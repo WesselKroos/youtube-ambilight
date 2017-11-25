@@ -24,7 +24,6 @@
   }],
   "web_accessible_resources": [
     "styles/main.css",
-    "scripts/generic.js",
     "scripts/youtube-ambilight.js"
   ],
   "permissions": ["activeTab"]

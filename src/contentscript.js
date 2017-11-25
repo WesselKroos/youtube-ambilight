@@ -1,6 +1,4 @@
-// Scripts
 var scripts = [
-  'scripts/generic.js',
   'scripts/youtube-ambilight.js'
 ]
 scripts.forEach((path) => {
