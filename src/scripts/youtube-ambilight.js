@@ -182,7 +182,7 @@ class Ambilight {
       const videoId = $.param('v', location.href)
       if(!videoId) return
       //console.log(`Loading ambilight video with id: ${videoId}`)
-      const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&fs=0&mute=1&vq=tiny`
+      const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&rel=0&fs=0&mute=1&disablekb=1&cc_load_policy=0&iv_load_policy=3&modestbranding=1&vq=tiny`
       this.iframe.attr('src', src)
     }
   
