@@ -9,9 +9,7 @@ class Ambilight {
       this.initSrcVideo()
       this.initElements()
       this.initImmersiveMode()
-
       this.setVideo()
-  
       this.initPlayerApi()
     }
   
@@ -62,32 +60,38 @@ class Ambilight {
         .on("play", this.onPlay.bind(this))
         .on("pause", this.onPause.bind(this))
       this.srcVideo.style.left = 0
-  
-      //this.srcVideo.ontimeupdate = (e) => {
-      //  console.log(`Time: ${this.srcVideo.currentTime} Total: ${this.srcVideo.duration}`);
-      //}
     }
     initPlayerApi() {
-      window.onPlayerReady = (event) => {
-        setTimeout(() => { this.setVideoPosition() }, 1500)
-        this.startSync()
-      }
       window.onYouTubeIframeAPIReady = () => {
         try {
           this.player = new YT.Player('ambilight-player', {
               events: {
-                'onReady': window.onPlayerReady
+                'onReady': this.onPlayerReady.bind(this),
+                'onError': this.onPlayerError.bind(this)
                 //'onStateChange': window.onPlayerStateChange
               }
           });
         } catch(ex) {
-          console.error('Youtube Ambilight failed to load the ambilight player: ' + ex.message)
+          console.error(`Youtube Ambilight failed to load the ambilight player: ${ex.message}`)
         }
       }
       var script = $.create('script')
         .attr('id', 'ambilight-player-script')
         .attr('src', 'https://www.youtube.com/iframe_api')
         .appendTo($.s('head'))
+    }
+    
+    onPlayerReady(event) {
+      setTimeout(() => { this.setVideoPosition() }, 1500)
+      this.startSync()
+    }
+    onPlayerError(event) {
+      console.error(`YouTube Ambilight failed to load the ambilight player (Error ${event.data})`)
+      if(event.data == 101 || event.data == 150)
+        console.error('Cause: This channel has disabled embedding into other websites')
+      else if(event.data == 5)
+        console.error('Cause: The video cannot be viewed in a HTML5 video tag')
+      console.error('More info: https://developers.google.com/youtube/iframe_api_reference#onError')
     }
   
     toggleAutoHide() {
