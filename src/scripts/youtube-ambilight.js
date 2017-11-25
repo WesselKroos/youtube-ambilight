@@ -42,6 +42,7 @@ class Ambilight {
     initImmersiveMode() {
       $.create('button')
         .class('toggle-auto-hide-btn ytp-button')
+        .attr('title', 'Ambilight Immersive mode\n(This hides everything around the video untill you scroll down)')
         .on('click', this.toggleAutoHide.bind(this))
         .prependTo($.s('.ytp-right-controls'))
     
