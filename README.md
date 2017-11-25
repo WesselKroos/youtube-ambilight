@@ -14,8 +14,16 @@ The following projectfiles are inserted into that specific webpage:
 
 This extension executes NO requests to any webserver, website or api other than YouTube's own api to play the ambilight video behind the real YouTube video.
 
-## Report, ask or contribute
+## Planned features
+1 A settings page where you can
+  - change the brightness, contrast and saturation of the ambilight
+  - turn the ambilight on or off
+  - switch between automatic/manual mode so you can disable the auto-start
+  - set the immersive mode on or off at the start of the video
+
+## Report, request or contribute
 Feel free to 
 - contribute to the project at https://github.com/WesselKroos/chrome-youtube-ambilight
 - report bugs at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
-- or ask a question https://github.com/WesselKroos/chrome-youtube-ambilight/issues
+- request a feature at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
+- or ask a question at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
