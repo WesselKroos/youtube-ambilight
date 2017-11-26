@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Test Extension Options</title>
+  <link rel="stylesheet" href="styles/options.css">
+</head>
+
+<body>
+  <div>
+    <input type="checkbox" id="enabled" checked>
+    <label for="enabled">Auto Enabled</label>
+  </div>
+  <div>
+    <input type="checkbox" id="immersive-mode">
+    <label for="immersive-mode">Auto Immersive Mode</label>
+  </div>
+
+  <hr/>
+
+  <div>
+      <label>Brightness</label>
+    <input type="range" id="brightness-range" min="10" max="150" value="110" step="1">
+    <input type="number" id="brightness" min="10" max="150" value="110" step="1">
+  </div>
+  <div>
+    <label>Contrast</label>
+    <input type="range" id="contrast-range" min="10" max="300" value="110" step="1">
+    <input type="number" id="contrast" min="10" max="300" value="110" step="1">
+  </div>
+  <div>
+    <label>Saturation</label>
+    <input type="range" id="saturation-range" min="0" max="500" value="110" step="1">
+    <input type="number" id="saturation" min="0" max="500" value="110" step="1">
+  </div>
+  <div>
+    <label>Size</label>
+    <input type="range" id="size-range" min="3" max="10" value="5" step="1">
+    <input type="number" id="size" min="3" max="10" value="5" step="1">
+  </div>
+  <div>
+    <button id="reset">Reset</button>
+  </div>
+
+  <div class="noise"></div>
+
+  <script src="scripts/options.js"></script>
+</body>
+</html>

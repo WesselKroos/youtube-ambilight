@@ -91,6 +91,24 @@ class Ambilight {
       this.initImmersiveMode()
       this.setVideo()
       this.initPlayerApi()
+      this.initOptions()
+    }
+
+    initOptions() {
+      window.addEventListener("message", event => {
+        if (event.source != window) return
+        if (event.data.type && event.data.type == "RECEIVE_SETTINGS")
+          this.onReceivedOptions(event.data.settings)
+      })
+      window.postMessage({ type: "GET_SETTINGS" }, "*");
+    }
+
+    onReceivedOptions(s) {
+      const filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.size}vw)`
+      this.container.style.webkitFilter = filter
+      const style = document.head.appendChild(document.createElement("style"));
+      const opacity = 1 - (Math.max(0, s.size - 3) / 7)
+      style.innerHTML = `.video-ambilight::after {opacity: ${opacity};}`;
     }
   
     initElements() {
@@ -141,6 +159,7 @@ class Ambilight {
         .on("pause", this.onPause.bind(this))
       this.srcVideo.style.left = 0
     }
+
     initPlayerApi() {
       window.onYouTubeIframeAPIReady = () => {
         try {
@@ -160,11 +179,12 @@ class Ambilight {
         .attr('src', 'https://www.youtube.com/iframe_api')
         .appendTo($.s('head'))
     }
-    
+
     onPlayerReady(event) {
       setTimeout(() => { this.setVideoPosition() }, 1500)
       this.startSync()
     }
+
     onPlayerError(event) {
       console.error(`YouTube Ambilight failed to load the ambilight player (Error ${event.data})`)
       if(event.data == 101 || event.data == 150)

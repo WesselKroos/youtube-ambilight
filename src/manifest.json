@@ -11,7 +11,8 @@
     "128": "images/icon-128.png"
   },
   "browser_action": {
-    "default_icon": "images/icon-19.png"
+    "default_icon": "images/icon-19.png",
+    "default_popup": "options.html"
   },
   "background" : {
     "scripts" : ["background.js"],
@@ -26,5 +27,12 @@
     "styles/main.css",
     "scripts/youtube-ambilight.js"
   ],
-  "permissions": ["activeTab"]
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": false
+  }
 }
