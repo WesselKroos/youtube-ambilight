@@ -32,7 +32,7 @@ options = {
     contrast: 100,
     saturation: 110,
     size: 5,
-    strength: 3
+    strength: 4
   },
   reset: () => {
     options.set(options.default)

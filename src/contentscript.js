@@ -20,7 +20,7 @@ window.addEventListener("message", function(event) {
       contrast: 100,
       saturation: 110,
       size: 5,
-      strength: 3
+      strength: 4
     }, (settings) => {
       window.postMessage({ type: "RECEIVE_SETTINGS", settings: settings }, "*")
     })
