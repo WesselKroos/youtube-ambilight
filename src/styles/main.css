@@ -1,13 +1,20 @@
-body {
-  overflow-x: hidden;
-}
-ytd-app {
+html {
   background: #fff !important;
 }
-html[dark="true"] ytd-app {
+html[dark="true"] {
   background: #000 !important;
 }
-ytd-watch {
+body {
+  overflow-x: hidden;
+  background: none !important;
+}
+ytd-app {
+  position: relative !important;
+  background: none !important;
+}
+ytd-watch,
+#player-container,
+.html5-video-player {
   background: none !important;
 }
 #content {
@@ -15,7 +22,7 @@ ytd-watch {
   z-index: 3;
 }
 
-#player {
+#player .video-stream.html5-main-video {
   /*box-shadow: 0 3px 20px #000;*/
   box-shadow: rgba(0,0,0,.5) 0 0 3px;
 }
@@ -26,8 +33,14 @@ ytd-watch {
 .html5-video-player {
   opacity: .9999999; /*Fix for hiding the black background ambient*/
 }
+
+body .ytp-gradient-bottom {
+  padding-top: 1px;
+  background: #000;
+}
 .ytp-chrome-bottom {
   max-width: calc(100% - 24px);
+  background: #000;
 }
 
 #playlist,
@@ -40,11 +53,21 @@ ytd-watch {
   z-index: 1;
   pointer-events: none;
   opacity: 1;
-  transform: scaleX(1.10) scaleY(1.17);
+  transform: scaleX(1.04) scaleY(1.06);
   filter: blur(5vw) brightness(110%) contrast(110%) saturate(110%);
-  mix-blend-mode: hard-light;
+  mix-blend-mode: color-dodge;
+}
+.video-ambilight + .video-ambilight {
+  transform: scaleX(1.06) scaleY(1.09);
+}
+.video-ambilight + .video-ambilight + .video-ambilight {
+  transform: scaleX(1.08) scaleY(1.12);
+}
+.video-ambilight + .video-ambilight + .video-ambilight + .video-ambilight {
+  transform: scaleX(1.10) scaleY(1.15);
 }
 html[dark="true"] .video-ambilight {
+  mix-blend-mode: hard-light;
   mix-blend-mode: screen;
 }
 .video-ambilight iframe {
@@ -52,20 +75,19 @@ html[dark="true"] .video-ambilight {
   z-index: 1;
   width: 100%;
   height: 100%;
-  filter: blur(15px) brightness(110%) contrast(110%) saturate(110%);
+  filter: blur(0px) contrast(115%);
   background: #fff;
-  mix-blend-mode: hard-light;
   transition: opacity .5s;
 }
 html[dark="true"] .video-ambilight iframe {
-  mix-blend-mode: screen;
   background: #000;
 }
 .video-ambilight iframe.unloaded {
   opacity: 0;
+  transition: opacity .15s;
 }
 
-.video-ambilight::after {
+/* .video-ambilight::after {
   position: absolute;
   z-index: 3;
   content: '';
@@ -73,10 +95,10 @@ html[dark="true"] .video-ambilight iframe {
   height: 100%;
   top: 0;
   left: 0;
-  transform: scaleX(.75) scaleY(.65);
+  transform: scaleX(.8) scaleY(.7);
   background: #000;
   opacity: .7;
-}
+} */
 
 .noise {
   width: 100%;
@@ -109,6 +131,11 @@ html[dark="true"] .noise {
   }
 }
 
+
+body.hide-surroundings:not(.disable-hide-surroundings)::-webkit-scrollbar {
+  width: 0;
+}
+
 ytd-playlist-panel-renderer,
 #related,
 #info.style-scope.ytd-watch,
@@ -124,7 +151,7 @@ body.hide-surroundings:not(.disable-hide-surroundings) #info.style-scope.ytd-wat
 body.hide-surroundings:not(.disable-hide-surroundings) #meta.style-scope.ytd-watch,
 body.hide-surroundings:not(.disable-hide-surroundings) ytd-comments,
 body.hide-surroundings:not(.disable-hide-surroundings) #masthead-container {
-  opacity: 0;
+  opacity: 0 !important;
   pointer-events: none;
   transition: opacity 1s ease-in;
 }

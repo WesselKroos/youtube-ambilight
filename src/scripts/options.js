@@ -22,17 +22,17 @@ HTMLElement.prototype.on = addEventListenerPrototype
 options = {
   restore: () => {
     chrome.storage.sync.get(options.default, (settings) => {
-      console.log(settings)
       options.set(settings)
     })
   },
   default: {
     enabled: true,
     'immersive-mode': false,
-    brightness: 110,
-    contrast: 110,
+    brightness: 100,
+    contrast: 100,
     saturation: 110,
-    size: 5
+    size: 5,
+    strength: 3
   },
   reset: () => {
     options.set(options.default)

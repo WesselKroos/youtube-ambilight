@@ -48,7 +48,7 @@ HTMLElement.prototype.removeClass = function(className) {
   var pos = classList.indexOf(className)
   if(pos !== -1) {
     classList.splice(pos, 1)
-    this.className = classList
+    this.className = classList.join(' ')
   }
   return this
 }
@@ -79,225 +79,261 @@ body = document.body
 //// Ambilight
 
 class Ambilight {
-    constructor() {
-      this.syncLoop = null
-      this.srcVideoOffsetTop = -1
-      this.isOnPlay = false
-      this.previousCorrection = 0
-      this.syncCount = 0
-
-      this.initSrcVideo()
-      this.initElements()
-      this.initImmersiveMode()
-      this.setVideo()
-      this.initPlayerApi()
-      this.initOptions()
-    }
-
-    initOptions() {
-      window.addEventListener("message", event => {
-        if (event.source != window) return
-        if (event.data.type && event.data.type == "RECEIVE_SETTINGS")
-          this.onReceivedOptions(event.data.settings)
-      })
-      window.postMessage({ type: "GET_SETTINGS" }, "*");
-    }
-
-    onReceivedOptions(s) {
-      const filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.size}vw)`
-      this.container.style.webkitFilter = filter
-      const style = document.head.appendChild(document.createElement("style"));
-      const opacity = 1 - (Math.max(0, s.size - 3) / 7)
-      style.innerHTML = `.video-ambilight::after {opacity: ${opacity};}`;
-    }
-  
-    initElements() {
-      $.create('div')
-        .class('noise')
-        .appendTo(body)
-  
-      this.container = $.create('div')
-        .class('video-ambilight')
-        .appendTo(body)
-  
-      this.iframe = $.create('iframe')
-        .attr('allowtransparency', true)
-        .class('unloaded')
-        .attr('id', 'ambilight-player')
-        .on('load', () => {
-          setTimeout(() => {
-            this.iframe.removeClass('unloaded')
-          }, 2000)
-        })
-        .appendTo(this.container)
-      
-      window.on('resize', this.setVideoPosition.bind(this))
-      setTimeout(() => { this.setVideoPosition() }, 1500)
-    }
-  
-    initImmersiveMode() {
-      $.create('button')
-        .class('toggle-auto-hide-btn ytp-button')
-        .attr('title', 'Ambilight Immersive mode\n(This hides everything around the video untill you scroll down)')
-        .on('click', this.toggleAutoHide.bind(this))
-        .prependTo($.s('.ytp-right-controls'))
+  constructor() {
+    this.strength = 3
+    this.srcVideoOffsetTop = -1
+    this.isOnPlay = false
+    this.syncCounts = []
+    this.containers = []
+    this.iframes = []
+    this.players = []
+    this.syncLoops = []
+    this.previousCorrections = []
+    this.receivedSettings = false
     
-      window.on('scroll', () => {
-        if(window.scrollY > this.srcVideoOffsetTop)
-          body.class('disable-hide-surroundings')
-        else
-          body.removeClass('disable-hide-surroundings')
-      })
-    }
-  
-    initSrcVideo() {
-      $.s('.ytp-size-button.ytp-button')
-        .on('click', this.setVideoPosition.bind(this))
-  
-      this.srcVideo = $.s('.video-stream.html5-main-video')
-        .on("play", this.onPlay.bind(this))
-        .on("pause", this.onPause.bind(this))
-      this.srcVideo.style.left = 0
+    this.requestOptions()
+  }
+
+  init() {
+    this.initSrcVideo()
+    this.initElements()
+    this.initImmersiveMode()
+    this.setVideo()
+    this.initPlayerApi()
+  }
+
+  requestOptions() {
+    window.addEventListener("message", event => {
+      if (event.source != window) return
+      if (event.data.type && event.data.type == "RECEIVE_SETTINGS")
+        this.onReceivedOptions(event.data.settings)
+    })
+    window.postMessage({ type: "GET_SETTINGS" }, "*");
+  }
+
+  onReceivedOptions(s) {
+    this.strength = s.strength
+    if(!this.receivedSettings) {
+      this.receivedSettings = true
+      this.init()
     }
 
-    initPlayerApi() {
-      window.onYouTubeIframeAPIReady = () => {
-        try {
-          this.player = new YT.Player('ambilight-player', {
-              events: {
-                'onReady': this.onPlayerReady.bind(this),
-                'onError': this.onPlayerError.bind(this)
-                //'onStateChange': window.onPlayerStateChange
-              }
-          });
-        } catch(ex) {
-          console.error(`Youtube Ambilight failed to load the ambilight player: ${ex.message}`)
-        }
+    this.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.size}vw)`
+    Object.keys(this.containers).forEach(key => {
+      this.containers[key].style.webkitFilter = this.filter
+    })
+    const style = document.head.appendChild(document.createElement("style"));
+    const opacity = 1 - (Math.max(0, s.size - 3) / 7)
+    style.innerHTML = `.video-ambilight::after {opacity: ${opacity};}`;
+  }
+
+  initElements() {
+    $.create('div')
+      .class('noise')
+      .appendTo(body)
+
+    for(let i=0; i<this.strength; i++) {
+      this.initVideo(i)
+    }
+    
+    window.on('resize', () => this.setVideoPosition())
+    this.setVideoPosition()
+  }
+
+  initVideo(key) {
+    this.containers[key] = $.create('div')
+      .class('video-ambilight')
+      .appendTo(body)
+
+    this.iframes[key] = $.create('iframe')
+      .attr('allowtransparency', true)
+      .class('ambilight-player unloaded')
+      .attr('id', `ambilight-player-${key}`)
+      .appendTo(this.containers[key])
+    this.syncLoops[key] = null
+    this.syncCounts[key] = 0
+    this.previousCorrections[key] = 0
+  }
+
+  initImmersiveMode() {
+    $.create('button')
+      .class('toggle-auto-hide-btn ytp-button')
+      .attr('title', 'Ambilight Immersive mode\n(This hides everything around the video untill you scroll down)')
+      .on('click', this.toggleAutoHide.bind(this))
+      .prependTo($.s('.ytp-right-controls'))
+  
+    window.on('scroll', () => {
+      if(window.scrollY > this.srcVideoOffsetTop)
+        body.class('disable-hide-surroundings')
+      else
+        body.removeClass('disable-hide-surroundings')
+    })
+  }
+
+  initSrcVideo() {
+    $.s('.ytp-size-button.ytp-button')
+      .on('click', () => this.setVideoPosition())
+
+    this.srcVideo = $.s('.video-stream.html5-main-video')
+      .on("play", this.onPlay.bind(this))
+      .on("pause", this.onPause.bind(this))
+    this.srcVideo.style.left = 0
+  }
+
+  initPlayerApi() {
+    window.onYouTubeIframeAPIReady = () => {
+      try {
+        Object.keys(this.iframes).forEach(key => {
+          this.players[key] = new YT.Player(`ambilight-player-${key}`, {
+            events: {
+              'onReady': (event) => this.onPlayerReady(event, key),
+              'onError': (event) => this.onPlayerError(event, key)
+              //'onStateChange': window.onPlayerStateChange
+            }
+          })
+        })
+      } catch(ex) {
+        console.error(`Youtube Ambilight failed to load the ambilight player: ${ex.message}`)
       }
-      var script = $.create('script')
-        .attr('id', 'ambilight-player-script')
-        .attr('src', 'https://www.youtube.com/iframe_api')
-        .appendTo($.s('head'))
     }
+    var script = $.create('script')
+      .attr('id', 'ambilight-player-script')
+      .attr('src', 'https://www.youtube.com/iframe_api')
+      .appendTo($.s('head'))
+  }
 
-    onPlayerReady(event) {
-      setTimeout(() => { this.setVideoPosition() }, 1500)
-      this.startSync()
-    }
+  onPlayerReady(event, key) {
+    this.startSync(key)
+  }
 
-    onPlayerError(event) {
-      console.error(`YouTube Ambilight failed to load the ambilight player (Error ${event.data})`)
-      if(event.data == 101 || event.data == 150)
-        console.error('Cause: This channel has disabled embedding into other websites')
-      else if(event.data == 5)
-        console.error('Cause: The video cannot be viewed in a HTML5 video tag')
-      console.error('More info: https://developers.google.com/youtube/iframe_api_reference#onError')
-    }
-  
-    toggleAutoHide() {
-      body.classList.toggle("hide-surroundings");
-    }
-  
-    setVideo() {
-      const videoId = $.param('v', location.href)
-      if(!videoId) return
-      //console.log(`Loading ambilight video with id: ${videoId}`)
-      const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&rel=0&fs=0&mute=1&disablekb=1&cc_load_policy=0&iv_load_policy=3&modestbranding=1&vq=tiny`
-      this.iframe.attr('src', src)
-    }
-  
-    startSync() {
-      if(this.syncLoop) return
-      this.syncLoop = setInterval(this.sync.bind(this), 1000)
-    }
-    sync() {
-      const player = this.player
-      const srcVideo = this.srcVideo
-      if(!player || !player.getPlayerState || player.getPlayerState() == 3) return
-      const playerState = player.getPlayerState()
+  onPlayerError(event, key) {
+    console.error(`YouTube Ambilight failed to load ambilight player ${key} (Error ${event.data})`)
+    if(event.data == 101 || event.data == 150)
+      console.error('Cause: This channel has disabled embedding into other websites')
+    else if(event.data == 5)
+      console.error('Cause: The video cannot be viewed in a HTML5 video tag')
+    console.error('More info: https://developers.google.com/youtube/iframe_api_reference#onError')
+  }
 
-      if(!srcVideo.playing) {
-        if(playerState != 0)
-          player.pauseVideo()
-          return
-      } else if(playerState == 2) {
-        player.playVideo()
-        return
-      } else if(playerState == 3) { //buffering
-        return
+  toggleAutoHide() {
+    body.classList.toggle("hide-surroundings");
+  }
+
+  setVideo() {
+    const videoId = $.param('v', location.href)
+    if(!videoId) return
+    //console.log(`Loading ambilight video with id: ${videoId}`)
+    const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&rel=0&fs=0&mute=1&disablekb=1&cc_load_policy=0&iv_load_policy=3&modestbranding=1&vq=tiny`
+    Object.keys(this.iframes).forEach(key => {
+      this.iframes[key].class('unloaded')
+        .attr('src', src)
+    })
+  }
+
+  startSync(key) {
+    if(this.syncLoops[key]) return
+    this.syncLoops[key] = setInterval(() => this.sync(key), 1000)
+  }
+  sync(key) {
+    const player = this.players[key]
+    const srcVideo = this.srcVideo
+    if(!player || !player.getPlayerState || player.getPlayerState() == 3) return
+    const playerState = player.getPlayerState()
+
+    if(!srcVideo.playing) {
+      if(playerState != 0) {
+        player.pauseVideo()
       }
+        return
+    } else if(playerState == 2) {
+      player.playVideo()
+      return
+    } else if(playerState == 3) { //buffering
+      return
+    }
 
-      const videoTime = srcVideo.currentTime
-      const ambilightTime = player.getCurrentTime()
-      if(videoTime == 0 || ambilightTime == 0) return
-      
-      if(Math.abs(videoTime - ambilightTime) > .02) {
-        let correction = 0.05
-        if(playerState != 3 && Math.abs(videoTime - ambilightTime) < 2) {
-          correction = this.previousCorrection + (videoTime - ambilightTime)
-        } else {
-          this.previousCorrection = 0
-        }
-        player.seekTo(videoTime + correction, true)
-        this.previousCorrection = correction
-
-        if(this.syncCount > 10)
-          console.warn(`Youtube Ambilight seems to fail while trying to sync the video\nVideo time:${videoTime}\nAmbilight time: ${ambilightTime}\nTimecorrection: ${correction}`)
-        this.syncCount++
+    const videoTime = srcVideo.currentTime
+    const ambilightTime = player.getCurrentTime()
+    if(videoTime == 0 || ambilightTime == 0) return
+    
+    if(Math.abs(videoTime - ambilightTime) > .02) {
+      let correction = 0.05
+      if(playerState != 3 && Math.abs(videoTime - ambilightTime) < 2) {
+        correction = this.previousCorrections[key] + (videoTime - ambilightTime)
       } else {
-        this.syncCount = 0
+        this.previousCorrections[key] = 0
       }
-    }
-  
-    setVideoPosition() {
-      setTimeout(() => {
-        const v = this.srcVideo
-        const a = this.container
-        if(!a || !v) return
-        const as = a.style
-        
-        as.width = `${v.offsetWidth}px`
-        as.height = `${v.offsetHeight}px`
-        as.left = (v.offset().left + window.scrollX) + 'px'
-        as.top = (v.offset().top + window.scrollY) + 'px'
-        this.updateSrcVideoTop()
-      }, 100)
-    }
+      player.seekTo(videoTime + correction, true)
+      this.previousCorrections[key] = correction
 
-    updateSrcVideoTop() {
-      this.srcVideoOffsetTop = this.srcVideo.offset().top + window.scrollY
-    }
-  
-    onPause(e) {
-      if(this.isOnPlay) {
-        this.iframe.class('unloaded')
-        return
-      }
-      clearTimeout(this.queuedUnloadAnimation)
-      this.sync()
-    }
-  
-    onPlay(e) {
-      this.isOnPlay = true
-      setTimeout(() => this.isOnPlay = false, 200)
-      if(!this.player || !this.player.getVideoStats || $.param('v', location.href) != this.player.getVideoStats().docid) {
-        this.iframe.class('unloaded')
-        clearTimeout(this.queuedUnloadAnimation)
-        setTimeout(() => {
-          this.setVideo()
-        }, 500)
-      } else {
-        this.sync()
-        this.queuedUnloadAnimation = setTimeout(() => {
-          this.iframe.removeClass('unloaded')
-        }, 3000)
-      }
+      if(this.syncCounts[key] > 10)
+        console.warn(`Youtube Ambilight seems to fail while trying to sync the video\nVideo time:${videoTime}\nAmbilight time: ${ambilightTime}\nTimecorrection: ${correction}`)
+      this.syncCounts[key]++
+    } else if(this.syncCounts[key] != 0) {
+      this.syncCounts[key] = 0
+      this.iframes[key].removeClass('unloaded')
+      this.setVideoPosition()
     }
   }
-  
-  if($.s('.video-ambilight')) {
-    console.warn('Youtube Ambilight is already enabled')
-  } else {
-    //console.log(`Enabling ambilight`)
+
+  setVideoPosition() {
+    setTimeout(() => {
+      const v = this.srcVideo
+      Object.keys(this.containers).forEach(key => {
+        const c = this.containers[key]
+        if(!c || !v) return
+        const cs = c.style
+        
+        cs.width = `${v.offsetWidth}px`
+        cs.height = `${v.offsetHeight}px`
+        cs.left = (v.offset().left + window.scrollX) + 'px'
+        cs.top = (v.offset().top + window.scrollY) + 'px'
+      })
+      this.updateSrcVideoTop()
+    }, 100)
+  }
+
+  updateSrcVideoTop() {
+    this.srcVideoOffsetTop = this.srcVideo.offset().top + window.scrollY
+  }
+
+  onPause(e) {
+    setTimeout(() => {
+      if(this.isOnPlay) {
+        return
+      }
+      Object.keys(this.iframes).forEach(key => {
+        this.iframes[key].class('unloaded')
+        this.sync(key)
+      })
+    }, 250)
+  }
+
+  onPlay(e) {
+    this.isOnPlay = true
+    setTimeout(() => this.isOnPlay = false, 500)
+
+    if(this.players.filter((player) => {
+      return !player || !player.getVideoStats || $.param('v', location.href) != player.getVideoStats().docid 
+    }).length) {
+      setTimeout(() => {
+        this.setVideo()
+      }, 500)
+    } else {
+      Object.keys(this.iframes).forEach(key => {
+        this.sync(key)
+      })
+    }
+  }
+}
+
+enableAmbilight = () => {
+  isVideoPage = window.location.href.indexOf('watch?v=') != -1
+  if(window.ambilight) {
+    if(!isVideoPage)
+      window.ambilight.onPause()
+  } else if(isVideoPage) {
     window.ambilight = new Ambilight()
   }
+}
+toggleAmbilight = setInterval(() => enableAmbilight(), 500)

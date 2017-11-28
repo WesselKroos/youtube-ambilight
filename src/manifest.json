@@ -19,7 +19,7 @@
     "persistent": false
   },
   "content_scripts": [{
-    "matches": ["https://www.youtube.com/watch*"],
+    "matches": ["https://www.youtube.com/*"],
     "js": ["contentscript.js"],
     "css": ["styles/main.css"]
   }],
