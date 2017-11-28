@@ -56,7 +56,7 @@ body .ytp-gradient-bottom {
   transform: scaleX(1.04) scaleY(1.06);
   filter: blur(5vw) brightness(110%) contrast(110%) saturate(110%);
   mix-blend-mode: screen;
-  background: #aaa;
+  background: #555;
 }
 .video-ambilight + .video-ambilight {
   transform: scaleX(1.06) scaleY(1.09);
