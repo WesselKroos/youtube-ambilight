@@ -80,26 +80,18 @@ body = document.body
 
 class Ambilight {
   constructor() {
-    this.strength = 3
+    this.strength = 0
     this.srcVideoOffsetTop = -1
     this.isOnPlay = false
+    this.receivedSettings = false
     this.syncCounts = []
     this.containers = []
     this.iframes = []
     this.players = []
     this.syncLoops = []
     this.previousCorrections = []
-    this.receivedSettings = false
     
     this.requestOptions()
-  }
-
-  init() {
-    this.initSrcVideo()
-    this.initElements()
-    this.initImmersiveMode()
-    this.setVideo()
-    this.initPlayerApi()
   }
 
   requestOptions() {
@@ -112,10 +104,25 @@ class Ambilight {
   }
 
   onReceivedOptions(s) {
-    this.strength = s.strength
     if(!this.receivedSettings) {
+      this.strength = s.strength
       this.receivedSettings = true
       this.init()
+    } else {
+      if(this.strength != s.strength) {
+        if(this.strength > s.strength) {
+          for(let i=this.strength; i>s.strength; i--) {
+            this.removeAmbilightVideo()
+          }
+        } else if(this.strength < s.strength) {
+          for(let i=this.strength; i<s.strength; i++) {
+            this.addAmbilightVideo()
+          }
+          this.setVideo()
+          this.setVideoPosition()
+        }
+      }
+      this.strength = s.strength
     }
 
     this.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.size}vw)`
@@ -126,33 +133,59 @@ class Ambilight {
     const opacity = 1 - (Math.max(0, s.size - 3) / 7)
     style.innerHTML = `.video-ambilight::after {opacity: ${opacity};}`;
   }
-
+  
+  init() {
+    this.initSrcVideo()
+    this.initElements()
+    this.initImmersiveMode()
+    this.setVideo()
+    this.initPlayerApi()
+  }
+  
   initElements() {
     $.create('div')
       .class('noise')
       .appendTo(body)
 
     for(let i=0; i<this.strength; i++) {
-      this.initVideo(i)
+      this.addAmbilightVideo()
     }
     
     window.on('resize', () => this.setVideoPosition())
     this.setVideoPosition()
   }
 
-  initVideo(key) {
-    this.containers[key] = $.create('div')
+  addAmbilightVideo() {
+    const key = this.containers.length
+    this.containers.push($.create('div')
       .class('video-ambilight')
-      .appendTo(body)
+      .appendTo(body))
 
-    this.iframes[key] = $.create('iframe')
+    this.iframes.push($.create('iframe')
       .attr('allowtransparency', true)
       .class('ambilight-player unloaded')
       .attr('id', `ambilight-player-${key}`)
-      .appendTo(this.containers[key])
-    this.syncLoops[key] = null
-    this.syncCounts[key] = 0
-    this.previousCorrections[key] = 0
+      .appendTo(this.containers[key]))
+    this.syncLoops.push(null)
+    this.syncCounts.push(0)
+    this.previousCorrections.push(0)
+    if(this.YTApiInitialized)
+      this.addPlayer(key)
+  }
+
+  removeAmbilightVideo() {
+    const key = this.players.length - 1
+    clearInterval(this.syncLoops[key])
+    this.players[key].destroy();
+    this.containers[key].remove()
+    this.iframes[key].remove()
+    
+    this.containers.pop()
+    this.iframes.pop()
+    this.players.pop()
+    this.syncCounts.pop()
+    this.previousCorrections.pop()
+    this.syncLoops.pop()
   }
 
   initImmersiveMode() {
@@ -182,15 +215,10 @@ class Ambilight {
 
   initPlayerApi() {
     window.onYouTubeIframeAPIReady = () => {
+      this.YTApiInitialized = true
       try {
         Object.keys(this.iframes).forEach(key => {
-          this.players[key] = new YT.Player(`ambilight-player-${key}`, {
-            events: {
-              'onReady': (event) => this.onPlayerReady(event, key),
-              'onError': (event) => this.onPlayerError(event, key)
-              //'onStateChange': window.onPlayerStateChange
-            }
-          })
+          this.addPlayer(key)
         })
       } catch(ex) {
         console.error(`Youtube Ambilight failed to load the ambilight player: ${ex.message}`)
@@ -200,6 +228,16 @@ class Ambilight {
       .attr('id', 'ambilight-player-script')
       .attr('src', 'https://www.youtube.com/iframe_api')
       .appendTo($.s('head'))
+  }
+
+  addPlayer(key) {
+    this.players[key] = new YT.Player(`ambilight-player-${key}`, {
+      events: {
+        'onReady': (event) => this.onPlayerReady(event, key),
+        'onError': (event) => this.onPlayerError(event, key)
+        //'onStateChange': window.onPlayerStateChange
+      }
+    })
   }
 
   onPlayerReady(event, key) {
@@ -224,11 +262,18 @@ class Ambilight {
     if(!videoId) return
     //console.log(`Loading ambilight video with id: ${videoId}`)
     const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&rel=0&fs=0&mute=1&disablekb=1&cc_load_policy=0&iv_load_policy=3&modestbranding=1&vq=tiny`
+    
     Object.keys(this.iframes).forEach(key => {
-      this.iframes[key].class('unloaded')
+      const player = this.players[key]
+      const iframe = this.iframes[key]
+      if(iframe.attr('src') == '#' && $.param('v', location.href) == player.getVideoStats().docid) return
+      
+      if(iframe.attr('src') == '#')
+        console.log(`${$.param('v', location.href)} != ${player.getVideoStats().docid}`)
+      iframe.class('unloaded')
         //Setting to # and then replace to avoid duplicate entries in the browser history
         .attr('src', '#')
-        .contentWindow.location.replace(src);
+        .contentWindow.location.replace(src)
     })
   }
 
