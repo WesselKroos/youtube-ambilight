@@ -266,10 +266,8 @@ class Ambilight {
     Object.keys(this.iframes).forEach(key => {
       const player = this.players[key]
       const iframe = this.iframes[key]
-      if(iframe.attr('src') == '#' && $.param('v', location.href) == player.getVideoStats().docid) return
+      if(iframe.attr('src') == '#' && player.getVideoStats && $.param('v', location.href) == player.getVideoStats().docid) return
       
-      if(iframe.attr('src') == '#')
-        console.log(`${$.param('v', location.href)} != ${player.getVideoStats().docid}`)
       iframe.class('unloaded')
         //Setting to # and then replace to avoid duplicate entries in the browser history
         .attr('src', '#')
