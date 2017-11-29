@@ -17,7 +17,7 @@ ytd-watch,
 .html5-video-player {
   background: none !important;
 }
-#content {
+#page-manager {
   position: relative;
   z-index: 3;
 }
