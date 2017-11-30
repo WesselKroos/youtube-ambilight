@@ -5,13 +5,13 @@ $ = {
   s: (selector) => { return document.querySelector(selector) },
   sa: (selector) => { return document.querySelectorAll(selector) },
   param: (name, url) => {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, "\\$&");
-    const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-      results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
+    url = url ? url : window.location.href
+    name = name.replace(/[\[\]]/g, "\\$&")
+    const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)")
+    const results = regex.exec(url)
+    if (!results) return null
+    if (!results[2]) return ''
+    return decodeURIComponent(results[2].replace(/\+/g, " "))
   }
 }
 
@@ -31,6 +31,11 @@ HTMLElement.prototype.append = function(elem) {
 }
 HTMLElement.prototype.appendTo = function(elem) {
   elem.append(this)
+  return this
+}
+HTMLElement.prototype.prependChild = HTMLElement.prototype.prepend
+HTMLElement.prototype.prepend = function(elem) {
+  this.prependChild(elem)
   return this
 }
 HTMLElement.prototype.prependTo = function(elem) {
@@ -69,7 +74,7 @@ HTMLElement.prototype.offset = function() {
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
   get: function(){
-      return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
+    return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2)
   }
 })
 
@@ -100,7 +105,7 @@ class Ambilight {
       if (event.data.type && event.data.type == "RECEIVE_SETTINGS")
         this.onReceivedOptions(event.data.settings)
     })
-    window.postMessage({ type: "GET_SETTINGS" }, "*");
+    window.postMessage({ type: "GET_SETTINGS" }, "*")
   }
 
   onReceivedOptions(s) {
@@ -111,11 +116,11 @@ class Ambilight {
     } else {
       if(this.strength != s.strength) {
         if(this.strength > s.strength) {
-          for(let i=this.strength; i>s.strength; i--) {
+          for(let i = this.strength; i > s.strength; i--) {
             this.removeAmbilightVideo()
           }
         } else if(this.strength < s.strength) {
-          for(let i=this.strength; i<s.strength; i++) {
+          for(let i = this.strength; i < s.strength; i++) {
             this.addAmbilightVideo()
           }
           this.setVideo()
@@ -129,9 +134,9 @@ class Ambilight {
     Object.keys(this.containers).forEach(key => {
       this.containers[key].style.webkitFilter = this.filter
     })
-    const style = document.head.appendChild(document.createElement("style"));
+    const style = document.head.appendChild(document.createElement("style"))
     const opacity = 1 - (Math.max(0, s.size - 3) / 7)
-    style.innerHTML = `.video-ambilight::after {opacity: ${opacity};}`;
+    style.innerHTML = `.ambilight-video::after {opacity: ${opacity}}`
   }
   
   init() {
@@ -145,9 +150,9 @@ class Ambilight {
   initElements() {
     $.create('div')
       .class('noise')
-      .appendTo(body)
+      .prependTo(body)
 
-    for(let i=0; i<this.strength; i++) {
+    for(let i = 0; i < this.strength; i++) {
       this.addAmbilightVideo()
     }
     
@@ -158,8 +163,8 @@ class Ambilight {
   addAmbilightVideo() {
     const key = this.containers.length
     this.containers.push($.create('div')
-      .class('video-ambilight')
-      .appendTo(body))
+      .class('ambilight-video')
+      .prependTo(body))
 
     this.iframes.push($.create('iframe')
       .attr('allowtransparency', true)
@@ -176,7 +181,7 @@ class Ambilight {
   removeAmbilightVideo() {
     const key = this.players.length - 1
     clearInterval(this.syncLoops[key])
-    this.players[key].destroy();
+    this.players[key].destroy()
     this.containers[key].remove()
     this.iframes[key].remove()
     
@@ -254,7 +259,7 @@ class Ambilight {
   }
 
   toggleAutoHide() {
-    body.classList.toggle("hide-surroundings");
+    body.classList.toggle("hide-surroundings")
   }
 
   setVideo() {
@@ -342,22 +347,30 @@ class Ambilight {
     this.srcVideoOffsetTop = this.srcVideo.offset().top + window.scrollY
   }
 
-  onPause(e) {
+  onPause() {
     setTimeout(() => {
       if(this.isOnPlay) {
         return
       }
       Object.keys(this.iframes).forEach(key => {
-        this.iframes[key].class('unloaded')
         this.sync(key)
       })
     }, 250)
   }
 
-  onPlay(e) {
+  onStop() {
+    this.onPause()
+    body.class('disable-ambilight')
+    Object.keys(this.iframes).forEach(key => {
+      this.iframes[key].class('unloaded')
+    })
+  }
+
+  onPlay() {
     this.isOnPlay = true
     setTimeout(() => this.isOnPlay = false, 500)
 
+    body.removeClass('disable-ambilight')
     if(this.players.filter((player) => {
       return !player || !player.getVideoStats || $.param('v', location.href) != player.getVideoStats().docid 
     }).length) {
@@ -375,8 +388,9 @@ class Ambilight {
 enableAmbilight = () => {
   isVideoPage = window.location.href.indexOf('watch?v=') != -1
   if(window.ambilight) {
-    if(!isVideoPage)
-      window.ambilight.onPause()
+    if(!isVideoPage) {
+      window.ambilight.onStop()
+    }
   } else if(isVideoPage) {
     window.ambilight = new Ambilight()
   }
