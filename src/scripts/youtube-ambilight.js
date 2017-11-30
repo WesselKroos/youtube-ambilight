@@ -134,9 +134,11 @@ class Ambilight {
     Object.keys(this.containers).forEach(key => {
       this.containers[key].style.webkitFilter = this.filter
     })
-    const style = document.head.appendChild(document.createElement("style"))
-    const opacity = 1 - (Math.max(0, s.size - 3) / 7)
-    style.innerHTML = `.ambilight-video::after {opacity: ${opacity}}`
+    
+    //// This was a fix to keep the brightness on point
+    // const style = document.head.appendChild(document.createElement("style"))
+    // const opacity = 1 - (Math.max(0, s.size - 3) / 7)
+    // style.innerHTML = `.ambilight-video::after {opacity: ${opacity}}`
   }
   
   init() {
