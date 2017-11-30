@@ -1,7 +1,7 @@
 html {
   background: #fff !important;
 }
-html[dark="true"] {
+html[dark] {
   background: #000 !important;
 }
 body {
@@ -20,6 +20,10 @@ ytd-watch,
 #page-manager {
   position: relative;
   z-index: 3;
+}
+#playlist,
+#related {
+  z-index: 1;
 }
 
 #player .video-stream.html5-main-video {
@@ -43,10 +47,6 @@ body .ytp-gradient-bottom {
   background: #000;
 }
 
-#playlist,
-#related {
-  z-index: 1;
-}
 
 .video-ambilight {
   position: absolute;
@@ -67,7 +67,7 @@ body .ytp-gradient-bottom {
 .video-ambilight + .video-ambilight + .video-ambilight + .video-ambilight {
   transform: scaleX(1.10) scaleY(1.15);
 }
-html[dark="true"] .video-ambilight {
+html[dark] .video-ambilight {
   mix-blend-mode: hard-light;
   mix-blend-mode: screen;
   background: none;
@@ -82,7 +82,7 @@ html[dark="true"] .video-ambilight {
   transition: opacity .5s;
   mix-blend-mode: color;
 }
-html[dark="true"] .video-ambilight iframe {
+html[dark] .video-ambilight iframe {
   background: #000;
   mix-blend-mode: initial;
 }
@@ -116,7 +116,7 @@ html[dark="true"] .video-ambilight iframe {
   mix-blend-mode: darken;
   pointer-events: none;
 }
-html[dark="true"] .noise {
+html[dark] .noise {
   filter: contrast(1800%) brightness(57%);
 }
 
