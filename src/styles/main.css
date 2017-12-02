@@ -56,11 +56,13 @@ video {
 /* Prevent Youtube video progressbar flickering */
 
 body .ytp-gradient-bottom {
-  padding-top: 1px;
+  height: 40px;
+  padding-top: 0;
   background: #000;
 }
 body .ytp-big-mode .ytp-gradient-bottom {
-  padding-top: 10px;
+  height: 60px;
+  padding-top: 0;
 }
 .ytp-chrome-bottom {
   max-width: calc(100% - 24px);
