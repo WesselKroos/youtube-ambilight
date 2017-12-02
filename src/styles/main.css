@@ -59,6 +59,9 @@ body .ytp-gradient-bottom {
   padding-top: 1px;
   background: #000;
 }
+body .ytp-big-mode .ytp-gradient-bottom {
+  padding-top: 10px;
+}
 .ytp-chrome-bottom {
   max-width: calc(100% - 24px);
   background: #000;
