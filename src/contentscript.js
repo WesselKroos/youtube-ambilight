@@ -17,7 +17,7 @@ window.addEventListener("message", function(event) {
       enabled: true,
       'immersive-mode': false,
       strength: 4,
-      spread: 25,
+      spread: 23,
       blur: 45,
       contrast: 115,
       saturation: 100,
