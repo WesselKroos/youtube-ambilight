@@ -70,27 +70,26 @@ body .ytp-gradient-bottom {
   position: absolute;
   pointer-events: none;
   opacity: 1;
-  transform: scaleX(1.04) scaleY(1.04);
+  transform: scaleX(1.00) scaleY(1.00);
   filter: blur(5vw) brightness(110%) contrast(110%) saturate(110%);
   mix-blend-mode: screen;
   background: #555;
 }
-.ambilight-video:nth-child(2) {
-  transform: scaleX(1.05) scaleY(1.05);
-}
-.ambilight-video:nth-child(3) {
-  transform: scaleX(1.03) scaleY(1.03);
-}
-.ambilight-video:nth-child(4) {
-  transform: scaleX(1.06) scaleY(1.06);
-}
-.ambilight-video:nth-child(5) {
-  transform: scaleX(1.02) scaleY(1.02);
-}
 html[dark] .ambilight-video {
-  mix-blend-mode: hard-light;
   mix-blend-mode: screen;
   background: none;
+}
+.ambilight-video:nth-child(2) {
+  transform: scaleX(1.045) scaleY(1.08);
+}
+.ambilight-video:nth-child(3) {
+  transform: scaleX(1.135) scaleY(1.24);
+}
+.ambilight-video:nth-child(4) {
+  transform: scaleX(1.315) scaleY(1.56);
+}
+.ambilight-video:nth-child(5) {
+  transform: scaleX(1.675) scaleY(2.20);
 }
 
 /* Prevent the ambilight video from introducing bugs on other pages than the /watch page */

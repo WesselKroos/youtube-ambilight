@@ -6,6 +6,11 @@
 </head>
 
 <body>
+
+  <div>
+    <h1>YouTube Ambilight settings</h1>
+  </div>
+
   <div style="display:none">
     <input type="checkbox" id="enabled" checked>
     <label for="enabled">Auto Enabled</label>
@@ -19,30 +24,81 @@
 
   <div>
     <label>Strength/Opacity</label>
-    <input type="range" id="strength-range" min="1" max="5" value="3" step="1">
-    <input type="number" id="strength" min="1" max="5" value="3" step="1">
+    <input type="range" id="strength-range" min="1" max="5" value="4" step="1">
+    <input type="number" id="strength" min="1" max="5" value="4" step="1">
+  </div>
+  <div class="info">
+    <span class="important">Changes to this setting will take 4-5 seconds to show up.</span><br/>
+    Represents the amount of ambilight instances.<br/>
+    Increasing this setting strengthes the other settings except the Blur/Fade settings.
   </div>
   <div>
+    <label>Spread</label>
+    <input type="range" id="spread-range" min="5" max="75" value="25" step="1">
+    <input type="number" id="spread" min="5" max="75" value="25" step="1" data-warn-from="40">
+  </div>
+  <div class="warn" id="spread-warn">
+    This setting might hurt performance when raised above 40!
+  </div>
+  <div class="info">
+    Represents the spreading of multiple ambilight instances.<br/>
+    Increasing the Strength/Opacity setting strengthes the effect,
+    <span class="important">but to much can result in a lot of distraction while watching the video and might be unrealistic.</span>
+  </div>
+  <div>
+    <label>Blur/Fade</label>
+    <input type="range" id="blur-range" min="20" max="100" value="45" step="1">
+    <input type="number" id="blur" min="20" max="100" value="45" step="1" data-warn-from="50">
+  </div>
+  <div class="warn" id="blur-warn">
+    This setting might hurt performance when raised above 50!
+  </div>
+  <div class="info">
+    Represents the mixing of details in the video.<br/>
+    Increasing this setting gives the ambilight a more suddle but wide effect,
+    <span class="important">but the color reproduction might suffer since details will be mixed more with each other.</span>
+  </div>
+  
+  <hr />
+
+  <div>
     <label>Contrast</label>
-    <input type="range" id="contrast-range" min="10" max="300" value="110" step="1">
-    <input type="number" id="contrast" min="10" max="300" value="110" step="1">
+    <input type="range" id="contrast-range" min="10" max="300" value="115" step="1">
+    <input type="number" id="contrast" min="10" max="300" value="115" step="1">
+  </div>
+  <div class="info">
+    Represents the dark/light of the video. (A minimum of 115 is recommended)<br/>
+    Increasing this setting gives more contrast,
+    but to much contrast can also result in a lot of white or black spots.
+    <span class="important">Lowering this setting to much results in a weak grey ambilight.</span>
   </div>
   <div>
     <label>Saturation</label>
-    <input type="range" id="saturation-range" min="0" max="500" value="110" step="1">
-    <input type="number" id="saturation" min="0" max="500" value="110" step="1">
+    <input type="range" id="saturation-range" min="0" max="500" value="100" step="1">
+    <input type="number" id="saturation" min="0" max="500" value="100" step="1">
   </div>
-  <div>
-    <label>Size</label>
-    <input type="range" id="size-range" min="3" max="10" value="5" step="1">
-    <input type="number" id="size" min="3" max="10" value="5" step="1">
+  <div class="info">
+    Represents the colorfullness of the video.<br/>
+    Increasing this setting gives more color,
+    <span class="important">but to much saturation can also result in wrong red, green or blue colors.</span>
+    Lowering this setting to 0 results in a black and white ambilight.
   </div>
   <div>
     <label>Brightness</label>
-    <input type="range" id="brightness-range" min="10" max="150" value="110" step="1">
-    <input type="number" id="brightness" min="10" max="150" value="110" step="1">
+    <input type="range" id="brightness-range" min="10" max="150" value="100" step="1">
+    <input type="number" id="brightness" min="10" max="150" value="100" step="1">
   </div>
-  <div>
+  <div class="info">
+    Represents the whiteness of the video.<br/>
+    <span class="important">If the ambilight is to weak it's recommended to increase the Strenght/Opacity setting first.</span><br/>
+    Increasing this setting results in a brighter light,
+    but to much can result in a white/grey ambilight.
+  </div>
+  
+  <hr />
+
+  <div class="align-right">
+    <button id="info">Detailed info</button>
     <button id="reset">Reset</button>
   </div>
 

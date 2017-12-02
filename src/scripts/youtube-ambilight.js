@@ -130,15 +130,10 @@ class Ambilight {
       this.strength = s.strength
     }
 
-    this.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.size}vw)`
     Object.keys(this.containers).forEach(key => {
-      this.containers[key].style.webkitFilter = this.filter
+      this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.blur/20 + key/2.5}vw)`
+      this.containers[key].style.transform = `scale(${1 + (s.spread/25) * (.09*key)},${1 + (s.spread/25) * (.16*key)})`
     })
-    
-    //// This was a fix to keep the brightness on point
-    // const style = document.head.appendChild(document.createElement("style"))
-    // const opacity = 1 - (Math.max(0, s.size - 3) / 7)
-    // style.innerHTML = `.ambilight-video::after {opacity: ${opacity}}`
   }
   
   init() {
@@ -166,6 +161,7 @@ class Ambilight {
     const key = this.containers.length
     this.containers.push($.create('div')
       .class('ambilight-video')
+      .attr('id', `ambilight-video-${key}`)
       .prependTo(body))
 
     this.iframes.push($.create('iframe')
@@ -185,7 +181,6 @@ class Ambilight {
     clearInterval(this.syncLoops[key])
     this.players[key].destroy()
     this.containers[key].remove()
-    this.iframes[key].remove()
     
     this.containers.pop()
     this.iframes.pop()

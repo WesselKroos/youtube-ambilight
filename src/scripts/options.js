@@ -18,6 +18,26 @@ addEventListenerPrototype = function(eventName, callback) {
 }
 HTMLElement.prototype.on = addEventListenerPrototype
 
+HTMLElement.prototype.class = function(className) {
+  var existingClasses = this.className.split(' ')
+  if(existingClasses.indexOf(className) === -1)
+    this.className += ' ' + className
+  return this
+}
+HTMLElement.prototype.removeClass = function(className) {
+  var classList = this.className.split(' ')
+  var pos = classList.indexOf(className)
+  if(pos !== -1) {
+    classList.splice(pos, 1)
+    this.className = classList.join(' ')
+  }
+  return this
+}
+
+body = document.body
+
+
+//// Options
 
 options = {
   restore: () => {
@@ -28,11 +48,12 @@ options = {
   default: {
     enabled: true,
     'immersive-mode': false,
-    brightness: 100,
-    contrast: 100,
-    saturation: 110,
-    size: 5,
-    strength: 4
+    strength: 4,
+    spread: 25,
+    blur: 45,
+    contrast: 115,
+    saturation: 100,
+    brightness: 100
   },
   reset: () => {
     options.set(options.default)
@@ -62,22 +83,30 @@ options = {
   }
 }
 
-
-
 $.sa('input[type="number"]').forEach(input => {
-  updateRange = () => {
-    inputRangeId = `${input.attr('id')}-range`
-    $.s(`#${inputRangeId}`).value = input.value
+  update = () => {
+    name = input.attr('id')
+    $.s(`#${name}-range`).value = input.value
+
+    const warnFrom = input.attr('data-warn-from')
+    if(warnFrom) {
+      const warn = $.s(`#${name}-warn`)
+      if(parseInt(input.value) > parseInt(warnFrom)) {
+        warn.class('warn--show')
+      } else {
+        warn.removeClass('warn--show')
+      }
+    } 
   }
   input.on('keypress', event => {
     var valid = event.charCode >= 48 && event.charCode <= 57
     if(!valid) event.preventDefault()
-    updateRange()
+    update()
   })
   input.on('keyup', event => { 
     options.validate(input)
   })
-  input.on('change', updateRange)
+  input.on('change', update)
 });
 $.sa('input[type="range"]').forEach(input => {
   input.on('change', event => {
@@ -98,3 +127,13 @@ $.s('#reset').on('click', options.reset)
 
 
 document.addEventListener('DOMContentLoaded', () => options.restore());
+
+
+// Info toggle
+
+$.s('#info').on('click', () => {
+  if(!body.attr('class') || body.attr('class').indexOf('show-info') === -1)
+    body.class('show-info')
+  else
+    body.removeClass('show-info')
+})

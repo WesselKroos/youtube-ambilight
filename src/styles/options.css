@@ -12,6 +12,15 @@ body {
   padding: 10px;
   color: #ddd;
 }
+html,
+body {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+h1 {
+  margin: 0 0 25px;
+}
 
 hr {
   height: 1px;
@@ -28,15 +37,18 @@ label {
 
 div {
   display: flex;
+  align-items: center;
   width: 100%;
   margin-top: 5px;
   margin-bottom: 5px;
 }
 
+.align-right {
+  justify-content: flex-end;
+}
+
 input[type="checkbox"] {
   -webkit-appearance: none;
-  position: relative;
-  top: -5px;
   width: 16px;
   height: 16px;
   border-radius: 2px;
@@ -60,23 +72,21 @@ input[type="checkbox"] + label {
 
 input[type="range"] {
   -webkit-appearance: none;
-  position: relative;
-  top: -4px;
-  margin-bottom: 4px;
   background: none;
   cursor: pointer;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   -webkit-appearance: none;
-  background: #333;
-  height: 1px;
+  background: linear-gradient(transparent 49%, #333 50%, transparent 51%);
+  height: 21px;
+  margin: -10px 0;
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 18px;
-  width: 18px;
-  margin-top: -8px;
+  height: 17px;
+  width: 17px;
+  margin-top: 2px;
   border-radius: 50%;
   background: #aaa;
   box-shadow: #111 0 0 0 2px;
@@ -88,8 +98,6 @@ input[type="range"]:hover::-webkit-slider-thumb {
 }
 
 input[type="number"] {
-  position: relative;
-  top: -5px;
   width: 55px;
   flex-shrink: 0;
   margin-left: 15px;
@@ -110,7 +118,7 @@ input[type="number"]:focus {
 button {
   min-width: 55px;
   transform: translateY(0px);
-  margin-left: auto;
+  margin-left: 15px;
   padding: 5px;
   border: 1px solid #333;
   background: #ddd;
@@ -134,6 +142,35 @@ button:active {
 input:focus,
 button:focus {
   outline: none;
+}
+
+.info-toggle {
+  background: #000;
+}
+.show-info .info-toggle {
+  background: #fff;
+}
+
+.info {
+  display: none;
+  margin-bottom: 25px;
+}
+.show-info .info {
+  display: block;
+}
+.show-info label {
+  font-weight: bold;
+}
+.important {
+  color: #fd6;
+}
+.warn {
+  display: none;
+  margin-bottom: 15px;
+  color: #f66;
+}
+.warn.warn--show {
+  display: block;
 }
 
 .noise {
