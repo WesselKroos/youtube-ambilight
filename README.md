@@ -13,7 +13,7 @@ A settings page where you can:
   - [Performance] Replace the ambilight video elements with canvas elements which have the video drawn on them 
   
 ## Privacy & Security
-This Chrome Extension uses the [activeTab](https://developer.chrome.com/extensions/activeTab) permission only on urls that start with https://www.youtube.com
+This Chrome Extension uses the [activeTab](https://developer.chrome.com/extensions/activeTab) permission only on urls that start with https://www.youtube.com. The extension will only active the ambilight on YouTube's /watch page
 It also uses the [storage](https://developer.chrome.com/extensions/storage) persmission to store it's settings
 
 The following projectfiles are inserted into that specific webpage:
