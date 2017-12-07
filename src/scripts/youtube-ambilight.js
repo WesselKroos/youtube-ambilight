@@ -136,8 +136,8 @@ class Ambilight {
       this.subContainers[key].style.webkitFilter = `blur(${s.blur/20 + key/2.5}vw)`
       this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`
       
-      const scaleMultiplier = (key) / (s.strength * 2) * 2
-      const scale = scaleMultiplier * scaleMultiplier * .02 * s.spread
+      const scaleMultiplier = (key) / (s.strength * 2)
+      const scale = scaleMultiplier * (scaleMultiplier * .5) * .1 * (s.spread * 1.5)
       this.containers[key].style.transform = `scale(${1.01 + scale},${1.01 + scale * (16/9)})`
     })
   }

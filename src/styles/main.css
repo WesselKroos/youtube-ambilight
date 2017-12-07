@@ -77,12 +77,10 @@ body .ytp-big-mode .ytp-gradient-bottom {
   opacity: 1;
   transform: scaleX(1.00) scaleY(1.00);
   filter: blur(5vw) brightness(110%) contrast(110%) saturate(110%);
-  mix-blend-mode: screen;
-  background: #555;
+  mix-blend-mode: hard-light;
 }
 html[dark] .ambilight-video {
-  mix-blend-mode: screen;
-  background: none;
+  mix-blend-mode: lighten;
 }
 .ambilight-video:nth-child(2) {
   transform: scaleX(1.045) scaleY(1.08);
@@ -111,6 +109,12 @@ body.disable-ambilight .ambilight-video {
   height: 100%;
   top: 0;
   left: 0;
+  background: #bbb;
+  mix-blend-mode: multiply;
+}
+html[dark] .ambilight-subcontainer {
+  background: none;
+  mix-blend-mode: lighten;
 }
 
 /* Ambilight black center */
