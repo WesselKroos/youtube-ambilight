@@ -16,12 +16,12 @@ window.addEventListener("message", function(event) {
     chrome.storage.sync.get({
       enabled: true,
       'immersive-mode': false,
-      strength: 4,
-      spread: 23,
-      blur: 45,
-      contrast: 115,
-      saturation: 100,
-      brightness: 100
+      strength: 2,
+      spread: 40,
+      blur: 30,
+      contrast: 110,
+      saturation: 110,
+      brightness: 110
     }, (settings) => {
       window.postMessage({ type: "RECEIVE_SETTINGS", settings: settings }, "*")
     })

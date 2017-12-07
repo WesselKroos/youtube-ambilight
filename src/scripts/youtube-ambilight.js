@@ -91,6 +91,7 @@ class Ambilight {
     this.receivedSettings = false
     this.syncCounts = []
     this.containers = []
+    this.subContainers = []
     this.iframes = []
     this.players = []
     this.syncLoops = []
@@ -131,8 +132,9 @@ class Ambilight {
     }
 
     Object.keys(this.containers).forEach(key => {
-      this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) blur(${s.blur/20 + key/2.5}vw)`
-      this.containers[key].style.transform = `scale(${1 + (s.spread/25) * (.09*key)},${1 + (s.spread/25) * (.16*key)})`
+      this.subContainers[key].style.webkitFilter = `blur(${s.blur/20 + key/2.5}vw)`
+      this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`
+      this.containers[key].style.transform = `scale(${1.1 + (s.spread/25) * (.09*key)},${1.125 + (s.spread/25) * (.16*key)})`
     })
   }
   
@@ -164,11 +166,16 @@ class Ambilight {
       .attr('id', `ambilight-video-${key}`)
       .prependTo(body))
 
+    this.subContainers.push($.create('div')
+      .class('ambilight-subcontainer')
+      .attr('id', `ambilight-subcontainer-${key}`)
+      .prependTo(this.containers[key]))
+
     this.iframes.push($.create('iframe')
       .attr('allowtransparency', true)
       .class('ambilight-player unloaded')
       .attr('id', `ambilight-player-${key}`)
-      .appendTo(this.containers[key]))
+      .appendTo(this.subContainers[key]))
     this.syncLoops.push(null)
     this.syncCounts.push(0)
     this.previousCorrections.push(0)
@@ -181,8 +188,10 @@ class Ambilight {
     clearInterval(this.syncLoops[key])
     this.players[key].destroy()
     this.containers[key].remove()
+    this.subContainers[key].remove()
     
     this.containers.pop()
+    this.subContainers.pop()
     this.iframes.pop()
     this.players.pop()
     this.syncCounts.pop()

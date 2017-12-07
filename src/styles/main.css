@@ -103,14 +103,37 @@ body.disable-ambilight .ambilight-video {
   display: none;
 }
 
+/* Ambilight video subcontainer */
+
+.ambilight-subcontainer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+/* Ambilight black center */
+
+.ambilight-subcontainer::after {
+  position: absolute;
+  content: '';
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  transform: scaleX(.8) scaleY(.66);
+  background: #000;
+}
+
 /* Ambilight video iframe */
 
 .ambilight-video iframe {
   position: absolute;
   width: 100%;
   height: 100%;
-  filter: contrast(115%);
   background: #fff;
+  filter: contrast(115%);
   transition: opacity .5s;
   mix-blend-mode: color;
 }
@@ -121,19 +144,6 @@ html[dark] .ambilight-video iframe {
 .ambilight-video iframe.unloaded {
   opacity: 0;
   transition: opacity .15s;
-}
-
-/* Ambilight black center */
-
-.ambilight-video::after {
-  position: absolute;
-  content: '';
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  transform: scaleX(.8) scaleY(.66);
-  background: #000;
 }
 
 /* Noise overlay to mask colorbanding */
