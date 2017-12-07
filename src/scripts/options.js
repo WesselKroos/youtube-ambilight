@@ -48,12 +48,12 @@ options = {
   default: {
     enabled: true,
     'immersive-mode': false,
-    strength: 2,
-    spread: 40,
-    blur: 30,
-    contrast: 110,
-    saturation: 110,
-    brightness: 110
+    strength: 3,
+    spread: 35,
+    blur: 35,
+    contrast: 100,
+    saturation: 100,
+    brightness: 100
   },
   reset: () => {
     options.set(options.default)

@@ -131,10 +131,14 @@ class Ambilight {
       this.strength = s.strength
     }
 
-    Object.keys(this.containers).forEach(key => {
+    Object.keys(this.containers).forEach(keyString => {
+      const key = parseInt(keyString)
       this.subContainers[key].style.webkitFilter = `blur(${s.blur/20 + key/2.5}vw)`
       this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`
-      this.containers[key].style.transform = `scale(${1.1 + (s.spread/25) * (.09*key)},${1.125 + (s.spread/25) * (.16*key)})`
+      
+      const scaleMultiplier = (key) / (s.strength * 2) * 2
+      const scale = scaleMultiplier * scaleMultiplier * .02 * s.spread
+      this.containers[key].style.transform = `scale(${1.01 + scale},${1.01 + scale * (16/9)})`
     })
   }
   
