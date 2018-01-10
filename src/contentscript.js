@@ -1,5 +1,5 @@
 var scripts = [
-  'scripts/youtube-ambilight.js'
+  'scripts/youtube-ambilight-v2.js'
 ]
 scripts.forEach((path) => {
   var s = document.createElement('script')
