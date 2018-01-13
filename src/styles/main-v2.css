@@ -1,0 +1,87 @@
+/* General */
+
+html,
+body {
+    background: #000 !important;
+}
+
+/* Cosmetics - Transparent elements */
+
+ytd-app,
+ytd-masthead,
+ytd-watch,
+#container.ytd-searchbox,
+#search-icon-legacy,
+#movie_player,
+#player-container {
+    background: none !important;
+}
+
+#search-form {
+    opacity: .5;
+}
+
+/* Cosmetics - Text visibility */
+
+#info,
+.title.ytd-video-primary-info-renderer,
+
+#meta,
+
+#playlist {
+    text-shadow: rgba(0,0,0,.75) 0 0px 7px !important;
+}
+#playlist yt-icon {
+    fill: rgba(255, 255, 255, 0.882) !important;
+}
+#playlist a,
+#index.ytd-playlist-panel-video-renderer,
+span.yt-view-count-renderer {
+    color: rgba(255, 255, 255, 0.882) !important;
+}
+
+.header.ytd-playlist-panel-renderer,
+.playlist-items.ytd-playlist-panel-renderer {
+    background: none !important;
+}
+
+/* Ambilight */
+
+.ambilight,
+.ambilight__container,
+.ambilight__canvas-list,
+.ambilight__canvas-container,
+.ambilight__canvas,
+.ambilight__shadow,
+.ambilight__shadow-fade,
+.ambilight__shadow-center {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.ambilight {
+    height: 200%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ambilight__container {
+    filter: blur(4px);
+    transition: opacity .5s;
+    opacity: 0;
+}
+
+.ambilight__canvas {
+    background: #000;
+    image-rendering: pixelated;
+}
+
+.ambilight__shadow {
+    mix-blend-mode: multiply;
+}
+
+.ambilight__shadow-center {
+    background: #fff;
+    overflow: hidden;
+}

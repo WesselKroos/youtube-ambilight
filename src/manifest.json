@@ -20,11 +20,11 @@
   },
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
-    "js": ["contentscript.js"]
-    //"css": ["styles/main.css"]
+    "js": ["contentscript.js"],
+    "css": ["styles/main-v2.css"]
   }],
   "web_accessible_resources": [
-    "styles/main.css",
+    "styles/main-v2.css",
     "scripts/youtube-ambilight-v2.js"
   ],
   "permissions": [
