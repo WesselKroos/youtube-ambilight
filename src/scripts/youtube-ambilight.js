@@ -109,11 +109,11 @@ class Ambilight {
     this.skippedFrames = 0
 
     this.spread = this.getSetting('spread')
-    if(this.spread === null) this.spread = 100
+    if(this.spread === null) this.spread = 60
     this.blur = this.getSetting('blur')
-    if(this.blur === null) this.blur = 50
+    if(this.blur === null) this.blur = 35
     this.bloom = this.getSetting('bloom')
-    if(this.bloom === null) this.bloom = 100
+    if(this.bloom === null) this.bloom = 25
     this.scaleStep = (1 / 9)
     this.innerStrength = 1
 
@@ -126,7 +126,7 @@ class Ambilight {
     // this.sepia = this.getSetting('sepia')
     // if(this.sepia === 'undefined') this.sepia = 0
     this.highQuality = this.getSetting('highQuality')
-    if(this.highQuality === 'undefined') this.highQuality = false
+    if(this.highQuality === 'undefined') this.highQuality = true
 
     this.videoPlayer = videoPlayer
     //this.videoPlayer.style.webkitFilter = `contrast(${this.contrast}%)`
@@ -238,6 +238,11 @@ class Ambilight {
   }
 
   updateSizes() {
+    //Ignore minimization after scrolling down
+    if($.s('.html5-video-player').classList.contains('ytp-player-minimized')){
+      return true
+    }
+
     this.playerOffset = this.videoPlayer.offset()
     if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
 
