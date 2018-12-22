@@ -21,11 +21,11 @@
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
     "js": ["contentscript.js"],
-    "css": ["styles/main-v2.css"]
+    "css": ["styles/main.css"]
   }],
   "web_accessible_resources": [
-    "styles/main-v2.css",
-    "scripts/youtube-ambilight-v2.js"
+    "styles/main.css",
+    "scripts/youtube-ambilight.js"
   ],
   "permissions": [
     "activeTab",

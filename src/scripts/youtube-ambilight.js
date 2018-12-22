@@ -15,394 +15,812 @@ $ = {
   }
 }
 
-HTMLElement.prototype.attr = function(name, value) {
-  if(typeof value === 'undefined') {
+HTMLElement.prototype.attr = function (name, value) {
+  if (typeof value === 'undefined') {
     return this.getAttribute(name)
   } else {
     this.setAttribute(name, value)
     return this
   }
 }
-HTMLElement.prototype.append = function(elem) {
-  if(typeof elem === 'string')
+HTMLElement.prototype.append = function (elem) {
+  if (typeof elem === 'string')
     elem = document.createTextNode(elem)
   this.appendChild(elem)
   return this
 }
-HTMLElement.prototype.appendTo = function(elem) {
+HTMLElement.prototype.appendTo = function (elem) {
   elem.append(this)
   return this
 }
 HTMLElement.prototype.prependChild = HTMLElement.prototype.prepend
-HTMLElement.prototype.prepend = function(elem) {
+HTMLElement.prototype.prepend = function (elem) {
   this.prependChild(elem)
   return this
 }
-HTMLElement.prototype.prependTo = function(elem) {
+HTMLElement.prototype.prependTo = function (elem) {
   elem.prepend(this)
   return this
 }
-HTMLElement.prototype.class = function(className) {
-  var existingClasses = this.className.split(' ')
-  if(existingClasses.indexOf(className) === -1)
+HTMLElement.prototype.class = function (className) {
+  const existingClasses = this.className.split(' ')
+  if (existingClasses.indexOf(className) === -1)
     this.className += ' ' + className
   return this
 }
-HTMLElement.prototype.removeClass = function(className) {
-  var classList = this.className.split(' ')
-  var pos = classList.indexOf(className)
-  if(pos !== -1) {
+HTMLElement.prototype.removeClass = function (className) {
+  const classList = this.className.split(' ')
+  const pos = classList.indexOf(className)
+  if (pos !== -1) {
     classList.splice(pos, 1)
     this.className = classList.join(' ')
   }
   return this
 }
-HTMLElement.prototype.text = function(text) {
+HTMLElement.prototype.text = function (text) {
   this.innerText = text
   return this
 }
-addEventListenerPrototype = function(eventName, callback) {
-  this.addEventListener(eventName, callback)
+addEventListenerPrototype = function (eventNames, callback) {
+  var list = eventNames.split(' ')
+  list.forEach((eventName) => {
+    this.addEventListener(eventName, callback)
+  })
   return this
 }
 HTMLElement.prototype.on = addEventListenerPrototype
 Window.prototype.on = addEventListenerPrototype
 
-HTMLElement.prototype.offset = function() {
+removeEventListenerPrototype = function (eventNames, callback) {
+  var list = eventNames.split(' ')
+  list.forEach((eventName) => {
+    this.removeEventListener(eventName, callback)
+  })
+  return this
+}
+HTMLElement.prototype.off = removeEventListenerPrototype
+Window.prototype.off = removeEventListenerPrototype
+
+HTMLElement.prototype.offset = function () {
   return this.getBoundingClientRect()
 }
 
-Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
-  get: function(){
-    return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2)
-  }
-})
-
 body = document.body
 
+raf = (webkitRequestAnimationFrame || requestAnimationFrame)
 
 //// Ambilight
 
 class Ambilight {
-  constructor() {
-    this.strength = 0
-    this.srcVideoOffsetTop = -1
-    this.isOnPlay = false
-    this.receivedSettings = false
-    this.syncCounts = []
-    this.containers = []
-    this.subContainers = []
-    this.iframes = []
-    this.players = []
-    this.syncLoops = []
-    this.previousCorrections = []
-    
-    this.requestOptions()
-  }
+  constructor(videoPlayer) {
+    this.showFrameRate = false
 
-  requestOptions() {
-    window.addEventListener("message", event => {
-      if (event.source != window) return
-      if (event.data.type && event.data.type == "RECEIVE_SETTINGS")
-        this.onReceivedOptions(event.data.settings)
+    this.playerOffset = {}
+    this.srcVideoOffset = {}
+
+    this.isHidden = true
+    this.ambiEnabled = false
+    this.showedWarning = false
+
+    this.p = null;
+    this.a = null;
+    this.isFullscreen = false
+    this.videoFrameCount = 0
+    this.skippedFrames = 0
+
+    this.spread = this.getSetting('spread')
+    if(this.spread === null) this.spread = 100
+    this.blur = this.getSetting('blur')
+    if(this.blur === null) this.blur = 50
+    this.bloom = this.getSetting('bloom')
+    if(this.bloom === null) this.bloom = 100
+    this.scaleStep = (1 / 9)
+    this.innerStrength = 1
+
+    this.contrast = this.getSetting('contrast')
+    if(this.contrast === 'undefined') this.contrast = 100
+    this.brightness = this.getSetting('brightness')
+    if(this.brightness === 'undefined') this.brightness = 100
+    this.saturation = this.getSetting('saturation')
+    if(this.saturation === 'undefined') this.saturation = 100
+    // this.sepia = this.getSetting('sepia')
+    // if(this.sepia === 'undefined') this.sepia = 0
+    this.highQuality = this.getSetting('highQuality')
+    if(this.highQuality === 'undefined') this.highQuality = false
+
+    this.videoPlayer = videoPlayer
+    //this.videoPlayer.style.webkitFilter = `contrast(${this.contrast}%)`
+
+    this.allContainer = document.createElement("div")
+    this.allContainer.class('ambilight')
+    body.prepend(this.allContainer)
+
+    this.ambilightContainer = document.createElement("div")
+    this.ambilightContainer.class('ambilight__container')
+    this.allContainer.prepend(this.ambilightContainer)
+
+    this.canvasList = document.createElement("div")
+    this.canvasList.class('ambilight__canvas-list')
+    this.ambilightContainer.prepend(this.canvasList)
+
+    const bufferElem = document.createElement("canvas")
+    const bufferCtx = bufferElem.getContext("2d")
+    this.buffer = {
+      elem: bufferElem,
+      ctx: bufferCtx,
+      heightMid: 0
+    }
+
+
+    const shadow = $.create('div')
+    shadow.class('ambilight__shadow')
+    this.ambilightContainer.appendChild(shadow)
+
+    this.shadowFade = $.create('div')
+    this.shadowFade.class('ambilight__shadow-fade')
+    shadow.appendChild(this.shadowFade)
+
+    this.recreateCanvasses()
+
+    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn => 
+      btn.on('click', () => raf(() =>
+        setTimeout(() => this.updateSizes(), 0)
+      ))
+    )
+
+    window.addEventListener('resize', () => {
+      this.updateSizes()
+      setTimeout(() =>
+        raf(() =>
+          setTimeout(() => this.updateSizes(), 200)
+        ), 
+      200)
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.keyCode === 70 || e.keyCode === 84)
+        setTimeout(() => this.updateSizes(), 0)
     })
-    window.postMessage({ type: "GET_SETTINGS" }, "*")
+
+    this.videoPlayer.on('playing', () => {
+      this.enableIfSettingEnabled()
+    })
+      .on('seeked', () => {
+        this.resetVideoFrameCounter()
+        this.scheduleNextFrame()
+      })
+      // .on('timeupdate', () => {
+      // })
+      // .on('pause', () => {
+      //   this.isPlaying = false
+      // })
+
+    this.initSettings()
+    this.initScrollPosition()
+    this.initImmersiveMode()
+
+    this.enableIfSettingEnabled()
   }
 
-  onReceivedOptions(s) {
-    if(!this.receivedSettings) {
-      this.strength = s.strength
-      this.receivedSettings = true
-      this.init()
+  recreateCanvasses() {
+    if(this.ambilightContainers) {
+      this.ambilightContainers.forEach(container => {
+        container.remove();
+      })
+    }
+    this.ambilightContainers = []
+    this.players = []
+
+    const spreadLevels = Math.round((this.spread / 100) * 10) + 2
+    for (let i = 0; i < spreadLevels; i++) {
+      const canvasContainer = $.create('div')
+      canvasContainer.class('ambilight__canvas-container')
+
+      const canvas = $.create('canvas')
+      canvas.class('ambilight__canvas')
+
+      const ctx = canvas.getContext('2d')
+      //ctx.imageSmoothingEnabled = false
+
+      canvasContainer.prepend(canvas)
+      this.canvasList.prepend(canvasContainer)
+
+      this.players.push({
+        elem: canvas,
+        ctx: ctx
+      })
+      this.ambilightContainers.push(canvasContainer)
+    }
+  }
+
+  resetVideoFrameCounter() {
+    this.videoFrameCount = 0
+  }
+
+  updateSizes() {
+    this.playerOffset = this.videoPlayer.offset()
+    if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
+
+    this.srcVideoOffset = {
+      top: this.playerOffset.top + window.scrollY,
+      width: this.videoPlayer.videoWidth,
+      height: this.videoPlayer.videoHeight
+    }
+
+    const scale = this.srcVideoOffset.height / 512
+    if(scale < 1 || scale > 4) {
+      this.p = {
+        w: 128,
+        h: 128
+      }
     } else {
-      if(this.strength != s.strength) {
-        if(this.strength > s.strength) {
-          for(let i = this.strength; i > s.strength; i--) {
-            this.removeAmbilightVideo()
-          }
-        } else if(this.strength < s.strength) {
-          for(let i = this.strength; i < s.strength; i++) {
-            this.addAmbilightVideo()
-          }
-          this.setVideo()
-          this.setVideoPosition()
+      this.p = {
+        w: Math.round(this.srcVideoOffset.width / scale),
+        h: Math.round(this.srcVideoOffset.height / scale)
+      }
+    }
+    
+
+    this.isFullscreen = !!$.s('.ytp-fullscreen')
+
+    this.ambilightContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
+    this.ambilightContainer.style.top = (this.playerOffset.top + window.scrollY) + 'px'
+    this.ambilightContainer.style.width = this.playerOffset.width + 'px'
+    this.ambilightContainer.style.height = (this.playerOffset.height) + 'px'
+
+    this.ambilightContainer.style.webkitFilter = `
+      blur(${this.playerOffset.height * (0.05 + (this.blur * .002))}px)
+    `
+    this.allContainer.style.webkitFilter = `
+      ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
+      ${(this.brightness !== 100) ? `brightness(${(parseInt(this.brightness) + 3)}%)` : ''}
+      ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
+      ${/*(this.sepia !== 0) ? `sepia(${this.sepia}%)` : ''*/ ''}
+    `
+
+    this.players.forEach((player) => {
+      if(player.elem.width !== this.p.w)
+        player.elem.width = this.p.w
+      if(player.elem.height !== this.p.h)
+        player.elem.height = this.p.h
+      player.ctx = player.elem.getContext('2d')
+      //player.ctx.imageSmoothingEnabled = false
+    })
+
+    this.buffer.elem.width = this.p.w
+    this.buffer.elem.height = this.p.h
+    this.buffer.heightMid = Math.ceil(this.p.h/2)
+    this.buffer.ctx = this.buffer.elem.getContext('2d')
+    this.buffer.ctx.imageSmoothingEnabled = false
+
+    this.resizeCanvasses()
+
+    this.resetVideoFrameCounter()
+
+    return true;
+  }
+
+  resizeCanvasses() {
+    const size = {
+      w: this.playerOffset.width,
+      h: this.playerOffset.height
+    }
+    const ratio = size.w / size.h
+    const lastScale = {
+      x: 1,
+      y: 1
+    }
+
+    this.ambilightContainers.forEach((container, i) => {
+      const pos = i - this.innerStrength
+      let scaleX = 1
+      let scaleY = 1
+
+      if (pos > 0) {
+        scaleX = 1 + (this.scaleStep * pos)
+        scaleY = 1 + ((this.scaleStep * ratio) * pos)
+      }
+
+      if (pos < 0) {
+        scaleX = 1 - (this.scaleStep * -pos)
+        scaleY = 1 - ((this.scaleStep * ratio) * -pos)
+        if (scaleX < 0) scaleX = 0
+        if (scaleY < 0) scaleY = 0
+      }
+      lastScale.x = scaleX
+      lastScale.y = scaleY
+      container.style.transform = `scale(${scaleX}, ${scaleY})`
+    })
+
+    this.shadowFade.style.transform = `scale(${lastScale.x}, ${lastScale.y})`
+    const scaledEdge = {
+      w: ((size.w * lastScale.x) - size.w) / 2 / lastScale.x,
+      h: ((size.h * lastScale.y) - size.h) / 2 / lastScale.y
+    }
+    const scaledSize = {
+      w: (size.w / lastScale.x),
+      h: (size.h / lastScale.y)
+    }
+
+    const bloom = this.bloom / 100
+    const gList = [
+      { p: .8, o: .9 },
+      { p: .6, o: .87 },
+      { p: .4, o: .75 },
+      { p: .2, o: .6 }
+    ]
+    const g = {
+      w: [
+        0,
+        ...gList.map(e => Math.round(scaledEdge.w - (scaledEdge.w * e.p) - (scaledEdge.w * bloom * (1 - e.p)))),
+        Math.round(scaledEdge.w                - (scaledEdge.w * bloom)),
+        Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * bloom)),
+        ...gList.reverse().map(e => Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * e.p) + (scaledEdge.w * bloom * (1 - e.p)))),
+        Math.round(scaledEdge.w + scaledSize.w + scaledEdge.w)
+      ],
+      h: [
+        0,
+        ...gList.map(e => Math.round(scaledEdge.h - (scaledEdge.h * e.p) - (scaledEdge.h * bloom * (1 - e.p)))),
+        Math.round(scaledEdge.h                - (scaledEdge.h * bloom)),
+        Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * bloom)),
+        ...gList.reverse().map(e => Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * e.p) + (scaledEdge.h * bloom * (1 - e.p)))),
+        Math.round(scaledEdge.h + scaledSize.h + scaledEdge.h)
+      ]
+    }
+    
+    this.shadowFade.style.background = `
+      linear-gradient(to bottom, rgba(0,0,0,.95) ${g.h[0]}px, ${ 
+        gList.map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[0 + gList.length - i]}px`).join(', ') 
+      }, rgba(0,0,0,0) ${g.h[1 + gList.length]}px, rgba(0,0,0,0) ${g.h[2 + gList.length]}px, ${ 
+        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[2 + gList.length + gList.length - i]}px`).join(', ') 
+      }, rgba(0,0,0,.95) ${g.h[5 + gList.length]}px),
+
+      linear-gradient(to right,  rgba(0,0,0,.95) ${g.w[0]}px, ${ 
+        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[1 + i]}px`).join(', ') 
+      }, rgba(0,0,0,0) ${g.w[1 + gList.length]}px, rgba(0,0,0,0) ${g.w[2 + gList.length]}px, ${ 
+        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[3 + gList.length + i]}px`).join(', ') 
+      }, rgba(0,0,0,.95) ${g.w[5 + gList.length]}px),
+    
+      linear-gradient(to left,   rgba(255,255,255,1), rgba(255,255,255,1))
+    `
+  }
+
+  checkVideoSize() {
+    //Scrolling?
+    if(!(this.ambilightContainer.style.width == this.playerOffset.width + 'px'))
+      return this.updateSizes()
+    
+    
+    //Resized
+    if(this.previousWidth !== this.videoPlayer.clientWidth) {
+      this.previousWidth = this.videoPlayer.clientWidth
+      return this.updateSizes()
+    }
+
+    //Auto quality moved up or down
+    if (this.srcVideoOffset.width !== this.videoPlayer.videoWidth
+      || this.srcVideoOffset.height !== this.videoPlayer.videoHeight) {
+      return this.updateSizes()
+    }
+  }
+
+  scheduleNextFrame() {
+    if(this.scheduled || !this.ambiEnabled) return
+
+    raf(() => {
+      this.scheduled = false
+      this.checkVideoSize()
+      this.drawAmbilight()
+      
+      if(this.scheduled || !this.ambiEnabled || this.videoPlayer.paused) return
+      this.scheduleNextFrame()
+    })
+    this.scheduled = true
+  }
+
+  isNewFrame(oldImage, newImage) {
+    if(!oldImage)
+      return true
+
+    for(var i = 0; i < oldImage.data.length;) {
+      if(oldImage.data[i] != newImage.data[i]) {
+        return true;
+      }
+      
+      i += 10
+    }
+
+    return false;
+  }
+
+  drawAmbilight() {
+    if (!this.ambiEnabled) return
+    if (this.isFullscreen) return
+
+    if (this.videoPlayer.currentTime == 0) {
+      this.hide()
+      return
+    }
+    
+    if (this.isHidden) {
+      this.show()
+    }
+
+    var newFrameCount = this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount
+    if (this.videoFrameCount == newFrameCount) {
+      this.skippedFrames = 0
+      if(!this.highQuality) return
+    } else if (this.videoFrameCount < newFrameCount && this.videoFrameCount > 120 && this.videoFrameCount - newFrameCount < - 2) {
+      this.skippedFrames++
+    }
+    if (this.videoFrameCount == newFrameCount - 1) {
+      this.skippedFrames = 0
+    }
+    if (this.skippedFrames > 20) {
+      console.warn(`YouTube Ambilight: Skipped ${newFrameCount - this.videoFrameCount - 1} frames\n(Your GPU might not be fast enough)`)
+    }
+    this.videoFrameCount = newFrameCount
+
+    this.buffer.ctx.drawImage(this.videoPlayer, 0, 0, this.p.w, this.p.h)
+
+    if(this.highQuality) {
+      var newImageW = this.buffer.ctx.getImageData(0, this.buffer.heightMid, this.p.w, 1);
+      var isNewFrameW = this.isNewFrame(this.oldImageW, newImageW)
+      this.oldImageW = newImageW
+
+      if(!isNewFrameW) return
+
+      // var newImageH = this.buffer.ctx.getImageData(0, 0, 1, this.p.h);
+      // var isNewFrameH = this.isNewFrame(this.oldImageH, newImageH)
+      // this.oldImageH = newImageH
+
+      // if(!isNewFrameH) {
+      //   return
+      // }
+    }
+
+    if(this.showFrameRate) {
+      if(this.frameRateCountStart < performance.now() - 1000) {
+        console.log(`fps: ${this.frameRateCount}`)
+        this.frameRateCount = 1
+        this.frameRateCountStart = performance.now()
+      } else {
+        if(!this.frameRateCount) {
+          this.frameRateCount = 1
+          this.frameRateCountStart = performance.now()
+        } else {
+          this.frameRateCount++
         }
       }
-      this.strength = s.strength
     }
 
-    Object.keys(this.containers).forEach(keyString => {
-      const key = parseInt(keyString)
-      this.subContainers[key].style.webkitFilter = `blur(${s.blur/20 + key/2.5}vw)`
-      this.containers[key].style.webkitFilter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`
-      
-      const scaleMultiplier = (key) / (s.strength * 2)
-      const scale = scaleMultiplier * (scaleMultiplier * .5) * .1 * (s.spread * 1.5)
-      this.containers[key].style.transform = `scale(${1.01 + scale},${1.01 + scale * (16/9)})`
+    this.players.forEach((player) => {
+      player.ctx.drawImage(this.buffer.elem, 0, 0)
     })
   }
-  
-  init() {
-    this.initSrcVideo()
-    this.initElements()
-    this.initImmersiveMode()
-    this.setVideo()
-    this.initPlayerApi()
-  }
-  
-  initElements() {
-    $.create('div')
-      .class('noise')
-      .prependTo(body)
 
-    for(let i = 0; i < this.strength; i++) {
-      this.addAmbilightVideo()
-    }
-    
-    window.on('resize', () => this.setVideoPosition())
-    this.setVideoPosition()
+
+  enableIfSettingEnabled() {
+    if (this.getSetting('enabled') === 'false') return
+    this.enable()
   }
 
-  addAmbilightVideo() {
-    const key = this.containers.length
-    this.containers.push($.create('div')
-      .class('ambilight-video')
-      .attr('id', `ambilight-video-${key}`)
-      .prependTo(body))
+  enable() {
+    this.ambiEnabled = true
 
-    this.subContainers.push($.create('div')
-      .class('ambilight-subcontainer')
-      .attr('id', `ambilight-subcontainer-${key}`)
-      .prependTo(this.containers[key]))
+    this.setSetting('enabled', true)
+    $.s(`#setting-enabled`).attr('aria-checked', this.ambiEnabled ? 'true' : 'false')
 
-    this.iframes.push($.create('iframe')
-      .attr('allowtransparency', true)
-      .class('ambilight-player unloaded')
-      .attr('id', `ambilight-player-${key}`)
-      .appendTo(this.subContainers[key]))
-    this.syncLoops.push(null)
-    this.syncCounts.push(0)
-    this.previousCorrections.push(0)
-    if(this.YTApiInitialized)
-      this.addPlayer(key)
+    this.updateSizes()
+    this.scheduleNextFrame()
   }
 
-  removeAmbilightVideo() {
-    const key = this.players.length - 1
-    clearInterval(this.syncLoops[key])
-    this.players[key].destroy()
-    this.containers[key].remove()
-    this.subContainers[key].remove()
-    
-    this.containers.pop()
-    this.subContainers.pop()
-    this.iframes.pop()
-    this.players.pop()
-    this.syncCounts.pop()
-    this.previousCorrections.pop()
-    this.syncLoops.pop()
+  disable() {
+    if (!this.ambiEnabled) return
+    this.ambiEnabled = false
+    this.hide()
   }
+
+  toggle() {
+    if (this.ambiEnabled)
+      this.disable()
+    else
+      this.enable()
+  }
+
+
+  hide() {
+    if (this.isHidden) return
+    this.isHidden = true
+    this.ambilightContainer.style.opacity = '0'
+    setTimeout(() => {
+      this.players.forEach((player) => {
+        player.ctx.clearRect(0, 0, player.elem.width, player.elem.height)
+      })
+    }, 500)
+  }
+
+  show() {
+    this.isHidden = false
+    this.ambilightContainer.style.opacity = '1'
+  }
+
+
+  initScrollPosition() {
+    window.on('scroll', () => {
+      this.checkScrollPosition()
+    })
+    this.checkScrollPosition()
+  }
+
+  checkScrollPosition() {
+    if(this.changedTopTimeout)
+      clearTimeout(this.changedTopTimeout)
+    if (window.scrollY > 0)
+      this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 100)
+    else
+      this.changedTopTimeout = setTimeout(() => body.class('at-top').removeClass('not-at-top'), 100)
+  }
+
 
   initImmersiveMode() {
-    $.create('button')
-      .class('toggle-auto-hide-btn ytp-button')
-      .attr('title', 'Ambilight Immersive mode\n(This hides everything around the video untill you scroll down)')
-      .on('click', this.toggleAutoHide.bind(this))
-      .prependTo($.s('.ytp-right-controls'))
+    if (this.getSetting('immersive') === 'true')
+      body.class('immersive-mode')
+  }
   
-    window.on('scroll', () => {
-      if(window.scrollY > this.srcVideoOffsetTop)
-        body.class('disable-hide-surroundings')
-      else
-        body.removeClass('disable-hide-surroundings')
-    })
+  toggleImmersiveMode() {
+    body.classList.toggle('immersive-mode')
+    var enabled = body.classList.contains('immersive-mode')
+    $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
+    this.setSetting('immersive', enabled)
+    window.dispatchEvent(new Event('resize'))
   }
 
-  initSrcVideo() {
-    $.s('.ytp-size-button.ytp-button')
-      .on('click', () => this.setVideoPosition())
 
-    this.srcVideo = $.s('.video-stream.html5-main-video')
-      .on("play", this.onPlay.bind(this))
-      .on("pause", this.onPause.bind(this))
-    this.srcVideo.style.left = 0
-  }
+  initSettings() {
+    var button = $.create('button')
+      .class('ytp-button ytp-ambilight-settings-button')
+      .attr('title', 'Ambilight settings')
+      .attr('aria-owns', 'ytp-id-190')
+      .on('click', () => this.openSettingsPopup())
+    
+    // var settingsIconId = '#ytp-id-19'
+    // try {
+    //   settingsIconId = document.querySelector('.ytp-settings-button').querySelector('use').attributes['href'].value
+    // } catch(ex) {}
+    //<use class="ytp-svg-shadow" xlink:href="${settingsIconId}"></use>
+    button.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+      <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
+    </svg>`
+    button.prependTo($.s('.ytp-right-controls'))
 
-  initPlayerApi() {
-    window.onYouTubeIframeAPIReady = () => {
-      this.YTApiInitialized = true
-      try {
-        Object.keys(this.iframes).forEach(key => {
-          this.addPlayer(key)
+    var settings = [
+      {
+        name: 'spread',
+        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
+        type: 'list',
+        value: this.spread,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'blur',
+        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
+        type: 'list',
+        value: this.blur,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'bloom',
+        label: 'Bloom',
+        type: 'list',
+        value: this.bloom,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'highQuality',
+        label: '<span style="display: inline-block; padding: 5px 0">High Precision<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
+        type: 'checkbox',
+        value: (this.getSetting('highQuality') === 'true') ? true : false
+      },
+      // {
+      //   name: 'sepia',
+      //   label: 'Sepia',
+      //   type: 'list',
+      //   value: this.sepia,
+      //   min: 0,
+      //   max: 100
+      // },
+      {
+        name: 'brightness',
+        label: 'Brightness',
+        type: 'list',
+        value: this.brightness,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'contrast',
+        label: 'Contrast',
+        type: 'list',
+        value: this.contrast,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'saturation',
+        label: 'Saturation',
+        type: 'list',
+        value: this.saturation,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'enabled',
+        label: 'Enabled',
+        type: 'checkbox',
+        value: (this.getSetting('enabled') === 'true') ? true : false
+      },
+      {
+        name: 'immersive',
+        label: 'Immersive',
+        type: 'checkbox',
+        value: (this.getSetting('immersive') === 'true') ? true : false
+      },
+    ]
+
+
+    this.settingsMenu = $.create('div')
+      .class('ytp-popup ytp-ambilight-settings-menu')
+      .attr('id', 'ytp-id-190')
+    this.settingsMenu.innerHTML = `
+      <div class="ytp-panel">
+        <div class="ytp-panel-menu" role="menu">
+          ${
+            settings.map(setting => {
+              if (setting.type === 'checkbox') {
+                return `
+                        <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
+                          <div class="ytp-menuitem-label">${setting.label}</div>
+                          <div class="ytp-menuitem-content">
+                            <div class="ytp-menuitem-toggle-checkbox"></div>
+                          </div>
+                        </div>
+                      `
+              } else if (setting.type === 'list') {
+                return `
+                      <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
+                        <div class="ytp-menuitem-label">${setting.label}</div>
+                        <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
+                      </div>
+                      <div class="ytp-menuitem-range" rowspan="2">
+                        <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="2" />
+                      </div>
+                      `
+              }
+            }).join('')
+          }
+        </div>
+      </div>`;
+
+    this.settingsMenu.prependTo($.s('.html5-video-player'))
+
+    settings.forEach(setting => {
+      const input = $.s(`#setting-${setting.name}`)
+      if(setting.type === 'list') {
+        const displayedValue = $.s(`#setting-${setting.name}-value`)
+        input.on('change mousemove', () => {
+          if(input.value === input.attr('data-previous-value')) return
+          var value = input.value
+          input.attr('data-previous-value', input.value)
+          displayedValue.innerHTML = `${value}%`
+          this[setting.name] = value
+
+          if(setting.name === 'spread') {
+            this.recreateCanvasses()
+          }
+          this.updateSizes()
         })
-      } catch(ex) {
-        console.error(`Youtube Ambilight failed to load the ambilight player: ${ex.message}`)
+        input.on('change', () => {
+          this.setSetting(setting.name, input.value)
+        })
+      } else if(setting.type === 'checkbox') {
+        input.on('click', () => {
+          if (setting.type === 'checkbox') {
+            setting.value = !setting.value
+          }
+
+          if (setting.name === 'immersive') {
+            this.toggleImmersiveMode()
+          }
+          if (setting.name === 'enabled') {
+            this.setSetting('enabled', setting.value)
+            $.s(`#setting-enabled`).attr('aria-checked', setting.value)
+            if(setting.value)
+              this.enable()
+            else
+              this.disable()
+          }
+          if (setting.name === 'highQuality') {
+            this.highQuality = setting.value
+            this.setSetting('highQuality', setting.value)
+            $.s(`#setting-highQuality`).attr('aria-checked', setting.value)
+          }
+        })
       }
-    }
-    var script = $.create('script')
-      .attr('id', 'ambilight-player-script')
-      .attr('src', 'https://www.youtube.com/iframe_api')
-      .appendTo($.s('head'))
+    });
   }
 
-  addPlayer(key) {
-    this.players[key] = new YT.Player(`ambilight-player-${key}`, {
-      events: {
-        'onReady': (event) => this.onPlayerReady(event, key),
-        'onError': (event) => this.onPlayerError(event, key)
-        //'onStateChange': window.onPlayerStateChange
-      }
-    })
-  }
+  openSettingsPopup() {
+    var isOpen = this.settingsMenu.classList.contains('is-visible')
+    if (isOpen) return
 
-  onPlayerReady(event, key) {
-    this.startSync(key)
-  }
+    this.settingsMenu.class('is-visible')
+    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
 
-  onPlayerError(event, key) {
-    console.error(`YouTube Ambilight failed to load ambilight player ${key} (Error ${event.data})`)
-    if(event.data == 101 || event.data == 150)
-      console.error('Cause: This channel has disabled embedding into other websites')
-    else if(event.data == 5)
-      console.error('Cause: The video cannot be viewed in a HTML5 video tag')
-    console.error('More info: https://developers.google.com/youtube/iframe_api_reference#onError')
-  }
+    this.closeSettingsListener = (e) => {
+      if (this.settingsMenu === e.target || this.settingsMenu.contains(e.target))
+        return;
 
-  toggleAutoHide() {
-    body.classList.toggle("hide-surroundings")
-  }
-
-  setVideo() {
-    const videoId = $.param('v', location.href)
-    if(!videoId) return
-    //console.log(`Loading ambilight video with id: ${videoId}`)
-    const src = `//www.youtube.com/embed/${videoId}?enablejsapi=1&origin=https://www.youtube.com&autoplay=1&autohide=1&controls=0&showinfo=0&rel=0&fs=0&mute=1&disablekb=1&cc_load_policy=0&iv_load_policy=3&modestbranding=1&vq=tiny`
-    
-    Object.keys(this.iframes).forEach(key => {
-      const player = this.players[key]
-      const iframe = this.iframes[key]
-      if(iframe.attr('src') == '#' && player.getVideoStats && $.param('v', location.href) == player.getVideoStats().docid) return
-      
-      iframe.class('unloaded')
-        //Setting to # and then replace to avoid duplicate entries in the browser history
-        .attr('src', '#')
-        .contentWindow.location.replace(src)
-    })
-  }
-
-  startSync(key) {
-    if(this.syncLoops[key]) return
-    this.syncLoops[key] = setInterval(() => this.sync(key), 1000)
-  }
-  sync(key) {
-    const player = this.players[key]
-    const srcVideo = this.srcVideo
-    if(!player || !player.getPlayerState || player.getPlayerState() == 3) return
-    const playerState = player.getPlayerState()
-
-    if(!srcVideo.playing) {
-      if(playerState != 0) {
-        player.pauseVideo()
-      }
-        return
-    } else if(playerState == 2) {
-      player.playVideo()
-      return
-    } else if(playerState == 3) { //buffering
-      return
-    }
-
-    const videoTime = srcVideo.currentTime
-    const ambilightTime = player.getCurrentTime()
-    if(videoTime == 0 || ambilightTime == 0) return
-    
-    if(Math.abs(videoTime - ambilightTime) > .02) {
-      let correction = 0.05
-      if(playerState != 3 && Math.abs(videoTime - ambilightTime) < 2) {
-        correction = this.previousCorrections[key] + (videoTime - ambilightTime)
-      } else {
-        this.previousCorrections[key] = 0
-      }
-      player.seekTo(videoTime + correction, true)
-      this.previousCorrections[key] = correction
-
-      if(this.syncCounts[key] > 10)
-        console.warn(`Youtube Ambilight seems to fail while trying to sync the video\nVideo time:${videoTime}\nAmbilight time: ${ambilightTime}\nTimecorrection: ${correction}`)
-      this.syncCounts[key]++
-    } else if(this.syncCounts[key] != 0) {
-      this.syncCounts[key] = 0
-      this.iframes[key].removeClass('unloaded')
-      this.setVideoPosition()
-    }
-  }
-
-  setVideoPosition() {
-    setTimeout(() => {
-      const v = this.srcVideo
-      Object.keys(this.containers).forEach(key => {
-        const c = this.containers[key]
-        if(!c || !v) return
-        const cs = c.style
-        
-        cs.width = `${v.offsetWidth}px`
-        cs.height = `${v.offsetHeight}px`
-        cs.left = (v.offset().left + window.scrollX) + 'px'
-        cs.top = (v.offset().top + window.scrollY) + 'px'
-      })
-      this.updateSrcVideoTop()
-    }, 100)
-  }
-
-  updateSrcVideoTop() {
-    this.srcVideoOffsetTop = this.srcVideo.offset().top + window.scrollY
-  }
-
-  onPause() {
-    setTimeout(() => {
-      if(this.isOnPlay) {
-        return
-      }
-      Object.keys(this.iframes).forEach(key => {
-        this.sync(key)
-      })
-    }, 250)
-  }
-
-  onStop() {
-    this.onPause()
-    body.class('disable-ambilight')
-    Object.keys(this.iframes).forEach(key => {
-      this.iframes[key].class('unloaded')
-    })
-  }
-
-  onPlay() {
-    this.isOnPlay = true
-    setTimeout(() => this.isOnPlay = false, 500)
-
-    body.removeClass('disable-ambilight')
-    if(this.players.filter((player) => {
-      return !player || !player.getVideoStats || $.param('v', location.href) != player.getVideoStats().docid 
-    }).length) {
       setTimeout(() => {
-        this.setVideo()
-      }, 500)
-    } else {
-      Object.keys(this.iframes).forEach(key => {
-        this.sync(key)
-      })
+        this.settingsMenu.removeClass('is-visible')
+        $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+      }, 1)
+      body.off('mouseup', this.closeSettingsListener)
     }
+    body.on('mouseup', this.closeSettingsListener)
+  }
+
+  setSetting(key, value) {
+    localStorage.setItem(`ambilight-${key}`, value)
+  }
+
+  getSetting(key) {
+    return localStorage.getItem(`ambilight-${key}`)
   }
 }
 
-enableAmbilight = () => {
-  isVideoPage = window.location.href.indexOf('watch?v=') != -1
-  if(window.ambilight) {
-    if(!isVideoPage) {
-      window.ambilight.onStop()
+
+enableIfVideoPage = () => {
+  const isVideoPage = window.location.href.indexOf('watch?') != -1
+  if (window.ambilight) {
+    if (!isVideoPage) {
+      if (window.ambilight.ambiEnabled) {
+        window.ambilight.disable()
+      }
+    } else {
+      if (!window.ambilight.ambiEnabled) {
+        window.ambilight.enableIfSettingEnabled()
+      }
     }
-  } else if(isVideoPage) {
-    window.ambilight = new Ambilight()
+  } else if (isVideoPage) {
+    const videoPlayer = $.s("#player-container video")
+    if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
+    window.ambilight = new Ambilight(videoPlayer)
   }
 }
-toggleAmbilight = setInterval(() => enableAmbilight(), 500)
+
+setInterval(() => enableIfVideoPage(), 1000)
+
+
+initAmbilight = () => {
+  try {
+    //Force YouTube dark theme
+    var app = $.s('ytd-app')
+    if (!app || !app.onDarkThemeAction_) return
+    app.onDarkThemeAction_()
+
+    enableIfVideoPage()
+
+    clearInterval(tryInitAmbilight)
+    //console.log('Initialized ambilight')
+  } catch (e) {
+    console.error('YouTube Ambilight: Initialization error', e)
+  }
+}
+
+raf(() => {
+  tryInitAmbilight = setInterval(() => initAmbilight(), 100)
+})
