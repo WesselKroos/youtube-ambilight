@@ -85,6 +85,13 @@ HTMLElement.prototype.offset = function () {
   return this.getBoundingClientRect()
 }
 
+function flatten(arrays, TypedArray) {
+  var arr = new TypedArray(arrays.reduce((n, a) => n + a.length, 0));
+  var i = 0;
+  arrays.forEach(a => { arr.set(a,i); i += a.length; });
+  return arr;
+}
+
 body = document.body
 
 raf = (webkitRequestAnimationFrame || requestAnimationFrame)
@@ -94,6 +101,7 @@ raf = (webkitRequestAnimationFrame || requestAnimationFrame)
 class Ambilight {
   constructor(videoPlayer) {
     this.showFrameRate = false
+    this.compareGridScale = 8
 
     this.playerOffset = {}
     this.srcVideoOffset = {}
@@ -427,12 +435,11 @@ class Ambilight {
     if(!oldImage)
       return true
 
-    for(var i = 0; i < oldImage.data.length;) {
-      if(oldImage.data[i] != newImage.data[i]) {
+    const partSize = Math.floor(this.p.w / this.compareGridScale)
+    for(var i = 0; i < oldImage.length; i += partSize) {
+      if(oldImage[i] != newImage[i]) {
         return true;
       }
-      
-      i += 10
     }
 
     return false;
@@ -469,19 +476,16 @@ class Ambilight {
     this.buffer.ctx.drawImage(this.videoPlayer, 0, 0, this.p.w, this.p.h)
 
     if(this.highQuality) {
-      var newImageW = this.buffer.ctx.getImageData(0, this.buffer.heightMid, this.p.w, 1);
-      var isNewFrameW = this.isNewFrame(this.oldImageW, newImageW)
-      this.oldImageW = newImageW
+      let newImage = []
+      const partSize = Math.floor(this.p.h / this.compareGridScale)
+      for(let i = 0; i < this.p.h; i += partSize) {
+        newImage.push(this.buffer.ctx.getImageData(0, i, this.p.w, 1).data);
+      }
+      newImage = flatten(newImage, Uint8ClampedArray)
+      const isNewFrame = this.isNewFrame(this.oldImage, newImage)
+      this.oldImage = newImage
 
-      if(!isNewFrameW) return
-
-      // var newImageH = this.buffer.ctx.getImageData(0, 0, 1, this.p.h);
-      // var isNewFrameH = this.isNewFrame(this.oldImageH, newImageH)
-      // this.oldImageH = newImageH
-
-      // if(!isNewFrameH) {
-      //   return
-      // }
+      if(!isNewFrame) return
     }
 
     if(this.showFrameRate) {
