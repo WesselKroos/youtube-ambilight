@@ -207,7 +207,7 @@ body.immersive-mode .toggle-auto-hide-btn {
 
 /* Settings */
 .ytp-ambilight-settings-menu {
-  width: 228px;
+  width: 229px;
   right: 12px;
   bottom: 49px;
   z-index: 71;
@@ -290,13 +290,12 @@ body.immersive-mode .toggle-auto-hide-btn {
   background: #fff;
 }
 
-.ytp-menuitem[role="menuitemrange"]:hover::after {
+.ytp-menuitem[role="menuitemrange"]:hover + .ytp-menuitem-range::before {
   content: '';
   position: absolute;
   left: 0;
   width: 100%;
-  height: 22px;
-  margin-top: 33px;
+  height: 6px;
   background-color: rgba(255,255,255,.1);
   pointer-events: none;
 }

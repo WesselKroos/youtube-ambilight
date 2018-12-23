@@ -126,11 +126,11 @@ class Ambilight {
     this.innerStrength = 1
 
     this.contrast = this.getSetting('contrast')
-    if(this.contrast === 'undefined') this.contrast = 100
+    if(this.contrast === null) this.contrast = 100
     this.brightness = this.getSetting('brightness')
-    if(this.brightness === 'undefined') this.brightness = 100
+    if(this.brightness === null) this.brightness = 100
     this.saturation = this.getSetting('saturation')
-    if(this.saturation === 'undefined') this.saturation = 100
+    if(this.saturation === null) this.saturation = 100
     // this.sepia = this.getSetting('sepia')
     // if(this.sepia === 'undefined') this.sepia = 0
     this.highQuality = this.getSetting('highQuality')
@@ -705,7 +705,7 @@ class Ambilight {
                         <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
                       </div>
                       <div class="ytp-menuitem-range" rowspan="2">
-                        <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="2" />
+                        <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="1" />
                       </div>
                       `
               }
