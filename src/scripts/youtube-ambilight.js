@@ -632,7 +632,7 @@ class Ambilight {
         name: 'highQuality',
         label: '<span style="display: inline-block; padding: 5px 0">High Precision<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
         type: 'checkbox',
-        value: (this.getSetting('highQuality') === 'true') ? true : false
+        value: this.highQuality
       },
       // {
       //   name: 'sepia',
