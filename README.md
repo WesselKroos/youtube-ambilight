@@ -7,14 +7,9 @@ Go to [YouTube Ambilight on the Chrome Web Store](https://chrome.google.com/webs
 ## Planned features
 A settings page where you can:
   - [Usability] Turn on the Ambilight on existing tabs after the installation so a refresh is not needed
-  - [Feature] Toggle the Ambilight on or off with a button
-  - [Feature] Switch between automatic/manual mode so you can disable the auto-start
-  - [Feature] Set the immersive mode on or off at the start of the video
-  - [Performance] Replace the ambilight video elements with canvas elements which have the video drawn on them 
   
 ## Privacy & Security
 - This Chrome Extension uses the [activeTab](https://developer.chrome.com/extensions/activeTab) permission only on urls that start with https://www.youtube.com. The extension will only active the ambilight on YouTube's /watch page
-- It also uses the [storage](https://developer.chrome.com/extensions/storage) persmission to store it's settings
 
 The following projectfiles are inserted into that specific webpage:
 - \src\scripts\youtube-ambilight.js
