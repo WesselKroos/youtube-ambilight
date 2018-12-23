@@ -132,9 +132,10 @@ class Ambilight {
     this.saturation = this.getSetting('saturation')
     if(this.saturation === null) this.saturation = 100
     // this.sepia = this.getSetting('sepia')
-    // if(this.sepia === 'undefined') this.sepia = 0
-    this.highQuality = this.getSetting('highQuality')
-    if(this.highQuality === 'undefined') this.highQuality = true
+    // if(this.sepia === null) this.sepia = 0
+    this.highQuality = (this.getSetting('highQuality') !== 'false')
+
+    this.immersive = (this.getSetting('immersive') === 'true')
 
     this.videoPlayer = videoPlayer
     //this.videoPlayer.style.webkitFilter = `contrast(${this.contrast}%)`
@@ -573,7 +574,7 @@ class Ambilight {
 
 
   initImmersiveMode() {
-    if (this.getSetting('immersive') === 'true')
+    if (this.immersive)
       body.class('immersive-mode')
   }
   
@@ -676,7 +677,7 @@ class Ambilight {
         name: 'immersive',
         label: 'Immersive',
         type: 'checkbox',
-        value: (this.getSetting('immersive') === 'true') ? true : false
+        value: this.immersive
       },
     ]
 
