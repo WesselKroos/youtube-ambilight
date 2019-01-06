@@ -154,7 +154,7 @@ class Ambilight {
     this.canvasList.class('ambilight__canvas-list')
     this.ambilightContainer.prepend(this.canvasList)
 
-    const bufferElem  = new OffscreenCanvas(1, 1)
+    const bufferElem  = document.createElement('canvas')
     const bufferCtx = bufferElem.getContext("2d")
     this.buffer = {
       elem: bufferElem,
@@ -326,8 +326,8 @@ class Ambilight {
     this.buffer.ctx = this.buffer.elem.getContext('2d')
     this.buffer.ctx.imageSmoothingEnabled = false
 
-    this.compareBuffer.elem.width = this.srcVideoOffset.width
-    this.compareBuffer.elem.height = this.srcVideoOffset.height
+    this.compareBuffer.elem.width = this.p.w
+    this.compareBuffer.elem.height = this.p.h
     this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d')
     this.compareBuffer.ctx.imageSmoothingEnabled = false
 
@@ -498,7 +498,7 @@ class Ambilight {
     this.videoFrameCount = newFrameCount
 
     if (this.highQuality) {
-      this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0)
+      this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0, this.compareBuffer.elem.width, this.compareBuffer.elem.height)
 
       let newImage = []
       const partSize = Math.floor(this.compareBuffer.elem.width / this.compareGridScale)
