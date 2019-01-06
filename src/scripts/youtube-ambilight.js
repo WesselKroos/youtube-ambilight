@@ -88,7 +88,7 @@ HTMLElement.prototype.offset = function () {
 function flatten(arrays, TypedArray) {
   var arr = new TypedArray(arrays.reduce((n, a) => n + a.length, 0));
   var i = 0;
-  arrays.forEach(a => { arr.set(a,i); i += a.length; });
+  arrays.forEach(a => { arr.set(a, i); i += a.length; });
   return arr;
 }
 
@@ -113,29 +113,31 @@ class Ambilight {
     this.p = null;
     this.a = null;
     this.isFullscreen = false
+    this.isFillingFullscreen = false
     this.videoFrameCount = 0
     this.skippedFrames = 0
 
     this.spread = this.getSetting('spread')
-    if(this.spread === null) this.spread = 60
+    if (this.spread === null) this.spread = 60
     this.blur = this.getSetting('blur')
-    if(this.blur === null) this.blur = 35
+    if (this.blur === null) this.blur = 35
     this.bloom = this.getSetting('bloom')
-    if(this.bloom === null) this.bloom = 25
+    if (this.bloom === null) this.bloom = 25
     this.scaleStep = (1 / 9)
     this.innerStrength = 1
 
     this.contrast = this.getSetting('contrast')
-    if(this.contrast === null) this.contrast = 100
+    if (this.contrast === null) this.contrast = 100
     this.brightness = this.getSetting('brightness')
-    if(this.brightness === null) this.brightness = 100
+    if (this.brightness === null) this.brightness = 100
     this.saturation = this.getSetting('saturation')
-    if(this.saturation === null) this.saturation = 100
+    if (this.saturation === null) this.saturation = 100
     // this.sepia = this.getSetting('sepia')
     // if(this.sepia === null) this.sepia = 0
-    this.highQuality = (this.getSetting('highQuality') !== 'false')
 
+    this.highQuality = (this.getSetting('highQuality') !== 'false')
     this.immersive = (this.getSetting('immersive') === 'true')
+    this.enableInFullscreen = (this.getSetting('enableInFullscreen') !== 'false')
 
     this.videoPlayer = videoPlayer
     //this.videoPlayer.style.webkitFilter = `contrast(${this.contrast}%)`
@@ -171,7 +173,7 @@ class Ambilight {
 
     this.recreateCanvasses()
 
-    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn => 
+    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => raf(() =>
         setTimeout(() => this.updateSizes(), 0)
       ))
@@ -182,8 +184,8 @@ class Ambilight {
       setTimeout(() =>
         raf(() =>
           setTimeout(() => this.updateSizes(), 200)
-        ), 
-      200)
+        ),
+        200)
     });
 
     document.addEventListener('keydown', (e) => {
@@ -198,11 +200,12 @@ class Ambilight {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
       })
-      // .on('timeupdate', () => {
-      // })
-      // .on('pause', () => {
-      //   this.isPlaying = false
-      // })
+    .on('ended', () => {
+      this.clear()
+    })
+    .on('emptied', () => {
+      this.clear()
+    })
 
     this.initSettings()
     this.initScrollPosition()
@@ -212,7 +215,7 @@ class Ambilight {
   }
 
   recreateCanvasses() {
-    if(this.ambilightContainers) {
+    if (this.ambilightContainers) {
       this.ambilightContainers.forEach(container => {
         container.remove();
       })
@@ -246,9 +249,16 @@ class Ambilight {
     this.videoFrameCount = 0
   }
 
+  clear() {
+    this.players.forEach((player) => {
+      player.ctx.fillStyle = '#000'
+      player.ctx.fillRect(0, 0, player.elem.width, player.elem.height)
+    })
+  }
+
   updateSizes() {
     //Ignore minimization after scrolling down
-    if($.s('.html5-video-player').classList.contains('ytp-player-minimized')){
+    if ($.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
       return true
     }
 
@@ -262,7 +272,7 @@ class Ambilight {
     }
 
     const scale = this.srcVideoOffset.height / 512
-    if(scale < 1 || scale > 4) {
+    if (scale < 1 || scale > 4) {
       this.p = {
         w: 128,
         h: 128
@@ -273,9 +283,14 @@ class Ambilight {
         h: Math.round(this.srcVideoOffset.height / scale)
       }
     }
-    
+
 
     this.isFullscreen = !!$.s('.ytp-fullscreen')
+    this.isFillingFullscreen = (
+      this.isFullscreen &&
+      Math.abs(this.playerOffset.width - window.innerWidth) < 10 &&
+      Math.abs(this.playerOffset.height - window.innerHeight) < 10
+    )
 
     this.ambilightContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
     this.ambilightContainer.style.top = (this.playerOffset.top + window.scrollY) + 'px'
@@ -293,9 +308,9 @@ class Ambilight {
     `
 
     this.players.forEach((player) => {
-      if(player.elem.width !== this.p.w)
+      if (player.elem.width !== this.p.w)
         player.elem.width = this.p.w
-      if(player.elem.height !== this.p.h)
+      if (player.elem.height !== this.p.h)
         player.elem.height = this.p.h
       player.ctx = player.elem.getContext('2d')
       //player.ctx.imageSmoothingEnabled = false
@@ -303,7 +318,7 @@ class Ambilight {
 
     this.buffer.elem.width = this.p.w
     this.buffer.elem.height = this.p.h
-    this.buffer.heightMid = Math.ceil(this.p.h/2)
+    this.buffer.heightMid = Math.ceil(this.p.h / 2)
     this.buffer.ctx = this.buffer.elem.getContext('2d')
     this.buffer.ctx.imageSmoothingEnabled = false
 
@@ -367,7 +382,7 @@ class Ambilight {
       w: [
         0,
         ...gList.map(e => Math.round(scaledEdge.w - (scaledEdge.w * e.p) - (scaledEdge.w * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.w                - (scaledEdge.w * bloom)),
+        Math.round(scaledEdge.w - (scaledEdge.w * bloom)),
         Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * bloom)),
         ...gList.reverse().map(e => Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * e.p) + (scaledEdge.w * bloom * (1 - e.p)))),
         Math.round(scaledEdge.w + scaledSize.w + scaledEdge.w)
@@ -375,24 +390,24 @@ class Ambilight {
       h: [
         0,
         ...gList.map(e => Math.round(scaledEdge.h - (scaledEdge.h * e.p) - (scaledEdge.h * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.h                - (scaledEdge.h * bloom)),
+        Math.round(scaledEdge.h - (scaledEdge.h * bloom)),
         Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * bloom)),
         ...gList.reverse().map(e => Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * e.p) + (scaledEdge.h * bloom * (1 - e.p)))),
         Math.round(scaledEdge.h + scaledSize.h + scaledEdge.h)
       ]
     }
-    
+
     this.shadowFade.style.background = `
-      linear-gradient(to bottom, rgba(0,0,0,.95) ${g.h[0]}px, ${ 
-        gList.map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[0 + gList.length - i]}px`).join(', ') 
-      }, rgba(0,0,0,0) ${g.h[1 + gList.length]}px, rgba(0,0,0,0) ${g.h[2 + gList.length]}px, ${ 
-        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[2 + gList.length + gList.length - i]}px`).join(', ') 
+      linear-gradient(to bottom, rgba(0,0,0,.95) ${g.h[0]}px, ${
+      gList.map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[0 + gList.length - i]}px`).join(', ')
+      }, rgba(0,0,0,0) ${g.h[1 + gList.length]}px, rgba(0,0,0,0) ${g.h[2 + gList.length]}px, ${
+      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[2 + gList.length + gList.length - i]}px`).join(', ')
       }, rgba(0,0,0,.95) ${g.h[5 + gList.length]}px),
 
-      linear-gradient(to right,  rgba(0,0,0,.95) ${g.w[0]}px, ${ 
-        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[1 + i]}px`).join(', ') 
-      }, rgba(0,0,0,0) ${g.w[1 + gList.length]}px, rgba(0,0,0,0) ${g.w[2 + gList.length]}px, ${ 
-        gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[3 + gList.length + i]}px`).join(', ') 
+      linear-gradient(to right,  rgba(0,0,0,.95) ${g.w[0]}px, ${
+      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[1 + i]}px`).join(', ')
+      }, rgba(0,0,0,0) ${g.w[1 + gList.length]}px, rgba(0,0,0,0) ${g.w[2 + gList.length]}px, ${
+      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[3 + gList.length + i]}px`).join(', ')
       }, rgba(0,0,0,.95) ${g.w[5 + gList.length]}px),
     
       linear-gradient(to left,   rgba(255,255,255,1), rgba(255,255,255,1))
@@ -401,12 +416,12 @@ class Ambilight {
 
   checkVideoSize() {
     //Scrolling?
-    if(!(this.ambilightContainer.style.width == this.playerOffset.width + 'px'))
+    if (!(this.ambilightContainer.style.width == this.playerOffset.width + 'px'))
       return this.updateSizes()
-    
-    
+
+
     //Resized
-    if(this.previousWidth !== this.videoPlayer.clientWidth) {
+    if (this.previousWidth !== this.videoPlayer.clientWidth) {
       this.previousWidth = this.videoPlayer.clientWidth
       return this.updateSizes()
     }
@@ -419,26 +434,26 @@ class Ambilight {
   }
 
   scheduleNextFrame() {
-    if(this.scheduled || !this.ambiEnabled) return
+    if (this.scheduled || !this.ambiEnabled) return
 
     raf(() => {
       this.scheduled = false
       this.checkVideoSize()
       this.drawAmbilight()
-      
-      if(this.scheduled || !this.ambiEnabled || this.videoPlayer.paused) return
+
+      if (this.scheduled || !this.ambiEnabled || this.videoPlayer.paused) return
       this.scheduleNextFrame()
     })
     this.scheduled = true
   }
 
   isNewFrame(oldImage, newImage) {
-    if(!oldImage)
+    if (!oldImage)
       return true
 
     const partSize = Math.floor(this.p.w / this.compareGridScale)
-    for(var i = 0; i < oldImage.length; i += partSize) {
-      if(oldImage[i] != newImage[i]) {
+    for (var i = 0; i < oldImage.length; i += partSize) {
+      if (oldImage[i] != newImage[i]) {
         return true;
       }
     }
@@ -448,13 +463,12 @@ class Ambilight {
 
   drawAmbilight() {
     if (!this.ambiEnabled) return
-    if (this.isFullscreen) return
 
-    if (this.videoPlayer.currentTime == 0) {
+    if (this.isFillingFullscreen || (!this.enableInFullscreen && this.isFullscreen)) {
       this.hide()
       return
     }
-    
+
     if (this.isHidden) {
       this.show()
     }
@@ -462,7 +476,7 @@ class Ambilight {
     var newFrameCount = this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount
     if (this.videoFrameCount == newFrameCount) {
       this.skippedFrames = 0
-      if(!this.highQuality) return
+      if (!this.highQuality) return
     } else if (this.videoFrameCount < newFrameCount && this.videoFrameCount > 120 && this.videoFrameCount - newFrameCount < - 2) {
       this.skippedFrames++
     }
@@ -476,26 +490,26 @@ class Ambilight {
 
     this.buffer.ctx.drawImage(this.videoPlayer, 0, 0, this.p.w, this.p.h)
 
-    if(this.highQuality) {
+    if (this.highQuality) {
       let newImage = []
       const partSize = Math.floor(this.p.h / this.compareGridScale)
-      for(let i = 0; i < this.p.h; i += partSize) {
+      for (let i = 0; i < this.p.h; i += partSize) {
         newImage.push(this.buffer.ctx.getImageData(0, i, this.p.w, 1).data);
       }
       newImage = flatten(newImage, Uint8ClampedArray)
       const isNewFrame = this.isNewFrame(this.oldImage, newImage)
       this.oldImage = newImage
 
-      if(!isNewFrame) return
+      if (!isNewFrame) return
     }
 
-    if(this.showFrameRate) {
-      if(this.frameRateCountStart < performance.now() - 1000) {
+    if (this.showFrameRate) {
+      if (this.frameRateCountStart < performance.now() - 1000) {
         console.log(`fps: ${this.frameRateCount}`)
         this.frameRateCount = 1
         this.frameRateCountStart = performance.now()
       } else {
-        if(!this.frameRateCount) {
+        if (!this.frameRateCount) {
           this.frameRateCount = 1
           this.frameRateCountStart = performance.now()
         } else {
@@ -544,9 +558,7 @@ class Ambilight {
     this.isHidden = true
     this.ambilightContainer.style.opacity = '0'
     setTimeout(() => {
-      this.players.forEach((player) => {
-        player.ctx.clearRect(0, 0, player.elem.width, player.elem.height)
-      })
+      this.clear()
     }, 500)
   }
 
@@ -564,7 +576,7 @@ class Ambilight {
   }
 
   checkScrollPosition() {
-    if(this.changedTopTimeout)
+    if (this.changedTopTimeout)
       clearTimeout(this.changedTopTimeout)
     if (window.scrollY > 0)
       this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 100)
@@ -577,7 +589,7 @@ class Ambilight {
     if (this.immersive)
       body.class('immersive-mode')
   }
-  
+
   toggleImmersiveMode() {
     body.classList.toggle('immersive-mode')
     var enabled = body.classList.contains('immersive-mode')
@@ -593,7 +605,7 @@ class Ambilight {
       .attr('title', 'Ambilight settings')
       .attr('aria-owns', 'ytp-id-190')
       .on('click', () => this.openSettingsPopup())
-    
+
     // var settingsIconId = '#ytp-id-19'
     // try {
     //   settingsIconId = document.querySelector('.ytp-settings-button').querySelector('use').attributes['href'].value
@@ -674,6 +686,12 @@ class Ambilight {
         value: (this.getSetting('enabled') === 'true') ? true : false
       },
       {
+        name: 'enableInFullscreen',
+        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
+        type: 'checkbox',
+        value: this.enableInFullscreen
+      },
+      {
         name: 'immersive',
         label: 'Immersive',
         type: 'checkbox',
@@ -689,9 +707,9 @@ class Ambilight {
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
           ${
-            settings.map(setting => {
-              if (setting.type === 'checkbox') {
-                return `
+      settings.map(setting => {
+        if (setting.type === 'checkbox') {
+          return `
                         <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
                           <div class="ytp-menuitem-label">${setting.label}</div>
                           <div class="ytp-menuitem-content">
@@ -699,8 +717,8 @@ class Ambilight {
                           </div>
                         </div>
                       `
-              } else if (setting.type === 'list') {
-                return `
+        } else if (setting.type === 'list') {
+          return `
                       <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
                         <div class="ytp-menuitem-label">${setting.label}</div>
                         <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
@@ -709,9 +727,9 @@ class Ambilight {
                         <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="1" />
                       </div>
                       `
-              }
-            }).join('')
-          }
+        }
+      }).join('')
+      }
         </div>
       </div>`;
 
@@ -719,16 +737,16 @@ class Ambilight {
 
     settings.forEach(setting => {
       const input = $.s(`#setting-${setting.name}`)
-      if(setting.type === 'list') {
+      if (setting.type === 'list') {
         const displayedValue = $.s(`#setting-${setting.name}-value`)
         input.on('change mousemove', () => {
-          if(input.value === input.attr('data-previous-value')) return
+          if (input.value === input.attr('data-previous-value')) return
           var value = input.value
           input.attr('data-previous-value', input.value)
           displayedValue.innerHTML = `${value}%`
           this[setting.name] = value
 
-          if(setting.name === 'spread') {
+          if (setting.name === 'spread') {
             this.recreateCanvasses()
           }
           this.updateSizes()
@@ -736,7 +754,7 @@ class Ambilight {
         input.on('change', () => {
           this.setSetting(setting.name, input.value)
         })
-      } else if(setting.type === 'checkbox') {
+      } else if (setting.type === 'checkbox') {
         input.on('click', () => {
           if (setting.type === 'checkbox') {
             setting.value = !setting.value
@@ -748,15 +766,18 @@ class Ambilight {
           if (setting.name === 'enabled') {
             this.setSetting('enabled', setting.value)
             $.s(`#setting-enabled`).attr('aria-checked', setting.value)
-            if(setting.value)
+            if (setting.value)
               this.enable()
             else
               this.disable()
           }
-          if (setting.name === 'highQuality') {
-            this.highQuality = setting.value
-            this.setSetting('highQuality', setting.value)
-            $.s(`#setting-highQuality`).attr('aria-checked', setting.value)
+          if (
+            setting.name === 'highQuality' ||
+            setting.name === 'enableInFullscreen'
+          ) {
+            this[setting.name] = setting.value
+            this.setSetting(setting.name, setting.value)
+            $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
           }
         })
       }

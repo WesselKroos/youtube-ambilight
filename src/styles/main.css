@@ -16,7 +16,9 @@ ytd-app[is-watch-page] #columns.ytd-watch-flexy,
 body.at-top ytd-app[is-watch-page] #container.ytd-searchbox,
 body.at-top ytd-app[is-watch-page] #search-icon-legacy,
 ytd-app[is-watch-page] #movie_player,
-ytd-app[is-watch-page] #player-container {
+ytd-app[is-watch-page] #player-container,
+ytd-app[is-watch-page] .html5-main-video
+{
     background: none !important;
 }
 ytd-app[is-watch-page] ytd-masthead {
@@ -25,6 +27,18 @@ ytd-app[is-watch-page] ytd-masthead {
 body.not-at-top ytd-app[is-watch-page] ytd-masthead,
 ytd-app[is-watch-page] ytd-masthead:hover {
     background: rgb(19,19,19) !important;
+}
+
+/* Video preview background */
+
+ytd-app[is-watch-page] .ytp-storyboard-framepreview {
+    margin: 0 auto;
+    position: relative;
+    display: table;
+}
+
+ytd-app[is-watch-page] .ytp-storyboard-framepreview-img {
+    margin: 0 !important;
 }
 
 /* Chat */
@@ -215,6 +229,9 @@ body.immersive-mode .toggle-auto-hide-btn {
   pointer-events: none;
   opacity: 0;
   transition: opacity .25s;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
+    width: 329px;
 }
 .ytp-ambilight-settings-menu.is-visible {
   opacity: 1;
