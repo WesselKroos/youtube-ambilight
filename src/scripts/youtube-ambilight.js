@@ -154,14 +154,19 @@ class Ambilight {
     this.canvasList.class('ambilight__canvas-list')
     this.ambilightContainer.prepend(this.canvasList)
 
-    const bufferElem = document.createElement("canvas")
+    const bufferElem  = new OffscreenCanvas(1, 1)
     const bufferCtx = bufferElem.getContext("2d")
     this.buffer = {
       elem: bufferElem,
-      ctx: bufferCtx,
-      heightMid: 0
+      ctx: bufferCtx
     }
 
+    const compareBufferElem  = new OffscreenCanvas(1, 1)
+    const compareBufferCtx = bufferElem.getContext("2d")
+    this.compareBuffer = {
+      elem: compareBufferElem,
+      ctx: compareBufferCtx
+    }
 
     const shadow = $.create('div')
     shadow.class('ambilight__shadow')
@@ -318,9 +323,13 @@ class Ambilight {
 
     this.buffer.elem.width = this.p.w
     this.buffer.elem.height = this.p.h
-    this.buffer.heightMid = Math.ceil(this.p.h / 2)
     this.buffer.ctx = this.buffer.elem.getContext('2d')
     this.buffer.ctx.imageSmoothingEnabled = false
+
+    this.compareBuffer.elem.width = this.srcVideoOffset.width
+    this.compareBuffer.elem.height = this.srcVideoOffset.height
+    this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d')
+    this.compareBuffer.ctx.imageSmoothingEnabled = false
 
     this.resizeCanvasses()
 
@@ -451,7 +460,7 @@ class Ambilight {
     if (!oldImage)
       return true
 
-    const partSize = Math.floor(this.p.w / this.compareGridScale)
+    const partSize = Math.floor(this.compareBuffer.elem.width / this.compareGridScale)
     for (var i = 0; i < oldImage.length; i += partSize) {
       if (oldImage[i] != newImage[i]) {
         return true;
@@ -488,19 +497,23 @@ class Ambilight {
     }
     this.videoFrameCount = newFrameCount
 
-    this.buffer.ctx.drawImage(this.videoPlayer, 0, 0, this.p.w, this.p.h)
-
     if (this.highQuality) {
+      this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0)
+
       let newImage = []
-      const partSize = Math.floor(this.p.h / this.compareGridScale)
+      const partSize = Math.floor(this.compareBuffer.elem.width / this.compareGridScale)
       for (let i = 0; i < this.p.h; i += partSize) {
-        newImage.push(this.buffer.ctx.getImageData(0, i, this.p.w, 1).data);
+        newImage.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data);
       }
       newImage = flatten(newImage, Uint8ClampedArray)
       const isNewFrame = this.isNewFrame(this.oldImage, newImage)
       this.oldImage = newImage
 
       if (!isNewFrame) return
+
+      this.buffer.ctx.drawImage(this.compareBuffer.elem, 0, 0, this.p.w, this.p.h)
+    } else {
+      this.buffer.ctx.drawImage(this.videoPlayer, 0, 0, this.p.w, this.p.h)
     }
 
     if (this.showFrameRate) {
