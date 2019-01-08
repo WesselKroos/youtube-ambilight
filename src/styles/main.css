@@ -31,7 +31,7 @@ ytd-app[is-watch-page] ytd-masthead:hover {
 
 /* Video preview background */
 
-ytd-app[is-watch-page] .ytp-storyboard-framepreview {
+/* ytd-app[is-watch-page] .ytp-storyboard-framepreview {
     margin: 0 auto;
     position: relative;
     display: table;
@@ -39,7 +39,7 @@ ytd-app[is-watch-page] .ytp-storyboard-framepreview {
 
 ytd-app[is-watch-page] .ytp-storyboard-framepreview-img {
     margin: 0 !important;
-}
+} */
 
 /* Chat */
 
