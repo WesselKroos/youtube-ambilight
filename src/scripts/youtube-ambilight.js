@@ -125,9 +125,9 @@ class Ambilight {
     this.highQualityWithCompare = true
 
     this.spread = this.getSetting('spread')
-    if (this.spread === null) this.spread = 60
+    if (this.spread === null) this.spread = 45
     this.blur = this.getSetting('blur')
-    if (this.blur === null) this.blur = 35
+    if (this.blur === null) this.blur = 20
     this.bloom = this.getSetting('bloom')
     if (this.bloom === null) this.bloom = 25
     this.scaleStep = (1 / 9)
@@ -283,10 +283,11 @@ class Ambilight {
     }
 
     const scale = Math.min(this.srcVideoOffset.height / 512, 4)
+    // A size of more than 256 is required to enable GPU acceleration in Chrome
     if (scale < 1) {
       this.p = {
-        w: 128,
-        h: 128
+        w: 512,
+        h: 512
       }
     } else {
       this.p = {
