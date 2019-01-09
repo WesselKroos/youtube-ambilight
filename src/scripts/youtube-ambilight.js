@@ -122,8 +122,6 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.videoFrameRateMeasureStartFrame = 0
 
-    this.highQualityWithCompare = true
-
     this.spread = this.getSetting('spread')
     if (this.spread === null) this.spread = 45
     this.blur = this.getSetting('blur')
@@ -574,10 +572,7 @@ class Ambilight {
       this.highQuality &&
       this.videoFrameCount === newFrameCount
     ) {
-      if (
-        this.highQualityWithCompare &&
-        (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < (this.displayFrameRate))
-      ) {
+      if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < (this.displayFrameRate)) {
         //performance.mark('comparing-compare-start');
         let newImage = []
 
@@ -843,6 +838,7 @@ class Ambilight {
             this.recreateCanvasses()
           }
           this.updateSizes()
+          this.scheduleNextFrame()
         })
         input.on('change', () => {
           this.setSetting(setting.name, input.value)
