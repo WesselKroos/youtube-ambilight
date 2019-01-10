@@ -280,12 +280,15 @@ class Ambilight {
       height: this.videoPlayer.videoHeight
     }
 
-    const scale = Math.min(this.srcVideoOffset.height / 512, 4)
+    const minSize = 512
+    const scaleX = Math.min(this.srcVideoOffset.width / minSize, 4)
+    const scaleY = Math.min(this.srcVideoOffset.height / minSize, 4)
+    const scale = Math.min(scaleX, scaleY)
     // A size of more than 256 is required to enable GPU acceleration in Chrome
     if (scale < 1) {
       this.p = {
-        w: 512,
-        h: 512
+        w: minSize,
+        h: minSize
       }
     } else {
       this.p = {
