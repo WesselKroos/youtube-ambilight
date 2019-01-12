@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "YouTube Ambilight",
   "description": "This Chrome Extension adds ambilight to YouTube videos",
-  "version": "2.10",
+  "version": "2.11",
   "author": "Wessel Kroos",
   "icons": {
     "16": "images/icon-16.png",
