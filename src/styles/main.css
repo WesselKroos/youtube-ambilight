@@ -222,12 +222,14 @@ body.immersive-mode .toggle-auto-hide-btn {
 /* Settings */
 .ytp-ambilight-settings-menu {
   width: 300px;
+  max-height: calc(100% - 90px);
+  overflow-y: auto !important;
   right: 12px;
   bottom: 49px;
   z-index: 71;
   will-change: width,height;
-  pointer-events: none;
   opacity: 0;
+  pointer-events: none;
   transition: opacity .25s;
 }
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
@@ -269,6 +271,34 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 .ytp-chrome-bottom {
   width: calc(100% - 24px) !important;
 }
+
+.ytp-ambilight-settings-menu .ytp-menuitem[aria-checked="true"] .ytp-menuitem-toggle-checkbox {
+    background-color: #3ea6ff;
+}
+
+.ytp-ambilight-settings-menu .ytpa-feedback-link {
+    display: table-row;
+    height: 32px;
+    color: #4eb6ff;
+    transition: color .2s;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link {
+    height: 50px;
+}
+.ytp-ambilight-settings-menu .ytpa-feedback-link:hover {
+    color: #5ebfff;
+}
+
+.ytp-ambilight-settings-menu .ytpa-feedback-link__text {
+    position: absolute;
+    display: block;
+    padding: 10px 15px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__text {
+    padding: 15px 20px;
+    font-size: 16px;
+}
+
 
 /* Settings - sliders */
 

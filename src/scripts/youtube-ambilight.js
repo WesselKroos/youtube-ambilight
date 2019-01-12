@@ -103,6 +103,9 @@ class Ambilight {
     this.showDisplayFrameRate = false
     this.showVideoFrameRate = false
 
+    this.feedbackFormLink = 'https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU'
+    this.storeLink = 'https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj'
+
     this.playerOffset = {}
     this.srcVideoOffset = {}
 
@@ -797,6 +800,9 @@ class Ambilight {
     this.settingsMenu.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
+          <a class="ytpa-feedback-link" rowspan="2" href="${this.storeLink}" target="_blank">
+            <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
+          </a>
           ${
       settings.map(setting => {
         if (setting.type === 'checkbox') {
