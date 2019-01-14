@@ -45,8 +45,7 @@ ytd-app[is-watch-page] .ytp-storyboard-framepreview-img {
 
 body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
     margin-top: 28px;
-    /* padding-top: calc((100vh - 169px) - ((9 / 16) * 100vw)); */
-    /* padding-top: calc((100vh - 169px) - ((var(--ytd-watch-flexy-height-ratio) / var(--ytd-watch-flexy-width-ratio)) * 100vw)); */
+    margin-bottom: 85px;
 }
 
 
