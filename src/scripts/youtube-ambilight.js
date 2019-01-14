@@ -143,7 +143,7 @@ class Ambilight {
     // this.sepia = this.getSetting('sepia')
     // if(this.sepia === null) this.sepia = 0
 
-    this.highQuality = (this.getSetting('highQuality') !== 'false')
+    this.highQuality = (this.getSetting('highQuality') === 'true')
     this.immersive = (this.getSetting('immersive') === 'true')
     this.enableInFullscreen = (this.getSetting('enableInFullscreen') !== 'false')
 
@@ -201,8 +201,19 @@ class Ambilight {
     });
 
     document.addEventListener('keydown', (e) => {
+      if(document.activeElement) {
+        const el = document.activeElement
+        const tag = el.tagName
+        const inputs = ['INPUT', 'SELECT', 'TEXTAREA'];
+        if(inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
+          return
+      }
       if (e.keyCode === 70 || e.keyCode === 84)
         setTimeout(() => this.updateSizes(), 0)
+      if (e.keyCode === 73) // i
+        this.toggleImmersiveMode()
+      if (e.keyCode === 65) // a
+        this.toggle()
     })
 
     this.videoPlayer.on('playing', () => {
@@ -624,7 +635,7 @@ class Ambilight {
     this.ambiEnabled = true
 
     this.setSetting('enabled', true)
-    $.s(`#setting-enabled`).attr('aria-checked', this.ambiEnabled ? 'true' : 'false')
+    $.s(`#setting-enabled`).attr('aria-checked', true)
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
@@ -633,8 +644,14 @@ class Ambilight {
     this.scheduleNextFrame()
   }
 
-  disable() {
+  disable(setSetting = false) {
     if (!this.ambiEnabled) return
+
+    if(setSetting) {
+      this.setSetting('enabled', false)
+      $.s(`#setting-enabled`).attr('aria-checked', false)
+    }
+
     this.ambiEnabled = false
     this.hide()
   }
@@ -775,7 +792,7 @@ class Ambilight {
       },
       {
         name: 'enabled',
-        label: 'Enabled',
+        label: 'Enabled (A)',
         type: 'checkbox',
         value: (this.getSetting('enabled') === 'true') ? true : false
       },
@@ -787,7 +804,7 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Immersive',
+        label: 'Immersive (I)',
         type: 'checkbox',
         value: this.immersive
       },
@@ -917,7 +934,7 @@ enableIfVideoPage = () => {
   if (window.ambilight) {
     if (!isVideoPage) {
       if (window.ambilight.ambiEnabled) {
-        window.ambilight.disable()
+        window.ambilight.disable(false)
       }
     } else {
       if (!window.ambilight.ambiEnabled) {

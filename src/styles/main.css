@@ -41,6 +41,15 @@ ytd-app[is-watch-page] .ytp-storyboard-framepreview-img {
     margin: 0 !important;
 } */
 
+/* Theater mode */
+
+body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
+    margin-top: 28px;
+    /* padding-top: calc((100vh - 169px) - ((9 / 16) * 100vw)); */
+    /* padding-top: calc((100vh - 169px) - ((var(--ytd-watch-flexy-height-ratio) / var(--ytd-watch-flexy-width-ratio)) * 100vw)); */
+}
+
+
 /* Chat */
 
 yt-live-chat-renderer {
@@ -179,7 +188,7 @@ ytd-app[is-watch-page] #masthead-container {
 body.immersive-mode.at-top ytd-app[is-watch-page] #secondary:not(:hover),
 body.immersive-mode.at-top ytd-app[is-watch-page] #masthead-container:not(:hover) {
   opacity: 0;
-  transition-delay: 2s;
+  transition-delay: 1s;
 }
 
 body.immersive-mode ytd-app[is-watch-page] #primary-inner > *:not(#player) {
@@ -188,7 +197,7 @@ body.immersive-mode ytd-app[is-watch-page] #primary-inner > *:not(#player) {
 }
 body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player) {
     opacity: 0;
-    transition-delay: 2s;
+    transition-delay: 1s;
 }
 
 body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player):hover {
