@@ -111,7 +111,7 @@ class Ambilight {
 
     this.isHidden = true
     this.ambiEnabled = false
-    this.showedWarning = false
+    this.showedHighQualityCompareWarning = false
 
     this.p = null;
     this.a = null;
@@ -594,12 +594,20 @@ class Ambilight {
         let newImage = []
 
         let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
-        for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
-          newImage.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data);
-        }
+        let isNewFrame = false
 
-        const isNewFrame = this.isNewFrame(this.oldImage, newImage)
-        //performance.mark('comparing-compare-end');
+        try {
+          for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
+            newImage.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data);
+          }
+          isNewFrame = this.isNewFrame(this.oldImage, newImage)
+          //performance.mark('comparing-compare-end');
+        } catch(ex) {
+          if(!this.showedHighQualityCompareWarning) {
+            console.warn('Failed to retrieve video data. ', ex)
+            this.showedHighQualityCompareWarning = true
+          }
+        }
 
         if (!isNewFrame) {
           newImage = null
@@ -639,6 +647,7 @@ class Ambilight {
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
+    this.showedHighQualityCompareWarning = false
 
     this.updateSizes()
     this.scheduleNextFrame()
