@@ -21,7 +21,6 @@ chrome.runtime.onInstalled.addListener(function(details) {
   if (details.reason !== 'install' && details.reason !== 'update')
     return
 
-  debugger;
   var version = (chrome.runtime.getManifest() || {}).version || ''
   var os = getOS()
 
