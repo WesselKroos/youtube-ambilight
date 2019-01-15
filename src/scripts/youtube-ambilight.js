@@ -690,9 +690,9 @@ class Ambilight {
     if (this.changedTopTimeout)
       clearTimeout(this.changedTopTimeout)
     if (window.scrollY > 0)
-      this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 100)
+      this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 20)
     else
-      this.changedTopTimeout = setTimeout(() => body.class('at-top').removeClass('not-at-top'), 100)
+      this.changedTopTimeout = setTimeout(() => body.class('at-top').removeClass('not-at-top'), 20)
   }
 
 

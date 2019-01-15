@@ -180,7 +180,7 @@ body.immersive-mode::-webkit-scrollbar {
 
 ytd-app[is-watch-page] #secondary,
 ytd-app[is-watch-page] #masthead-container {
-  transition: opacity .25s ease-out;
+  transition: opacity .15s ease-out;
   will-change: opacity;
   transition-delay: 0s;
 }
@@ -191,7 +191,7 @@ body.immersive-mode.at-top ytd-app[is-watch-page] #masthead-container:not(:hover
 }
 
 body.immersive-mode ytd-app[is-watch-page] #primary-inner > *:not(#player) {
-  transition: opacity .25s ease-out;
+  transition: opacity .15s ease-out;
   will-change: opacity;
 }
 body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player) {
