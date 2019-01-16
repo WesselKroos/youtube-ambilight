@@ -48,6 +48,10 @@ body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-c
     margin-bottom: 85px;
 }
 
+ytd-app[is-watch-page] .html5-main-video {
+    transform: var(--video-transform);
+}
+
 
 /* Chat */
 
