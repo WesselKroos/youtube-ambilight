@@ -125,27 +125,121 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.videoFrameRateMeasureStartFrame = 0
 
+
+    this.settings = [
+      {
+        name: 'spread',
+        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
+        type: 'list',
+        default: 45,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'blur',
+        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
+        type: 'list',
+        default: 20,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'bloom',
+        label: 'Bloom',
+        type: 'list',
+        default: 25,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'highQuality',
+        label: '<span style="display: inline-block; padding: 5px 0">High Precision<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
+        type: 'checkbox',
+        default: false
+      },
+      // {
+      //   name: 'sepia',
+      //   label: 'Sepia',
+      //   type: 'list',
+      //   value: this.sepia,
+      //   min: 0,
+      //   max: 100
+      // },
+      {
+        name: 'brightness',
+        label: 'Brightness',
+        type: 'list',
+        default: 100,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'contrast',
+        label: 'Contrast',
+        type: 'list',
+        default: 100,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'saturation',
+        label: 'Saturation',
+        type: 'list',
+        default: 100,
+        min: 0,
+        max: 200
+      },
+      {
+        name: 'videoScale',
+        label: 'Video scale',
+        type: 'list',
+        default: 100,
+        min: 1,
+        max: 200
+      },
+      {
+        name: 'enabled',
+        label: 'Enabled (A)',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'enableInFullscreen',
+        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        name: 'immersive',
+        label: 'Immersive (I)',
+        type: 'checkbox',
+        default: false
+      },
+    ]
+
+    this.enabled = this.getSetting('enabled')
     this.spread = this.getSetting('spread')
-    if (this.spread === null) this.spread = 45
     this.blur = this.getSetting('blur')
-    if (this.blur === null) this.blur = 20
     this.bloom = this.getSetting('bloom')
-    if (this.bloom === null) this.bloom = 25
     this.scaleStep = (1 / 9)
     this.innerStrength = 1
 
     this.contrast = this.getSetting('contrast')
-    if (this.contrast === null) this.contrast = 100
     this.brightness = this.getSetting('brightness')
-    if (this.brightness === null) this.brightness = 100
     this.saturation = this.getSetting('saturation')
-    if (this.saturation === null) this.saturation = 100
     // this.sepia = this.getSetting('sepia')
     // if(this.sepia === null) this.sepia = 0
 
-    this.highQuality = (this.getSetting('highQuality') === 'true')
-    this.immersive = (this.getSetting('immersive') === 'true')
-    this.enableInFullscreen = (this.getSetting('enableInFullscreen') !== 'false')
+    this.videoScale = this.getSetting('videoScale')
+
+    this.highQuality = this.getSetting('highQuality', true)
+    this.immersive = this.getSetting('immersive', true)
+    this.enableInFullscreen = this.getSetting('enableInFullscreen', true)
+
+    
+    this.settings.forEach(setting => {
+      setting.value = this[setting.name]
+    })
 
     this.videoPlayer = videoPlayer
 
@@ -201,11 +295,11 @@ class Ambilight {
     });
 
     document.addEventListener('keydown', (e) => {
-      if(document.activeElement) {
+      if (document.activeElement) {
         const el = document.activeElement
         const tag = el.tagName
         const inputs = ['INPUT', 'SELECT', 'TEXTAREA'];
-        if(inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
+        if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
           return
       }
       if (e.keyCode === 70 || e.keyCode === 84)
@@ -284,6 +378,8 @@ class Ambilight {
     if ($.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
       return true
     }
+    this.videoPlayer.style.setProperty('--video-transform', `scale(${(this.videoScale / 100)})`);
+    //this.videoPlayer.setAttribute('data-scale', this.videoScale / 100)
 
     this.playerOffset = this.videoPlayer.offset()
     if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
@@ -602,8 +698,8 @@ class Ambilight {
           }
           isNewFrame = this.isNewFrame(this.oldImage, newImage)
           //performance.mark('comparing-compare-end');
-        } catch(ex) {
-          if(!this.showedHighQualityCompareWarning) {
+        } catch (ex) {
+          if (!this.showedHighQualityCompareWarning) {
             console.warn('Failed to retrieve video data. ', ex)
             this.showedHighQualityCompareWarning = true
           }
@@ -635,7 +731,7 @@ class Ambilight {
 
 
   enableIfSettingEnabled() {
-    if (this.getSetting('enabled') === 'false') return
+    if (!this.getSetting('enabled')) return
     this.enable()
   }
 
@@ -656,7 +752,7 @@ class Ambilight {
   disable(setSetting = false) {
     if (!this.ambiEnabled) return
 
-    if(setSetting) {
+    if (setSetting) {
       this.setSetting('enabled', false)
       $.s(`#setting-enabled`).attr('aria-checked', false)
     }
@@ -736,89 +832,6 @@ class Ambilight {
     </svg>`
     button.prependTo($.s('.ytp-right-controls'))
 
-    var settings = [
-      {
-        name: 'spread',
-        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
-        type: 'list',
-        value: this.spread,
-        min: 0,
-        max: 100
-      },
-      {
-        name: 'blur',
-        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
-        type: 'list',
-        value: this.blur,
-        min: 0,
-        max: 100
-      },
-      {
-        name: 'bloom',
-        label: 'Bloom',
-        type: 'list',
-        value: this.bloom,
-        min: 0,
-        max: 100
-      },
-      {
-        name: 'highQuality',
-        label: '<span style="display: inline-block; padding: 5px 0">High Precision<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
-        type: 'checkbox',
-        value: this.highQuality
-      },
-      // {
-      //   name: 'sepia',
-      //   label: 'Sepia',
-      //   type: 'list',
-      //   value: this.sepia,
-      //   min: 0,
-      //   max: 100
-      // },
-      {
-        name: 'brightness',
-        label: 'Brightness',
-        type: 'list',
-        value: this.brightness,
-        min: 0,
-        max: 200
-      },
-      {
-        name: 'contrast',
-        label: 'Contrast',
-        type: 'list',
-        value: this.contrast,
-        min: 0,
-        max: 200
-      },
-      {
-        name: 'saturation',
-        label: 'Saturation',
-        type: 'list',
-        value: this.saturation,
-        min: 0,
-        max: 200
-      },
-      {
-        name: 'enabled',
-        label: 'Enabled (A)',
-        type: 'checkbox',
-        value: (this.getSetting('enabled') === 'true') ? true : false
-      },
-      {
-        name: 'enableInFullscreen',
-        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
-        type: 'checkbox',
-        value: this.enableInFullscreen
-      },
-      {
-        name: 'immersive',
-        label: 'Immersive (I)',
-        type: 'checkbox',
-        value: this.immersive
-      },
-    ]
-
 
     this.settingsMenu = $.create('div')
       .class('ytp-popup ytp-ambilight-settings-menu')
@@ -830,53 +843,55 @@ class Ambilight {
             <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
           </a>
           ${
-      settings.map(setting => {
-        if (setting.type === 'checkbox') {
-          return `
-                        <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
-                          <div class="ytp-menuitem-label">${setting.label}</div>
-                          <div class="ytp-menuitem-content">
-                            <div class="ytp-menuitem-toggle-checkbox"></div>
-                          </div>
-                        </div>
-                      `
-        } else if (setting.type === 'list') {
-          return `
-                      <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
-                        <div class="ytp-menuitem-label">${setting.label}</div>
-                        <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
-                      </div>
-                      <div class="ytp-menuitem-range" rowspan="2">
-                        <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="1" />
-                      </div>
-                      `
-        }
-      }).join('')
-      }
+            this.settings.map(setting => {
+              if (setting.type === 'checkbox') {
+                return `
+                  <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
+                    <div class="ytp-menuitem-label">${setting.label}</div>
+                    <div class="ytp-menuitem-content">
+                      <div class="ytp-menuitem-toggle-checkbox"></div>
+                    </div>
+                  </div>
+                `
+              } else if (setting.type === 'list') {
+                return `
+                  <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
+                    <div class="ytp-menuitem-label">${setting.label}</div>
+                    <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
+                  </div>
+                  <div class="ytp-menuitem-range" rowspan="2" title="Double click to reset">
+                    <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="1" />
+                  </div>
+                `
+              }
+            }).join('')
+          }
         </div>
       </div>`;
 
     this.settingsMenu.prependTo($.s('.html5-video-player'))
 
-    settings.forEach(setting => {
+    this.settings.forEach(setting => {
       const input = $.s(`#setting-${setting.name}`)
       if (setting.type === 'list') {
         const displayedValue = $.s(`#setting-${setting.name}-value`)
-        input.on('change mousemove', () => {
-          if (input.value === input.attr('data-previous-value')) return
-          var value = input.value
-          input.attr('data-previous-value', input.value)
+        input.on('change mousemove dblclick', (e) => {
+          let value = input.value
+          if(e.type === 'dblclick') {
+            value = this.settings.find(s => s.name === setting.name).default
+          } else if (input.value === input.attr('data-previous-value')) {
+            return
+          }
+          input.value = value
+          input.attr('data-previous-value', value)
           displayedValue.innerHTML = `${value}%`
-          this[setting.name] = value
+          this.setSetting(setting.name, value)
 
           if (setting.name === 'spread') {
             this.recreateCanvasses()
           }
           this.updateSizes()
           this.scheduleNextFrame()
-        })
-        input.on('change', () => {
-          this.setSetting(setting.name, input.value)
         })
       } else if (setting.type === 'checkbox') {
         input.on('click', () => {
@@ -899,7 +914,6 @@ class Ambilight {
             setting.name === 'highQuality' ||
             setting.name === 'enableInFullscreen'
           ) {
-            this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
           }
@@ -929,11 +943,29 @@ class Ambilight {
   }
 
   setSetting(key, value) {
-    localStorage.setItem(`ambilight-${key}`, value)
+    this[key] = value
+
+    if(!this.setSettingTimeout)
+      this.setSettingTimeout = {}
+
+    if(this.setSettingTimeout[key])
+      clearTimeout(this.setSettingTimeout[key])
+
+    this.setSettingTimeout[key] = setTimeout(() => {
+      localStorage.setItem(`ambilight-${key}`, value)
+      this.setSettingTimeout[key] = null
+    }, 500)
   }
 
   getSetting(key) {
-    return localStorage.getItem(`ambilight-${key}`)
+    let value = localStorage.getItem(`ambilight-${key}`)
+    const setting = this.settings.find(setting => setting.name === key)
+    if (value === null) {
+      value = setting.default
+    } else if (setting.type === 'checkbox') {
+      value = (value === 'true')
+    }
+    return value
   }
 }
 
