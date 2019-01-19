@@ -29,6 +29,10 @@ ytd-app[is-watch-page] ytd-masthead:hover {
     background: rgb(19,19,19) !important;
 }
 
+ytd-app[is-watch-page] #masthead-container.ytd-app::after {
+    display: none;
+}
+
 /* Video preview background */
 
 /* ytd-app[is-watch-page] .ytp-storyboard-framepreview {
