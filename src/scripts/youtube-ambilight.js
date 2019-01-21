@@ -394,7 +394,6 @@ class Ambilight {
       return true
     }
     this.videoPlayer.style.setProperty('--video-transform', `scale(${(this.videoScale / 100)})`);
-    //this.videoPlayer.setAttribute('data-scale', this.videoScale / 100)
 
     this.playerOffset = this.videoPlayer.offset()
     if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
@@ -560,11 +559,6 @@ class Ambilight {
   }
 
   checkVideoSize() {
-    //Scrolling?
-    if (!(this.ambilightContainer.style.width == this.playerOffset.width + 'px'))
-      return this.updateSizes()
-
-
     //Resized
     if (this.previousWidth !== this.videoPlayer.clientWidth) {
       this.previousWidth = this.videoPlayer.clientWidth
