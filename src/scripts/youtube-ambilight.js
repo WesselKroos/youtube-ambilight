@@ -546,13 +546,13 @@ class Ambilight {
       gList.map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[0 + gList.length - i]}px`).join(', ')
       }, rgba(0,0,0,0) ${g.h[1 + gList.length]}px, rgba(0,0,0,0) ${g.h[2 + gList.length]}px, ${
       gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[2 + gList.length + gList.length - i]}px`).join(', ')
-      }, rgba(0,0,0,.95) ${g.h[5 + gList.length]}px),
+      }, rgba(0,0,0,.95) ${g.h[3 + gList.length + gList.length]}px),
 
       linear-gradient(to right,  rgba(0,0,0,.95) ${g.w[0]}px, ${
       gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[1 + i]}px`).join(', ')
       }, rgba(0,0,0,0) ${g.w[1 + gList.length]}px, rgba(0,0,0,0) ${g.w[2 + gList.length]}px, ${
       gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[3 + gList.length + i]}px`).join(', ')
-      }, rgba(0,0,0,.95) ${g.w[5 + gList.length]}px),
+      }, rgba(0,0,0,.95) ${g.w[3 + gList.length + gList.length]}px),
     
       linear-gradient(to left,   rgba(255,255,255,1), rgba(255,255,255,1))
     `
