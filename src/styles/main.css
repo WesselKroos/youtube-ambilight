@@ -167,7 +167,7 @@ ytd-app[is-watch-page] .playlist-items.ytd-playlist-panel-renderer {
 }
 
 .ambilight__container {
-    transition: opacity .5s;
+    transition: opacity .25s;
     opacity: 0;
 }
 

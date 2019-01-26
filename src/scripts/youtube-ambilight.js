@@ -109,7 +109,7 @@ class Ambilight {
     this.srcVideoOffset = {}
 
     this.isHidden = true
-    this.ambiEnabled = false
+    this.isOnVideoPage = true
     this.showedHighQualityCompareWarning = false
 
     this.p = null;
@@ -307,11 +307,11 @@ class Ambilight {
       if (e.keyCode === 73) // i
         this.toggleImmersiveMode()
       if (e.keyCode === 65) // a
-        this.toggle()
+        this.toggleEnabled()
     })
 
     this.videoPlayer.on('playing', () => {
-      this.enableIfSettingEnabled()
+      this.start()
     })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
@@ -333,7 +333,7 @@ class Ambilight {
     this.initScrollPosition()
     this.initImmersiveMode()
 
-    this.enableIfSettingEnabled()
+    this.start()
   }
 
   setFeedbackLink() {
@@ -579,12 +579,12 @@ class Ambilight {
     if (ambilight.checkVideoSize())
       ambilight.drawAmbilight()
 
-    if (ambilight.scheduled || !ambilight.ambiEnabled || ambilight.videoPlayer.paused) return
+    if (ambilight.scheduled || !ambilight.enabled || ambilight.videoPlayer.paused) return
     ambilight.scheduleNextFrame()
   }
 
   scheduleNextFrame() {
-    if (this.scheduled || !this.ambiEnabled) return
+    if (this.scheduled || !this.enabled || !this.isOnVideoPage) return
 
     raf(this.nextFrame)
     this.scheduled = true
@@ -655,7 +655,7 @@ class Ambilight {
   }
 
   drawAmbilight() {
-    if (!this.ambiEnabled) return
+    if (!this.enabled) return
 
     if (
       this.isVR ||
@@ -738,17 +738,33 @@ class Ambilight {
     })
   }
 
-
-  enableIfSettingEnabled() {
-    if (!this.getSetting('enabled')) return
-    this.enable()
-  }
-
   enable() {
-    this.ambiEnabled = true
+    if(this.enabled) return
 
     this.setSetting('enabled', true)
     $.s(`#setting-enabled`).attr('aria-checked', true)
+
+    this.start()
+  }
+
+  disable() {
+    if (!this.enabled) return
+
+    this.setSetting('enabled', false)
+    $.s(`#setting-enabled`).attr('aria-checked', false)
+
+    this.hide()
+  }
+
+  toggleEnabled() {
+    if (this.enabled)
+      this.disable()
+    else
+      this.enable()
+  }
+
+  start() {
+    if(!this.isOnVideoPage || !this.enabled) return
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
@@ -756,25 +772,6 @@ class Ambilight {
 
     this.updateSizes()
     this.scheduleNextFrame()
-  }
-
-  disable(setSetting = false) {
-    if (!this.ambiEnabled) return
-
-    if (setSetting) {
-      this.setSetting('enabled', false)
-      $.s(`#setting-enabled`).attr('aria-checked', false)
-    }
-
-    this.ambiEnabled = false
-    this.hide()
-  }
-
-  toggle() {
-    if (this.ambiEnabled)
-      this.disable()
-    else
-      this.enable()
   }
 
 
@@ -907,8 +904,6 @@ class Ambilight {
             this.toggleImmersiveMode()
           }
           if (setting.name === 'enabled') {
-            this.setSetting('enabled', setting.value)
-            $.s(`#setting-enabled`).attr('aria-checked', setting.value)
             if (setting.value)
               this.enable()
             else
@@ -974,26 +969,20 @@ class Ambilight {
 }
 
 
-enableIfVideoPage = () => {
-  const isVideoPage = window.location.href.indexOf('watch?') != -1
+checkOnVideoPage = () => {
+  const isOnVideoPage = (window.location.href.indexOf('watch?') != -1)
   if (window.ambilight) {
-    if (!isVideoPage) {
-      if (window.ambilight.ambiEnabled) {
-        window.ambilight.disable(false)
-      }
-    } else {
-      if (!window.ambilight.ambiEnabled) {
-        window.ambilight.enableIfSettingEnabled()
-      }
-    }
-  } else if (isVideoPage) {
+    window.ambilight.isOnVideoPage = isOnVideoPage
+    if(isOnVideoPage)
+      window.ambilight.start()
+  } else if (isOnVideoPage) {
     const videoPlayer = $.s("#player-container video")
     if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
     window.ambilight = new Ambilight(videoPlayer)
   }
 }
 
-setInterval(() => enableIfVideoPage(), 1000)
+setInterval(() => checkOnVideoPage(), 1000)
 
 
 initAmbilight = () => {
@@ -1003,7 +992,7 @@ initAmbilight = () => {
     if (!app || !app.onDarkThemeAction_) return
     app.onDarkThemeAction_()
 
-    enableIfVideoPage()
+    checkOnVideoPage()
 
     clearInterval(tryInitAmbilight)
     //console.log('Initialized ambilight')
