@@ -347,33 +347,27 @@ class Ambilight {
   // }
 
   recreateCanvasses() {
-    if (this.ambilightContainers) {
-      this.ambilightContainers.forEach(container => {
-        container.remove();
+    if (this.players) {
+      this.players.forEach(player => {
+        player.elem.remove();
       })
     }
-    this.ambilightContainers = []
     this.players = []
 
     const spreadLevels = Math.round((this.spread / 100) * 10) + 2
     for (let i = 0; i < spreadLevels; i++) {
-      const canvasContainer = $.create('div')
-      canvasContainer.class('ambilight__canvas-container')
-
       const canvas = $.create('canvas')
       canvas.class('ambilight__canvas')
 
       const ctx = canvas.getContext('2d')
       //ctx.imageSmoothingEnabled = false
 
-      canvasContainer.prepend(canvas)
-      this.canvasList.prepend(canvasContainer)
+      this.canvasList.prepend(canvas)
 
       this.players.push({
         elem: canvas,
         ctx: ctx
       })
-      this.ambilightContainers.push(canvasContainer)
     }
   }
 
@@ -431,19 +425,22 @@ class Ambilight {
     )
 
     this.ambilightContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
-    this.ambilightContainer.style.top = (this.playerOffset.top + window.scrollY) + 'px'
+    this.ambilightContainer.style.top = (this.playerOffset.top + window.scrollY - 1) + 'px'
     this.ambilightContainer.style.width = this.playerOffset.width + 'px'
     this.ambilightContainer.style.height = (this.playerOffset.height) + 'px'
 
     this.ambilightContainer.style.webkitFilter = `
       blur(${this.playerOffset.height * (0.05 + (this.blur * .002))}px)
-    `
-    this.allContainer.style.webkitFilter = `
       ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
-      ${(this.brightness !== 100) ? `brightness(${(parseInt(this.brightness) + 3)}%)` : ''}
+      ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
       ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
-      ${/*(this.sepia !== 0) ? `sepia(${this.sepia}%)` : ''*/ ''}
     `
+    // this.allContainer.style.webkitFilter = `
+    //   ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
+    //   ${(this.brightness !== 100) ? `brightness(${(parseInt(this.brightness) + 3)}%)` : ''}
+    //   ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
+    //   ${/*(this.sepia !== 0) ? `sepia(${this.sepia}%)` : ''*/ ''}
+    // `
 
     this.players.forEach((player) => {
       if (player.elem.width !== this.p.w)
@@ -484,7 +481,7 @@ class Ambilight {
       y: 1
     }
 
-    this.ambilightContainers.forEach((container, i) => {
+    this.players.forEach((player, i) => {
       const pos = i - this.innerStrength
       let scaleX = 1
       let scaleY = 1
@@ -502,7 +499,7 @@ class Ambilight {
       }
       lastScale.x = scaleX
       lastScale.y = scaleY
-      container.style.transform = `scale(${scaleX}, ${scaleY})`
+      player.elem.style.transform = `scale(${scaleX}, ${scaleY})`
     })
 
     this.shadowFade.style.transform = `scale(${lastScale.x}, ${lastScale.y})`
@@ -801,9 +798,9 @@ class Ambilight {
     if (this.changedTopTimeout)
       clearTimeout(this.changedTopTimeout)
     if (window.scrollY > 0)
-      this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 20)
+      this.changedTopTimeout = setTimeout(() => body.class('not-at-top').removeClass('at-top'), 100)
     else
-      this.changedTopTimeout = setTimeout(() => body.class('at-top').removeClass('not-at-top'), 20)
+      this.changedTopTimeout = setTimeout(() => body.class('at-top').removeClass('not-at-top'), 100)
   }
 
 
