@@ -832,7 +832,7 @@ class Ambilight {
 
 
     this.settingsMenu = $.create('div')
-      .class('ytp-popup ytp-ambilight-settings-menu')
+      .class('ytp-popup ytp-settings-menu ytp-ambilight-settings-menu')
       .attr('id', 'ytp-id-190')
     this.settingsMenu.innerHTML = `
       <div class="ytp-panel">
