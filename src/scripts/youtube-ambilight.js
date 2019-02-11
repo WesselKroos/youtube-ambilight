@@ -211,7 +211,7 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Immersive (I)',
+        label: 'Immersive (Z)',
         type: 'checkbox',
         default: false
       },
@@ -304,7 +304,7 @@ class Ambilight {
       }
       if (e.keyCode === 70 || e.keyCode === 84)
         setTimeout(() => this.updateSizes(), 0)
-      if (e.keyCode === 73) // i
+      if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       if (e.keyCode === 65) // a
         this.toggleEnabled()
