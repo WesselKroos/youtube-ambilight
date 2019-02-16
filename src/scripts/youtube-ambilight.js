@@ -130,7 +130,7 @@ class Ambilight {
         name: 'spread',
         label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
         type: 'list',
-        default: 45,
+        default: 20,
         min: 0,
         max: 200,
         step: .1
@@ -139,7 +139,7 @@ class Ambilight {
         name: 'blur',
         label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
         type: 'list',
-        default: 30,
+        default: 50,
         min: 0,
         max: 100
       },
@@ -147,7 +147,7 @@ class Ambilight {
         name: 'bloom',
         label: 'Fade out start',
         type: 'list',
-        default: 10,
+        default: 15,
         min: -50,
         max: 100
       },
@@ -155,7 +155,7 @@ class Ambilight {
         name: 'fadeOutEasing',
         label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span style="line-height: 12px; font-size: 10px;">(Tip: Turn blur all the way down)</span></span>',
         type: 'list',
-        default: 40,
+        default: 60,
         min: 1,
         max: 100,
         step: 1
@@ -164,7 +164,7 @@ class Ambilight {
         name: 'edge',
         label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span style="line-height: 12px; font-size: 10px;">(Lower GPU usage. Tip: Turn blur down)</span></span>',
         type: 'list',
-        default: 15,
+        default: 20,
         min: 2,
         max: 50,
         step: .1
