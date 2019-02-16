@@ -123,16 +123,14 @@ ytd-app[is-watch-page] .playlist-items.ytd-playlist-panel-renderer {
 .ambilight__container,
 .ambilight__canvas-list,
 .ambilight__canvas,
-.ambilight__shadow,
-.ambilight__shadow-fade,
-.ambilight__shadow-center {
+.ambilight__shadow {
     position: absolute;
     width: 100%;
     height: 100%;
 }
 
 .ambilight {
-    height: 200%;
+    height: 300%;
     overflow: hidden;
     pointer-events: none;
 }
@@ -145,10 +143,6 @@ ytd-app[is-watch-page] .playlist-items.ytd-playlist-panel-renderer {
 .ambilight__canvas {
     background: #000;
     /* image-rendering: pixelated; */
-}
-
-.ambilight__shadow {
-    mix-blend-mode: multiply;
 }
 
 /* Immersive mode */

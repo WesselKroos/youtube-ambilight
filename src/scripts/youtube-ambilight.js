@@ -132,23 +132,42 @@ class Ambilight {
         type: 'list',
         default: 45,
         min: 0,
-        max: 100
+        max: 200,
+        step: .1
       },
       {
         name: 'blur',
         label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
         type: 'list',
-        default: 20,
+        default: 30,
         min: 0,
         max: 100
       },
       {
         name: 'bloom',
-        label: 'Bloom',
+        label: 'Fade out start',
         type: 'list',
-        default: 25,
-        min: 0,
+        default: 10,
+        min: -50,
         max: 100
+      },
+      {
+        name: 'fadeOutEasing',
+        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span style="line-height: 12px; font-size: 10px;">(Tip: Turn blur all the way down)</span></span>',
+        type: 'list',
+        default: 40,
+        min: 1,
+        max: 100,
+        step: 1
+      },
+      {
+        name: 'edge',
+        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span style="line-height: 12px; font-size: 10px;">(Lower GPU usage. Tip: Turn blur down)</span></span>',
+        type: 'list',
+        default: 15,
+        min: 2,
+        max: 50,
+        step: .1
       },
       {
         name: 'highQuality',
@@ -221,8 +240,9 @@ class Ambilight {
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
     this.bloom = this.getSetting('bloom')
-    this.scaleStep = (1 / 9)
-    this.innerStrength = 1
+    this.fadeOutEasing = this.getSetting('fadeOutEasing')
+    this.edge = this.getSetting('edge')
+    this.innerStrength = 3
 
     this.contrast = this.getSetting('contrast')
     this.brightness = this.getSetting('brightness')
@@ -236,7 +256,7 @@ class Ambilight {
     this.immersive = this.getSetting('immersive', true)
     this.enableInFullscreen = this.getSetting('enableInFullscreen', true)
 
-    
+
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
     })
@@ -269,13 +289,9 @@ class Ambilight {
       ctx: compareBufferCtx
     }
 
-    const shadow = $.create('div')
-    shadow.class('ambilight__shadow')
-    this.ambilightContainer.appendChild(shadow)
-
-    this.shadowFade = $.create('div')
-    this.shadowFade.class('ambilight__shadow-fade')
-    shadow.appendChild(this.shadowFade)
+    this.shadow = $.create('div')
+    this.shadow.class('ambilight__shadow')
+    this.ambilightContainer.appendChild(this.shadow)
 
     this.recreateCanvasses()
 
@@ -347,15 +363,21 @@ class Ambilight {
   // }
 
   recreateCanvasses() {
-    if (this.players) {
-      this.players.forEach(player => {
-        player.elem.remove();
-      })
-    }
-    this.players = []
+    const spreadLevels = Math.max(2, Math.round((this.spread / this.edge)) + this.innerStrength + 1)
 
-    const spreadLevels = Math.round((this.spread / 100) * 10) + 2
-    for (let i = 0; i < spreadLevels; i++) {
+    if (!this.players) {
+      this.players = []
+    }
+
+    this.players = this.players.filter((player, i) => {
+      if (i >= spreadLevels) {
+        player.elem.remove();
+        return false
+      }
+      return true
+    })
+
+    for (let i = this.players.length; i < spreadLevels; i++) {
       const canvas = $.create('canvas')
       canvas.class('ambilight__canvas')
 
@@ -430,7 +452,7 @@ class Ambilight {
     this.ambilightContainer.style.height = (this.playerOffset.height) + 'px'
 
     this.ambilightContainer.style.webkitFilter = `
-      blur(${this.playerOffset.height * (0.05 + (this.blur * .002))}px)
+      blur(${this.playerOffset.height * (this.blur * .002)}px)
       ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
       ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
       ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
@@ -471,15 +493,24 @@ class Ambilight {
   }
 
   resizeCanvasses() {
-    const size = {
+    const playerSize = {
       w: this.playerOffset.width,
       h: this.playerOffset.height
     }
-    const ratio = size.w / size.h
+    const ratio = (playerSize.w > playerSize.h) ?
+      {
+        x: 1,
+        y: (playerSize.w / playerSize.h)
+      } : {
+        x: (playerSize.h / playerSize.w),
+        y: 1
+      }
     const lastScale = {
       x: 1,
       y: 1
     }
+
+    const scaleStep = this.edge / 100
 
     this.players.forEach((player, i) => {
       const pos = i - this.innerStrength
@@ -487,13 +518,13 @@ class Ambilight {
       let scaleY = 1
 
       if (pos > 0) {
-        scaleX = 1 + (this.scaleStep * pos)
-        scaleY = 1 + ((this.scaleStep * ratio) * pos)
+        scaleX = 1 + ((scaleStep * ratio.x) * pos)
+        scaleY = 1 + ((scaleStep * ratio.y) * pos)
       }
 
       if (pos < 0) {
-        scaleX = 1 - (this.scaleStep * -pos)
-        scaleY = 1 - ((this.scaleStep * ratio) * -pos)
+        scaleX = 1 - ((scaleStep * ratio.x) * -pos)
+        scaleY = 1 - ((scaleStep * ratio.y) * -pos)
         if (scaleX < 0) scaleX = 0
         if (scaleY < 0) scaleY = 0
       }
@@ -502,56 +533,67 @@ class Ambilight {
       player.elem.style.transform = `scale(${scaleX}, ${scaleY})`
     })
 
-    this.shadowFade.style.transform = `scale(${lastScale.x}, ${lastScale.y})`
-    const scaledEdge = {
-      w: ((size.w * lastScale.x) - size.w) / 2 / lastScale.x,
-      h: ((size.h * lastScale.y) - size.h) / 2 / lastScale.y
-    }
-    const scaledSize = {
-      w: (size.w / lastScale.x),
-      h: (size.h / lastScale.y)
-    }
+    this.shadow.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
 
-    const bloom = this.bloom / 100
-    const gList = [
-      { p: .8, o: .9 },
-      { p: .6, o: .87 },
-      { p: .4, o: .75 },
-      { p: .2, o: .6 }
-    ]
-    const g = {
-      w: [
+    //Shadow gradient 
+    const getGradient = (size, edge, keyframes, fadeOutFrom, darkest) => {
+      const points = [
         0,
-        ...gList.map(e => Math.round(scaledEdge.w - (scaledEdge.w * e.p) - (scaledEdge.w * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.w - (scaledEdge.w * bloom)),
-        Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * bloom)),
-        ...gList.reverse().map(e => Math.round(scaledEdge.w + scaledSize.w + (scaledEdge.w * e.p) + (scaledEdge.w * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.w + scaledSize.w + scaledEdge.w)
-      ],
-      h: [
-        0,
-        ...gList.map(e => Math.round(scaledEdge.h - (scaledEdge.h * e.p) - (scaledEdge.h * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.h - (scaledEdge.h * bloom)),
-        Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * bloom)),
-        ...gList.reverse().map(e => Math.round(scaledEdge.h + scaledSize.h + (scaledEdge.h * e.p) + (scaledEdge.h * bloom * (1 - e.p)))),
-        Math.round(scaledEdge.h + scaledSize.h + scaledEdge.h)
+        ...keyframes.map(e => Math.round(edge - (edge * e.p) - (edge * fadeOutFrom * (1 - e.p)))),
+        Math.round(edge - (edge * fadeOutFrom)),
+        Math.round(edge + size + (edge * fadeOutFrom)),
+        ...keyframes.reverse().map(e => Math.round(edge + size + (edge * e.p) + (edge * fadeOutFrom * (1 - e.p)))),
+        Math.round(edge + size + edge)
       ]
+
+      return `
+        rgba(0,0,0,${darkest}) ${points[0]}px, 
+        ${
+        keyframes.map((e, i) => `
+            rgba(0,0,0,${e.o}) ${points[0 + keyframes.length - i]}px
+          `).join(', ')
+        }, 
+        rgba(0,0,0,0) ${points[1 + keyframes.length]}px, 
+        rgba(0,0,0,0) ${points[2 + keyframes.length]}px, 
+        ${
+        keyframes.reverse().map((e, i) => `
+            rgba(0,0,0,${e.o}) ${points[2 + (keyframes.length * 2) - i]}px
+          `).join(', ')
+        }, 
+        rgba(0,0,0,${darkest}) ${points[3 + (keyframes.length * 2)]}px
+      `
     }
 
-    this.shadowFade.style.background = `
-      linear-gradient(to bottom, rgba(0,0,0,.95) ${g.h[0]}px, ${
-      gList.map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[0 + gList.length - i]}px`).join(', ')
-      }, rgba(0,0,0,0) ${g.h[1 + gList.length]}px, rgba(0,0,0,0) ${g.h[2 + gList.length]}px, ${
-      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.h[2 + gList.length + gList.length - i]}px`).join(', ')
-      }, rgba(0,0,0,.95) ${g.h[3 + gList.length + gList.length]}px),
+    const edge = {
+      w: ((playerSize.w * lastScale.x) - playerSize.w) / 2 / lastScale.x,
+      h: ((playerSize.h * lastScale.y) - playerSize.h) / 2 / lastScale.y
+    }
+    const video = {
+      w: (playerSize.w / lastScale.x),
+      h: (playerSize.h / lastScale.y)
+    }
 
-      linear-gradient(to right,  rgba(0,0,0,.95) ${g.w[0]}px, ${
-      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[1 + i]}px`).join(', ')
-      }, rgba(0,0,0,0) ${g.w[1 + gList.length]}px, rgba(0,0,0,0) ${g.w[2 + gList.length]}px, ${
-      gList.reverse().map((e, i) => `rgba(0,0,0,${e.o}) ${g.w[3 + gList.length + i]}px`).join(', ')
-      }, rgba(0,0,0,.95) ${g.w[3 + gList.length + gList.length]}px),
-    
-      linear-gradient(to left,   rgba(255,255,255,1), rgba(255,255,255,1))
+    const plotKeyframes = (length, powerOf, darkest) => {
+      const keyframes = []
+      for (let i = 1; i < length; i++) {
+        keyframes.push({
+          p: (i / length),
+          o: Math.pow(i / length, powerOf) * darkest
+        })
+      }
+      return keyframes
+    }
+    const darkest = 1
+    const easing = (16 / (this.fadeOutEasing * .64))
+    const keyframes = plotKeyframes(64, easing, darkest)
+
+    const fadeOutFrom = this.bloom / 100
+    const verticalGradient = getGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest)
+    const horizontalGradient = getGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest)
+
+    this.shadow.style.background = `
+      linear-gradient(to bottom, ${verticalGradient}),
+      linear-gradient(to right, ${horizontalGradient})
     `
   }
 
@@ -736,7 +778,7 @@ class Ambilight {
   }
 
   enable() {
-    if(this.enabled) return
+    if (this.enabled) return
 
     this.setSetting('enabled', true)
     $.s(`#setting-enabled`).attr('aria-checked', true)
@@ -761,13 +803,12 @@ class Ambilight {
   }
 
   start() {
-    if(!this.isOnVideoPage || !this.enabled) return
+    if (!this.isOnVideoPage || !this.enabled) return
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
     this.showedHighQualityCompareWarning = false
 
-    this.updateSizes()
     this.scheduleNextFrame()
   }
 
@@ -841,9 +882,9 @@ class Ambilight {
             <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
           </a>
           ${
-            this.settings.map(setting => {
-              if (setting.type === 'checkbox') {
-                return `
+      this.settings.map(setting => {
+        if (setting.type === 'checkbox') {
+          return `
                   <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div class="ytp-menuitem-content">
@@ -851,8 +892,8 @@ class Ambilight {
                     </div>
                   </div>
                 `
-              } else if (setting.type === 'list') {
-                return `
+        } else if (setting.type === 'list') {
+          return `
                   <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
@@ -861,9 +902,9 @@ class Ambilight {
                     <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
                   </div>
                 `
-              }
-            }).join('')
-          }
+        }
+      }).join('')
+      }
         </div>
       </div>`;
 
@@ -875,7 +916,7 @@ class Ambilight {
         const displayedValue = $.s(`#setting-${setting.name}-value`)
         input.on('change mousemove dblclick', (e) => {
           let value = input.value
-          if(e.type === 'dblclick') {
+          if (e.type === 'dblclick') {
             value = this.settings.find(s => s.name === setting.name).default
           } else if (input.value === input.attr('data-previous-value')) {
             return
@@ -885,7 +926,7 @@ class Ambilight {
           displayedValue.innerHTML = `${value}%`
           this.setSetting(setting.name, value)
 
-          if (setting.name === 'spread') {
+          if (setting.name === 'spread' || setting.name === 'edge' || setting.name === 'fadeOutEasing') {
             this.recreateCanvasses()
           }
           this.updateSizes()
@@ -941,10 +982,10 @@ class Ambilight {
   setSetting(key, value) {
     this[key] = value
 
-    if(!this.setSettingTimeout)
+    if (!this.setSettingTimeout)
       this.setSettingTimeout = {}
 
-    if(this.setSettingTimeout[key])
+    if (this.setSettingTimeout[key])
       clearTimeout(this.setSettingTimeout[key])
 
     this.setSettingTimeout[key] = setTimeout(() => {
@@ -970,8 +1011,9 @@ checkOnVideoPage = () => {
   const isOnVideoPage = (window.location.href.indexOf('watch?') != -1)
   if (window.ambilight) {
     window.ambilight.isOnVideoPage = isOnVideoPage
-    if(isOnVideoPage)
+    if (isOnVideoPage) {
       window.ambilight.start()
+    }
   } else if (isOnVideoPage) {
     const videoPlayer = $.s("#player-container video")
     if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
