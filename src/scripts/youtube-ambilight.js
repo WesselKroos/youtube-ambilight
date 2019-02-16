@@ -242,7 +242,7 @@ class Ambilight {
     this.bloom = this.getSetting('bloom')
     this.fadeOutEasing = this.getSetting('fadeOutEasing')
     this.edge = this.getSetting('edge')
-    this.innerStrength = 3
+    this.innerStrength = 2
 
     this.contrast = this.getSetting('contrast')
     this.brightness = this.getSetting('brightness')
