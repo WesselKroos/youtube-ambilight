@@ -45,19 +45,19 @@ chrome.runtime.onInstalled.addListener(function (details) {
   chrome.runtime.setUninstallURL(feedbackFormLink)
 
 
-  if (details.reason !== 'update') return
+  // if (details.reason !== 'update') return
 
-  chrome.notifications.create(
-    {
-      type: "list",
-      title: `YouTube Ambilight updated to ${(chrome.runtime.getManifest() || {}).version} New:`,
-      message: "Primary message to display",
-      iconUrl: chrome.extension.getURL("/images/icon-128.png"),
-      items: [
-        { title: "1", message: "Added 3 more settings: \nFade out start, curve & edge size." },
-        { title: "2", message: "Fixed vertical video's spread size." },
-        { title: "3", message: "Performance improvements" }
-      ]
-    }
-  );
+  // chrome.notifications.create(
+  //   {
+  //     type: "list",
+  //     title: `YouTube Ambilight updated to ${(chrome.runtime.getManifest() || {}).version} New:`,
+  //     message: "Primary message to display",
+  //     iconUrl: chrome.extension.getURL("/images/icon-128.png"),
+  //     items: [
+  //       { title: "1", message: "Added 3 more settings: \nFade out start, curve & edge size." },
+  //       { title: "2", message: "Fixed vertical video's spread size." },
+  //       { title: "3", message: "Performance improvements" }
+  //     ]
+  //   }
+  // );
 });

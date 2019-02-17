@@ -28,8 +28,7 @@
     "scripts/youtube-ambilight.js"
   ],
   "permissions": [
-    "activeTab",
-    "notifications"
+    "activeTab"
   ],
   "options_ui": {
     "page": "options.html",
