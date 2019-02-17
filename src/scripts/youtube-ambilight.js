@@ -1006,12 +1006,12 @@ class Ambilight {
       value = setting.default
     } else if (setting.type === 'checkbox') {
       value = (value === 'true')
+    } else {
+      if(key === 'blur')
+        value = parseInt(value) + 30
+      if(key === 'bloom')
+        value = parseInt(value) + 7
     }
-
-    if(key === 'blur')
-      value = parseInt(value) + 30
-    if(key === 'bloom')
-      value = parseInt(value) + 7
 
     return value
   }
