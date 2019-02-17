@@ -220,7 +220,7 @@ class Ambilight {
         name: 'enabled',
         label: 'Enabled (A)',
         type: 'checkbox',
-        default: false
+        default: true
       },
       {
         name: 'enableInFullscreen',
@@ -452,7 +452,7 @@ class Ambilight {
     this.ambilightContainer.style.height = (this.playerOffset.height) + 'px'
 
     this.ambilightContainer.style.webkitFilter = `
-      blur(${this.playerOffset.height * (this.blur * .002)}px)
+      blur(${this.playerOffset.height * (this.blur * .0025)}px)
       ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
       ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
       ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
@@ -583,7 +583,7 @@ class Ambilight {
       }
       return keyframes
     }
-    const darkest = 1
+    const darkest = .95
     const easing = (16 / (this.fadeOutEasing * .64))
     const keyframes = plotKeyframes(64, easing, darkest)
 
@@ -982,6 +982,11 @@ class Ambilight {
   setSetting(key, value) {
     this[key] = value
 
+    if(key === 'blur')
+      value -= 30
+    if(key === 'bloom')
+      value -= 7
+
     if (!this.setSettingTimeout)
       this.setSettingTimeout = {}
 
@@ -1002,6 +1007,12 @@ class Ambilight {
     } else if (setting.type === 'checkbox') {
       value = (value === 'true')
     }
+
+    if(key === 'blur')
+      value = parseInt(value) + 30
+    if(key === 'bloom')
+      value = parseInt(value) + 7
+
     return value
   }
 }
