@@ -1,8 +1,11 @@
 /* General */
 
 html[dark="true"],
+html[dark="true"][lang],
+html[dark="true"][style],
 html[dark="true"] body {
     background: #000 !important;
+    background-color: #000 !important;
 }
 
 /* Cosmetics - Transparent elements */
