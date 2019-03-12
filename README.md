@@ -5,7 +5,7 @@ This Chrome Extension adds ambilight to the videos you view on YouTube
 Go to [YouTube Ambilight on the Chrome Web Store](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj) and add the extension to Chrome
 
 ## Planned features
-  - [Usability] Turn on the Ambilight extension on existing tabs after the installation. This was a refresh is not needed anymore
+  - [Usability] Turn on the Ambilight extension on existing tabs after the installation. This way a refresh is not needed anymore
   
 ## Privacy & Security
 - This Chrome Extension uses the [activeTab](https://developer.chrome.com/extensions/activeTab) permission only on urls that start with https://www.youtube.com. The extension will only activate the ambilight extension on YouTube's /watch page
