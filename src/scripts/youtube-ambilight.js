@@ -349,7 +349,7 @@ class Ambilight {
     this.initScrollPosition()
     this.initImmersiveMode()
 
-    this.start()
+    this.start();
   }
 
   setFeedbackLink() {
@@ -786,7 +786,6 @@ class Ambilight {
 
     this.setSetting('enabled', true)
     $.s(`#setting-enabled`).attr('aria-checked', true)
-    $.s('html').attr('data-ambilight-enabled', true)
 
     this.start()
   }
@@ -808,8 +807,72 @@ class Ambilight {
       this.enable()
   }
 
+  CookiePREFf6LightTheme = 80000
+  CookiePREFf6DarkTheme = 400
+
+  getCookie (name) {
+    try {
+      return document.cookie.split('; ').find(c => c.split('=')[0] === name).substr(name.length + 1);
+    } catch {
+      return undefined
+    }
+  }
+
+  getCookieParam (name) {
+    try {
+      return this.getCookie('PREF').split('&').find(p => p.split('=')[0] === name).substr(name.length + 1);
+    } catch {
+      return undefined
+    }
+  }
+
+  setCookieParam(cookieName, paramName, paramValue) {
+    const params = [];
+    this.getCookie(cookieName).split('&').forEach(p => {
+      const name = p.split('=')[0]
+      const value = p.substr(name.length + 1)
+      params[name] = value
+    });
+    console.log('existing params', params)
+    params[paramName] = paramValue;
+
+    const d = new Date()
+    d.setTime(d.getTime() + (730*24*60*60*1000)) // 2 year
+    const expires = `expires=${d.toUTCString()}`
+    const cookieValue = (Object.keys(params)).map(k => `${k}=${params[k]}`).join('&')
+    const newCookie = `${cookieName}=${cookieValue};${expires};domain=.youtube.com;path=/`;
+    console.log('Writing new cookie:', newCookie)
+    document.cookie = newCookie;
+  }
+
   start() {
     if (!this.isOnVideoPage || !this.enabled) return
+
+
+    $.s('html').attr('data-ambilight-enabled', true)
+
+    if(!$.s('html').attr('dark')) {
+      //Set cookie preferences
+      try {
+        this.originalPREFf6 = this.getCookieParam('f6');
+        console.log('challenge to dark', this.originalPREFf6)
+        if(this.originalPREFf6 !== this.CookiePREFf6DarkTheme) {
+          console.log('set to dark')
+          this.setCookieParam('PREF', 'f6', this.CookiePREFf6DarkTheme)
+        }
+      } catch {}
+
+      //Set html tag attribute dark
+      $.s('html').attr('dark', true)
+
+      //Toggle dark theme
+      try {
+        var app = $.s('ytd-app')
+        if (!app || !app.onDarkModeToggledAction_) {
+          app.onDarkModeToggledAction_()
+        }
+      } catch {}
+    }
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
@@ -1049,11 +1112,6 @@ window.checkOnVideoPageInterval = setInterval(() => checkOnVideoPage(), 1000)
 
 initAmbilight = () => {
   try {
-    //Force YouTube dark theme
-    var app = $.s('ytd-app')
-    if (!app || !app.onDarkThemeAction_) return
-    app.onDarkThemeAction_()
-
     checkOnVideoPage()
     //console.log('Initialized ambilight')
   } catch (e) {
