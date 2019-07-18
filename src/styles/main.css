@@ -1,6 +1,6 @@
 /* General */
 
-html[dark="true"],
+html[dark="true"][data-ambilight-enabled="true"],
 html[dark="true"][lang],
 html[dark="true"][style],
 html[dark="true"] body {

@@ -94,7 +94,7 @@ function flatten(arrays, TypedArray) {
 
 body = document.body
 
-raf = (webkitRequestAnimationFrame || requestAnimationFrame)
+raf = (requestAnimationFrame || webkitRequestAnimationFrame)
 
 //// Ambilight
 
@@ -237,6 +237,7 @@ class Ambilight {
     ]
 
     this.enabled = this.getSetting('enabled')
+    $.s('html').attr('data-ambilight-enabled', this.enabled)
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
     this.bloom = this.getSetting('bloom')
@@ -283,10 +284,9 @@ class Ambilight {
     }
 
     const compareBufferElem = new OffscreenCanvas(1, 1)
-    const compareBufferCtx = bufferElem.getContext("2d")
     this.compareBuffer = {
       elem: compareBufferElem,
-      ctx: compareBufferCtx
+      ctx: compareBufferElem.getContext("2d")
     }
 
     this.shadow = $.create('div')
@@ -353,8 +353,8 @@ class Ambilight {
   }
 
   setFeedbackLink() {
-    const version = document.body.getAttribute('data-ambilight-version') || '';
-    const os = document.body.getAttribute('data-ambilight-os') || '';
+    const version = $.s('html').getAttribute('data-ambilight-version') || '';
+    const os = $.s('html').getAttribute('data-ambilight-os') || '';
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}`
   }
 
@@ -470,11 +470,10 @@ class Ambilight {
       if (player.elem.height !== this.p.h)
         player.elem.height = this.p.h
       player.ctx = player.elem.getContext('2d')
+      //player.ctx.globalAlpha = (1/5) //Todo: Enable for a smoother transition between frames
       //player.ctx.imageSmoothingEnabled = false
     })
 
-
-    //console.log('scaled video to ' + this.p.w + ' x ' + this.p.h + ' (x' + scale + ')')
     this.buffer.elem.width = this.p.w
     this.buffer.elem.height = this.p.h
     this.buffer.ctx = this.buffer.elem.getContext('2d')
@@ -613,13 +612,18 @@ class Ambilight {
     return true
   }
 
-  nextFrame() {
-    ambilight.scheduled = false
-    if (ambilight.checkVideoSize())
-      ambilight.drawAmbilight()
+  nextFrame = () => {
+    try {
+      this.scheduled = false
+      if (this.checkVideoSize())
+      this.drawAmbilight()
 
-    if (ambilight.scheduled || !ambilight.enabled || ambilight.videoPlayer.paused) return
-    ambilight.scheduleNextFrame()
+      if (this.scheduled || !this.enabled || this.videoPlayer.paused) return
+      this.scheduleNextFrame()
+    } catch(e) {
+      console.error('YouTube Ambilight | NextFrame:', e)
+      clearInterval(window.checkOnVideoPageInterval)
+    }
   }
 
   scheduleNextFrame() {
@@ -782,6 +786,7 @@ class Ambilight {
 
     this.setSetting('enabled', true)
     $.s(`#setting-enabled`).attr('aria-checked', true)
+    $.s('html').attr('data-ambilight-enabled', true)
 
     this.start()
   }
@@ -791,6 +796,7 @@ class Ambilight {
 
     this.setSetting('enabled', false)
     $.s(`#setting-enabled`).attr('aria-checked', false)
+    $.s('html').attr('data-ambilight-enabled', false)
 
     this.hide()
   }
@@ -1019,20 +1025,26 @@ class Ambilight {
 
 
 checkOnVideoPage = () => {
-  const isOnVideoPage = (window.location.href.indexOf('watch?') != -1)
-  if (window.ambilight) {
-    window.ambilight.isOnVideoPage = isOnVideoPage
-    if (isOnVideoPage) {
-      window.ambilight.start()
+  try {
+    const isOnVideoPage = (window.location.href.indexOf('watch?') != -1)
+    if (window.ambilight) {
+      window.ambilight.isOnVideoPage = isOnVideoPage
+      if (isOnVideoPage) {
+        window.ambilight.start()
+      }
+    } else if (isOnVideoPage) {
+      const videoPlayer = $.s("#player-container video")
+      if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
+      window.ambilight = new Ambilight(videoPlayer)
     }
-  } else if (isOnVideoPage) {
-    const videoPlayer = $.s("#player-container video")
-    if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
-    window.ambilight = new Ambilight(videoPlayer)
+  } catch (e) {
+    console.error('YouTube Ambilight | CheckOnVideoPage:', e)
+    clearInterval(window.checkOnVideoPageInterval)
+    clearInterval(window.initAmbilightInterval)
   }
 }
 
-setInterval(() => checkOnVideoPage(), 1000)
+window.checkOnVideoPageInterval = setInterval(() => checkOnVideoPage(), 1000)
 
 
 initAmbilight = () => {
@@ -1043,14 +1055,13 @@ initAmbilight = () => {
     app.onDarkThemeAction_()
 
     checkOnVideoPage()
-
-    clearInterval(tryInitAmbilight)
     //console.log('Initialized ambilight')
   } catch (e) {
-    console.error('YouTube Ambilight: Initialization error', e)
+    console.error('YouTube Ambilight | InitAmbilight:', e)
   }
+  clearInterval(window.initAmbilightInterval)
 }
 
 raf(() => {
-  tryInitAmbilight = setInterval(() => initAmbilight(), 100)
+  window.initAmbilightInterval = setInterval(() => initAmbilight(), 100)
 })

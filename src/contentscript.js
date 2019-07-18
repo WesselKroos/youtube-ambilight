@@ -28,23 +28,26 @@ const utils = {
 }
 
 const scripts = [
-  'scripts/youtube-ambilight.js'
+  chrome.extension.getURL('scripts/youtube-ambilight.js')
 ]
 scripts.forEach((path) => {
   const s = document.createElement('script')
-  s.src = chrome.extension.getURL(path)
-  document.head.appendChild(s)
+  s.src = path
   s.onload = () => {
     s.parentNode.removeChild(s)
   }
+  s.onerror = (e) => {
+    console.error('Adding script failed:', e.target.src, e);
+  }
+  document.head.appendChild(s)
 })
 
 const setExtensionInfo = () => {
   const version = utils.getVersion() || ''
   const os = utils.getOS() || ''
 
-  document.body.setAttribute('data-ambilight-version', version);
-  document.body.setAttribute('data-ambilight-os', os);
+  document.querySelector('html').setAttribute('data-ambilight-version', version);
+  document.querySelector('html').setAttribute('data-ambilight-os', os);
 }
 
 setExtensionInfo()
