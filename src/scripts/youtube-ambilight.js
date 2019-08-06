@@ -95,13 +95,33 @@ function flatten(arrays, TypedArray) {
 body = document.body
 
 raf = (requestAnimationFrame || webkitRequestAnimationFrame)
+ctxOptions = {
+  desynchronized: false
+}
+
+const waitForDomElement = (check, containerSelector, callback) => {
+  if (check()) {
+    callback()
+  } else {
+    const observer = new MutationObserver((mutationsList, observer) => {
+      if (!check()) return;
+      observer.disconnect()
+      callback()
+    })
+    observer.observe($.s(containerSelector), {
+      childList: true,
+      subtree: true
+    })
+    return observer
+  }
+}
 
 //// Ambilight
 
 class Ambilight {
   constructor(videoPlayer) {
-    this.showDisplayFrameRate = false
-    this.showVideoFrameRate = false
+    this.showDisplayFrameRate = true
+    this.showVideoFrameRate = true
 
     this.setFeedbackLink()
 
@@ -217,20 +237,17 @@ class Ambilight {
         step: 0.1
       },
       {
-        name: 'enabled',
-        label: 'Enabled (A)',
-        type: 'checkbox',
-        default: true
+        name: 'horizontalBarsClipPercentage',
+        label: 'Strip black bars',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 49,
+        step: 0.1
       },
       {
-        name: 'enableInFullscreen',
-        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
-        type: 'checkbox',
-        default: true
-      },
-      {
-        name: 'immersive',
-        label: 'Immersive (Z)',
+        name: 'showFPS',
+        label: 'Show framerate',
         type: 'checkbox',
         default: false
       },
@@ -239,6 +256,32 @@ class Ambilight {
         label: 'Default theme is light',
         type: 'checkbox',
         default: false
+      },
+      {
+        name: 'surroundingContentShadowStrength',
+        label: 'Surrounding content shadow',
+        type: 'list',
+        default: 16,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'immersive',
+        label: 'Immersive (Z)',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'enableInFullscreen',
+        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        name: 'enabled',
+        label: 'Enabled (A)',
+        type: 'checkbox',
+        default: true
       }
     ]
 
@@ -258,17 +301,26 @@ class Ambilight {
     // if(this.sepia === null) this.sepia = 0
 
     this.videoScale = this.getSetting('videoScale')
+    this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
 
     this.highQuality = this.getSetting('highQuality', true)
     this.immersive = this.getSetting('immersive', true)
     this.enableInFullscreen = this.getSetting('enableInFullscreen', true)
+    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable', true)
+    this.showFPS = this.getSetting('showFPS')
 
+    this.surroundingContentShadowStrength = this.getSetting('surroundingContentShadowStrength')
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
     })
 
-    this.videoPlayer = videoPlayer
+    this.style = document.createElement('style')
+    this.style.appendChild(document.createTextNode(''))
+    document.head.appendChild(this.style)
+    this.updateStyles()
+
+    this.setupVideoPlayer(videoPlayer)
 
     this.allContainer = document.createElement("div")
     this.allContainer.class('ambilight')
@@ -278,12 +330,20 @@ class Ambilight {
     this.ambilightContainer.class('ambilight__container')
     this.allContainer.prepend(this.ambilightContainer)
 
+    this.clipContainer = document.createElement("div")
+    this.clipContainer.class('ambilight__clip-container')
+    this.ambilightContainer.prepend(this.clipContainer)
+
+    this.playerContainer = document.createElement("div")
+    this.playerContainer.class('ambilight__player-container')
+    this.clipContainer.prepend(this.playerContainer)
+
     this.canvasList = document.createElement("div")
     this.canvasList.class('ambilight__canvas-list')
-    this.ambilightContainer.prepend(this.canvasList)
+    this.playerContainer.prepend(this.canvasList)
 
     const bufferElem = document.createElement('canvas')
-    const bufferCtx = bufferElem.getContext("2d")
+    const bufferCtx = bufferElem.getContext('2d', ctxOptions)
     this.buffer = {
       elem: bufferElem,
       ctx: bufferCtx
@@ -292,20 +352,29 @@ class Ambilight {
     const compareBufferElem = new OffscreenCanvas(1, 1)
     this.compareBuffer = {
       elem: compareBufferElem,
-      ctx: compareBufferElem.getContext("2d")
+      ctx: compareBufferElem.getContext('2d', ctxOptions)
     }
 
     this.shadow = $.create('div')
     this.shadow.class('ambilight__shadow')
-    this.ambilightContainer.appendChild(this.shadow)
+    this.playerContainer.appendChild(this.shadow)
 
     this.recreateCanvasses()
 
-    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => raf(() =>
-        setTimeout(() => this.updateSizes(), 0)
-      ))
-    )
+    if (this.showDisplayFrameRate || this.showVideoFrameRate) {
+      this.FPSContainer = document.createElement("div")
+      this.FPSContainer.class('ambilight__fps-container')
+
+      this.videoFPSContainer = document.createElement("div")
+      this.videoFPSContainer.class('ambilight__video-fps')
+      this.FPSContainer.prepend(this.videoFPSContainer)
+
+      this.displayFPSContainer = document.createElement("div")
+      this.displayFPSContainer.class('ambilight__display-fps')
+      this.FPSContainer.prepend(this.displayFPSContainer)
+
+      $.s('#player-container').prepend(this.FPSContainer)
+    }
 
     window.addEventListener('resize', () => {
       this.updateSizes()
@@ -332,6 +401,22 @@ class Ambilight {
         this.toggleEnabled()
     })
 
+    this.initSettings()
+    this.initScrollPosition()
+    this.initImmersiveMode()
+
+    this.enable(true);
+  }
+
+  setupVideoPlayer(videoPlayer) {
+    this.videoPlayer = videoPlayer
+
+    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
+      btn.on('click', () => raf(() =>
+        setTimeout(() => this.updateSizes(), 0)
+      ))
+    )
+
     this.videoPlayer.on('playing', () => {
       this.start()
     })
@@ -344,18 +429,9 @@ class Ambilight {
       })
       .on('emptied', () => {
         this.clear()
+        this.horizontalBarsClipPercentage = 0
+        this.setSetting('horizontalBarsClipPercentage', 0)
       })
-
-    // document.addEventListener('visibilitychange', () => {
-    //   if(document.visibilityState === 'visible')
-    //     this.updateSettings()
-    // })
-
-    this.initSettings()
-    this.initScrollPosition()
-    this.initImmersiveMode()
-
-    this.enable(true);
   }
 
   setFeedbackLink() {
@@ -387,9 +463,7 @@ class Ambilight {
       const canvas = $.create('canvas')
       canvas.class('ambilight__canvas')
 
-      const ctx = canvas.getContext('2d')
-      //ctx.imageSmoothingEnabled = false
-
+      const ctx = canvas.getContext('2d', ctxOptions)
       this.canvasList.prepend(canvas)
 
       this.players.push({
@@ -410,12 +484,24 @@ class Ambilight {
     })
   }
 
+  horizontalBarsClipPX = 0;
+
   updateSizes() {
+    if(!this.enabled) return;
     //Ignore minimization after scrolling down
     if ($.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
       return true
     }
     this.videoPlayer.style.setProperty('--video-transform', `scale(${(this.videoScale / 100)})`);
+
+    const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
+    const videoPlayerContainer = this.videoPlayer.parentNode
+    videoPlayerContainer.style.overflow = 'hidden'
+    this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
+    const top = Math.max(0, parseInt(this.videoPlayer.style.top))
+    this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
+    videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
+    videoPlayerContainer.style.height = `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
 
     this.playerOffset = this.videoPlayer.offset()
     if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
@@ -439,7 +525,7 @@ class Ambilight {
     } else {
       this.p = {
         w: Math.round(this.srcVideoOffset.width / scale),
-        h: Math.round(this.srcVideoOffset.height / scale)
+        h: Math.round((this.srcVideoOffset.height * (1 - (horizontalBarsClip * 2))) / scale)
       }
     }
 
@@ -452,10 +538,10 @@ class Ambilight {
       Math.abs(this.playerOffset.height - window.innerHeight) < 10
     )
 
-    this.ambilightContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
-    this.ambilightContainer.style.top = (this.playerOffset.top + window.scrollY - 1) + 'px'
-    this.ambilightContainer.style.width = this.playerOffset.width + 'px'
-    this.ambilightContainer.style.height = (this.playerOffset.height) + 'px'
+    this.playerContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
+    this.playerContainer.style.top = (this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsClipPX) + 'px'
+    this.playerContainer.style.width = this.playerOffset.width + 'px'
+    this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsClipPX * 2)) + 'px'
 
     this.ambilightContainer.style.webkitFilter = `
       blur(${this.playerOffset.height * (this.blur * .0025)}px)
@@ -475,20 +561,17 @@ class Ambilight {
         player.elem.width = this.p.w
       if (player.elem.height !== this.p.h)
         player.elem.height = this.p.h
-      player.ctx = player.elem.getContext('2d')
-      //player.ctx.globalAlpha = (1/5) //Todo: Enable for a smoother transition between frames
-      //player.ctx.imageSmoothingEnabled = false
+      player.ctx = player.elem.getContext('2d', ctxOptions)
     })
 
     this.buffer.elem.width = this.p.w
     this.buffer.elem.height = this.p.h
-    this.buffer.ctx = this.buffer.elem.getContext('2d')
-    //this.buffer.ctx.imageSmoothingEnabled = false
+    this.buffer.ctx = this.buffer.elem.getContext('2d', ctxOptions)
 
     this.compareBuffer.elem.width = this.srcVideoOffset.width
     this.compareBuffer.elem.height = this.srcVideoOffset.height
-    this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d')
-    this.compareBuffer.ctx.imageSmoothingEnabled = false
+    this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d', ctxOptions)
+    this.compareBufferBarsClipPx = Math.round(this.compareBuffer.elem.height * horizontalBarsClip)
 
     this.resizeCanvasses()
 
@@ -497,10 +580,21 @@ class Ambilight {
     return true;
   }
 
+  updateStyles() {
+    const shadowSize = this.surroundingContentShadowStrength / 5
+    this.style.childNodes[0].data = `
+      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
+      html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #primary-inner > *:not(#player),
+      html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #secondary {
+          ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,.66)) !important;`: ''}
+      }
+    `;
+  }
+
   resizeCanvasses() {
     const playerSize = {
       w: this.playerOffset.width,
-      h: this.playerOffset.height
+      h: this.playerOffset.height - (this.horizontalBarsClipPX * 2)
     }
     const ratio = (playerSize.w > playerSize.h) ?
       {
@@ -604,8 +698,10 @@ class Ambilight {
 
   checkVideoSize() {
     //Resized
-    if (this.previousWidth !== this.videoPlayer.clientWidth) {
+    if (this.previousWidth !== this.videoPlayer.clientWidth 
+      || this.previousTop !== this.videoPlayer.style.top) {
       this.previousWidth = this.videoPlayer.clientWidth
+      this.previousTop = this.videoPlayer.style.top
       return this.updateSizes()
     }
 
@@ -622,11 +718,11 @@ class Ambilight {
     try {
       this.scheduled = false
       if (this.checkVideoSize())
-      this.drawAmbilight()
+        this.drawAmbilight()
 
       if (this.scheduled || !this.enabled || this.videoPlayer.paused) return
       this.scheduleNextFrame()
-    } catch(e) {
+    } catch (e) {
       console.error('YouTube Ambilight | NextFrame:', e)
       clearInterval(window.checkOnVideoPageInterval)
     }
@@ -676,8 +772,12 @@ class Ambilight {
       if (this.videoFrameRateStartTime + 1000 < videoFrameRateTime) {
         if (this.videoFrameRateStartFrame !== 0) {
           this.videoFrameRate = (videoFrameRateFrame - this.videoFrameRateStartFrame) / ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
-          if (this.showVideoFrameRate)
-            console.log(`Video: ${this.videoFrameRate} FPS`)
+          if (this.showFPS) {
+            const frameRateText = (Math.round(this.videoFrameRate * 100) / 100).toFixed(2)
+            this.videoFPSContainer.innerHTML = `VIDEO: ${frameRateText}`
+          } else if (this.videoFPSContainer.innerHTML !== '') {
+            this.videoFPSContainer.innerHTML = ''
+          }
         }
         this.videoFrameRateStartFrame = videoFrameRateFrame
         this.videoFrameRateStartTime = videoFrameRateTime
@@ -689,8 +789,13 @@ class Ambilight {
     var displayFrameRateTime = performance.now()
     if (this.displayFrameRateStartTime < displayFrameRateTime - 1000) {
       this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
-      if (this.showDisplayFrameRate)
-        console.log(`Display: ${this.displayFrameRate} FPS`)
+      if (this.showFPS) {
+        const frameRateText = (Math.round(this.displayFrameRate * 100) / 100).toFixed(2)
+        this.displayFPSContainer.innerHTML = `DISPLAY: ${frameRateText}`
+        this.displayFPSContainer.style.color = (this.displayFrameRate < this.videoFrameRate) ? '#f33' : (this.displayFrameRate < this.videoFrameRate + 5) ? '#ff0' : '#3f3'
+      } else if (this.displayFPSContainer.innerHTML !== '') {
+        this.displayFPSContainer.innerHTML = ''
+      }
       this.displayFrameRateFrame = 1
       this.displayFrameRateStartTime = displayFrameRateTime
     } else {
@@ -778,7 +883,7 @@ class Ambilight {
 
     this.videoFrameCount = newFrameCount
 
-    this.buffer.ctx.drawImage(this.compareBuffer.elem, 0, 0, this.p.w, this.p.h)
+    this.buffer.ctx.drawImage(this.compareBuffer.elem, 0, this.compareBufferBarsClipPx, this.compareBuffer.elem.width, this.compareBuffer.elem.height - (this.compareBufferBarsClipPx * 2), 0, 0, this.p.w, this.p.h)
     //performance.mark('end-drawing');
     //performance.measure('drawing', 'start-drawing', 'end-drawing');
 
@@ -795,17 +900,14 @@ class Ambilight {
 
     $.s('html').attr('data-ambilight-enabled', true)
 
-    if(!$.s('html').attr('dark')) {
-      this.setDarkTheme(true)
-      if(!initial) {
-        this.setSetting('resetThemeToLightOnDisable', true)
-      }
-    } else {
-      if(!initial) {
-        this.setSetting('resetThemeToLightOnDisable', false)
-      }
+    if (!initial) {
+      const toLight = !$.s('html').attr('dark')
+      this.resetThemeToLightOnDisable = toLight
+      this.setSetting('resetThemeToLightOnDisable', toLight)
+      $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
     }
 
+    this.updateSizes()
     this.start()
   }
 
@@ -816,44 +918,70 @@ class Ambilight {
     $.s(`#setting-enabled`).attr('aria-checked', false)
     $.s('html').attr('data-ambilight-enabled', false)
 
-    if(this.getSetting('resetThemeToLightOnDisable')) {
+    if (this.resetThemeToLightOnDisable) {
+      this.resetThemeToLightOnDisable = undefined
       this.setDarkTheme(false)
     }
     
+    this.videoPlayer.style.marginTop = ''
+    const videoPlayerContainer = this.videoPlayer.parentNode
+    videoPlayerContainer.style.overflow = ''
+    videoPlayerContainer.style.marginTop = ''
+    videoPlayerContainer.style.height = ''
+
     this.hide()
   }
 
   setDarkTheme(value) {
+    if (this.setDarkThemeBusy) return
+    if ($.s('html').attr('dark')) {
+      if (value) return
+    } else {
+      if (!value) return
+    }
+    this.setDarkThemeBusy = true
+
     try {
-      if($.s('ytd-toggle-theme-compact-link-renderer')) {
-        const renderer = $.s('ytd-toggle-theme-compact-link-renderer')
-        if(value) { 
-          renderer.handleSignalActionToggleDarkThemeOn_()
+      const toggle = (renderer) => {
+        renderer = renderer || $.s('ytd-toggle-theme-compact-link-renderer')
+        if (value) {
+          renderer.handleSignalActionToggleDarkThemeOn()
         } else {
-          renderer.handleSignalActionToggleDarkThemeOff_()
+          renderer.handleSignalActionToggleDarkThemeOff()
         }
-      } else {
-        $.s('#avatar-btn').click()
-        this.closeAccountDropdown = setInterval(() => {
-          if(!$.s('ytd-active-account-header-renderer')) return
-          if($.s('ytd-active-account-header-renderer').offsetParent) {
-            if(!this.accountDropdownClosing) {
-              this.accountDropdownClosing = true
-              $.s('#avatar-btn').click()
-            }
-            return
-          }
-          
-          const renderer = $.s('ytd-toggle-theme-compact-link-renderer')
-          if(value) { 
-            renderer.handleSignalActionToggleDarkThemeOn_()
-          } else {
-            renderer.handleSignalActionToggleDarkThemeOff_()
-          }
-          clearInterval(this.closeAccountDropdown)
-        }, 50);
+        this.setDarkThemeBusy = false
       }
-    } catch {}
+
+      const renderer = $.s('ytd-toggle-theme-compact-link-renderer')
+      if (renderer) {
+        toggle(renderer)
+      } else {
+        $.s('ytd-popup-container').style.opacity = 0
+        waitForDomElement(
+          () => $.s('#avatar-btn'),
+          'ytd-masthead',
+          () => {
+            waitForDomElement(
+              () => {
+                const renderer = $.s('ytd-toggle-theme-compact-link-renderer')
+                return (renderer && renderer.handleSignalActionToggleDarkThemeOn)
+              },
+              'ytd-popup-container',
+              () => {
+                $.s('#avatar-btn').click()
+                toggle()
+                setTimeout(() => {
+                  $.s('ytd-popup-container').style.opacity = ''
+                }, 1)
+              })
+            $.s('#avatar-btn').click()
+          }
+        )
+      }
+    } catch (ex) { 
+      console.error('Error while setting dark mode', ex)
+      this.setDarkThemeBusy = false
+    }
   }
 
   toggleEnabled() {
@@ -870,6 +998,10 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.showedHighQualityCompareWarning = false
 
+    if (!$.s('html').attr('dark')) {
+      this.setDarkTheme(true)
+    }
+
     this.scheduleNextFrame()
   }
 
@@ -881,11 +1013,16 @@ class Ambilight {
     setTimeout(() => {
       this.clear()
     }, 500)
+    if (this.resetThemeToLightOnDisable) {
+      this.resetThemeToLightOnDisable = undefined
+      this.setDarkTheme(false)
+    }
   }
 
   show() {
     this.isHidden = false
     this.ambilightContainer.style.opacity = '1'
+    this.setDarkTheme(true)
   }
 
 
@@ -987,6 +1124,11 @@ class Ambilight {
           displayedValue.innerHTML = `${value}%`
           this.setSetting(setting.name, value)
 
+          if(setting.name === 'surroundingContentShadowStrength') {
+            this[setting.name] = value
+            this.updateStyles()
+            return
+          }
           if (setting.name === 'spread' || setting.name === 'edge' || setting.name === 'fadeOutEasing') {
             this.recreateCanvasses()
           }
@@ -1010,8 +1152,11 @@ class Ambilight {
           }
           if (
             setting.name === 'highQuality' ||
-            setting.name === 'enableInFullscreen'
+            setting.name === 'enableInFullscreen' ||
+            setting.name === 'showFPS' ||
+            setting.name === 'resetThemeToLightOnDisable'
           ) {
+            this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
           }
@@ -1043,9 +1188,9 @@ class Ambilight {
   setSetting(key, value) {
     this[key] = value
 
-    if(key === 'blur')
+    if (key === 'blur')
       value -= 30
-    if(key === 'bloom')
+    if (key === 'bloom')
       value -= 7
 
     if (!this.setSettingTimeout)
@@ -1068,9 +1213,9 @@ class Ambilight {
     } else if (setting.type === 'checkbox') {
       value = (value === 'true')
     } else {
-      if(key === 'blur')
+      if (key === 'blur')
         value = parseInt(value) + 30
-      if(key === 'bloom')
+      if (key === 'bloom')
         value = parseInt(value) + 7
     }
 
@@ -1078,40 +1223,59 @@ class Ambilight {
   }
 }
 
+const ambilightDetectDetachedVideo = () => {
+  var container = $.s('ytd-watch-flexy');
 
-checkOnVideoPage = () => {
-  try {
-    const isOnVideoPage = (window.location.href.indexOf('watch?') != -1)
-    if (window.ambilight) {
-      window.ambilight.isOnVideoPage = isOnVideoPage
-      if (isOnVideoPage) {
-        window.ambilight.start()
-      }
-    } else if (isOnVideoPage) {
-      const videoPlayer = $.s("#player-container video")
-      if (!$.s('ytd-masthead') || !videoPlayer) return //Not ready
+  var observer = new MutationObserver((mutationsList, observer) => {
+    const videoPlayer = container.querySelector('video')
+    if(!videoPlayer) return
+
+    const isDetached = ambilight.videoPlayer !== videoPlayer
+    if(!isDetached) return
+    
+    ambilight.setupVideoPlayer(videoPlayer)
+  });
+
+  observer.observe(container, {
+    attributes: true,
+    attributeOldValue: false,
+    characterData: false,
+    characterDataOldValue: false,
+    childList: false,
+    subtree: true
+  });
+}
+
+const ambilightDetectVideoPage = () => {
+  const tryInitAmbilight = () => {
+    const videoPlayer = $.s("#player-container video")
+    if (videoPlayer) {
       window.ambilight = new Ambilight(videoPlayer)
+      ambilightDetectDetachedVideo()
     }
-  } catch (e) {
-    console.error('YouTube Ambilight | CheckOnVideoPage:', e)
-    clearInterval(window.checkOnVideoPageInterval)
-    clearInterval(window.initAmbilightInterval)
   }
+
+  const ytpApp = $.s('ytd-app')
+  if (ytpApp.hasAttribute('is-watch-page')) {
+    tryInitAmbilight()
+  }
+
+  const observer = new MutationObserver((mutationsList, observer) => {
+    if (!window.ambilight) {
+      tryInitAmbilight()
+    } else {
+      if (ytpApp.hasAttribute('is-watch-page')) {
+        window.ambilight.start()
+      } else if (ambilight.resetThemeToLightOnDisable) {
+        ambilight.resetThemeToLightOnDisable = undefined
+        window.ambilight.setDarkTheme(false)
+      }
+    }
+  })
+  observer.observe(ytpApp, {
+    attributes: true,
+    attributeFilter: ['is-watch-page']
+  })
 }
 
-window.checkOnVideoPageInterval = setInterval(() => checkOnVideoPage(), 1000)
-
-
-initAmbilight = () => {
-  try {
-    checkOnVideoPage()
-    //console.log('Initialized ambilight')
-  } catch (e) {
-    console.error('YouTube Ambilight | InitAmbilight:', e)
-  }
-  clearInterval(window.initAmbilightInterval)
-}
-
-raf(() => {
-  window.initAmbilightInterval = setInterval(() => initAmbilight(), 100)
-})
+ambilightDetectVideoPage()

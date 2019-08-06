@@ -66,12 +66,12 @@ html[data-ambilight-enabled=true] #message.yt-live-chat-text-message-renderer {
 html[data-ambilight-enabled=true] #author-name.yt-live-chat-author-chip {
   color: #bbb;
 }
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form * {
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form * {
   border-color: rgba(255, 255, 255, 0.6) !important;
   color: white !important;
   fill: white !important;
 }
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search::-webkit-input-placeholder {
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search::-webkit-input-placeholder {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form {
@@ -80,16 +80,8 @@ html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form {
 html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form {
   opacity: 0.25;
 }
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-masthead:hover #search-form {
-  opacity: 1;
-}
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-watch #top > #player {
   z-index: 2;
-}
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #top > #container > *,
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #primary-inner > *:not(#player),
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #secondary {
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.66)) !important;
 }
 html[data-ambilight-enabled=true][dark=true] ytd-app[is-watch-page] #playlist yt-icon {
   fill: rgba(255, 255, 255, 0.882) !important;
@@ -101,11 +93,16 @@ html[data-ambilight-enabled=true] ytd-app[is-watch-page] .header.ytd-playlist-pa
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] .playlist-items.ytd-playlist-panel-renderer {
   background: none !important;
 }
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-playlist-panel-video-renderer:hover:not(.dragging) {
+  background-color: rgba(20, 20, 20, 0.15);
+}
 html[data-ambilight-enabled=true] .ambilight,
 html[data-ambilight-enabled=true] .ambilight__container,
 html[data-ambilight-enabled=true] .ambilight__canvas-list,
 html[data-ambilight-enabled=true] .ambilight__canvas,
-html[data-ambilight-enabled=true] .ambilight__shadow {
+html[data-ambilight-enabled=true] .ambilight__shadow,
+html[data-ambilight-enabled=true] .ambilight__clip-container,
+html[data-ambilight-enabled=true] .ambilight__player-container {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -116,7 +113,6 @@ html[data-ambilight-enabled=true] .ambilight {
   pointer-events: none;
 }
 html[data-ambilight-enabled=true] .ambilight__container {
-  transition: opacity 0.25s;
   opacity: 0;
 }
 html[data-ambilight-enabled=true] .ambilight__canvas {
@@ -311,4 +307,16 @@ body .toggle-auto-hide-btn:hover {
 
 body.immersive-mode .toggle-auto-hide-btn {
   font-weight: bold;
+}
+
+/* FPS */
+.ambilight__fps-container {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 5px;
+  filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000);
+  color: #fff;
+  font-size: 18px;
+  pointer-events: none;
 }

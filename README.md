@@ -22,3 +22,14 @@ Feel free to
 - report bugs at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
 - request a feature at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
 - or ask a question at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
+
+## New features: progress
+- FPS counter
+- Start ambilight with the MutationObserver
+- Switch darkmode with the MutationObserver
+- Reset to light mode (Setting is automatically enabled)
+- Don't apply ambilight styling in light theme
+- Hide horizontal black bars setting
+- Surrounding content shadow setting
+> Only horizontal ambilight setting
+> Check optimizations on a laptop like the async rendering of the canvas
