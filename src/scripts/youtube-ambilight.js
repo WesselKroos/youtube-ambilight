@@ -119,6 +119,8 @@ const waitForDomElement = (check, containerSelector, callback) => {
 //// Ambilight
 
 class Ambilight {
+  static setDarkThemeBusy = false;
+
   constructor(videoPlayer) {
     this.showDisplayFrameRate = true
     this.showVideoFrameRate = true
@@ -920,7 +922,7 @@ class Ambilight {
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
-      this.setDarkTheme(false)
+      Ambilight.setDarkTheme(false)
     }
     
     this.videoPlayer.style.marginTop = ''
@@ -932,14 +934,14 @@ class Ambilight {
     this.hide()
   }
 
-  setDarkTheme(value) {
-    if (this.setDarkThemeBusy) return
+  static setDarkTheme(value) {
+    if (Ambilight.setDarkThemeBusy) return
     if ($.s('html').attr('dark')) {
       if (value) return
     } else {
       if (!value) return
     }
-    this.setDarkThemeBusy = true
+    Ambilight.setDarkThemeBusy = true
 
     try {
       const toggle = (renderer) => {
@@ -949,7 +951,7 @@ class Ambilight {
         } else {
           renderer.handleSignalActionToggleDarkThemeOff()
         }
-        this.setDarkThemeBusy = false
+        Ambilight.setDarkThemeBusy = false
       }
 
       const renderer = $.s('ytd-toggle-theme-compact-link-renderer')
@@ -980,7 +982,7 @@ class Ambilight {
       }
     } catch (ex) { 
       console.error('Error while setting dark mode', ex)
-      this.setDarkThemeBusy = false
+      Ambilight.setDarkThemeBusy = false
     }
   }
 
@@ -999,7 +1001,7 @@ class Ambilight {
     this.showedHighQualityCompareWarning = false
 
     if (!$.s('html').attr('dark')) {
-      this.setDarkTheme(true)
+      Ambilight.setDarkTheme(true)
     }
 
     this.scheduleNextFrame()
@@ -1015,14 +1017,14 @@ class Ambilight {
     }, 500)
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
-      this.setDarkTheme(false)
+      Ambilight.setDarkTheme(false)
     }
   }
 
   show() {
     this.isHidden = false
     this.ambilightContainer.style.opacity = '1'
-    this.setDarkTheme(true)
+    Ambilight.setDarkTheme(true)
   }
 
 
@@ -1218,9 +1220,17 @@ class Ambilight {
       if (key === 'bloom')
         value = parseInt(value) + 7
     }
-
+    
     return value
   }
+}
+
+const resetThemeToLightIfSettingIsTrue = () => {
+  const key = 'resetThemeToLightOnDisable'
+  const value = localStorage.getItem(`ambilight-${key}`) || false
+  if(!value) return
+
+  Ambilight.setDarkTheme(false)
 }
 
 const ambilightDetectDetachedVideo = () => {
@@ -1258,6 +1268,8 @@ const ambilightDetectVideoPage = () => {
   const ytpApp = $.s('ytd-app')
   if (ytpApp.hasAttribute('is-watch-page')) {
     tryInitAmbilight()
+  } else {
+    resetThemeToLightIfSettingIsTrue()
   }
 
   const observer = new MutationObserver((mutationsList, observer) => {
@@ -1267,8 +1279,8 @@ const ambilightDetectVideoPage = () => {
       if (ytpApp.hasAttribute('is-watch-page')) {
         window.ambilight.start()
       } else if (ambilight.resetThemeToLightOnDisable) {
-        ambilight.resetThemeToLightOnDisable = undefined
-        window.ambilight.setDarkTheme(false)
+        window.ambilight.resetThemeToLightOnDisable = undefined
+        Ambilight.setDarkTheme(false)
       }
     }
   })
