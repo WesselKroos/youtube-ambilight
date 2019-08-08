@@ -290,6 +290,14 @@ class Ambilight {
         max: 100
       },
       {
+        name: 'debandingStrength',
+        label: 'Debanding strength (noise)',
+        type: 'list',
+        default: 2,
+        min: 0,
+        max: 2
+      },
+      {
         name: 'immersive',
         label: 'Immersive (Z)',
         type: 'checkbox',
@@ -334,6 +342,7 @@ class Ambilight {
     this.showFPS = this.getSetting('showFPS')
 
     this.surroundingContentShadowStrength = this.getSetting('surroundingContentShadowStrength')
+    this.debandingStrength = this.getSetting('debandingStrength')
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
@@ -612,12 +621,27 @@ class Ambilight {
 
   updateStyles() {
     const shadowSize = this.surroundingContentShadowStrength / 5
+    const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
+    const debandingStrength = parseInt(this.debandingStrength)
+
     this.style.childNodes[0].data = `
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
       html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #primary-inner > *:not(#player),
       html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #secondary {
-          ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,.66)) !important;` : ''}
+        ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,.66)) !important;` : ''}
       }
+
+      ${debandingStrength ? `
+        .ambilight::after {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          left: 0;
+          top: 0;
+          background: url('${baseurl}images/${(debandingStrength === 1) ? 'noise.png' : 'noise-strong.png'}');
+        }
+      ` : ''}
     `;
   }
 
@@ -1156,7 +1180,10 @@ class Ambilight {
           displayedValue.innerHTML = `${value}%`
           this.setSetting(setting.name, value)
 
-          if (setting.name === 'surroundingContentShadowStrength') {
+          if (
+            setting.name === 'surroundingContentShadowStrength' ||
+            setting.name === 'debandingStrength'
+          ) {
             this[setting.name] = value
             this.updateStyles()
             return

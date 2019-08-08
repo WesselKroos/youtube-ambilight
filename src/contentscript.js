@@ -48,6 +48,7 @@ const setExtensionInfo = () => {
 
   document.querySelector('html').setAttribute('data-ambilight-version', version);
   document.querySelector('html').setAttribute('data-ambilight-os', os);
+  document.querySelector('html').setAttribute('data-ambilight-baseurl', chrome.extension.getURL(''));
 }
 
 setExtensionInfo()

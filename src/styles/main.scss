@@ -111,11 +111,6 @@ html[data-ambilight-enabled="true"] {
   ytd-app[is-watch-page] ytd-watch #top > #player {
       z-index: 2;
   }
-  ytd-app[is-watch-page] #top > #container > *,
-  ytd-app[is-watch-page] #primary-inner > *:not(#player),
-  ytd-app[is-watch-page] #secondary {
-      filter: drop-shadow(0 0 3px rgba(0,0,0,.66)) !important;
-  }
 
   &[dark="true"] ytd-app[is-watch-page] #playlist yt-icon {
       fill: rgba(255, 255, 255, 0.882) !important;

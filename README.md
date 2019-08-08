@@ -31,5 +31,8 @@ Feel free to
 - Don't apply ambilight styling in light theme
 - Hide horizontal black bars setting
 - Surrounding content shadow setting
-> Only horizontal ambilight setting
-> Check optimizations on a laptop like the async rendering of the canvas
+- Error reporting
+- Check optimizations on a laptop like the async rendering of the canvas
+- debanding (noise levels)
+x Only horizontal ambilight setting
+x Group settings
