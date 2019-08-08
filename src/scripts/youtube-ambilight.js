@@ -293,9 +293,9 @@ class Ambilight {
         name: 'debandingStrength',
         label: 'Debanding strength (noise)',
         type: 'list',
-        default: 2,
+        default: 100,
         min: 0,
-        max: 2
+        max: 100
       },
       {
         name: 'immersive',
@@ -639,7 +639,8 @@ class Ambilight {
           height: 100%;
           left: 0;
           top: 0;
-          background: url('${baseurl}images/${(debandingStrength === 1) ? 'noise.png' : 'noise-strong.png'}');
+          background: url('${baseurl}images/${(debandingStrength > 75) ? 'noise-strong.png' : 'noise.png'}');
+          opacity: ${debandingStrength / ((debandingStrength > 75) ? 100 : 75)};
         }
       ` : ''}
     `;
