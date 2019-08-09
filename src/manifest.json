@@ -26,8 +26,9 @@
   "web_accessible_resources": [
     "styles/main.css",
     "scripts/youtube-ambilight.js",
-    "images/noise.png",
-    "images/noise-strong.png"
+    "images/noise-1.png",
+    "images/noise-2.png",
+    "images/noise-3.png"
   ],
   "permissions": [
     "activeTab"

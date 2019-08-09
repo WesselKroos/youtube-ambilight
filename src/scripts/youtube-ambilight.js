@@ -214,6 +214,14 @@ class Ambilight {
         step: .1
       },
       {
+        name: 'debandingStrength',
+        label: 'Debanding (noise)',
+        type: 'list',
+        default: 100,
+        min: 0,
+        max: 100
+      },
+      {
         name: 'highQuality',
         label: '<span style="display: inline-block; padding: 5px 0">High Precision<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
         type: 'checkbox',
@@ -252,32 +260,8 @@ class Ambilight {
         max: 200
       },
       {
-        name: 'videoScale',
-        label: 'Video scale',
-        type: 'list',
-        default: 100,
-        min: 25,
-        max: 100,
-        step: 0.1
-      },
-      {
-        name: 'horizontalBarsClipPercentage',
-        label: 'Strip black bars',
-        type: 'list',
-        default: 0,
-        min: 0,
-        max: 49,
-        step: 0.1
-      },
-      {
-        name: 'showFPS',
-        label: 'Show framerate',
-        type: 'checkbox',
-        default: false
-      },
-      {
-        name: 'resetThemeToLightOnDisable',
-        label: 'Default theme is light',
+        name: 'immersive',
+        label: 'Immersive (Z)',
         type: 'checkbox',
         default: false
       },
@@ -290,16 +274,32 @@ class Ambilight {
         max: 100
       },
       {
-        name: 'debandingStrength',
-        label: 'Debanding strength (noise)',
+        name: 'horizontalBarsClipPercentage',
+        label: 'Strip black bars',
         type: 'list',
-        default: 100,
+        default: 0,
         min: 0,
-        max: 100
+        max: 49,
+        step: 0.1
       },
       {
-        name: 'immersive',
-        label: 'Immersive (Z)',
+        name: 'videoScale',
+        label: 'Video scale',
+        type: 'list',
+        default: 100,
+        min: 25,
+        max: 100,
+        step: 0.1
+      },
+      {
+        name: 'showFPS',
+        label: 'Show framerate',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'resetThemeToLightOnDisable',
+        label: 'Default theme is light',
         type: 'checkbox',
         default: false
       },
@@ -438,7 +438,8 @@ class Ambilight {
     this.initScrollPosition()
     this.initImmersiveMode()
 
-    this.enable(true);
+    if(this.enabled)
+      this.enable(true);
   }
 
   setupVideoPlayer(videoPlayer) {
@@ -639,8 +640,8 @@ class Ambilight {
           height: 100%;
           left: 0;
           top: 0;
-          background: url('${baseurl}images/${(debandingStrength > 75) ? 'noise-strong.png' : 'noise.png'}');
-          opacity: ${debandingStrength / ((debandingStrength > 75) ? 100 : 75)};
+          background: url('${baseurl}images/noise-${(debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1}.png');
+          opacity: ${debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)};
         }
       ` : ''}
     `;
