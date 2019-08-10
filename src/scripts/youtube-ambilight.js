@@ -324,7 +324,7 @@ class Ambilight {
       {
         new: true,
         name: 'resetThemeToLightOnDisable',
-        label: 'Theme when turned off is light',
+        label: 'Dark theme on video page only',
         type: 'checkbox',
         default: false
       },

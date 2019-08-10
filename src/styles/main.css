@@ -161,7 +161,7 @@ html[data-ambilight-enabled=true] body.immersive-mode.at-top ytd-app[is-watch-pa
 }
 
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
-  width: 329px;
+  width: 420px;
 }
 
 .ytp-ambilight-settings-menu.is-visible {
@@ -176,7 +176,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 .ytp-ambilight-settings-button {
   position: relative;
 }
-
 .ytp-ambilight-settings-button::after {
   content: "";
   position: absolute;
@@ -196,7 +195,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 .ytp-ambilight-settings-button svg {
   transition: transform 0.1s cubic-bezier(0.4, 0, 1, 1);
 }
-
 .ytp-ambilight-settings-button[aria-expanded=true] svg {
   transform: rotateZ(30deg);
 }
@@ -213,9 +211,8 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   display: table-row;
   height: 25px;
 }
-
-ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link {
-  height: 50px;
+ytd-watch-flexy[fullscreen] .html5-video-player .ytp-ambilight-settings-menu .ytpa-feedback-link {
+  height: 40px;
 }
 
 .ytp-ambilight-settings-menu .ytpa-feedback-link__text {
@@ -224,12 +221,10 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link {
   padding: 10px 15px;
   color: #3ea6ff;
 }
-
 .ytp-ambilight-settings-menu .ytpa-feedback-link__text:hover {
   color: #5ebfff;
   text-decoration: underline;
 }
-
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__text {
   padding: 15px 20px;
   font-size: 16px;
@@ -238,7 +233,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
 .html5-video-player .ytp-ambilight-settings-menu a {
   color: #3ea6ff;
 }
-
 .html5-video-player .ytp-ambilight-settings-menu a:hover {
   color: #5ebfff;
   text-decoration: underline;
@@ -261,10 +255,12 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   text-align: center;
   line-height: 11px;
 }
+ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::before {
+  margin-top: 8px;
+}
 
 .ytap-section {
   display: table-row;
-  line-height: 20px;
   font-weight: 600;
   filter: drop-shadow(rgba(0, 0, 0, 0.5) 0px 1px 0px) drop-shadow(rgba(0, 0, 0, 0.25) 0px -1px 0px);
 }
@@ -273,12 +269,17 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
 }
 .ytap-section__label, .ytap-section__fill {
   height: 20px;
+  line-height: 20px;
   margin-top: 12px;
   margin-bottom: 3px;
   padding: 0px 14px;
   line-height: 21px;
   background: #5556;
   color: #bbb;
+}
+ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .ytap-section__fill {
+  height: 30px;
+  line-height: 30px;
 }
 .ytap-section__fill {
   color: transparent;
@@ -288,7 +289,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
 .ytp-menuitem {
   transition: background-color 0.15s;
 }
-
 .ytp-menuitem[role=menuitemrange]:hover {
   background: none !important;
   cursor: default !important;
@@ -298,7 +298,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   display: table-row;
   height: 6px;
 }
-
 .ytp-menuitem-range input[type=range] {
   position: absolute;
   display: table-row;
@@ -309,7 +308,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   margin: 0 14px;
   outline: 0;
 }
-
 .ytp-menuitem-range input[type=range]::-webkit-slider-runnable-track {
   -webkit-appearance: none;
   background: linear-gradient(transparent 42%, rgba(255, 255, 255, 0.3) 43%, rgba(255, 255, 255, 0.3) 57%, transparent 58%);
@@ -317,7 +315,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   margin: -10px 0;
   outline: none;
 }
-
 .ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   height: 17px;
@@ -328,7 +325,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
   transition: all 0.15s;
 }
-
 .ytp-menuitem-range input[type=range]:hover::-webkit-slider-thumb {
   background: #fff;
 }
@@ -344,11 +340,9 @@ body .toggle-auto-hide-btn {
   cursor: pointer;
   transition: color 0.2s;
 }
-
-.toggle-auto-hide-btn::before {
+body .toggle-auto-hide-btn::before {
   content: "IM";
 }
-
 body .toggle-auto-hide-btn:hover {
   color: #fff;
   text-shadow: #000 0px 0px 2px;
