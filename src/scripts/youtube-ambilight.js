@@ -527,12 +527,13 @@ class Ambilight {
       if ($.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
         return true
       }
-      this.videoPlayer.style.setProperty('--video-transform', `scale(${(this.videoScale / 100)})`);
+      $.s('.html5-video-container').style.setProperty('transform', `scale(${(this.videoScale / 100)})`);
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
       const videoPlayerContainer = this.videoPlayer.parentNode
       videoPlayerContainer.style.overflow = 'hidden'
       this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
+      console.log(this.horizontalBarsClipPX)
       const top = Math.max(0, parseInt(this.videoPlayer.style.top))
       this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
       videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
@@ -573,10 +574,11 @@ class Ambilight {
         Math.abs(this.playerOffset.height - window.innerHeight) < 10
       )
 
+      this.horizontalBarsScaledClipPX = Math.round(horizontalBarsClip * this.playerOffset.height)
       this.playerContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
-      this.playerContainer.style.top = (this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsClipPX) + 'px'
+      this.playerContainer.style.top = (this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsScaledClipPX) + 'px'
       this.playerContainer.style.width = this.playerOffset.width + 'px'
-      this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsClipPX * 2)) + 'px'
+      this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsScaledClipPX * 2)) + 'px'
 
       this.ambilightContainer.style.webkitFilter = `
         blur(${this.playerOffset.height * (this.blur * .0025)}px)
@@ -650,7 +652,7 @@ class Ambilight {
   resizeCanvasses() {
     const playerSize = {
       w: this.playerOffset.width,
-      h: this.playerOffset.height - (this.horizontalBarsClipPX * 2)
+      h: this.playerOffset.height - (this.horizontalBarsScaledClipPX * 2)
     }
     const ratio = (playerSize.w > playerSize.h) ?
       {
