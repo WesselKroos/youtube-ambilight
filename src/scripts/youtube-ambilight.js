@@ -171,6 +171,10 @@ class Ambilight {
 
     this.settings = [
       {
+        type: 'section',
+        label: 'Ambilight'
+      },
+      {
         name: 'spread',
         label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
         type: 'list',
@@ -214,8 +218,9 @@ class Ambilight {
         step: .1
       },
       {
+        new: true,
         name: 'debandingStrength',
-        label: 'Debanding (noise)',
+        label: 'Debanding (dithering) <a href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;"> ? </a>',
         type: 'list',
         default: 100,
         min: 0,
@@ -235,6 +240,10 @@ class Ambilight {
       //   min: 0,
       //   max: 100
       // },
+      {
+        type: 'section',
+        label: 'Ambilight image adjustment'
+      },
       {
         name: 'brightness',
         label: 'Brightness',
@@ -260,22 +269,13 @@ class Ambilight {
         max: 200
       },
       {
-        name: 'immersive',
-        label: 'Immersive (Z)',
-        type: 'checkbox',
-        default: false
+        type: 'section',
+        label: 'Video resizing'
       },
       {
-        name: 'surroundingContentShadowStrength',
-        label: 'Surrounding content shadow',
-        type: 'list',
-        default: 16,
-        min: 0,
-        max: 100
-      },
-      {
+        new: true,
         name: 'horizontalBarsClipPercentage',
-        label: 'Strip black bars',
+        label: 'Remove horizontal black bars',
         type: 'list',
         default: 0,
         min: 0,
@@ -284,7 +284,7 @@ class Ambilight {
       },
       {
         name: 'videoScale',
-        label: 'Video scale',
+        label: 'Scale',
         type: 'list',
         default: 100,
         min: 25,
@@ -292,14 +292,39 @@ class Ambilight {
         step: 0.1
       },
       {
+        type: 'section',
+        label: 'Other page content'
+      },
+      {
+        new: true,
+        name: 'surroundingContentShadowStrength',
+        label: 'Shadow',
+        type: 'list',
+        default: 16,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'immersive',
+        label: 'Hide (immersive mode) [Z]',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        type: 'section',
+        label: 'General'
+      },
+      {
+        new: true,
         name: 'showFPS',
         label: 'Show framerate',
         type: 'checkbox',
         default: false
       },
       {
+        new: true,
         name: 'resetThemeToLightOnDisable',
-        label: 'Default theme is light',
+        label: 'Theme when turned off is light',
         type: 'checkbox',
         default: false
       },
@@ -311,7 +336,7 @@ class Ambilight {
       },
       {
         name: 'enabled',
-        label: 'Enabled (A)',
+        label: 'Enabled [A]',
         type: 'checkbox',
         default: true
       }
@@ -463,8 +488,6 @@ class Ambilight {
       })
       .on('emptied', () => {
         this.clear()
-        this.horizontalBarsClipPercentage = 0
-        this.setSetting('horizontalBarsClipPercentage', 0)
       })
   }
 
@@ -473,10 +496,6 @@ class Ambilight {
     const os = $.s('html').getAttribute('data-ambilight-os') || '';
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}`
   }
-
-  // updateSettings() {
-  //   console.log('update settings')
-  // }
 
   recreateCanvasses() {
     const spreadLevels = Math.max(2, Math.round((this.spread / this.edge)) + this.innerStrength + 1)
@@ -533,7 +552,6 @@ class Ambilight {
       const videoPlayerContainer = this.videoPlayer.parentNode
       videoPlayerContainer.style.overflow = 'hidden'
       this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
-      console.log(this.horizontalBarsClipPX)
       const top = Math.max(0, parseInt(this.videoPlayer.style.top))
       this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
       videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
@@ -1143,7 +1161,7 @@ class Ambilight {
       this.settings.map(setting => {
         if (setting.type === 'checkbox') {
           return `
-                  <div id="setting-${setting.name}" class="ytp-menuitem" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
+                  <div id="setting-${setting.name}" class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div class="ytp-menuitem-content">
                       <div class="ytp-menuitem-toggle-checkbox"></div>
@@ -1152,12 +1170,23 @@ class Ambilight {
                 `
         } else if (setting.type === 'list') {
           return `
-                  <div class="ytp-menuitem" aria-haspopup="false" role="menuitemrange" tabindex="0">
+                  <div class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}" aria-haspopup="false" role="menuitemrange" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
                   </div>
                   <div class="ytp-menuitem-range" rowspan="2" title="Double click to reset">
                     <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
+                  </div>
+                `
+        } else if (setting.type === 'section') {
+          return `
+                  <div class="ytap-section">
+                    <div class="ytap-section__cell">
+                      <div class="ytap-section__label">${setting.label}</div>
+                    </div>
+                    <div class="ytap-section__cell">
+                      <div class="ytap-section__fill">-</div>
+                    </div>
                   </div>
                 `
         }

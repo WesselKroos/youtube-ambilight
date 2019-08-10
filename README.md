@@ -35,5 +35,5 @@ Feel free to
 - Check optimizations on a laptop like the async rendering of the canvas
 - debanding (noise levels)
 - Combine scale & hide horizontal black bars settings
+- Group settings
 x Only horizontal ambilight setting
-x Group settings
