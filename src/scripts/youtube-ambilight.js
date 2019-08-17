@@ -450,10 +450,10 @@ class Ambilight {
     }
 
     window.addEventListener('resize', () => {
-      this.updateSizes()
+      this.checkVideoSize()
       setTimeout(() =>
         raf(() =>
-          setTimeout(() => this.updateSizes(), 200)
+          setTimeout(() => this.checkVideoSize(), 200)
         ),
         200)
     })
@@ -467,7 +467,7 @@ class Ambilight {
           return
       }
       if (e.keyCode === 70 || e.keyCode === 84)
-        setTimeout(() => this.updateSizes(), 0)
+        setTimeout(() => this.checkVideoSize(), 0)
       if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       if (e.keyCode === 65) // a
@@ -487,7 +487,7 @@ class Ambilight {
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => raf(() =>
-        setTimeout(() => this.updateSizes(), 0)
+        setTimeout(() => this.checkVideoSize(), 0)
       ))
     )
 
@@ -565,20 +565,27 @@ class Ambilight {
         Math.abs(this.playerOffset.height - window.innerHeight) < 10
       )
 
+      const videoPlayerContainer = this.videoPlayer.parentNode
+
       //Ignore minimization after scrolling down
-      if ($.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
+      if (this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
+        $.s('.html5-video-container').style.setProperty('transform', ``)
+        videoPlayerContainer.style.overflow = ''
+        this.videoPlayer.style.marginTop = ''
+        videoPlayerContainer.style.marginTop = ''
+        videoPlayerContainer.style.height = ''
         return true
       }
+
       $.s('.html5-video-container').style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-      const videoPlayerContainer = this.videoPlayer.parentNode
-      videoPlayerContainer.style.overflow = this.isVR ? '' : 'hidden'
+      videoPlayerContainer.style.overflow = 'hidden'
       this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
       const top = Math.max(0, parseInt(this.videoPlayer.style.top))
-      this.videoPlayer.style.marginTop = this.isVR ? '' : `${-this.horizontalBarsClipPX - top}px`
-      videoPlayerContainer.style.marginTop = this.isVR ? '' : `${this.horizontalBarsClipPX + top}px`
-      videoPlayerContainer.style.height = this.isVR ? '' : `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
+      this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
+      videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
+      videoPlayerContainer.style.height = `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
 
       this.playerOffset = this.videoPlayer.offset()
       if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
@@ -866,7 +873,7 @@ class Ambilight {
         if (this.videoFrameRateStartFrame !== 0) {
           this.videoFrameRate = (videoFrameRateFrame - this.videoFrameRateStartFrame) / ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
           if (this.showFPS) {
-            const frameRateText = (Math.round(this.videoFrameRate * 100) / 100).toFixed(2)
+            const frameRateText = (Math.round(Math.min(this.displayFrameRate || this.videoFrameRate, Math.max(0, this.videoFrameRate)) * 100) / 100).toFixed(2)
             this.videoFPSContainer.innerHTML = `VIDEO: ${frameRateText}`
           } else if (this.videoFPSContainer.innerHTML !== '') {
             this.videoFPSContainer.innerHTML = ''
@@ -883,7 +890,7 @@ class Ambilight {
     if (this.displayFrameRateStartTime < displayFrameRateTime - 1000) {
       this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
       if (this.showFPS) {
-        const frameRateText = (Math.round(this.displayFrameRate * 100) / 100).toFixed(2)
+        const frameRateText = (Math.round(Math.max(0, this.displayFrameRate) * 100) / 100).toFixed(2)
         this.displayFPSContainer.innerHTML = `DISPLAY: ${frameRateText}`
         this.displayFPSContainer.style.color = (this.displayFrameRate < this.videoFrameRate) ? '#f33' : (this.displayFrameRate < this.videoFrameRate + 5) ? '#ff0' : '#3f3'
       } else if (this.displayFPSContainer.innerHTML !== '') {
@@ -1001,7 +1008,7 @@ class Ambilight {
       $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
     }
 
-    this.updateSizes()
+    this.checkVideoSize()
     this.start()
   }
 
