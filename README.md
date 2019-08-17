@@ -36,4 +36,8 @@ Feel free to
 - debanding (noise levels)
 - Combine scale & hide horizontal black bars settings
 - Group settings
+- Restore VR exclusion
+- Remove ambilight bleeding on the browser edges since Chrome 73
+- Split shadow settings into opacity and size
 x Only horizontal ambilight setting
+x Resize, stop, start, other source events performance
