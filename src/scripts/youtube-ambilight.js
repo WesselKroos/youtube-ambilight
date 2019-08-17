@@ -1,7 +1,6 @@
 //// Sentry error reporting
-
 var AmbilightSentry = {
-  captureException: () => { }
+  captureException: (ex) => {}
 }
 
 try {
@@ -126,7 +125,6 @@ const waitForDomElement = (check, containerSelector, callback) => {
     callback()
   } else {
     const observer = new MutationObserver((mutationsList, observer) => {
-      //console.log('MutationObserver 1')
       if (!check()) return
       observer.disconnect()
       callback()
@@ -1036,6 +1034,7 @@ class Ambilight {
       } else {
         if (!value) return
       }
+      if (value && !$.s('ytd-app').hasAttribute('is-watch-page')) return
       Ambilight.setDarkThemeBusy = true
 
       const toggle = (renderer) => {
@@ -1339,17 +1338,19 @@ class Ambilight {
 
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
-  const value = localStorage.getItem(`ambilight-${key}`) || false
+  const value = (localStorage.getItem(`ambilight-${key}`) === 'true')
   if (!value) return
 
   Ambilight.setDarkTheme(false)
 }
 
 const ambilightDetectDetachedVideo = () => {
-  const container = $.s('ytd-watch-flexy')
+  const container = $.s('.html5-video-container')
+  const ytpApp = $.s('ytd-app')
 
   const observer = new MutationObserver((mutationsList, observer) => {
-    //console.log('MutationObserver 2')
+    if (!ytpApp.hasAttribute('is-watch-page')) return
+
     const videoPlayer = container.querySelector('video')
     if (!videoPlayer) return
 
@@ -1369,33 +1370,27 @@ const ambilightDetectDetachedVideo = () => {
   })
 }
 
-const ambilightDetectVideoPage = () => {
-  const tryInitAmbilight = () => {
-    const videoPlayer = $.s("#player-container video")
-    if (videoPlayer) {
-      window.ambilight = new Ambilight(videoPlayer)
-      ambilightDetectDetachedVideo()
-    }
-  }
-
+const tryInitAmbilight = () => {
   const ytpApp = $.s('ytd-app')
-  if (ytpApp.hasAttribute('is-watch-page')) {
-    tryInitAmbilight()
-  } else {
-    resetThemeToLightIfSettingIsTrue()
-  }
+  if (!ytpApp.hasAttribute('is-watch-page')) return
 
+  const videoPlayer = $.s("ytd-watch-flexy video")
+  if (!videoPlayer) return false
+
+  window.ambilight = new Ambilight(videoPlayer)
+  ambilightDetectDetachedVideo()
+  return true
+}
+
+const ambilightDetectPageTransition = () => {
+  const ytpApp = $.s('ytd-app')
   const observer = new MutationObserver((mutationsList, observer) => {
-    //console.log('MutationObserver 3')
-    if (!window.ambilight) {
-      tryInitAmbilight()
-    } else {
-      if (ytpApp.hasAttribute('is-watch-page')) {
-        window.ambilight.start()
-      } else if (ambilight.resetThemeToLightOnDisable) {
-        window.ambilight.resetThemeToLightOnDisable = undefined
-        Ambilight.setDarkTheme(false)
-      }
+    if (!window.ambilight) return
+
+    if (ytpApp.hasAttribute('is-watch-page')) {
+      window.ambilight.start()
+    } else if (ambilight.resetThemeToLightOnDisable) {
+      Ambilight.setDarkTheme(false)
     }
   })
   observer.observe(ytpApp, {
@@ -1404,7 +1399,30 @@ const ambilightDetectVideoPage = () => {
   })
 }
 
+const ambilightDetectVideoPage = () => {
+  if(tryInitAmbilight()) return
+
+  const ytpApp = $.s('ytd-app')
+  if (!ytpApp.hasAttribute('is-watch-page')) {
+    resetThemeToLightIfSettingIsTrue()
+  }
+
+  const observer = new MutationObserver((mutationsList, observer) => {
+    if (window.ambilight) {
+      observer.disconnect()
+      return
+    }
+
+    tryInitAmbilight()
+  })
+  observer.observe(ytpApp, {
+    childList: true,
+    subtree: true
+  })
+}
+
 try {
+  ambilightDetectPageTransition()
   ambilightDetectVideoPage()
 } catch (ex) {
   console.error('YouTube Ambilight | Initialization', ex)

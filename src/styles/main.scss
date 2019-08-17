@@ -35,7 +35,7 @@ html[data-ambilight-enabled="true"] {
 
 
     ytd-masthead {
-      transition: background-color .25s;
+      transition: background-color .15s;
 
       &:hover {
         background: rgb(19,19,19) !important;
@@ -100,10 +100,10 @@ html[data-ambilight-enabled="true"] {
   }
 
   ytd-app[is-watch-page] #search-form {
-      transition: opacity .25s;
+      transition: opacity .15s;
   }
   body.at-top ytd-app[is-watch-page] #search-form {
-      opacity: .25;
+      opacity: .15;
   }
 
   /* Cosmetics - Text visibility */
@@ -154,7 +154,7 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight__container {
-      //transition: opacity .25s;
+      //transition: opacity .15s;
       opacity: 0;
   }
 

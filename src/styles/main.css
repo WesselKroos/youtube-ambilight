@@ -39,7 +39,7 @@ html[data-ambilight-enabled=true] ytd-app[is-watch-page] .html5-main-video {
   background: none !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-masthead {
-  transition: background-color 0.25s;
+  transition: background-color 0.15s;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-masthead:hover {
   background: #131313 !important;
@@ -75,10 +75,10 @@ html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search::-w
   color: rgba(255, 255, 255, 0.6) !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form {
-  transition: opacity 0.25s;
+  transition: opacity 0.15s;
 }
 html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form {
-  opacity: 0.25;
+  opacity: 0.15;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-watch #top > #player {
   z-index: 2;
