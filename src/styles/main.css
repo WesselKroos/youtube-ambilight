@@ -281,12 +281,15 @@ ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::before {
   line-height: 20px;
   margin-top: 12px;
   margin-bottom: 3px;
+  border-top: 1px solid #ffffff10;
+  border-bottom: 1px solid #ffffff05;
   padding: 0px 14px;
   line-height: 21px;
   background: #5556;
-  color: #bbb;
+  color: #ccc;
 }
 ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .ytap-section__fill {
+  padding: 0px 20px;
   height: 30px;
   line-height: 30px;
 }

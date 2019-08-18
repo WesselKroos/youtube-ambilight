@@ -283,6 +283,12 @@ class Ambilight {
         step: 0.1
       },
       {
+        name: 'horizontalBarsClipPercentageReset',
+        label: 'Reset black bars next video',
+        type: 'checkbox',
+        default: false
+      },
+      {
         name: 'videoScale',
         label: 'Scale',
         type: 'list',
@@ -368,6 +374,7 @@ class Ambilight {
 
     this.videoScale = this.getSetting('videoScale')
     this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
+    this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
 
     this.highQuality = this.getSetting('highQuality', true)
     this.immersive = this.getSetting('immersive', true)
@@ -477,6 +484,7 @@ class Ambilight {
     this.initSettings()
     this.initScrollPosition()
     this.initImmersiveMode()
+    this.resetBlackBarsIfNeeded()
 
     if (this.enabled)
       this.enable(true)
@@ -493,17 +501,34 @@ class Ambilight {
 
     this.videoPlayer.on('playing', () => {
       this.start()
+      this.resetBlackBarsIfNeeded()
     })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
       })
       .on('ended', () => {
+        this.resetBlackBarsIfNeeded()
         this.clear()
       })
       .on('emptied', () => {
+        this.resetBlackBarsIfNeeded()
         this.clear()
       })
+  }
+
+  resetBlackBarsIfNeeded() {
+    const videoPath = location.search
+    if(!this.prevVideoPath || videoPath !== this.prevVideoPath) {
+      if(this.horizontalBarsClipPercentageReset) {
+        this.setSetting('horizontalBarsClipPercentage', 0)
+        $.s('#setting-horizontalBarsClipPercentage').value = 0
+        $.s(`#setting-horizontalBarsClipPercentage-value`).innerHTML = '0%'
+        this.horizontalBarsClipPercentage = 0
+        this.checkVideoSize()
+      }
+    }
+    this.prevVideoPath = videoPath
   }
 
   setFeedbackLink() {
@@ -1291,7 +1316,8 @@ class Ambilight {
             setting.name === 'highQuality' ||
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
-            setting.name === 'resetThemeToLightOnDisable'
+            setting.name === 'resetThemeToLightOnDisable' ||
+            setting.name === 'horizontalBarsClipPercentageReset'
           ) {
             this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
