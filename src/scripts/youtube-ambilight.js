@@ -1424,8 +1424,7 @@ const ambilightDetectDetachedVideo = () => {
   })
 }
 
-const tryInitAmbilight = () => {
-  const ytpApp = $.s('ytd-app')
+const tryInitAmbilight = (ytpApp) => {
   if (!ytpApp.hasAttribute('is-watch-page')) return
 
   const videoPlayer = $.s("ytd-watch-flexy video")
@@ -1436,8 +1435,7 @@ const tryInitAmbilight = () => {
   return true
 }
 
-const ambilightDetectPageTransition = () => {
-  const ytpApp = $.s('ytd-app')
+const ambilightDetectPageTransition = (ytpApp) => {
   const observer = new MutationObserver((mutationsList, observer) => {
     if (!window.ambilight) return
 
@@ -1453,10 +1451,9 @@ const ambilightDetectPageTransition = () => {
   })
 }
 
-const ambilightDetectVideoPage = () => {
-  if (tryInitAmbilight()) return
+const ambilightDetectVideoPage = (ytpApp) => {
+  if (tryInitAmbilight(ytpApp)) return
 
-  const ytpApp = $.s('ytd-app')
   if (!ytpApp.hasAttribute('is-watch-page')) {
     resetThemeToLightIfSettingIsTrue()
   }
@@ -1467,7 +1464,7 @@ const ambilightDetectVideoPage = () => {
       return
     }
 
-    tryInitAmbilight()
+    tryInitAmbilight(ytpApp)
   })
   observer.observe(ytpApp, {
     childList: true,
@@ -1476,8 +1473,11 @@ const ambilightDetectVideoPage = () => {
 }
 
 try {
-  ambilightDetectPageTransition()
-  ambilightDetectVideoPage()
+  const ytpApp = $.s('ytd-app')
+  if (ytpApp) {
+    ambilightDetectPageTransition(ytpApp)
+    ambilightDetectVideoPage(ytpApp)
+  }
 } catch (ex) {
   console.error('YouTube Ambilight | Initialization', ex)
   AmbilightSentry.captureException(ex)
