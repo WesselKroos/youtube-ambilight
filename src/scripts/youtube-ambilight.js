@@ -556,7 +556,6 @@ class Ambilight {
 
   updateSizes() {
     try {
-      if (!this.enabled) return
       this.isVR = !!$.s('.ytp-webgl-spherical')
       this.isFullscreen = !!$.s('.ytp-fullscreen')
       const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
@@ -578,7 +577,7 @@ class Ambilight {
       const videoPlayerContainer = this.videoPlayer.parentNode
 
       //Ignore minimization after scrolling down
-      const notVisible = (this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized') || (this.isFullscreen && !this.enableInFullscreen))
+      const notVisible = (!this.enabled || this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized') || (this.isFullscreen && !this.enableInFullscreen))
       if (notVisible || noClipOrScale) {
         $.s('.html5-video-container').style.setProperty('transform', ``)
         videoPlayerContainer.style.overflow = ''
@@ -813,7 +812,10 @@ class Ambilight {
   checkVideoSize() {
     //Resized
     if (this.previousWidth !== this.videoPlayer.clientWidth
-      || this.previousTop !== this.videoPlayer.style.top) {
+      || this.previousTop !== this.videoPlayer.style.top
+      || this.previousEnabled !== this.enabled
+    ) {
+      this.previousEnabled = this.enabled
       this.previousWidth = this.videoPlayer.clientWidth
       this.previousTop = this.videoPlayer.style.top
       return this.updateSizes()
@@ -1044,6 +1046,7 @@ class Ambilight {
     videoPlayerContainer.style.marginTop = ''
     videoPlayerContainer.style.height = ''
 
+    this.checkVideoSize()
     this.hide()
   }
 
