@@ -1,6 +1,6 @@
 //// Sentry error reporting
 var AmbilightSentry = {
-  captureException: (ex) => {}
+  captureException: (ex) => { }
 }
 
 try {
@@ -559,33 +559,47 @@ class Ambilight {
       if (!this.enabled) return
       this.isVR = !!$.s('.ytp-webgl-spherical')
       this.isFullscreen = !!$.s('.ytp-fullscreen')
+      const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
       this.isFillingFullscreen = (
         this.isFullscreen &&
         Math.abs(this.playerOffset.width - window.innerWidth) < 10 &&
-        Math.abs(this.playerOffset.height - window.innerHeight) < 10
+        Math.abs(this.playerOffset.height - window.innerHeight) < 10 &&
+        noClipOrScale
       )
+
+      if(this.isFullscreen) {
+        if(this.enableInFullscreen) {
+          body.removeClass('ambilight-disable-in-fullscreen')
+        } else {
+          body.class('ambilight-disable-in-fullscreen')
+        }
+      }
 
       const videoPlayerContainer = this.videoPlayer.parentNode
 
       //Ignore minimization after scrolling down
-      if (this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized')) {
+      const notVisible = (this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized') || (this.isFullscreen && !this.enableInFullscreen))
+      if (notVisible || noClipOrScale) {
         $.s('.html5-video-container').style.setProperty('transform', ``)
         videoPlayerContainer.style.overflow = ''
         this.videoPlayer.style.marginTop = ''
         videoPlayerContainer.style.marginTop = ''
         videoPlayerContainer.style.height = ''
+      }
+      if (notVisible) {
         return true
       }
 
-      $.s('.html5-video-container').style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
-
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-      videoPlayerContainer.style.overflow = 'hidden'
-      this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
-      const top = Math.max(0, parseInt(this.videoPlayer.style.top))
-      this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
-      videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
-      videoPlayerContainer.style.height = `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
+      if(!noClipOrScale) {
+        $.s('.html5-video-container').style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
+        videoPlayerContainer.style.overflow = 'hidden'
+        this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
+        const top = Math.max(0, parseInt(this.videoPlayer.style.top))
+        this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
+        videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
+        videoPlayerContainer.style.height = `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
+      }
 
       this.playerOffset = this.videoPlayer.offset()
       if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
@@ -747,7 +761,7 @@ class Ambilight {
 
       const pointMax = (points[points.length - 1])
       const gradient = this.shadow.ctx.createLinearGradient(
-        0, 
+        0,
         0,
         horizontal ? this.shadow.elem.width : 0,
         !horizontal ? this.shadow.elem.height : 0
@@ -1280,6 +1294,10 @@ class Ambilight {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
           }
+
+          if (setting.name === 'enableInFullscreen' && this.isFullscreen) {
+            this.updateSizes()
+          }
         })
       }
     })
@@ -1407,7 +1425,7 @@ const ambilightDetectPageTransition = () => {
 }
 
 const ambilightDetectVideoPage = () => {
-  if(tryInitAmbilight()) return
+  if (tryInitAmbilight()) return
 
   const ytpApp = $.s('ytd-app')
   if (!ytpApp.hasAttribute('is-watch-page')) {

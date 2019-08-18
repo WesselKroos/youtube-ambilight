@@ -33,7 +33,6 @@ html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-watch,
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-watch-flexy,
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #player-theater-container,
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #columns.ytd-watch-flexy,
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] #movie_player,
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #player-container,
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] .html5-main-video {
   background: none !important;
@@ -41,14 +40,11 @@ html[data-ambilight-enabled=true] ytd-app[is-watch-page] .html5-main-video {
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-masthead {
   transition: background-color 0.15s;
 }
-html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-masthead:hover {
-  background: #131313 !important;
-}
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.ytd-app::after {
   display: none;
 }
-html[data-ambilight-enabled=true] body.not-at-top ytd-app[is-watch-page] ytd-masthead:hover {
-  background: #131313 !important;
+html[data-ambilight-enabled=true] body:not(.ambilight-disable-in-fullscreen) ytd-app[is-watch-page] #movie_player {
+  background: none !important;
 }
 html[data-ambilight-enabled=true] body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
   margin-top: 28px;
@@ -70,15 +66,28 @@ html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-for
   border-color: rgba(255, 255, 255, 0.6) !important;
   color: white !important;
   fill: white !important;
+  transition: all 0.15s;
 }
 html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search::-webkit-input-placeholder {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form {
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, filter 0.15s;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form {
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:not(:hover):not(:focus-within) {
   opacity: 0.15;
+}
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within {
+  background: #121212 !important;
+  border-radius: 2px;
+}
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover button, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within button {
+  background: #ffffff14 !important;
+}
+html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover *, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within * {
+  border-color: rgba(55, 55, 55, 0.6) !important;
+  color: white !important;
+  fill: white !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] ytd-watch #top > #player {
   z-index: 2;
@@ -161,7 +170,7 @@ html[data-ambilight-enabled=true] body.immersive-mode.at-top ytd-app[is-watch-pa
 }
 
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
-  width: 420px;
+  width: 440px;
 }
 
 .ytp-ambilight-settings-menu.is-visible {
