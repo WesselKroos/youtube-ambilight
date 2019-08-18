@@ -14,7 +14,8 @@ The following projectfiles are inserted into that specific webpage:
 - \src\scripts\youtube-ambilight.js
 - \src\styles\main.css
 
-This extension executes NO requests to any webserver, website or api.
+The only requests being sent are crash reports. If a crash occures a request is being sent to [Sentri.io](https://sentry.io). 
+No other requests are sent to any webserver, website or api.
 
 ## Report, request or contribute
 Feel free to 
@@ -39,5 +40,5 @@ Feel free to
 - Restore VR exclusion
 - Remove ambilight bleeding on the browser edges since Chrome 73
 - Split shadow settings into opacity and size
+- Resize, stop, start, other source events performance
 x Only horizontal ambilight setting
-x Resize, stop, start, other source events performance
