@@ -40,6 +40,8 @@ try {
         setExtra(`window.width`, window.innerWidth)
         setExtra(`window.height`, window.innerHeight)
         setExtra(`window.scrollY`, window.scrollY)
+        setExtra(`window.devicePixelRatio`, window.devicePixelRatio)
+        setExtra(`document.fullscreen`, document.fullscreen)
       } catch (ex) { }
 
       try {
@@ -743,7 +745,13 @@ class Ambilight {
       }
 
       this.playerOffset = this.videoPlayer.offset()
-      if (this.playerOffset.top === undefined || this.videoPlayer.videoWidth === 0) return false //Not ready
+      if (
+        this.playerOffset.top === undefined || 
+        !this.playerOffset.width || 
+        !this.playerOffset.height || 
+        !this.videoPlayer.videoWidth ||
+        !this.videoPlayer.videoHeight
+      ) return false //Not ready
 
       this.srcVideoOffset = {
         top: this.playerOffset.top + window.scrollY,
