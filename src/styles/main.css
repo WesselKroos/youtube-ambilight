@@ -375,3 +375,10 @@ body.immersive-mode .toggle-auto-hide-btn {
   font-size: 18px;
   pointer-events: none;
 }
+
+/* Prevent YouTube's flickering scrollbar bug */
+#page-manager.ytd-app {
+  overflow: visible !important;
+  overflow-y: visible !important;
+  overflow-x: visible !important;
+}
