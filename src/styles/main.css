@@ -308,7 +308,7 @@ ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .y
 
 .ytp-menuitem-range {
   display: table-row;
-  height: 6px;
+  height: 5px;
 }
 .ytp-menuitem-range input[type=range] {
   position: absolute;
@@ -317,6 +317,7 @@ ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .y
   background: none;
   cursor: pointer;
   width: calc(100% - 28px);
+  height: 0;
   margin: 0 14px;
   outline: 0;
 }
@@ -329,9 +330,9 @@ ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .y
 }
 .ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 17px;
-  width: 17px;
-  margin-top: 2px;
+  height: 13px;
+  width: 13px;
+  margin-top: 4px;
   border-radius: 50%;
   background: #bdbdbd;
   box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
@@ -339,6 +340,46 @@ ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .y
 }
 .ytp-menuitem-range input[type=range]:hover::-webkit-slider-thumb {
   background: #fff;
+}
+.ytp-menuitem-range--has-snap-points {
+  height: 15px;
+}
+.ytp-menuitem-range--has-snap-points input[type=range] {
+  height: 15px;
+}
+
+.setting-range-datalist {
+  position: relative;
+  display: inline-block;
+  width: calc(100% + 28px);
+  left: 21px;
+  font-size: 10px;
+  pointer-events: none;
+}
+.setting-range-datalist__label {
+  position: absolute;
+  width: 17px;
+  margin-top: -9px;
+  margin-left: -8.5px;
+  padding: 0;
+  text-align: center;
+  color: #999;
+}
+.setting-range-datalist__label::before {
+  content: "";
+  position: absolute;
+  width: 1px;
+  height: 13px;
+  left: 0;
+  margin-top: -15px;
+  margin-left: 8px;
+  background: #666;
+}
+.setting-range-datalist__label--flip {
+  margin-top: -37px;
+}
+.setting-range-datalist__label--flip::before {
+  margin-top: 13px;
 }
 
 /* Settings - Immersive mode button */

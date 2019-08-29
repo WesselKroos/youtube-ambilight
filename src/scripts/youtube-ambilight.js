@@ -398,7 +398,8 @@ class Ambilight {
         default: 0,
         min: 0,
         max: 49,
-        step: 0.1
+        step: 0.1,
+        snapPoints: [8.7, 12.3, 13.5]
       },
       {
         name: 'horizontalBarsClipPercentageReset',
@@ -1371,9 +1372,24 @@ class Ambilight {
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
                   </div>
-                  <div class="ytp-menuitem-range" rowspan="2" title="Double click to reset">
-                    <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
+                  <div class="ytp-menuitem-range ${
+                    setting.snapPoints ? 'ytp-menuitem-range--has-snap-points': ''
+                  }" rowspan="2" title="Double click to reset">
+                    <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" list="snap-points-${setting.name}" />
                   </div>
+                  ${
+                    !setting.snapPoints ? '' : `
+                      <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
+                        ${
+                          setting.snapPoints.map((point, i) => `<option class="setting-range-datalist__label ${
+                            (point < setting.snapPoints[i-1] + 2) ? 'setting-range-datalist__label--flip' : ''
+                          }" value="${point}" label="${Math.floor(point)}" style="left: ${
+                            (point + (-setting.min)) * (100 / (setting.max - setting.min))
+                          }%">`)
+                        }
+                      </datalist>
+                    `
+                  }
                 `
         } else if (setting.type === 'section') {
           return `

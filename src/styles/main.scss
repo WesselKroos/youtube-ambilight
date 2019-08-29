@@ -368,8 +368,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 
 .ytp-menuitem-range {
   display: table-row;
-  height: 6px;
-  
+  height: 5px;
   input[type="range"] {
     position: absolute;
     display: table-row;
@@ -377,6 +376,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     background: none;
     cursor: pointer;
     width: calc(100% - 28px);
+    height: 0;
     margin: 0 14px;
     outline: 0;
     &::-webkit-slider-runnable-track {
@@ -388,9 +388,9 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     }
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
-      height: 17px;
-      width: 17px;
-      margin-top: 2px;
+      height: 13px;
+      width: 13px;
+      margin-top: 4px;
       border-radius: 50%;
       background: #bdbdbd;
       box-shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
@@ -398,6 +398,49 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     }
     &:hover::-webkit-slider-thumb {
       background: #fff;
+    }
+  }
+
+  &--has-snap-points {
+    height: 15px;
+    input[type="range"] {
+      height: 15px;
+    }
+  }
+}
+
+.setting-range-datalist {
+  position: relative;
+  display: inline-block;
+  width: calc(100% + 28px);
+  left: 21px;
+  font-size: 10px;
+  pointer-events: none;
+
+  &__label {
+    position: absolute;
+    width: 17px;
+    margin-top: -9px;
+    margin-left: -8.5px;
+    padding: 0;
+    text-align: center;
+    color: #999;
+    &::before {
+      content: '';
+      position: absolute;
+      width: 1px;
+      height: 13px;
+      left: 0;
+      margin-top: -15px;
+      margin-left: 8px;
+      background: #666;
+    }
+
+    &--flip {
+      margin-top: -37px;
+      &::before {
+        margin-top: 13px;
+      }
     }
   }
 }
