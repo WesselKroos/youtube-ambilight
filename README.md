@@ -42,3 +42,9 @@ Feel free to
 - Split shadow settings into opacity and size
 - Resize, stop, start, other source events performance
 x Only horizontal ambilight setting
+- Prevent video stutter in synchronized mode by temporary turning of the overlay when detecting stutter
+- Fullscreen slider knob size
+- Fix error Sentry
+- Turn FPS on/off even when ambilight is turned off
+- Smooth Motion with seeking support
+- Buffer new frames for smoother motion

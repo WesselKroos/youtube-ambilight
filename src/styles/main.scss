@@ -171,6 +171,15 @@ html[data-ambilight-enabled="true"] {
   .ambilight__canvas {
       background: #000;
       /* image-rendering: pixelated; */
+    backface-visibility: hidden;  
+  }
+
+  .ambilight__video-overlay {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    backface-visibility: hidden;
   }
 
   /* Immersive mode */
@@ -209,7 +218,7 @@ html[data-ambilight-enabled="true"] {
 /* Settings */
 
 .ytp-ambilight-settings-menu {
-  width: 300px;
+  width: 320px;
   max-height: calc(100% - 90px);
   overflow-y: auto !important;
   right: 12px;
@@ -425,6 +434,8 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     padding: 0;
     text-align: center;
     color: #999;
+    pointer-events: all;
+    cursor: pointer;
     &::before {
       content: '';
       position: absolute;
@@ -434,6 +445,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       margin-top: -15px;
       margin-left: 8px;
       background: #666;
+      pointer-events: none;
     }
 
     &--flip {
@@ -477,12 +489,16 @@ body.immersive-mode .toggle-auto-hide-btn {
   z-index: 2;
   top: 5px;
   left: 5px;
-  filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000);
+  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
   color: #fff;
   font-size: 18px;
   pointer-events: none;
+  backface-visibility: hidden;
 }
 
+.ytp-chrome-bottom {
+  backface-visibility: hidden;
+}
 
 /* Prevent YouTube's flickering scrollbar bug */
 
