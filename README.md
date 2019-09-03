@@ -49,5 +49,5 @@ Feel free to
 x Adjust the lowest spread setting to rendering only one canvas element
 x Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops
 x Buffer frames in video sync mode for smoother motion in the video
-x Prevent video stutter in synchronized mode by temporary turning of the overlay when detecting stutter
+x Temporary turn off the video sync canvas when the framerate is to low
 x Only horizontal ambilight setting
