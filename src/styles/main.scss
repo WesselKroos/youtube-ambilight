@@ -235,7 +235,7 @@ html[data-ambilight-enabled="true"] {
   transition: opacity .25s;
 }
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
-  width: 440px;
+  width: 490px;
 }
 .ytp-ambilight-settings-menu.is-visible {
   opacity: 1;
@@ -332,10 +332,20 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     line-height: 11px;
 
     ytd-watch-flexy[fullscreen] & {
+      left: 6px;
       margin-top: 8px;
     }
   }
+}
 
+.ytap-menuitem-description {
+  line-height: 12px;
+  font-size: 10px;
+
+  ytd-watch-flexy[fullscreen] & {
+    line-height: 15px;
+    font-size: 13px;
+  }
 }
 
 .ytap-section {
@@ -393,6 +403,10 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     height: 0;
     margin: 0 14px;
     outline: 0;
+    ytd-watch-flexy[fullscreen] & {
+      margin: 0 22px;
+      width: calc(100% - 44px);
+    }
     &::-webkit-slider-runnable-track {
       -webkit-appearance: none;
       background: linear-gradient(transparent 42%, rgba(255,255,255,0.3) 43%, rgba(255,255,255,0.3) 57%, transparent 58%);
@@ -409,6 +423,12 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       background: #bdbdbd;
       box-shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
       transition: all .15s;
+
+      ytd-watch-flexy[fullscreen] & {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+      }
     }
     &:hover::-webkit-slider-thumb {
       background: #fff;
@@ -430,6 +450,10 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   left: 21px;
   font-size: 10px;
   pointer-events: none;
+  ytd-watch-flexy[fullscreen] & {
+    left: 31px;
+    width: calc(100% + 44px);
+  }
 
   &__label {
     position: absolute;
@@ -440,6 +464,9 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     text-align: center;
     color: #999;
     pointer-events: all;
+    &:hover {
+      color: #fff;
+    }
     cursor: pointer;
     &::before {
       content: '';
@@ -452,11 +479,25 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       background: #666;
       pointer-events: none;
     }
+    ytd-watch-flexy[fullscreen] & {
+      margin-top: -14px;
+      &::before {
+        height: 20px;
+        margin-top: -21px;
+        width: 2px;
+      }
+    }
 
     &--flip {
       margin-top: -37px;
       &::before {
         margin-top: 13px;
+      }
+      ytd-watch-flexy[fullscreen] & {
+        margin-top: -48px;
+        &::before {
+          margin-top: 13px;
+        }
       }
     }
   }

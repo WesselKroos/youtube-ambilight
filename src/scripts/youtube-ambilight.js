@@ -295,7 +295,7 @@ class Ambilight {
       },
       {
         name: 'spread',
-        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span class="ytap-menuitem-description">(More GPU usage)</span></span>',
         type: 'list',
         default: 20,
         min: 0,
@@ -304,7 +304,7 @@ class Ambilight {
       },
       {
         name: 'blur',
-        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span style="line-height: 12px; font-size: 10px;">(More GPU memory)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span class="ytap-menuitem-description">(More GPU memory)</span></span>',
         type: 'list',
         default: 50,
         min: 0,
@@ -321,7 +321,7 @@ class Ambilight {
       },
       {
         name: 'fadeOutEasing',
-        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span style="line-height: 12px; font-size: 10px;">(Tip: Turn blur all the way down)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span class="ytap-menuitem-description">(Tip: Turn blur all the way down)</span></span>',
         type: 'list',
         default: 60,
         min: 1,
@@ -330,7 +330,7 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span style="line-height: 12px; font-size: 10px;">(Lower GPU usage. Tip: Turn blur down)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytap-menuitem-description">(Lower GPU usage. Tip: Turn blur down)</span></span>',
         type: 'list',
         default: 20,
         min: 2,
@@ -348,21 +348,21 @@ class Ambilight {
       },
       {
         name: 'highQuality',
-        label: '<span style="display: inline-block; padding: 5px 0">Prevent frame drops<br/><span style="line-height: 12px; font-size: 10px;">(More CPU usage)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Prevent frame drops<br/><span class="ytap-menuitem-description">(More CPU usage)</span></span>',
         type: 'checkbox',
         default: false
       },
       {
         new: true,
         name: 'videoOverlayEnabled',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video to ambilight<br/><span style="line-height: 12px; font-size: 10px;">(Stuttering video? Try "Prevent frame drops")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video to ambilight<br/><span class="ytap-menuitem-description">(Stuttering video? Try "Prevent frame drops")</span></span>',
         type: 'checkbox',
         default: false
       },
       {
         new: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span style="line-height: 12px; font-size: 10px;">(More GPU usage. Works also for "Sync video")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works also for "Sync video")</span></span>',
         type: 'checkbox',
         default: false
       },
@@ -480,7 +480,7 @@ class Ambilight {
       },
       {
         name: 'enableInFullscreen',
-        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span style="line-height: 12px; font-size: 10px;">(When in fullscreen mode)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span class="ytap-menuitem-description">(When in fullscreen mode)</span></span>',
         type: 'checkbox',
         default: true
       },
