@@ -677,7 +677,7 @@ class Ambilight {
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => raf(() =>
-        setTimeout(() => this.checkVideoSize(), 0)
+        setTimeout(() => this.scheduleNextFrame(), 0)
       ))
     )
 
@@ -798,9 +798,9 @@ class Ambilight {
         this.videoPlayer.style.marginTop = ''
         videoPlayerContainer.style.marginTop = ''
         videoPlayerContainer.style.height = ''
-        this.hide()
       }
       if (notVisible) {
+        this.hide()
         return true
       }
 
@@ -917,6 +917,7 @@ class Ambilight {
 
       this.resetVideoFrameCounter()
 
+      this.sizesInvalidated = false
       return true
     } catch (ex) {
       console.error('YouTube Ambilight | Resize | UpdateSizes:', ex)
@@ -1060,6 +1061,16 @@ class Ambilight {
   }
 
   checkVideoSize() {
+    if(this.canvassesInvalidated) {
+      this.canvassesInvalidated = false
+      this.recreateCanvasses()
+    }
+
+    if(this.sizesInvalidated) {
+      this.sizesInvalidated = false
+      return this.updateSizes()
+    }
+
     //Resized
     if (this.previousWidth !== this.videoPlayer.clientWidth
       || this.previousTop !== this.videoPlayer.style.top
@@ -1085,14 +1096,14 @@ class Ambilight {
   }
 
   nextFrame = () => {
-    try {
-      this.scheduled = false
+    if(!this.scheduled) return
+    this.scheduled = false
 
+    try {
       if (!this.checkVideoSize()) {
         this.videoFrameCount = 0
         return
       }
-      if (this.scheduled || !this.enabled || !this.isOnVideoPage || this.videoPlayer.paused) return
 
       this.drawAmbilight()
 
@@ -1102,6 +1113,11 @@ class Ambilight {
         this.detectAmbilightFrameRate()
       }, 1)
 
+      
+      if (this.videoPlayer.paused) {
+        return
+      } 
+
       this.scheduleNextFrame()
     } catch (ex) {
       console.error('YouTube Ambilight | NextFrame:', ex)
@@ -1110,10 +1126,12 @@ class Ambilight {
   }
 
   scheduleNextFrame() {
-    if (this.scheduled || !this.enabled || !this.isOnVideoPage || this.videoPlayer.paused) return
+    if (this.scheduled || !this.enabled || !this.isOnVideoPage) {
+      return
+    } 
 
-    raf(this.nextFrame)
     this.scheduled = true
+    raf(this.nextFrame)
   }
 
   isNewFrame(oldImage, newImage) {
@@ -1138,6 +1156,13 @@ class Ambilight {
     oldImage = null
     newImage = null
     return false
+  }
+
+  hideFPS () {
+    this.videoFPSContainer.innerHTML = ''
+    this.displayFPSContainer.innerHTML = ''
+    this.ambilightFPSContainer.innerHTML = ''
+    this.skippedFramesContainer.innerHTML = ''
   }
 
   detectVideoFrameRate() {
@@ -1236,7 +1261,6 @@ class Ambilight {
       this.show()
     }
 
-
     //performance.mark('start-drawing')
 
     let newVideoFrameCount = this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount
@@ -1301,7 +1325,7 @@ class Ambilight {
     }
 
     //console.log(this.videoPlayer.currentTime, this.videoPlayer.getCurrentTime(), this.videoPlayer.webkitDecodedFrameCount, this.videoPlayer.webkitDroppedFrameCount, this.videoPlayer.webkitVideoDecodedByteCount, this.videoPlayer.webkitAudioDecodedByteCount)
-    if(this.frameBlending) {
+    if(this.frameBlending && !this.videoPlayer.paused) {
       if(isNewFrame) {
         this.previousFrameTime = this.videoPlayer.currentTime
 
@@ -1502,6 +1526,7 @@ class Ambilight {
     if (this.isHidden) return
     this.isHidden = true
     this.ambilightContainer.style.opacity = '0'
+    this.hideFPS()
     if(this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
@@ -1663,9 +1688,9 @@ class Ambilight {
             return
           }
           if (setting.name === 'spread' || setting.name === 'edge' || setting.name === 'fadeOutEasing') {
-            this.recreateCanvasses()
+            this.canvassesInvalidated = true
           }
-          this.updateSizes()
+          this.sizesInvalidated = true
           this.scheduleNextFrame()
         })
       } else if (setting.type === 'checkbox') {
@@ -1695,6 +1720,10 @@ class Ambilight {
             this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+          }
+
+          if(setting.name === 'showFPS' && !setting.value) {
+            this.hideFPS()
           }
 
           this.updateSizes()

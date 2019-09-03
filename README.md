@@ -41,10 +41,13 @@ Feel free to
 - Remove ambilight bleeding on the browser edges since Chrome 73
 - Split shadow settings into opacity and size
 - Resize, stop, start, other source events performance
-x Only horizontal ambilight setting
-- Prevent video stutter in synchronized mode by temporary turning of the overlay when detecting stutter
+- Fix styles error Sentry
 - Fullscreen slider knob size
-- Fix error Sentry
 - Turn FPS on/off even when ambilight is turned off
+- Render ambilight when paused
 - Smooth Motion with seeking support
-- Buffer new frames for smoother motion
+x Adjust the lowest spread setting to rendering only one canvas element
+x Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops
+x Buffer frames in video sync mode for smoother motion in the video
+x Prevent video stutter in synchronized mode by temporary turning of the overlay when detecting stutter
+x Only horizontal ambilight setting
