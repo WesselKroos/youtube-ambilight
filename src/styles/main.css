@@ -1,3 +1,7 @@
+.ambilight {
+  display: none;
+}
+
 html[data-ambilight-enabled=true] {
   /* General */
   /* Cosmetics - Transparent elements */
@@ -117,6 +121,7 @@ html[data-ambilight-enabled=true] .ambilight__player-container {
   height: 100%;
 }
 html[data-ambilight-enabled=true] .ambilight {
+  display: block;
   height: 300%;
   overflow: hidden;
   pointer-events: none;

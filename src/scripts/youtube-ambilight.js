@@ -636,6 +636,7 @@ class Ambilight {
     }
 
     window.addEventListener('resize', () => {
+      if(!this.isOnVideoPage) return
       this.checkVideoSize()
       setTimeout(() =>
         raf(() =>
@@ -645,6 +646,7 @@ class Ambilight {
     })
 
     document.addEventListener('keydown', (e) => {
+      if(!this.isOnVideoPage) return
       if (document.activeElement) {
         const el = document.activeElement
         const tag = el.tagName
@@ -780,11 +782,18 @@ class Ambilight {
       }
 
       const videoPlayerContainer = this.videoPlayer.parentNode
+      const html5VideoPlayer = $.s('.html5-video-player')
 
-      //Ignore minimization after scrolling down
-      const notVisible = (!this.enabled || this.isVR || $.s('.html5-video-player').classList.contains('ytp-player-minimized') || (this.isFullscreen && !this.enableInFullscreen))
+      const notVisible = (
+          !this.enabled || 
+          this.isVR || 
+          !videoPlayerContainer || 
+          !html5VideoPlayer || 
+          html5VideoPlayer.classList.contains('ytp-player-minimized') || 
+          (this.isFullscreen && !this.enableInFullscreen)
+        )
       if (notVisible || noClipOrScale) {
-        $.s('.html5-video-container').style.setProperty('transform', ``)
+        videoPlayerContainer.style.setProperty('transform', ``)
         videoPlayerContainer.style.overflow = ''
         this.videoPlayer.style.marginTop = ''
         videoPlayerContainer.style.marginTop = ''
@@ -797,7 +806,7 @@ class Ambilight {
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
       if (!noClipOrScale) {
-        $.s('.html5-video-container').style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
+        videoPlayerContainer.style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
         videoPlayerContainer.style.overflow = 'hidden'
         this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
         const top = Math.max(0, parseInt(this.videoPlayer.style.top))
@@ -1819,9 +1828,13 @@ const ambilightDetectPageTransition = (ytpApp) => {
     if (!window.ambilight) return
 
     if (ytpApp.hasAttribute('is-watch-page')) {
+      window.ambilight.isOnVideoPage = true
       window.ambilight.start()
-    } else if (ambilight.resetThemeToLightOnDisable) {
-      Ambilight.setDarkTheme(false)
+    } else {
+      window.ambilight.isOnVideoPage = false
+      if (ambilight.resetThemeToLightOnDisable) {
+        Ambilight.setDarkTheme(false)
+      }
     }
   })
   observer.observe(ytpApp, {
