@@ -1578,7 +1578,13 @@ class Ambilight {
 
   initScrollPosition() {
     window.on('scroll', () => {
-      this.checkScrollPosition()
+      if(this.changedTopTimeout)
+        clearTimeout(this.changedTopTimeout)
+
+      this.changedTopTimeout = setTimeout(() => {
+        this.checkScrollPosition()
+        this.changedTopTimeout = undefined
+      }, 100)
     })
     this.checkScrollPosition()
   }
