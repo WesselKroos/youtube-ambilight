@@ -27,9 +27,9 @@ html[data-ambilight-enabled=true][dark=true] body {
   background: #000 !important;
   background-color: #000 !important;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] ytd-masthead,
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #container.ytd-searchbox,
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-icon-legacy {
+html[data-ambilight-enabled=true] body ytd-app[is-watch-page] #masthead-container.at-top ytd-masthead,
+html[data-ambilight-enabled=true] body ytd-app[is-watch-page] #masthead-container.at-top #container.ytd-searchbox,
+html[data-ambilight-enabled=true] body ytd-app[is-watch-page] #masthead-container.at-top #search-icon-legacy {
   background: none !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page],
@@ -66,29 +66,29 @@ html[data-ambilight-enabled=true] #message.yt-live-chat-text-message-renderer {
 html[data-ambilight-enabled=true] #author-name.yt-live-chat-author-chip {
   color: #bbb;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form * {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form * {
   border-color: rgba(255, 255, 255, 0.6) !important;
   color: white !important;
   fill: white !important;
   transition: all 0.15s;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search::-webkit-input-placeholder {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search::-webkit-input-placeholder {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 html[data-ambilight-enabled=true] ytd-app[is-watch-page] #search-form {
   transition: opacity 0.15s, filter 0.15s;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:not(:hover):not(:focus-within) {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:not(:hover):not(:focus-within) {
   opacity: 0.15;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:hover, html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:focus-within {
   background: #121212 !important;
   border-radius: 2px;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover button, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within button {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:hover button, html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:focus-within button {
   background: #ffffff14 !important;
 }
-html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:hover *, html[data-ambilight-enabled=true] body.at-top ytd-app[is-watch-page] #search-form:focus-within * {
+html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:hover *, html[data-ambilight-enabled=true] ytd-app[is-watch-page] #masthead-container.at-top #search-form:focus-within * {
   border-color: rgba(55, 55, 55, 0.6) !important;
   color: white !important;
   fill: white !important;
@@ -140,6 +140,10 @@ html[data-ambilight-enabled=true] .ambilight__video-overlay {
   height: 0;
   pointer-events: none;
   backface-visibility: hidden;
+  transition: opacity 0.25s;
+}
+html[data-ambilight-enabled=true] .ambilight__video-overlay--hide {
+  opacity: 0;
 }
 html[data-ambilight-enabled=true] body.immersive-mode::-webkit-scrollbar {
   width: 0;

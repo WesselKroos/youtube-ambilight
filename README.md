@@ -46,6 +46,7 @@ Feel free to
 - Turn FPS on/off even when ambilight is turned off
 - Render ambilight when paused
 - Smooth Motion with seeking support
+x Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76
 x Adjust the lowest spread setting to rendering only one canvas element
 x Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops
 x Buffer frames in video sync mode for smoother motion in the video
