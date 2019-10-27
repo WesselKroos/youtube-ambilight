@@ -183,9 +183,10 @@ html[data-ambilight-enabled="true"] {
     width: 0;
     height: 0;
     pointer-events: none;
-    transition: opacity .001s;
+    transition: opacity .25s;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+      transition: opacity .001s;
     }
   }
 
@@ -245,6 +246,8 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 }
 .ytp-ambilight-settings-menu .ytp-panel {
   position: relative;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 .ytp-ambilight-settings-button {
   position: relative;
@@ -315,27 +318,111 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   }
 }
 
-.ytap-menuitem--new .ytp-menuitem-label {
-  &::before {
-    content: 'N';
-    position: absolute;
-    left: 2px;
-    margin-top: 2px;
-    width: 11px;
-    height: auto;
-    display: block;
-    border-radius: 50%;
-    background: #fd0;
-    color: #000a;
-    font-weight: 600;
-    font-size: 7px;
-    text-shadow: none;
-    text-align: center;
-    line-height: 11px;
+.ytap-menuitem--experimental,
+.ytap-menuitem--new {
+  & .ytp-menuitem-label {
+    position: relative;
+    &::before {
+      content: 'N';
+      position: absolute;
+      pointer-events: none;
+      top: 0;
+      left: 2px;
+      margin-top: 2px;
+      width: 11px;
+      height: auto;
+      border-radius: 6px;
+      display: block;
+      line-height: 12px;
+      background: #fd0;
+      color: #000;
+      font-weight: 600;
+      font-size: 7px;
+      text-shadow: none;
+      text-align: center;
+      line-height: 11px;
+      transition: transform .25s .25s ease-out;
 
-    ytd-watch-flexy[fullscreen] & {
-      left: 6px;
-      margin-top: 8px;
+      ytd-watch-flexy[fullscreen] & {
+        width: 14px;
+        height: 14px;
+        left: 5px;
+        margin-top: 6px;
+        border-radius: 7px;
+        line-height: 14px;
+        font-size: 9px;
+      }
+    }
+    &::after {
+      content: 'New';
+      position: absolute;
+      pointer-events: none;
+      top: 0;
+      left: 2px;
+      max-width: 3px;
+      margin-top: -12px;
+      height: 12px;
+      padding: 0 4px;
+      border-radius: 6px;
+      display: block;
+      background: #fd0;
+      color: #000;
+      line-height: 12px;
+      font-size: 10px;
+      overflow: hidden;
+      white-space: nowrap;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 1s, opacity .125s .125s ease-in, max-width .25s ease-out;
+
+      ytd-watch-flexy[fullscreen] & {
+        max-width: 6px;
+        height: 14px;
+        border-radius: 7px;
+        line-height: 14px;
+        font-size: 13px;
+        left: 5px;
+      }
+    }
+  }
+  &:hover .ytp-menuitem-label {
+    &::before {
+      transform: translateY(-14px);
+      transition: transform .25s .75s ease-in;
+
+      ytd-watch-flexy[fullscreen] & {
+        transform: translateY(-18px);
+      }
+    }
+    &::after {
+      visibility: visible;
+      opacity: 1;
+      max-width: 28px;
+      transition: visibility 0s .75s, opacity .125s .9s ease-out, max-width .5s 1s ease;
+      ytd-watch-flexy[fullscreen] & {
+        max-width: 34px;
+      }
+    }
+  }
+}
+.ytap-menuitem--experimental {
+  .ytp-menuitem-label {
+    &::before {
+      content: 'E';
+      background: #f00;
+    }
+    &::after {
+      content: 'Experimental';
+      background: #f00;
+    }
+  }
+  
+  &:hover .ytp-menuitem-label {
+    &::after {
+      max-width: 67px;
+      ytd-watch-flexy[fullscreen] & {
+        max-width: 85px;
+      }
     }
   }
 }
@@ -371,10 +458,14 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     line-height: 21px;
     background: #5556;
     color: #ccc;
+    transition: background-color .15s;
     ytd-watch-flexy[fullscreen] & {
       padding: 0px 20px;
       height: 30px;
       line-height: 30px;
+    }
+    .ytap-section:hover & {
+      background: #6667;
     }
   }
   &__fill {
@@ -505,6 +596,110 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   }
 }
 
+/* Settings - Experimental flexbox styling */
+
+.ytp-ambilight-settings-menu {
+  .ytp-panel-menu {
+    display: block;
+  }
+
+  .ytpa-feedback-link__text {
+    position: static;
+  }
+
+  .ytpa-feedback-link {
+    height: auto !important;
+  }
+
+  .ytap-section {
+    display: flex;
+    width: 100%;
+    margin: 5px 0;
+    cursor: pointer;
+    &::after {
+      position: absolute;
+      right: 12px;
+      margin-top: 3px;
+      font-size: 13px;
+      content: 'v';
+      color: #666;
+
+      ytd-watch-flexy[fullscreen] & {
+        font-size: 17px;
+        margin-top: 4px;
+        margin-right: 1px;
+      }
+    }
+    &.is-collapsed {
+      margin: 5px 0 -4px;
+      &::after {
+        position: absolute;
+        right: 12px;
+        margin-top: 5px;
+        font-size: 18px;
+        content: '^';
+        ytd-watch-flexy[fullscreen] & {
+          font-size: 25px;
+          margin-right: 0;
+        }
+      }
+      $sel: '&';
+      @for $i from 1 through 10 {
+        $sel: if($i == 1, " + *:not(.ytap-section)", selector-nest($sel, " + *:not(.ytap-section)"));
+        #{$sel} {
+          display: none;
+        }
+      }
+    }
+  }
+  .ytap-section__cell {
+    flex-grow: 1;
+  }
+  .ytap-section__label,
+  .ytap-section__fill {
+    margin: 0;
+  }
+
+  .ytp-menuitem {
+    display: flex;
+    width: 100%;
+    height: auto !important;
+    margin: 0;
+    padding: 6px 0;
+    ytd-watch-flexy[fullscreen] & {
+      padding: 9px 0;
+    }
+  }
+  .ytp-menuitem-label {
+    align-self: center;
+    width: calc(100% - 67px);
+    span {
+      padding: 0 !important;
+    }
+  }
+
+  .ytp-menuitem[role="menuitemcheckbox"] {
+
+  }
+  .ytp-menuitem-toggle-checkbox {
+    margin: 3px 0;
+  }
+
+  .ytp-menuitem-range {
+    display: block;
+    height: 0px;
+    margin: -2px 0 13px;
+    position: relative;
+    z-index: 2;
+    ytd-watch-flexy[fullscreen] & {
+      margin: -4px 0 20px;
+    }
+  }
+  .ytp-menuitem-range input[type="range"] {
+    position: static;
+    display: block;
+  }
+}
 
 /* Settings - Immersive mode button */
 

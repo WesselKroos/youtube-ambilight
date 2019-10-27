@@ -297,7 +297,9 @@ class Ambilight {
     this.settings = [
       {
         type: 'section',
-        label: 'Ambilight'
+        label: 'Ambilight',
+        name: 'sectionAmbilightCollapsed',
+        default: false
       },
       {
         name: 'blur',
@@ -345,7 +347,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight image adjustment'
+        label: 'Ambilight image adjustment',
+        name: 'sectionAmbilightImageAdjustmentCollapsed',
+        default: false
       },
       // {
       //   name: 'sepia',
@@ -381,7 +385,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Video resizing'
+        label: 'Video resizing',
+        name: 'sectionVideoResizingCollapsed',
+        default: false
       },
       {
         new: true,
@@ -411,7 +417,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Other page content'
+        label: 'Other page content',
+        name: 'sectionOtherPageContentCollapsed',
+        default: false
       },
       {
         new: true,
@@ -439,7 +447,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight quality & performance'
+        label: 'Ambilight quality & performance',
+        name: 'sectionAmbilightQualityPerformanceCollapsed',
+        default: false
       },
       {
         new: true,
@@ -457,14 +467,14 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
+        experimental: true,
         name: 'videoOverlayEnabled',
         label: '<span style="display: inline-block; padding: 5px 0">Sync video exactly <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames. \"Prevent frame drops\" is auto-enabled to minimize this issue." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(Stuttering video? Try "Prevent frame drops")</span></span>',
         type: 'checkbox',
         default: false
       },
       {
-        new: true,
+        experimental: true,
         name: 'videoOverlaySyncThreshold',
         label: '<span style="display: inline-block; padding: 5px 0">Sync video: auto-disable threshold<br/><span class="ytap-menuitem-description">(Auto-disable when dropping % of frames)</span></span>',
         type: 'list',
@@ -474,13 +484,14 @@ class Ambilight {
         step: 1
       },
       {
-        new: true,
+        experimental: true,
         name: 'frameBlending',
         label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works also for "Sync video")</span></span>',
         type: 'checkbox',
         default: false
       },
       {
+        experimental: true,
         name: 'frameBlendingSmoothness',
         label: 'Smooth motion strength',
         type: 'list',
@@ -491,7 +502,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'General'
+        label: 'General',
+        name: 'sectionGeneralCollapsed',
+        default: false
       },
       {
         new: true,
@@ -520,7 +533,17 @@ class Ambilight {
         default: true
       }
     ]
+    
 
+    //Sections
+    this.sectionAmbilightCollapsed = this.getSetting('sectionAmbilightCollapsed')
+    this.sectionAmbilightImageAdjustmentCollapsed =  this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
+    this.sectionVideoResizingCollapsed =  this.getSetting('sectionVideoResizingCollapsed')
+    this.sectionOtherPageContentCollapsed =  this.getSetting('sectionOtherPageContentCollapsed')
+    this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
+    this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
+
+    //Settings
     this.enabled = this.getSetting('enabled')
     $.s('html').attr('data-ambilight-enabled', this.enabled)
     this.spread = this.getSetting('spread')
@@ -1650,7 +1673,7 @@ class Ambilight {
   hide() {
     if (this.isHidden) return
     this.isHidden = true
-    this.ambilightContainer.style.opacity = '0'
+    this.ambilightContainer.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     if(this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
@@ -1666,7 +1689,7 @@ class Ambilight {
 
   show() {
     this.isHidden = false
-    this.ambilightContainer.style.opacity = '1'
+    this.ambilightContainer.style.opacity = 1
     Ambilight.setDarkTheme(true)
   }
 
@@ -1742,7 +1765,7 @@ class Ambilight {
       this.settings.map(setting => {
         if (setting.type === 'checkbox') {
           return `
-                  <div id="setting-${setting.name}" class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
+                  <div id="setting-${setting.name}" class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}${setting.experimental ? ' ytap-menuitem--experimental' : ''}" role="menuitemcheckbox" aria-checked="${setting.value ? 'true' : 'false'}" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div class="ytp-menuitem-content">
                       <div class="ytp-menuitem-toggle-checkbox"></div>
@@ -1751,7 +1774,7 @@ class Ambilight {
                 `
         } else if (setting.type === 'list') {
           return `
-                  <div class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}" aria-haspopup="false" role="menuitemrange" tabindex="0">
+                  <div class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}${setting.experimental ? ' ytap-menuitem--experimental' : ''}" aria-haspopup="false" role="menuitemrange" tabindex="0">
                     <div class="ytp-menuitem-label">${setting.label}</div>
                     <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
                   </div>
@@ -1776,7 +1799,7 @@ class Ambilight {
                 `
         } else if (setting.type === 'section') {
           return `
-                  <div class="ytap-section">
+                  <div class="ytap-section${setting.value ? ' is-collapsed' : ''}" data-name="${setting.name}">
                     <div class="ytap-section__cell">
                       <div class="ytap-section__label">${setting.label}</div>
                     </div>
@@ -1797,6 +1820,21 @@ class Ambilight {
         const input = document.querySelector(`#setting-${name}`)
         input.value = value
         input.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+    })
+    this.settingsMenu.querySelectorAll('.ytap-section').forEach(section => {
+      section.on('click', (e) => {
+        const name = section.attr('data-name')
+        const settingSection = this.settings.find(setting => setting.type == 'section' && setting.name == name)
+        if(!settingSection) return
+        settingSection.value = !settingSection.value
+        this.setSetting(name, settingSection.value)
+
+        if(settingSection.value) {
+          section.class('is-collapsed')
+        } else {
+          section.removeClass('is-collapsed')
+        }
       })
     })
     this.settingsMenu.prependTo($.s('.html5-video-player'))
@@ -1931,7 +1969,7 @@ class Ambilight {
     const setting = this.settings.find(setting => setting.name === key)
     if (value === null) {
       value = setting.default
-    } else if (setting.type === 'checkbox') {
+    } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (value === 'true')
     } else {
       if (key === 'blur')

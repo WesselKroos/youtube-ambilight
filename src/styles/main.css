@@ -138,10 +138,11 @@ html[data-ambilight-enabled=true] .ambilight__video-overlay {
   width: 0;
   height: 0;
   pointer-events: none;
-  transition: opacity 0.001s;
+  transition: opacity 0.25s;
 }
 html[data-ambilight-enabled=true] .ambilight__video-overlay--hide {
   opacity: 1e-7;
+  transition: opacity 0.001s;
 }
 html[data-ambilight-enabled=true] body.immersive-mode::-webkit-scrollbar {
   width: 0;
@@ -195,6 +196,8 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 
 .ytp-ambilight-settings-menu .ytp-panel {
   position: relative;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 .ytp-ambilight-settings-button {
@@ -262,26 +265,108 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   text-decoration: underline;
 }
 
+.ytap-menuitem--experimental .ytp-menuitem-label,
+.ytap-menuitem--new .ytp-menuitem-label {
+  position: relative;
+}
+.ytap-menuitem--experimental .ytp-menuitem-label::before,
 .ytap-menuitem--new .ytp-menuitem-label::before {
   content: "N";
   position: absolute;
+  pointer-events: none;
+  top: 0;
   left: 2px;
   margin-top: 2px;
   width: 11px;
   height: auto;
+  border-radius: 6px;
   display: block;
-  border-radius: 50%;
+  line-height: 12px;
   background: #fd0;
-  color: #000a;
+  color: #000;
   font-weight: 600;
   font-size: 7px;
   text-shadow: none;
   text-align: center;
   line-height: 11px;
+  transition: transform 0.25s 0.25s ease-out;
 }
+ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental .ytp-menuitem-label::before,
 ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::before {
-  left: 6px;
-  margin-top: 8px;
+  width: 14px;
+  height: 14px;
+  left: 5px;
+  margin-top: 6px;
+  border-radius: 7px;
+  line-height: 14px;
+  font-size: 9px;
+}
+.ytap-menuitem--experimental .ytp-menuitem-label::after,
+.ytap-menuitem--new .ytp-menuitem-label::after {
+  content: "New";
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 2px;
+  max-width: 3px;
+  margin-top: -12px;
+  height: 12px;
+  padding: 0 4px;
+  border-radius: 6px;
+  display: block;
+  background: #fd0;
+  color: #000;
+  line-height: 12px;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 1s, opacity 0.125s 0.125s ease-in, max-width 0.25s ease-out;
+}
+ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental .ytp-menuitem-label::after,
+ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::after {
+  max-width: 6px;
+  height: 14px;
+  border-radius: 7px;
+  line-height: 14px;
+  font-size: 13px;
+  left: 5px;
+}
+.ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
+.ytap-menuitem--new:hover .ytp-menuitem-label::before {
+  transform: translateY(-14px);
+  transition: transform 0.25s 0.75s ease-in;
+}
+ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
+ytd-watch-flexy[fullscreen] .ytap-menuitem--new:hover .ytp-menuitem-label::before {
+  transform: translateY(-18px);
+}
+.ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
+.ytap-menuitem--new:hover .ytp-menuitem-label::after {
+  visibility: visible;
+  opacity: 1;
+  max-width: 28px;
+  transition: visibility 0s 0.75s, opacity 0.125s 0.9s ease-out, max-width 0.5s 1s ease;
+}
+ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
+ytd-watch-flexy[fullscreen] .ytap-menuitem--new:hover .ytp-menuitem-label::after {
+  max-width: 34px;
+}
+
+.ytap-menuitem--experimental .ytp-menuitem-label::before {
+  content: "E";
+  background: #f00;
+}
+.ytap-menuitem--experimental .ytp-menuitem-label::after {
+  content: "Experimental";
+  background: #f00;
+}
+.ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
+  max-width: 67px;
+}
+ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
+  max-width: 85px;
 }
 
 .ytap-menuitem-description {
@@ -312,11 +397,15 @@ ytd-watch-flexy[fullscreen] .ytap-menuitem-description {
   line-height: 21px;
   background: #5556;
   color: #ccc;
+  transition: background-color 0.15s;
 }
 ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .ytap-section__fill {
   padding: 0px 20px;
   height: 30px;
   line-height: 30px;
+}
+.ytap-section:hover .ytap-section__label, .ytap-section:hover .ytap-section__fill {
+  background: #6667;
 }
 .ytap-section__fill {
   color: transparent;
@@ -438,6 +527,121 @@ ytd-watch-flexy[fullscreen] .setting-range-datalist__label--flip {
 }
 ytd-watch-flexy[fullscreen] .setting-range-datalist__label--flip::before {
   margin-top: 13px;
+}
+
+/* Settings - Experimental flexbox styling */
+.ytp-ambilight-settings-menu .ytp-panel-menu {
+  display: block;
+}
+.ytp-ambilight-settings-menu .ytpa-feedback-link__text {
+  position: static;
+}
+.ytp-ambilight-settings-menu .ytpa-feedback-link {
+  height: auto !important;
+}
+.ytp-ambilight-settings-menu .ytap-section {
+  display: flex;
+  width: 100%;
+  margin: 5px 0;
+  cursor: pointer;
+}
+.ytp-ambilight-settings-menu .ytap-section::after {
+  position: absolute;
+  right: 12px;
+  margin-top: 3px;
+  font-size: 13px;
+  content: "v";
+  color: #666;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section::after {
+  font-size: 17px;
+  margin-top: 4px;
+  margin-right: 1px;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed {
+  margin: 5px 0 -4px;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed::after {
+  position: absolute;
+  right: 12px;
+  margin-top: 5px;
+  font-size: 18px;
+  content: "^";
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section.is-collapsed::after {
+  font-size: 25px;
+  margin-right: 0;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section.is-collapsed + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) + *:not(.ytap-section) {
+  display: none;
+}
+.ytp-ambilight-settings-menu .ytap-section__cell {
+  flex-grow: 1;
+}
+.ytp-ambilight-settings-menu .ytap-section__label,
+.ytp-ambilight-settings-menu .ytap-section__fill {
+  margin: 0;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem {
+  display: flex;
+  width: 100%;
+  height: auto !important;
+  margin: 0;
+  padding: 6px 0;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem {
+  padding: 9px 0;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-label {
+  align-self: center;
+  width: calc(100% - 67px);
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-label span {
+  padding: 0 !important;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-toggle-checkbox {
+  margin: 3px 0;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range {
+  display: block;
+  height: 0px;
+  margin: -2px 0 13px;
+  position: relative;
+  z-index: 2;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem-range {
+  margin: -4px 0 20px;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range] {
+  position: static;
+  display: block;
 }
 
 /* Settings - Immersive mode button */
