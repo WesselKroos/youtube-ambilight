@@ -874,11 +874,13 @@ class Ambilight {
           (this.isFullscreen && !this.enableInFullscreen)
         )
       if (notVisible || noClipOrScale) {
-        videoPlayerContainer.style.setProperty('transform', ``)
-        videoPlayerContainer.style.overflow = ''
         this.videoPlayer.style.marginTop = ''
-        videoPlayerContainer.style.marginTop = ''
-        videoPlayerContainer.style.height = ''
+        if(videoPlayerContainer) {
+          videoPlayerContainer.style.setProperty('transform', ``)
+          videoPlayerContainer.style.overflow = ''
+          videoPlayerContainer.style.marginTop = ''
+          videoPlayerContainer.style.height = ''
+        }
       }
       if (notVisible) {
         this.hide()
@@ -887,13 +889,13 @@ class Ambilight {
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
       if (!noClipOrScale) {
-        videoPlayerContainer.style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
-        videoPlayerContainer.style.overflow = 'hidden'
         this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoPlayer.offsetHeight)
         const top = Math.max(0, parseInt(this.videoPlayer.style.top))
         this.videoPlayer.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
         videoPlayerContainer.style.marginTop = `${this.horizontalBarsClipPX + top}px`
         videoPlayerContainer.style.height = `${this.videoPlayer.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
+        videoPlayerContainer.style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
+        videoPlayerContainer.style.overflow = 'hidden'
       }
 
       this.playerOffset = this.videoPlayer.offset()
