@@ -619,34 +619,7 @@ class Ambilight {
     }
 
     this.recreateCanvasses()
-
-    if (this.showDisplayFrameRate || this.showVideoFrameRate) {
-
-      this.FPSContainer = document.createElement("div")
-      this.FPSContainer.class('ambilight__fps-container')
-
-      this.videoSyncedContainer = document.createElement("div")
-      this.videoSyncedContainer.class('ambilight__video-synced')
-      this.FPSContainer.prepend(this.videoSyncedContainer)
-
-      this.displayFPSContainer = document.createElement("div")
-      this.displayFPSContainer.class('ambilight__display-fps')
-      this.FPSContainer.prepend(this.displayFPSContainer)
-
-      this.ambilightFPSContainer = document.createElement("div")
-      this.ambilightFPSContainer.class('ambilight__ambilight-fps')
-      this.FPSContainer.prepend(this.ambilightFPSContainer)
-
-      this.skippedFramesContainer = document.createElement("div")
-      this.skippedFramesContainer.class('ambilight__skipped-frames')
-      this.FPSContainer.prepend(this.skippedFramesContainer)
-
-      this.videoFPSContainer = document.createElement("div")
-      this.videoFPSContainer.class('ambilight__video-fps')
-      this.FPSContainer.prepend(this.videoFPSContainer)
-
-      $.s('#player-container').prepend(this.FPSContainer)
-    }
+    this.initFPSContainer()
 
     window.addEventListener('resize', () => {
       if(!this.isOnVideoPage) return
@@ -683,6 +656,36 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
+  }
+
+  initFPSContainer() {
+    if (!this.showDisplayFrameRate && !this.showVideoFrameRate) return
+    if(this.videoSyncedContainer && this.videoSyncedContainer.isConnected) return
+
+    this.FPSContainer = document.createElement("div")
+    this.FPSContainer.class('ambilight__fps-container')
+
+    this.videoSyncedContainer = document.createElement("div")
+    this.videoSyncedContainer.class('ambilight__video-synced')
+    this.FPSContainer.prepend(this.videoSyncedContainer)
+
+    this.displayFPSContainer = document.createElement("div")
+    this.displayFPSContainer.class('ambilight__display-fps')
+    this.FPSContainer.prepend(this.displayFPSContainer)
+
+    this.ambilightFPSContainer = document.createElement("div")
+    this.ambilightFPSContainer.class('ambilight__ambilight-fps')
+    this.FPSContainer.prepend(this.ambilightFPSContainer)
+
+    this.skippedFramesContainer = document.createElement("div")
+    this.skippedFramesContainer.class('ambilight__skipped-frames')
+    this.FPSContainer.prepend(this.skippedFramesContainer)
+
+    this.videoFPSContainer = document.createElement("div")
+    this.videoFPSContainer.class('ambilight__video-fps')
+    this.FPSContainer.prepend(this.videoFPSContainer)
+
+    $.s('#player-container').prepend(this.FPSContainer)
   }
 
   initVideoOverlay() {
@@ -993,6 +996,7 @@ class Ambilight {
       this.resizeCanvasses()
 
       this.resetVideoFrameCounter()
+      this.initFPSContainer()
 
       this.sizesInvalidated = false
       return true
