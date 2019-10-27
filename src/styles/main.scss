@@ -176,7 +176,6 @@ html[data-ambilight-enabled="true"] {
   .ambilight__canvas {
       background: #000;
       /* image-rendering: pixelated; */
-    backface-visibility: hidden;  
   }
 
   .ambilight__video-overlay {
@@ -184,10 +183,9 @@ html[data-ambilight-enabled="true"] {
     width: 0;
     height: 0;
     pointer-events: none;
-    backface-visibility: hidden;
-    transition: opacity .25s;
+    transition: opacity .001s;
     &--hide {
-      opacity: 0;
+      opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     }
   }
 
@@ -539,15 +537,16 @@ body.immersive-mode .toggle-auto-hide-btn {
   z-index: 2;
   top: 5px;
   left: 5px;
+  width: calc(100% - 10px);
+  height: 110px;
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
   color: #fff;
   font-size: 18px;
   pointer-events: none;
-  backface-visibility: hidden;
-}
 
-.ytp-chrome-bottom {
-  backface-visibility: hidden;
+  * {
+    height: 22px;
+  }
 }
 
 /* Prevent YouTube's flickering scrollbar bug */

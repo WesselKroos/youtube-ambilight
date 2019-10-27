@@ -46,9 +46,10 @@ Feel free to
 - Turn FPS on/off even when ambilight is turned off
 - Render ambilight when paused
 - Smooth Motion with seeking support
-x Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76
+- Fix framedrop when cutting of the black bars in version 2.27.1 vs 2.27
+- Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops (opacity: 0; stackoverflows the gpu memory)
+- Temporary turn off the video sync canvas when the framerate is to low
 x Adjust the lowest spread setting to rendering only one canvas element
-x Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops
-x Buffer frames in video sync mode for smoother motion in the video
-x Temporary turn off the video sync canvas when the framerate is to low
 x Only horizontal ambilight setting
+x Buffer frames in video sync mode for smoother motion in the video
+? Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76 https://www.youtube.com/watch?v=PaErPyEnDvk
