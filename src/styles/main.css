@@ -166,7 +166,7 @@ html[data-ambilight-enabled=true] body.immersive-mode.at-top ytd-app[is-watch-pa
 /* Settings */
 .ytp-ambilight-settings-menu {
   width: 320px;
-  max-height: calc(100% - 90px);
+  max-height: calc(100% - 70px);
   overflow-y: auto !important;
   right: 12px;
   bottom: 49px;
@@ -179,6 +179,7 @@ html[data-ambilight-enabled=true] body.immersive-mode.at-top ytd-app[is-watch-pa
 
 ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   width: 490px;
+  max-height: calc(100% - 140px);
 }
 
 .ytp-ambilight-settings-menu.is-visible {
@@ -222,20 +223,19 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   width: calc(100% - 24px) !important;
 }
 
-.ytp-ambilight-settings-menu .ytp-menuitem[aria-checked=true] .ytp-menuitem-toggle-checkbox {
-  background-color: #3ea6ff;
+.ytp-ambilight-settings-menu {
+  /* Settings - sliders */
 }
-
+.ytp-ambilight-settings-menu .ytp-panel-menu {
+  display: block;
+}
 .html5-video-player .ytp-ambilight-settings-menu .ytpa-feedback-link {
   display: table-row;
-  height: 25px;
 }
 ytd-watch-flexy[fullscreen] .html5-video-player .ytp-ambilight-settings-menu .ytpa-feedback-link {
   height: 40px;
 }
-
 .ytp-ambilight-settings-menu .ytpa-feedback-link__text {
-  position: absolute;
   display: block;
   padding: 10px 15px;
   color: #3ea6ff;
@@ -248,7 +248,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   padding: 15px 20px;
   font-size: 16px;
 }
-
 .html5-video-player .ytp-ambilight-settings-menu a {
   color: #3ea6ff;
 }
@@ -256,285 +255,13 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytpa-feedback-link__te
   color: #5ebfff;
   text-decoration: underline;
 }
-
-.ytap-menuitem--experimental .ytp-menuitem-label,
-.ytap-menuitem--new .ytp-menuitem-label {
-  position: relative;
-}
-.ytap-menuitem--experimental .ytp-menuitem-label::before,
-.ytap-menuitem--new .ytp-menuitem-label::before {
-  content: "N";
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  left: 2px;
-  margin-top: 2px;
-  width: 11px;
-  height: auto;
-  border-radius: 6px;
-  display: block;
-  line-height: 12px;
-  background: #fd0;
-  color: #000;
-  font-weight: 600;
-  font-size: 7px;
-  text-shadow: none;
-  text-align: center;
-  line-height: 11px;
-  transition: transform 0.25s 0.25s ease-out;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental .ytp-menuitem-label::before,
-ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::before {
-  width: 14px;
-  height: 14px;
-  left: 5px;
-  margin-top: 6px;
-  border-radius: 7px;
-  line-height: 14px;
-  font-size: 9px;
-}
-.ytap-menuitem--experimental .ytp-menuitem-label::after,
-.ytap-menuitem--new .ytp-menuitem-label::after {
-  content: "New";
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  left: 2px;
-  max-width: 3px;
-  margin-top: -12px;
-  height: 12px;
-  padding: 0 4px;
-  border-radius: 6px;
-  display: block;
-  background: #fd0;
-  color: #000;
-  line-height: 12px;
-  font-size: 10px;
-  overflow: hidden;
-  white-space: nowrap;
-  visibility: hidden;
-  opacity: 0;
-  transition: visibility 1s, opacity 0.125s 0.125s ease-in, max-width 0.25s ease-out;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental .ytp-menuitem-label::after,
-ytd-watch-flexy[fullscreen] .ytap-menuitem--new .ytp-menuitem-label::after {
-  max-width: 6px;
-  height: 14px;
-  border-radius: 7px;
-  line-height: 14px;
-  font-size: 13px;
-  left: 5px;
-}
-.ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
-.ytap-menuitem--new:hover .ytp-menuitem-label::before {
-  transform: translateY(-14px);
-  transition: transform 0.25s 0.75s ease-in;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
-ytd-watch-flexy[fullscreen] .ytap-menuitem--new:hover .ytp-menuitem-label::before {
-  transform: translateY(-18px);
-}
-.ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
-.ytap-menuitem--new:hover .ytp-menuitem-label::after {
-  visibility: visible;
-  opacity: 1;
-  max-width: 28px;
-  transition: visibility 0s 0.75s, opacity 0.125s 0.9s ease-out, max-width 0.5s 1s ease;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
-ytd-watch-flexy[fullscreen] .ytap-menuitem--new:hover .ytp-menuitem-label::after {
-  max-width: 34px;
-}
-
-.ytap-menuitem--experimental .ytp-menuitem-label::before {
-  content: "E";
-  background: #f00;
-}
-.ytap-menuitem--experimental .ytp-menuitem-label::after {
-  content: "Experimental";
-  background: #f00;
-}
-.ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
-  max-width: 67px;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
-  max-width: 85px;
-}
-
-.ytap-menuitem-description {
-  line-height: 12px;
-  font-size: 10px;
-}
-ytd-watch-flexy[fullscreen] .ytap-menuitem-description {
-  line-height: 15px;
-  font-size: 13px;
-}
-
-.ytap-section {
-  display: table-row;
-  font-weight: 600;
-  filter: drop-shadow(rgba(0, 0, 0, 0.5) 0px 1px 0px) drop-shadow(rgba(0, 0, 0, 0.25) 0px -1px 0px);
-}
-.ytap-section__cell {
-  display: table-cell;
-}
-.ytap-section__label, .ytap-section__fill {
-  height: 20px;
-  line-height: 20px;
-  margin-top: 12px;
-  margin-bottom: 3px;
-  border-top: 1px solid #ffffff10;
-  border-bottom: 1px solid #ffffff05;
-  padding: 0px 14px;
-  line-height: 21px;
-  background: #5556;
-  color: #ccc;
-  transition: background-color 0.15s;
-}
-ytd-watch-flexy[fullscreen] .ytap-section__label, ytd-watch-flexy[fullscreen] .ytap-section__fill {
-  padding: 0px 20px;
-  height: 30px;
-  line-height: 30px;
-}
-.ytap-section:hover .ytap-section__label, .ytap-section:hover .ytap-section__fill {
-  background: #6667;
-}
-.ytap-section__fill {
-  color: transparent;
-}
-
-/* Settings - sliders */
-.ytp-menuitem {
-  transition: background-color 0.15s;
-}
-.ytp-menuitem[role=menuitemrange]:hover {
-  background: none !important;
-  cursor: default !important;
-}
-
-.ytp-menuitem-range {
-  display: table-row;
-  height: 5px;
-}
-.ytp-menuitem-range input[type=range] {
-  position: absolute;
-  display: table-row;
-  -webkit-appearance: none;
-  background: none;
-  cursor: pointer;
-  width: calc(100% - 28px);
-  height: 0;
-  margin: 0 14px;
-  outline: 0;
-}
-ytd-watch-flexy[fullscreen] .ytp-menuitem-range input[type=range] {
-  margin: 0 22px;
-  width: calc(100% - 44px);
-}
-.ytp-menuitem-range input[type=range]::-webkit-slider-runnable-track {
-  -webkit-appearance: none;
-  background: linear-gradient(transparent 42%, rgba(255, 255, 255, 0.3) 43%, rgba(255, 255, 255, 0.3) 57%, transparent 58%);
-  height: 21px;
-  margin: -10px 0;
-  outline: none;
-}
-.ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  height: 13px;
-  width: 13px;
-  margin-top: 4px;
-  border-radius: 50%;
-  background: #bdbdbd;
-  box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
-  transition: all 0.15s;
-}
-ytd-watch-flexy[fullscreen] .ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
-  width: 20px;
-  height: 20px;
-  margin-top: 0;
-}
-.ytp-menuitem-range input[type=range]:hover::-webkit-slider-thumb {
-  background: #fff;
-}
-.ytp-menuitem-range--has-snap-points {
-  height: 15px;
-}
-.ytp-menuitem-range--has-snap-points input[type=range] {
-  height: 15px;
-}
-
-.setting-range-datalist {
-  position: relative;
-  display: inline-block;
-  width: calc(100% + 28px);
-  left: 21px;
-  font-size: 10px;
-  pointer-events: none;
-}
-ytd-watch-flexy[fullscreen] .setting-range-datalist {
-  left: 31px;
-  width: calc(100% + 44px);
-}
-.setting-range-datalist__label {
-  position: absolute;
-  width: 17px;
-  margin-top: -9px;
-  margin-left: -8.5px;
-  padding: 0;
-  text-align: center;
-  color: #999;
-  pointer-events: all;
-  cursor: pointer;
-}
-.setting-range-datalist__label:hover {
-  color: #fff;
-}
-.setting-range-datalist__label::before {
-  content: "";
-  position: absolute;
-  width: 1px;
-  height: 13px;
-  left: 0;
-  margin-top: -15px;
-  margin-left: 8px;
-  background: #666;
-  pointer-events: none;
-}
-ytd-watch-flexy[fullscreen] .setting-range-datalist__label {
-  margin-top: -14px;
-}
-ytd-watch-flexy[fullscreen] .setting-range-datalist__label::before {
-  height: 20px;
-  margin-top: -21px;
-  width: 2px;
-}
-.setting-range-datalist__label--flip {
-  margin-top: -37px;
-}
-.setting-range-datalist__label--flip::before {
-  margin-top: 13px;
-}
-ytd-watch-flexy[fullscreen] .setting-range-datalist__label--flip {
-  margin-top: -48px;
-}
-ytd-watch-flexy[fullscreen] .setting-range-datalist__label--flip::before {
-  margin-top: 13px;
-}
-
-/* Settings - Experimental flexbox styling */
-.ytp-ambilight-settings-menu .ytp-panel-menu {
-  display: block;
-}
-.ytp-ambilight-settings-menu .ytpa-feedback-link__text {
-  position: static;
-}
-.ytp-ambilight-settings-menu .ytpa-feedback-link {
-  height: auto !important;
-}
 .ytp-ambilight-settings-menu .ytap-section {
   display: flex;
   width: 100%;
   margin: 5px 0;
+  filter: drop-shadow(rgba(0, 0, 0, 0.5) 0px 1px 0px) drop-shadow(rgba(0, 0, 0, 0.25) 0px -1px 0px);
+  font-weight: 600;
+  color: #ccc;
   cursor: pointer;
 }
 .ytp-ambilight-settings-menu .ytap-section::after {
@@ -552,6 +279,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section::after {
 }
 .ytp-ambilight-settings-menu .ytap-section.is-collapsed {
   margin: 5px 0 -4px;
+  color: #999;
 }
 .ytp-ambilight-settings-menu .ytap-section.is-collapsed::after {
   position: absolute;
@@ -597,9 +325,128 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section.is-collap
 .ytp-ambilight-settings-menu .ytap-section__cell {
   flex-grow: 1;
 }
-.ytp-ambilight-settings-menu .ytap-section__label,
+.ytp-ambilight-settings-menu .ytap-section__label, .ytp-ambilight-settings-menu .ytap-section__fill {
+  height: 20px;
+  line-height: 20px;
+  border-top: 1px solid #ffffff10;
+  border-bottom: 1px solid #ffffff05;
+  padding: 0px 14px;
+  line-height: 21px;
+  background: #5556;
+  transition: background-color 0.15s;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section__label, ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-section__fill {
+  padding: 0px 20px;
+  height: 30px;
+  line-height: 30px;
+}
+.ytp-ambilight-settings-menu .ytap-section:hover .ytap-section__label, .ytp-ambilight-settings-menu .ytap-section:hover .ytap-section__fill {
+  background: #6667 !important;
+}
 .ytp-ambilight-settings-menu .ytap-section__fill {
-  margin: 0;
+  color: transparent;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label,
+.ytp-ambilight-settings-menu .ytap-menuitem--new .ytp-menuitem-label {
+  position: relative;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::before,
+.ytp-ambilight-settings-menu .ytap-menuitem--new .ytp-menuitem-label::before {
+  content: "N";
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 2px;
+  margin-top: 2px;
+  width: 11px;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  line-height: 12px;
+  background: #fd0;
+  color: #000;
+  font-weight: 600;
+  font-size: 7px;
+  text-shadow: none;
+  text-align: center;
+  line-height: 11px;
+  transition: transform 0.25s 0.25s ease-out;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::before,
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--new .ytp-menuitem-label::before {
+  width: 14px;
+  height: 14px;
+  left: 5px;
+  margin-top: 6px;
+  border-radius: 7px;
+  line-height: 14px;
+  font-size: 9px;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::after,
+.ytp-ambilight-settings-menu .ytap-menuitem--new .ytp-menuitem-label::after {
+  content: "New";
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 2px;
+  max-width: 3px;
+  margin-top: -12px;
+  height: 12px;
+  padding: 0 4px;
+  border-radius: 6px;
+  display: block;
+  background: #fd0;
+  color: #000;
+  line-height: 12px;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 1s, opacity 0.125s 0.125s ease-in, max-width 0.25s ease-out;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::after,
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--new .ytp-menuitem-label::after {
+  max-width: 6px;
+  height: 14px;
+  border-radius: 7px;
+  line-height: 14px;
+  font-size: 13px;
+  left: 5px;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
+.ytp-ambilight-settings-menu .ytap-menuitem--new:hover .ytp-menuitem-label::before {
+  transform: translateY(-14px);
+  transition: transform 0.25s 0.75s ease-in;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::before,
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--new:hover .ytp-menuitem-label::before {
+  transform: translateY(-18px);
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
+.ytp-ambilight-settings-menu .ytap-menuitem--new:hover .ytp-menuitem-label::after {
+  visibility: visible;
+  opacity: 1;
+  max-width: 28px;
+  transition: visibility 0s 0.75s, opacity 0.125s 0.9s ease-out, max-width 0.5s 1s ease;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::after,
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--new:hover .ytp-menuitem-label::after {
+  max-width: 34px;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::before {
+  content: "E";
+  background: #f00;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental .ytp-menuitem-label::after {
+  content: "Experimental";
+  background: #f00;
+}
+.ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
+  max-width: 67px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem--experimental:hover .ytp-menuitem-label::after {
+  max-width: 85px;
 }
 .ytp-ambilight-settings-menu .ytp-menuitem {
   display: flex;
@@ -618,12 +465,27 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem {
 .ytp-ambilight-settings-menu .ytp-menuitem-label span {
   padding: 0 !important;
 }
+.ytp-ambilight-settings-menu .ytap-menuitem-description {
+  line-height: 12px;
+  font-size: 10px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytap-menuitem-description {
+  line-height: 15px;
+  font-size: 13px;
+}
 .ytp-ambilight-settings-menu .ytp-menuitem-toggle-checkbox {
   margin: 3px 0;
 }
+.ytp-ambilight-settings-menu .ytp-menuitem[aria-checked=true] .ytp-menuitem-toggle-checkbox {
+  background-color: #3ea6ff;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem[role=menuitemrange]:hover {
+  background: none !important;
+  cursor: default !important;
+}
 .ytp-ambilight-settings-menu .ytp-menuitem-range {
   display: block;
-  height: 0px;
+  height: 0;
   margin: -2px 0 13px;
   position: relative;
   z-index: 2;
@@ -632,8 +494,109 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem-range {
   margin: -4px 0 20px;
 }
 .ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range] {
-  position: static;
   display: block;
+  -webkit-appearance: none;
+  background: none;
+  cursor: pointer;
+  width: calc(100% - 28px);
+  height: 0;
+  margin: 0 14px;
+  outline: 0;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range] {
+  margin: 0 22px;
+  width: calc(100% - 44px);
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: linear-gradient(transparent 42%, rgba(255, 255, 255, 0.3) 43%, rgba(255, 255, 255, 0.3) 57%, transparent 58%);
+  height: 21px;
+  margin: -10px 0;
+  outline: none;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 13px;
+  width: 13px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #bdbdbd;
+  box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
+  transition: all 0.15s;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range]::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: 0;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range input[type=range]:hover::-webkit-slider-thumb {
+  background: #fff;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range--has-snap-points {
+  margin: 3px 0px 13px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .ytp-menuitem-range--has-snap-points {
+  margin: 3px 0 20px;
+}
+.ytp-ambilight-settings-menu .ytp-menuitem-range--has-snap-points input[type=range] {
+  height: 15px;
+}
+.ytp-ambilight-settings-menu .setting-range-datalist {
+  position: relative;
+  display: inline-block;
+  width: calc(100% - 41px);
+  left: 20.5px;
+  font-size: 10px;
+  pointer-events: none;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .setting-range-datalist {
+  left: 32px;
+  width: calc(100% - 64px);
+}
+.ytp-ambilight-settings-menu .setting-range-datalist__label {
+  position: absolute;
+  width: 17px;
+  margin-top: -7px;
+  margin-left: -8.5px;
+  padding: 0;
+  text-align: center;
+  color: #999;
+  pointer-events: all;
+  cursor: pointer;
+}
+.ytp-ambilight-settings-menu .setting-range-datalist__label:hover {
+  color: #fff;
+}
+.ytp-ambilight-settings-menu .setting-range-datalist__label::before {
+  content: "";
+  position: absolute;
+  width: 1px;
+  height: 13px;
+  left: 0;
+  margin-top: -15px;
+  margin-left: 8px;
+  background: #666;
+  pointer-events: none;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .setting-range-datalist__label {
+  margin-top: -18px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .setting-range-datalist__label::before {
+  height: 20px;
+  margin-top: -21px;
+  width: 2px;
+}
+.ytp-ambilight-settings-menu .setting-range-datalist__label--flip {
+  margin-top: -35px;
+}
+.ytp-ambilight-settings-menu .setting-range-datalist__label--flip::before {
+  margin-top: 13px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .setting-range-datalist__label--flip {
+  margin-top: -52px;
+}
+ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu .setting-range-datalist__label--flip::before {
+  margin-top: 13px;
 }
 
 /* Settings - Immersive mode button */
