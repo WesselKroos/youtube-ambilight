@@ -18,9 +18,7 @@ html[data-ambilight-enabled="true"] {
   /* Cosmetics - Transparent elements */
 
   body ytd-app[is-watch-page] #masthead-container.at-top {
-    ytd-masthead,
-    #container.ytd-searchbox,
-    #search-icon-legacy {
+    ytd-masthead {
       background: none !important;
     }
   }
@@ -87,35 +85,30 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Search */
 
-  ytd-app[is-watch-page] #masthead-container.at-top #search-form * {
-      border-color: rgba(255,255,255,.6) !important;
-      color: rgba(255,255,255,1) !important;
-      fill: rgba(255,255,255,1) !important;
-      transition: all .15s;
-  }
-
-  ytd-app[is-watch-page] #masthead-container.at-top #search::-webkit-input-placeholder {
-      color: rgba(255,255,255,.6) !important;
-  }
-
-  ytd-app[is-watch-page] #search-form {
-      transition: opacity .15s, filter .15s;
-  }
-  ytd-app[is-watch-page] #masthead-container.at-top #search-form {
-    &:not(:hover):not(:focus-within) {
-      opacity: .15;
-    }
-    &:hover,
-    &:focus-within {
-      background: #121212 !important;
-      border-radius: 2px;
-      button {
-        background: #ffffff14 !important;
+  ytd-app[is-watch-page] {
+    #search-form {
+      transition: background-color .15s;
+      #search::-webkit-input-placeholder {
+        transition: color .15s;
       }
-      * {
-        border-color: rgba(55,55,55,.6) !important;
-        color: rgba(255,255,255,1) !important;
-        fill: rgba(255,255,255,1) !important;
+      > * {
+        transition: all .15s;
+      }
+      > button {
+        background-color: #393939 !important;
+      }
+    }
+    #masthead-container.at-top {
+      #search-form:not(:hover):not(:focus-within) {
+        > * {
+          background-color: transparent !important;
+          border-color: rgba(255,255,255,.15) !important;
+          color: rgba(255,255,255,.15) !important;
+          fill: rgba(255,255,255,.15) !important;
+        }
+        #search::-webkit-input-placeholder {
+          color: rgba(255,255,255,.15) !important;
+        }
       }
     }
   }
