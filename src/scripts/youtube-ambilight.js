@@ -260,8 +260,6 @@ try {
 //// Ambilight
 
 class Ambilight {
-  static setDarkThemeBusy = false
-
   constructor(videoPlayer) {
     this.showDisplayFrameRate = true
     this.showVideoFrameRate = true
@@ -608,25 +606,25 @@ class Ambilight {
     this.canvasList.class('ambilight__canvas-list')
     this.playerContainer.prepend(this.canvasList)
 
-    const compareBufferElem = new OffscreenCanvas(1, 1)
+    const compareBufferElem = document.createElement("canvas")
     this.compareBuffer = {
       elem: compareBufferElem,
       ctx: compareBufferElem.getContext('2d', ctxOptions)
     }
 
-    const drawBuffer2Elem = new OffscreenCanvas(1, 1)
+    const drawBuffer2Elem = document.createElement("canvas")
     this.drawBuffer2 = {
       elem: drawBuffer2Elem,
       ctx: drawBuffer2Elem.getContext('2d', ctxOptions)
     }
 
-    const drawBufferElem = new OffscreenCanvas(1, 1)
+    const drawBufferElem = document.createElement("canvas")
     this.drawBuffer = {
       elem: drawBufferElem,
       ctx: drawBufferElem.getContext('2d', ctxOptions)
     }
 
-    const bufferElem = new OffscreenCanvas(1, 1)
+    const bufferElem = document.createElement("canvas")
     this.buffer = {
       elem: bufferElem,
       ctx: bufferElem.getContext('2d', ctxOptions)
@@ -723,14 +721,14 @@ class Ambilight {
 
   initFrameBlending() {
     //this.previousBuffer
-    const previousBufferElem = new OffscreenCanvas(1, 1)
+    const previousBufferElem = document.createElement("canvas")
     this.previousBuffer = {
       elem: previousBufferElem,
       ctx: previousBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.playerBuffer
-    const playerBufferElem = new OffscreenCanvas(1, 1)
+    const playerBufferElem = document.createElement("canvas")
     this.playerBuffer = {
       elem: playerBufferElem,
       ctx: playerBufferElem.getContext('2d', ctxOptions)
@@ -739,14 +737,14 @@ class Ambilight {
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
-    const videoOverlayBufferElem = new OffscreenCanvas(1, 1)
+    const videoOverlayBufferElem = document.createElement("canvas")
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.previousVideoOverlayBuffer
-    const previousVideoOverlayBufferElem = new OffscreenCanvas(1, 1)
+    const previousVideoOverlayBufferElem = document.createElement("canvas")
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
       ctx: previousVideoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -1303,7 +1301,7 @@ class Ambilight {
       this.videoFrameRateStartFrame = 0
     }
 
-    const frameCount = this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount
+    const frameCount = this.getVideoFrameCount()
     if (this.videoFrameCount !== frameCount) {
       const videoFrameRateFrame = frameCount
       const videoFrameRateTime = performance.now()
@@ -1375,6 +1373,12 @@ class Ambilight {
     }
   }
 
+  getVideoFrameCount() {
+    if(!this.videoPlayer) return 0;
+    return this.videoPlayer.mozPresentedFrames || // Firefox
+          (this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount) // Chrome
+  }
+
   drawAmbilight() {
     if (!this.enabled) return
 
@@ -1393,13 +1397,11 @@ class Ambilight {
 
     //performance.mark('start-drawing')
 
-    let newVideoFrameCount = this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount
-    const decodedVideoFrameCount = newVideoFrameCount
-
+    let newVideoFrameCount = this.getVideoFrameCount()
     this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0, this.compareBuffer.elem.width, this.compareBuffer.elem.height)
-    
     let compareBufferHasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     let skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
+
     if (this.highQuality) {
       if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
         //performance.mark('comparing-compare-start')
@@ -1619,13 +1621,12 @@ class Ambilight {
       if (renderer) {
         toggle(renderer)
       } else {
-        let btn = $.s('#avatar-btn') || // When logged in
+        const findBtn = () => $.s('#avatar-btn') || // When logged in
           $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
-        if(!btn) throw new Error('Cannot find the settings button on the YouTube video page.')
-
+        
         $.s('ytd-popup-container').style.opacity = 0
         waitForDomElement(
-          () => btn,
+          findBtn,
           'ytd-masthead',
           () => {
             waitForDomElement(
@@ -1635,7 +1636,7 @@ class Ambilight {
               },
               'ytd-popup-container',
               () => {
-                btn.click()
+                findBtn().click()
                 toggle()
                 setTimeout(() => {
                   $.s('ytd-popup-container').style.opacity = ''
@@ -1643,7 +1644,7 @@ class Ambilight {
                 }, 1)
               })
             let previousActiveElement = document.activeElement
-            btn.click()
+            findBtn().click()
           }
         )
       }
@@ -1987,6 +1988,7 @@ class Ambilight {
     return value
   }
 }
+Ambilight.setDarkThemeBusy = false
 
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
