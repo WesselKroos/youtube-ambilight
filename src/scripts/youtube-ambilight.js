@@ -1619,9 +1619,13 @@ class Ambilight {
       if (renderer) {
         toggle(renderer)
       } else {
+        let btn = $.s('#avatar-btn') || // When logged in
+          $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
+        if(!btn) throw new Error('Cannot find the settings button on the YouTube video page.')
+
         $.s('ytd-popup-container').style.opacity = 0
         waitForDomElement(
-          () => $.s('#avatar-btn'),
+          () => btn,
           'ytd-masthead',
           () => {
             waitForDomElement(
@@ -1631,7 +1635,7 @@ class Ambilight {
               },
               'ytd-popup-container',
               () => {
-                $.s('#avatar-btn').click()
+                btn.click()
                 toggle()
                 setTimeout(() => {
                   $.s('ytd-popup-container').style.opacity = ''
@@ -1639,7 +1643,7 @@ class Ambilight {
                 }, 1)
               })
             let previousActiveElement = document.activeElement
-            $.s('#avatar-btn').click()
+            btn.click()
           }
         )
       }
