@@ -15,16 +15,16 @@
     "default_popup": "options.html"
   },
   "background" : {
-    "scripts" : ["background.js"],
+    "scripts" : ["scripts/background.js"],
     "persistent": false
   },
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
-    "js": ["contentscript.js"],
-    "css": ["styles/main.css"]
+    "js": ["scripts/content.js"],
+    "css": ["styles/youtube-ambilight.css"]
   }],
   "web_accessible_resources": [
-    "styles/main.css",
+    "styles/options.css",
     "scripts/youtube-ambilight.js",
     "images/noise-1.png",
     "images/noise-2.png",
