@@ -945,7 +945,7 @@ class Ambilight {
     return true
   }
 
-  nextFrame() {
+  nextFrame = () => {
     if (!this.scheduled) return
     this.scheduled = false
 
@@ -985,7 +985,7 @@ class Ambilight {
     }
 
     this.scheduled = true
-    raf(() => this.nextFrame())
+    raf(this.nextFrame)
   }
 
   isNewFrame(oldImage, newImage) {
@@ -1117,7 +1117,7 @@ class Ambilight {
 
   getVideoFrameCount() {
     if (!this.videoPlayer) return 0;
-    return this.videoPlayer.mozPresentedFrames || // Firefox
+    return this.videoPlayer.mozPaintedFrames || // Firefox
       (this.videoPlayer.webkitDecodedFrameCount + this.videoPlayer.webkitDroppedFrameCount) // Chrome
   }
 
