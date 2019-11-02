@@ -1,11 +1,12 @@
 import { $ } from "./generic";
+import { BrowserClient } from '@sentry/browser/esm/client';
 import {
-  init,
   captureException,
-  withScope
-} from "@sentry/browser";
+  withScope,
+  initAndBind
+} from "@sentry/core";
 
-init({
+initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
   release: document.querySelector('html').getAttribute('data-ambilight-version') || '?',
