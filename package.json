@@ -31,10 +31,7 @@
     "build:css:ambilight": "sass --no-source-map src/styles/youtube-ambilight.scss dist/styles/youtube-ambilight.css",
     "build:css:options": "copyfiles -u 2 src/styles/options.css dist/styles",
     "build:css": "run-p build:css:ambilight build:css:options",
-    "build:scripts:ambilight": "rollup -c",
-    "build:scripts:background": "copyfiles -u 2 src/scripts/background.js dist/scripts",
-    "build:scripts:content": "copyfiles -u 2 src/scripts/content.js dist/scripts",
-    "build:scripts": "run-p build:scripts:ambilight build:scripts:background build:scripts:content",
+    "build:scripts": "rollup -c",
     "build": "run-p build:manifest build:html build:images build:css build:scripts"
   }
 }

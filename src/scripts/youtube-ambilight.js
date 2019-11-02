@@ -1,5 +1,5 @@
-import { $, body, waitForDomElement, raf, ctxOptions } from './generic';
-import AmbilightSentry from './ambilight-sentry'
+import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
+import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
   constructor(videoPlayer) {
