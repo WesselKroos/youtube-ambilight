@@ -9,7 +9,10 @@ const common = {
     babel({
       exclude: 'node_modules/**'
     }),
-    cleanup()
+    cleanup({
+      comments: 'none',
+      sourcemap: false
+    })
   ]
 }
 
