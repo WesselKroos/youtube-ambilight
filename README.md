@@ -49,10 +49,14 @@ Feel free to
 - [x] Fix framedrop when cutting of the black bars in version 2.27.1 vs 2.27
 - [x] Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops (opacity: 0; stackoverflows the gpu memory)
 - [x] Temporary turn off the video sync canvas when the framerate is to low
+- [ ] Add a timeout and timeoutCallback to the waitForDomElement function
 - [ ] Adjust the lowest spread setting to rendering only one canvas element
-- [ ] Only horizontal ambilight setting
+- [ ] Ambilight directions setting (top, right, bottom, left)
 - [ ] Buffer frames in video sync mode for smoother motion in the video
 - [ ] Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76 https://www.youtube.com/watch?v=PaErPyEnDvk
+- [ ] Firefox: immersive mode: Hide scrollbar
+- [ ] Firefox: blur(100px) max workaround: Add a second element with blur(100px)
+- [ ] Firefox: resizing and restore from inactive browser
 
 
 ## Development
