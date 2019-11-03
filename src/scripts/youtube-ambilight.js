@@ -159,6 +159,40 @@ class Ambilight {
       },
       {
         type: 'section',
+        label: 'Directions',
+        name: 'sectionDirectionsCollapsed',
+        default: false
+      },
+      {
+        new: true,
+        name: 'directionTopEnabled',
+        label: 'Top',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionRightEnabled',
+        label: 'Right',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionBottomEnabled',
+        label: 'Bottom',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionLeftEnabled',
+        label: 'Left',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        type: 'section',
         label: 'Other page content',
         name: 'sectionOtherPageContentCollapsed',
         default: false
@@ -307,6 +341,11 @@ class Ambilight {
     this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
     this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
 
+    this.directionTopEnabled = this.getSetting('directionTopEnabled')
+    this.directionRightEnabled = this.getSetting('directionRightEnabled')
+    this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
+    this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
+
     this.highQuality = this.getSetting('highQuality', true)
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
@@ -376,6 +415,8 @@ class Ambilight {
 
     const shadowElem = document.createElement('canvas')
     shadowElem.class('ambilight__shadow')
+    shadowElem.width = 1920
+    shadowElem.height = 1080
     this.playerContainer.appendChild(shadowElem)
     const shadowCtx = shadowElem.getContext('2d', ctxOptions)
     this.shadow = {
@@ -904,6 +945,60 @@ class Ambilight {
     const fadeOutFrom = this.bloom / 100
     drawGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest, false)
     drawGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest, true)
+
+    // Directions
+    const scaleW = this.shadow.elem.width / (video.w + edge.w + edge.w)
+    const scaleH = this.shadow.elem.height / (video.h + edge.h + edge.h)
+    this.shadow.ctx.fillStyle = '#000000'
+
+
+    if(!this.directionTopEnabled) {
+      this.shadow.ctx.beginPath()
+
+      this.shadow.ctx.moveTo(0, 0)
+      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  0)
+      
+      this.shadow.ctx.fill()
+    }
+
+    if(!this.directionRightEnabled) {
+      this.shadow.ctx.beginPath()
+
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  0)
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h + video.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  scaleH * (edge.h + video.h + edge.h))
+      
+      this.shadow.ctx.fill()
+    }
+
+    if(!this.directionBottomEnabled) {
+      this.shadow.ctx.beginPath()
+
+      this.shadow.ctx.moveTo(0,                                     scaleH * (edge.h + video.h + edge.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h + video.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h + video.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  scaleH * (edge.h + video.h + edge.h))
+      
+      this.shadow.ctx.fill()
+    }
+
+    if(!this.directionLeftEnabled) {
+      this.shadow.ctx.beginPath()
+
+      this.shadow.ctx.moveTo(0,                                     0)
+      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h))
+      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
+      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h + video.h))
+      this.shadow.ctx.lineTo(0,                                     scaleH * (edge.h + video.h + edge.h))
+      
+      this.shadow.ctx.fill()
+    }
   }
 
   checkVideoSize() {
@@ -1617,7 +1712,11 @@ class Ambilight {
             this.updateStyles()
             return
           }
-          if (setting.name === 'spread' || setting.name === 'edge' || setting.name === 'fadeOutEasing') {
+          if (
+            setting.name === 'spread' || 
+            setting.name === 'edge' || 
+            setting.name === 'fadeOutEasing'
+          ) {
             this.canvassesInvalidated = true
           }
           this.sizesInvalidated = true
@@ -1645,7 +1744,11 @@ class Ambilight {
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
             setting.name === 'resetThemeToLightOnDisable' ||
-            setting.name === 'horizontalBarsClipPercentageReset'
+            setting.name === 'horizontalBarsClipPercentageReset' ||
+            setting.name === 'directionTopEnabled' ||
+            setting.name === 'directionRightEnabled' ||
+            setting.name === 'directionBottomEnabled' ||
+            setting.name === 'directionLeftEnabled'
           ) {
             this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
