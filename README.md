@@ -1,11 +1,12 @@
 # Chrome YouTube Ambilight
-This Chrome Extension adds ambilight to the videos you view on YouTube
+This extension adds ambilight to the videos you view on YouTube
 
 ## Installation
 Go to [YouTube Ambilight on the Chrome Web Store](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj) and add the extension to Chrome
   
 ## Privacy & Security
-- This Chrome Extension only loads on urls that start with https://www.youtube.com. The extension will only activate the ambilight extension on YouTube's /watch page
+- This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
+- On install this extension uses the `tabs` permission to add the extension on the tabs that are already on the YouTube website.
 
 The following projectfiles are inserted into that specific webpage:
 - \src\scripts\youtube-ambilight.js
@@ -46,6 +47,7 @@ Feel free to
 - [x] Fix framedrop when cutting of the black bars in version 2.27.1 vs 2.27
 - [x] Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops (opacity: 0; stackoverflows the gpu memory)
 - [x] Temporary turn off the video sync canvas when the framerate is to low
+- [x] Turn on the Ambilight extension on existing tabs after the installation. This way a refresh is not needed anymore
 - [ ] Add a timeout and timeoutCallback to the waitForDomElement function
 - [ ] Adjust the lowest spread setting to rendering only one canvas element
 - [ ] Ambilight directions setting (top, right, bottom, left)
@@ -54,7 +56,6 @@ Feel free to
 - [ ] Firefox: immersive mode: Hide scrollbar
 - [ ] Firefox: blur(100px) max workaround: Add a second element with blur(100px)
 - [ ] Firefox: resizing and restore from inactive browser
-- [ ] Turn on the Ambilight extension on existing tabs after the installation. This way a refresh is not needed anymore
 
 
 ## Development
