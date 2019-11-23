@@ -89,7 +89,41 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight image adjustment',
+        label: 'Ambilight directions',
+        name: 'sectionDirectionsCollapsed',
+        default: false
+      },
+      {
+        new: true,
+        name: 'directionTopEnabled',
+        label: 'Top',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionRightEnabled',
+        label: 'Right',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionBottomEnabled',
+        label: 'Bottom',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        new: true,
+        name: 'directionLeftEnabled',
+        label: 'Left',
+        type: 'checkbox',
+        default: true
+      },
+      {
+        type: 'section',
+        label: 'Ambilight image',
         name: 'sectionAmbilightImageAdjustmentCollapsed',
         default: false
       },
@@ -127,7 +161,7 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Video resizing',
+        label: 'Video',
         name: 'sectionVideoResizingCollapsed',
         default: false
       },
@@ -172,42 +206,26 @@ class Ambilight {
         step: 0.1
       },
       {
-        type: 'section',
-        label: 'Directions',
-        name: 'sectionDirectionsCollapsed',
-        default: false
+        new: true,
+        name: 'videoShadowSize',
+        label: 'Shadow size',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100
       },
       {
         new: true,
-        name: 'directionTopEnabled',
-        label: 'Top',
-        type: 'checkbox',
-        default: true
-      },
-      {
-        new: true,
-        name: 'directionRightEnabled',
-        label: 'Right',
-        type: 'checkbox',
-        default: true
-      },
-      {
-        new: true,
-        name: 'directionBottomEnabled',
-        label: 'Bottom',
-        type: 'checkbox',
-        default: true
-      },
-      {
-        new: true,
-        name: 'directionLeftEnabled',
-        label: 'Left',
-        type: 'checkbox',
-        default: true
+        name: 'videoShadowOpacity',
+        label: 'Shadow opacity',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100
       },
       {
         type: 'section',
-        label: 'Other page content',
+        label: 'Page content',
         name: 'sectionOtherPageContentCollapsed',
         default: false
       },
@@ -373,6 +391,9 @@ class Ambilight {
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
     this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
     this.debandingStrength = this.getSetting('debandingStrength')
+
+    this.videoShadowSize = this.getSetting('videoShadowSize')
+    this.videoShadowOpacity = this.getSetting('videoShadowOpacity')
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
@@ -739,7 +760,8 @@ class Ambilight {
       this.playerContainer.style.top = (this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsScaledClipPX) + 'px'
       this.playerContainer.style.width = this.playerOffset.width + 'px'
       this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsScaledClipPX * 2)) + 'px'
-
+      //this.playerContainer.style.transform = `translate3d(${(this.playerOffset.left + window.scrollX)}px, ${(this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsScaledClipPX)}px, 0)`
+      
       this.ambilightContainer.style.webkitFilter = `
         blur(${this.playerOffset.height * (this.blur * .0025)}px)
         ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
@@ -841,8 +863,15 @@ class Ambilight {
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
-
+    const videoShadowSize = this.videoShadowSize * this.videoShadowSize
+    const videoShadowOpacity = this.videoShadowOpacity / 100
+    
+    //${videoShadowSize ? `filter: drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) !important;` : ''}
     this.style.childNodes[0].data = `
+      html[data-ambilight-enabled="true"] .html5-video-container {
+        ${videoShadowSize ? `box-shadow: rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px, rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px !important;` : ''}
+      }
+
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
       html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #primary-inner > *:not(#player),
       html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #secondary {
@@ -902,7 +931,13 @@ class Ambilight {
       }
       lastScale.x = scaleX
       lastScale.y = scaleY
+      
       player.elem.style.transform = `scale(${scaleX}, ${scaleY})`
+      //player.elem.style.marginLeft = `${-(((playerSize.w * scaleX) - playerSize.w) / 2)}px`
+      //player.elem.style.width = `${playerSize.w * scaleX}px`
+      //player.elem.style.marginTop = `${-(((playerSize.h * scaleY) - playerSize.h) / 2)}px`
+      //player.elem.style.height = ` ${playerSize.h * scaleY}px`
+
     })
 
     this.shadow.elem.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
@@ -1460,7 +1495,10 @@ class Ambilight {
     let percentage = Math.round((size / height) * 10000) / 100
     percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
 
-    if(Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage > percentage) {
+    if(
+      (Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage > percentage) ||
+      (percentage > 20) 
+    ) {
       return
     }
 
@@ -1813,7 +1851,9 @@ class Ambilight {
           if (
             setting.name === 'surroundingContentShadowSize' ||
             setting.name === 'surroundingContentShadowOpacity' ||
-            setting.name === 'debandingStrength'
+            setting.name === 'debandingStrength' ||
+            setting.name === 'videoShadowSize' ||
+            setting.name === 'videoShadowOpacity'
           ) {
             this[setting.name] = value
             this.updateStyles()

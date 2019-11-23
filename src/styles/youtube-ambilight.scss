@@ -12,6 +12,7 @@ html[data-ambilight-enabled="true"] {
     body {
       background: #000 !important;
       background-color: #000 !important;
+      transition: background-color .33s;
     }
   }
 
@@ -44,6 +45,8 @@ html[data-ambilight-enabled="true"] {
 
   body:not(.ambilight-disable-in-fullscreen) ytd-app[is-watch-page] #movie_player {
     background: none !important;
+    position: absolute !important;
+    overflow: visible !important;
   }
 
   /* Video preview background */
@@ -65,19 +68,26 @@ html[data-ambilight-enabled="true"] {
     margin-bottom: 85px;
   }
 
-  ytd-app[is-watch-page] .html5-main-video {
-    transform: var(--video-transform);
-    margin-top: 0px;
-    transition: margin-top .2s ease-out;
-  }
-
-  .html5-video-container {
+  ytd-app[is-watch-page] .html5-video-container {
     height: 100%;
     margin-top: 0px;
     overflow: hidden;
     transition: margin-top .2s ease-out, height .2s ease-out;
+    margin-left: auto;
+    margin-right: auto;
+    /* width: 2006px !important; */
+    width: fit-content !important;
   }
 
+
+  ytd-app[is-watch-page] .html5-main-video {
+    transform: var(--video-transform);
+    margin-top: 0px;
+    transition: margin-top .2s ease-out;
+
+    left: 0 !important;
+    position: relative !important;
+  }
 
   /* Chat */
 
@@ -186,6 +196,7 @@ html[data-ambilight-enabled="true"] {
     height: 0;
     margin-top: 0px;
     pointer-events: none;
+    left: 0 !important;
     transition: opacity .25s, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
@@ -315,12 +326,14 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     }
   }
 
-  .html5-video-player & {
-    a {
-      color: #3ea6ff;
-      &:hover {
-        color: #5ebfff;
-        text-decoration: underline;
+  .html5-video-player {
+    & {
+      a {
+        color: #3ea6ff;
+        &:hover {
+          color: #5ebfff;
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -363,7 +376,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         }
       }
       $sel: '&';
-      @for $i from 1 through 10 {
+      @for $i from 1 through 12 {
         $sel: if($i == 1, " + *:not(.ytap-section)", selector-nest($sel, " + *:not(.ytap-section)"));
         #{$sel} {
           display: none;
