@@ -133,6 +133,20 @@ class Ambilight {
       },
       {
         new: true,
+        name: 'detectHorizontalBarSizeEnabled',
+        label: 'Auto-detect black bars',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        new: true,
+        name: 'detectColoredHorizontalBarSizeEnabled',
+        label: 'Also auto-detect colored bars',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        new: true,
         name: 'horizontalBarsClipPercentage',
         label: 'Remove horizontal black bars',
         type: 'list',
@@ -338,6 +352,8 @@ class Ambilight {
     // if(this.sepia === null) this.sepia = 0
 
     this.videoScale = this.getSetting('videoScale')
+    this.detectHorizontalBarSizeEnabled = this.getSetting('detectHorizontalBarSizeEnabled')
+    this.detectColoredHorizontalBarSizeEnabled = this.getSetting('detectColoredHorizontalBarSizeEnabled')
     this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
     this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
 
@@ -346,12 +362,12 @@ class Ambilight {
     this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
     this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
 
-    this.highQuality = this.getSetting('highQuality', true)
+    this.highQuality = this.getSetting('highQuality')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
-    this.immersive = this.getSetting('immersive', true)
-    this.enableInFullscreen = this.getSetting('enableInFullscreen', true)
-    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable', true)
+    this.immersive = this.getSetting('immersive')
+    this.enableInFullscreen = this.getSetting('enableInFullscreen')
+    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
 
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
@@ -547,34 +563,41 @@ class Ambilight {
 
     this.videoPlayer.on('playing', () => {
       this.start()
-      this.resetBlackBarsIfNeeded()
+      this.resetHorizontalBarsIfNeeded()
     })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
       })
       .on('ended', () => {
-        this.resetBlackBarsIfNeeded()
+        this.resetHorizontalBarsIfNeeded()
         this.clear()
       })
       .on('emptied', () => {
-        this.resetBlackBarsIfNeeded()
+        this.resetHorizontalBarsIfNeeded()
         this.clear()
       })
   }
 
-  resetBlackBarsIfNeeded() {
+  resetHorizontalBarsIfNeeded() {
     const videoPath = location.search
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.horizontalBarsClipPercentageReset) {
-        this.setSetting('horizontalBarsClipPercentage', 0)
-        $.s('#setting-horizontalBarsClipPercentage').value = 0
-        $.s(`#setting-horizontalBarsClipPercentage-value`).innerHTML = '0%'
-        this.horizontalBarsClipPercentage = 0
-        this.checkVideoSize()
+        this.setHorizontalBars(0)
       }
     }
     this.prevVideoPath = videoPath
+  }
+
+  setHorizontalBars(percentage) {
+    this.horizontalBarsClipPercentage = percentage
+    this.sizesInvalidated = true
+    this.canvassesInvalidated = true
+    setTimeout(() => {
+      this.setSetting('horizontalBarsClipPercentage', percentage)
+      $.s('#setting-horizontalBarsClipPercentage').value = percentage
+      $.s(`#setting-horizontalBarsClipPercentage-value`).innerHTML = `${percentage}%`
+    }, 1)
   }
 
   setFeedbackLink() {
@@ -1083,18 +1106,18 @@ class Ambilight {
     raf(this.nextFrame)
   }
 
-  isNewFrame(oldImage, newImage) {
-    if (!oldImage || oldImage.length !== newImage.length) {
-      oldImage = null
-      newImage = null
+  isNewFrame(oldLines, newLines) {
+    if (!oldLines || oldLines.length !== newLines.length) {
+      oldLines = null
+      newLines = null
       return true
     }
 
-    for (let i = 0; i < oldImage.length; i++) {
-      for (let xi = 0; xi < oldImage[i].length; xi++) {
-        if (oldImage[i][xi] !== newImage[i][xi]) {
-          oldImage = null
-          newImage = null
+    for (let i = 0; i < oldLines.length; i++) {
+      for (let xi = 0; xi < oldLines[i].length; xi++) {
+        if (oldLines[i][xi] !== newLines[i][xi]) {
+          oldLines = null
+          newLines = null
           i = null
           xi = null
           return true
@@ -1102,8 +1125,8 @@ class Ambilight {
       }
     }
 
-    oldImage = null
-    newImage = null
+    oldLines = null
+    newLines = null
     return false
   }
 
@@ -1242,12 +1265,12 @@ class Ambilight {
     if (this.highQuality) {
       if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
         //performance.mark('comparing-compare-start')
-        let newImage = []
+        let lines = []
         let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
 
         try {
           for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
-            newImage.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
+            lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
           }
         } catch (ex) {
           if (!this.showedHighQualityCompareWarning) {
@@ -1258,7 +1281,7 @@ class Ambilight {
         }
 
         if (!compareBufferHasNewFrame) {
-          const isConfirmedNewFrame = this.isNewFrame(this.oldImage, newImage)
+          const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
           if (isConfirmedNewFrame) {
             newVideoFrameCount++
             compareBufferHasNewFrame = true
@@ -1267,16 +1290,23 @@ class Ambilight {
         //performance.mark('comparing-compare-end')
 
         if (compareBufferHasNewFrame) {
-          this.oldImage = newImage
+          this.oldLines = lines
         }
 
         //performance.measure('comparing-compare', 'comparing-compare-start', 'comparing-compare-end')
-
-        newImage = null
       }
     }
 
     if (compareBufferHasNewFrame) {
+      if(this.detectHorizontalBarSizeEnabled) {
+        const lines = []
+        let partSize = Math.ceil(this.compareBuffer.elem.width / 6)
+        for (let i = partSize; i < this.compareBuffer.elem.width; i += partSize) {
+          lines.push(this.compareBuffer.ctx.getImageData(i, 0, 1, this.compareBuffer.elem.height).data)
+        }
+        this.detectHorizontalBarSize(lines)
+      }
+
       this.drawBuffer2.ctx.drawImage(this.compareBuffer.elem, 0, 0, this.drawBuffer.elem.width, this.drawBuffer.elem.height)
       this.drawBuffer2HasNewFrame = true
     }
@@ -1362,6 +1392,81 @@ class Ambilight {
     }
   }
 
+  detectHorizontalBarSize(imageVLines) {
+    let sizes = []
+    const colorIndex = (4* 4)
+    let color = this.detectColoredHorizontalBarSizeEnabled ?
+      [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
+      [2,2,2]
+    const maxColorDeviation = 8
+    
+    for(const line of imageVLines) {
+      for (let i = 0; i < line.length; i += 4) {
+        if(
+          Math.abs(line[i] - color[0]) <= maxColorDeviation && 
+          Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
+          Math.abs(line[i+2] - color[2]) <= maxColorDeviation
+        ) continue;
+        const size = i ? (i / 4) : 0
+        sizes.push(size)
+        break;
+      }
+      for (let i = line.length - 1; i >= 0; i -= 4) {
+        if(
+          Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
+          Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
+          Math.abs(line[i-1] - color[2]) <= maxColorDeviation
+        ) continue;
+        const j = (line.length - 1) - i;
+        const size = j ? (j / 4) : 0
+        sizes.push(size)
+        break;
+      }
+    }
+
+    if(!sizes.length) {
+      return
+    }
+
+    const averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+    sizes = sizes.sort((a, b) => {
+      const aGap = Math.abs(averageSize - a)
+      const bGap = Math.abs(averageSize - b)
+      return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
+    }).splice(0, 6)
+    const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
+    const height = (imageVLines[0].length / 4)
+    const allowed = height * 0.005
+    const valid = (maxDeviation <= allowed)
+    
+    let size = 0;
+    if(!valid) {
+      let lowestSize = Math.min(...sizes)
+      let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
+      if(lowestPercentage >= this.horizontalBarsClipPercentage) {
+        return
+      }
+
+      size = lowestSize
+    } else {
+      size = Math.max(...sizes)// (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+    }
+
+    
+    const correction = height * 0.001
+    const threshold = height * 0.02
+    size = (size > threshold) ? size + correction : 0
+    
+    let percentage = Math.round((size / height) * 10000) / 100
+    percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
+
+    if(Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage > percentage) {
+      return
+    }
+
+    this.setHorizontalBars(percentage)
+  }
+
   checkIfNeedToHideVideoOverlay() {
     var ambilightFramesAdded = this.ambilightFrameCount - this.prevAmbilightFrameCountForShouldHideDetection
     var videoFramesAdded = this.videoFrameCount - this.prevVideoFrameCountForShouldHideDetection
@@ -1406,7 +1511,7 @@ class Ambilight {
       $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
     }
 
-    this.resetBlackBarsIfNeeded()
+    this.resetHorizontalBarsIfNeeded()
     this.checkVideoSize()
     this.start()
   }
@@ -1692,6 +1797,8 @@ class Ambilight {
       if (setting.type === 'list') {
         const displayedValue = $.s(`#setting-${setting.name}-value`)
         input.on('change mousemove dblclick', (e) => {
+          if(e.type === 'mousemove' && e.buttons === 0) return
+
           let value = input.value
           if (e.type === 'dblclick') {
             value = this.settings.find(s => s.name === setting.name).default
@@ -1719,6 +1826,10 @@ class Ambilight {
           ) {
             this.canvassesInvalidated = true
           }
+          if(setting.name === 'horizontalBarsClipPercentage' && this.detectHorizontalBarSizeEnabled) {
+            $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
+          }
+
           this.sizesInvalidated = true
           this.scheduleNextFrame()
         })
@@ -1745,6 +1856,8 @@ class Ambilight {
             setting.name === 'showFPS' ||
             setting.name === 'resetThemeToLightOnDisable' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
+            setting.name === 'detectHorizontalBarSizeEnabled' ||
+            setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
             setting.name === 'directionTopEnabled' ||
             setting.name === 'directionRightEnabled' ||
             setting.name === 'directionBottomEnabled' ||
