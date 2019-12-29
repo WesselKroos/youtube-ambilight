@@ -2,7 +2,8 @@ import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
-  constructor(videoPlayer) {
+  constructor(videoPlayer, isClassic) {
+    Ambilight.isClassic = isClassic
     this.showDisplayFrameRate = true
     this.showVideoFrameRate = true
 
@@ -34,7 +35,7 @@ class Ambilight {
     this.previousFrameTime = 0
     this.syncInfo = []
 
-    this.masthead = $.s('#masthead-container')
+    this.masthead = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
 
     this.settings = [
       {
@@ -426,25 +427,25 @@ class Ambilight {
     this.canvasList.class('ambilight__canvas-list')
     this.playerContainer.prepend(this.canvasList)
 
-    const compareBufferElem = document.createElement("canvas")
+    const compareBufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
     this.compareBuffer = {
       elem: compareBufferElem,
       ctx: compareBufferElem.getContext('2d', ctxOptions)
     }
 
-    const drawBuffer2Elem = document.createElement("canvas")
+    const drawBuffer2Elem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
     this.drawBuffer2 = {
       elem: drawBuffer2Elem,
       ctx: drawBuffer2Elem.getContext('2d', ctxOptions)
     }
 
-    const drawBufferElem = document.createElement("canvas")
+    const drawBufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
     this.drawBuffer = {
       elem: drawBufferElem,
       ctx: drawBufferElem.getContext('2d', ctxOptions)
     }
 
-    const bufferElem = document.createElement("canvas")
+    const bufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
     this.buffer = {
       elem: bufferElem,
       ctx: bufferElem.getContext('2d', ctxOptions)
@@ -528,7 +529,8 @@ class Ambilight {
     this.videoFPSContainer.class('ambilight__video-fps')
     this.FPSContainer.prepend(this.videoFPSContainer)
 
-    $.s('#player-container').prepend(this.FPSContainer)
+    const container = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
+    container.prepend(this.FPSContainer)
   }
 
   initVideoOverlay() {
@@ -754,6 +756,18 @@ class Ambilight {
           h: Math.round((this.srcVideoOffset.height * (1 - (horizontalBarsClip * 2))) / scale)
         }
       }
+      
+      if(Ambilight.isClassic) {
+        if(this.isFullscreen) {
+          if(this.allContainer.parentElement !== html5VideoPlayer) {
+            html5VideoPlayer.prepend(this.allContainer)
+          }
+        } else {
+          if(this.allContainer.parentElement !== body) {
+            body.prepend(this.allContainer)
+          }
+        }
+      }
 
       this.horizontalBarsScaledClipPX = Math.round(horizontalBarsClip * this.playerOffset.height)
       this.playerContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
@@ -873,8 +887,11 @@ class Ambilight {
       }
 
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
-      html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #primary-inner > *:not(#player),
-      html[data-ambilight-enabled="true"]  ytd-app[is-watch-page] #secondary {
+      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #primary-inner > *:not(#player),
+      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #secondary,
+      
+      #watch7-main,
+      #player-playlist .watch-playlist {
         ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) !important;` : ''}
       }
 
@@ -1471,7 +1488,7 @@ class Ambilight {
     }).splice(0, 6)
     const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
     const height = (imageVLines[0].length / 4)
-    const allowed = height * 0.005
+    const allowed = height * 0.01
     const valid = (maxDeviation <= allowed)
     
     let size = 0;
@@ -1496,8 +1513,8 @@ class Ambilight {
     percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
 
     if(
-      (Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage > percentage) ||
-      (percentage > 20) 
+      (Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage >= percentage) ||
+      (percentage > 25) 
     ) {
       return
     }
@@ -1578,6 +1595,7 @@ class Ambilight {
 
   static setDarkTheme(value) {
     try {
+      if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
       if ($.s('html').attr('dark')) {
         if (value) return
@@ -2033,8 +2051,16 @@ const ambilightDetectDetachedVideo = () => {
   })
 }
 
-const tryInitAmbilight = (ytpApp) => {
-  if (!ytpApp.hasAttribute('is-watch-page')) return
+const tryInitClassicAmbilight = () => {
+  const classicBody = $.s('body[data-spf-name="watch"]')
+  const classicVideoPlayer = $.s("video.html5-main-video")
+  if(!classicBody || !classicVideoPlayer) return false
+
+  window.ambilight = new Ambilight(classicVideoPlayer, true)
+  return true
+}
+const tryInitAmbilight = () => {
+  if (!$.s('ytd-app[is-watch-page]')) return
 
   const videoPlayer = $.s("ytd-watch-flexy video")
   if (!videoPlayer) return false
@@ -2044,30 +2070,34 @@ const tryInitAmbilight = (ytpApp) => {
   return true
 }
 
-const ambilightDetectPageTransition = (ytpApp) => {
+const ambilightDetectPageTransition = () => {
   const observer = new MutationObserver((mutationsList, observer) => {
     if (!window.ambilight) return
 
-    if (ytpApp.hasAttribute('is-watch-page')) {
-      window.ambilight.isOnVideoPage = true
+    const isOnVideoPage = !!($.s('body[data-spf-name="watch"]') || $.s('ytd-app[is-watch-page]'))
+    window.ambilight.isOnVideoPage = isOnVideoPage
+    if (isOnVideoPage) {
       window.ambilight.start()
     } else {
-      window.ambilight.isOnVideoPage = false
+      window.ambilight.hide()
       if (ambilight.resetThemeToLightOnDisable) {
         Ambilight.setDarkTheme(false)
       }
     }
   })
-  observer.observe(ytpApp, {
+  var app = $.s('ytd-app, body[data-spf-name]')
+  if(!app) return
+  observer.observe(app, {
     attributes: true,
-    attributeFilter: ['is-watch-page']
+    attributeFilter: ['is-watch-page', 'data-spf-name']
   })
 }
 
-const ambilightDetectVideoPage = (ytpApp) => {
-  if (tryInitAmbilight(ytpApp)) return
+const ambilightDetectVideoPage = () => {
+  if (tryInitAmbilight()) return
+  if (tryInitClassicAmbilight()) return
 
-  if (!ytpApp.hasAttribute('is-watch-page')) {
+  if ($.s('ytd-app:not([is-watch-page])')) {
     resetThemeToLightIfSettingIsTrue()
   }
 
@@ -2077,20 +2107,20 @@ const ambilightDetectVideoPage = (ytpApp) => {
       return
     }
 
-    tryInitAmbilight(ytpApp)
+    tryInitAmbilight()
+    tryInitClassicAmbilight()
   })
-  observer.observe(ytpApp, {
+  var app = $.s('ytd-app, body[data-spf-name]')
+  if(!app) return
+  observer.observe(app, {
     childList: true,
     subtree: true
   })
 }
 
 try {
-  const ytpApp = $.s('ytd-app')
-  if (ytpApp) {
-    ambilightDetectPageTransition(ytpApp)
-    ambilightDetectVideoPage(ytpApp)
-  }
+  ambilightDetectPageTransition()
+  ambilightDetectVideoPage()
 } catch (ex) {
   console.error('YouTube Ambilight | Initialization', ex)
   AmbilightSentry.captureExceptionWithDetails(ex)
