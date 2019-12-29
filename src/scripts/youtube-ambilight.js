@@ -181,7 +181,6 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
         name: 'horizontalBarsClipPercentage',
         label: 'Remove horizontal black bars',
         type: 'list',
@@ -231,7 +230,6 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
         name: 'surroundingContentShadowSize',
         label: 'Shadow size',
         type: 'list',
@@ -240,7 +238,6 @@ class Ambilight {
         max: 100
       },
       {
-        new: true,
         name: 'surroundingContentShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
@@ -261,7 +258,6 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
         name: 'debandingStrength',
         label: 'Debanding (dithering) <a title="More information about Dithering" href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;">?</a>',
         type: 'list',
@@ -295,7 +291,7 @@ class Ambilight {
       {
         experimental: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works also for "Sync video")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
         type: 'checkbox',
         default: false
       },
@@ -316,14 +312,12 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
         name: 'showFPS',
         label: 'Show framerate',
         type: 'checkbox',
         default: false
       },
       {
-        new: true,
         name: 'resetThemeToLightOnDisable',
         label: 'Dark theme on video page only',
         type: 'checkbox',
@@ -346,6 +340,7 @@ class Ambilight {
 
     //Sections
     this.sectionAmbilightCollapsed = this.getSetting('sectionAmbilightCollapsed')
+    this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
     this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
     this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
     this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
@@ -427,25 +422,36 @@ class Ambilight {
     this.canvasList.class('ambilight__canvas-list')
     this.playerContainer.prepend(this.canvasList)
 
-    const compareBufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
+    // Warning: Using Canvas elements in this div instead of OffScreenCanvas
+    // while waiting for a fix for this issue:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
+    this.buffersContainer = document.createElement('div')
+    this.buffersContainer.class('ambilight__buffers-container')
+    this.allContainer.prepend(this.buffersContainer)
+
+    const compareBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(compareBufferElem)
     this.compareBuffer = {
       elem: compareBufferElem,
       ctx: compareBufferElem.getContext('2d', ctxOptions)
     }
 
-    const drawBuffer2Elem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
+    const drawBuffer2Elem = document.createElement("canvas") //new OffscreenCanvas(1, 1)
+    this.buffersContainer.appendChild(drawBuffer2Elem) 
     this.drawBuffer2 = {
       elem: drawBuffer2Elem,
       ctx: drawBuffer2Elem.getContext('2d', ctxOptions)
     }
 
-    const drawBufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
+    const drawBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(drawBufferElem)
     this.drawBuffer = {
       elem: drawBufferElem,
       ctx: drawBufferElem.getContext('2d', ctxOptions)
     }
 
-    const bufferElem = new OffscreenCanvas(1, 1) //document.createElement("canvas")
+    const bufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(bufferElem)
     this.buffer = {
       elem: bufferElem,
       ctx: bufferElem.getContext('2d', ctxOptions)
@@ -545,14 +551,16 @@ class Ambilight {
 
   initFrameBlending() {
     //this.previousBuffer
-    const previousBufferElem = document.createElement("canvas")
+    const previousBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(previousBufferElem)
     this.previousBuffer = {
       elem: previousBufferElem,
       ctx: previousBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.playerBuffer
-    const playerBufferElem = document.createElement("canvas")
+    const playerBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(playerBufferElem)
     this.playerBuffer = {
       elem: playerBufferElem,
       ctx: playerBufferElem.getContext('2d', ctxOptions)
@@ -561,14 +569,16 @@ class Ambilight {
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
-    const videoOverlayBufferElem = document.createElement("canvas")
+    const videoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(videoOverlayBufferElem)
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.previousVideoOverlayBuffer
-    const previousVideoOverlayBufferElem = document.createElement("canvas")
+    const previousVideoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(previousVideoOverlayBufferElem)
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
       ctx: previousVideoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -741,8 +751,8 @@ class Ambilight {
       }
 
       const minSize = 512
-      const scaleX = Math.min(this.srcVideoOffset.width / minSize, 4)
-      const scaleY = Math.min(this.srcVideoOffset.height / minSize, 4)
+      const scaleX = Math.min(this.srcVideoOffset.width / minSize, 8)
+      const scaleY = Math.min(this.srcVideoOffset.height / minSize, 8)
       const scale = Math.min(scaleX, scaleY)
       // A size of more than 256 is required to enable GPU acceleration in Chrome
       if (scale < 1) {
@@ -1495,7 +1505,7 @@ class Ambilight {
     if(!valid) {
       let lowestSize = Math.min(...sizes)
       let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
-      if(lowestPercentage >= this.horizontalBarsClipPercentage) {
+      if(lowestPercentage >= this.horizontalBarsClipPercentage - 4) {
         return
       }
 

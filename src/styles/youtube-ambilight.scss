@@ -72,7 +72,7 @@ html[data-ambilight-enabled="true"] {
     height: 100%;
     margin-top: 0px;
     overflow: hidden;
-    transition: margin-top .2s ease-out, height .2s ease-out;
+    //transition: margin-top .2s ease-out, height .2s ease-out;
     margin-left: auto;
     margin-right: auto;
     /* width: 2006px !important; */
@@ -83,7 +83,7 @@ html[data-ambilight-enabled="true"] {
   ytd-app[is-watch-page] .html5-main-video {
     transform: var(--video-transform);
     margin-top: 0px;
-    transition: margin-top .2s ease-out;
+    //transition: margin-top .2s ease-out;
 
     left: 0 !important;
     position: relative !important;
@@ -536,6 +536,12 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   .ytp-menuitem-label {
     align-self: center;
     width: calc(100% - 67px);
+    padding: 0 15px;
+
+    .ytp-big-mode & {
+      padding: 0 22px;
+    }
+
     span {
       padding: 0 !important;
     }
@@ -544,6 +550,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   .ytap-menuitem-description {
     line-height: 12px;
     font-size: 10px;
+    color: #ffffff88;
 
     ytd-watch-flexy[fullscreen] & {
       line-height: 15px;
@@ -737,4 +744,13 @@ body.immersive-mode .toggle-auto-hide-btn {
   overflow: visible !important;
   overflow-y: visible !important;
   overflow-x: visible !important;
+}
+
+/* Workaround for issue with OffScreenCanvas */
+.ambilight__buffers-container {
+  position: absolute;
+  opacity: 0.00001;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
