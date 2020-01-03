@@ -61,7 +61,7 @@ body #footer-container {
   color: #7d7d7d54;
 }
 
-.yt-uix-button:not(.search-btn-component),
+#footer .pickers .yt-uix-button, #footer-main > .yt-uix-button, #page .yt-uix-button,
 .yt-card .yt-uix-button-expander:hover {
   background: rgba(255,255,255,0);
   color: rgba(255,255,255,.95);
@@ -105,7 +105,11 @@ body #footer-container {
   opacity: .75;
 }
 
-.yt-uix-button-default:not(.search-btn-component), .yt-uix-button-default[disabled]:not(.search-btn-component), .yt-uix-button-default[disabled]:hover:not(.search-btn-component), .yt-uix-button-default[disabled]:active:not(.search-btn-component), .yt-uix-button-default[disabled]:focus:not(.search-btn-component) {
+#page .yt-uix-button-default, 
+#page .yt-uix-button-default[disabled], 
+#page .yt-uix-button-default[disabled]:hover, 
+#page .yt-uix-button-default[disabled]:active, 
+#page .yt-uix-button-default[disabled]:focus {
   background: rgba(255,255,255,0);
   color: rgba(255,255,255,1) !important;
   border-color: rgba(255,255,255,.2);
@@ -134,9 +138,8 @@ ytd-app[scrolling_] {
   position: absolute;
 }
 
-/* Replace black images with white ones (1x) */
-.like-button-renderer-like-button:not(.yt-uix-button-toggled):before,
-.like-button-renderer-dislike-button:not(.yt-uix-button-toggled):before,
+.like-button-renderer-like-button:not(.yt-uix-button-toggled):not(:active):before,
+.like-button-renderer-dislike-button:before,
 .addto-button:before,
 .action-panel-trigger-share:before,
 #action-panel-overflow-button:before, 
@@ -151,4 +154,8 @@ ytd-app[scrolling_] {
 .comment-replies-renderer-expander-down:after,
 #footer .yt-uix-button-default .yt-uix-button-icon {
 filter: invert(1);
+}
+
+.like-button-renderer-dislike-button-clicked.yt-uix-button-toggled {
+  opacity: 1;
 }

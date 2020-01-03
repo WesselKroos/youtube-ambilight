@@ -197,10 +197,10 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     left: 0 !important;
-    transition: opacity .25s, margin-top .2s ease-out;
+    transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
-      transition: opacity .001s, margin-top .2s ease-out;
+      transition: opacity .001s;//, margin-top .2s ease-out;
     }
   }
 
@@ -290,10 +290,6 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
   &[aria-expanded="true"] svg {
     transform: rotateZ(30deg);
   }
-}
-
-.ytp-chrome-bottom {
-  width: calc(100% - 24px) !important;
 }
 
 .ytp-ambilight-settings-menu {

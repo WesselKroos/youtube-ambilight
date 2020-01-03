@@ -181,6 +181,16 @@ class Ambilight {
         default: false
       },
       {
+        new: true,
+        name: 'detectHorizontalBarSizeOffsetPercentage',
+        label: 'Auto-detect black bars offset',
+        type: 'list',
+        default: 0,
+        min: -24,
+        max: 24,
+        step: 0.1
+      },
+      {
         name: 'horizontalBarsClipPercentage',
         label: 'Remove horizontal black bars',
         type: 'list',
@@ -368,6 +378,7 @@ class Ambilight {
     this.videoScale = this.getSetting('videoScale')
     this.detectHorizontalBarSizeEnabled = this.getSetting('detectHorizontalBarSizeEnabled')
     this.detectColoredHorizontalBarSizeEnabled = this.getSetting('detectColoredHorizontalBarSizeEnabled')
+    this.detectHorizontalBarSizeOffsetPercentage = this.getSetting('detectHorizontalBarSizeOffsetPercentage')
     this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
     this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
 
@@ -938,6 +949,12 @@ class Ambilight {
       y: 1
     }
 
+    //To prevent 0x0 sized canvas elements causing a GPU memory leak
+    const minScale = {
+      x: 1/playerSize.w,
+      y: 1/playerSize.h
+    }
+
     const scaleStep = this.edge / 100
 
     this.players.forEach((player, i) => {
@@ -959,7 +976,7 @@ class Ambilight {
       lastScale.x = scaleX
       lastScale.y = scaleY
       
-      player.elem.style.transform = `scale(${scaleX}, ${scaleY})`
+      player.elem.style.transform = `scale(${Math.max(minScale.x, scaleX)}, ${Math.max(minScale.y, scaleY)})`
       //player.elem.style.marginLeft = `${-(((playerSize.w * scaleX) - playerSize.w) / 2)}px`
       //player.elem.style.width = `${playerSize.w * scaleX}px`
       //player.elem.style.marginTop = `${-(((playerSize.h * scaleY) - playerSize.h) / 2)}px`
@@ -1515,7 +1532,7 @@ class Ambilight {
     }
 
     
-    const correction = height * 0.001
+    const correction = (height * 0.001) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
     const threshold = height * 0.02
     size = (size > threshold) ? size + correction : 0
     
