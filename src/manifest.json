@@ -38,6 +38,7 @@
     "chrome_style": false
   },
   "permissions": [
-    "tabs"
+    "tabs",
+    "https://www.youtube.com/*"
   ]
 }
