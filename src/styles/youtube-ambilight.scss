@@ -174,6 +174,8 @@ html[data-ambilight-enabled="true"] {
       height: 300%;
       overflow: hidden;
       pointer-events: none;
+      top: 0;
+      left: 0;
   }
 
   .ambilight__clip-container {
@@ -250,10 +252,11 @@ html[data-ambilight-enabled="true"] {
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s;
-}
-ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
-  width: 490px;
-  max-height: calc(100% - 140px);
+
+  .ytp-fullscreen & {
+    width: 490px;
+    max-height: calc(100% - 140px);
+  }
 }
 .ytp-ambilight-settings-menu.is-visible {
   opacity: 1;
@@ -301,7 +304,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     .ytpa-feedback-link {
       display: table-row;
       
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         height: 40px;
       }
     }
@@ -316,7 +319,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       text-decoration: underline;
     }
 
-    ytd-watch-flexy[fullscreen] & {
+    .ytp-fullscreen & {
       padding: 15px 20px;
       font-size: 16px;
     }
@@ -351,7 +354,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       content: 'v';
       color: #666;
 
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         font-size: 17px;
         margin-top: 4px;
         margin-right: 1px;
@@ -366,7 +369,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         margin-top: 5px;
         font-size: 18px;
         content: '^';
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           font-size: 25px;
           margin-right: 0;
         }
@@ -394,7 +397,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       line-height: 21px;
       background: #5556;
       transition: background-color .15s;
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         padding: 0px 20px;
         height: 30px;
         line-height: 30px;
@@ -436,7 +439,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         line-height: 11px;
         transition: transform .25s .25s ease-out;
 
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           width: 14px;
           height: 14px;
           left: 5px;
@@ -468,7 +471,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         opacity: 0;
         transition: visibility 1s, opacity .125s .125s ease-in, max-width .25s ease-out;
 
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           max-width: 6px;
           height: 14px;
           border-radius: 7px;
@@ -483,7 +486,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         transform: translateY(-14px);
         transition: transform .25s .75s ease-in;
 
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           transform: translateY(-18px);
         }
       }
@@ -492,7 +495,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         opacity: 1;
         max-width: 28px;
         transition: visibility 0s .75s, opacity .125s .9s ease-out, max-width .5s 1s ease;
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           max-width: 34px;
         }
       }
@@ -513,7 +516,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     &:hover .ytp-menuitem-label {
       &::after {
         max-width: 67px;
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           max-width: 85px;
         }
       }
@@ -525,7 +528,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     height: auto !important;
     margin: 0;
     padding: 6px 0;
-    ytd-watch-flexy[fullscreen] & {
+    .ytp-fullscreen & {
       padding: 9px 0;
     }
   }
@@ -548,7 +551,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     font-size: 10px;
     color: #ffffff88;
 
-    ytd-watch-flexy[fullscreen] & {
+    .ytp-fullscreen & {
       line-height: 15px;
       font-size: 13px;
     }
@@ -575,7 +578,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     margin: -2px 0 13px;
     position: relative;
     z-index: 2;
-    ytd-watch-flexy[fullscreen] & {
+    .ytp-fullscreen & {
       margin: -4px 0 20px;
     }
     input[type="range"] {
@@ -587,7 +590,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
       height: 0;
       margin: 0 14px;
       outline: 0;
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         margin: 0 22px;
         width: calc(100% - 44px);
       }
@@ -608,7 +611,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         box-shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
         transition: all .15s;
 
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           width: 20px;
           height: 20px;
           margin-top: 0;
@@ -621,7 +624,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
 
     &--has-snap-points {
       margin: 3px 0px 13px;
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         margin: 3px 0 20px;
       }
       input[type="range"] {
@@ -637,7 +640,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
     left: 20.5px;
     font-size: 10px;
     pointer-events: none;
-    ytd-watch-flexy[fullscreen] & {
+    .ytp-fullscreen & {
       left: 32px;
       width: calc(100% - 64px);
     }
@@ -666,7 +669,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         background: #666;
         pointer-events: none;
       }
-      ytd-watch-flexy[fullscreen] & {
+      .ytp-fullscreen & {
         margin-top: -18px;
         &::before {
           height: 20px;
@@ -680,7 +683,7 @@ ytd-watch-flexy[fullscreen] .ytp-ambilight-settings-menu {
         &::before {
           margin-top: 13px;
         }
-        ytd-watch-flexy[fullscreen] & {
+        .ytp-fullscreen & {
           margin-top: -52px;
           &::before {
             margin-top: 13px;

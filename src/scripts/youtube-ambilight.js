@@ -734,6 +734,16 @@ class Ambilight {
         this.hide()
         return true
       }
+      
+      if(this.isFullscreen) {
+        if(this.allContainer.parentElement !== html5VideoPlayer) {
+          html5VideoPlayer.prepend(this.allContainer)
+        }
+      } else {
+        if(this.allContainer.parentElement !== body) {
+          body.prepend(this.allContainer)
+        }
+      }
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
       if (!noClipOrScale) {
@@ -755,8 +765,16 @@ class Ambilight {
         !this.videoPlayer.videoHeight
       ) return false //Not ready
 
+      const scrollTop = (this.isFullscreen ? (Ambilight.isClassic ? 0 : $.s('ytd-app').scrollTop) : window.scrollY)
+      this.playerOffset = {
+        left: this.playerOffset.left,
+        top: this.playerOffset.top + scrollTop,
+        width: this.playerOffset.width,
+        height: this.playerOffset.height
+      }
+
       this.srcVideoOffset = {
-        top: this.playerOffset.top + window.scrollY,
+        top: this.playerOffset.top,
         width: this.videoPlayer.videoWidth,
         height: this.videoPlayer.videoHeight
       }
@@ -777,25 +795,13 @@ class Ambilight {
           h: Math.round((this.srcVideoOffset.height * (1 - (horizontalBarsClip * 2))) / scale)
         }
       }
-      
-      if(Ambilight.isClassic) {
-        if(this.isFullscreen) {
-          if(this.allContainer.parentElement !== html5VideoPlayer) {
-            html5VideoPlayer.prepend(this.allContainer)
-          }
-        } else {
-          if(this.allContainer.parentElement !== body) {
-            body.prepend(this.allContainer)
-          }
-        }
-      }
 
       this.horizontalBarsScaledClipPX = Math.round(horizontalBarsClip * this.playerOffset.height)
       this.playerContainer.style.left = (this.playerOffset.left + window.scrollX) + 'px'
-      this.playerContainer.style.top = (this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsScaledClipPX) + 'px'
+      this.playerContainer.style.top = (this.playerOffset.top +  - 1 + this.horizontalBarsScaledClipPX) + 'px'
       this.playerContainer.style.width = this.playerOffset.width + 'px'
       this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsScaledClipPX * 2)) + 'px'
-      //this.playerContainer.style.transform = `translate3d(${(this.playerOffset.left + window.scrollX)}px, ${(this.playerOffset.top + window.scrollY - 1 + this.horizontalBarsScaledClipPX)}px, 0)`
+      //this.playerContainer.style.transform = `translate3d(${(this.playerOffset.left)}px, ${(this.playerOffset.top - 1 + this.horizontalBarsScaledClipPX)}px, 0)`
       
       this.ambilightContainer.style.webkitFilter = `
         blur(${this.playerOffset.height * (this.blur * .0025)}px)
@@ -911,8 +917,8 @@ class Ambilight {
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #primary-inner > *:not(#player),
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #secondary,
       
-      #watch7-main,
-      #player-playlist .watch-playlist {
+      html[data-ambilight-enabled="true"] #watch7-main,
+      html[data-ambilight-enabled="true"] #player-playlist .watch-playlist {
         ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) !important;` : ''}
       }
 
@@ -1133,8 +1139,8 @@ class Ambilight {
     const playerContainerRect = this.playerContainer.getBoundingClientRect()
     const videoPlayerRec = this.videoPlayer.getBoundingClientRect()
     if (
-      playerContainerRect.width !== videoPlayerRec.width ||
-      playerContainerRect.x !== videoPlayerRec.x
+      Math.abs(playerContainerRect.width - videoPlayerRec.width) > 1 ||
+      Math.abs(playerContainerRect.x - videoPlayerRec.x) > 1
     ) {
       return this.updateSizes()
     }
@@ -1713,6 +1719,8 @@ class Ambilight {
       this.clear()
       this.hideFPS()
     }, 500)
+
+    $.s('html').attr('data-ambilight-classic', false)
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
       Ambilight.setDarkTheme(false)
@@ -1723,6 +1731,7 @@ class Ambilight {
     this.isHidden = false
     this.ambilightContainer.style.opacity = 1
     Ambilight.setDarkTheme(true)
+    $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
   }
 
 

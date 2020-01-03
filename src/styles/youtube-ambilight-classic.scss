@@ -1,3 +1,5 @@
+html[data-ambilight-classic="true"] {
+
 body {
   background: #000;
 }
@@ -158,4 +160,11 @@ filter: invert(1);
 
 .like-button-renderer-dislike-button-clicked.yt-uix-button-toggled {
   opacity: 1;
+}
+
+#watch-sidebar-live-chat .yt-uix-expander-collapsed {
+  background: transparent !important;
+}
+
+
 }

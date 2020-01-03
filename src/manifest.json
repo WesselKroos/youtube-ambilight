@@ -21,7 +21,10 @@
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
     "js": ["scripts/content.js"],
-    "css": ["styles/youtube-ambilight.css"]
+    "css": [
+      "styles/youtube-ambilight.css",
+      "styles/youtube-ambilight-classic.css"
+    ]
   }],
   "web_accessible_resources": [
     "styles/options.css",
