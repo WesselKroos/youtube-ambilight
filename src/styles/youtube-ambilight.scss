@@ -375,7 +375,7 @@ html[data-ambilight-enabled="true"] {
         }
       }
       $sel: '&';
-      @for $i from 1 through 12 {
+      @for $i from 1 through 15 {
         $sel: if($i == 1, " + *:not(.ytap-section)", selector-nest($sel, " + *:not(.ytap-section)"));
         #{$sel} {
           display: none;
