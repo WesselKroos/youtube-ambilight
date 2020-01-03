@@ -438,7 +438,7 @@ class Ambilight {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
     this.buffersContainer = document.createElement('div')
     this.buffersContainer.class('ambilight__buffers-container')
-    this.allContainer.prepend(this.buffersContainer)
+    //this.allContainer.prepend(this.buffersContainer)
 
     const compareBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
     this.buffersContainer.appendChild(compareBufferElem)
