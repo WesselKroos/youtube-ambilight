@@ -2,38 +2,39 @@ import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
-  constructor(videoPlayer, isClassic) {
-    Ambilight.isClassic = isClassic
-    this.showDisplayFrameRate = true
-    this.showVideoFrameRate = true
+  static isClassic = false
 
-    this.horizontalBarsClipPX = 0
+  showDisplayFrameRate = true
+  showVideoFrameRate = true
 
+  horizontalBarsClipPX = 0
+
+  playerOffset = {}
+  srcVideoOffset = {}
+
+  isHidden = true
+  isOnVideoPage = true
+  showedHighQualityCompareWarning = false
+
+  p = null
+  a = null
+  isFullscreen = false
+  isFillingFullscreen = false
+  isVR = false
+
+  videoFrameCount = 0
+  skippedFrames = 0
+  displayFrameRate = 0
+  videoFrameRate = 0
+  videoFrameRateMeasureStartTime = 0
+  videoFrameRateMeasureStartFrame = 0
+  ambilightFrameCount = 0
+  ambilightFrameRate = 0
+  previousFrameTime = 0
+  syncInfo = []
+
+  constructor(videoPlayer) {
     this.setFeedbackLink()
-
-    this.playerOffset = {}
-    this.srcVideoOffset = {}
-
-    this.isHidden = true
-    this.isOnVideoPage = true
-    this.showedHighQualityCompareWarning = false
-
-    this.p = null
-    this.a = null
-    this.isFullscreen = false
-    this.isFillingFullscreen = false
-    this.isVR = false
-
-    this.videoFrameCount = 0
-    this.skippedFrames = 0
-    this.displayFrameRate = 0
-    this.videoFrameRate = 0
-    this.videoFrameRateMeasureStartTime = 0
-    this.videoFrameRateMeasureStartFrame = 0
-    this.ambilightFrameCount = 0
-    this.ambilightFrameRate = 0
-    this.previousFrameTime = 0
-    this.syncInfo = []
 
     this.masthead = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
 
@@ -2044,7 +2045,6 @@ class Ambilight {
     return value
   }
 }
-Ambilight.setDarkThemeBusy = false
 
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
@@ -2092,7 +2092,8 @@ const tryInitClassicAmbilight = () => {
   const classicVideoPlayer = $.s("video.html5-main-video")
   if(!classicBody || !classicVideoPlayer) return false
 
-  window.ambilight = new Ambilight(classicVideoPlayer, true)
+  Ambilight.isClassic = true
+  window.ambilight = new Ambilight(classicVideoPlayer)
   return true
 }
 const tryInitAmbilight = () => {
