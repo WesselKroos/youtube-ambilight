@@ -3,6 +3,10 @@ import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
   static isClassic = false
+  VIEW_SMALL = 0
+  VIEW_THEATER = 1
+  VIEW_FULLSCREEN = 2
+  VIEW_POPUP = 3
 
   showDisplayFrameRate = true
   showVideoFrameRate = true
@@ -18,6 +22,7 @@ class Ambilight {
 
   p = null
   a = null
+  view = -1
   isFullscreen = false
   isFillingFullscreen = false
   isVR = false
@@ -129,14 +134,6 @@ class Ambilight {
         name: 'sectionAmbilightImageAdjustmentCollapsed',
         default: false
       },
-      // {
-      //   name: 'sepia',
-      //   label: 'Sepia',
-      //   type: 'list',
-      //   value: this.sepia,
-      //   min: 0,
-      //   max: 100
-      // },
       {
         name: 'brightness',
         label: 'Brightness',
@@ -170,7 +167,7 @@ class Ambilight {
       {
         new: true,
         name: 'detectHorizontalBarSizeEnabled',
-        label: 'Auto-detect black bars',
+        label: 'Auto-detect black bars [B]<br/><span class="ytap-menuitem-description">(More CPU usage)</span>',
         type: 'checkbox',
         default: false
       },
@@ -358,54 +355,7 @@ class Ambilight {
     this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
     this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
 
-    //Settings
-    this.enabled = this.getSetting('enabled')
-    $.s('html').attr('data-ambilight-enabled', this.enabled)
-    this.spread = this.getSetting('spread')
-    this.blur = this.getSetting('blur')
-    this.bloom = this.getSetting('bloom')
-    this.fadeOutEasing = this.getSetting('fadeOutEasing')
-    this.edge = this.getSetting('edge')
-    this.innerStrength = 2
-    this.videoOverlayEnabled = this.getSetting('videoOverlayEnabled')
-    this.videoOverlaySyncThreshold = this.getSetting('videoOverlaySyncThreshold')
-
-    this.contrast = this.getSetting('contrast')
-    this.brightness = this.getSetting('brightness')
-    this.saturation = this.getSetting('saturation')
-    // this.sepia = this.getSetting('sepia')
-    // if(this.sepia === null) this.sepia = 0
-
-    this.videoScale = this.getSetting('videoScale')
-    this.detectHorizontalBarSizeEnabled = this.getSetting('detectHorizontalBarSizeEnabled')
-    this.detectColoredHorizontalBarSizeEnabled = this.getSetting('detectColoredHorizontalBarSizeEnabled')
-    this.detectHorizontalBarSizeOffsetPercentage = this.getSetting('detectHorizontalBarSizeOffsetPercentage')
-    this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
-    this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
-
-    this.directionTopEnabled = this.getSetting('directionTopEnabled')
-    this.directionRightEnabled = this.getSetting('directionRightEnabled')
-    this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
-    this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
-
-    this.highQuality = this.getSetting('highQuality')
-    this.frameBlending = this.getSetting('frameBlending')
-    this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
-    this.immersive = this.getSetting('immersive')
-    this.enableInFullscreen = this.getSetting('enableInFullscreen')
-    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
-    this.showFPS = this.getSetting('showFPS')
-
-    this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
-    this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
-    this.debandingStrength = this.getSetting('debandingStrength')
-
-    this.videoShadowSize = this.getSetting('videoShadowSize')
-    this.videoShadowOpacity = this.getSetting('videoShadowOpacity')
-
-    this.settings.forEach(setting => {
-      setting.value = this[setting.name]
-    })
+    this.getAllSettings()
 
     this.style = document.createElement('style')
     this.style.appendChild(document.createTextNode(''))
@@ -508,6 +458,8 @@ class Ambilight {
         this.toggleImmersiveMode()
       if (e.keyCode === 65) // a
         this.toggleEnabled()
+      if (e.keyCode === 66) // b
+        this.toggleAutoDetectBlackBars()
     })
 
     this.initSettings()
@@ -518,6 +470,59 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
+  }
+
+  toggleAutoDetectBlackBars() {
+    $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
+    this.setHorizontalBars(0)
+  }
+
+  getAllSettings() {
+    this.enabled = this.getSetting('enabled')
+    $.s('html').attr('data-ambilight-enabled', this.enabled)
+    this.spread = this.getSetting('spread')
+    this.blur = this.getSetting('blur')
+    this.bloom = this.getSetting('bloom')
+    this.fadeOutEasing = this.getSetting('fadeOutEasing')
+    this.edge = this.getSetting('edge')
+    this.innerStrength = 2
+    this.videoOverlayEnabled = this.getSetting('videoOverlayEnabled')
+    this.videoOverlaySyncThreshold = this.getSetting('videoOverlaySyncThreshold')
+
+    this.contrast = this.getSetting('contrast')
+    this.brightness = this.getSetting('brightness')
+    this.saturation = this.getSetting('saturation')
+
+    this.videoScale = this.getSetting('videoScale')
+    this.detectHorizontalBarSizeEnabled = this.getSetting('detectHorizontalBarSizeEnabled')
+    this.detectColoredHorizontalBarSizeEnabled = this.getSetting('detectColoredHorizontalBarSizeEnabled')
+    this.detectHorizontalBarSizeOffsetPercentage = this.getSetting('detectHorizontalBarSizeOffsetPercentage')
+    this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
+    this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
+
+    this.directionTopEnabled = this.getSetting('directionTopEnabled')
+    this.directionRightEnabled = this.getSetting('directionRightEnabled')
+    this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
+    this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
+
+    this.highQuality = this.getSetting('highQuality')
+    this.frameBlending = this.getSetting('frameBlending')
+    this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
+    this.immersive = this.getSetting('immersive')
+    this.enableInFullscreen = this.getSetting('enableInFullscreen')
+    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
+    this.showFPS = this.getSetting('showFPS')
+
+    this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
+    this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
+    this.debandingStrength = this.getSetting('debandingStrength')
+
+    this.videoShadowSize = this.getSetting('videoShadowSize')
+    this.videoShadowOpacity = this.getSetting('videoShadowOpacity')
+
+    this.settings.forEach(setting => {
+      setting.value = this[setting.name]
+    })
   }
 
   initFPSContainer() {
@@ -602,7 +607,7 @@ class Ambilight {
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => raf(() =>
-        setTimeout(() => this.scheduleNextFrame(), 0)
+        setTimeout(() => this.scheduleNextFrame(), 500)
       ))
     )
 
@@ -693,8 +698,31 @@ class Ambilight {
 
   updateSizes() {
     try {
+      const html5VideoPlayer = $.s('.html5-video-player')
+      const flexy = $.s('ytd-watch-flexy')
+      const page = $.s('#page')
       this.isVR = !!$.s('.ytp-webgl-spherical')
-      this.isFullscreen = !!$.s('.ytp-fullscreen')
+
+      const prevView = this.view
+      if(html5VideoPlayer.classList.contains('ytp-fullscreen'))
+        this.view = this.VIEW_FULLSCREEN
+      else if(
+        (flexy && flexy.attr('theater') !== null) ||
+        (page && page.classList.contains('watch-stage-mode'))
+      )
+        this.view = this.VIEW_THEATER
+      else if(html5VideoPlayer.classList.contains('ytp-player-minimized'))
+        this.view = this.VIEW_POPUP
+      else
+        this.view = this.VIEW_SMALL
+
+      // Todo: Set the settings for the specific view
+      // if(prevView !== this.view) {
+      //   console.log('VIEW CHANGED: ', this.view)
+      //   this.getAllSettings()
+      // }
+
+      this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
       const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
       this.isFillingFullscreen = (
         this.isFullscreen &&
@@ -712,7 +740,6 @@ class Ambilight {
       }
 
       const videoPlayerContainer = this.videoPlayer.parentNode
-      const html5VideoPlayer = $.s('.html5-video-player')
 
       const notVisible = (
         !this.enabled ||
@@ -814,7 +841,6 @@ class Ambilight {
       //   ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
       //   ${(this.brightness !== 100) ? `brightness(${(parseInt(this.brightness) + 3)}%)` : ''}
       //   ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
-      //   ${/*(this.sepia !== 0) ? `sepia(${this.sepia}%)` : ''*/ ''}
       // `
 
       this.players.forEach((player) => {

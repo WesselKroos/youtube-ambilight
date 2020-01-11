@@ -60,44 +60,17 @@ html[data-ambilight-enabled="true"] {
     overflow: visible !important;
   }
 
-  /* Video preview background */
+  /* Video preview while moving the timeline */
 
-  /* ytd-app[is-watch-page] .ytp-storyboard-framepreview {
-      margin: 0 auto;
-      position: relative;
-      display: table;
+  .ytp-storyboard-framepreview {
+    max-width: 100%; //Prevent horizontal scrollbar bug
   }
-
-  ytd-app[is-watch-page] .ytp-storyboard-framepreview-img {
-      margin: 0 !important;
-  } */
 
   /* Theater mode */
 
   body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
     margin-top: 28px;
     margin-bottom: 85px;
-  }
-
-  ytd-app[is-watch-page] .html5-video-container {
-    height: 100%;
-    margin-top: 0px;
-    overflow: hidden;
-    //transition: margin-top .2s ease-out, height .2s ease-out;
-    margin-left: auto;
-    margin-right: auto;
-    /* width: 2006px !important; */
-    width: fit-content !important;
-  }
-
-
-  ytd-app[is-watch-page] .html5-main-video {
-    transform: var(--video-transform);
-    margin-top: 0px;
-    //transition: margin-top .2s ease-out;
-
-    left: 0 !important;
-    position: relative !important;
   }
 
   /* Chat */
@@ -209,7 +182,6 @@ html[data-ambilight-enabled="true"] {
     height: 0;
     margin-top: 0px;
     pointer-events: none;
-    left: 0 !important;
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
