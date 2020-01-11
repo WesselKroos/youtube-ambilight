@@ -459,7 +459,7 @@ class Ambilight {
       if (e.keyCode === 65) // a
         this.toggleEnabled()
       if (e.keyCode === 66) // b
-        this.toggleAutoDetectBlackBars()
+        this.toggleDetectHorizontalBars()
     })
 
     this.initSettings()
@@ -472,9 +472,10 @@ class Ambilight {
     }, 0)
   }
 
-  toggleAutoDetectBlackBars() {
+  toggleDetectHorizontalBars() {
     $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
     this.setHorizontalBars(0)
+    this.start()
   }
 
   getAllSettings() {
@@ -1356,7 +1357,7 @@ class Ambilight {
 
     if (
       this.isVR ||
-      this.isFillingFullscreen ||
+      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled) ||
       (!this.enableInFullscreen && this.isFullscreen)
     ) {
       this.hide()
