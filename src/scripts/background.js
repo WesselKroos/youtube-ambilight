@@ -11,18 +11,19 @@ chrome.runtime.onInstalled.addListener(function (details) {
     chrome.runtime.setUninstallURL(feedbackFormLink)
   }
 
-  if (details.reason !== 'install')
-    return
+  // if (details.reason !== 'install')
+  //   return
 
-  chrome.tabs.query({
-    "url": ["https://www.youtube.com/*"]
-  }, (tabs) => {
-    Object.keys(tabs)
-      .map(key => tabs[key].id)
-      .forEach(tabId => {
-        chrome.tabs.reload(tabId)
-      })
-  })
+  //// Refresh all the already open YouTube tabs to start the extension
+  // chrome.tabs.query({
+  //   "url": ["https://www.youtube.com/*"]
+  // }, (tabs) => {
+  //   Object.keys(tabs)
+  //     .map(key => tabs[key].id)
+  //     .forEach(tabId => {
+  //       chrome.tabs.reload(tabId)
+  //     })
+  // })
 
   // if (details.reason !== 'update') return
 

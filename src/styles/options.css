@@ -4,24 +4,32 @@
   box-sizing: border-box;
 }
 html {
-  background: #000;
+  background: #1f1f1f;
 }
 body { 
   min-width: 350px;
   max-width: 100%;
-  padding: 10px;
-  color: #fff;
-}
-html,
-body {
-  max-height: 500px;
-  overflow-y: auto;
+  padding: 5px;
+  color: #ccc;
 }
 
 h1 {
-  margin: 0 0 25px;
+  margin: 0 0 15px;
+  font-size: 16px;
+  color: rgb(62, 166, 255);
+}
+
+h2 {
+  margin: 25px 0 10px;
+  font-size: 16px;
+  color: #fff;
+}
+
+a {
+  color: rgb(62, 166, 255);
+  font-weight: bold;
 }
 
 .important {
-  color: #fd6;
+  color: #f65;
 }
