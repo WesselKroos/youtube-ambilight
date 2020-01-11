@@ -2,11 +2,14 @@
 This extension adds ambilight to the videos you view on YouTube
 
 ## Installation
-Go to [YouTube Ambilight on the Chrome Web Store](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj) and add the extension to Chrome
-  
+Go to the extensions site of your browser and add the extension:
+
+[![Google Chrome Web Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
+
+[![Opera addons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
+
 ## Privacy & Security
 - This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
-- On install this extension uses the `tabs` permission to add the extension on the tabs that are already on the YouTube website.
 
 The following projectfiles are inserted into that specific webpage:
 - \src\scripts\youtube-ambilight.js
@@ -21,6 +24,18 @@ Feel free to
 - report bugs at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
 - request a feature at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
 - or ask a question at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
+
+## Development
+1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
+2. In the terminal/commandline enter `yarn build`. A `/dist` folder will be generated which is the source of the Chrome extension.
+3. Add the extension to Chrome:
+    1. In Chrome go to the url [chrome://extensions/](chrome://extensions/).
+    2. Turn on the `Developer mode` toggle.
+    3. Click `Load unpacked` and select the `/dist` folder.
+    4. `YouTube Ambilight` has been added to the list of extensions.
+4. After you've modified a file in the `/src` folder follow these steps:
+    1. In the terminal/commandline enter `yarn build`
+    2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.
 
 ## New features: progress
 - [x] FPS counter
@@ -48,24 +63,11 @@ Feel free to
 - [x] Make sure the new buffers dont crash Chrome on lower end devices and it's still smooth on laptops (opacity: 0; stackoverflows the gpu memory)
 - [x] Temporary turn off the video sync canvas when the framerate is to low
 - [x] Turn on the Ambilight extension on existing tabs after the installation. This way a refresh is not needed anymore
+- [x] Ambilight directions setting (top, right, bottom, left)
 - [ ] Add a timeout and timeoutCallback to the waitForDomElement function
 - [ ] Adjust the lowest spread setting to rendering only one canvas element
-- [ ] Ambilight directions setting (top, right, bottom, left)
 - [ ] Buffer frames in video sync mode for smoother motion in the video
 - [ ] Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76 https://www.youtube.com/watch?v=PaErPyEnDvk
 - [ ] Firefox: immersive mode: Hide scrollbar
 - [ ] Firefox: blur(100px) max workaround: Add a second element with blur(100px)
 - [ ] Firefox: resizing and restore from inactive browser
-
-
-## Development
-1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
-2. In the terminal/commandline enter `yarn build`. A `/dist` folder will be generated which is the source of the Chrome extension.
-3. Add the extension to Chrome:
-    1. In Chrome go to the url [chrome://extensions/](chrome://extensions/).
-    2. Turn on the `Developer mode` toggle.
-    3. Click `Load unpacked` and select the `/dist` folder.
-    4. `YouTube Ambilight` has been added to the list of extensions.
-4. After you've modified a file in the `/src` folder follow these steps:
-    1. In the terminal/commandline enter `yarn build`
-    2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.
