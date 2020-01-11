@@ -1,5 +1,5 @@
-# Chrome YouTube Ambilight
-This extension adds ambilight to the videos you view on YouTube
+# ![YouTube Ambilight](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/heading.png?raw=true)
+This browser extension adds ambilight to the videos you view on YouTube
 
 ## Installation
 Go to the extensions site of your browser and add the extension:
