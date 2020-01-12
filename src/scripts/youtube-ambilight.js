@@ -654,7 +654,7 @@ class Ambilight {
     setTimeout(() => {
       this.setSetting('horizontalBarsClipPercentage', percentage)
       $.s('#setting-horizontalBarsClipPercentage').value = percentage
-      $.s(`#setting-horizontalBarsClipPercentage-value`).innerHTML = `${percentage}%`
+      $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${percentage}%`
     }, 1)
   }
 
@@ -1259,18 +1259,18 @@ class Ambilight {
   }
 
   hideFPS() {
-    this.videoFPSContainer.innerHTML = ''
-    this.displayFPSContainer.innerHTML = ''
-    this.ambilightFPSContainer.innerHTML = ''
-    this.skippedFramesContainer.innerHTML = ''
-    this.videoSyncedContainer.innerHTML = ''
+    this.videoFPSContainer.textContent = ''
+    this.displayFPSContainer.textContent = ''
+    this.ambilightFPSContainer.textContent = ''
+    this.skippedFramesContainer.textContent = ''
+    this.videoSyncedContainer.textContent = ''
   }
 
   detectVideoSynced() {
     if (!this.showFPS || !this.videoOverlay) return
-    if (this.videoSyncedContainer.innerHTML) {
+    if (this.videoSyncedContainer.textContent) {
       if (!this.videoOverlayEnabled) {
-        this.videoSyncedContainer.innerHTML = ''
+        this.videoSyncedContainer.textContent = ''
         return
       }
       if (this.videoOverlay.isHidden !== undefined && this.videoOverlay.isHidden === this.detectVideoSyncedWasHidden)
@@ -1278,7 +1278,7 @@ class Ambilight {
     }
     if (!this.videoOverlayEnabled) return
 
-    this.videoSyncedContainer.innerHTML = this.videoOverlayEnabled ? `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}` : ''
+    this.videoSyncedContainer.textContent = this.videoOverlayEnabled ? `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}` : ''
     this.videoSyncedContainer.style.color = this.videoOverlay.isHidden ? '#f33' : '#7f7'
     this.detectVideoSyncedWasHidden = this.videoOverlay.isHidden
   }
@@ -1298,9 +1298,9 @@ class Ambilight {
           this.videoFrameRate = (videoFrameRateFrame - this.videoFrameRateStartFrame) / ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
           if (this.showFPS) {
             const frameRateText = (Math.round(Math.min(this.displayFrameRate || this.videoFrameRate, Math.max(0, this.videoFrameRate)) * 100) / 100).toFixed(2)
-            this.videoFPSContainer.innerHTML = `VIDEO: ${frameRateText}`
-          } else if (this.videoFPSContainer.innerHTML !== '') {
-            this.videoFPSContainer.innerHTML = ''
+            this.videoFPSContainer.textContent = `VIDEO: ${frameRateText}`
+          } else if (this.videoFPSContainer.textContent !== '') {
+            this.videoFPSContainer.textContent = ''
           }
         }
         this.videoFrameRateStartFrame = videoFrameRateFrame
@@ -1315,10 +1315,10 @@ class Ambilight {
       this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
       if (this.showFPS) {
         const frameRateText = (Math.round(Math.max(0, this.displayFrameRate) * 100) / 100).toFixed(2)
-        this.displayFPSContainer.innerHTML = `DISPLAY: ${frameRateText}`
+        this.displayFPSContainer.textContent = `DISPLAY: ${frameRateText}`
         this.displayFPSContainer.style.color = (this.displayFrameRate < this.videoFrameRate) ? '#f33' : (this.displayFrameRate < this.videoFrameRate + 5) ? '#ff0' : '#7f7'
-      } else if (this.displayFPSContainer.innerHTML !== '') {
-        this.displayFPSContainer.innerHTML = ''
+      } else if (this.displayFPSContainer.textContent !== '') {
+        this.displayFPSContainer.textContent = ''
       }
       this.displayFrameRateFrame = 1
       this.displayFrameRateStartTime = displayFrameRateTime
@@ -1346,14 +1346,14 @@ class Ambilight {
         this.ambilightFrameRate = (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
         if (this.showFPS) {
           const frameRateText = (Math.round(Math.min(this.displayFrameRate || this.ambilightFrameRate, Math.max(0, this.ambilightFrameRate)) * 100) / 100).toFixed(2)
-          this.ambilightFPSContainer.innerHTML = `AMBILIGHT: ${frameRateText}`
+          this.ambilightFPSContainer.textContent = `AMBILIGHT: ${frameRateText}`
           this.ambilightFPSContainer.style.color = (this.ambilightFrameRate < this.videoFrameRate - 0.5) ? '#f33' : '#7f7'
 
-          this.skippedFramesContainer.innerHTML = `DROPPED FRAMES: ${this.skippedFrames}`
+          this.skippedFramesContainer.textContent = `DROPPED FRAMES: ${this.skippedFrames}`
           this.skippedFramesContainer.style.color = (this.skippedFrames > 0) ? '#f33' : '#7f7'
-        } else if (this.ambilightFPSContainer.innerHTML !== '') {
-          this.ambilightFPSContainer.innerHTML = ''
-          this.skippedFramesContainer.innerHTML = ''
+        } else if (this.ambilightFPSContainer.textContent !== '') {
+          this.ambilightFPSContainer.textContent = ''
+          this.skippedFramesContainer.textContent = ''
         }
       }
       this.ambilightFrameRateStartFrame = ambilightFrameRateFrame
@@ -1947,7 +1947,7 @@ class Ambilight {
           }
           input.value = value
           input.attr('data-previous-value', value)
-          displayedValue.innerHTML = `${value}%`
+          displayedValue.textContent = `${value}%`
           this.setSetting(setting.name, value)
 
           if (
