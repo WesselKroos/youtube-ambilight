@@ -184,8 +184,8 @@ class Ambilight {
         label: 'Auto-detect black bars offset',
         type: 'list',
         default: 0,
-        min: -24,
-        max: 24,
+        min: -5,
+        max: 5,
         step: 0.1
       },
       {
@@ -649,8 +649,7 @@ class Ambilight {
 
   setHorizontalBars(percentage) {
     this.horizontalBarsClipPercentage = percentage
-    this.sizesInvalidated = true
-    this.canvassesInvalidated = true
+    this.updateSizes(true)
     setTimeout(() => {
       this.setSetting('horizontalBarsClipPercentage', percentage)
       $.s('#setting-horizontalBarsClipPercentage').value = percentage
@@ -704,7 +703,7 @@ class Ambilight {
     })
   }
 
-  updateSizes() {
+  updateSizes(isBlackBarsAdjustment = false) {
     try {
       const html5VideoPlayer = $.s('.html5-video-player')
       const flexy = $.s('ytd-watch-flexy')
@@ -911,9 +910,11 @@ class Ambilight {
         }
       }
 
-      this.compareBuffer.elem.width = this.srcVideoOffset.width
-      this.compareBuffer.elem.height = this.srcVideoOffset.height
-      this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d', ctxOptions)
+      if(!isBlackBarsAdjustment) { //Prevent losing imagedata
+        this.compareBuffer.elem.width = this.srcVideoOffset.width
+        this.compareBuffer.elem.height = this.srcVideoOffset.height
+        this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d', ctxOptions)
+      }
 
       this.drawBuffer2.elem.width = this.srcVideoOffset.width
       this.drawBuffer2.elem.height = this.srcVideoOffset.height
