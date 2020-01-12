@@ -1597,13 +1597,14 @@ class Ambilight {
     var canChange = (performance.now() - this.videoOverlay.isHiddenChangeTimestamp) > 2000
     var outSyncCount = this.syncInfo.filter(value => !value).length
     var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
-    if (outSyncCount > outSyncMaxFrames) {
+
+    if (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
         this.videoOverlay.isHiddenChangeTimestamp = performance.now()
       }
-    } else if (outSyncCount == 0 && canChange) {
+    } else if (canChange || this.videoOverlaySyncThreshold == 100) {
       if (this.videoOverlay.isHidden) {
         this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
