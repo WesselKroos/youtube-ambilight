@@ -6,6 +6,8 @@ Go to the extensions site of your browser and add the extension:
 
 [![Google Chrome Web Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
 
+[![Firefox Browser Add-ons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Firefox.png?raw=true)](https://addons.mozilla.org/firefox/addon/youtube-ambilight/)
+
 [![Opera addons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
 ## Privacy & Security
