@@ -2191,8 +2191,10 @@ const ambilightDetectVideoPage = () => {
 }
 
 try {
-  ambilightDetectPageTransition()
-  ambilightDetectVideoPage()
+  if(!window.ambilight) {
+    ambilightDetectPageTransition()
+    ambilightDetectVideoPage()
+  }
 } catch (ex) {
   console.error('YouTube Ambilight | Initialization', ex)
   AmbilightSentry.captureExceptionWithDetails(ex)
