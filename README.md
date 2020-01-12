@@ -64,10 +64,9 @@ Feel free to
 - [x] Temporary turn off the video sync canvas when the framerate is to low
 - [x] Turn on the Ambilight extension on existing tabs after the installation. This way a refresh is not needed anymore
 - [x] Ambilight directions setting (top, right, bottom, left)
+- [x] Firefox: resizing and restore from inactive browser
 - [ ] Add a timeout and timeoutCallback to the waitForDomElement function
 - [ ] Adjust the lowest spread setting to rendering only one canvas element
 - [ ] Buffer frames in video sync mode for smoother motion in the video
 - [ ] Fix antialiasing in video sync mode. Example: https://youtu.be/e8SkIex2zXk?t=76 https://www.youtube.com/watch?v=PaErPyEnDvk
-- [ ] Firefox: immersive mode: Hide scrollbar
 - [ ] Firefox: blur(100px) max workaround: Add a second element with blur(100px)
-- [ ] Firefox: resizing and restore from inactive browser
