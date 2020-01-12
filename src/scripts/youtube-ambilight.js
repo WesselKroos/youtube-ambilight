@@ -938,7 +938,11 @@ class Ambilight {
     //${videoShadowSize ? `filter: drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) !important;` : ''}
     this.style.childNodes[0].data = `
       html[data-ambilight-enabled="true"] .html5-video-container {
-        ${videoShadowSize ? `box-shadow: rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px, rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px !important;` : ''}
+        ${videoShadowSize ? `
+        background: rgba(0,0,0,${videoShadowOpacity}) !important;
+        box-shadow: rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
+        rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px !important;
+        ` : ''}
       }
 
       html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
@@ -1503,6 +1507,10 @@ class Ambilight {
 
       this.ambilightFrameCount++
     }
+
+    // FireFox bug: Force to rerender the outer blur of the canvasses
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
+    this.allContainer.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
   }
 
   detectHorizontalBarSize(imageVLines) {
