@@ -528,6 +528,10 @@ html[data-ambilight-enabled="true"] {
     span {
       padding: 0 !important;
     }
+
+    a:hover:not([href="#"]) {
+      color: #3ea6ff;
+    }
   }
 
   .ytap-menuitem-description {

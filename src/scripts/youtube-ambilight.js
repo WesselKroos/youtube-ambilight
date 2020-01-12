@@ -267,7 +267,7 @@ class Ambilight {
       },
       {
         name: 'debandingStrength',
-        label: 'Debanding (dithering) <a title="More information about Dithering" href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;">?</a>',
+        label: 'Debanding (dithering) <a title="Click for more information about Dithering" href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;">?</a>',
         type: 'list',
         default: 0,
         min: 0,
@@ -299,7 +299,7 @@ class Ambilight {
       {
         experimental: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="More information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="Click for more information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
         type: 'checkbox',
         default: false
       },
