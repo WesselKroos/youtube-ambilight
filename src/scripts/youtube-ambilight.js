@@ -368,6 +368,10 @@ class Ambilight {
     this.allContainer.class('ambilight')
     body.prepend(this.allContainer)
 
+    this.videoShadow = document.createElement("div")
+    this.videoShadow.class('ambilight__video-shadow')
+    this.allContainer.prepend(this.videoShadow)
+
     this.ambilightContainer = document.createElement("div")
     this.ambilightContainer.class('ambilight__container')
     this.allContainer.prepend(this.ambilightContainer)
@@ -607,9 +611,12 @@ class Ambilight {
     this.videoPlayer = videoPlayer
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => raf(() =>
-        setTimeout(() => this.scheduleNextFrame(), 500)
-      ))
+      btn.on('click', () => {
+        raf(() => {
+          setTimeout(() => this.checkVideoSize(), 1)
+          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
+        })
+      })
     )
 
     this.videoPlayer.on('playing', () => {
@@ -832,6 +839,11 @@ class Ambilight {
       this.playerContainer.style.height = (this.playerOffset.height - (this.horizontalBarsScaledClipPX * 2)) + 'px'
       //this.playerContainer.style.transform = `translate3d(${(this.playerOffset.left)}px, ${(this.playerOffset.top - 1 + this.horizontalBarsScaledClipPX)}px, 0)`
       
+      this.videoShadow.style.left = this.playerContainer.style.left
+      this.videoShadow.style.top = this.playerContainer.style.top
+      this.videoShadow.style.width = this.playerContainer.style.width
+      this.videoShadow.style.height = this.playerContainer.style.height
+
       this.ambilightContainer.style.webkitFilter = `
         blur(${this.playerOffset.height * (this.blur * .0025)}px)
         ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
@@ -935,9 +947,8 @@ class Ambilight {
     const videoShadowSize = this.videoShadowSize * this.videoShadowSize
     const videoShadowOpacity = this.videoShadowOpacity / 100
     
-    //${videoShadowSize ? `filter: drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) drop-shadow(0 0 ${videoShadowSize}px rgba(0,0,0,${videoShadowOpacity})) !important;` : ''}
     this.style.childNodes[0].data = `
-      html[data-ambilight-enabled="true"] .html5-video-container {
+      html[data-ambilight-enabled="true"] .ambilight__video-shadow {
         ${videoShadowSize ? `
         background: rgba(0,0,0,${videoShadowOpacity}) !important;
         box-shadow: rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,

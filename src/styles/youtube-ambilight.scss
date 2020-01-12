@@ -142,6 +142,7 @@ html[data-ambilight-enabled="true"] {
   /* Ambilight */
 
   .ambilight,
+  .ambilight__video-shadow,
   .ambilight__container,
   .ambilight__canvas-list,
   .ambilight__canvas,
@@ -158,6 +159,7 @@ html[data-ambilight-enabled="true"] {
       height: 300%;
       overflow: hidden;
       pointer-events: none;
+      user-select: none;
       top: 0;
       left: 0;
   }
@@ -182,6 +184,7 @@ html[data-ambilight-enabled="true"] {
     height: 0;
     margin-top: 0px;
     pointer-events: none;
+    user-select: none;
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
@@ -406,6 +409,7 @@ html[data-ambilight-enabled="true"] {
         content: 'N';
         position: absolute;
         pointer-events: none;
+        user-select: none;
         top: 0;
         left: 2px;
         margin-top: 2px;
@@ -437,6 +441,7 @@ html[data-ambilight-enabled="true"] {
         content: 'New';
         position: absolute;
         pointer-events: none;
+        user-select: none;
         top: 0;
         left: 2px;
         max-width: 3px;
@@ -717,6 +722,7 @@ body.immersive-mode .toggle-auto-hide-btn {
   color: #fff;
   font-size: 18px;
   pointer-events: none;
+  user-select: none;
 
   * {
     height: 22px;
