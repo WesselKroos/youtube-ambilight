@@ -1759,7 +1759,7 @@ class Ambilight {
   hide() {
     if (this.isHidden) return
     this.isHidden = true
-    this.ambilightContainer.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+    this.allContainer.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
@@ -1777,7 +1777,7 @@ class Ambilight {
 
   show() {
     this.isHidden = false
-    this.ambilightContainer.style.opacity = 1
+    this.allContainer.style.opacity = 1
     Ambilight.setDarkTheme(true)
     $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
   }

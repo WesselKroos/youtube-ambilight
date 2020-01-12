@@ -162,15 +162,12 @@ html[data-ambilight-enabled="true"] {
       user-select: none;
       top: 0;
       left: 0;
+      opacity: 0;
+      //transition: opacity .15s;
   }
 
   .ambilight__clip-container {
     //overflow: hidden;
-  }
-
-  .ambilight__container {
-      //transition: opacity .15s;
-      opacity: 0;
   }
 
   .ambilight__canvas {

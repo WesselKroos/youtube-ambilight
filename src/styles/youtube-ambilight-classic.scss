@@ -5,10 +5,10 @@ body {
 }
 
 #appbar-guide-menu, .guide-flyout,
-#yt-masthead-container,
+#yt-masthead-container.at-top,
 
-#masthead-search:not(:hover) #masthead-search-terms,
-#masthead-search:not(:hover) .search-btn-component,
+#yt-masthead-container.at-top #masthead-search:not(:hover):not(:focus-within) #masthead-search-terms,
+#yt-masthead-container.at-top #masthead-search:not(:hover):not(:focus-within) .search-btn-component,
 
 .watch-stage-mode #theater-background,
 .player-api,
@@ -28,6 +28,7 @@ body #footer-container {
   box-shadow: none;
 }
 
+#yt-masthead-container.at-top,
 #masthead-search #masthead-search-terms,
 #masthead-search .search-btn-component {
   transition: all .2s;
@@ -59,7 +60,7 @@ body #footer-container {
   color: #167ac6;
 }
 
-#masthead-search-terms:not(:hover):not(:focus-within) input {
+#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input {
   color: #7d7d7d54;
 }
 
