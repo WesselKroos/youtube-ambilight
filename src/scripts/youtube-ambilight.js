@@ -944,7 +944,7 @@ class Ambilight {
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
-    const videoShadowSize = this.videoShadowSize * this.videoShadowSize
+    const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px
     const videoShadowOpacity = this.videoShadowOpacity / 100
     
     this.style.childNodes[0].data = `
