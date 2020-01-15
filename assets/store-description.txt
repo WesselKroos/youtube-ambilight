@@ -4,7 +4,7 @@ And it works on both the classic and new YouTube layout.
 
 Requirement:
 
-A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
+A video card with a score of at least 5000 points in the PassMark G3D Mark benchmark is recommended.
 Check your video card's score here: https://www.videocardbenchmark.net/gpu_list.php
 With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
 
