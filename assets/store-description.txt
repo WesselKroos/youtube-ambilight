@@ -1,0 +1,59 @@
+This extension will surround YouTube videos with ambilight inside your browser. No need for extra hardware like lightstrips or smart lights, it's all in your browser!
+And it works on both the classic and new YouTube layout.
+
+
+Requirement:
+
+A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
+Check your video card's score here: https://www.videocardbenchmark.net/gpu_list.php
+With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+
+
+Features:
+
+1. Ambilight control
+- Blur
+- Spread
+- Edge size
+- Fade out start & curve
+- Directions (top, left, bottom, right)
+
+2. Ambilight image adjustment
+- Brightness
+- Contrast
+- Saturation
+
+3. Video
+- Auto-detect & remove black bars
+- Reset black bars in the next video
+- Scale
+- Shadow size & opacity
+
+4. Videopage content
+- Shadow size & opacity
+- Immersive mode (Show only the video when you are at the top of the page)
+
+5. Ambilight quality & performance
+- Debanding (dithering)
+- Prevent frame drops: Syncs the ambilight effect with the video framerate more tightly. This will require extra CPU usage because it detects new video frames on every display refresh rate, since the native framerate counter of the browser can be delayed.
+- Sync video exactly 
+- Smooth motion (frame blending)
+
+6. General
+- Show framerate
+- Dark theme on videopage only
+- Enable in fullscreen: Shows the surround ambilight in fullscreen mode where normally black bars are located
+- Enabled/Disabled
+
+
+Contribute
+
+You view the source code and can contribute to this open source project at https://github.com/WesselKroos/youtube-ambilight
+
+
+Privacy & Security
+
+This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
+
+The only requests being sent are crash reports to Sentri.io. No other requests are sent to any webserver, website or api. 
+While doing so we take into account your Do Not Track preference. For more information about Do Not Track visit https://allaboutdnt.com

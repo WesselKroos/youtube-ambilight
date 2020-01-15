@@ -10,6 +10,11 @@ Go to the extensions site of your browser and add the extension:
 
 [![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
+## Requirement
+A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
+Check your video card's score here: https://www.videocardbenchmark.net/gpu_list.php
+With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+
 ## Privacy & Security
 - This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
 
