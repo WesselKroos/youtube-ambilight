@@ -1,17 +1,17 @@
 {
-  "name": "chrome-youtube-ambilight",
+  "name": "youtube-ambilight",
   "version": "1.0.0",
-  "description": "This Chrome Extension adds ambilight to the videos you view on YouTube",
+  "description": "This browser extension adds ambilight to the videos you view on YouTube",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WesselKroos/chrome-youtube-ambilight.git"
+    "url": "git+https://github.com/WesselKroos/youtube-ambilight.git"
   },
   "author": "Wessel Kroos",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/WesselKroos/chrome-youtube-ambilight/issues"
+    "url": "https://github.com/WesselKroos/youtube-ambilight/issues"
   },
-  "homepage": "https://github.com/WesselKroos/chrome-youtube-ambilight#readme",
+  "homepage": "https://github.com/WesselKroos/youtube-ambilight#readme",
   "devDependencies": {
     "@babel/core": "^7.6.4",
     "@babel/plugin-proposal-class-properties": "^7.5.5",

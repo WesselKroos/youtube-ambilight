@@ -1,14 +1,14 @@
-# ![YouTube Ambilight](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/heading.png?raw=true)
+# ![YouTube Ambilight](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)
 Immersive yourself in YouTube videos with ambilight!
 
 ## Installation
 Go to the extensions site of your browser and add the extension:
 
-[![Google Chrome Web Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
+[![Google Chrome Web Store](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
 
-[![Firefox Browser Add-ons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Firefox.png?raw=true)](https://addons.mozilla.org/firefox/addon/youtube-ambilight/)
+[![Firefox Browser Add-ons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Firefox.png?raw=true)](https://addons.mozilla.org/firefox/addon/youtube-ambilight/)
 
-[![Opera addons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
+[![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
 ## Privacy & Security
 - This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
@@ -22,10 +22,10 @@ No other requests are sent to any webserver, website or api.
 
 ## Report, request or contribute
 Feel free to 
-- contribute to the project at https://github.com/WesselKroos/chrome-youtube-ambilight
-- report bugs at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
-- request a feature at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
-- or ask a question at https://github.com/WesselKroos/chrome-youtube-ambilight/issues
+- contribute to the project at https://github.com/WesselKroos/youtube-ambilight
+- report bugs at https://github.com/WesselKroos/youtube-ambilight/issues
+- request a feature at https://github.com/WesselKroos/youtube-ambilight/issues
+- or ask a question at https://github.com/WesselKroos/youtube-ambilight/issues
 
 ## Development
 1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
