@@ -10,6 +10,8 @@ Go to the extensions site of your browser and add the extension:
 
 [![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
+[![Microsoft Edge Insider Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Microsoft%20Edge%20Insider.png?raw=true)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf)
+
 ## Requirement
 A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
 Check your video card's score here: https://www.videocardbenchmark.net/gpu_list.php
