@@ -1373,7 +1373,7 @@ class Ambilight {
 
     if (
       this.isVR ||
-      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled) ||
+      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled && !this.frameBlending) ||
       (!this.enableInFullscreen && this.isFullscreen)
     ) {
       this.hide()
@@ -1479,7 +1479,7 @@ class Ambilight {
         this.ambilightFrameCount++
       }
       const frameDuration = (drawTime - this.previousFrameTime)
-      const alpha = (this.ambilightFrameRate < this.videoFrameRate * 1.33) ? 1 : Math.min(1, (frameDuration) / (1000 / (this.videoFrameRate / (this.frameBlendingSmoothness / 100) || 1)))
+      const alpha = (this.displayFrameRate < this.videoFrameRate * 1.33) ? 1 : Math.min(1, (frameDuration) / (1000 / (this.videoFrameRate / (this.frameBlendingSmoothness / 100) || 1)))
       if (this.videoOverlayEnabled) {
         this.videoOverlay.ctx.globalAlpha = 1
         this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
