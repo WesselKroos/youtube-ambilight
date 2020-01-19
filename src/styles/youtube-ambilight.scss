@@ -224,7 +224,7 @@ html[data-ambilight-enabled="true"] {
 
 /* Settings */
 
-.ytp-ambilight-settings-menu {
+.ytpa-ambilight-settings-menu {
   width: 320px;
   max-height: calc(100% - 70px);
   overflow-y: auto !important;
@@ -241,11 +241,11 @@ html[data-ambilight-enabled="true"] {
     max-height: calc(100% - 140px);
   }
 }
-.ytp-ambilight-settings-menu.is-visible {
+.ytpa-ambilight-settings-menu.is-visible {
   opacity: 1;
   pointer-events: all;
 }
-.ytp-ambilight-settings-menu .ytp-panel {
+.ytpa-ambilight-settings-menu .ytp-panel {
   position: relative;
   overflow-x: visible;
   overflow-y: visible;
@@ -279,7 +279,7 @@ html[data-ambilight-enabled="true"] {
   }
 }
 
-.ytp-ambilight-settings-menu {
+.ytpa-ambilight-settings-menu {
   .ytp-panel-menu {
     display: block;
   }
@@ -321,7 +321,7 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  .ytap-section {
+  .ytpa-section {
     display: flex;
     width: 100%;
     margin: 5px 0;
@@ -360,7 +360,7 @@ html[data-ambilight-enabled="true"] {
       }
       $sel: '&';
       @for $i from 1 through 15 {
-        $sel: if($i == 1, " + *:not(.ytap-section)", selector-nest($sel, " + *:not(.ytap-section)"));
+        $sel: if($i == 1, " + *:not(.ytpa-section)", selector-nest($sel, " + *:not(.ytpa-section)"));
         #{$sel} {
           display: none;
         }
@@ -387,7 +387,7 @@ html[data-ambilight-enabled="true"] {
         line-height: 30px;
       }
     }
-    &:hover .ytap-section {
+    &:hover .ytpa-section {
       &__label,
       &__fill {
         background: #6667 !important;
@@ -395,11 +395,12 @@ html[data-ambilight-enabled="true"] {
     }
     &__fill {
       color: transparent;
+      font-size: 0;
     }
   }
 
-  .ytap-menuitem--experimental,
-  .ytap-menuitem--new {
+  .ytpa-menuitem--experimental,
+  .ytpa-menuitem--new {
     & .ytp-menuitem-label {
       position: relative;
       &::before {
@@ -487,7 +488,7 @@ html[data-ambilight-enabled="true"] {
       }
     }
   }
-  .ytap-menuitem--experimental {
+  .ytpa-menuitem--experimental {
     .ytp-menuitem-label {
       &::before {
         content: 'E';
@@ -518,6 +519,7 @@ html[data-ambilight-enabled="true"] {
       padding: 9px 0;
     }
   }
+
   .ytp-menuitem-label {
     align-self: center;
     width: calc(100% - 67px);
@@ -536,7 +538,7 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  .ytap-menuitem-description {
+  .ytpa-menuitem-description {
     line-height: 12px;
     font-size: 10px;
     color: #ffffff88;
@@ -678,6 +680,17 @@ html[data-ambilight-enabled="true"] {
           }
         }
       }
+    }
+  }
+}
+.ytpa-ambilight-settings-menu:not(.ytpa-ambilight-settings-menu--advanced) {
+  .ytpa-section--advanced {
+    display: none !important;
+  }
+  .ytpa-menuitem--advanced {
+    &,
+    & + .ytp-menuitem-range {
+      display: none !important;
     }
   }
 }

@@ -46,13 +46,25 @@ class Ambilight {
     this.settings = [
       {
         type: 'section',
+        label: 'Settings',
+        name: 'sectionSettingsCollapsed',
+        default: true
+      },
+      {
+        name: 'advancedSettings',
+        label: 'Advanced',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        type: 'section',
         label: 'Ambilight',
         name: 'sectionAmbilightCollapsed',
         default: false
       },
       {
         name: 'blur',
-        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span class="ytap-menuitem-description">(More GPU memory)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span class="ytpa-menuitem-description">(More GPU memory)</span></span>',
         type: 'list',
         default: 50,
         min: 0,
@@ -60,7 +72,7 @@ class Ambilight {
       },
       {
         name: 'spread',
-        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span class="ytap-menuitem-description">(More GPU usage)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span class="ytpa-menuitem-description">(More GPU usage)</span></span>',
         type: 'list',
         default: 20,
         min: 0,
@@ -69,12 +81,13 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytap-menuitem-description">(Lower GPU usage. Tip: Turn blur down)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytpa-menuitem-description">(Lower GPU usage. Tip: Turn blur down)</span></span>',
         type: 'list',
         default: 20,
         min: 2,
         max: 50,
-        step: .1
+        step: .1,
+        advanced: true
       },
       {
         name: 'bloom',
@@ -83,56 +96,60 @@ class Ambilight {
         default: 15,
         min: -50,
         max: 100,
-        step: .1
+        step: .1,
+        advanced: true
       },
       {
         name: 'fadeOutEasing',
-        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span class="ytap-menuitem-description">(Tip: Turn blur all the way down)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>',
         type: 'list',
         default: 60,
         min: 1,
         max: 100,
-        step: 1
+        step: 1,
+        advanced: true
       },
       {
         type: 'section',
         label: 'Ambilight directions',
         name: 'sectionDirectionsCollapsed',
-        default: false
+        default: false,
+        advanced: true
       },
       {
-        new: true,
         name: 'directionTopEnabled',
         label: 'Top',
         type: 'checkbox',
-        default: true
+        default: true,
+        advanced: true
       },
       {
-        new: true,
         name: 'directionRightEnabled',
         label: 'Right',
         type: 'checkbox',
-        default: true
+        default: true,
+        advanced: true
       },
       {
-        new: true,
         name: 'directionBottomEnabled',
         label: 'Bottom',
         type: 'checkbox',
-        default: true
+        default: true,
+        advanced: true
       },
       {
-        new: true,
         name: 'directionLeftEnabled',
         label: 'Left',
         type: 'checkbox',
-        default: true
+        default: true,
+        advanced: true
       },
       {
         type: 'section',
         label: 'Ambilight image',
         name: 'sectionAmbilightImageAdjustmentCollapsed',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         name: 'brightness',
@@ -140,7 +157,8 @@ class Ambilight {
         type: 'list',
         default: 100,
         min: 0,
-        max: 200
+        max: 200,
+        advanced: true
       },
       {
         name: 'contrast',
@@ -148,7 +166,8 @@ class Ambilight {
         type: 'list',
         default: 100,
         min: 0,
-        max: 200
+        max: 200,
+        advanced: true
       },
       {
         name: 'saturation',
@@ -156,7 +175,8 @@ class Ambilight {
         type: 'list',
         default: 100,
         min: 0,
-        max: 200
+        max: 200,
+        advanced: true
       },
       {
         type: 'section',
@@ -165,32 +185,57 @@ class Ambilight {
         default: false
       },
       {
-        new: true,
+        name: 'videoScale',
+        label: 'Size',
+        type: 'list',
+        default: 100,
+        min: 25,
+        max: 100,
+        step: 0.1
+      },
+      {
+        name: 'videoShadowSize',
+        label: 'Shadow size',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100
+      },
+      {
+        name: 'videoShadowOpacity',
+        label: 'Shadow opacity',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        advanced: true
+      },
+      {
         name: 'detectHorizontalBarSizeEnabled',
-        label: 'Auto-detect black bars [B]<br/><span class="ytap-menuitem-description">(More CPU usage)</span>',
+        label: 'Detect black bars [B]<br/><span class="ytpa-menuitem-description">(More CPU usage)</span>',
         type: 'checkbox',
         default: false
       },
       {
-        new: true,
         name: 'detectColoredHorizontalBarSizeEnabled',
-        label: 'Also auto-detect colored bars',
+        label: 'Also detect colored bars',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
-        new: true,
         name: 'detectHorizontalBarSizeOffsetPercentage',
-        label: 'Auto-detect black bars offset',
+        label: 'Detect black bars offset',
         type: 'list',
         default: 0,
         min: -5,
         max: 5,
-        step: 0.1
+        step: 0.1,
+        advanced: true
       },
       {
         name: 'horizontalBarsClipPercentage',
-        label: 'Remove horizontal black bars',
+        label: 'Remove black bars',
         type: 'list',
         default: 0,
         min: 0,
@@ -202,34 +247,8 @@ class Ambilight {
         name: 'horizontalBarsClipPercentageReset',
         label: 'Reset black bars next video',
         type: 'checkbox',
-        default: false
-      },
-      {
-        name: 'videoScale',
-        label: 'Scale',
-        type: 'list',
-        default: 100,
-        min: 25,
-        max: 100,
-        step: 0.1
-      },
-      {
-        new: true,
-        name: 'videoShadowSize',
-        label: 'Shadow size',
-        type: 'list',
-        default: 0,
-        min: 0,
-        max: 100
-      },
-      {
-        new: true,
-        name: 'videoShadowOpacity',
-        label: 'Shadow opacity',
-        type: 'list',
-        default: 0,
-        min: 0,
-        max: 100
+        default: false,
+        advanced: true
       },
       {
         type: 'section',
@@ -251,7 +270,8 @@ class Ambilight {
         type: 'list',
         default: 67,
         min: 0,
-        max: 100
+        max: 100,
+        advanced: true
       },
       {
         name: 'immersive',
@@ -263,7 +283,8 @@ class Ambilight {
         type: 'section',
         label: 'Ambilight quality & performance',
         name: 'sectionAmbilightQualityPerformanceCollapsed',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         name: 'debandingStrength',
@@ -271,37 +292,42 @@ class Ambilight {
         type: 'list',
         default: 0,
         min: 0,
-        max: 100
+        max: 100,
+        advanced: true
       },
       {
         name: 'highQuality',
-        label: '<span style="display: inline-block; padding: 5px 0">Prevent frame drops <a title="Compares a small part of each video frame with the previous frame instead of relying on the webkitDecodedFrames value. Since this value can sometimes lag behind the visible video frames on high refreshrate monitors." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More CPU usage)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Prevent frame drops <a title="Compares a small part of each video frame with the previous frame instead of relying on the webkitDecodedFrames value. Since this value can sometimes lag behind the visible video frames on high refreshrate monitors." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(More CPU usage)</span></span>',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         experimental: true,
         name: 'videoOverlayEnabled',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video exactly <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames. \"Prevent frame drops\" is auto-enabled to minimize this issue." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(Stuttering video? Try "Prevent frame drops")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video exactly <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames. \"Prevent frame drops\" is auto-enabled to minimize this issue." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(Stuttering video? Try "Prevent frame drops")</span></span>',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         experimental: true,
         name: 'videoOverlaySyncThreshold',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video: auto-disable threshold<br/><span class="ytap-menuitem-description">(Auto-disable when dropping % of frames)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video: auto-disable threshold<br/><span class="ytpa-menuitem-description">(Auto-disable when dropping % of frames)</span></span>',
         type: 'list',
         default: 5,
         min: 1,
         max: 100,
-        step: 1
+        step: 1,
+        advanced: true
       },
       {
         experimental: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="Click for more information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytap-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="Click for more information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         experimental: true,
@@ -311,7 +337,8 @@ class Ambilight {
         default: 80,
         min: 0,
         max: 100,
-        step: 1
+        step: 1,
+        advanced: true
       },
       {
         type: 'section',
@@ -323,30 +350,34 @@ class Ambilight {
         name: 'showFPS',
         label: 'Show framerate',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         name: 'resetThemeToLightOnDisable',
         label: 'Dark theme on video page only',
         type: 'checkbox',
-        default: false
+        default: false,
+        advanced: true
       },
       {
         name: 'enableInFullscreen',
-        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span class="ytap-menuitem-description">(When in fullscreen mode)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span class="ytpa-menuitem-description">(When in fullscreen mode)</span></span>',
         type: 'checkbox',
-        default: true
+        default: true,
+        advanced: true
       },
       {
         name: 'enabled',
         label: 'Enabled [A]',
         type: 'checkbox',
         default: true
-      }
+      },
     ]
 
 
     //Sections
+    this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
     this.sectionAmbilightCollapsed = this.getSetting('sectionAmbilightCollapsed')
     this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
     this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
@@ -485,6 +516,9 @@ class Ambilight {
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
     $.s('html').attr('data-ambilight-enabled', this.enabled)
+
+    this.advancedSettings = this.getSetting('advancedSettings')
+
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
     this.bloom = this.getSetting('bloom')
@@ -932,6 +966,7 @@ class Ambilight {
       this.initFPSContainer()
 
       this.sizesInvalidated = false
+      this.buffersCleared = true
       return true
     } catch (ex) {
       console.error('YouTube Ambilight | Resize | UpdateSizes:', ex)
@@ -1433,7 +1468,10 @@ class Ambilight {
         for (let i = partSize; i < this.compareBuffer.elem.width; i += partSize) {
           lines.push(this.compareBuffer.ctx.getImageData(i, 0, 1, this.compareBuffer.elem.height).data)
         }
-        this.detectHorizontalBarSize(lines)
+        if(this.detectHorizontalBarSize(lines) && this.frameBlending) {
+          this.drawAmbilight()
+          return
+        }
       }
 
       this.drawBuffer2.ctx.drawImage(this.compareBuffer.elem, 0, 0, this.drawBuffer.elem.width, this.drawBuffer.elem.height)
@@ -1479,7 +1517,10 @@ class Ambilight {
         this.ambilightFrameCount++
       }
       const frameDuration = (drawTime - this.previousFrameTime)
-      const alpha = (this.displayFrameRate < this.videoFrameRate * 1.33) ? 1 : Math.min(1, (frameDuration) / (1000 / (this.videoFrameRate / (this.frameBlendingSmoothness / 100) || 1)))
+      let alpha =  1
+      if(!this.buffersCleared && (this.displayFrameRate >= this.videoFrameRate * 1.33))
+        alpha = Math.min(1, (frameDuration) / (1000 / (this.videoFrameRate / (this.frameBlendingSmoothness / 100) || 1)))
+
       if (this.videoOverlayEnabled) {
         this.videoOverlay.ctx.globalAlpha = 1
         this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
@@ -1519,6 +1560,8 @@ class Ambilight {
 
       this.ambilightFrameCount++
     }
+
+    this.buffersCleared = false
 
     // FireFox bug: Force to rerender the outer blur of the canvasses
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
@@ -1587,8 +1630,7 @@ class Ambilight {
 
     
     const correction = (height * 0.001) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
-    const threshold = height * 0.02
-    size = (size > threshold) ? size + correction : 0
+    size += (size > 1) ? correction : 0
     
     let percentage = Math.round((size / height) * 10000) / 100
     percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
@@ -1601,6 +1643,7 @@ class Ambilight {
     }
 
     this.setHorizontalBars(percentage)
+    return true
   }
 
   checkIfNeedToHideVideoOverlay() {
@@ -1843,7 +1886,9 @@ class Ambilight {
 
 
     this.settingsMenu = $.create('div')
-      .class('ytp-popup ytp-settings-menu ytp-ambilight-settings-menu')
+      .class(`ytp-popup ytp-settings-menu ytpa-ambilight-settings-menu ${
+        (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : ''
+      }`)
       .attr('id', 'ytp-id-190')
     this.settingsMenu.innerHTML = `
       <div class="ytp-panel">
@@ -1853,58 +1898,63 @@ class Ambilight {
           </a>
           ${
       this.settings.map(setting => {
+        let classes = 'ytp-menuitem'
+        if(setting.advanced) classes += ' ytpa-menuitem--advanced'
+        if(setting.new) classes += ' ytpa-menuitem--new'
+        if(setting.experimental) classes += ' ytpa-menuitem--experimental'
+
         if (setting.type === 'checkbox') {
           return `
-                  <div id="setting-${setting.name}" 
-                  class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}${setting.experimental ? ' ytap-menuitem--experimental' : ''}" 
-                  role="menuitemcheckbox" 
-                  aria-checked="${setting.value ? 'true' : 'false'}" 
-                  tabindex="0">
-                    <div class="ytp-menuitem-label">${setting.label}</div>
-                    <div class="ytp-menuitem-content">
-                      <div class="ytp-menuitem-toggle-checkbox"></div>
-                    </div>
-                  </div>
-                `
+            <div id="setting-${setting.name}" 
+            class="${classes}" 
+            role="menuitemcheckbox" 
+            aria-checked="${setting.value ? 'true' : 'false'}" 
+            tabindex="0">
+              <div class="ytp-menuitem-label">${setting.label}</div>
+              <div class="ytp-menuitem-content">
+                <div class="ytp-menuitem-toggle-checkbox"></div>
+              </div>
+            </div>
+          `
         } else if (setting.type === 'list') {
           return `
-                  <div class="ytp-menuitem${setting.new ? ' ytap-menuitem--new' : ''}${setting.experimental ? ' ytap-menuitem--experimental' : ''}" aria-haspopup="false" role="menuitemrange" tabindex="0">
-                    <div class="ytp-menuitem-label">${setting.label}</div>
-                    <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
-                  </div>
-                  <div 
-                  class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
-                  rowspan="2" 
-                  title="Double click to reset">
-                    <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
-                  </div>
-                  ${!setting.snapPoints ? '' : `
-                    <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                      ${setting.snapPoints.map((point, i) => `
-                        <option 
-                          class="setting-range-datalist__label ${(point < setting.snapPoints[i - 1] + 2) ? 'setting-range-datalist__label--flip' : ''}" 
-                          value="${point}" 
-                          label="${Math.floor(point)}" 
-                          title="Snap to ${point}" 
-                          style="left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
-                      `)}
-                    </datalist>
-                  `}
-                `
+            <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
+              <div class="ytp-menuitem-label">${setting.label}</div>
+              <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
+            </div>
+            <div 
+            class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
+            rowspan="2" 
+            title="Double click to reset">
+              <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
+            </div>
+            ${!setting.snapPoints ? '' : `
+              <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
+                ${setting.snapPoints.map((point, i) => `
+                  <option 
+                    class="setting-range-datalist__label ${(point < setting.snapPoints[i - 1] + 2) ? 'setting-range-datalist__label--flip' : ''}" 
+                    value="${point}" 
+                    label="${Math.floor(point)}" 
+                    title="Snap to ${point}" 
+                    style="left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                `)}
+              </datalist>
+            `}
+          `
         } else if (setting.type === 'section') {
           return `
-                  <div class="ytap-section${setting.value ? ' is-collapsed' : ''}" data-name="${setting.name}">
-                    <div class="ytap-section__cell">
-                      <div class="ytap-section__label">${setting.label}</div>
-                    </div>
-                    <div class="ytap-section__cell">
-                      <div class="ytap-section__fill">-</div>
-                    </div>
-                  </div>
-                `
+            <div class="ytpa-section ${setting.value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" data-name="${setting.name}">
+              <div class="ytpa-section__cell">
+                <div class="ytpa-section__label">${setting.label}</div>
+              </div>
+              <div class="ytpa-section__cell">
+                <div class="ytpa-section__fill">-</div>
+              </div>
+            </div>
+          `
         }
       }).join('')
-      }
+          }
         </div>
       </div>`
     this.settingsMenu.querySelectorAll('.setting-range-datalist__label').forEach(label => {
@@ -1916,7 +1966,7 @@ class Ambilight {
         input.dispatchEvent(new Event('change', { bubbles: true }))
       })
     })
-    this.settingsMenu.querySelectorAll('.ytap-section').forEach(section => {
+    this.settingsMenu.querySelectorAll('.ytpa-section').forEach(section => {
       section.on('click', (e) => {
         const name = section.attr('data-name')
         const settingSection = this.settings.find(setting => setting.type == 'section' && setting.name == name)
@@ -2004,11 +2054,20 @@ class Ambilight {
             setting.name === 'directionTopEnabled' ||
             setting.name === 'directionRightEnabled' ||
             setting.name === 'directionBottomEnabled' ||
-            setting.name === 'directionLeftEnabled'
+            setting.name === 'directionLeftEnabled' ||
+            setting.name === 'advancedSettings'
           ) {
             this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+          }
+
+          if(setting.name === 'advancedSettings') {
+            if(setting.value) {
+              this.settingsMenu.class('ytpa-ambilight-settings-menu--advanced')
+            } else {
+              this.settingsMenu.removeClass('ytpa-ambilight-settings-menu--advanced')
+            }
           }
 
           if (setting.name === 'videoOverlayEnabled' && setting.value && !this.highQuality) {
