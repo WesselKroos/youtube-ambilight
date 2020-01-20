@@ -1629,8 +1629,11 @@ class Ambilight {
     }
 
     
-    const correction = (height * 0.001) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
-    size += (size > 1) ? correction : 0
+    if(size < (height * 0.01)) {
+      size = 0
+    } else {
+      size += (height * 0.001) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
+    }
     
     let percentage = Math.round((size / height) * 10000) / 100
     percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
