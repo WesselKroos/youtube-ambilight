@@ -83,7 +83,7 @@ class Ambilight {
         name: 'edge',
         label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytpa-menuitem-description">(Lower GPU usage. Tip: Turn blur down)</span></span>',
         type: 'list',
-        default: 20,
+        default: 17,
         min: 2,
         max: 50,
         step: .1,
@@ -211,21 +211,26 @@ class Ambilight {
         advanced: true
       },
       {
+        type: 'section',
+        label: 'Black bars',
+        name: 'sectionBlackBarsCollapsed',
+        default: false
+      },
+      {
         name: 'detectHorizontalBarSizeEnabled',
-        label: 'Detect black bars [B]<br/><span class="ytpa-menuitem-description">(More CPU usage)</span>',
+        label: 'Remove black bars [B]<br/><span class="ytpa-menuitem-description">(More CPU usage)</span>',
         type: 'checkbox',
         default: false
       },
       {
         name: 'detectColoredHorizontalBarSizeEnabled',
-        label: 'Also detect colored bars',
+        label: 'Also remove colored bars',
         type: 'checkbox',
-        default: false,
-        advanced: true
+        default: false
       },
       {
         name: 'detectHorizontalBarSizeOffsetPercentage',
-        label: 'Detect black bars offset',
+        label: 'Black bar detection offset',
         type: 'list',
         default: 0,
         min: -5,
@@ -235,19 +240,20 @@ class Ambilight {
       },
       {
         name: 'horizontalBarsClipPercentage',
-        label: 'Remove black bars',
+        label: 'Black bars size',
         type: 'list',
         default: 0,
         min: 0,
         max: 49,
         step: 0.1,
-        snapPoints: [8.7, 12.3, 13.5]
+        snapPoints: [8.7, 12.3, 13.5],
+        advanced: true
       },
       {
         name: 'horizontalBarsClipPercentageReset',
         label: 'Reset black bars next video',
         type: 'checkbox',
-        default: false,
+        default: true,
         advanced: true
       },
       {
@@ -382,6 +388,7 @@ class Ambilight {
     this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
     this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
     this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
+    this.sectionBlackBarsCollapsed = this.getSetting('sectionBlackBarsCollapsed')
     this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
     this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
     this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')

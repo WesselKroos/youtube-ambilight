@@ -689,8 +689,11 @@ html[data-ambilight-enabled="true"] {
   }
   .ytpa-menuitem--advanced {
     &,
-    & + .ytp-menuitem-range {
+    + .ytp-menuitem-range {
       display: none !important;
+      + .setting-range-datalist {
+        display: none !important;
+      }
     }
   }
 }
