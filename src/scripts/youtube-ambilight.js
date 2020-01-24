@@ -1241,12 +1241,10 @@ class Ambilight {
 
       this.drawAmbilight()
 
-      setTimeout(() => {
-        this.detectVideoFrameRate()
-        this.detectDisplayFrameRate()
-        this.detectAmbilightFrameRate()
-        this.detectVideoSynced()
-      }, 1)
+      this.detectVideoFrameRate()
+      this.detectDisplayFrameRate()
+      this.detectAmbilightFrameRate()
+      this.detectVideoSynced()
 
 
       if (this.videoPlayer.paused) {
