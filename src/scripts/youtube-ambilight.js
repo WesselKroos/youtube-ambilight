@@ -205,7 +205,7 @@ class Ambilight {
         name: 'videoShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 0,
+        default: 67,
         min: 0,
         max: 100,
         advanced: true
