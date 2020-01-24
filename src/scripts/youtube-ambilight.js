@@ -1427,38 +1427,38 @@ class Ambilight {
       this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
     }
 
-      if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
-        //performance.mark('comparing-compare-start')
-        let lines = []
-        let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
+    if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
+      //performance.mark('comparing-compare-start')
+      let lines = []
+      let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
 
-        try {
-          for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
-            lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
-          }
-        } catch (ex) {
-        if (!this.showedCompareWarning) {
-            console.warn('Failed to retrieve video data. ', ex)
-            AmbilightSentry.captureExceptionWithDetails(ex)
-          this.showedCompareWarning = true
-          }
+      try {
+        for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
+          lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
         }
-
-        if (!compareBufferHasNewFrame) {
-          const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
-          if (isConfirmedNewFrame) {
-            newVideoFrameCount++
-            compareBufferHasNewFrame = true
-          }
+      } catch (ex) {
+      if (!this.showedCompareWarning) {
+          console.warn('Failed to retrieve video data. ', ex)
+          AmbilightSentry.captureExceptionWithDetails(ex)
+        this.showedCompareWarning = true
         }
-        //performance.mark('comparing-compare-end')
-
-        if (compareBufferHasNewFrame) {
-          this.oldLines = lines
-        }
-
-        //performance.measure('comparing-compare', 'comparing-compare-start', 'comparing-compare-end')
       }
+
+      if (!compareBufferHasNewFrame) {
+        const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
+        if (isConfirmedNewFrame) {
+          newVideoFrameCount++
+          compareBufferHasNewFrame = true
+        }
+      }
+      //performance.mark('comparing-compare-end')
+
+      if (compareBufferHasNewFrame) {
+        this.oldLines = lines
+      }
+
+      //performance.measure('comparing-compare', 'comparing-compare-start', 'comparing-compare-end')
+    }
 
     if (compareBufferHasNewFrame) {
       if(this.detectHorizontalBarSizeEnabled) {
@@ -1561,8 +1561,8 @@ class Ambilight {
     // FireFox workaround: Force to rerender the outer blur of the canvasses
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
     if(this.videoPlayer.mozPaintedFrames) {
-    this.allContainer.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
-  }
+      this.allContainer.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+    }
   }
 
   detectHorizontalBarSize(imageVLines) {
