@@ -18,7 +18,7 @@ class Ambilight {
 
   isHidden = true
   isOnVideoPage = true
-  showedHighQualityCompareWarning = false
+  showedCompareWarning = false
 
   p = null
   a = null
@@ -81,7 +81,7 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytpa-menuitem-description">(Lower GPU usage. Tip: Turn blur down)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>',
         type: 'list',
         default: 17,
         min: 2,
@@ -302,16 +302,9 @@ class Ambilight {
         advanced: true
       },
       {
-        name: 'highQuality',
-        label: '<span style="display: inline-block; padding: 5px 0">Prevent frame drops <a title="Compares a small part of each video frame with the previous frame instead of relying on the webkitDecodedFrames value. Since this value can sometimes lag behind the visible video frames on high refreshrate monitors." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(More CPU usage)</span></span>',
-        type: 'checkbox',
-        default: false,
-        advanced: true
-      },
-      {
         experimental: true,
         name: 'videoOverlayEnabled',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video exactly <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames. \"Prevent frame drops\" is auto-enabled to minimize this issue." href="#" onclick="return false" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(Stuttering video? Try "Prevent frame drops")</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video exactly <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames." href="#" onclick="return false" style="padding: 0 5px;">?</a></span>',
         type: 'checkbox',
         default: false,
         advanced: true
@@ -551,7 +544,6 @@ class Ambilight {
     this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
     this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
 
-    this.highQuality = this.getSetting('highQuality')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
@@ -1435,13 +1427,8 @@ class Ambilight {
     const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (skippedFrames) {
       this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
-      this.skippedFrameTime = performance.now()
     }
 
-    if (
-      this.highQuality ||
-      (!this.advancedSettings && (!this.skippedFrameTime || this.skippedFrameTime < performance.now() - 2000))
-    ) {
       if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
         //performance.mark('comparing-compare-start')
         let lines = []
@@ -1452,10 +1439,10 @@ class Ambilight {
             lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
           }
         } catch (ex) {
-          if (!this.showedHighQualityCompareWarning) {
+        if (!this.showedCompareWarning) {
             console.warn('Failed to retrieve video data. ', ex)
             AmbilightSentry.captureExceptionWithDetails(ex)
-            this.showedHighQualityCompareWarning = true
+          this.showedCompareWarning = true
           }
         }
 
@@ -1474,7 +1461,6 @@ class Ambilight {
 
         //performance.measure('comparing-compare', 'comparing-compare-start', 'comparing-compare-end')
       }
-    }
 
     if (compareBufferHasNewFrame) {
       if(this.detectHorizontalBarSizeEnabled) {
@@ -1574,9 +1560,11 @@ class Ambilight {
 
     this.buffersCleared = false
 
-    // FireFox bug: Force to rerender the outer blur of the canvasses
+    // FireFox workaround: Force to rerender the outer blur of the canvasses
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
+    if(this.videoPlayer.mozPaintedFrames) {
     this.allContainer.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+  }
   }
 
   detectHorizontalBarSize(imageVLines) {
@@ -1804,7 +1792,7 @@ class Ambilight {
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
-    this.showedHighQualityCompareWarning = false
+    this.showedCompareWarning = false
 
     if (!$.s('html').attr('dark')) {
       Ambilight.setDarkTheme(true)
@@ -2056,7 +2044,6 @@ class Ambilight {
               this.disable()
           }
           if (
-            setting.name === 'highQuality' ||
             setting.name === 'videoOverlayEnabled' ||
             setting.name === 'frameBlending' ||
             setting.name === 'enableInFullscreen' ||
@@ -2082,10 +2069,6 @@ class Ambilight {
             } else {
               this.settingsMenu.removeClass('ytpa-ambilight-settings-menu--advanced')
             }
-          }
-
-          if (setting.name === 'videoOverlayEnabled' && setting.value && !this.highQuality) {
-            $.s(`#setting-highQuality`).click()
           }
 
           if (setting.name === 'showFPS' && !setting.value) {
