@@ -28,7 +28,7 @@ class Ambilight {
   isVR = false
 
   videoFrameCount = 0
-  skippedFrames = 0
+  skippedFramesCount = 0
   displayFrameRate = 0
   videoFrameRate = 0
   videoFrameRateMeasureStartTime = 0
@@ -1392,8 +1392,8 @@ class Ambilight {
           this.ambilightFPSContainer.textContent = `AMBILIGHT: ${frameRateText}`
           this.ambilightFPSContainer.style.color = (this.ambilightFrameRate < this.videoFrameRate - 0.5) ? '#f33' : '#7f7'
 
-          this.skippedFramesContainer.textContent = `DROPPED FRAMES: ${this.skippedFrames}`
-          this.skippedFramesContainer.style.color = (this.skippedFrames > 0) ? '#f33' : '#7f7'
+          this.skippedFramesContainer.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
+          this.skippedFramesContainer.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
         } else if (this.ambilightFPSContainer.textContent !== '') {
           this.ambilightFPSContainer.textContent = ''
           this.skippedFramesContainer.textContent = ''
@@ -1431,9 +1431,17 @@ class Ambilight {
     let newVideoFrameCount = this.getVideoFrameCount()
     this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0, this.compareBuffer.elem.width, this.compareBuffer.elem.height)
     let compareBufferHasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-    let skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
+    
+    const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
+    if (skippedFrames) {
+      this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
+      this.skippedFrameTime = performance.now()
+    }
 
-    if (this.highQuality) {
+    if (
+      this.highQuality ||
+      (!this.advancedSettings && (!this.skippedFrameTime || this.skippedFrameTime < performance.now() - 2000))
+    ) {
       if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
         //performance.mark('comparing-compare-start')
         let lines = []
@@ -1494,10 +1502,6 @@ class Ambilight {
 
 
 
-    if (skippedFrames) {
-      //console.warn('SKIPPED <--')
-      this.skippedFrames += newVideoFrameCount - (this.videoFrameCount + 1)
-    }
 
     if (newVideoFrameCount > this.videoFrameCount) {
       this.videoFrameCount = newVideoFrameCount
