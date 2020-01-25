@@ -1269,25 +1269,17 @@ class Ambilight {
 
   isNewFrame(oldLines, newLines) {
     if (!oldLines || oldLines.length !== newLines.length) {
-      oldLines = null
-      newLines = null
       return true
     }
 
     for (let i = 0; i < oldLines.length; i++) {
-      for (let xi = 0; xi < oldLines[i].length; xi++) {
+      for (let xi = 0; xi < oldLines[i].length; xi+=10) {
         if (oldLines[i][xi] !== newLines[i][xi]) {
-          oldLines = null
-          newLines = null
-          i = null
-          xi = null
           return true
         }
       }
     }
 
-    oldLines = null
-    newLines = null
     return false
   }
 
