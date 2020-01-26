@@ -1429,10 +1429,10 @@ class Ambilight {
           lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
         }
       } catch (ex) {
-      if (!this.showedCompareWarning) {
+        if (!this.showedCompareWarning) {
           console.warn('Failed to retrieve video data. ', ex)
           AmbilightSentry.captureExceptionWithDetails(ex)
-        this.showedCompareWarning = true
+          this.showedCompareWarning = true
         }
       }
 
