@@ -293,6 +293,16 @@ class Ambilight {
         advanced: true
       },
       {
+        name: 'frameSync',
+        label: 'Frame synchronization',
+        type: 'list',
+        default: 50,
+        min: 0,
+        max: 100,
+        step: 50,
+        advanced: true
+      },
+      {
         name: 'debandingStrength',
         label: 'Debanding (dithering) <a title="Click for more information about Dithering" href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;">?</a>',
         type: 'list',
@@ -433,18 +443,11 @@ class Ambilight {
       ctx: compareBufferElem.getContext('2d', ctxOptions)
     }
 
-    const drawBuffer2Elem = document.createElement("canvas") //new OffscreenCanvas(1, 1)
-    this.buffersContainer.appendChild(drawBuffer2Elem) 
-    this.drawBuffer2 = {
-      elem: drawBuffer2Elem,
-      ctx: drawBuffer2Elem.getContext('2d', ctxOptions)
-    }
-
-    const drawBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersContainer.appendChild(drawBufferElem)
-    this.drawBuffer = {
-      elem: drawBufferElem,
-      ctx: drawBufferElem.getContext('2d', ctxOptions)
+    const videoBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    this.buffersContainer.appendChild(videoBufferElem)
+    this.videoBuffer = {
+      elem: videoBufferElem,
+      ctx: videoBufferElem.getContext('2d', ctxOptions)
     }
 
     const bufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
@@ -544,6 +547,7 @@ class Ambilight {
     this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
     this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
 
+    this.frameSync = this.getSetting('frameSync')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
@@ -848,8 +852,8 @@ class Ambilight {
       }
 
       const minSize = 512
-      const scaleX = Math.min(this.srcVideoOffset.width / minSize, 8)
-      const scaleY = Math.min(this.srcVideoOffset.height / minSize, 8)
+      const scaleX = this.srcVideoOffset.width / minSize
+      const scaleY = this.srcVideoOffset.height / minSize
       const scale = Math.min(scaleX, scaleY)
       // A size of more than 256 is required to enable GPU acceleration in Chrome
       if (scale < 1) {
@@ -944,19 +948,15 @@ class Ambilight {
       }
 
       if(!isBlackBarsAdjustment) { //Prevent losing imagedata
-        this.compareBuffer.elem.width = this.srcVideoOffset.width
-        this.compareBuffer.elem.height = this.srcVideoOffset.height
+        this.compareBuffer.elem.width = this.p.w
+        this.compareBuffer.elem.height = this.p.h
         this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d', ctxOptions)
       }
 
-      this.drawBuffer2.elem.width = this.srcVideoOffset.width
-      this.drawBuffer2.elem.height = this.srcVideoOffset.height
-      this.drawBuffer2.ctx = this.drawBuffer2.elem.getContext('2d', ctxOptions)
-
-      this.drawBuffer.elem.width = this.srcVideoOffset.width
-      this.drawBuffer.elem.height = this.srcVideoOffset.height
-      this.drawBuffer.ctx = this.drawBuffer.elem.getContext('2d', ctxOptions)
-      this.drawBufferBarsClipPx = Math.round(this.drawBuffer.elem.height * horizontalBarsClip)
+      this.videoBuffer.elem.width = this.srcVideoOffset.width
+      this.videoBuffer.elem.height = this.srcVideoOffset.height
+      this.videoBuffer.ctx = this.videoBuffer.elem.getContext('2d', ctxOptions)
+      this.videoBufferBarsClipPx = Math.round(this.videoBuffer.elem.height * horizontalBarsClip)
 
 
       this.resizeCanvasses()
@@ -1412,47 +1412,49 @@ class Ambilight {
 
     let newVideoFrameCount = this.getVideoFrameCount()
     this.compareBuffer.ctx.drawImage(this.videoPlayer, 0, 0, this.compareBuffer.elem.width, this.compareBuffer.elem.height)
-    let compareBufferHasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+    let hasNewFrame = false
     
-    const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
-    if (skippedFrames) {
-      this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
+    if(this.frameSync == 0) {
+      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+    } else if (this.frameSync == 50) {
+      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+      if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
+        //performance.mark('comparing-compare-start')
+        let lines = []
+        let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
+
+        try {
+          for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
+            lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
+          }
+        } catch (ex) {
+          if (!this.showedCompareWarning) {
+            console.warn('Failed to retrieve video data. ', ex)
+            AmbilightSentry.captureExceptionWithDetails(ex)
+            this.showedCompareWarning = true
+          }
+        }
+
+        if (!hasNewFrame) {
+          const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
+          if (isConfirmedNewFrame) {
+            newVideoFrameCount++
+            hasNewFrame = true
+          }
+        }
+        //performance.mark('comparing-compare-end')
+
+        if (hasNewFrame) {
+          this.oldLines = lines
+        }
+      }
+    } else if (this.frameSync == 100) {
+      hasNewFrame = true
     }
+    
 
-    if (!this.videoFrameRate || !this.displayFrameRate || this.videoFrameRate < this.displayFrameRate) {
-      //performance.mark('comparing-compare-start')
-      let lines = []
-      let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
 
-      try {
-        for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
-          lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
-        }
-      } catch (ex) {
-        if (!this.showedCompareWarning) {
-          console.warn('Failed to retrieve video data. ', ex)
-          AmbilightSentry.captureExceptionWithDetails(ex)
-          this.showedCompareWarning = true
-        }
-      }
-
-      if (!compareBufferHasNewFrame) {
-        const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
-        if (isConfirmedNewFrame) {
-          newVideoFrameCount++
-          compareBufferHasNewFrame = true
-        }
-      }
-      //performance.mark('comparing-compare-end')
-
-      if (compareBufferHasNewFrame) {
-        this.oldLines = lines
-      }
-
-      //performance.measure('comparing-compare', 'comparing-compare-start', 'comparing-compare-end')
-    }
-
-    if (compareBufferHasNewFrame) {
+    if (hasNewFrame) {
       if(this.detectHorizontalBarSizeEnabled) {
         const lines = []
         let partSize = Math.ceil(this.compareBuffer.elem.width / 6)
@@ -1465,41 +1467,38 @@ class Ambilight {
         }
       }
 
-      this.drawBuffer2.ctx.drawImage(this.compareBuffer.elem, 0, 0, this.drawBuffer.elem.width, this.drawBuffer.elem.height)
-      this.drawBuffer2HasNewFrame = true
-    }
-
-    let drawBufferHasNewFrame = false
-    if (this.drawBuffer2HasNewFrame) {
-      this.drawBuffer.ctx.drawImage(this.drawBuffer2.elem, 0, 0, this.drawBuffer.elem.width, this.drawBuffer.elem.height)
-      this.drawBuffer2HasNewFrame = false
-      drawBufferHasNewFrame = true
+      this.videoBuffer.ctx.drawImage(this.videoPlayer, 0, 0, this.videoBuffer.elem.width, this.videoBuffer.elem.height)
     }
 
 
-
-
+    
+    const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
+    if (skippedFrames) {
+      this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
+    }
     if (newVideoFrameCount > this.videoFrameCount) {
       this.videoFrameCount = newVideoFrameCount
     }
 
+
+
     //console.log(this.videoPlayer.currentTime, this.videoPlayer.getCurrentTime(), this.videoPlayer.webkitDecodedFrameCount, this.videoPlayer.webkitDroppedFrameCount, this.videoPlayer.webkitVideoDecodedByteCount, this.videoPlayer.webkitAudioDecodedByteCount)
     if (this.frameBlending && !this.videoPlayer.paused) {
       const drawTime = performance.now()
-      if (drawBufferHasNewFrame) {
+      if (hasNewFrame) {
         this.previousFrameTime = this.previousDrawTime
 
         if (this.videoOverlayEnabled) {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-          this.videoOverlayBuffer.ctx.drawImage(this.drawBuffer.elem, 0, 0)
+          this.videoOverlayBuffer.ctx.drawImage(this.videoBuffer.elem, 0, 0)
         }
         this.previousBuffer.ctx.drawImage(this.buffer.elem, 0, 0)
-        this.buffer.ctx.drawImage(this.drawBuffer.elem,
+        this.buffer.ctx.drawImage(this.videoBuffer.elem,
           0,
-          this.drawBufferBarsClipPx,
-          this.drawBuffer.elem.width,
-          this.drawBuffer.elem.height - (this.drawBufferBarsClipPx * 2),
-          0, 0, this.p.w, this.p.h)
+          this.videoBufferBarsClipPx,
+          this.videoBuffer.elem.width,
+          this.videoBuffer.elem.height - (this.videoBufferBarsClipPx * 2),
+          0, 0, this.buffer.elem.width, this.buffer.elem.height)
 
         this.ambilightFrameCount++
       }
@@ -1528,18 +1527,19 @@ class Ambilight {
       })
       this.previousDrawTime = drawTime
     } else {
-      if (!drawBufferHasNewFrame) return
+      if (!hasNewFrame) return
 
       if (this.videoOverlayEnabled) {
-        this.videoOverlay.ctx.drawImage(this.drawBuffer.elem, 0, 0)
+        this.videoOverlay.ctx.drawImage(this.videoBuffer.elem, 0, 0)
         this.checkIfNeedToHideVideoOverlay()
       }
 
-      this.buffer.ctx.drawImage(this.drawBuffer.elem,
+      this.buffer.ctx.drawImage(this.videoBuffer.elem,
         0,
-        this.drawBufferBarsClipPx,
-        this.drawBuffer.elem.width,
-        this.drawBuffer.elem.height - (this.drawBufferBarsClipPx * 2), 0, 0, this.p.w, this.p.h)
+        this.videoBufferBarsClipPx,
+        this.videoBuffer.elem.width,
+        this.videoBuffer.elem.height - (this.videoBufferBarsClipPx * 2), 
+        0, 0, this.buffer.elem.width, this.buffer.elem.height)
 
       this.players.forEach((player) => {
         player.ctx.drawImage(this.buffer.elem, 0, 0)
@@ -1912,7 +1912,7 @@ class Ambilight {
           return `
             <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
               <div class="ytp-menuitem-label">${setting.label}</div>
-              <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${setting.value}%</div>
+              <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${this.getSettingListDisplayText(setting)}</div>
             </div>
             <div 
             class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
@@ -1990,8 +1990,8 @@ class Ambilight {
           }
           input.value = value
           input.attr('data-previous-value', value)
-          displayedValue.textContent = `${value}%`
           this.setSetting(setting.name, value)
+          displayedValue.textContent = this.getSettingListDisplayText({...setting, value})
 
           if (
             setting.name === 'surroundingContentShadowSize' ||
@@ -2035,6 +2035,7 @@ class Ambilight {
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
+            setting.name === 'frameSync' ||
             setting.name === 'frameBlending' ||
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
@@ -2069,6 +2070,18 @@ class Ambilight {
         })
       }
     })
+  }
+
+  getSettingListDisplayText(setting) {
+    if (setting.name === 'frameSync') {
+      if (setting.value == 0)
+        return 'Energy'
+      if (setting.value == 50)
+        return 'Balanced'
+      if (setting.value == 100)
+        return 'Quality'
+    }
+    return `${setting.value}%`
   }
 
   openSettingsPopup() {
