@@ -143,12 +143,12 @@ html[data-ambilight-enabled="true"] {
 
   .ambilight,
   .ambilight__video-shadow,
-  .ambilight__container,
-  .ambilight__canvas-list,
-  .ambilight__canvas,
+  .ambilight__filter,
+  .ambilight__projector-list,
+  .ambilight__projector,
   .ambilight__shadow,
-  .ambilight__clip-container,
-  .ambilight__player-container {
+  .ambilight__clip,
+  .ambilight__projectors {
       position: absolute;
       width: 100%;
       height: 100%;
@@ -166,11 +166,11 @@ html[data-ambilight-enabled="true"] {
       //transition: opacity .15s;
   }
 
-  .ambilight__clip-container {
+  .ambilight__clip {
     //overflow: hidden;
   }
 
-  .ambilight__canvas {
+  .ambilight__projector {
       background: #000;
       /* image-rendering: pixelated; */
   }
@@ -548,6 +548,10 @@ html[data-ambilight-enabled="true"] {
       font-size: 13px;
     }
   }
+
+  .ytp-menuitem-content {
+    white-space: nowrap;
+  }
   
   .ytp-menuitem-toggle-checkbox {
     margin: 3px 0;
@@ -724,7 +728,7 @@ body.immersive-mode .toggle-auto-hide-btn {
 
 /* FPS */
 
-.ambilight__fps-container {
+.ambilight__fps-list {
   position: absolute;
   z-index: 2;
   top: 5px;
@@ -751,7 +755,7 @@ body.immersive-mode .toggle-auto-hide-btn {
 }
 
 /* Workaround for issue with OffScreenCanvas */
-.ambilight__buffers-container {
+.ambilight__buffers {
   position: absolute;
   opacity: 0.00001;
   width: 1px;
