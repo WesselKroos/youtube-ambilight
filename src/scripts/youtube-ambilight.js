@@ -1267,7 +1267,7 @@ class Ambilight {
     if(this.scheduled) return
     this.scheduled = true
 
-    if(this.videoHasRequestAnimationFrame && !this.videoElem.paused) {
+    if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
       this.videoRafId = this.videoElem.requestAnimationFrame(this.nextFrame)
     } else {
       this.rafId = raf(this.nextFrame)
@@ -1420,11 +1420,11 @@ class Ambilight {
     this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
 
     let hasNewFrame = false
-    if(this.videoHasRequestAnimationFrame) {
+    if(this.videoHasRequestAnimationFrame && !this.frameBlending) {
       hasNewFrame = true
     } else if(this.frameSync == 0) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-    } else if (this.frameSync == 50) {
+    } else if (this.frameSync == 50 || this.frameBlending) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
       if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         //performance.mark('comparing-compare-start')
@@ -1487,8 +1487,6 @@ class Ambilight {
           this.videoSnapshotBuffer.elem.width,
           this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-
-        this.ambilightFrameCount++
       }
       const frameDuration = (drawTime - this.previousFrameTime)
       let alpha =  1
@@ -1532,9 +1530,9 @@ class Ambilight {
       this.projectors.forEach((projector) => {
         projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
       })
-
-      this.ambilightFrameCount++
     }
+
+    this.ambilightFrameCount++
 
     if(this.detectHorizontalBarSizeEnabled) {
       setTimeout(() => {
