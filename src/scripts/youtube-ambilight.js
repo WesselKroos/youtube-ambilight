@@ -151,7 +151,7 @@ class Ambilight {
         type: 'section',
         label: 'Video',
         name: 'sectionVideoResizingCollapsed',
-        default: false
+        default: true
       },
       {
         name: 'videoScale',
@@ -183,7 +183,7 @@ class Ambilight {
         type: 'section',
         label: 'Black bars',
         name: 'sectionBlackBarsCollapsed',
-        default: false
+        default: true
       },
       {
         name: 'detectHorizontalBarSizeEnabled',
@@ -213,7 +213,7 @@ class Ambilight {
         type: 'list',
         default: 0,
         min: 0,
-        max: 49,
+        max: 40,
         step: 0.1,
         snapPoints: [8.7, 12.3, 13.5],
         advanced: true
@@ -227,7 +227,7 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight image',
+        label: 'Filters',
         name: 'sectionAmbilightImageAdjustmentCollapsed',
         default: false,
         advanced: true
@@ -261,9 +261,9 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight directions',
+        label: 'Directions',
         name: 'sectionDirectionsCollapsed',
-        default: false,
+        default: true,
         advanced: true
       },
       {
@@ -367,7 +367,7 @@ class Ambilight {
         label: 'Dark theme on video page only',
         type: 'checkbox',
         default: false,
-        advanced: true
+        advanced: false
       },
       {
         name: 'enableInFullscreen',
@@ -432,29 +432,22 @@ class Ambilight {
     // Warning: Using Canvas elements in this div instead of OffScreenCanvas
     // while waiting for a fix for this issue:
     // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
-    this.buffersElem = document.createElement('div')
-    this.buffersElem.class('ambilight__buffers')
+    //this.buffersElem = document.createElement('div')
+    //this.buffersElem.class('ambilight__buffers')
     //this.elem.prepend(this.buffersElem)
 
-    const compareBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(compareBufferElem)
-    this.compareBuffer = {
-      elem: compareBufferElem,
-      ctx: compareBufferElem.getContext('2d', ctxOptions)
+    const videoSnapshotBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(videoSnapshotBufferElem)
+    this.videoSnapshotBuffer = {
+      elem: videoSnapshotBufferElem,
+      ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
     }
 
-    const videoBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(videoBufferElem)
-    this.videoBuffer = {
-      elem: videoBufferElem,
-      ctx: videoBufferElem.getContext('2d', ctxOptions)
-    }
-
-    const bufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(bufferElem)
-    this.buffer = {
-      elem: bufferElem,
-      ctx: bufferElem.getContext('2d', ctxOptions)
+    const projectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(projectorBufferElem)
+    this.projectorBuffer = {
+      elem: projectorBufferElem,
+      ctx: projectorBufferElem.getContext('2d', ctxOptions)
     }
 
     const shadowElem = document.createElement('canvas')
@@ -615,27 +608,27 @@ class Ambilight {
   }
 
   initFrameBlending() {
-    //this.previousBuffer
-    const previousBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(previousBufferElem)
-    this.previousBuffer = {
-      elem: previousBufferElem,
-      ctx: previousBufferElem.getContext('2d', ctxOptions)
+    //this.previousProjectorBuffer
+    const previousProjectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(previousProjectorBufferElem)
+    this.previousProjectorBuffer = {
+      elem: previousProjectorBufferElem,
+      ctx: previousProjectorBufferElem.getContext('2d', ctxOptions)
     }
 
-    //this.blendedBuffer
-    const blendedBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(blendedBufferElem)
-    this.blendedBuffer = {
-      elem: blendedBufferElem,
-      ctx: blendedBufferElem.getContext('2d', ctxOptions)
+    //this.blendedProjectorBuffer
+    const blendedProjectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(blendedProjectorBufferElem)
+    this.blendedProjectorBuffer = {
+      elem: blendedProjectorBufferElem,
+      ctx: blendedProjectorBufferElem.getContext('2d', ctxOptions)
     }
   }
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
     const videoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(videoOverlayBufferElem)
+    //this.buffersElem.appendChild(videoOverlayBufferElem)
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -643,7 +636,7 @@ class Ambilight {
 
     //this.previousVideoOverlayBuffer
     const previousVideoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    this.buffersElem.appendChild(previousVideoOverlayBufferElem)
+    //this.buffersElem.appendChild(previousVideoOverlayBufferElem)
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
       ctx: previousVideoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -907,12 +900,12 @@ class Ambilight {
         projector.ctx = projector.elem.getContext('2d', ctxOptions)
       })
 
-      this.buffer.elem.width = this.p.w
-      this.buffer.elem.height = this.p.h
-      this.buffer.ctx = this.buffer.elem.getContext('2d', ctxOptions)
-      //this.buffer.ctx.globalAlpha = .5
+      this.projectorBuffer.elem.width = this.p.w
+      this.projectorBuffer.elem.height = this.p.h
+      this.projectorBuffer.ctx = this.projectorBuffer.elem.getContext('2d', ctxOptions)
+      //this.projectorBuffer.ctx.globalAlpha = .5
 
-      if (this.frameBlending && !this.previousBuffer) {
+      if (this.frameBlending && !this.previousProjectorBuffer) {
         this.initFrameBlending()
       }
       if (this.videoOverlayEnabled && !this.videoOverlay) {
@@ -923,13 +916,13 @@ class Ambilight {
       }
 
       if (this.frameBlending) {
-        this.previousBuffer.elem.width = this.p.w
-        this.previousBuffer.elem.height = this.p.h
-        this.previousBuffer.ctx = this.previousBuffer.elem.getContext('2d', ctxOptions)
+        this.previousProjectorBuffer.elem.width = this.p.w
+        this.previousProjectorBuffer.elem.height = this.p.h
+        this.previousProjectorBuffer.ctx = this.previousProjectorBuffer.elem.getContext('2d', ctxOptions)
 
-        this.blendedBuffer.elem.width = this.p.w
-        this.blendedBuffer.elem.height = this.p.h
-        this.blendedBuffer.ctx = this.blendedBuffer.elem.getContext('2d', ctxOptions)
+        this.blendedProjectorBuffer.elem.width = this.p.w
+        this.blendedProjectorBuffer.elem.height = this.p.h
+        this.blendedProjectorBuffer.ctx = this.blendedProjectorBuffer.elem.getContext('2d', ctxOptions)
       }
 
       if (this.videoOverlayEnabled && !this.videoOverlay.elem.parentNode) {
@@ -955,15 +948,11 @@ class Ambilight {
       }
 
       if(!isBlackBarsAdjustment) { //Prevent losing imagedata
-        this.compareBuffer.elem.width = this.p.w
-        this.compareBuffer.elem.height = this.p.h
-        this.compareBuffer.ctx = this.compareBuffer.elem.getContext('2d', ctxOptions)
+        this.videoSnapshotBuffer.elem.width = this.p.w
+        this.videoSnapshotBuffer.elem.height = this.p.h
+        this.videoSnapshotBuffer.ctx = this.videoSnapshotBuffer.elem.getContext('2d', ctxOptions)
       }
-
-      this.videoBuffer.elem.width = this.srcVideoOffset.width
-      this.videoBuffer.elem.height = this.srcVideoOffset.height
-      this.videoBuffer.ctx = this.videoBuffer.elem.getContext('2d', ctxOptions)
-      this.compareBufferBarsClipPx = Math.round(this.compareBuffer.elem.height * horizontalBarsClip)
+      this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
 
 
       this.resizeCanvasses()
@@ -1428,7 +1417,7 @@ class Ambilight {
     //performance.mark('start-drawing')
 
     let newVideoFrameCount = this.getVideoFrameCount()
-    this.compareBuffer.ctx.drawImage(this.videoElem, 0, 0, this.compareBuffer.elem.width, this.compareBuffer.elem.height)
+    this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
 
     let hasNewFrame = false
     if(this.videoHasRequestAnimationFrame) {
@@ -1440,11 +1429,11 @@ class Ambilight {
       if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         //performance.mark('comparing-compare-start')
         let lines = []
-        let partSize = Math.ceil(this.compareBuffer.elem.height / 3)
+        let partSize = Math.ceil(this.videoSnapshotBuffer.elem.height / 3)
 
         try {
-          for (let i = partSize; i < this.compareBuffer.elem.height; i += partSize) {
-            lines.push(this.compareBuffer.ctx.getImageData(0, i, this.compareBuffer.elem.width, 1).data)
+          for (let i = partSize; i < this.videoSnapshotBuffer.elem.height; i += partSize) {
+            lines.push(this.videoSnapshotBuffer.ctx.getImageData(0, i, this.videoSnapshotBuffer.elem.width, 1).data)
           }
         } catch (ex) {
           if (!this.showedCompareWarning) {
@@ -1485,20 +1474,19 @@ class Ambilight {
     if (this.frameBlending && !this.videoElem.paused) {
       const drawTime = performance.now()
       if (hasNewFrame) {
-        this.videoBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoBuffer.elem.width, this.videoBuffer.elem.height)
         this.previousFrameTime = this.previousDrawTime
 
         if (this.videoOverlayEnabled) {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-          this.videoOverlayBuffer.ctx.drawImage(this.videoBuffer.elem, 0, 0)
+          this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
         }
-        this.previousBuffer.ctx.drawImage(this.buffer.elem, 0, 0)
-        this.buffer.ctx.drawImage(this.compareBuffer.elem,
+        this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+        this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
           0,
-          this.compareBufferBarsClipPx,
-          this.compareBuffer.elem.width,
-          this.compareBuffer.elem.height - (this.compareBufferBarsClipPx * 2),
-          0, 0, this.buffer.elem.width, this.buffer.elem.height)
+          this.videoSnapshotBufferBarsClipPx,
+          this.videoSnapshotBuffer.elem.width,
+          this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
+          0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         this.ambilightFrameCount++
       }
@@ -1517,32 +1505,32 @@ class Ambilight {
         this.checkIfNeedToHideVideoOverlay()
       }
 
-      this.blendedBuffer.ctx.globalAlpha = 1
-      this.blendedBuffer.ctx.drawImage(this.previousBuffer.elem, 0, 0)
-      this.blendedBuffer.ctx.globalAlpha = alpha
-      this.blendedBuffer.ctx.drawImage(this.buffer.elem, 0, 0)
-      this.blendedBuffer.ctx.globalAlpha = 1
+      this.blendedProjectorBuffer.ctx.globalAlpha = 1
+      this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
+      this.blendedProjectorBuffer.ctx.globalAlpha = alpha
+      this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+      this.blendedProjectorBuffer.ctx.globalAlpha = 1
       this.projectors.forEach((projector) => {
-        projector.ctx.drawImage(this.blendedBuffer.elem, 0, 0)
+        projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
       })
       this.previousDrawTime = drawTime
     } else {
       if (!hasNewFrame) return
 
       if (this.videoOverlayEnabled) {
-        this.videoOverlay.ctx.drawImage(this.videoBuffer.elem, 0, 0)
+        this.videoOverlay.ctx.drawImage(this.videoElem, 0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         this.checkIfNeedToHideVideoOverlay()
       }
 
-      this.buffer.ctx.drawImage(this.compareBuffer.elem,
+      this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
         0,
-        this.compareBufferBarsClipPx,
-        this.compareBuffer.elem.width,
-        this.compareBuffer.elem.height - (this.compareBufferBarsClipPx * 2), 
-        0, 0, this.buffer.elem.width, this.buffer.elem.height)
+        this.videoSnapshotBufferBarsClipPx,
+        this.videoSnapshotBuffer.elem.width,
+        this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
+        0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
       this.projectors.forEach((projector) => {
-        projector.ctx.drawImage(this.buffer.elem, 0, 0)
+        projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
       })
 
       this.ambilightFrameCount++
@@ -1551,9 +1539,9 @@ class Ambilight {
     if(this.detectHorizontalBarSizeEnabled) {
       setTimeout(() => {
         const lines = []
-        let partSize = Math.ceil(this.compareBuffer.elem.width / 6)
-        for (let i = partSize; i < this.compareBuffer.elem.width; i += partSize) {
-          lines.push(this.compareBuffer.ctx.getImageData(i, 0, 1, this.compareBuffer.elem.height).data)
+        let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
+        for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
+          lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
         }
         this.detectHorizontalBarSize(lines)
       }, 1);
