@@ -341,7 +341,7 @@ class Ambilight {
         name: 'fadeOutEasing',
         label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>',
         type: 'list',
-        default: 60,
+        default: 35,
         min: 1,
         max: 100,
         step: 1,
@@ -2012,7 +2012,6 @@ class Ambilight {
             setting.name === 'videoShadowSize' ||
             setting.name === 'videoShadowOpacity'
           ) {
-            this[setting.name] = value
             this.updateStyles()
             return
           }
@@ -2023,6 +2022,40 @@ class Ambilight {
           ) {
             this.canvassesInvalidated = true
           }
+          if(!this.advancedSettings) {
+            if(setting.name === 'blur') {
+              const edgeSetting = this.settings.find(setting => setting.name === 'edge')
+              const edgeValue = (value <= 5 ) ? 2 : ((value >= 25) ? 17 : (
+                {
+                  6: 3,
+                  7: 3.5,
+                  8: 3.5,
+                  9: 4,
+                  10: 4.5,
+                  11: 5,
+                  12: 5.75,
+                  13: 6.5,
+                  14: 7,
+                  15: 7.5,
+                  16: 8,
+                  17: 8.5,
+                  18: 8.5,
+                  19: 9,
+                  20: 10,
+                  21: 11,
+                  22: 12.5,
+                  23: 14,
+                  24: 15,
+                }
+                [value]
+              ))
+
+              const edgeInputElem = $.s(`#setting-${edgeSetting.name}`)
+              edgeInputElem.value = edgeValue
+              edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+          }
+
           if(setting.name === 'horizontalBarsClipPercentage' && this.detectHorizontalBarSizeEnabled) {
             $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
           }
@@ -2061,7 +2094,6 @@ class Ambilight {
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings'
           ) {
-            this[setting.name] = setting.value
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
           }
