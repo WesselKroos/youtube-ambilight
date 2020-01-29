@@ -696,7 +696,8 @@ class Ambilight {
   setFeedbackLink() {
     const version = $.s('html').getAttribute('data-ambilight-version') || ''
     const os = $.s('html').getAttribute('data-ambilight-os') || ''
-    this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}`
+    const browser = $.s('html').getAttribute('data-ambilight-browser') || ''
+    this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
   recreateCanvasses() {

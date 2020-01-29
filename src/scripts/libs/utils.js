@@ -17,6 +17,22 @@ export const getOS = () => {
   }
 }
 
+export const getBrowser = () => {
+  try {
+    const list = [
+      { match: 'Firefox', name: 'Firefox' },
+      { match: 'OPR', name: 'Opera' },
+      { match: 'Edg', name: 'Edge' },
+      { match: 'Chrome', name: 'Chrome' }
+    ]
+    var ua = window.navigator.userAgent
+    var browser = list.find(browser => (ua.indexOf(browser.match) >= 0))
+    return (browser) ? browser.name : ua
+  } catch (ex) {
+    return null
+  }
+}
+
 export const getVersion = () => {
   try {
     return (chrome.runtime.getManifest() || {}).version
