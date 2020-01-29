@@ -519,7 +519,6 @@ class Ambilight {
     this.enabled = this.getSetting('enabled')
     $.s('html').attr('data-ambilight-enabled', this.enabled)
 
-    this.advancedSettings = this.getSetting('advancedSettings')
 
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
@@ -546,7 +545,22 @@ class Ambilight {
     this.directionBottomEnabled = this.getSetting('directionBottomEnabled')
     this.directionLeftEnabled = this.getSetting('directionLeftEnabled')
 
-    this.frameSync = this.getSetting('frameSync')
+    //// Migrations from version 2.32
+    // Enable advancedSettings for existing users
+    const previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
+    const previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
+    if(previouslyAdvancedSettings === null) {
+      this.setSetting('advancedSettings', (previouslyEnabled !== null))
+    }
+    // Migrate highQuality to frameSync
+    const previouslyHighQuality = this.getSetting('highQuality')
+    if(previouslyHighQuality === 'false') {
+      this.setSetting('frameSync', 0)
+      this.removeSetting('highQuality')
+    } else {
+      this.frameSync = this.getSetting('frameSync')
+    }
+
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
@@ -2135,7 +2149,7 @@ class Ambilight {
       console.error('YouTube Ambilight | getSetting', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
-    const setting = this.settings.find(setting => setting.name === key)
+    const setting = this.settings.find(setting => setting.name === key) || {}
     if (value === null) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
@@ -2148,6 +2162,15 @@ class Ambilight {
     }
 
     return value
+  }
+
+  removeSetting(key) {
+    try {
+      localStorage.removeItem(`ambilight-${key}`)
+    } catch (ex) {
+      console.error('YouTube Ambilight | removeSetting', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 }
 
