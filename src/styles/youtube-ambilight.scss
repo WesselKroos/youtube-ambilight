@@ -327,35 +327,55 @@ html[data-ambilight-enabled="true"] {
     margin: 5px 0;
     filter: drop-shadow(rgb(0, 0, 0, .5) 0px 1px 0px) drop-shadow(rgb(0, 0, 0, .25) 0px -1px 0px);
     font-weight: 600;
-    color: #ccc;
+    color: #ddd;
     cursor: pointer;
 
     &::after {
       position: absolute;
       right: 12px;
-      margin-top: 3px;
-      font-size: 13px;
-      content: 'v';
-      color: #666;
+      width: 0;
+      height: 0;
+      margin-top: 8px;
+      border-left: 5px solid #0000;
+      border-bottom: 5px solid #111;
+      border-right: 5px solid #0000;
+      content: '';
 
       .ytp-fullscreen & {
-        font-size: 17px;
-        margin-top: 4px;
-        margin-right: 1px;
+        margin-top: 11px;
+        margin-right: 0;
+        border-left-width: 8px;
+        border-bottom-width: 8px;
+        border-right-width: 8px;
+      }
+    }
+    &:not(:hover) {
+      &::after {
+        border-bottom-color: #0000;
       }
     }
     &.is-collapsed {
       margin: 5px 0 -4px;
-      color: #999;
       &::after {
         position: absolute;
         right: 12px;
-        margin-top: 5px;
-        font-size: 18px;
-        content: '^';
+        margin-top: 9px;
+        border-top: 5px solid #111;
+        border-bottom: none;
+        content: '';
         .ytp-fullscreen & {
-          font-size: 25px;
-          margin-right: 0;
+          margin-top: 12px;
+          border-top-width: 8px;
+        }
+      }
+      &:not(:hover) {
+        color: #8888;
+        &::after {
+          border-top-color: #0000;
+        }
+        .ytpa-section__label,
+        .ytpa-section__fill {
+          background: #4447;
         }
       }
       $sel: '&';
@@ -379,8 +399,7 @@ html[data-ambilight-enabled="true"] {
       border-bottom: 1px solid #ffffff05;
       padding: 0px 14px;
       line-height: 21px;
-      background: #5556;
-      transition: background-color .15s;
+      background: #444d;
       .ytp-fullscreen & {
         padding: 0px 20px;
         height: 30px;
@@ -604,7 +623,6 @@ html[data-ambilight-enabled="true"] {
         border-radius: 50%;
         background: #bdbdbd;
         box-shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-        transition: all .15s;
 
         .ytp-fullscreen & {
           width: 20px;
@@ -699,6 +717,9 @@ html[data-ambilight-enabled="true"] {
         display: none !important;
       }
     }
+  }
+  .ytpa-menuitem-description {
+    display: none;
   }
 }
 
