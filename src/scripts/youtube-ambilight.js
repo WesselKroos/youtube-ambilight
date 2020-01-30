@@ -1475,6 +1475,17 @@ class Ambilight {
       hasNewFrame = true
     }
     
+    if(hasNewFrame && this.detectHorizontalBarSizeEnabled) {
+      const lines = []
+      let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
+      for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
+        lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
+      }
+      if(this.detectHorizontalBarSize(lines)) {
+        return this.drawAmbilight()
+      }
+    }
+    
     const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (skippedFrames) {
       this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
@@ -1548,17 +1559,6 @@ class Ambilight {
     }
 
     this.ambilightFrameCount++
-
-    if(this.detectHorizontalBarSizeEnabled) {
-      setTimeout(() => {
-        const lines = []
-        let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
-        for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
-          lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
-        }
-        this.detectHorizontalBarSize(lines)
-      }, 1);
-    }
 
     this.buffersCleared = false
 
