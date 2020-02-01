@@ -494,9 +494,17 @@ class Ambilight {
     })
 
     this.videoHasRequestAnimationFrame = !!this.videoElem.requestAnimationFrame
+    this.settings = this.settings.map(setting => {
       if(this.videoHasRequestAnimationFrame) {
-      this.settings = this.settings.filter(setting => setting.name !== 'frameSync')
+        if(setting.name === 'frameSync') {
+          return undefined
         }
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+          setting.advanced = true
+        }
+      }
+      return setting
+    }).filter(setting => setting)
 
     this.initSettings()
     this.initScrollPosition()
