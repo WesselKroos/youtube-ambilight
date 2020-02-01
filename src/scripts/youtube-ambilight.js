@@ -483,7 +483,7 @@ class Ambilight {
         if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
           return
       }
-      if (e.keyCode === 70 || e.keyCode === 84)
+      if (e.keyCode === 70 || e.keyCode === 84) // f || t
         setTimeout(() => this.checkVideoSize(), 0)
       if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
@@ -808,12 +808,11 @@ class Ambilight {
         (this.isFullscreen && !this.enableInFullscreen)
       )
       if (notVisible || noClipOrScale) {
-        this.videoElem.style.marginTop = ''
         if (videoElemParentElem) {
           videoElemParentElem.style.transform = ``
           videoElemParentElem.style.overflow = ''
-          videoElemParentElem.style.marginTop = ''
           videoElemParentElem.style.height = ''
+          videoElemParentElem.style.setProperty('--video-transform', `scaleY(${(1 / this.horizontalBarsClipScaleY)})`)
         }
       }
       if (notVisible) {
@@ -833,13 +832,12 @@ class Ambilight {
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
       if (!noClipOrScale) {
-        this.horizontalBarsClipPX = Math.round(horizontalBarsClip * this.videoElem.offsetHeight)
         const top = Math.max(0, parseInt(this.videoElem.style.top))
-        this.videoElem.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
-        videoElemParentElem.style.marginTop = `${this.horizontalBarsClipPX + top}px`
-        videoElemParentElem.style.height = `${this.videoElem.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
-        videoElemParentElem.style.transform =  `scale(${(this.videoScale / 100)})`
+        videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
+        this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
+        videoElemParentElem.style.transform =  `scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
         videoElemParentElem.style.overflow = 'hidden'
+        videoElemParentElem.style.setProperty('--video-transform', `scaleY(${(1 / this.horizontalBarsClipScaleY)})`)
       }
 
       this.projectorOffset = this.videoElem.offset()
@@ -879,21 +877,32 @@ class Ambilight {
       } else {
         this.p = {
           w: Math.round(this.srcVideoOffset.width / scale),
-          h: Math.round((this.srcVideoOffset.height * (1 - (horizontalBarsClip * 2))) / scale)
+          h: Math.round((this.srcVideoOffset.height) / scale) // * (1 - (horizontalBarsClip * 2))
         }
       }
 
-      this.horizontalBarsScaledClipPX = Math.round(horizontalBarsClip * this.projectorOffset.height)
-      this.projectorsElem.style.left = (this.projectorOffset.left + window.scrollX) + 'px'
-      this.projectorsElem.style.top = (this.projectorOffset.top +  - 1 + this.horizontalBarsScaledClipPX) + 'px'
-      this.projectorsElem.style.width = this.projectorOffset.width + 'px'
-      this.projectorsElem.style.height = (this.projectorOffset.height - (this.horizontalBarsScaledClipPX * 2)) + 'px'
-      //this.projectorsElem.style.transform = `translate3d(${(this.projectorOffset.left)}px, ${(this.projectorOffset.top - 1 + this.horizontalBarsScaledClipPX)}px, 0)`
+      const unscaledWidth = Math.round(this.projectorOffset.width / (this.videoScale / 100))
+      const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
+      const unscaledLeft = Math.round((this.projectorOffset.left + window.scrollX) - ((unscaledWidth - this.projectorOffset.width) / 2))
+      const unscaledTop = Math.round(this.projectorOffset.top - ((unscaledHeight - this.projectorOffset.height) / 2))
+
+      this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
+      this.projectorsElem.style.left = `${unscaledLeft}px`
+      this.projectorsElem.style.top = `${unscaledTop - 1}px`
+      this.projectorsElem.style.width = `${unscaledWidth}px`
+      this.projectorsElem.style.height = `${unscaledHeight}px`
+      this.projectorsElem.style.transform = `scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
       
-      this.videoShadowElem.style.left = this.projectorsElem.style.left
-      this.videoShadowElem.style.top = this.projectorsElem.style.top
-      this.videoShadowElem.style.width = this.projectorsElem.style.width
-      this.videoShadowElem.style.height = this.projectorsElem.style.height
+      if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
+        this.videoShadowElem.style.display = 'block'
+        this.videoShadowElem.style.left = `${unscaledLeft}px`
+        this.videoShadowElem.style.top = `${unscaledTop}px`
+        this.videoShadowElem.style.width = `${unscaledWidth}px`
+        this.videoShadowElem.style.height = `${(unscaledHeight * this.horizontalBarsClipScaleY)}px`
+        this.videoShadowElem.style.transform = `translate3d(0,0,0) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`
+      } else {
+        this.videoShadowElem.style.display = ''
+      }
 
       this.filterElem.style.webkitFilter = `
         blur(${this.projectorOffset.height * (this.blur * .0025)}px)
@@ -901,11 +910,6 @@ class Ambilight {
         ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
         ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
       `
-      // this.elem.style.webkitFilter = `
-      //   ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
-      //   ${(this.brightness !== 100) ? `brightness(${(parseInt(this.brightness) + 3)}%)` : ''}
-      //   ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
-      // `
 
       this.projectors.forEach((projector) => {
         if (projector.elem.width !== this.p.w)
@@ -918,7 +922,6 @@ class Ambilight {
       this.projectorBuffer.elem.width = this.p.w
       this.projectorBuffer.elem.height = this.p.h
       this.projectorBuffer.ctx = this.projectorBuffer.elem.getContext('2d', ctxOptions)
-      //this.projectorBuffer.ctx.globalAlpha = .5
 
       if (this.frameBlending && !this.previousProjectorBuffer) {
         this.initFrameBlending()
@@ -990,7 +993,7 @@ class Ambilight {
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
-    const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px
+    const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
     
     this.styleElem.childNodes[0].data = `
@@ -1029,7 +1032,7 @@ class Ambilight {
   resizeCanvasses() {
     const projectorSize = {
       w: this.projectorOffset.width,
-      h: this.projectorOffset.height - (this.horizontalBarsScaledClipPX * 2)
+      h: this.projectorOffset.height * this.horizontalBarsClipScaleY
     }
     const ratio = (projectorSize.w > projectorSize.h) ?
       {
@@ -1072,11 +1075,6 @@ class Ambilight {
       lastScale.y = scaleY
       
       projector.elem.style.transform = `scale(${Math.max(minScale.x, scaleX)}, ${Math.max(minScale.y, scaleY)})`
-      //projector.elem.style.marginLeft = `${-(((projectorSize.w * scaleX) - projectorSize.w) / 2)}px`
-      //projector.elem.style.width = `${projectorSize.w * scaleX}px`
-      //projector.elem.style.marginTop = `${-(((projectorSize.h * scaleY) - projectorSize.h) / 2)}px`
-      //projector.elem.style.height = ` ${projectorSize.h * scaleY}px`
-
     })
 
     this.shadow.elem.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
@@ -1494,9 +1492,6 @@ class Ambilight {
       this.videoFrameCount = newVideoFrameCount
     }
 
-
-
-    //console.log(this.videoElem.currentTime, this.videoElem.getCurrentTime(), this.videoElem.webkitDecodedFrameCount, this.videoElem.webkitDroppedFrameCount, this.videoElem.webkitVideoDecodedByteCount, this.videoElem.webkitAudioDecodedByteCount)
     if (this.frameBlending && !this.videoElem.paused) {
       const drawTime = performance.now()
       if (hasNewFrame) {
@@ -1633,15 +1628,16 @@ class Ambilight {
     if(size < (height * 0.01)) {
       size = 0
     } else {
-      size += (height * 0.001) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
+      size += (height * 0.002) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
     }
     
     let percentage = Math.round((size / height) * 10000) / 100
     percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
 
+    const adjustment = (percentage - this.horizontalBarsClipPercentage)
     if(
-      (Math.abs(this.horizontalBarsClipPercentage - percentage) < 1 && this.horizontalBarsClipPercentage >= percentage) ||
-      (percentage > 25) 
+      (percentage > 25) ||
+      (adjustment > -1 && adjustment <= 0)
     ) {
       return
     }
@@ -2233,7 +2229,6 @@ const ambilightDetectDetachedVideo = () => {
     const isDetached = ambilight.videoElem !== videoElem
     if (!isDetached) return
 
-    //console.log('Detected detached video.\nOld:\n', ambilight.videoElem, '\nNew:\n', videoElem)
     ambilight.initVideoElem(videoElem)
   })
 

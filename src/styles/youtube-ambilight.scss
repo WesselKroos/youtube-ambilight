@@ -85,7 +85,10 @@ html[data-ambilight-enabled="true"] {
       color: #bbb;
   }
 
-
+  /* Video */
+  .html5-main-video {
+    transform: var(--video-transform);
+  }
   /* Cosmetics - Search */
 
   ytd-app[is-watch-page] {
@@ -168,6 +171,9 @@ html[data-ambilight-enabled="true"] {
 
   .ambilight__clip {
     //overflow: hidden;
+  }
+  .ambilight__video-shadow {
+    display: none;
   }
 
   .ambilight__projector {
