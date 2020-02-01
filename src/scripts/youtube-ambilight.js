@@ -810,7 +810,7 @@ class Ambilight {
       if (notVisible || noClipOrScale) {
         this.videoElem.style.marginTop = ''
         if (videoElemParentElem) {
-          videoElemParentElem.style.setProperty('transform', ``)
+          videoElemParentElem.style.transform = ``
           videoElemParentElem.style.overflow = ''
           videoElemParentElem.style.marginTop = ''
           videoElemParentElem.style.height = ''
@@ -838,7 +838,7 @@ class Ambilight {
         this.videoElem.style.marginTop = `${-this.horizontalBarsClipPX - top}px`
         videoElemParentElem.style.marginTop = `${this.horizontalBarsClipPX + top}px`
         videoElemParentElem.style.height = `${this.videoElem.offsetHeight * (1 - (horizontalBarsClip * 2))}px`
-        videoElemParentElem.style.setProperty('transform', `scale(${(this.videoScale / 100)})`)
+        videoElemParentElem.style.transform =  `scale(${(this.videoScale / 100)})`
         videoElemParentElem.style.overflow = 'hidden'
       }
 
