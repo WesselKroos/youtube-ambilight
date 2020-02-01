@@ -494,9 +494,9 @@ class Ambilight {
     })
 
     this.videoHasRequestAnimationFrame = !!this.videoElem.requestAnimationFrame
-    if(this.videoHasRequestAnimationFrame) {
+      if(this.videoHasRequestAnimationFrame) {
       this.settings = this.settings.filter(setting => setting.name !== 'frameSync')
-    }
+        }
 
     this.initSettings()
     this.initScrollPosition()
@@ -551,7 +551,10 @@ class Ambilight {
     const previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
     if(previouslyAdvancedSettings === null) {
       this.setSetting('advancedSettings', (previouslyEnabled !== null))
+    } else {
+      this.advancedSettings = this.getSetting('advancedSettings')
     }
+
     // Migrate highQuality to frameSync
     const previouslyHighQuality = this.getSetting('highQuality')
     if(previouslyHighQuality === 'false') {
