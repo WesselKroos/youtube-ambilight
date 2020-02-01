@@ -1418,6 +1418,9 @@ class Ambilight {
   }
 
   detectDisplayFrameRate = () => {
+    if(!this.detectDisplayFrameRateScheduled) return
+    this.detectDisplayFrameRateScheduled = false
+
     const displayFrameRateTime = performance.now()
     if (this.displayFrameRateStartTime < displayFrameRateTime - 2000) {
       this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
@@ -1439,9 +1442,10 @@ class Ambilight {
       }
     }
     
-    if(this.enabled && !this.videoElem.paused) {
-      raf(this.detectDisplayFrameRate)
-    }
+    if(!this.enabled || this.videoElem.paused) return
+
+    this.detectDisplayFrameRateScheduled = true
+    raf(this.detectDisplayFrameRate)
   }
 
   detectAmbilightFrameRate() {
@@ -1868,6 +1872,9 @@ class Ambilight {
     }
 
     this.scheduleNextFrame()
+    
+    if(this.detectDisplayFrameRateScheduled) return
+    this.detectDisplayFrameRateScheduled = true
     raf(this.detectDisplayFrameRate)
   }
 
