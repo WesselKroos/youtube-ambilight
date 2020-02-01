@@ -1246,6 +1246,14 @@ class Ambilight {
       }
     }
 
+    if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
+      const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
+      const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
+      if(this.videoShadowElem.style.transform !== `translate3d(0,0,0) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`) {
+        return this.updateSizes()
+      }
+    }
+
 
     return true
   }
@@ -1643,7 +1651,7 @@ class Ambilight {
     if(size < (height * 0.01)) {
       size = 0
     } else {
-      size += (height * 0.002) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
+      size += (height * 0.004) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
     }
     
     let percentage = Math.round((size / height) * 10000) / 100
