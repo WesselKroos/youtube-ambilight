@@ -1304,7 +1304,7 @@ class Ambilight {
       }
 
       const nextFrameTime = performance.now()
-      const delayTime = (this.lastNextFrameTime) 
+      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
         ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
         : 0
       if(!delayTime) {
