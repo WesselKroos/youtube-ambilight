@@ -812,7 +812,7 @@ class Ambilight {
           videoElemParentElem.style.transform = ``
           videoElemParentElem.style.overflow = ''
           videoElemParentElem.style.height = ''
-          videoElemParentElem.style.setProperty('--video-transform', `scaleY(${(1 / this.horizontalBarsClipScaleY)})`)
+          videoElemParentElem.style.setProperty('--video-transform', '')
         }
       }
       if (notVisible) {
@@ -835,9 +835,9 @@ class Ambilight {
         const top = Math.max(0, parseInt(this.videoElem.style.top))
         videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
         this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
-        videoElemParentElem.style.transform =  `scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
+        videoElemParentElem.style.transform =  `translateY(${top}px) scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
         videoElemParentElem.style.overflow = 'hidden'
-        videoElemParentElem.style.setProperty('--video-transform', `scaleY(${(1 / this.horizontalBarsClipScaleY)})`)
+        videoElemParentElem.style.setProperty('--video-transform', `translateY(${-top}px) scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})`)
       }
 
       this.projectorOffset = this.videoElem.offset()
@@ -1231,6 +1231,21 @@ class Ambilight {
     ) {
       return this.updateSizes()
     }
+
+    
+    const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
+    if(!noClipOrScale) {
+      const videoElemParentElem = this.videoElem.parentElement
+      if(videoElemParentElem) {
+        const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
+        const top = Math.max(0, parseInt(this.videoElem.style.top))
+        const scaleY = (Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)
+        if(videoTransform !== `translateY(${-top}px) scaleY(${scaleY})`) {
+          return this.updateSizes()
+        }
+      }
+    }
+
 
     return true
   }
