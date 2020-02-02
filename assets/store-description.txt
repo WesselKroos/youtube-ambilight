@@ -14,6 +14,26 @@ Features:
 1. Ambilight control
 - Blur
 - Spread
+
+2. Video
+- Auto-detect & remove black bars
+- Scale
+- Shadow size
+
+3. Video page content
+- Shadow size
+- Immersive mode (Show only the video when you are at the top of the page)
+
+4. Ambilight quality & performance
+- Synchronization quality (Energy saver, Balanced, High performance)
+
+5. General
+- Switch back to the light theme when ambilight is turned off
+- Enabled/Disabled
+
+
+Advanced features:
+1. Ambilight control
 - Edge size
 - Fade out start & curve
 - Directions (top, left, bottom, right)
@@ -24,26 +44,21 @@ Features:
 - Saturation
 
 3. Video
-- Auto-detect & remove black bars
-- Reset black bars in the next video
-- Scale
-- Shadow size & opacity
+- Shadow opacity
+- Set the black bars size manually
 
-4. Videopage content
-- Shadow size & opacity
-- Immersive mode (Show only the video when you are at the top of the page)
+4. Video page content
+- Shadow opacity
 
 5. Ambilight quality & performance
+- Show framerate
 - Debanding (dithering)
-- Prevent frame drops: Syncs the ambilight effect with the video framerate more tightly. This will require extra CPU usage because it detects new video frames on every display refresh rate, since the native framerate counter of the browser can be delayed.
+- Limit framerate (for energy saving)
 - Sync video exactly 
 - Smooth motion (frame blending)
 
 6. General
-- Show framerate
-- Dark theme on videopage only
-- Enable in fullscreen: Shows the surround ambilight in fullscreen mode where normally black bars are located
-- Enabled/Disabled
+- Enable in fullscreen (Shows the surround ambilight also in fullscreen mode)
 
 
 Contribute
