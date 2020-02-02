@@ -4,6 +4,10 @@ body {
   background: #000;
 }
 
+#a11y-announcements-container {
+  transform: translateY(-100%);
+}
+
 #appbar-guide-menu, .guide-flyout,
 #yt-masthead-container.at-top,
 
@@ -26,6 +30,11 @@ body #footer-container {
   background: none !important;
   border-color: transparent;
   box-shadow: none;
+}
+
+#yt-masthead-container.at-top #masthead-search:not(:hover):not(:focus-within) #masthead-search-terms,
+#yt-masthead-container.at-top #masthead-search:not(:hover):not(:focus-within) .search-btn-component {
+  border-color: rgba(255,255,255,.1);
 }
 
 #yt-masthead-container.at-top,
@@ -127,18 +136,6 @@ body #footer-container {
 .yt-badge{
   background: rgba(255,255,255,0);
   border-color: rgba(255,255,255,.2);
-}
-
-.html5-video-container {
-  margin-top: 0;
-}
-
-.html5-video-player,
-ytd-app[scrolling_] {
-  overflow: visible;
-}
-#movie_player {
-  position: absolute;
 }
 
 .like-button-renderer-like-button:not(.yt-uix-button-toggled):not(:active):before,

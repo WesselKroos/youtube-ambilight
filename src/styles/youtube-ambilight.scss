@@ -56,8 +56,6 @@ html[data-ambilight-enabled="true"] {
 
   body:not(.ambilight-disable-in-fullscreen) ytd-app[is-watch-page] #movie_player {
     background: none !important;
-    position: absolute !important;
-    overflow: visible !important;
   }
 
   /* Video preview while moving the timeline */
