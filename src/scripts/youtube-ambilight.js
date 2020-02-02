@@ -1293,31 +1293,33 @@ class Ambilight {
     this.scheduled = true
 
     if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
-      this.videoRafId = this.videoElem.requestAnimationFrame(this.nextFrame)
+      this.videoRafId = this.videoElem.requestAnimationFrame(this.onNextFrame)
       return
     }
 
-    this.rafId = raf(() => {
-      if(!this.framerateLimit) {
-        this.nextFrame()
-        return
-      }
+    this.rafId = raf(this.onNextFrame)
+  }
 
-      const nextFrameTime = performance.now()
-      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
-        ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
-        : 0
-      if(!delayTime) {
-        this.lastNextFrameTime = performance.now()
-        this.nextFrame()
-        return
-      }
+  onNextFrame = () => {
+    if(!this.framerateLimit) {
+      this.nextFrame()
+      return
+    }
 
-      setTimeout(() => {
-        this.lastNextFrameTime = performance.now()
-        this.nextFrame()
-      }, delayTime)
-    })
+    const nextFrameTime = performance.now()
+    const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
+      ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
+      : 0
+    if(!delayTime) {
+      this.lastNextFrameTime = performance.now()
+      this.nextFrame()
+      return
+    }
+
+    setTimeout(() => {
+      this.lastNextFrameTime = performance.now()
+      this.nextFrame()
+    }, delayTime)
   }
 
   nextFrame = (time, { presentedFrames } = {}) => {
