@@ -57,7 +57,6 @@ export default class AmbilightSentry {
         setExtra(`youtube.dark`, !!($.s('html').attributes.dark || {}).value)
         setExtra(`youtube.lang`, ($.s('html').attributes.lang || {}).value)
         setExtra(`youtube.loggedIn`, !!$.s('#avatar-btn'))
-        setExtra(`player.classes`, [$.s('.html5-video-player').classList].join(' '))
       } catch (ex) { }
 
       try {
@@ -71,21 +70,6 @@ export default class AmbilightSentry {
         if (!navigator.doNotTrack) {
           setExtra(`video.id`, $.s('ytd-watch-flexy').attributes['video-id'].value)
         }
-      } catch (ex) { }
-
-      try {
-        const videos = $.sa('video')
-        videos.forEach((video, i) => {
-          try {
-            setExtra(`videoTags[${i}].classes`, [video.classList].join(' '))
-            setExtra(`videoTags[${i}].style.width`, video.style.width)
-            setExtra(`videoTags[${i}].style.height`, video.style.height)
-            setExtra(`videoTags[${i}].style.top`, video.style.top)
-            setExtra(`videoTags[${i}].style.left`, video.style.left)
-            setExtra(`videoTags[${i}].offsetParent`,
-              `${video.offsetParent.tagName.toLowerCase()}.${[video.offsetParent.classList].join('.')}`)
-          } catch (ex) { }
-        })
       } catch (ex) { }
 
       try {
@@ -125,6 +109,41 @@ export default class AmbilightSentry {
             setExtra(`video.webkitAudioDecodedByteCount`, ambilight.videoPlayer.webkitAudioDecodedByteCount)
           }
         }
+      } catch (ex) { }
+
+      try {
+        var selectors = {
+          'html': $.sa('html'),
+          'body': $.sa('body'),
+          '#page': $.sa('[id="#page"]'),
+          'ytd-app': $.sa('ytd-app'),
+          'ytd-watch-flexy': $.sa('ytd-watch-flexy'),
+          '#player-theater-container': $.sa('[id="player-theater-container"]'),
+          'ytd-miniplayer': $.sa('ytd-miniplayer'),
+          '.html5-video-container': $.sa('.html5-video-container'),
+          '#player-container': $.sa('[id="player-container"]'),
+          '#player-api': $.sa('[id="player-api"]'),
+          '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
+          '.html5-video-player': $.sa('.html5-video-player'),
+          'video': $.sa('video'),
+          'ytd-masthead': $.sa('ytd-masthead'),
+          'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
+          '#avatar-btn': $.sa('[id="avatar-btn"]'),
+          '.ytp-right-controls': $.sa('.ytp-right-controls'),
+          '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
+          '[class*="ambilight"]': $.sa('[class*="ambilight"]'),
+        }
+        Object.keys(selectors).forEach((selector) => {
+          const nodes = selectors[selector]
+          if(!nodes) return
+          [...nodes].forEach((node, i) => {
+            try {
+              setExtra(`selectors[${selector}].nodes[${i}]`, node ? node.cloneNode(false).outerHTML : null)
+              setExtra(`selectors[${selector}].nodes[${i}].childNodes`, node ? node.childNodes.length : null)
+              setExtra(`selectors[${selector}].nodes[${i}].parentNode`, (node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : null)
+            } catch (ex) { }
+          })
+        })
       } catch (ex) { }
 
       captureException(ex)

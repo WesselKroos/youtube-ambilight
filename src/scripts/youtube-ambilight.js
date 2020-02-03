@@ -1006,7 +1006,7 @@ class Ambilight {
     } catch (ex) {
       console.error('YouTube Ambilight | Resize | UpdateSizes:', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
-      throw ex
+      throw new Error('catched')
     }
   }
 
@@ -1281,54 +1281,66 @@ class Ambilight {
   }
 
   scheduleNextFrame() {
-    if (!this.enabled || !this.isOnVideoPage) return
+    try {
+      if (!this.enabled || !this.isOnVideoPage) return
 
-    if(this.videoRafId && this.videoElem.paused) {
-      this.videoElem.cancelAnimationFrame(this.videoRafId)
-      this.videoRafId = undefined
-      this.scheduled = false
+      if(this.videoRafId && this.videoElem.paused) {
+        this.videoElem.cancelAnimationFrame(this.videoRafId)
+        this.videoRafId = undefined
+        this.scheduled = false
+      }
+
+      if(this.scheduled) return
+      this.scheduled = true
+
+      if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
+        this.videoRafId = this.videoElem.requestAnimationFrame(this.onNextFrame)
+        return
+      }
+
+      this.rafId = raf(this.onNextFrame)
+    } catch (ex) {
+      if(ex.message === 'catched') return
+      console.error('YouTube Ambilight | ScheduleNextFrame:', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
     }
-
-    if(this.scheduled) return
-    this.scheduled = true
-
-    if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
-      this.videoRafId = this.videoElem.requestAnimationFrame(this.onNextFrame)
-      return
-    }
-
-    this.rafId = raf(this.onNextFrame)
   }
 
   onNextFrame = () => {
-    if(!this.framerateLimit) {
-      this.nextFrame()
-      return
-    }
+    try {
+      if(!this.framerateLimit) {
+        this.nextFrame()
+        return
+      }
 
-    const nextFrameTime = performance.now()
-    const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
-      ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
-      : 0
-    if(!delayTime) {
-      this.lastNextFrameTime = performance.now()
-      this.nextFrame()
-      return
-    }
+      const nextFrameTime = performance.now()
+      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
+        ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
+        : 0
+      if(!delayTime) {
+        this.lastNextFrameTime = performance.now()
+        this.nextFrame()
+        return
+      }
 
-    setTimeout(() => {
-      this.lastNextFrameTime = performance.now()
-      this.nextFrame()
-    }, delayTime)
+      setTimeout(() => {
+        this.lastNextFrameTime = performance.now()
+        this.nextFrame()
+      }, delayTime)
+    } catch (ex) {
+      if(ex.message === 'catched') return
+      console.error('YouTube Ambilight | OnNextFrame:', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 
   nextFrame = (time, { presentedFrames } = {}) => {
-    this.requestAnimationFramePresentedFrames = presentedFrames
-
-    if (!this.scheduled) return
-    this.scheduled = false
-
     try {
+      this.requestAnimationFramePresentedFrames = presentedFrames
+
+      if (!this.scheduled) return
+      this.scheduled = false
+
       if (!this.checkVideoSize()) {
         this.videoFrameCount = 0
         return
@@ -1349,6 +1361,7 @@ class Ambilight {
 
       this.scheduleNextFrame()
     } catch (ex) {
+      if(ex.message === 'catched') return
       console.error('YouTube Ambilight | NextFrame:', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
