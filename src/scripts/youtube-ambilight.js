@@ -694,7 +694,7 @@ class Ambilight {
     this.videoElem.on('playing', () => {
       this.start()
       this.resetHorizontalBarsIfNeeded()
-    })
+      })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
@@ -938,12 +938,10 @@ class Ambilight {
           projector.elem.width = this.p.w
         if (projector.elem.height !== this.p.h)
           projector.elem.height = this.p.h
-        projector.ctx = projector.elem.getContext('2d', ctxOptions)
       })
 
       this.projectorBuffer.elem.width = this.p.w
       this.projectorBuffer.elem.height = this.p.h
-      this.projectorBuffer.ctx = this.projectorBuffer.elem.getContext('2d', ctxOptions)
 
       if (this.frameBlending && !this.previousProjectorBuffer) {
         this.initFrameBlending()
@@ -958,11 +956,9 @@ class Ambilight {
       if (this.frameBlending) {
         this.previousProjectorBuffer.elem.width = this.p.w
         this.previousProjectorBuffer.elem.height = this.p.h
-        this.previousProjectorBuffer.ctx = this.previousProjectorBuffer.elem.getContext('2d', ctxOptions)
-
+        
         this.blendedProjectorBuffer.elem.width = this.p.w
         this.blendedProjectorBuffer.elem.height = this.p.h
-        this.blendedProjectorBuffer.ctx = this.blendedProjectorBuffer.elem.getContext('2d', ctxOptions)
       }
 
       if (this.videoOverlayEnabled && !this.videoOverlay.elem.parentNode) {
@@ -974,23 +970,19 @@ class Ambilight {
         this.videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
         this.videoOverlay.elem.width = this.srcVideoOffset.width
         this.videoOverlay.elem.height = this.srcVideoOffset.height
-        this.videoOverlay.ctx = this.videoOverlay.elem.getContext('2d', ctxOptions)
 
         if (this.frameBlending) {
           this.videoOverlayBuffer.elem.width = this.srcVideoOffset.width
           this.videoOverlayBuffer.elem.height = this.srcVideoOffset.height
-          this.videoOverlayBuffer.ctx = this.videoOverlayBuffer.elem.getContext('2d', ctxOptions)
 
           this.previousVideoOverlayBuffer.elem.width = this.srcVideoOffset.width
           this.previousVideoOverlayBuffer.elem.height = this.srcVideoOffset.height
-          this.previousVideoOverlayBuffer.ctx = this.previousVideoOverlayBuffer.elem.getContext('2d', ctxOptions)
         }
       }
 
       if(!isBlackBarsAdjustment) { //Prevent losing imagedata
         this.videoSnapshotBuffer.elem.width = this.p.w
         this.videoSnapshotBuffer.elem.height = this.p.h
-        this.videoSnapshotBuffer.ctx = this.videoSnapshotBuffer.elem.getContext('2d', ctxOptions)
       }
       this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
 
@@ -1284,6 +1276,8 @@ class Ambilight {
     try {
       if (!this.enabled || !this.isOnVideoPage) return
 
+      if(this.rafId) return
+
       if(this.videoRafId && this.videoElem.paused) {
         this.videoElem.cancelAnimationFrame(this.videoRafId)
         this.videoRafId = undefined
@@ -1308,6 +1302,8 @@ class Ambilight {
 
   onNextFrame = () => {
     try {
+      this.rafId = undefined
+      this.videoRafId = undefined
       if(!this.framerateLimit) {
         this.nextFrame()
         return
@@ -1885,12 +1881,13 @@ class Ambilight {
     if (!$.s('html').attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
+    
+    if(!this.detectDisplayFrameRateScheduled) {
+      this.detectDisplayFrameRateScheduled = true
+      raf(this.detectDisplayFrameRate)
+    }
 
     this.scheduleNextFrame()
-    
-    if(this.detectDisplayFrameRateScheduled) return
-    this.detectDisplayFrameRateScheduled = true
-    raf(this.detectDisplayFrameRate)
   }
 
 
