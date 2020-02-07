@@ -694,6 +694,11 @@ class Ambilight {
     this.videoElem.on('playing', () => {
       this.start()
       this.resetHorizontalBarsIfNeeded()
+    })
+      .on('canplay', () => {
+        if(!this.videoElem.paused) return;
+        this.scheduleNextFrame()
+        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
       })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
