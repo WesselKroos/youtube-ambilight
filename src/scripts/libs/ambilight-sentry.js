@@ -12,14 +12,12 @@ initAndBind(BrowserClient, {
   release: document.querySelector('html').getAttribute('data-ambilight-version') || '?',
   beforeSend: (event) => {
     try {
-      if (!navigator.doNotTrack) {
         event.request = {
-          url: location.href,
+        url: (!navigator.doNotTrack) ? location.href : '?',
           headers: {
             "User-Agent": navigator.userAgent
           }
         };
-      }
     } catch (ex) { console.warn(ex) }
     return event
   }
@@ -161,10 +159,17 @@ export default class AmbilightSentry {
           if(!nodes) return
           [...nodes].forEach((node, i) => {
             try {
-              setExtra(`selectors[${selector}][${i}]`, {
-                node: node ? node.cloneNode(false).outerHTML : null,
-                childNodes: node ? node.childNodes.length : null,
-                parentNode: (node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : null
+              let nodeHtml = node ? node.cloneNode(false).outerHTML : ''
+              let parentNodeHtml = ((node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : '') || ''
+              if(navigator.doNotTrack) {
+                nodeHtml = nodeHtml.replace(/video-id="(?!^).*?"/gi, '')
+                parentNodeHtml = parentNodeHtml.replace(/video-id="(?!^).*?"/gi, '')
+              }
+
+              setExtra(`$('${selector}')[${i}]`, {
+                node: nodeHtml,
+                parentNode: parentNodeHtml,
+                childNodes: node ? node.childNodes.length : null
               })
             } catch (ex) { console.warn(ex) }
           })
