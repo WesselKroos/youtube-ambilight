@@ -2336,20 +2336,20 @@ const ambilightDetectVideoInfo = () => {
   try {
     const saveStreamingData = () => {
       try {
-        if(ytplayer.config) {
-          const videoInfo = window.currentVideoInfo
-          const streamingData = (JSON.parse(ytplayer.config.args.player_response).streamingData);
-          if(streamingData.formats)
-            streamingData.formats.forEach(format => {
-              if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
-              videoInfo.mimeType.available.push(format.mimeType)
-            })
-          if(streamingData.adaptiveFormats)
-            streamingData.adaptiveFormats.forEach(format => {
-              if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
-              videoInfo.mimeType.available.push(format.mimeType)
-            })
-        }
+        if(!ytplayer.config || !ytplayer.config.args || !ytplayer.config.args.player_response) return
+
+        const videoInfo = window.currentVideoInfo
+        const streamingData = (JSON.parse(ytplayer.config.args.player_response).streamingData)
+        if(streamingData.formats)
+          streamingData.formats.forEach(format => {
+            if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
+            videoInfo.mimeType.available.push(format.mimeType)
+          })
+        if(streamingData.adaptiveFormats)
+          streamingData.adaptiveFormats.forEach(format => {
+            if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
+            videoInfo.mimeType.available.push(format.mimeType)
+          })
       } catch(ex) { 
         console.warn('YouTube Ambilight | ambilightDetectVideoInfo | saveStreamingData:', ex.message)
       }
