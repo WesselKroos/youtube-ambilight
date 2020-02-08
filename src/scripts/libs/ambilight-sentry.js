@@ -12,12 +12,12 @@ initAndBind(BrowserClient, {
   release: document.querySelector('html').getAttribute('data-ambilight-version') || '?',
   beforeSend: (event) => {
     try {
-        event.request = {
+      event.request = {
         url: (!navigator.doNotTrack) ? location.href : '?',
-          headers: {
-            "User-Agent": navigator.userAgent
-          }
-        };
+        headers: {
+          "User-Agent": navigator.userAgent
+        }
+      };
     } catch (ex) { console.warn(ex) }
     return event
   }
@@ -117,7 +117,7 @@ export default class AmbilightSentry {
             ...ambilightExtra,
             ambilightFrameCount: ambilight.ambilightFrameCount,
             videoFrameCount: ambilight.videoFrameCount,
-            skippedFrames: ambilight.skippedFrames,
+            skippedFramesCount: ambilight.skippedFramesCount,
             videoFrameRate: ambilight.videoFrameRate,
             displayFrameRate: ambilight.displayFrameRate,
             view: ambilight.view,
@@ -141,11 +141,15 @@ export default class AmbilightSentry {
           'ytd-watch-flexy': $.sa('ytd-watch-flexy'),
           '#player-theater-container': $.sa('[id="player-theater-container"]'),
           'ytd-miniplayer': $.sa('ytd-miniplayer'),
+          '#ytd-player': $.sa('#ytd-player'),
+          '#container.ytd-player': $.sa('#container.ytd-player'),
           '.html5-video-container': $.sa('.html5-video-container'),
           '#player-container': $.sa('[id="player-container"]'),
           '#player-api': $.sa('[id="player-api"]'),
           '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
           '.html5-video-player': $.sa('.html5-video-player'),
+          '#movie_player': $.sa('#movie_player'),
+          '.html5-video-container': $.sa('.html5-video-container'),
           'video': $.sa('video'),
           'ytd-masthead': $.sa('ytd-masthead'),
           'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
