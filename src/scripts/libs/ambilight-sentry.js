@@ -20,7 +20,7 @@ initAndBind(BrowserClient, {
           }
         };
       }
-    } catch (ex) { }
+    } catch (ex) { console.warn(ex) }
     return event
   }
 })
@@ -31,85 +31,106 @@ export default class AmbilightSentry {
       const setExtra = (name, value) => {
         try {
           scope.setExtra(name, (value === undefined) ? null : value)
-        } catch (ex) { }
+        } catch (ex) { console.warn(ex) }
       }
 
       try {
-        setExtra(`window.width`, window.innerWidth)
-        setExtra(`window.height`, window.innerHeight)
-        setExtra(`window.scrollY`, window.scrollY)
-        setExtra(`window.devicePixelRatio`, window.devicePixelRatio)
-        setExtra(`document.fullscreen`, document.fullscreen)
-      } catch (ex) { }
+        setExtra('window', {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          scrollY: window.scrollY,
+          devicePixelRatio: window.devicePixelRatio,
+          fullscreen: document.fullscreen
+        })
+      } catch (ex) { console.warn(ex) }
 
       try {
         if (window.screen) {
-          setExtra(`screen.width`, screen.width)
-          setExtra(`screen.height`, screen.height)
-          setExtra(`screen.availWidth`, screen.availWidth)
-          setExtra(`screen.availHeight`, screen.availHeight)
-          setExtra(`screen.colorDepth`, screen.colorDepth)
-          setExtra(`screen.pixelDepth`, screen.pixelDepth)
+          setExtra('screen', {
+            width: screen.width,
+            height: screen.height,
+            availWidth: screen.availWidth,
+            availHeight: screen.availHeight,
+            colorDepth: screen.colorDepth,
+            pixelDepth: screen.pixelDepth
+          })
         }
-      } catch (ex) { }
+      } catch (ex) { console.warn(ex) }
 
       try {
-        setExtra(`youtube.dark`, !!($.s('html').attributes.dark || {}).value)
-        setExtra(`youtube.lang`, ($.s('html').attributes.lang || {}).value)
-        setExtra(`youtube.loggedIn`, !!$.s('#avatar-btn'))
-      } catch (ex) { }
+        setExtra('youtube', {
+          dark: !!($.s('html').attributes.dark || {}).value,
+          lang: ($.s('html').attributes.lang || {}).value,
+          loggedIn: !!$.s('#avatar-btn')
+        })
+      } catch (ex) { console.warn(ex) }
 
+      const pageExtra = {}
       try {
-        setExtra(`page.isVideo`, location.pathname == '/watch')
-      } catch (ex) { }
+        pageExtra.isVideo = (location.pathname == '/watch')
+      } catch (ex) { console.warn(ex) }
       try {
-        setExtra(`page.isYtdApp`, !!$.s('ytd-app'))
-      } catch (ex) { }
+        pageExtra.isYtdApp = !!$.s('ytd-app')
+      } catch (ex) { console.warn(ex) }
+      setExtra('page', pageExtra)
 
       try {
         if (!navigator.doNotTrack) {
-          setExtra(`video.id`, $.s('ytd-watch-flexy').attributes['video-id'].value)
+          setExtra('videoId', $.s('ytd-watch-flexy').attributes['video-id'].value)
         }
-      } catch (ex) { }
+      } catch (ex) { console.warn(ex) }
+      try {
+        setExtra('videoMimeType', ambilight.videoInfo.mimeType)
+      } catch (ex) { console.warn(ex) }
 
       try {
-        setExtra('ambilight.initialized', !!window.ambilight)
-        if (window.ambilight) {
-          const ambilight = window.ambilight || {}
-
-          setExtra(`ambilight.ambilightFrameCount`, ambilight.ambilightFrameCount)
-          setExtra(`ambilight.videoFrameCount`, ambilight.videoFrameCount)
-          setExtra(`ambilight.skippedFrames`, ambilight.skippedFrames)
-          setExtra(`ambilight.videoFrameRate`, ambilight.videoFrameRate)
-          setExtra(`ambilight.displayFrameRate`, ambilight.displayFrameRate);
-
-          (ambilight.settings || []).forEach(setting => {
-            if (!setting || !setting.name) return
-            setExtra(`settings.${setting.name}`, setting.value)
+        if (ambilight.videoElem) {
+          const videoElem = ambilight.videoElem
+          setExtra('videoElem', {
+            videoWidth: videoElem.videoWidth,
+            videoHeight: videoElem.videoHeight,
+            clientWidth: videoElem.clientWidth,
+            clientHeight: videoElem.clientHeight,
+            currentTime: videoElem.currentTime,
+            duration: videoElem.duration,
+            playbackRate: videoElem.playbackRate,
+            remoteState: (videoElem.remote || {}).state,
+            readyState: videoElem.readyState,
+            loop: videoElem.loop,
+            seeking: videoElem.seeking,
+            paused: videoElem.paused,
+            ended: videoElem.ended,
+            error: videoElem.error,
+            webkitDecodedFrameCount: videoElem.webkitDecodedFrameCount,
+            webkitDroppedFrameCount: videoElem.webkitDroppedFrameCount,
+            webkitVideoDecodedByteCount: videoElem.webkitVideoDecodedByteCount,
+            webkitAudioDecodedByteCount: videoElem.webkitAudioDecodedByteCount
           })
-
-          if (ambilight.videoPlayer) {
-            setExtra(`video.videoWidth`, ambilight.videoPlayer.videoWidth)
-            setExtra(`video.videoHeight`, ambilight.videoPlayer.videoHeight)
-            setExtra(`video.clientWidth`, ambilight.videoPlayer.clientWidth)
-            setExtra(`video.clientHeight`, ambilight.videoPlayer.clientHeight)
-            setExtra(`video.currentTime`, ambilight.videoPlayer.currentTime)
-            setExtra(`video.duration`, ambilight.videoPlayer.duration)
-            setExtra(`video.playbackRate`, ambilight.videoPlayer.playbackRate)
-            setExtra(`video.remote.state`, (ambilight.videoPlayer.remote || {}).state)
-            setExtra(`video.readyState`, ambilight.videoPlayer.readyState)
-            setExtra(`video.loop`, ambilight.videoPlayer.loop)
-            setExtra(`video.seeking`, ambilight.videoPlayer.seeking)
-            setExtra(`video.paused`, ambilight.videoPlayer.paused)
-            setExtra(`video.ended`, ambilight.videoPlayer.ended)
-            setExtra(`video.error`, ambilight.videoPlayer.error)
-            setExtra(`video.webkitDecodedFrameCount`, ambilight.videoPlayer.webkitDecodedFrameCount)
-            setExtra(`video.webkitDroppedFrameCount`, ambilight.videoPlayer.webkitDroppedFrameCount)
-            setExtra(`video.webkitVideoDecodedByteCount`, ambilight.videoPlayer.webkitVideoDecodedByteCount)
-            setExtra(`video.webkitAudioDecodedByteCount`, ambilight.videoPlayer.webkitAudioDecodedByteCount)
-          }
         }
-      } catch (ex) { }
+      } catch (ex) { console.warn(ex) }
+
+      let ambilightExtra = {}
+      try {
+        ambilightExtra.initialized = !!ambilight
+        if (ambilight) {
+          ambilightExtra = {
+            ...ambilightExtra,
+            ambilightFrameCount: ambilight.ambilightFrameCount,
+            videoFrameCount: ambilight.videoFrameCount,
+            skippedFrames: ambilight.skippedFrames,
+            videoFrameRate: ambilight.videoFrameRate,
+            displayFrameRate: ambilight.displayFrameRate,
+            view: ambilight.view,
+            settings: {}
+          }
+
+          ;(ambilight.settings || []).forEach(setting => {
+            if (!setting || !setting.name) return
+            ambilightExtra.settings[setting.name] = setting.value
+          })
+        }
+        setExtra('ambilight', ambilightExtra)
+      } catch (ex) { console.warn(ex) }
 
       try {
         var selectors = {
@@ -138,13 +159,15 @@ export default class AmbilightSentry {
           if(!nodes) return
           [...nodes].forEach((node, i) => {
             try {
-              setExtra(`selectors[${selector}].nodes[${i}]`, node ? node.cloneNode(false).outerHTML : null)
-              setExtra(`selectors[${selector}].nodes[${i}].childNodes`, node ? node.childNodes.length : null)
-              setExtra(`selectors[${selector}].nodes[${i}].parentNode`, (node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : null)
-            } catch (ex) { }
+              setExtra(`selectors[${selector}][${i}]`, {
+                node: node ? node.cloneNode(false).outerHTML : null,
+                childNodes: node ? node.childNodes.length : null,
+                parentNode: (node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : null
+              })
+            } catch (ex) { console.warn(ex) }
           })
         })
-      } catch (ex) { }
+      } catch (ex) { console.warn(ex) }
 
       captureException(ex)
       scope.clear()

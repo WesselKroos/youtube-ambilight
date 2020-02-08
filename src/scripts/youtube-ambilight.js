@@ -3,10 +3,10 @@ import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
   static isClassic = false
-  VIEW_SMALL = 0
-  VIEW_THEATER = 1
-  VIEW_FULLSCREEN = 2
-  VIEW_POPUP = 3
+  VIEW_SMALL = 'VIEW_SMALL'
+  VIEW_THEATER = 'VIEW_THEATER'
+  VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
+  VIEW_POPUP = 'VIEW_POPUP'
 
   showDisplayFrameRate = true
   showVideoFrameRate = true
@@ -40,6 +40,7 @@ class Ambilight {
 
   constructor(videoElem) {
     this.setFeedbackLink()
+    this.initVideoInfo()
 
     this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
 
@@ -600,6 +601,60 @@ class Ambilight {
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
     })
+  }
+
+  initVideoInfo() {
+    const videoInfo = this.videoInfo = {
+      mimeType: {
+        available: [],
+        current: {
+          video: undefined,
+          audio: undefined
+        }
+      }
+    }
+
+    try {
+      var origOpen = XMLHttpRequest.prototype.open
+      XMLHttpRequest.prototype.open = function() {
+        this.addEventListener('load', function() {
+          try {
+            const querystring = new URLSearchParams(this.responseURL.substr(this.responseURL.indexOf('?') + 1))
+            const mime = querystring.get('mime')
+            if(!mime) return
+            if(mime.indexOf('video')) {
+              if(videoInfo.mimeType.current.video !== mime)
+                videoInfo.mimeType.current.video = mime
+            } else if(mime.indexOf('audio')) {
+              if(videoInfo.mimeType.current.audio !== mime)
+                videoInfo.mimeType.current.audio = mime
+            }
+          } catch (ex) {
+            console.error('YouTube Ambilight | XMLHttpRequest | load:', ex)
+            AmbilightSentry.captureExceptionWithDetails(ex)
+          }
+        })
+        origOpen.apply(this, arguments)
+      }
+    } catch (ex) {
+      console.error('YouTube Ambilight | initVideoInfo:', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+
+    try {
+      const streamingData = (JSON.parse(ytplayer.config.args.player_response).streamingData);
+      streamingData.formats.forEach(format => {
+        if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
+          videoInfo.mimeType.available.push(format.mimeType)
+      })
+      streamingData.adaptiveFormats.forEach(format => {
+        if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
+          videoInfo.mimeType.available.push(format.mimeType)
+      })
+    } catch (ex) {
+      console.error('YouTube Ambilight | initVideoInfo:', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 
   initFPSListElem() {
