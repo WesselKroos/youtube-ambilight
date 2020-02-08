@@ -80,7 +80,9 @@ export default class AmbilightSentry {
         }
       } catch (ex) { console.warn(ex) }
       try {
-        setExtra('videoMimeType', ambilight.videoInfo.mimeType)
+        if(window.currentVideoInfo) {
+          setExtra('videoMimeType', window.currentVideoInfo.mimeType)
+        }
       } catch (ex) { console.warn(ex) }
 
       try {
