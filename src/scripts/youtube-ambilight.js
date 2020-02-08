@@ -3,6 +3,7 @@ import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
   static isClassic = false
+  VIEW_DETACHED = 'VIEW_DETACHED'
   VIEW_SMALL = 'VIEW_SMALL'
   VIEW_THEATER = 'VIEW_THEATER'
   VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
@@ -636,8 +637,8 @@ class Ambilight {
     this.videoFPSElem.class('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
 
-    const playerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
-    playerElem.prepend(this.FPSListElem)
+    const playerContainerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
+    playerContainerElem.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
@@ -796,18 +797,19 @@ class Ambilight {
       const pageElem = $.s('#page')
       this.isVR = !!$.s('.ytp-webgl-spherical')
 
-      const prevView = this.view
-      if(playerElem.classList.contains('ytp-fullscreen'))
-        this.view = this.VIEW_FULLSCREEN
-      else if(
-        (flexyElem && flexyElem.attr('theater') !== null) ||
-        (pageElem && pageElem.classList.contains('watch-stage-mode'))
-      )
-        this.view = this.VIEW_THEATER
-      else if(playerElem.classList.contains('ytp-player-minimized'))
-        this.view = this.VIEW_POPUP
-      else
-        this.view = this.VIEW_SMALL
+      if(playerElem) {
+        const prevView = this.view
+        if(playerElem.classList.contains('ytp-fullscreen'))
+          this.view = this.VIEW_FULLSCREEN
+        else if(
+          (flexyElem && flexyElem.attr('theater') !== null) ||
+          (pageElem && pageElem.classList.contains('watch-stage-mode'))
+        )
+          this.view = this.VIEW_THEATER
+        else if(playerElem.classList.contains('ytp-player-minimized'))
+          this.view = this.VIEW_POPUP
+        else
+          this.view = this.VIEW_SMALL
       } else {
         this.view = this.VIEW_DETACHED
       }
