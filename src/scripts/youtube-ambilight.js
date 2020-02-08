@@ -566,8 +566,15 @@ class Ambilight {
 
     //// Migrations from version 2.32
     // Enable advancedSettings for existing users
-    const previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
-    const previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
+    let previouslyEnabled = false
+    let previouslyAdvancedSettings = false
+    try {
+      previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
+      previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
+    } catch (ex) {
+      console.warn('YouTube Ambilight | getSetting', ex)
+      //AmbilightSentry.captureExceptionWithDetails(ex)
+    }
     if(previouslyAdvancedSettings === null) {
       this.setSetting('advancedSettings', (previouslyEnabled !== null))
     } else {
@@ -2322,8 +2329,8 @@ class Ambilight {
       try {
         localStorage.setItem(`ambilight-${key}`, value)
       } catch (ex) {
-        console.error('YouTube Ambilight | setSetting', ex)
-        AmbilightSentry.captureExceptionWithDetails(ex)
+        console.warn('YouTube Ambilight | setSetting', ex)
+        //AmbilightSentry.captureExceptionWithDetails(ex)
       }
       this.setSettingTimeout[key] = null
     }, 500)
@@ -2334,8 +2341,8 @@ class Ambilight {
     try {
       value = localStorage.getItem(`ambilight-${key}`)
     } catch (ex) {
-      console.error('YouTube Ambilight | getSetting', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('YouTube Ambilight | getSetting', ex)
+      //AmbilightSentry.captureExceptionWithDetails(ex)
     }
     const setting = this.settings.find(setting => setting.name === key) || {}
     if (value === null) {
@@ -2356,8 +2363,8 @@ class Ambilight {
     try {
       localStorage.removeItem(`ambilight-${key}`)
     } catch (ex) {
-      console.error('YouTube Ambilight | removeSetting', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('YouTube Ambilight | removeSetting', ex)
+      //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
 }
@@ -2368,8 +2375,8 @@ const resetThemeToLightIfSettingIsTrue = () => {
     const value = (localStorage.getItem(`ambilight-${key}`) === 'true')
     if (!value) return
   } catch (ex) {
-    console.error('YouTube Ambilight | resetThemeToLightIfSettingIsTrue', ex)
-    AmbilightSentry.captureExceptionWithDetails(ex)
+    console.warn('YouTube Ambilight | resetThemeToLightIfSettingIsTrue', ex)
+    //AmbilightSentry.captureExceptionWithDetails(ex)
     return
   }
 
