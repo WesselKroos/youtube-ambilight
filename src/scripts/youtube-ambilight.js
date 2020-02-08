@@ -1308,7 +1308,8 @@ class Ambilight {
     const videoElemRec = this.videoElem.getBoundingClientRect()
     if (
       Math.abs(projectorsElemRect.width - videoElemRec.width) > 1 ||
-      Math.abs(projectorsElemRect.x - videoElemRec.x) > 1
+      Math.abs(projectorsElemRect.x - videoElemRec.x) > 1 ||
+      Math.abs(projectorsElemRect.y - videoElemRec.y) > 1
     ) {
       return this.updateSizes()
     }
