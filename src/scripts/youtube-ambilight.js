@@ -42,8 +42,133 @@ class Ambilight {
   constructor(videoElem) {
     this.setFeedbackLink()
 
-    this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
+    this.initVideoElem(videoElem)
+    this.initAmbilightElems()
+    this.initBuffers()
 
+    this.initSettings()
+    
+    this.recreateProjectors()
+    this.initFPSListElem()
+
+    this.initStyles()
+    this.updateStyles()
+
+    this.initListeners()
+
+    this.initScrollPosition()
+    this.initImmersiveMode()
+
+    setTimeout(() => {
+      if (this.enabled)
+        this.enable(true)
+    }, 0)
+  }
+
+  toggleDetectHorizontalBars() {
+    $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
+    this.setHorizontalBars(0)
+    this.start()
+  }
+
+  initStyles () {
+    this.styleElem = document.createElement('style')
+    this.styleElem.appendChild(document.createTextNode(''))
+    document.head.appendChild(this.styleElem)
+  }
+
+  initListeners() {
+    window.addEventListener('resize', () => {
+      if (!this.isOnVideoPage) return
+      this.checkVideoSize()
+      setTimeout(() =>
+        raf(() =>
+          setTimeout(() => this.checkVideoSize(), 200)
+        ),
+        200)
+    })
+
+    document.addEventListener('keydown', (e) => {
+      if (!this.isOnVideoPage) return
+      if (document.activeElement) {
+        const el = document.activeElement
+        const tag = el.tagName
+        const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
+        if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
+          return
+      }
+      if (e.keyCode === 70 || e.keyCode === 84) // f || t
+        setTimeout(() => this.checkVideoSize(), 0)
+      if (e.keyCode === 90) // z
+        this.toggleImmersiveMode()
+      if (e.keyCode === 65) // a
+        this.toggleEnabled()
+      if (e.keyCode === 66) // b
+        this.toggleDetectHorizontalBars()
+    })
+  }
+
+  initAmbilightElems() {
+    this.elem = document.createElement("div")
+    this.elem.class('ambilight')
+    body.prepend(this.elem)
+
+    this.videoShadowElem = document.createElement("div")
+    this.videoShadowElem.class('ambilight__video-shadow')
+    this.elem.prepend(this.videoShadowElem)
+
+    this.filterElem = document.createElement("div")
+    this.filterElem.class('ambilight__filter')
+    this.elem.prepend(this.filterElem)
+
+    this.clipElem = document.createElement("div")
+    this.clipElem.class('ambilight__clip')
+    this.filterElem.prepend(this.clipElem)
+
+    this.projectorsElem = document.createElement("div")
+    this.projectorsElem.class('ambilight__projectors')
+    this.clipElem.prepend(this.projectorsElem)
+
+    this.projectorListElem = document.createElement("div")
+    this.projectorListElem.class('ambilight__projector-list')
+    this.projectorsElem.prepend(this.projectorListElem)
+
+    const shadowElem = document.createElement('canvas')
+    shadowElem.class('ambilight__shadow')
+    shadowElem.width = 1920
+    shadowElem.height = 1080
+    this.projectorsElem.appendChild(shadowElem)
+    const shadowCtx = shadowElem.getContext('2d', ctxOptions)
+    this.shadow = {
+      elem: shadowElem,
+      ctx: shadowCtx
+    }
+
+    // Warning: Using Canvas elements in this div instead of OffScreenCanvas
+    // while waiting for a fix for this issue:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
+    //this.buffersElem = document.createElement('div')
+    //this.buffersElem.class('ambilight__buffers')
+    //this.elem.prepend(this.buffersElem)
+  }
+
+  initBuffers() {
+    const videoSnapshotBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(videoSnapshotBufferElem)
+    this.videoSnapshotBuffer = {
+      elem: videoSnapshotBufferElem,
+      ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
+    }
+
+    const projectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(projectorsBufferElem)
+    this.projectorBuffer = {
+      elem: projectorsBufferElem,
+      ctx: projectorsBufferElem.getContext('2d', ctxOptions)
+    }
+  }
+
+  initSettings() {
     this.settings = [
       {
         type: 'section',
@@ -395,115 +520,6 @@ class Ambilight {
       },
     ]
 
-
-    //Sections
-    this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
-    this.sectionAmbilightCollapsed = this.getSetting('sectionAmbilightCollapsed')
-    this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
-    this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
-    this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
-    this.sectionBlackBarsCollapsed = this.getSetting('sectionBlackBarsCollapsed')
-    this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
-    this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
-    this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
-
-    this.getAllSettings()
-
-    this.styleElem = document.createElement('style')
-    this.styleElem.appendChild(document.createTextNode(''))
-    document.head.appendChild(this.styleElem)
-    this.updateStyles()
-
-    this.initVideoElem(videoElem)
-
-    this.elem = document.createElement("div")
-    this.elem.class('ambilight')
-    body.prepend(this.elem)
-
-    this.videoShadowElem = document.createElement("div")
-    this.videoShadowElem.class('ambilight__video-shadow')
-    this.elem.prepend(this.videoShadowElem)
-
-    this.filterElem = document.createElement("div")
-    this.filterElem.class('ambilight__filter')
-    this.elem.prepend(this.filterElem)
-
-    this.clipElem = document.createElement("div")
-    this.clipElem.class('ambilight__clip')
-    this.filterElem.prepend(this.clipElem)
-
-    this.projectorsElem = document.createElement("div")
-    this.projectorsElem.class('ambilight__projectors')
-    this.clipElem.prepend(this.projectorsElem)
-
-    this.projectorListElem = document.createElement("div")
-    this.projectorListElem.class('ambilight__projector-list')
-    this.projectorsElem.prepend(this.projectorListElem)
-
-    // Warning: Using Canvas elements in this div instead of OffScreenCanvas
-    // while waiting for a fix for this issue:
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
-    //this.buffersElem = document.createElement('div')
-    //this.buffersElem.class('ambilight__buffers')
-    //this.elem.prepend(this.buffersElem)
-
-    const videoSnapshotBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(videoSnapshotBufferElem)
-    this.videoSnapshotBuffer = {
-      elem: videoSnapshotBufferElem,
-      ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
-    }
-
-    const projectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(projectorBufferElem)
-    this.projectorBuffer = {
-      elem: projectorBufferElem,
-      ctx: projectorBufferElem.getContext('2d', ctxOptions)
-    }
-
-    const shadowElem = document.createElement('canvas')
-    shadowElem.class('ambilight__shadow')
-    shadowElem.width = 1920
-    shadowElem.height = 1080
-    this.projectorsElem.appendChild(shadowElem)
-    const shadowCtx = shadowElem.getContext('2d', ctxOptions)
-    this.shadow = {
-      elem: shadowElem,
-      ctx: shadowCtx
-    }
-
-    this.recreateCanvasses()
-    this.initFPSListElem()
-
-    window.addEventListener('resize', () => {
-      if (!this.isOnVideoPage) return
-      this.checkVideoSize()
-      setTimeout(() =>
-        raf(() =>
-          setTimeout(() => this.checkVideoSize(), 200)
-        ),
-        200)
-    })
-
-    document.addEventListener('keydown', (e) => {
-      if (!this.isOnVideoPage) return
-      if (document.activeElement) {
-        const el = document.activeElement
-        const tag = el.tagName
-        const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
-        if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
-          return
-      }
-      if (e.keyCode === 70 || e.keyCode === 84) // f || t
-        setTimeout(() => this.checkVideoSize(), 0)
-      if (e.keyCode === 90) // z
-        this.toggleImmersiveMode()
-      if (e.keyCode === 65) // a
-        this.toggleEnabled()
-      if (e.keyCode === 66) // b
-        this.toggleDetectHorizontalBars()
-    })
-
     this.videoHasRequestAnimationFrame = !!this.videoElem.requestAnimationFrame
     this.settings = this.settings.map(setting => {
       if(this.videoHasRequestAnimationFrame) {
@@ -517,27 +533,24 @@ class Ambilight {
       return setting
     }).filter(setting => setting)
 
-    this.initSettings()
-    this.initScrollPosition()
-    this.initImmersiveMode()
-
-
-    setTimeout(() => {
-      if (this.enabled)
-        this.enable(true)
-    }, 0)
-  }
-
-  toggleDetectHorizontalBars() {
-    $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-    this.setHorizontalBars(0)
-    this.start()
+    this.getAllSettings()
+    this.initSettingsMenu()
   }
 
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
     $.s('html').attr('data-ambilight-enabled', this.enabled)
 
+    //Sections
+    this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
+    this.sectionAmbilightCollapsed = this.getSetting('sectionAmbilightCollapsed')
+    this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
+    this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
+    this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
+    this.sectionBlackBarsCollapsed = this.getSetting('sectionBlackBarsCollapsed')
+    this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
+    this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
+    this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
 
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
@@ -653,19 +666,19 @@ class Ambilight {
 
   initFrameBlending() {
     //this.previousProjectorBuffer
-    const previousProjectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(previousProjectorBufferElem)
+    const previousProjectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(previousProjectorsBufferElem)
     this.previousProjectorBuffer = {
-      elem: previousProjectorBufferElem,
-      ctx: previousProjectorBufferElem.getContext('2d', ctxOptions)
+      elem: previousProjectorsBufferElem,
+      ctx: previousProjectorsBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.blendedProjectorBuffer
-    const blendedProjectorBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(blendedProjectorBufferElem)
+    const blendedProjectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    //this.buffersElem.appendChild(blendedProjectorsBufferElem)
     this.blendedProjectorBuffer = {
-      elem: blendedProjectorBufferElem,
-      ctx: blendedProjectorBufferElem.getContext('2d', ctxOptions)
+      elem: blendedProjectorsBufferElem,
+      ctx: blendedProjectorsBufferElem.getContext('2d', ctxOptions)
     }
   }
 
@@ -690,15 +703,6 @@ class Ambilight {
   initVideoElem(videoElem) {
     this.videoElem = videoElem
 
-    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => {
-        raf(() => {
-          setTimeout(() => this.checkVideoSize(), 1)
-          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
-        })
-      })
-    )
-
     this.videoElem.on('playing', () => {
       this.start()
       this.resetHorizontalBarsIfNeeded()
@@ -720,6 +724,15 @@ class Ambilight {
         this.resetHorizontalBarsIfNeeded()
         this.clear()
       })
+
+    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
+      btn.on('click', () => {
+        raf(() => {
+          setTimeout(() => this.checkVideoSize(), 1)
+          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
+        })
+      })
+    )
   }
 
   resetHorizontalBarsIfNeeded() {
@@ -749,7 +762,7 @@ class Ambilight {
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
-  recreateCanvasses() {
+  recreateProjectors() {
     const spreadLevels = Math.max(2, Math.round((this.spread / this.edge)) + this.innerStrength + 1)
 
     if (!this.projectors) {
@@ -1231,7 +1244,7 @@ class Ambilight {
   checkVideoSize() {
     if (this.canvassesInvalidated) {
       this.canvassesInvalidated = false
-      this.recreateCanvasses()
+      this.recreateProjectors()
     }
 
     if (this.sizesInvalidated) {
@@ -1938,6 +1951,8 @@ class Ambilight {
 
 
   initScrollPosition() {
+    this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
+
     window.on('scroll', () => {
       if (this.changedTopTimeout)
         clearTimeout(this.changedTopTimeout)
@@ -1982,7 +1997,7 @@ class Ambilight {
   }
 
 
-  initSettings() {
+  initSettingsMenu() {
     this.settingsMenuBtn = $.create('button')
       .class('ytp-button ytp-ambilight-settings-button')
       .attr('title', 'Ambilight settings')
@@ -1992,7 +2007,7 @@ class Ambilight {
     this.settingsMenuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
       <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
     </svg>`
-    this.settingsMenuBtn.prependTo($.s('.ytp-right-controls'))
+    this.settingsMenuBtn.prependTo($.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child'))
 
 
     this.settingsMenuElem = $.create('div')

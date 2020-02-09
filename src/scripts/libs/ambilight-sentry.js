@@ -146,7 +146,6 @@ export default class AmbilightSentry {
           '.html5-video-container': $.sa('.html5-video-container'),
           '#player-container': $.sa('[id="player-container"]'),
           '#player-api': $.sa('[id="player-api"]'),
-          '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
           '.html5-video-player': $.sa('.html5-video-player'),
           '#movie_player': $.sa('#movie_player'),
           '.html5-video-container': $.sa('.html5-video-container'),
@@ -154,8 +153,11 @@ export default class AmbilightSentry {
           'ytd-masthead': $.sa('ytd-masthead'),
           'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
           '#avatar-btn': $.sa('[id="avatar-btn"]'),
+          '.ytp-chrome-bottom': $.sa('.ytp-chrome-bottom'),
+          '.ytp-chrome-controls': $.sa('.ytp-chrome-controls'),
           '.ytp-right-controls': $.sa('.ytp-right-controls'),
           '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
+          '.ytp-settings-button': $.sa('.ytp-settings-button'),
           '[class*="ambilight"]': $.sa('[class*="ambilight"]'),
         }
         Object.keys(selectors).forEach((selector) => {
