@@ -1377,7 +1377,25 @@ class Ambilight {
         return
       }
       
-      this.drawAmbilight()
+      try {
+        this.drawAmbilight()
+      } catch (ex) {
+        if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
+          if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
+            this.catchedNS_ERROR_NOT_AVAILABLE = true
+            console.error('YouTube Ambilight | NextFrame:', ex)
+            AmbilightSentry.captureExceptionWithDetails(ex)
+          }
+        } else if(ex.name == 'NS_ERROR_OUT_OF_MEMORY') {
+          if(!this.catchedNS_ERROR_OUT_OF_MEMORY) {
+            this.catchedNS_ERROR_OUT_OF_MEMORY = true
+            console.error('YouTube Ambilight | NextFrame:', ex)
+            AmbilightSentry.captureExceptionWithDetails(ex)
+          }
+        } else {
+          throw ex
+        }
+      }
 
       this.detectVideoFrameRate()
       this.detectAmbilightFrameRate()
@@ -2396,10 +2414,10 @@ const ambilightDetectVideoInfo = () => {
 
           const videoInfo = window.currentVideoInfo
 
-          if(mime.indexOf('video')) {
+          if(mime.indexOf('video') === 0) {
             if(videoInfo.mimeType.current.video !== mime)
             videoInfo.mimeType.current.video = mime
-          } else if(mime.indexOf('audio')) {
+          } else if(mime.indexOf('audio') === 0) {
             if(videoInfo.mimeType.current.audio !== mime)
             videoInfo.mimeType.current.audio = mime
           }

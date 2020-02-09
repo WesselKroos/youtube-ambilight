@@ -40,7 +40,9 @@ export default class AmbilightSentry {
           devicePixelRatio: window.devicePixelRatio,
           fullscreen: document.fullscreen
         })
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('window.exception', ex)
+      }
 
       try {
         if (window.screen) {
@@ -53,7 +55,9 @@ export default class AmbilightSentry {
             pixelDepth: screen.pixelDepth
           })
         }
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('screen.exception', ex)
+      }
 
       try {
         setExtra('youtube', {
@@ -61,58 +65,67 @@ export default class AmbilightSentry {
           lang: ($.s('html').attributes.lang || {}).value,
           loggedIn: !!$.s('#avatar-btn')
         })
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('youtube.exception', ex)
+      }
 
       const pageExtra = {}
       try {
         pageExtra.isVideo = (location.pathname == '/watch')
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('pageExtra.isVideo.exception', ex)
+      }
       try {
         pageExtra.isYtdApp = !!$.s('ytd-app')
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) { 
+        setExtra('pageExtra.isYtdApp.exception', ex)
+      }
       setExtra('page', pageExtra)
 
       try {
         if (!navigator.doNotTrack) {
           setExtra('videoId', $.s('ytd-watch-flexy').attributes['video-id'].value)
         }
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('videoId.exception', ex)
+      }
       try {
         if(window.currentVideoInfo) {
           setExtra('videoMimeType', window.currentVideoInfo.mimeType)
         }
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('videoMimeType.exception', ex)
+      }
 
       try {
-        if (ambilight.videoElem) {
-          const videoElem = ambilight.videoElem
-          setExtra('videoElem', {
-            videoWidth: videoElem.videoWidth,
-            videoHeight: videoElem.videoHeight,
-            clientWidth: videoElem.clientWidth,
-            clientHeight: videoElem.clientHeight,
-            currentTime: videoElem.currentTime,
-            duration: videoElem.duration,
-            playbackRate: videoElem.playbackRate,
-            remoteState: (videoElem.remote || {}).state,
-            readyState: videoElem.readyState,
-            loop: videoElem.loop,
-            seeking: videoElem.seeking,
-            paused: videoElem.paused,
-            ended: videoElem.ended,
-            error: videoElem.error,
-            webkitDecodedFrameCount: videoElem.webkitDecodedFrameCount,
-            webkitDroppedFrameCount: videoElem.webkitDroppedFrameCount,
-            webkitVideoDecodedByteCount: videoElem.webkitVideoDecodedByteCount,
-            webkitAudioDecodedByteCount: videoElem.webkitAudioDecodedByteCount
-          })
+        const videoElem = document.querySelector('video')
+        if (videoElem) {
+          let keys = []
+          for(let i = 0, obj = videoElem; i <= 1; i++) {
+            obj = Object.getPrototypeOf(obj)
+            keys = keys.concat(Object.getOwnPropertyNames(obj))
+          }
+
+          let videoElemInfo = {}
+          keys.filter(key => 
+              key.indexOf('on') !== 0 && 
+              key.indexOf('__') !== 0 && 
+              key.indexOf('constructor') !== 0 &&
+              typeof videoElem[key] !== 'function')
+            .forEach(key => {
+              videoElemInfo[key] = videoElem[key]
+            })
+          
+          setExtra('videoElem', videoElemInfo)
         }
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) { 
+        setExtra('videoElem.exception', ex)
+       }
 
       let ambilightExtra = {}
       try {
-        ambilightExtra.initialized = !!ambilight
-        if (ambilight) {
+        ambilightExtra.initialized = (typeof ambilight !== 'undefined')
+        if (typeof ambilight !== 'undefined') {
           ambilightExtra = {
             ...ambilightExtra,
             ambilightFrameCount: ambilight.ambilightFrameCount,
@@ -130,7 +143,9 @@ export default class AmbilightSentry {
           })
         }
         setExtra('ambilight', ambilightExtra)
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('ambilight.exception', ex)
+      }
 
       try {
         var selectors = {
@@ -172,7 +187,7 @@ export default class AmbilightSentry {
                 parentNodeHtml = parentNodeHtml.replace(/video-id="(?!^).*?"/gi, '')
               }
 
-              setExtra(`$('${selector}')[${i}]`, {
+              setExtra(`»('${selector}')[${i}]`, {
                 node: nodeHtml,
                 parentNode: parentNodeHtml,
                 childNodes: node ? node.childNodes.length : null
@@ -180,7 +195,9 @@ export default class AmbilightSentry {
             } catch (ex) { console.warn(ex) }
           })
         })
-      } catch (ex) { console.warn(ex) }
+      } catch (ex) {
+        setExtra('$.exception', ex)
+      }
 
       captureException(ex)
       scope.clear()
