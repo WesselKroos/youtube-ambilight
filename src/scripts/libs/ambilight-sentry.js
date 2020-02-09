@@ -1,4 +1,4 @@
-import { $ } from "./generic";
+import { $, setEventErrorHandler } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
 import {
   captureException,
@@ -187,3 +187,5 @@ export default class AmbilightSentry {
     })
   }
 }
+
+setEventErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))

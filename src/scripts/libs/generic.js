@@ -1,3 +1,8 @@
+let eventErrorHandler;
+export const setEventErrorHandler = (handler) => {
+  eventErrorHandler = handler
+}
+
 HTMLElement.prototype.attr = function (name, value) {
   if (typeof value === 'undefined') {
     return this.getAttribute(name)
@@ -43,11 +48,27 @@ HTMLElement.prototype.text = function (text) {
   this.innerText = text
   return this
 }
-const addEventListenerPrototype = function (eventNames, callback) {
+const addEventListenerPrototype = function (eventNames, callback, getListenerCallback) {
+  const reportedCallback = (...args) => {
+    try {
+      callback(...args)
+    } catch(ex) {
+      ex.message = `${ex.message} \nOn event: ${args[0].type} \nAnd element: ${this.cloneNode(false).outerHTML}`
+
+      console.error(ex)
+      if(eventErrorHandler)
+        eventErrorHandler(ex)
+    }
+  }
+
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
-    this.addEventListener(eventName, callback)
+    this.addEventListener(eventName, reportedCallback)
   })
+
+  if(getListenerCallback)
+    getListenerCallback(reportedCallback)
+
   return this
 }
 HTMLElement.prototype.on = addEventListenerPrototype
