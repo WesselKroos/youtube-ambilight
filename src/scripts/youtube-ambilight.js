@@ -2107,6 +2107,14 @@ class Ambilight {
       })
     })
     this.settingsMenuElem.prependTo($.s('.html5-video-player'))
+    try {
+      this.settingsMenuElem.scrollTop = this.settingsMenuElem.scrollHeight
+      this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) ? -1 : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
+      this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight)
+    } catch(ex) {
+      console.error('YouTube Ambilight | initSettingsMenuScrollInformation', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
 
     this.settings.forEach(setting => {
       const inputElem = $.s(`#setting-${setting.name}`)
@@ -2252,30 +2260,48 @@ class Ambilight {
     return `${setting.value}%`
   }
 
+  settingsMenuOnCloseScrollBottom = 0
+  settingsMenuOnCloseScrollHeight = 0
   onSettingsBtnClicked = () => {
-    const isOpen = this.settingsMenuElem.classList.contains('is-visible')
-    if (isOpen) return
+    try {
+      const isOpen = this.settingsMenuElem.classList.contains('is-visible')
+      if (isOpen) return
 
-    this.settingsMenuElem.class('is-visible')
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+      this.settingsMenuElem.class('is-visible')
+      if(this.settingsMenuOnCloseScrollBottom !== -1) {
+        const percentage = (this.settingsMenuElem.scrollHeight) / this.settingsMenuOnCloseScrollHeight
+        this.settingsMenuElem.scrollTop = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - (this.settingsMenuOnCloseScrollBottom * percentage)
+      }
+      $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
 
-    this.settingsMenuBtn.off('click', this.onSettingsBtnClicked)
-    setTimeout(() => {
-      body.on('click', this.onCloseSettingsListener)
-    }, 100)
+      this.settingsMenuBtn.off('click', this.onSettingsBtnClicked)
+      setTimeout(() => {
+        body.on('click', this.onCloseSettingsListener)
+      }, 100)
+    } catch(ex) {
+      console.error('YouTube Ambilight | onCloseSettingsListener', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 
   onCloseSettingsListener = (e) => {
-    if (this.settingsMenuElem === e.target || this.settingsMenuElem.contains(e.target))
-      return
+    try {
+      if (this.settingsMenuElem === e.target || this.settingsMenuElem.contains(e.target))
+        return
 
-    this.settingsMenuElem.removeClass('is-visible')
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+      this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) ? -1 : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
+      this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
+      this.settingsMenuElem.removeClass('is-visible')
+      $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
 
-    body.off('click', this.onCloseSettingsListener)
-    setTimeout(() => {
-      this.settingsMenuBtn.on('click', this.onSettingsBtnClicked)
-    }, 100)
+      body.off('click', this.onCloseSettingsListener)
+      setTimeout(() => {
+        this.settingsMenuBtn.on('click', this.onSettingsBtnClicked)
+      }, 100)
+    } catch(ex) {
+      console.error('YouTube Ambilight | onCloseSettingsListener', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 
   setSetting(key, value) {
