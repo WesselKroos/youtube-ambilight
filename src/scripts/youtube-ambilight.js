@@ -40,24 +40,23 @@ class Ambilight {
   syncInfo = []
 
   constructor(videoElem) {
-    this.setFeedbackLink()
+    this.videoElem = videoElem
 
-    this.initVideoElem(videoElem)
+    this.initFeedbackLink()
+    this.initSettings()
+
     this.initAmbilightElems()
     this.initBuffers()
-
-    this.initSettings()
-    
     this.recreateProjectors()
     this.initFPSListElem()
 
     this.initStyles()
     this.updateStyles()
 
-    this.initListeners()
-
     this.initScrollPosition()
     this.initImmersiveMode()
+
+    this.initListeners()
 
     setTimeout(() => {
       if (this.enabled)
@@ -78,6 +77,38 @@ class Ambilight {
   }
 
   initListeners() {
+    this.videoElem
+      .on('playing', () => {
+        this.start()
+        this.resetHorizontalBarsIfNeeded()
+      })
+      .on('canplay', () => {
+        if(!this.videoElem.paused) return;
+        this.scheduleNextFrame()
+        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
+      })
+      .on('seeked', () => {
+        this.resetVideoFrameCounter()
+        this.scheduleNextFrame()
+      })
+      .on('ended', () => {
+        this.resetHorizontalBarsIfNeeded()
+        this.clear()
+      })
+      .on('emptied', () => {
+        this.resetHorizontalBarsIfNeeded()
+        this.clear()
+      })
+
+    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
+      btn.on('click', () => {
+        raf(() => {
+          setTimeout(() => this.checkVideoSize(), 1)
+          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
+        })
+      })
+    )
+
     window.addEventListener('resize', () => {
       if (!this.isOnVideoPage) return
       this.checkVideoSize()
@@ -700,41 +731,6 @@ class Ambilight {
     }
   }
 
-  initVideoElem(videoElem) {
-    this.videoElem = videoElem
-
-    this.videoElem.on('playing', () => {
-      this.start()
-      this.resetHorizontalBarsIfNeeded()
-    })
-      .on('canplay', () => {
-        if(!this.videoElem.paused) return;
-        this.scheduleNextFrame()
-        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
-      })
-      .on('seeked', () => {
-        this.resetVideoFrameCounter()
-        this.scheduleNextFrame()
-      })
-      .on('ended', () => {
-        this.resetHorizontalBarsIfNeeded()
-        this.clear()
-      })
-      .on('emptied', () => {
-        this.resetHorizontalBarsIfNeeded()
-        this.clear()
-      })
-
-    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => {
-        raf(() => {
-          setTimeout(() => this.checkVideoSize(), 1)
-          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
-        })
-      })
-    )
-  }
-
   resetHorizontalBarsIfNeeded() {
     const videoPath = location.search
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
@@ -755,7 +751,7 @@ class Ambilight {
     }, 1)
   }
 
-  setFeedbackLink() {
+  initFeedbackLink() {
     const version = $.s('html').getAttribute('data-ambilight-version') || ''
     const os = $.s('html').getAttribute('data-ambilight-os') || ''
     const browser = $.s('html').getAttribute('data-ambilight-browser') || ''
