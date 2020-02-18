@@ -1842,9 +1842,11 @@ class Ambilight {
 
     this.videoElem.style.marginTop = ''
     const videoElemParentElem = this.videoElem.parentNode
-    videoElemParentElem.style.overflow = ''
-    videoElemParentElem.style.marginTop = ''
-    videoElemParentElem.style.height = ''
+    if (videoElemParentElem) {
+      videoElemParentElem.style.overflow = ''
+      videoElemParentElem.style.marginTop = ''
+      videoElemParentElem.style.height = ''
+    }
 
     this.checkVideoSize()
     this.hide()
