@@ -169,7 +169,7 @@ class Ambilight {
     shadowElem.width = 1920
     shadowElem.height = 1080
     this.projectorsElem.appendChild(shadowElem)
-    const shadowCtx = shadowElem.getContext('2d', ctxOptions)
+    const shadowCtx = shadowElem.getContext('2d', { ...ctxOptions, alpha: true })
     this.shadow = {
       elem: shadowElem,
       ctx: shadowCtx
@@ -1506,6 +1506,13 @@ class Ambilight {
   }
 
   detectAmbilightFrameRate() {
+    if (this.showFPS) {
+      this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
+      this.skippedFramesElem.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
+    } else {
+      this.skippedFramesElem.textContent = ''
+    }
+
     if (this.ambilightFrameRateStartTime === undefined) {
       this.ambilightFrameRateStartTime = 0
       this.ambilightFrameRateStartFrame = 0
@@ -1514,6 +1521,7 @@ class Ambilight {
     const frameCount = this.ambilightFrameCount
     const ambilightFrameRateFrame = frameCount
     const ambilightFrameRateTime = performance.now()
+
     if (this.ambilightFrameRateStartTime + 2000 < ambilightFrameRateTime) {
       if (this.ambilightFrameRateStartFrame !== 0) {
         this.ambilightFrameRate = (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
@@ -1522,11 +1530,8 @@ class Ambilight {
           this.ambilightFPSElem.textContent = `AMBILIGHT: ${frameRateText}`
           this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9) ? '#f33' : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
 
-          this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
-          this.skippedFramesElem.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
         } else if (this.ambilightFPSElem.textContent !== '') {
           this.ambilightFPSElem.textContent = ''
-          this.skippedFramesElem.textContent = ''
         }
       }
       this.ambilightFrameRateStartFrame = ambilightFrameRateFrame
