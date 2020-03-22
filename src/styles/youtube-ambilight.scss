@@ -87,6 +87,9 @@ html[data-ambilight-enabled="true"] {
   .html5-main-video {
     transform: var(--video-transform);
   }
+  .ambilight__video-overlay {
+    transform: var(--video-transform);
+  }
 
   /* Cosmetics - Search */
 
