@@ -87,6 +87,7 @@ html[data-ambilight-enabled="true"] {
   .html5-main-video {
     transform: var(--video-transform);
   }
+
   /* Cosmetics - Search */
 
   ytd-app[is-watch-page] {
@@ -115,6 +116,26 @@ html[data-ambilight-enabled="true"] {
         }
       }
     }
+  }
+
+  /* Cosmetics - Clarify box (To prevent css filter shadow flickering) */
+
+  #clarify-box {
+    margin-top: 24px;
+  }
+  ytd-clarification-renderer {
+    background: #0000;
+    box-shadow: rgba(255,255,255,.15) 0 0 0 1px inset;
+  }
+
+  /* Cosmetics - Donation */
+  
+  #header-section.ytd-donation-shelf-renderer,
+  #donate-section.ytd-donation-shelf-renderer,
+  #creator-messages-section.ytd-donation-shelf-renderer, 
+  #nonprofit-section.ytd-donation-shelf-renderer,
+  #collapse-controls-section.ytd-donation-shelf-renderer {
+    background: none;
   }
 
   /* Cosmetics - Text visibility */
