@@ -469,7 +469,9 @@ class Ambilight {
       },
       {
         name: 'blur',
-        label: '<span style="display: inline-block; padding: 5px 0">Blur<br/><span class="ytpa-menuitem-description">(More GPU memory)</span></span>',
+        label: `
+          <span style="display: inline-block; padding: 5px 0">Blur<br/>
+          <span class="ytpa-menuitem-description">(More GPU memory)</span></span>`,
         type: 'list',
         default: 50,
         min: 0,
@@ -477,7 +479,9 @@ class Ambilight {
       },
       {
         name: 'spread',
-        label: '<span style="display: inline-block; padding: 5px 0">Spread<br/><span class="ytpa-menuitem-description">(More GPU usage)</span></span>',
+        label: `
+          <span style="display: inline-block; padding: 5px 0">Spread<br/>
+          <span class="ytpa-menuitem-description">(More GPU usage)</span></span>`,
         type: 'list',
         default: 20,
         min: 0,
@@ -486,7 +490,9 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: '<span style="display: inline-block; padding: 5px 0">Edge size<br/><span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>',
+        label: `
+          <span style="display: inline-block; padding: 5px 0">Edge size<br/>
+          <span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>`,
         type: 'list',
         default: 17,
         min: 2,
@@ -506,7 +512,9 @@ class Ambilight {
       },
       {
         name: 'fadeOutEasing',
-        label: '<span style="display: inline-block; padding: 5px 0">Fade out curve<br/><span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>',
+        label: `
+          <span style="display: inline-block; padding: 5px 0">Fade out curve<br/>
+          <span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>`,
         type: 'list',
         default: 35,
         min: 1,
@@ -516,7 +524,13 @@ class Ambilight {
       },
       {
         name: 'debandingStrength',
-        label: 'Debanding (noise) <a title="Click for more information about Dithering" href="https://www.lifewire.com/what-is-dithering-4686105" target="_blank" style="padding: 0 5px;">?</a>',
+        label: `
+          Debanding (noise) 
+          <a 
+            title="Click for more information about Dithering" 
+            href="https://www.lifewire.com/what-is-dithering-4686105" 
+            target="_blank" 
+            style="padding: 0 5px;">?</a>`,
         type: 'list',
         default: 0,
         min: 0,
@@ -538,7 +552,11 @@ class Ambilight {
       },
       {
         name: 'enableInFullscreen',
-        label: '<span style="display: inline-block; padding: 5px 0">Enable in fullscreen<br/><span class="ytpa-menuitem-description">(When in fullscreen mode)</span></span>',
+        label: `
+          <span style="display: inline-block; padding: 5px 0">
+            Enable in fullscreen<br/>
+            <span class="ytpa-menuitem-description">(When in fullscreen mode)</span>
+          </span>`,
         type: 'checkbox',
         default: true,
         advanced: true
@@ -884,9 +902,16 @@ class Ambilight {
         const top = Math.max(0, parseInt(this.videoElem.style.top))
         videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
         this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
-        videoElemParentElem.style.transform =  `translateY(${top}px) scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
+        videoElemParentElem.style.transform =  `
+          translateY(${top}px) 
+          scale(${(this.videoScale / 100)}) 
+          scaleY(${this.horizontalBarsClipScaleY})
+        `
         videoElemParentElem.style.overflow = 'hidden'
-        videoElemParentElem.style.setProperty('--video-transform', `translateY(${-top}px) scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})`)
+        videoElemParentElem.style.setProperty('--video-transform', `
+          translateY(${-top}px) 
+          scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})
+        `)
       }
 
       this.projectorOffset = this.videoElem.offset()
@@ -932,15 +957,24 @@ class Ambilight {
 
       const unscaledWidth = Math.round(this.projectorOffset.width / (this.videoScale / 100))
       const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
-      const unscaledLeft = Math.round((this.projectorOffset.left + window.scrollX) - ((unscaledWidth - this.projectorOffset.width) / 2))
-      const unscaledTop = Math.round(this.projectorOffset.top - ((unscaledHeight - this.projectorOffset.height) / 2))
+      const unscaledLeft = Math.round(
+        (this.projectorOffset.left + window.scrollX) - 
+        ((unscaledWidth - this.projectorOffset.width) / 2)
+      )
+      const unscaledTop = Math.round(
+        this.projectorOffset.top - 
+        ((unscaledHeight - this.projectorOffset.height) / 2)
+      )
 
       this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
       this.projectorsElem.style.left = `${unscaledLeft}px`
       this.projectorsElem.style.top = `${unscaledTop - 1}px`
       this.projectorsElem.style.width = `${unscaledWidth}px`
       this.projectorsElem.style.height = `${unscaledHeight}px`
-      this.projectorsElem.style.transform = `scale(${(this.videoScale / 100)}) scaleY(${this.horizontalBarsClipScaleY})`
+      this.projectorsElem.style.transform = `
+        scale(${(this.videoScale / 100)}) 
+        scaleY(${this.horizontalBarsClipScaleY})
+      `
       
       if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
         this.videoShadowElem.style.display = 'block'
@@ -948,7 +982,11 @@ class Ambilight {
         this.videoShadowElem.style.top = `${unscaledTop}px`
         this.videoShadowElem.style.width = `${unscaledWidth}px`
         this.videoShadowElem.style.height = `${(unscaledHeight * this.horizontalBarsClipScaleY)}px`
-        this.videoShadowElem.style.transform = `translate3d(0,0,0) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`
+        this.videoShadowElem.style.transform = `
+          translate3d(0,0,0) 
+          translateY(${(unscaledHeight * horizontalBarsClip)}px) 
+          scale(${(this.videoScale / 100)})
+        `
       } else {
         this.videoShadowElem.style.display = ''
       }
@@ -1037,6 +1075,8 @@ class Ambilight {
     const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
     
+    const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
+    const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
     this.styleElem.childNodes[0].data = `
       html[data-ambilight-enabled="true"] .ambilight__video-shadow {
         ${videoShadowSize ? `
@@ -1052,7 +1092,11 @@ class Ambilight {
       
       html[data-ambilight-enabled="true"] #watch7-main,
       html[data-ambilight-enabled="true"] #player-playlist .watch-playlist {
-        ${shadowSize ? `filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) !important;` : ''}
+        ${shadowSize ? `
+          filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
+          !important;
+        ` : ''}
       }
 
       ${debandingStrength ? `
@@ -1063,8 +1107,8 @@ class Ambilight {
           height: 100%;
           left: 0;
           top: 0;
-          background: url('${baseurl}images/noise-${(debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1}.png');
-          opacity: ${debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)};
+          background: url('${baseurl}images/noise-${noiseImageIndex}.png');
+          opacity: ${noiseOpacity};
         }
       ` : ''}
     `
@@ -1125,10 +1169,14 @@ class Ambilight {
     const drawGradient = (size, edge, keyframes, fadeOutFrom, darkest, horizontal) => {
       const points = [
         0,
-        ...keyframes.map(e => Math.max(0, edge - (edge * e.p) - (edge * fadeOutFrom * (1 - e.p)))),
+        ...keyframes.map(e => Math.max(
+          0, edge - (edge * e.p) - (edge * fadeOutFrom * (1 - e.p))
+        )),
         edge - (edge * fadeOutFrom),
         edge + size + (edge * fadeOutFrom),
-        ...keyframes.reverse().map(e => Math.min(edge + size + edge, edge + size + (edge * e.p) + (edge * fadeOutFrom * (1 - e.p)))),
+        ...keyframes.reverse().map(e => Math.min(
+          edge + size + edge, edge + size + (edge * e.p) + (edge * fadeOutFrom * (1 - e.p))
+        )),
         edge + size + edge
       ]
 
@@ -1288,13 +1336,21 @@ class Ambilight {
       }
     }
 
-    if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
-      const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-      const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
-      if(this.videoShadowElem.style.transform !== `translate3d(0,0,0) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`) {
-        return this.updateSizes()
-      }
-    }
+    //What use case is this?
+    // if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
+    //   const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
+    //   const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
+    //   if(this.videoShadowElem.style.transform !== `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`) {
+    //     console.log('nope!', 
+    //       this.videoShadowElem.style.transform, 
+    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
+    //     return this.updateSizes()
+    //   } else {
+    //     console.log('yes!', 
+    //       this.videoShadowElem.style.transform, 
+    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
+    //   }
+    // }
 
 
     return true
@@ -1461,9 +1517,16 @@ class Ambilight {
     const videoFrameRateTime = performance.now()
     if (this.videoFrameRateStartTime + 2000 < videoFrameRateTime) {
       if (this.videoFrameRateStartFrame !== 0) {
-        this.videoFrameRate = (videoFrameRateFrame - this.videoFrameRateStartFrame) / ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
+        this.videoFrameRate = (
+          (videoFrameRateFrame - this.videoFrameRateStartFrame) / 
+          ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
+        )
         if (this.showFPS) {
-          const frameRateText = (Math.round(Math.min(this.videoFrameRate, Math.max(0, this.videoFrameRate)) * 100) / 100).toFixed(2)
+          const frameRateText = (
+              Math.round(
+                Math.min(this.videoFrameRate, Math.max(0, this.videoFrameRate)) * 100
+              ) / 100
+            ).toFixed(2)
           this.videoFPSElem.textContent = `VIDEO: ${frameRateText}`
         } else if (this.videoFPSElem.textContent !== '') {
           this.videoFPSElem.textContent = ''
@@ -1484,7 +1547,9 @@ class Ambilight {
       if (this.showFPS) {
         const frameRateText = (Math.round(Math.max(0, this.displayFrameRate) * 100) / 100).toFixed(2)
         this.displayFPSElem.textContent = `DISPLAY: ${frameRateText}`
-        this.displayFPSElem.style.color = (this.displayFrameRate < this.videoFrameRate - 1) ? '#f33' : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
+        this.displayFPSElem.style.color = (this.displayFrameRate < this.videoFrameRate - 1) 
+          ? '#f33' 
+          : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
       } else if (this.displayFPSElem.textContent !== '') {
         this.displayFPSElem.textContent = ''
       }
@@ -1524,12 +1589,20 @@ class Ambilight {
 
     if (this.ambilightFrameRateStartTime + 2000 < ambilightFrameRateTime) {
       if (this.ambilightFrameRateStartFrame !== 0) {
-        this.ambilightFrameRate = (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
+        this.ambilightFrameRate = (
+          (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / 
+          ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
+        )
         if (this.showFPS) {
-          const frameRateText = (Math.round(Math.min(this.displayFrameRate || this.ambilightFrameRate, Math.max(0, this.ambilightFrameRate)) * 100) / 100).toFixed(2)
+          const frameRateText = (
+            Math.round(
+              Math.min(this.displayFrameRate || this.ambilightFrameRate, Math.max(0, this.ambilightFrameRate)) * 100
+            ) / 100
+          ).toFixed(2)
           this.ambilightFPSElem.textContent = `AMBILIGHT: ${frameRateText}`
-          this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9) ? '#f33' : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
-
+          this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9) 
+            ? '#f33' 
+            : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
         } else if (this.ambilightFPSElem.textContent !== '') {
           this.ambilightFPSElem.textContent = ''
         }
@@ -1565,7 +1638,8 @@ class Ambilight {
     //performance.mark('start-drawing')
 
     let newVideoFrameCount = this.getVideoFrameCount()
-    this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
+    this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
+      0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
 
     let hasNewFrame = false
     if(this.videoHasRequestAnimationFrame && !this.frameBlending) {
@@ -1636,7 +1710,8 @@ class Ambilight {
 
         if (this.videoOverlayEnabled) {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-          this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
+          this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
+            0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
         }
         this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
@@ -1649,7 +1724,19 @@ class Ambilight {
       const frameDuration = (drawTime - this.previousFrameTime)
       let alpha =  1
       if(!this.buffersCleared && (this.displayFrameRate >= this.videoFrameRate * 1.33))
-        alpha = Math.min(1, (frameDuration) / (1000 / (this.videoFrameRate / (this.frameBlendingSmoothness / 100) || 1)))
+        alpha = Math.min(
+          1, 
+          (
+            frameDuration / 
+            (
+              1000 / 
+              (
+                this.videoFrameRate / 
+                (this.frameBlendingSmoothness / 100) || 1
+              )
+            )
+          )
+        )
 
       if (this.videoOverlayEnabled) {
         this.videoOverlay.ctx.globalAlpha = 1
@@ -1674,7 +1761,8 @@ class Ambilight {
       if (!hasNewFrame) return
 
       if (this.videoOverlayEnabled) {
-        this.videoOverlay.ctx.drawImage(this.videoElem, 0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
+        this.videoOverlay.ctx.drawImage(this.videoElem, 
+          0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         this.checkIfNeedToHideVideoOverlay()
       }
 
@@ -2072,7 +2160,14 @@ class Ambilight {
             class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
             rowspan="2" 
             title="Double click to reset">
-              <input id="setting-${setting.name}" type="range" min="${setting.min}" max="${setting.max}" colspan="2" value="${setting.value}" step="${setting.step || 1}" />
+              <input 
+                id="setting-${setting.name}" 
+                type="range" 
+                min="${setting.min}" 
+                max="${setting.max}" 
+                colspan="2" 
+                value="${setting.value}" 
+                step="${setting.step || 1}" />
             </div>
             ${!setting.snapPoints ? '' : `
               <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
@@ -2089,7 +2184,9 @@ class Ambilight {
           `
         } else if (setting.type === 'section') {
           return `
-            <div class="ytpa-section ${setting.value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" data-name="${setting.name}">
+            <div 
+              class="ytpa-section ${setting.value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" 
+              data-name="${setting.name}">
               <div class="ytpa-section__cell">
                 <div class="ytpa-section__label">${setting.label}</div>
               </div>
@@ -2130,7 +2227,9 @@ class Ambilight {
     this.settingsMenuElem.prependTo($.s('.html5-video-player'))
     try {
       this.settingsMenuElem.scrollTop = this.settingsMenuElem.scrollHeight
-      this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) ? -1 : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
+      this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) 
+        ? -1 
+        : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
       this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight)
     } catch(ex) {
       console.error('YouTube Ambilight | initSettingsMenuScrollInformation', ex)
@@ -2290,7 +2389,10 @@ class Ambilight {
     this.settingsMenuElem.class('is-visible')
     if(this.settingsMenuOnCloseScrollBottom !== -1) {
       const percentage = (this.settingsMenuElem.scrollHeight) / this.settingsMenuOnCloseScrollHeight
-      this.settingsMenuElem.scrollTop = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - (this.settingsMenuOnCloseScrollBottom * percentage)
+      this.settingsMenuElem.scrollTop = (
+        (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - 
+        (this.settingsMenuOnCloseScrollBottom * percentage)
+      )
     }
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
 
@@ -2304,7 +2406,9 @@ class Ambilight {
     if (this.settingsMenuElem === e.target || this.settingsMenuElem.contains(e.target))
       return
 
-    this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) ? -1 : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
+    this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) 
+      ? -1 : 
+      (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
     this.settingsMenuElem.removeClass('is-visible')
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
