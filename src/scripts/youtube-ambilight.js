@@ -2170,8 +2170,10 @@ class Ambilight {
                     value="${point}" 
                     label="${Math.floor(point)}" 
                     title="Snap to ${point}" 
-                    style="left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
-                `)}
+                    style="margin-left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                    ${Math.floor(point)}
+                  </option>
+                `).join('')}
               </datalist>
             `}
           `

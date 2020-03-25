@@ -655,45 +655,62 @@ html[data-ambilight-enabled="true"] {
 
   .ytp-menuitem-range {
     display: block;
-    height: 0;
-    margin: -2px 0 13px;
+    height: 15px;
+    margin: 0;
     position: relative;
     z-index: 2;
     .ytp-fullscreen & {
-      margin: -4px 0 20px;
+      height: 22px;
     }
     input[type="range"] {
       display: block;
       -webkit-appearance: none;
-      background: rgba(255,255,255,0.3);
+      background: none;
       cursor: pointer;
       width: calc(100% - 28px);
-      height: 3px;
-      margin: 0 14px -3px;
+      height: 15px;
+      margin: -7px 14px 0;
       outline: 0;
+      overflow: hidden;
       .ytp-fullscreen & {
-        margin: 0 22px;
+        height: 22px;
+        margin: -11px 22px 0;
         width: calc(100% - 44px);
       }
       @include input-range-track {
         -webkit-appearance: none;
-        background: none;
+        background: rgba(255,255,255,0.3);
         height: 3px;
         outline: none;
+        .ytp-fullscreen & {
+          height: 4px;
+        }
       }
       @include input-range-thumb {
         -webkit-appearance: none;
         height: 13px;
         width: 13px;
         margin-top: -5px;
+        border: none;
         border-radius: 50%;
         background: #bdbdbd;
-        box-shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
+
+        $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
+        @for $i from 1 through 140 {
+          $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #aaaaaa;
+        }
+        box-shadow: $shadow;
 
         .ytp-fullscreen & {
           width: 20px;
           height: 20px;
-          margin-top: -9px;
+          margin-top: -8px;
+
+          $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
+          @for $i from 1 through 210 {
+            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #aaaaaa;
+          }
+          box-shadow: $shadow;
         }
       }
       &:hover::-webkit-slider-thumb {
@@ -711,60 +728,63 @@ html[data-ambilight-enabled="true"] {
 
   .setting-range-datalist {
     position: relative;
-    display: inline-block;
+    display: block;
     width: calc(100% - 41px);
     left: 20.5px;
-    top: -4px;
+    top: -13px;
     font-size: 10px;
     pointer-events: none;
     .ytp-fullscreen & {
-      top: 6px;
+      top: -6px;
       left: 32px;
       width: calc(100% - 64px);
     }
 
     &__label {
-      position: absolute;
       width: 17px;
-      margin-top: -7px;
-      margin-left: -8.5px;
+      height: 20px;
+      margin-right: -17px;
+      margin-bottom: -20px;
+      transform: translate(-8.5px, 0);
       padding: 0;
       text-align: center;
-      color: #999;
       pointer-events: all;
+      cursor: pointer;
+      color: #999;
       &:hover {
         color: #fff;
       }
-      cursor: pointer;
       &::before {
         content: '';
-        position: absolute;
+        display: block;
         width: 1px;
         height: 13px;
-        left: 0;
-        margin-top: -15px;
-        margin-left: 8px;
+        transform: translate(8.5px, -12px);
+        margin-right: -1px;
+        margin-bottom: -13px;
         background: #666;
         pointer-events: none;
       }
       .ytp-fullscreen & {
-        margin-top: -18px;
+        transform: translate(-8.5px, -2px);
         &::before {
-          height: 20px;
-          margin-top: -21px;
           width: 2px;
+          height: 20px;
+          margin-right: -2px;
+          margin-bottom: -20px;
+          transform: translate(8.5px, -20px);
         }
       }
 
       &--flip {
-        margin-top: -35px;
+        transform: translate(-8.5px, -23px);
         &::before {
-          margin-top: 13px;
+          transform: translate(8.5px, 11px);
         }
         .ytp-fullscreen & {
-          margin-top: -52px;
+          transform: translate(-8.5px, -35px);
           &::before {
-            margin-top: 13px;
+            transform: translate(8.5px, 13px);
           }
         }
       }
