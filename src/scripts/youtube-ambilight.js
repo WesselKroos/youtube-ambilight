@@ -876,9 +876,10 @@ class Ambilight {
       )
       if (notVisible || noClipOrScale) {
         if (videoElemParentElem) {
-          videoElemParentElem.style.transform = ``
+          videoElemParentElem.style.transform = ''
           videoElemParentElem.style.overflow = ''
           videoElemParentElem.style.height = ''
+          videoElemParentElem.style.marginBottom = ''
           videoElemParentElem.style.setProperty('--video-transform', '')
         }
       }
@@ -901,13 +902,15 @@ class Ambilight {
       if (!noClipOrScale) {
         const top = Math.max(0, parseInt(this.videoElem.style.top))
         videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
+        videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
+        videoElemParentElem.style.overflow = 'hidden'
+
         this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
         videoElemParentElem.style.transform =  `
           translateY(${top}px) 
           scale(${(this.videoScale / 100)}) 
           scaleY(${this.horizontalBarsClipScaleY})
         `
-        videoElemParentElem.style.overflow = 'hidden'
         videoElemParentElem.style.setProperty('--video-transform', `
           translateY(${-top}px) 
           scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})
@@ -1933,6 +1936,7 @@ class Ambilight {
       videoElemParentElem.style.overflow = ''
       videoElemParentElem.style.marginTop = ''
       videoElemParentElem.style.height = ''
+      videoElemParentElem.style.marginBottom = ''
     }
 
     this.checkVideoSize()
