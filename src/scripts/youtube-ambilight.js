@@ -1092,13 +1092,8 @@ class Ambilight {
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow', 
-      (shadowSize)
-      ? `
-        drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
-        drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
-      ` 
-      : '')
+    document.body.style.setProperty('--ambilight-filter-shadow-size', (shadowSize) ? `${shadowSize}px` : '')
+    document.body.style.setProperty('--ambilight-filter-shadow-opacity', (shadowSize) ? shadowOpacity : '')
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
