@@ -27,6 +27,12 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
+  body,
+  ytd-app[scrolling_] {
+    overflow-x: hidden; //Prevent video scale 200% from creating a horizontal scrollbar
+    overflow-y: visible;
+  }
+
   /* Cosmetics - Transparent elements */
 
   body ytd-app[is-watch-page] #masthead-container.at-top {
@@ -810,4 +816,38 @@ body.immersive-mode .toggle-auto-hide-btn {
   width: 1px;
   height: 1px;
   overflow: hidden;
+}
+
+
+/* youtube-ambilight.js Ambilight.updateStyles variables */
+
+html[data-ambilight-enabled="true"] {
+  .ambilight__video-shadow {
+    background: var(--ambilight-video-shadow-background, none) !important;
+    box-shadow: var(--ambilight-video-shadow-box-shadow, none) !important;
+  }
+
+  ytd-app[is-watch-page] #top > #container > *,
+  ytd-app[is-watch-page] #primary-inner > *:not(#player),
+  ytd-app[is-watch-page] #secondary,
+
+  #watch7-main,
+  #player-playlist .watch-playlist {
+    filter: var(--ambilight-filter-shadow, none) !important;
+  }
+
+  .ambilight::after {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    content: var(--ambilight-after-content, none);
+    background: var(--ambilight-after-background, none);
+    opacity: var(--ambilight-after-opacity, 1);
+  }
+
+ .html5-video-player {
+    overflow: var(--ambilight-html5-video-player-overflow, hidden);
+  }
 }

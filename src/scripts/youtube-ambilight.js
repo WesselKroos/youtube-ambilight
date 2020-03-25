@@ -326,7 +326,7 @@ class Ambilight {
         type: 'list',
         default: 100,
         min: 25,
-        max: 100,
+        max: 200,
         step: 0.1
       },
       {
@@ -1077,41 +1077,35 @@ class Ambilight {
     
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
-    this.styleElem.childNodes[0].data = `
-      html[data-ambilight-enabled="true"] .ambilight__video-shadow {
-        ${videoShadowSize ? `
-        background: rgba(0,0,0,${videoShadowOpacity}) !important;
-        box-shadow: rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
-        rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px !important;
-        ` : ''}
-      }
+    
+    
+    document.body.style.setProperty('--ambilight-video-shadow-background', 
+      (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
+    document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
+      (videoShadowSize)
+        ? `
+          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
+          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
+        `
+        : '')
 
-      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #top > #container > *,
-      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #primary-inner > *:not(#player),
-      html[data-ambilight-enabled="true"] ytd-app[is-watch-page] #secondary,
-      
-      html[data-ambilight-enabled="true"] #watch7-main,
-      html[data-ambilight-enabled="true"] #player-playlist .watch-playlist {
-        ${shadowSize ? `
-          filter: drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
-          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
-          !important;
-        ` : ''}
-      }
+    document.body.style.setProperty('--ambilight-filter-shadow', 
+      (shadowSize)
+      ? `
+        drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity})) 
+        drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+      ` 
+      : '')
 
-      ${debandingStrength ? `
-        .ambilight::after {
-          content: '';
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          left: 0;
-          top: 0;
-          background: url('${baseurl}images/noise-${noiseImageIndex}.png');
-          opacity: ${noiseOpacity};
-        }
-      ` : ''}
-    `
+    document.body.style.setProperty('--ambilight-after-content', 
+      debandingStrength ? `''` : '')
+    document.body.style.setProperty('--ambilight-after-background', 
+      debandingStrength ? `url('${baseurl}images/noise-${noiseImageIndex}.png')` : '')
+    document.body.style.setProperty('--ambilight-after-opacity', 
+      debandingStrength ? noiseOpacity : '')
+
+    document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
+      (this.videoScale > 100) ?  'visible' : '')
   }
 
   resizeCanvasses() {
@@ -2259,10 +2253,10 @@ class Ambilight {
             setting.name === 'surroundingContentShadowOpacity' ||
             setting.name === 'debandingStrength' ||
             setting.name === 'videoShadowSize' ||
-            setting.name === 'videoShadowOpacity'
+            setting.name === 'videoShadowOpacity' ||
+            setting.name === 'videoScale'
           ) {
             this.updateStyles()
-            return
           }
           if (
             setting.name === 'spread' || 
