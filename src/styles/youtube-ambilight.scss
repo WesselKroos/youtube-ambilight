@@ -657,10 +657,11 @@ html[data-ambilight-enabled="true"] {
     display: block;
     height: 15px;
     margin: 0;
+    padding-bottom: 3px;
     position: relative;
     z-index: 2;
     .ytp-fullscreen & {
-      height: 22px;
+      height: 23px;
     }
     input[type="range"] {
       display: block;
@@ -697,10 +698,14 @@ html[data-ambilight-enabled="true"] {
 
         $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
         @for $i from 1 through 150 {
-          $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #888;
+          $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #3ea6ff;
         }
         box-shadow: $shadow;
-        transition: transform .1s ease-in-out, background-color .1 ease-in-out, box-shadow .2s ease-in-out;
+        transition: background-color .15 ease-in-out, box-shadow .2s ease-in-out;
+
+        .ytp-menuitem-range-wrapper:hover & {
+          background: #fff !important;
+        }
 
         .ytp-fullscreen & {
           width: 20px;
@@ -709,56 +714,47 @@ html[data-ambilight-enabled="true"] {
 
           $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
           @for $i from 1 through 210 {
-            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #888;
+            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
           }
           box-shadow: $shadow;
         }
-      }
-      &:hover {
-        @include input-range-thumb {
-          transform: scale(1.05);
-          $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-          @for $i from 1 through 150 {
-            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #3ea6ff;
-          }
-          box-shadow: $shadow;
-        }
-
-        .ytp-fullscreen & {
-          @include input-range-thumb {
-            $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-            @for $i from 1 through 210 {
-              $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
-            }
-            box-shadow: $shadow;
-          }
-        }
-      }
-      &:hover::-webkit-slider-thumb {
-        background: #fff;
       }
     }
 
     &--has-snap-points {
-      margin: 8px 0px 11px;
+      margin: 8px 0 0;
       .ytp-fullscreen & {
-        margin: 8px 0 7px;
+        margin: 8px 0 0;
       }
     }
   }
+    
+  .ytp-menuitem-range-wrapper {
+    &:hover {
+      background: #ffffff1a;
+
+      input[type="range"] { 
+        @include input-range-thumb {
+          background: #fff;
+        }
+      }
+    }
+  }
+
+  
 
   .setting-range-datalist {
     position: relative;
     display: block;
     width: calc(100% - 41px);
+    height: 10px;
     left: 20.5px;
-    top: -13px;
     font-size: 10px;
     pointer-events: none;
     .ytp-fullscreen & {
-      top: -6px;
       left: 32px;
       width: calc(100% - 64px);
+      height: 12px;
     }
 
     &__label {
@@ -766,7 +762,7 @@ html[data-ambilight-enabled="true"] {
       height: 20px;
       margin-right: -17px;
       margin-bottom: -20px;
-      transform: translate(-8.5px, 0);
+      transform: translate(-8.5px, -5px);
       padding: 0;
       text-align: center;
       pointer-events: all;
@@ -787,7 +783,7 @@ html[data-ambilight-enabled="true"] {
         pointer-events: none;
       }
       .ytp-fullscreen & {
-        transform: translate(-8.5px, -2px);
+        transform: translate(-8.5px, -5px);
         &::before {
           width: 2px;
           height: 20px;
@@ -798,12 +794,12 @@ html[data-ambilight-enabled="true"] {
       }
 
       &--flip {
-        transform: translate(-8.5px, -23px);
+        transform: translate(-8.5px, -28px);
         &::before {
           transform: translate(8.5px, 11px);
         }
         .ytp-fullscreen & {
-          transform: translate(-8.5px, -35px);
+          transform: translate(-8.5px, -38px);
           &::before {
             transform: translate(8.5px, 13px);
           }

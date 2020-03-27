@@ -2146,37 +2146,39 @@ class Ambilight {
           `
         } else if (setting.type === 'list') {
           return `
-            <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
-              <div class="ytp-menuitem-label">${setting.label}</div>
-              <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${this.getSettingListDisplayText(setting)}</div>
+            <div class="ytp-menuitem-range-wrapper">
+              <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
+                <div class="ytp-menuitem-label">${setting.label}</div>
+                <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${this.getSettingListDisplayText(setting)}</div>
+              </div>
+              <div 
+              class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
+              rowspan="2" 
+              title="Double click to reset">
+                <input 
+                  id="setting-${setting.name}" 
+                  type="range" 
+                  min="${setting.min}" 
+                  max="${setting.max}" 
+                  colspan="2" 
+                  value="${setting.value}" 
+                  step="${setting.step || 1}" />
+              </div>
+              ${!setting.snapPoints ? '' : `
+                <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
+                  ${setting.snapPoints.map((point, i) => `
+                    <option 
+                      class="setting-range-datalist__label ${(point < setting.snapPoints[i - 1] + 2) ? 'setting-range-datalist__label--flip' : ''}" 
+                      value="${point}" 
+                      label="${Math.floor(point)}" 
+                      title="Snap to ${point}" 
+                      style="margin-left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                      ${Math.floor(point)}
+                    </option>
+                  `).join('')}
+                </datalist>
+              `}
             </div>
-            <div 
-            class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
-            rowspan="2" 
-            title="Double click to reset">
-              <input 
-                id="setting-${setting.name}" 
-                type="range" 
-                min="${setting.min}" 
-                max="${setting.max}" 
-                colspan="2" 
-                value="${setting.value}" 
-                step="${setting.step || 1}" />
-            </div>
-            ${!setting.snapPoints ? '' : `
-              <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                ${setting.snapPoints.map((point, i) => `
-                  <option 
-                    class="setting-range-datalist__label ${(point < setting.snapPoints[i - 1] + 2) ? 'setting-range-datalist__label--flip' : ''}" 
-                    value="${point}" 
-                    label="${Math.floor(point)}" 
-                    title="Snap to ${point}" 
-                    style="margin-left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
-                    ${Math.floor(point)}
-                  </option>
-                `).join('')}
-              </datalist>
-            `}
           `
         } else if (setting.type === 'section') {
           return `
