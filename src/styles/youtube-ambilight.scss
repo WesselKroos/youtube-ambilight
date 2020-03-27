@@ -696,10 +696,11 @@ html[data-ambilight-enabled="true"] {
         background: #bdbdbd;
 
         $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-        @for $i from 1 through 140 {
-          $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #aaaaaa;
+        @for $i from 1 through 150 {
+          $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #888;
         }
         box-shadow: $shadow;
+        transition: transform .1s ease-in-out, background-color .1 ease-in-out, box-shadow .2s ease-in-out;
 
         .ytp-fullscreen & {
           width: 20px;
@@ -708,9 +709,29 @@ html[data-ambilight-enabled="true"] {
 
           $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
           @for $i from 1 through 210 {
-            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #aaaaaa;
+            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #888;
           }
           box-shadow: $shadow;
+        }
+      }
+      &:hover {
+        @include input-range-thumb {
+          transform: scale(1.05);
+          $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
+          @for $i from 1 through 150 {
+            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #3ea6ff;
+          }
+          box-shadow: $shadow;
+        }
+
+        .ytp-fullscreen & {
+          @include input-range-thumb {
+            $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
+            @for $i from 1 through 210 {
+              $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
+            }
+            box-shadow: $shadow;
+          }
         }
       }
       &:hover::-webkit-slider-thumb {
