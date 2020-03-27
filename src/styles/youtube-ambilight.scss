@@ -23,7 +23,7 @@ html[data-ambilight-enabled="true"] {
     body {
       background: #000 !important;
       background-color: #000 !important;
-      transition: background-color .33s;
+      transition: background-color .1s;
     }
   }
 
@@ -75,6 +75,11 @@ html[data-ambilight-enabled="true"] {
   body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
     margin-top: 28px;
     margin-bottom: 85px;
+  }
+  
+  //Reduce theater mode flicker when switching between enabled and disabled
+  ytd-app[is-watch-page] #player-theater-container {
+    transition: background-color 0s .01s;
   }
 
   /* Chat */

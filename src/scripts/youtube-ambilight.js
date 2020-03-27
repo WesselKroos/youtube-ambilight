@@ -2055,6 +2055,9 @@ class Ambilight {
     }, 500)
 
     $.s('html').attr('data-ambilight-classic', false)
+    if(Ambilight.isClassic) {
+      $.s('html').attr('dark', false)
+    }
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
       Ambilight.setDarkTheme(false)
@@ -2066,6 +2069,9 @@ class Ambilight {
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
     $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
+    if(Ambilight.isClassic) {
+      $.s('html').attr('dark', true)
+    }
   }
 
 

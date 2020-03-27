@@ -1,3 +1,8 @@
+//Reduce theater mode flicker when switching between enabled and disabled
+.watch-stage-mode #theater-background {
+  transition: none;
+}
+
 html[data-ambilight-classic="true"] {
 
 body {
