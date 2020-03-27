@@ -475,7 +475,8 @@ class Ambilight {
         type: 'list',
         default: 50,
         min: 0,
-        max: 100
+        max: 100,
+        step: .1
       },
       {
         name: 'spread',
@@ -2269,7 +2270,7 @@ class Ambilight {
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
-              const edgeValue = (value <= 5 ) ? 2 : ((value >= 25) ? 17 : (
+              const edgeValue = (value <= 5.5 ) ? 2 : ((value >= 24.5) ? 17 : (
                 {
                   6: 3,
                   7: 3.5,
@@ -2291,7 +2292,7 @@ class Ambilight {
                   23: 14,
                   24: 15,
                 }
-                [value]
+                [Math.round(value)]
               ))
 
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}`)
