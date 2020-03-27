@@ -39,8 +39,12 @@ class Ambilight {
   previousFrameTime = 0
   syncInfo = []
 
+  enableMozillaBug1606251Workaround = false
+
   constructor(videoElem) {
     this.videoElem = videoElem
+
+    this.detectMozillaBug1606251Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -62,6 +66,20 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
+  }
+
+  // FireFox workaround: Force to rerender the outer blur of the canvasses
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
+  detectMozillaBug1606251Workaround() {
+    if(this.videoElem.mozPaintedFrames) {
+      const firefoxUserAgentMatches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
+      if(firefoxUserAgentMatches.length >= 2) {
+        const firefoxVersion = parseFloat(firefoxUserAgentMatches[1])
+        if(firefoxVersion && firefoxVersion < 74) {
+          this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
+        }
+      }
+    }
   }
 
   toggleDetectHorizontalBars() {
@@ -1775,9 +1793,7 @@ class Ambilight {
 
     this.buffersCleared = false
 
-    // FireFox workaround: Force to rerender the outer blur of the canvasses
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
-    if(this.videoElem.mozPaintedFrames) {
+    if(this.enableMozillaBug1606251Workaround) {
       this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
     }
   }
