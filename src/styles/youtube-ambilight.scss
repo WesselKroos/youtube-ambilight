@@ -141,10 +141,8 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Clarify box (To prevent css filter shadow flickering) */
 
-  #clarify-box {
-    margin-top: 24px;
-  }
   ytd-clarification-renderer {
+    margin-top: 24px;
     background: none;
     box-shadow: rgba(0,0,0,.15) 0 0 0 1px inset;
   }
