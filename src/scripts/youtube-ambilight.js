@@ -98,7 +98,7 @@ class Ambilight {
     this.videoElem
       .on('playing', () => {
         this.start()
-        this.resetHorizontalBarsIfNeeded()
+        this.resetSettingsIfNeeded()
       })
       .on('canplay', () => {
         if(!this.videoElem.paused) return;
@@ -110,11 +110,11 @@ class Ambilight {
         this.scheduleNextFrame()
       })
       .on('ended', () => {
-        this.resetHorizontalBarsIfNeeded()
+        this.resetSettingsIfNeeded()
         this.clear()
       })
       .on('emptied', () => {
-        this.resetHorizontalBarsIfNeeded()
+        this.resetSettingsIfNeeded()
         this.clear()
       })
 
@@ -768,7 +768,7 @@ class Ambilight {
     }
   }
 
-  resetHorizontalBarsIfNeeded() {
+  resetSettingsIfNeeded() {
     const videoPath = location.search
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.horizontalBarsClipPercentageReset) {
@@ -1929,7 +1929,7 @@ class Ambilight {
       $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
     }
 
-    this.resetHorizontalBarsIfNeeded()
+    this.resetSettingsIfNeeded()
     this.checkVideoSize()
     this.start()
   }
