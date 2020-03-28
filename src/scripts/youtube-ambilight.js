@@ -1327,10 +1327,11 @@ class Ambilight {
 
     const projectorsElemRect = this.projectorsElem.getBoundingClientRect()
     const videoElemRec = this.videoElem.getBoundingClientRect()
+    const expectedProjectsElemRectY = videoElemRec.y + (videoElemRec.height * (this.horizontalBarsClipPercentage/100))
     if (
       Math.abs(projectorsElemRect.width - videoElemRec.width) > 1 ||
       Math.abs(projectorsElemRect.x - videoElemRec.x) > 1 ||
-      Math.abs(projectorsElemRect.y - videoElemRec.y) > 1
+      Math.abs(projectorsElemRect.y - expectedProjectsElemRectY) > 2
     ) {
       return this.updateSizes()
     }
@@ -1343,7 +1344,10 @@ class Ambilight {
         const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
         const top = Math.max(0, parseInt(this.videoElem.style.top))
         const scaleY = (Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)
-        if(videoTransform !== `translateY(${-top}px) scaleY(${scaleY})`) {
+        if(
+          videoTransform.indexOf(`translateY(${-top}px)`) === -1 ||
+          videoTransform.indexOf(`scaleY(${scaleY})`) === -1
+        ) {
           return this.updateSizes()
         }
       }
