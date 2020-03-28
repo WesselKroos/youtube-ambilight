@@ -1039,6 +1039,8 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.frameBlending && !this.previousVideoOverlayBuffer) {
         this.initVideoOverlayWithFrameBlending()
       }
+      if(this.videoOverlayEnabled)
+        this.checkIfNeedToHideVideoOverlay()
 
       if (this.frameBlending) {
         this.previousProjectorBuffer.elem.width = this.p.w
@@ -1887,17 +1889,19 @@ class Ambilight {
     var outSyncCount = this.syncInfo.filter(value => !value).length
     var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100) {
+    if (this.videoElem.paused || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
         this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.detectVideoSynced()
       }
     } else if (canChange || this.videoOverlaySyncThreshold == 100) {
       if (this.videoOverlay.isHidden) {
         this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
         this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.detectVideoSynced()
       }
     }
 
