@@ -13,6 +13,35 @@
   display: none;
 }
 
+/* Workaround for issue with OffScreenCanvas */
+.ambilight__buffers {
+  position: absolute;
+  opacity: 0.00001;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* FPS */
+
+.ambilight__fps-list {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 5px;
+  width: calc(100% - 10px);
+  height: 110px;
+  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
+  color: #fff;
+  font-size: 18px;
+  pointer-events: none;
+  user-select: none;
+
+  * {
+    height: 22px;
+  }
+}
+
 html[data-ambilight-enabled="true"] {
   /* General */
 
@@ -60,8 +89,16 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  body:not(.ambilight-disable-in-fullscreen) ytd-app[is-watch-page] #movie_player {
+  ytd-app[is-watch-page] #movie_player {
     background: none !important;
+  }
+
+  /* Prevent YouTube's flickering scrollbar bug */
+
+  #page-manager.ytd-app {
+    overflow: visible !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
   }
 
   /* Video preview while moving the timeline */
@@ -850,44 +887,6 @@ body .toggle-auto-hide-btn {
 }
 body.immersive-mode .toggle-auto-hide-btn {
   font-weight: bold;
-}
-
-
-/* FPS */
-
-.ambilight__fps-list {
-  position: absolute;
-  z-index: 2;
-  top: 5px;
-  left: 5px;
-  width: calc(100% - 10px);
-  height: 110px;
-  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
-  color: #fff;
-  font-size: 18px;
-  pointer-events: none;
-  user-select: none;
-
-  * {
-    height: 22px;
-  }
-}
-
-/* Prevent YouTube's flickering scrollbar bug */
-
-#page-manager.ytd-app {
-  overflow: visible !important;
-  overflow-y: visible !important;
-  overflow-x: visible !important;
-}
-
-/* Workaround for issue with OffScreenCanvas */
-.ambilight__buffers {
-  position: absolute;
-  opacity: 0.00001;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
 }
 
 

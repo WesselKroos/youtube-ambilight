@@ -878,14 +878,6 @@ class Ambilight {
         noClipOrScale
       )
 
-      if (this.isFullscreen) {
-        if (this.enableInFullscreen) {
-          body.removeClass('ambilight-disable-in-fullscreen')
-        } else {
-          body.class('ambilight-disable-in-fullscreen')
-        }
-      }
-
       const videoElemParentElem = this.videoElem.parentNode
 
       const notVisible = (
@@ -2065,6 +2057,7 @@ class Ambilight {
       this.hideFPS()
     }, 500)
 
+    $.s('html').attr('data-ambilight-enabled', false)
     $.s('html').attr('data-ambilight-classic', false)
     if(Ambilight.isClassic) {
       $.s('html').attr('dark', false)
@@ -2079,6 +2072,7 @@ class Ambilight {
     this.isHidden = false
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
+    $.s('html').attr('data-ambilight-enabled', true)
     $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
     if(Ambilight.isClassic) {
       $.s('html').attr('dark', true)
@@ -2295,6 +2289,7 @@ class Ambilight {
           ) {
             this.updateStyles()
           }
+
           if (
             setting.name === 'spread' || 
             setting.name === 'edge' || 
@@ -2302,6 +2297,7 @@ class Ambilight {
           ) {
             this.canvassesInvalidated = true
           }
+
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
