@@ -2731,6 +2731,29 @@ const tryInitAmbilight = () => {
   const videoElem = $.s("ytd-watch-flexy video")
   if (!videoElem) return false
 
+  const settingsBtnContainerElem = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+  if(!settingsBtnContainerElem) {
+    if(!window.ambilightSettingsBtnContainerElemUndefinedThrown) {
+      window.ambilightSettingsBtnContainerElemUndefinedThrown = true
+      const ex = new Error('Tried to initialize ambilight without settingsBtnContainerElem')
+      console.warn(ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+    return false
+  }
+
+  const playerElem = $.s('.html5-video-player')
+  if(!playerElem) {
+    if(!window.ambilightPlayerElemUndefinedThrown) {
+      window.ambilightPlayerElemUndefinedThrown = true
+      const ex = new Error('Tried to initialize ambilight without playerElem')
+      console.warn(ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+    return false
+  }
+
+
   window.ambilight = new Ambilight(videoElem)
   ambilightDetectDetachedVideo()
   return true
