@@ -44,6 +44,9 @@ class Ambilight {
   constructor(videoElem) {
     this.videoElem = videoElem
 
+     //Possible fix for the getImageData SecurityError
+    this.videoElem.crossOrigin = 'anonymous'
+
     this.detectMozillaBug1606251Workaround()
 
     this.initFeedbackLink()
