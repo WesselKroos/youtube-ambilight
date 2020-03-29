@@ -1072,7 +1072,7 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.frameBlending && !this.previousVideoOverlayBuffer) {
         this.initVideoOverlayWithFrameBlending()
       }
-      if(this.videoOverlayEnabled)
+      if(this.videoOverlayEnabled && this.videoOverlay)
         this.checkIfNeedToHideVideoOverlay()
 
       if (this.frameBlending) {
@@ -1083,12 +1083,12 @@ class Ambilight {
         this.blendedProjectorBuffer.elem.height = this.p.h
       }
 
-      if (this.videoOverlayEnabled && !this.videoOverlay.elem.parentNode) {
+      if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.elem.parentNode) {
         this.videoOverlay.elem.appendTo($.s('.html5-video-container'))
       } else if (!this.videoOverlayEnabled && this.videoOverlay && this.videoOverlay.elem.parentNode) {
         this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
       }
-      if (this.videoOverlayEnabled) {
+      if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
         this.videoOverlay.elem.width = this.srcVideoOffset.width
         this.videoOverlay.elem.height = this.srcVideoOffset.height
@@ -1354,7 +1354,7 @@ class Ambilight {
       return this.updateSizes()
     }
 
-    if (this.videoOverlayEnabled && this.videoElem.getAttribute('style') !== this.videoOverlay.elem.getAttribute('style')) {
+    if (this.videoOverlayEnabled && this.videoOverlay && this.videoElem.getAttribute('style') !== this.videoOverlay.elem.getAttribute('style')) {
       return this.updateSizes()
     }
 
@@ -1788,7 +1788,7 @@ class Ambilight {
           )
         )
 
-      if (this.videoOverlayEnabled) {
+      if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.ctx.globalAlpha = 1
         this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
         this.videoOverlay.ctx.globalAlpha = alpha
@@ -1810,7 +1810,7 @@ class Ambilight {
     } else {
       if (!hasNewFrame) return
 
-      if (this.videoOverlayEnabled) {
+      if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         this.checkIfNeedToHideVideoOverlay()
