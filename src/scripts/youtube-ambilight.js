@@ -85,12 +85,6 @@ class Ambilight {
     }
   }
 
-  toggleDetectHorizontalBars() {
-    $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-    this.setHorizontalBars(0)
-    this.start()
-  }
-
   initStyles () {
     this.styleElem = document.createElement('style')
     this.styleElem.appendChild(document.createTextNode(''))
@@ -156,7 +150,9 @@ class Ambilight {
       if (e.keyCode === 65) // a
         this.toggleEnabled()
       if (e.keyCode === 66) // b
-        this.toggleDetectHorizontalBars()
+        $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
+      if (e.keyCode === 87) // w
+        $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
   }
 
@@ -414,6 +410,12 @@ class Ambilight {
         advanced: true
       },
       {
+        name: 'detectVideoFillScaleEnabled',
+        label: 'Fill video to screen width [W]',
+        type: 'checkbox',
+        default: false
+      },
+      {
         type: 'section',
         label: 'Filters',
         name: 'sectionAmbilightImageAdjustmentCollapsed',
@@ -641,6 +643,7 @@ class Ambilight {
     this.detectColoredHorizontalBarSizeEnabled = this.getSetting('detectColoredHorizontalBarSizeEnabled')
     this.detectHorizontalBarSizeOffsetPercentage = this.getSetting('detectHorizontalBarSizeOffsetPercentage')
     this.horizontalBarsClipPercentage = this.getSetting('horizontalBarsClipPercentage')
+    this.detectVideoFillScaleEnabled = this.getSetting('detectVideoFillScaleEnabled')
     this.horizontalBarsClipPercentageReset = this.getSetting('horizontalBarsClipPercentageReset')
 
     this.directionTopEnabled = this.getSetting('directionTopEnabled')
@@ -777,6 +780,9 @@ class Ambilight {
       if (this.horizontalBarsClipPercentageReset) {
         this.setHorizontalBars(0)
       }
+      if(this.detectVideoFillScaleEnabled) {
+        this.setSetting('videoScale', 100)
+      }
     }
     this.prevVideoPath = videoPath
   }
@@ -839,8 +845,40 @@ class Ambilight {
     })
   }
 
+  detectVideoFillScale() {
+    let videoScale = 100
+    if(this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
+      const videoContainer = this.videoElem.closest('.html5-video-player')
+      if(videoContainer) {
+        const videoScaleY = (100 - (this.horizontalBarsClipPercentage * 2)) / 100
+        const videoWidth = this.videoElem.offsetWidth
+        const videoHeight = this.videoElem.offsetHeight * videoScaleY
+        const containerWidth = videoContainer.offsetWidth
+        const containerHeight = videoContainer.offsetHeight
+        const scaleX = containerWidth / videoWidth
+        const scaleY = containerHeight / videoHeight
+
+        videoScale = Math.round(Math.min(scaleX, scaleY) * 10000) / 100
+        if(isNaN(videoScale)) {
+          videoScale = 100
+        }
+        if(videoScale < 100.5) {
+          videoScale = 100
+        }
+      }
+    }
+
+    this.setSetting('videoScale', videoScale)
+    $.s('#setting-videoScale').value = videoScale
+    $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
+  }
+
   updateSizes(isBlackBarsAdjustment = false) {
     try {
+      if(this.detectVideoFillScaleEnabled){
+        this.detectVideoFillScale()
+      }
+
       const playerElem = $.s('.html5-video-player')
       const flexyElem = $.s('ytd-watch-flexy')
       const pageElem = $.s('#page')
@@ -2333,7 +2371,17 @@ class Ambilight {
           }
 
           if(setting.name === 'horizontalBarsClipPercentage' && this.detectHorizontalBarSizeEnabled) {
-            $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
+            const controllerInput = $.s(`#setting-detectHorizontalBarSizeEnabled`)
+            controllerInput.dontResetControlledSetting = true
+            controllerInput.click()
+          }
+
+          if(setting.name === 'videoScale') {
+            if(this.detectVideoFillScaleEnabled) {
+              const controllerInput = $.s(`#setting-detectVideoFillScaleEnabled`)
+              controllerInput.dontResetControlledSetting = true
+              controllerInput.click()
+            }
           }
 
           this.sizesInvalidated = true
@@ -2364,6 +2412,7 @@ class Ambilight {
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
             setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
+            setting.name === 'detectVideoFillScaleEnabled' ||
             setting.name === 'directionTopEnabled' ||
             setting.name === 'directionRightEnabled' ||
             setting.name === 'directionBottomEnabled' ||
@@ -2372,6 +2421,34 @@ class Ambilight {
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+          }
+
+          if(setting.name === 'detectHorizontalBarSizeEnabled') {
+            if(!setting.value) {
+              if(!inputElem.dontResetControlledSetting) {
+                this.setSetting('horizontalBarsClipPercentage', 0)
+              }
+            } else {
+              if(this.videoElem.paused) {
+                this.start()
+              }
+            }
+            if(inputElem.dontResetControlledSetting) {
+              delete inputElem.dontResetControlledSetting
+            }
+            this.updateControlledSettings()
+          }
+
+          if(setting.name === 'detectVideoFillScaleEnabled') {
+            if(!setting.value) {
+              if(!inputElem.dontResetControlledSetting) {
+                this.setSetting('videoScale', 100)
+              }
+            }
+            if(inputElem.dontResetControlledSetting) {
+              delete inputElem.dontResetControlledSetting
+            }
+            this.updateControlledSettings()
           }
 
           if(setting.name === 'advancedSettings') {
@@ -2390,6 +2467,30 @@ class Ambilight {
         })
       }
     })
+
+    this.updateControlledSettings()
+  }
+
+  updateControlledSettings() {
+    if(!this.detectVideoFillScaleEnabled) {
+      $.s(`#setting-videoScale-value`)
+        .removeClass('is-controlled-by-setting')
+        .attr('title', '')
+    } else {
+      $.s(`#setting-videoScale-value`)
+        .class('is-controlled-by-setting')
+        .attr('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
+    }
+
+    if(!this.detectHorizontalBarSizeEnabled) {
+      $.s(`#setting-horizontalBarsClipPercentage-value`)
+        .removeClass('is-controlled-by-setting')
+        .attr('title', '')
+    } else {
+      $.s(`#setting-horizontalBarsClipPercentage-value`)
+        .class('is-controlled-by-setting')
+        .attr('title', 'Controlled by the "Remove black bars" setting.\nManually adjusting this setting will turn off "Remove black bars"')
+    }
   }
 
   getSettingListDisplayText(setting) {
