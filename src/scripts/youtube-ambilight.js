@@ -312,7 +312,7 @@ class Ambilight {
         name: 'surroundingContentShadowSize',
         label: 'Shadow size',
         type: 'list',
-        default: 16,
+        default: 0,
         min: 0,
         max: 100
       },
@@ -320,7 +320,7 @@ class Ambilight {
         name: 'surroundingContentShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 50,
         min: 0,
         max: 100,
         advanced: true
@@ -1139,15 +1139,35 @@ class Ambilight {
     document.body.style.setProperty('--ambilight-video-shadow-background', 
       (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
     document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
-      (videoShadowSize)
+      (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow-size', (shadowSize) ? `${shadowSize}px` : '')
-    document.body.style.setProperty('--ambilight-filter-shadow-opacity', (shadowSize) ? shadowOpacity : '')
+    document.body.style.setProperty('--ambilight-filter-shadow', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity * 2}))`
+      )
+      : '')
+    document.body.style.setProperty('--ambilight-filter-shadow-inverted', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity * 2}))`
+      )
+      : '')
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
@@ -2367,6 +2387,13 @@ class Ambilight {
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+
+            if(setting.name === 'surroundingContentShadowSize') {
+              const opacitySetting = this.settings.find(setting => setting.name === 'surroundingContentShadowOpacity')
+              const opacityInputElem = $.s(`#setting-${opacitySetting.name}`)
+              opacityInputElem.value = opacitySetting.default
+              opacityInputElem.dispatchEvent(new Event('change', { bubbles: true }))
             }
           }
 
