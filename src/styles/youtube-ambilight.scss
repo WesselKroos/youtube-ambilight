@@ -283,15 +283,13 @@ html[data-ambilight-enabled="true"] {
 
   .ambilight__video-overlay {
     position: absolute;
-    width: 0;
-    height: 0;
+    width: 1px;
+    height: 1px;
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
-    transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
-      transition: opacity .001s;//, margin-top .2s ease-out;
     }
   }
 
