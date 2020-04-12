@@ -170,7 +170,7 @@ class Ambilight {
   }
 
   initGetImageDataAllowed() {
-    this.getImageDataAllowed = (this.videoElem.src && this.videoElem.src.indexOf('youtube.com') !== -1)
+    this.getImageDataAllowed = (!window.chrome || (this.videoElem.src && this.videoElem.src.indexOf('youtube.com') !== -1))
 
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
