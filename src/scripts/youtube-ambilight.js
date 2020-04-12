@@ -6,10 +6,11 @@ const version = getVersion() || ''
 const os = getOS() || ''
 const browserName = getBrowserName() || ''
 window.browser = window.browser || window.chrome
-document.querySelector('html').setAttribute('data-ambilight-version', version);
-document.querySelector('html').setAttribute('data-ambilight-os', os);
-document.querySelector('html').setAttribute('data-ambilight-browser', browserName);
-document.querySelector('html').setAttribute('data-ambilight-baseurl', browser.runtime.getURL(''));
+const html = document.querySelector('html')
+html.setAttribute('data-ambilight-version', version);
+html.setAttribute('data-ambilight-os', os);
+html.setAttribute('data-ambilight-browser', browserName);
+html.setAttribute('data-ambilight-baseurl', browser.runtime.getURL(''));
 
 class Ambilight {
   static isClassic = false
@@ -2216,13 +2217,13 @@ class Ambilight {
 
   initImmersiveMode() {
     if (this.immersive)
-      body.class('immersive-mode')
+      html.attr('data-ambilight-immersive-mode', true)
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
-    body.classList.toggle('immersive-mode')
-    const enabled = body.classList.contains('immersive-mode')
+    const enabled = !this.immersive
+    html.attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
     window.dispatchEvent(new Event('resize'))

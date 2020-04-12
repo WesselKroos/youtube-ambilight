@@ -109,7 +109,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Theater mode */
 
-  body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
+  &[data-ambilight-immersive-mode="true"] ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
     margin-top: 28px;
     margin-bottom: 85px;
   }
@@ -295,35 +295,41 @@ html[data-ambilight-enabled="true"] {
 
   /* Immersive mode */
 
-  body.immersive-mode::-webkit-scrollbar {
-    width: 0;
-  }
-
   ytd-app[is-watch-page] #secondary,
   ytd-app[is-watch-page] #masthead-container {
     transition: opacity .15s ease-out;
     will-change: opacity;
     transition-delay: 0s;
   }
-  body.immersive-mode.at-top ytd-app[is-watch-page] #secondary:not(:hover),
-  body.immersive-mode.at-top ytd-app[is-watch-page] #masthead-container:not(:hover) {
-    opacity: 0;
-    transition-delay: 1s;
-  }
 
-  body.immersive-mode ytd-app[is-watch-page] #primary-inner > *:not(#player) {
-    transition: opacity .15s ease-out;
-    will-change: opacity;
-  }
-  body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player) {
-      opacity: 0;
-      transition-delay: 1s;
-  }
+  &[data-ambilight-immersive-mode="true"] {
+    scrollbar-width: none;
+    body::-webkit-scrollbar {
+      width: 0;
+    }
 
-  body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player):hover {
-    opacity: 1;
-    transition-delay: 0s;
-  }
+    ytd-app[is-watch-page] #primary-inner > *:not(#player) {
+      transition: opacity .15s ease-out;
+      will-change: opacity;
+    }
+
+    body.at-top ytd-app[is-watch-page]  {
+      #secondary:not(:hover),
+      #masthead-container:not(:hover) {
+        opacity: 0;
+        transition-delay: 1s;
+      }
+    
+      #primary-inner > *:not(#player) {
+        opacity: 0;
+        transition-delay: 1s;
+        &:hover {
+          opacity: 1;
+          transition-delay: 0s;
+        }
+      }
+    }
+  } 
 }
 
 /* Settings */
@@ -909,7 +915,7 @@ body .toggle-auto-hide-btn {
     text-shadow: #000 0px 0px 2px;
   }
 }
-body.immersive-mode .toggle-auto-hide-btn {
+html[data-ambilight-immersive-mode="true"] .toggle-auto-hide-btn {
   font-weight: bold;
 }
 
