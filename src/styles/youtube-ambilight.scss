@@ -332,6 +332,7 @@ html[data-ambilight-enabled="true"] {
   width: 320px;
   max-height: calc(100% - 70px);
   overflow-y: auto !important;
+  scrollbar-width: thin;
   right: 12px;
   bottom: 49px;
   z-index: 71;
