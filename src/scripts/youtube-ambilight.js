@@ -1,5 +1,15 @@
 import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
+import { getOS, getVersion, getBrowserName } from './libs/utils'
+
+const version = getVersion() || ''
+const os = getOS() || ''
+const browserName = getBrowserName() || ''
+window.browser = window.browser || window.chrome
+document.querySelector('html').setAttribute('data-ambilight-version', version);
+document.querySelector('html').setAttribute('data-ambilight-os', os);
+document.querySelector('html').setAttribute('data-ambilight-browser', browserName);
+document.querySelector('html').setAttribute('data-ambilight-baseurl', browser.runtime.getURL(''));
 
 class Ambilight {
   static isClassic = false
@@ -2683,7 +2693,7 @@ const ambilightDetectVideoInfo = () => {
   try {
     const saveStreamingData = () => {
       try {
-        if(!ytplayer.config || !ytplayer.config.args || !ytplayer.config.args.player_response) return
+        if(!window.ytplayer || !ytplayer.config || !ytplayer.config.args || !ytplayer.config.args.player_response) return
 
         const videoInfo = window.currentVideoInfo
         const streamingData = (JSON.parse(ytplayer.config.args.player_response).streamingData)

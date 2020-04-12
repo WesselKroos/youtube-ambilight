@@ -17,7 +17,7 @@ export const getOS = () => {
   }
 }
 
-export const getBrowser = () => {
+export const getBrowserName = () => {
   try {
     const list = [
       { match: 'Firefox', name: 'Firefox' },

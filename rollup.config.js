@@ -25,15 +25,6 @@ const background = {
   }
 }
 
-const content = {
-   input:  './src/scripts/content.js',
-   output:  { 
-    file: './dist/scripts/content.js',
-    format: 'iife',
-    globals: {},
-  }
-}
-
 const youtubeAmbilight = {
    input:  './src/scripts/youtube-ambilight.js',
    output:  { 
@@ -45,6 +36,5 @@ const youtubeAmbilight = {
 
 export default [
   Object.assign({}, background, common),
-  Object.assign({}, content, common),
   Object.assign({}, youtubeAmbilight, common)
 ]
