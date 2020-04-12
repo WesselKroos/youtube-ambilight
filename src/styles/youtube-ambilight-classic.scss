@@ -52,11 +52,32 @@ body #footer-container {
   transition: all .2s;
 }
 
+#yt-masthead-container.at-top {
+  #yt-masthead-creation-button:before {
+    filter: brightness(2.5);
+  }
+  .yt-uix-button-icon-bell {
+    filter: invert(1);
+    opacity: 0.75;
+  }
+  .search-btn-component .yt-uix-button-content {
+    transition: filter .2s, opacity .2s;
+  }
+  #masthead-search:not(:hover):not(:focus-within) .search-btn-component .yt-uix-button-content {
+    filter: invert(1) brightness(1.5);
+    opacity: 0.25;
+  }
+}
+
 #appbar-guide-menu {
   background: rgba(10,10,10,.95) !important;
 }
 #guide-container {
   pointer-events: all;
+}
+
+#logo-container {
+  filter: brightness(8);
 }
 
 #appbar-guide-menu, .guide-flyout, .guide-item,
@@ -78,8 +99,9 @@ body #footer-container {
   color: #167ac6;
 }
 
-#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input {
-  color: #7d7d7d54;
+#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input,
+#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input::-webkit-input-placeholder {
+  color: rgba(255,255,255,.25);
 }
 
 #footer .pickers .yt-uix-button, #footer-main > .yt-uix-button, #page .yt-uix-button,
@@ -154,8 +176,6 @@ body #footer-container {
 #action-panel-overflow-button:before, 
 .action-panel-trigger-overflow:before,
 .yt-uix-subscription-preferences-button:before,
-.yt-uix-button-icon-bell,
-#yt-masthead-creation-button:before,
 .yt-uix-button-action-menu:before, 
 .yt-uix-button-lockup-action-menu:before,
 #comment-section-renderer .sprite-like:before,
@@ -173,5 +193,17 @@ body #footer-container {
   background: transparent !important;
 }
 
+ytd-app[is-watch-page] #top > #container > *,
+#watch7-main,
+#player-playlist .watch-playlist {
+  filter: var(--ambilight-filter-shadow-inverted) !important;
+}
+&[dark="true"] {
+  ytd-app[is-watch-page] #top > #container > *,
+  #watch7-main,
+  #player-playlist .watch-playlist {
+    filter: var(--ambilight-filter-shadow) !important;
+  }
+}
 
 }

@@ -921,24 +921,13 @@ html[data-ambilight-enabled="true"] {
     box-shadow: var(--ambilight-video-shadow-box-shadow, none) !important;
   }
 
-  &:not([dark="true"]) {
-    ytd-masthead {
-      filter: var(--ambilight-filter-shadow) !important;
-    }
-  }
-  ytd-app[is-watch-page] #top > #container > *,
   ytd-app[is-watch-page] #primary-inner > *:not(#player),
-  ytd-app[is-watch-page] #secondary,
-  #watch7-main,
-  #player-playlist .watch-playlist {
+  ytd-app[is-watch-page] #secondary {
     filter: var(--ambilight-filter-shadow-inverted) !important;
   }
   &[dark="true"] {
-    ytd-app[is-watch-page] #top > #container > *,
     ytd-app[is-watch-page] #primary-inner > *:not(#player),
-    ytd-app[is-watch-page] #secondary,
-    #watch7-main,
-    #player-playlist .watch-playlist {
+    ytd-app[is-watch-page] #secondary {
       filter: var(--ambilight-filter-shadow) !important;
     }
   }
