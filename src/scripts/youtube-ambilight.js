@@ -1,6 +1,9 @@
 import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
+import { getDevicePerformance } from './libs/utils'
 const html = document.querySelector('html')
+
+getDevicePerformance()
 
 class Ambilight {
   static isClassic = false
