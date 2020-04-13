@@ -20,13 +20,14 @@
   },
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
-    "js": ["scripts/youtube-ambilight.js"],
+    "js": ["scripts/content.js"],
     "css": [
       "styles/youtube-ambilight.css",
       "styles/youtube-ambilight-classic.css"
     ]
   }],
   "web_accessible_resources": [
+    "scripts/youtube-ambilight.js",
     "images/noise-1.png",
     "images/noise-2.png",
     "images/noise-3.png"
