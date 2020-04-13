@@ -769,7 +769,7 @@ html[data-ambilight-enabled="true"] {
           margin-top: -8px;
 
           $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-          @for $i from 1 through 210 {
+          @for $i from 1 through 220 {
             $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #bbb;
           }
           box-shadow: $shadow;
@@ -801,7 +801,7 @@ html[data-ambilight-enabled="true"] {
   
           .ytp-fullscreen & {
             $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-            @for $i from 1 through 210 {
+            @for $i from 1 through 220 {
               $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
             }
             box-shadow: $shadow;
