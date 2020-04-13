@@ -42,7 +42,7 @@ export const getVersion = () => {
 }
 
 //Performance levels: 0 = Low | 1 = Medium | 2 = High
-export const getDevicePerformance = async () => {
+export const getDevicePerformanceLevel = () => {
   try {
     const specs = {
       RAM: {
@@ -51,25 +51,26 @@ export const getDevicePerformance = async () => {
       CPU: {
         threads: navigator.hardwareConcurrency
       },
-      GPU: {
-        videoDecoding: await navigator.mediaCapabilities.decodingInfo({
-          type: 'file', 
-          video: {
-              contentType: 'video/mp4;codecs=avc1.64001F',
-              width: 2160,
-              height: 3840,
-              bitrate: 50000, 
-              framerate: 60
-          } 
-        })
-      }
+      // Ignore GPU performance for now. Because almost all devices have hardware decoding for H264
+      // GPU: {
+      //   videoDecoding: await navigator.mediaCapabilities.decodingInfo({
+      //     type: 'file', 
+      //     video: {
+      //         contentType: 'video/mp4;codecs=avc1.64001F',
+      //         width: 2160,
+      //         height: 3840,
+      //         bitrate: 50000, 
+      //         framerate: 60
+      //     } 
+      //   })
+      // }
     }
-    console.log('Device performance specs:', specs)
+    //console.log('Device performance specs:', specs)
 
     const levels = {
       RAM: 0,
       CPU: 0,
-      GPU: 0
+      //GPU: 0
     }
 
     if(specs.RAM.gb < 4) {
@@ -88,19 +89,17 @@ export const getDevicePerformance = async () => {
       levels.CPU = 2
     }
 
-    if(!specs.GPU.videoDecoding.supported) {
-      levels.GPU = 0
-    } else if(!specs.GPU.videoDecoding.smooth) {
-      levels.GPU = 1
-    } else {
-      levels.GPU = 2
-    }
-    console.log('Device performance levels:', levels)
+    // if(!specs.GPU.videoDecoding.supported) {
+    //   levels.GPU = 0
+    // } else if(!specs.GPU.videoDecoding.smooth) {
+    //   levels.GPU = 1
+    // } else {
+    //   levels.GPU = 2
+    // }
+    //console.log('Device performance levels:', levels)
 
-    const level = Math.min(...levels)
-    console.log('Device performance level: ', level)
-    return level
+    return Math.min(...Object.keys(levels).map(key => levels[key]))
   } catch(ex) {
-    return 0
+    return 1
   }
 }

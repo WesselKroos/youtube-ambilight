@@ -1,9 +1,7 @@
 import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
-import { getDevicePerformance } from './libs/utils'
+import { getDevicePerformanceLevel } from './libs/utils'
 const html = document.querySelector('html')
-
-getDevicePerformance()
 
 class Ambilight {
   static isClassic = false
@@ -42,6 +40,8 @@ class Ambilight {
   ambilightFrameRate = 0
   previousFrameTime = 0
   syncInfo = []
+
+  devicePerformanceLevel = getDevicePerformanceLevel()
 
   enableMozillaBug1606251Workaround = false
 
@@ -334,7 +334,7 @@ class Ambilight {
         name: 'surroundingContentShadowSize',
         label: 'Shadow size<br/><span class="ytpa-menuitem-description">(Can cause scroll stuttering)</span>',
         type: 'list',
-        default: 20,
+        default: (this.devicePerformanceLevel === 0) ? 0 : 20,
         min: 0,
         max: 100,
         step: .1
