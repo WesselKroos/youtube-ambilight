@@ -1285,17 +1285,20 @@ class Ambilight {
         !horizontal ? this.shadow.elem.height : 0
       )
 
-      gradient.addColorStop(Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`)
+      let gradientStops = []
+      gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
       keyframes.forEach((e, i) => {
-        gradient.addColorStop(Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`)
+        gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`])
       })
-      gradient.addColorStop(Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`)
-      gradient.addColorStop(Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`)
+      gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
+      gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
       keyframes.reverse().forEach((e, i) => {
-        gradient.addColorStop(Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`)
+        gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`])
       })
-      gradient.addColorStop(Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`)
+      gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
+      gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
+      gradientStops.forEach(args => gradient.addColorStop(...args))
       this.shadow.ctx.fillStyle = gradient
       this.shadow.ctx.fillRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
     }
@@ -1317,7 +1320,10 @@ class Ambilight {
           o: Math.pow(i / length, powerOf) * darkest
         })
       }
-      return keyframes
+      return keyframes.map(({p, o}) => ({
+        p: (Math.round(p * 10000) / 10000),
+        o: (Math.round(o * 10000) / 10000)
+      }))
     }
     const darkest = 1
     const easing = (16 / (this.fadeOutEasing * .64))
