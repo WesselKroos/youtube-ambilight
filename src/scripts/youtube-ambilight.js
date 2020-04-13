@@ -2871,10 +2871,21 @@ const ambilightDetectVideoPage = () => {
   })
 }
 
+const ambilightDetectUnsupportedLayout = () => {
+  if($.s('ytm-app')) {
+    console.warn("Cannot add Ambilight to YouTube mobile layout")
+    AmbilightSentry.captureExceptionWithDetails(new Error("Cannot add Ambilight to YouTube mobile layout"))
+  } else if($.s('ytm-custom-control')) {
+    console.warn("Cannot add Ambilight to YouTube layout with custom controls")
+    AmbilightSentry.captureExceptionWithDetails(new Error("Cannot add Ambilight to YouTube layout with custom controls"))
+  }
+}
+
 try {
   if(!window.ambilight) {
     ambilightDetectPageTransition()
     ambilightDetectVideoPage()
+    ambilightDetectUnsupportedLayout()
   }
 } catch (ex) {
   console.error('YouTube Ambilight | Initialization', ex)

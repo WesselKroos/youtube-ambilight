@@ -75,11 +75,35 @@ export default class AmbilightSentry {
       } catch (ex) {
         setExtra('pageExtra.isVideo.exception', ex)
       }
+
       try {
         pageExtra.isYtdApp = !!$.s('ytd-app')
       } catch (ex) { 
         setExtra('pageExtra.isYtdApp.exception', ex)
       }
+      try {
+        pageExtra.isYtmApp = !!$.s('ytm-app')
+      } catch (ex) { 
+        setExtra('pageExtra.isYtmApp.exception', ex)
+      }
+
+      try {
+        pageExtra.isYtpChromeControls = !!$.s('.ytp-chrome-controls')
+      } catch (ex) {
+        setExtra('pageExtra.controls.isYtpChromeControls.exception', ex)
+      }
+      try {
+        pageExtra.isYtmCustomControl = !!$.s('ytm-custom-control')
+      } catch (ex) {
+        setExtra('pageExtra.controls.isYtmCustomControl.exception', ex)
+      }
+      try {
+        pageExtra.isYtpNativeControls = !!$.s('.html5-video-player.ytp-native-controls')
+      } catch (ex) {
+        setExtra('pageExtra.controls.isYtpNativeControls.exception', ex)
+      }
+      
+      
       setExtra('page', pageExtra)
 
       try {
@@ -151,23 +175,25 @@ export default class AmbilightSentry {
         var selectors = {
           'html': $.sa('html'),
           'body': $.sa('body'),
-          '#page': $.sa('[id="#page"]'),
+          '#page': $.sa('#page'),
           'ytd-app': $.sa('ytd-app'),
           'ytd-watch-flexy': $.sa('ytd-watch-flexy'),
-          '#player-theater-container': $.sa('[id="player-theater-container"]'),
+          '#player-theater-container': $.sa('#player-theater-container'),
           'ytd-miniplayer': $.sa('ytd-miniplayer'),
           '#ytd-player': $.sa('#ytd-player'),
           '#container.ytd-player': $.sa('#container.ytd-player'),
           '.html5-video-container': $.sa('.html5-video-container'),
-          '#player-container': $.sa('[id="player-container"]'),
-          '#player-api': $.sa('[id="player-api"]'),
+          '#player-container': $.sa('#player-container'),
+          '#player-api': $.sa('#player-api'),
           '.html5-video-player': $.sa('.html5-video-player'),
           '#movie_player': $.sa('#movie_player'),
-          '.html5-video-container': $.sa('.html5-video-container'),
           'video': $.sa('video'),
+          'ytm-custom-control': $.sa('ytm-custom-control'),
+          '#player-control-overlay': $.sa('#player-control-overlay'),
+          '.player-controls-top': $.sa('.player-controls-top'),
           'ytd-masthead': $.sa('ytd-masthead'),
           'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
-          '#avatar-btn': $.sa('[id="avatar-btn"]'),
+          '#avatar-btn': $.sa('#avatar-btn'),
           '.ytp-chrome-bottom': $.sa('.ytp-chrome-bottom'),
           '.ytp-chrome-controls': $.sa('.ytp-chrome-controls'),
           '.ytp-right-controls': $.sa('.ytp-right-controls'),

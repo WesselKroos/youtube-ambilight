@@ -19,7 +19,7 @@
     "persistent": false
   },
   "content_scripts": [{
-    "matches": ["https://www.youtube.com/*"],
+    "matches": ["https://*.youtube.com/*"],
     "js": ["scripts/content.js"],
     "css": [
       "styles/youtube-ambilight.css",
