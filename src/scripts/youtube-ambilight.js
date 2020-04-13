@@ -343,8 +343,7 @@ class Ambilight {
         default: 25,
         min: 0,
         max: 100,
-        step: .1,
-        advanced: true
+        step: .1
       },
       {
         name: 'immersive',
@@ -373,16 +372,17 @@ class Ambilight {
         type: 'list',
         default: 0,
         min: 0,
-        max: 100
+        max: 100,
+        step: .1
       },
       {
         name: 'videoShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 50,
         min: 0,
         max: 100,
-        advanced: true
+        step: .1
       },
       {
         type: 'section',
@@ -754,7 +754,10 @@ class Ambilight {
     videoOverlayElem.class('ambilight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
-      ctx: videoOverlayElem.getContext('2d', ctxOptions),
+      ctx: videoOverlayElem.getContext('2d', {
+        ...ctxOptions,
+        desynchronized: true
+      }),
       isHiddenChangeTimestamp: 0
     }
   }
@@ -2423,13 +2426,6 @@ class Ambilight {
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-            }
-
-            if(setting.name === 'surroundingContentShadowSize') {
-              const opacitySetting = this.settings.find(setting => setting.name === 'surroundingContentShadowOpacity')
-              const opacityInputElem = $.s(`#setting-${opacitySetting.name}-range`)
-              opacityInputElem.value = opacitySetting.default
-              opacityInputElem.dispatchEvent(new Event('change', { bubbles: true }))
             }
           }
 

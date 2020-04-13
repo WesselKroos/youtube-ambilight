@@ -94,7 +94,7 @@ export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)
 
 export const ctxOptions = {
   alpha: false,
-  // desynchronized: false,
+  // desynchronized: true,
   imageSmoothingQuality: 'low'
 }
 
