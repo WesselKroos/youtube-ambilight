@@ -756,7 +756,7 @@ class Ambilight {
       elem: videoOverlayElem,
       ctx: videoOverlayElem.getContext('2d', {
         ...ctxOptions,
-        desynchronized: true
+        alpha: true
       }),
       isHiddenChangeTimestamp: 0
     }
@@ -849,7 +849,10 @@ class Ambilight {
       const projectorElem = $.create('canvas')
       projectorElem.class('ambilight__projector')
 
-      const projectorCtx = projectorElem.getContext('2d', ctxOptions)
+      const projectorCtx = projectorElem.getContext('2d', {
+        ...ctxOptions,
+        desynchronized: false
+      })
       this.projectorListElem.prepend(projectorElem)
 
       this.projectors.push({
