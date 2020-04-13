@@ -45,6 +45,17 @@
 html[data-ambilight-enabled="true"] {
   /* General */
 
+  body {
+    --yt-spec-text-secondary: rgba(20, 20, 20, 0.75);
+    --yt-spec-icon-inactive: rgba(20, 20, 20, 0.5);
+  }
+  &[dark="true"] {
+    body {
+      --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
+      --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
+    }
+  }
+
   &[dark="true"] {
     &,
     &[lang],

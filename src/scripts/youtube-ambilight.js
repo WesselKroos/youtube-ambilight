@@ -1861,7 +1861,6 @@ class Ambilight {
         this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
         this.videoOverlay.ctx.globalAlpha = alpha
         this.videoOverlay.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-        this.videoOverlay.ctx.globalAlpha = 1
 
         this.checkIfNeedToHideVideoOverlay()
       }
@@ -1870,7 +1869,6 @@ class Ambilight {
       this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
       this.blendedProjectorBuffer.ctx.globalAlpha = alpha
       this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-      this.blendedProjectorBuffer.ctx.globalAlpha = 1
       this.projectors.forEach((projector) => {
         projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
       })
