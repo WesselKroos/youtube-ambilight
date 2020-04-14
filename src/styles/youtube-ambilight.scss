@@ -149,6 +149,9 @@ html[data-ambilight-enabled="true"] {
   .html5-main-video {
     transform: var(--video-transform);
   }
+  .unstarted-mode .html5-main-video {
+    opacity: 0; //With autoplay disabled. Hide elemnt when transform property screws up the top propery
+  }
   .ambilight__video-overlay {
     transform: var(--video-transform);
   }
