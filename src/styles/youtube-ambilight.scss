@@ -357,10 +357,9 @@ html[data-ambilight-enabled="true"] {
   bottom: 49px;
   z-index: 71;
   will-change: width,height;
+  visibility: hidden;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s;
-
+  transition: opacity .15s, visibility 0s .15s !important;
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
@@ -368,8 +367,10 @@ html[data-ambilight-enabled="true"] {
 }
 .ytpa-ambilight-settings-menu.is-visible {
   opacity: 1;
-  pointer-events: all;
+  visibility: visible;
+  transition: opacity .15s, visibility 0s !important;
 }
+
 .ytpa-ambilight-settings-menu .ytp-panel {
   position: relative;
   overflow-x: visible;
