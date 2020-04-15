@@ -2408,29 +2408,8 @@ class Ambilight {
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
-              const edgeValue = (value <= 5.5 ) ? 2 : ((value >= 24.5) ? 17 : (
-                {
-                  6: 3,
-                  7: 3.5,
-                  8: 3.5,
-                  9: 4,
-                  10: 4.5,
-                  11: 5,
-                  12: 5.75,
-                  13: 6.5,
-                  14: 7,
-                  15: 7.5,
-                  16: 8,
-                  17: 8.5,
-                  18: 8.5,
-                  19: 9,
-                  20: 10,
-                  21: 11,
-                  22: 12.5,
-                  23: 14,
-                  24: 15,
-                }
-                [Math.round(value)]
+              const edgeValue = (value <= 5 ) ? 2 : ((value >= 42.5) ? 17 : (
+                value/2.5
               ))
 
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
