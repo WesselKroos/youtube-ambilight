@@ -92,12 +92,6 @@ export const body = document.body
 
 export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)
 
-export const ctxOptions = {
-  alpha: false,
-  desynchronized: true,
-  imageSmoothingQuality: 'low'
-}
-
 export const $ = {
   create: (tag) => { return document.createElement(tag) },
   s: (selector) => { return document.querySelector(selector) },

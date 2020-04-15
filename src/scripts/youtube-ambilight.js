@@ -1,7 +1,24 @@
-import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
+import { $, body, waitForDomElement, raf } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import { getDevicePerformanceLevel } from './libs/utils'
+
 const html = document.querySelector('html')
+
+const version = html.getAttribute('data-ambilight-version') || ''
+const os = html.getAttribute('data-ambilight-os') || ''
+const browser = html.getAttribute('data-ambilight-browser') || ''
+
+const ctxOptions = {
+  //Alpha enabled:
+  //Firefox: Prevents black lines at the edge of the ambilight canvasses
+  alpha: true,
+  //Desynchronized enabled:
+  //Firefox: Has no benifit
+  //Chrome: Results in less stutter when switching between hidden/visible video overlay
+  //Edge: Causes rendering artifacts on the first video frame
+  desynchronized: false,
+  imageSmoothingQuality: 'low'
+}
 
 class Ambilight {
   static isClassic = false
@@ -104,10 +121,13 @@ class Ambilight {
         this.start()
         this.resetSettingsIfNeeded()
       })
-      .on('canplay', () => {
-        if(!this.videoElem.paused) return;
+      .on('canplaythrough', () => {
+        //Switching video resolution while paused
         this.scheduleNextFrame()
-        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
+      })
+      .on('canplay', () => {
+        //Switching video resolution while paused
+        this.scheduleNextFrame()
       })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
@@ -208,7 +228,7 @@ class Ambilight {
     shadowElem.width = 1920
     shadowElem.height = 1080
     this.projectorsElem.appendChild(shadowElem)
-    const shadowCtx = shadowElem.getContext('2d', { ...ctxOptions, alpha: true })
+    const shadowCtx = shadowElem.getContext('2d', ctxOptions)
     this.shadow = {
       elem: shadowElem,
       ctx: shadowCtx
@@ -278,7 +298,7 @@ class Ambilight {
       },
       {
         name: 'framerateLimit',
-        label: 'Limit framerate (per second)',
+        label: 'Limit framerate',
         type: 'list',
         default: 0,
         min: 0,
@@ -636,7 +656,7 @@ class Ambilight {
 
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
-    $.s('html').attr('data-ambilight-enabled', this.enabled)
+    html.attr('data-ambilight-enabled', this.enabled)
 
     //Sections
     this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
@@ -727,6 +747,7 @@ class Ambilight {
 
     this.FPSListElem = document.createElement("div")
     this.FPSListElem.class('ambilight__fps-list')
+    this.FPSListElem.style.display = 'none'
 
     this.videoSyncedElem = document.createElement("div")
     this.videoSyncedElem.class('ambilight__video-synced')
@@ -757,10 +778,7 @@ class Ambilight {
     videoOverlayElem.class('ambilight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
-      ctx: videoOverlayElem.getContext('2d', {
-        ...ctxOptions,
-        alpha: true
-      }),
+      ctx: videoOverlayElem.getContext('2d', ctxOptions),
       isHiddenChangeTimestamp: 0
     }
   }
@@ -827,9 +845,6 @@ class Ambilight {
   }
 
   initFeedbackLink() {
-    const version = $.s('html').getAttribute('data-ambilight-version') || ''
-    const os = $.s('html').getAttribute('data-ambilight-os') || ''
-    const browser = $.s('html').getAttribute('data-ambilight-browser') || ''
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
@@ -852,10 +867,7 @@ class Ambilight {
       const projectorElem = $.create('canvas')
       projectorElem.class('ambilight__projector')
 
-      const projectorCtx = projectorElem.getContext('2d', {
-        ...ctxOptions,
-        desynchronized: false
-      })
+      const projectorCtx = projectorElem.getContext('2d', ctxOptions)
       this.projectorListElem.prepend(projectorElem)
 
       this.projectors.push({
@@ -872,8 +884,7 @@ class Ambilight {
   clear() {
     ambilightSetVideoInfo()
     this.projectors.forEach((projector) => {
-      projector.ctx.fillStyle = '#000'
-      projector.ctx.fillRect(0, 0, projector.elem.width, projector.elem.height)
+      projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
     })
   }
 
@@ -1161,7 +1172,7 @@ class Ambilight {
   updateStyles() {
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
-    const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
+    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
     const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
@@ -1591,14 +1602,6 @@ class Ambilight {
     return false
   }
 
-  hideFPS() {
-    this.videoFPSElem.textContent = ''
-    this.displayFPSElem.textContent = ''
-    this.ambilightFPSElem.textContent = ''
-    this.skippedFramesElem.textContent = ''
-    this.videoSyncedElem.textContent = ''
-  }
-
   detectVideoSynced() {
     if (!this.showFPS || !this.videoOverlay) return
     if (this.videoSyncedElem.textContent) {
@@ -1638,8 +1641,6 @@ class Ambilight {
               ) / 100
             ).toFixed(2)
           this.videoFPSElem.textContent = `VIDEO: ${frameRateText}`
-        } else if (this.videoFPSElem.textContent !== '') {
-          this.videoFPSElem.textContent = ''
         }
       }
       this.videoFrameRateStartFrame = videoFrameRateFrame
@@ -1660,8 +1661,6 @@ class Ambilight {
         this.displayFPSElem.style.color = (this.displayFrameRate < this.videoFrameRate - 1) 
           ? '#f33' 
           : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
-      } else if (this.displayFPSElem.textContent !== '') {
-        this.displayFPSElem.textContent = ''
       }
       this.displayFrameRateFrame = 1
       this.displayFrameRateStartTime = displayFrameRateTime
@@ -1684,8 +1683,6 @@ class Ambilight {
     if (this.showFPS) {
       this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
       this.skippedFramesElem.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
-    } else {
-      this.skippedFramesElem.textContent = ''
     }
 
     if (this.ambilightFrameRateStartTime === undefined) {
@@ -1713,8 +1710,6 @@ class Ambilight {
           this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9) 
             ? '#f33' 
             : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
-        } else if (this.ambilightFPSElem.textContent !== '') {
-          this.ambilightFPSElem.textContent = ''
         }
       }
       this.ambilightFrameRateStartFrame = ambilightFrameRateFrame
@@ -2024,10 +2019,10 @@ class Ambilight {
     if($.s(`#setting-enabled`))
       $.s(`#setting-enabled`).attr('aria-checked', true)
 
-    $.s('html').attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-enabled', true)
 
     if (!initial) {
-      const toLight = !$.s('html').attr('dark')
+      const toLight = !html.attr('dark')
       this.resetThemeToLightOnDisable = toLight
       this.setSetting('resetThemeToLightOnDisable', toLight)
       if($.s(`#setting-resetThemeToLightOnDisable`))
@@ -2045,7 +2040,7 @@ class Ambilight {
     this.setSetting('enabled', false)
     if($.s(`#setting-enabled`))
       $.s(`#setting-enabled`).attr('aria-checked', false)
-    $.s('html').attr('data-ambilight-enabled', false)
+    html.attr('data-ambilight-enabled', false)
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2069,7 +2064,7 @@ class Ambilight {
     try {
       if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
-      if ($.s('html').attr('dark')) {
+      if (html.attr('dark')) {
         if (value) return
       } else {
         if (!value) return
@@ -2139,7 +2134,7 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.showedCompareWarning = false
 
-    if (!$.s('html').attr('dark')) {
+    if (!html.attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
     
@@ -2159,15 +2154,13 @@ class Ambilight {
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
-    setTimeout(() => {
-      this.clear()
-      this.hideFPS()
-    }, 500)
+    this.clear()
+    this.FPSListElem.style.display = 'none'
 
-    $.s('html').attr('data-ambilight-enabled', false)
-    $.s('html').attr('data-ambilight-classic', false)
+    html.attr('data-ambilight-enabled', false)
+    html.attr('data-ambilight-classic', false)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', false)
+      html.attr('dark', false)
     }
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2179,10 +2172,13 @@ class Ambilight {
     this.isHidden = false
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
-    $.s('html').attr('data-ambilight-enabled', true)
-    $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
+    html.attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-classic', Ambilight.isClassic)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', true)
+      html.attr('dark', true)
+    }
+    if(this.showFPS) {
+      this.FPSListElem.style.display = ''
     }
   }
 
@@ -2516,8 +2512,12 @@ class Ambilight {
             }
           }
 
-          if (setting.name === 'showFPS' && !setting.value) {
-            this.hideFPS()
+          if (setting.name === 'showFPS') {
+            if(setting.value) {
+              this.FPSListElem.style.display = ''
+            } else {
+              this.FPSListElem.style.display = 'none'
+            }
           }
 
           this.updateSizes()
