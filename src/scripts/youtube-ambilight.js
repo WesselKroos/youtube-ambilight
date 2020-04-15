@@ -370,7 +370,13 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Hide (immersive mode) [Z]',
+        label: 'Hide everything [Z]',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'hideScrollbar',
+        label: 'Hide scrollbar',
         type: 'checkbox',
         default: false
       },
@@ -725,6 +731,8 @@ class Ambilight {
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
+    this.hideScrollbar = this.getSetting('hideScrollbar')
+    html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
@@ -2438,14 +2446,17 @@ class Ambilight {
             setting.value = !setting.value
           }
 
-          if (setting.name === 'immersive') {
-            this.toggleImmersiveMode()
-          }
           if (setting.name === 'enabled') {
             if (setting.value)
               this.enable()
             else
               this.disable()
+          }
+          if (setting.name === 'immersive') {
+            this.toggleImmersiveMode()
+          }
+          if (setting.name === 'hideScrollbar') {
+            html.attr('data-ambilight-hide-scrollbar', setting.value)
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
@@ -2462,7 +2473,8 @@ class Ambilight {
             setting.name === 'directionRightEnabled' ||
             setting.name === 'directionBottomEnabled' ||
             setting.name === 'directionLeftEnabled' ||
-            setting.name === 'advancedSettings'
+            setting.name === 'advancedSettings' ||
+            setting.name === 'hideScrollbar'
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)

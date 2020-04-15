@@ -311,6 +311,13 @@ html[data-ambilight-enabled="true"] {
     transition-delay: 0s;
   }
 
+  &[data-ambilight-hide-scrollbar="true"] {
+    scrollbar-width: none;
+    body::-webkit-scrollbar {
+      width: 0;
+    }
+  }
+  
   &[data-ambilight-immersive-mode="true"] {
     scrollbar-width: none;
     body::-webkit-scrollbar {
