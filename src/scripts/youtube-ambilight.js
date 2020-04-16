@@ -894,6 +894,9 @@ class Ambilight {
     this.projectors.forEach((projector) => {
       projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
     })
+    if(this.videoOverlayEnabled && this.videoOverlay) {
+      this.videoOverlay.ctx.clearRect(0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
+    }
   }
 
   detectVideoFillScale() {
