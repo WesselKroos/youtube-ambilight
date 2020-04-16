@@ -297,8 +297,10 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
+    transition: opacity .5s;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+      transition: opacity 0s;
     }
   }
 
