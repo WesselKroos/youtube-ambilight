@@ -20,6 +20,100 @@ const ctxOptions = {
   imageSmoothingQuality: 'low'
 }
 
+
+class FrameCounter {
+  durations = []
+  rates = []
+  rate = 0
+  count = 0
+  prev = undefined
+  elem = undefined
+  elemPrefix = 'AMBILIGHT'
+  visible = false
+  getColor = undefined
+  frequency = 1000
+
+  constructor(elem, elemPrefix, getColor) {
+    this.elem = elem
+    this.elemPrefix = elemPrefix
+    this.getColor = getColor
+  }
+
+  ignorePrevious() {
+    this.prev = undefined
+  }
+
+  reset() {
+    this.count = 0
+    this.rate = 0
+    this.durations = []
+    this.rates = []
+    this.prev = undefined
+    this.shownTime = undefined
+  }
+
+  //count = undefined when the update is only called when a new frame is drawn
+  //count = a number when the counter should be based on another number
+  update(count) {
+    if(count === undefined) {
+      count = this.count + 1
+    } else if(this.count === count) {
+      return
+    }
+
+    const time = performance.now()
+    const prev = this.prev
+
+    if(prev) {
+      const duration = (time - prev.time) / (count - prev.count)
+      this.durations.push({
+        time,
+        duration
+      })
+      this.durations = this.durations.filter(item => item.time > time - 500)
+
+      const rate = 1000 / (this.durations.reduce((sum, item) => sum + item.duration, 0) / this.durations.length)
+      this.rates.push({
+        time,
+        rate
+      })
+    }
+
+    if(this.rates.length) {
+      const rate = this.rates.reduce((sum, item) => sum + item.rate, 0) / this.rates.length
+      const shouldShow = (this.visible && (!this.shownTime || this.shownTime < performance.now() - this.frequency)) // || (Math.abs(rate - this.rate) / this.rate) > .0005)) 
+      this.rate = rate
+      this.rates = this.rates.filter(item => item.time > time - 2000)
+
+      if(shouldShow)
+        this.show()
+    }
+    
+    this.count = count
+    this.prev = {
+      count,
+      time
+    }
+  }
+
+  show() {
+    this.visible = true
+
+    this.shownTime = performance.now()
+    this.elem.textContent = `${this.elemPrefix} ${this.rate.toFixed(2)}`
+    if(this.getColor)
+      this.elem.style.color = this.getColor(this.rate)
+  }
+
+  hide() {
+    this.visible = false
+
+    this.elem.textContent = ''
+    this.elem.style.color = ''
+  }
+}
+
+
 class Ambilight {
   static isClassic = false
   VIEW_DETACHED = 'VIEW_DETACHED'
@@ -27,9 +121,6 @@ class Ambilight {
   VIEW_THEATER = 'VIEW_THEATER'
   VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
   VIEW_POPUP = 'VIEW_POPUP'
-
-  showDisplayFrameRate = true
-  showVideoFrameRate = true
 
   horizontalBarsClipPX = 0
 
@@ -48,14 +139,8 @@ class Ambilight {
   isVR = false
 
   videoFrameCount = 0
-  skippedFramesCount = 0
-  displayFrameRate = 0
-  videoFrameRate = 0
-  videoFrameRateMeasureStartTime = 0
-  videoFrameRateMeasureStartFrame = 0
-  ambilightFrameCount = 0
-  ambilightFrameRate = 0
-  previousFrameTime = 0
+  skippedFrames = []
+  previousVideoFrameTime = 0
   syncInfo = []
 
   devicePerformanceLevel = getDevicePerformanceLevel()
@@ -73,7 +158,7 @@ class Ambilight {
     this.initAmbilightElems()
     this.initBuffers()
     this.recreateProjectors()
-    this.initFPSListElem()
+    this.initFPSCounters()
 
     this.initStyles()
     this.updateStyles()
@@ -120,6 +205,7 @@ class Ambilight {
         this.initGetImageDataAllowed()
         this.start()
         this.resetSettingsIfNeeded()
+        this.resetFrameCounters(false, false)
       })
       .on('canplaythrough', () => {
         //Switching video resolution while paused
@@ -129,17 +215,24 @@ class Ambilight {
         //Switching video resolution while paused
         this.scheduleNextFrame()
       })
+      .on('seeking', () => {
+        this.seeking = true
+        this.resetFrameCounters(false, false) // Todo: Don't reset framerate & videosync
+      })
       .on('seeked', () => {
-        this.resetVideoFrameCounter()
+        this.seeking = false
         this.scheduleNextFrame()
+        this.resetFrameCounters(false, false) // Todo: Don't reset framerate & videosync
       })
       .on('ended', () => {
         this.resetSettingsIfNeeded()
         this.clear()
+        this.resetFrameCounters(true, true)
       })
       .on('emptied', () => {
         this.resetSettingsIfNeeded()
         this.clear()
+        this.resetFrameCounters(true, true)
       })
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
@@ -280,7 +373,7 @@ class Ambilight {
         advanced: false
       },
       {
-        name: 'showFPS',
+        name: 'FPSvisible',
         label: 'Show framerate',
         type: 'checkbox',
         default: false,
@@ -317,7 +410,7 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlaySyncThreshold',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video disable threshold<br/><span class="ytpa-menuitem-description">(Disable when dropping % of frames)</span></span>',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video threshold<br/><span class="ytpa-menuitem-description">Disables when dropping % of frames</span></span>',
         type: 'list',
         default: 5,
         min: 1,
@@ -735,7 +828,7 @@ class Ambilight {
     html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
-    this.showFPS = this.getSetting('showFPS')
+    this.FPSvisible = this.getSetting('FPSvisible')
 
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
     this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
@@ -749,10 +842,7 @@ class Ambilight {
     })
   }
 
-  initFPSListElem() {
-    if (!this.showDisplayFrameRate && !this.showVideoFrameRate) return
-    if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
-
+  initFPSCounters() {
     this.FPSListElem = document.createElement("div")
     this.FPSListElem.class('ambilight__fps-list')
     this.FPSListElem.style.display = 'none'
@@ -764,6 +854,13 @@ class Ambilight {
     this.displayFPSElem = document.createElement("div")
     this.displayFPSElem.class('ambilight__display-fps')
     this.FPSListElem.prepend(this.displayFPSElem)
+    this.displayFrameCounter = new FrameCounter(
+      this.displayFPSElem, 
+      'DISPLAY',
+      (rate) => (rate < this.videoFrameCounter.rate - 1) 
+        ? '#f33' 
+        : (rate < this.videoFrameCounter.rate - 0.01) ? '#df0' : '#7f7'
+    )
 
     this.skippedFramesElem = document.createElement("div")
     this.skippedFramesElem.class('ambilight__skipped-frames')
@@ -772,13 +869,29 @@ class Ambilight {
     this.ambilightFPSElem = document.createElement("div")
     this.ambilightFPSElem.class('ambilight__ambilight-fps')
     this.FPSListElem.prepend(this.ambilightFPSElem)
+    this.ambilightFrameCounter = new FrameCounter(
+      this.ambilightFPSElem, 
+      'AMBILIGHT',
+      (rate) => 
+        (rate < this.videoFrameCounter.rate * .9) 
+        ? '#f33' 
+        : (rate < this.videoFrameCounter.rate - 0.01) ? '#df0' : '#7f7'
+    )
 
     this.videoFPSElem = document.createElement("div")
     this.videoFPSElem.class('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
+    this.videoFrameCounter = new FrameCounter(
+      this.videoFPSElem, 
+      'VIDEO'
+    )
 
     const playerContainerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
     playerContainerElem.prepend(this.FPSListElem)
+    
+    if(this.FPSvisible) {
+      this.showFPS()
+    }
   }
 
   initVideoOverlay() {
@@ -883,10 +996,6 @@ class Ambilight {
         ctx: projectorCtx
       })
     }
-  }
-
-  resetVideoFrameCounter() {
-    this.videoFrameCount = 0
   }
 
   clear() {
@@ -1129,7 +1238,7 @@ class Ambilight {
         this.initVideoOverlayWithFrameBlending()
       }
       if(this.videoOverlayEnabled && this.videoOverlay)
-        this.checkIfNeedToHideVideoOverlay()
+        this.updateVideoOverlayVisibility()
 
       if (this.frameBlending) {
         this.previousProjectorBuffer.elem.width = this.p.w
@@ -1164,11 +1273,7 @@ class Ambilight {
       }
       this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
 
-
       this.resizeCanvasses()
-
-      this.resetVideoFrameCounter()
-      this.initFPSListElem()
 
       this.sizesInvalidated = false
       this.buffersCleared = true
@@ -1468,23 +1573,6 @@ class Ambilight {
       }
     }
 
-    //What use case is this?
-    // if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
-    //   const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-    //   const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
-    //   if(this.videoShadowElem.style.transform !== `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`) {
-    //     console.log('nope!', 
-    //       this.videoShadowElem.style.transform, 
-    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
-    //     return this.updateSizes()
-    //   } else {
-    //     console.log('yes!', 
-    //       this.videoShadowElem.style.transform, 
-    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
-    //   }
-    // }
-
-
     return true
   }
 
@@ -1554,7 +1642,6 @@ class Ambilight {
       this.scheduled = false
 
       if (!this.checkVideoSize()) {
-        this.videoFrameCount = 0
         return
       } else if (!this.p) {
         //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
@@ -1581,8 +1668,6 @@ class Ambilight {
         }
       }
 
-      this.detectVideoFrameRate()
-      this.detectAmbilightFrameRate()
       this.detectVideoSynced()
 
       if (this.videoElem.paused) {
@@ -1614,7 +1699,7 @@ class Ambilight {
   }
 
   detectVideoSynced() {
-    if (!this.showFPS || !this.videoOverlay) return
+    if (!this.FPSvisible || !this.videoOverlay) return
     if (this.videoSyncedElem.textContent) {
       if (!this.videoOverlayEnabled) {
         this.videoSyncedElem.textContent = ''
@@ -1625,107 +1710,39 @@ class Ambilight {
     }
     if (!this.videoOverlayEnabled) return
 
-    this.videoSyncedElem.textContent = this.videoOverlayEnabled ? `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}` : ''
+    this.videoSyncedElem.textContent = this.videoOverlayEnabled ? `SYNC VIDEO: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}` : ''
     this.videoSyncedElem.style.color = this.videoOverlay.isHidden ? '#f33' : '#7f7'
     this.detectVideoSyncedWasHidden = this.videoOverlay.isHidden
   }
 
-  detectVideoFrameRate() {
-    if (this.videoFrameRateStartTime === undefined) {
-      this.videoFrameRateStartTime = 0
-      this.videoFrameRateStartFrame = 0
-    }
+  detectFrameRates = () => {
+    if(!this.detectFrameRatesScheduled) return
+    this.detectFrameRatesScheduled = false
 
-    const frameCount = this.getVideoFrameCount()
-    const videoFrameRateFrame = frameCount
-    const videoFrameRateTime = performance.now()
-    if (this.videoFrameRateStartTime + 2000 < videoFrameRateTime) {
-      if (this.videoFrameRateStartFrame !== 0) {
-        this.videoFrameRate = (
-          (videoFrameRateFrame - this.videoFrameRateStartFrame) / 
-          ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
-        )
-        if (this.showFPS) {
-          const frameRateText = (
-              Math.round(
-                Math.min(this.videoFrameRate, Math.max(0, this.videoFrameRate)) * 100
-              ) / 100
-            ).toFixed(2)
-          this.videoFPSElem.textContent = `VIDEO: ${frameRateText}`
-        }
-      }
-      this.videoFrameRateStartFrame = videoFrameRateFrame
-      this.videoFrameRateStartTime = videoFrameRateTime
-    }
-  }
-
-  detectDisplayFrameRate = () => {
-    if(!this.detectDisplayFrameRateScheduled) return
-    this.detectDisplayFrameRateScheduled = false
-
-    const displayFrameRateTime = performance.now()
-    if (this.displayFrameRateStartTime < displayFrameRateTime - 2000) {
-      this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
-      if (this.showFPS) {
-        const frameRateText = (Math.round(Math.max(0, this.displayFrameRate) * 100) / 100).toFixed(2)
-        this.displayFPSElem.textContent = `DISPLAY: ${frameRateText}`
-        this.displayFPSElem.style.color = (this.displayFrameRate < this.videoFrameRate - 1) 
-          ? '#f33' 
-          : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
-      }
-      this.displayFrameRateFrame = 1
-      this.displayFrameRateStartTime = displayFrameRateTime
-    } else {
-      if (!this.displayFrameRateFrame) {
-        this.displayFrameRateFrame = 1
-        this.displayFrameRateStartTime = displayFrameRateTime
-      } else {
-        this.displayFrameRateFrame++
-      }
-    }
+    this.displayFrameCounter.update()
+    this.videoFrameCounter.update(this.getVideoFrameCount())
     
     if(!this.enabled || this.videoElem.paused) return
 
-    this.detectDisplayFrameRateScheduled = true
-    raf(this.detectDisplayFrameRate)
+    this.detectFrameRatesScheduled = true
+    raf(this.detectFrameRates)
   }
 
-  detectAmbilightFrameRate() {
-    if (this.showFPS) {
-      this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
-      this.skippedFramesElem.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
-    }
-
-    if (this.ambilightFrameRateStartTime === undefined) {
-      this.ambilightFrameRateStartTime = 0
-      this.ambilightFrameRateStartFrame = 0
-    }
-
-    const frameCount = this.ambilightFrameCount
-    const ambilightFrameRateFrame = frameCount
-    const ambilightFrameRateTime = performance.now()
-
-    if (this.ambilightFrameRateStartTime + 2000 < ambilightFrameRateTime) {
-      if (this.ambilightFrameRateStartFrame !== 0) {
-        this.ambilightFrameRate = (
-          (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / 
-          ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
-        )
-        if (this.showFPS) {
-          const frameRateText = (
-            Math.round(
-              Math.min(this.displayFrameRate || this.ambilightFrameRate, Math.max(0, this.ambilightFrameRate)) * 100
-            ) / 100
-          ).toFixed(2)
-          this.ambilightFPSElem.textContent = `AMBILIGHT: ${frameRateText}`
-          this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9) 
-            ? '#f33' 
-            : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#df0' : '#7f7'
-        }
+  updateSkippedFrames(count) {
+    if(count) {
+      const now = performance.now()
+      for(let i = 0; i < count; i++) {
+        this.skippedFrames.push(now)
       }
-      this.ambilightFrameRateStartFrame = ambilightFrameRateFrame
-      this.ambilightFrameRateStartTime = ambilightFrameRateTime
     }
+
+    if (this.FPSvisible)
+      this.showSkippedFrames()
+  }
+
+  showSkippedFrames() {
+    this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFrames.length}`
+    this.skippedFramesElem.style.color = (this.skippedFrames.length > 0) ? '#f33' : '#7f7'
   }
 
   getVideoFrameCount() {
@@ -1733,6 +1750,29 @@ class Ambilight {
     if (this.requestAnimationFramePresentedFrames) return this.requestAnimationFramePresentedFrames
     return this.videoElem.mozPaintedFrames || // Firefox
       (this.videoElem.webkitDecodedFrameCount + this.videoElem.webkitDroppedFrameCount) // Chrome
+  }
+
+  resetFrameCounters(resetSkippedFrames, resetFrameRates) {
+    this.previousVideoFrameTime = 0
+    this.previousDrawTime = 0
+    
+    if(resetSkippedFrames) {
+      this.skippedFrames = []
+      if(this.FPSvisible)
+        this.showSkippedFrames()
+    }
+
+    this.videoFrameCount = 0
+
+    if(resetFrameRates) {
+      this.ambilightFrameCounter.reset()
+      this.videoFrameCounter.reset()
+      this.displayFrameCounter.reset()
+    } else {
+      this.ambilightFrameCounter.ignorePrevious()
+      this.videoFrameCounter.ignorePrevious()
+      this.displayFrameCounter.ignorePrevious()
+    }
   }
 
   drawAmbilight() {
@@ -1764,8 +1804,8 @@ class Ambilight {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     } else if (this.frameSync == 50 || this.frameBlending) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-      if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
-        if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
+      if (this.getImageDataAllowed && this.videoFrameCounter.rate && this.displayFrameCounter.rate && this.displayFrameCounter.rate > this.videoFrameCounter.rate) {
+        if(!hasNewFrame || this.framerateLimit > this.videoFrameCounter.rate - 1) {
           //performance.mark('comparing-compare-start')
           let lines = []
           let partSize = Math.ceil(this.videoSnapshotBuffer.elem.height / 3)
@@ -1819,9 +1859,9 @@ class Ambilight {
       }
     }
     
-    const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
+    const skippedFrames = (!this.seeking && this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (skippedFrames) {
-      this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
+      this.updateSkippedFrames((newVideoFrameCount - 1) - this.videoFrameCount)
     }
     if (newVideoFrameCount > this.videoFrameCount) {
       this.videoFrameCount = newVideoFrameCount
@@ -1830,7 +1870,7 @@ class Ambilight {
     if (this.frameBlending && !this.videoElem.paused) {
       const drawTime = performance.now()
       if (hasNewFrame) {
-        this.previousFrameTime = this.previousDrawTime
+        this.previousVideoFrameTime = this.previousDrawTime
 
         if (this.videoOverlayEnabled) {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
@@ -1845,9 +1885,9 @@ class Ambilight {
           this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
       }
-      const frameDuration = (drawTime - this.previousFrameTime)
+      const frameDuration = (drawTime - this.previousVideoFrameTime)
       let alpha =  1
-      if(!this.buffersCleared && (this.displayFrameRate >= this.videoFrameRate * 1.33))
+      if(!this.buffersCleared && (this.displayFrameCounter.rate >= this.videoFrameCounter.rate * 1.33))
         alpha = Math.min(
           1, 
           (
@@ -1855,7 +1895,7 @@ class Ambilight {
             (
               1000 / 
               (
-                this.videoFrameRate / 
+                this.videoFrameCounter.rate / 
                 (this.frameBlendingSmoothness / 100) || 1
               )
             )
@@ -1868,7 +1908,7 @@ class Ambilight {
         this.videoOverlay.ctx.globalAlpha = alpha
         this.videoOverlay.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
 
-        this.checkIfNeedToHideVideoOverlay()
+        this.updateVideoOverlayVisibility()
       }
 
       this.blendedProjectorBuffer.ctx.globalAlpha = 1
@@ -1885,7 +1925,7 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
-        this.checkIfNeedToHideVideoOverlay()
+        this.updateVideoOverlayVisibility()
       }
 
       this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
@@ -1900,12 +1940,13 @@ class Ambilight {
       })
     }
 
-    this.ambilightFrameCount++
+    if(!this.seeking && this.ambilightFrameCounter.visible) //Only used when the framerate is visible
+      this.ambilightFrameCounter.update()
 
     this.buffersCleared = false
 
     if(this.enableMozillaBug1606251Workaround) {
-      this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+      this.elem.style.transform = `translateZ(${Math.random() % 10}px)`;
     }
   }
 
@@ -1991,36 +2032,35 @@ class Ambilight {
     return true
   }
 
-  checkIfNeedToHideVideoOverlay() {
-    var ambilightFramesAdded = this.ambilightFrameCount - this.prevAmbilightFrameCountForShouldHideDetection
-    var videoFramesAdded = this.videoFrameCount - this.prevVideoFrameCountForShouldHideDetection
-    var canChange = (performance.now() - this.videoOverlay.isHiddenChangeTimestamp) > 2000
-    var outSyncCount = this.syncInfo.filter(value => !value).length
-    var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
+  updateVideoOverlayVisibility() {
+    const frameRate = (this.videoFrameCounter.rate) ? this.videoFrameCounter.rate : 1
+    const timespan = 2 //seconds
+    const fromTime = performance.now() - (timespan * 1000)
+    const skippedFramesCount = this.skippedFrames
+      .slice(Math.max(0, this.skippedFrames.length - Math.ceil(frameRate * timespan)))
+      .filter(skippedFrameTime => skippedFrameTime > fromTime)
+      .length
 
-    if (this.videoElem.paused || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    const failureThreshold = (this.videoOverlaySyncThreshold / 100)
+    const failureRate = skippedFramesCount / (frameRate * timespan)
+    const aboveThreshold = failureRate > failureThreshold
+
+    const mayShow = (performance.now() - this.videoOverlay.hiddenTimestamp) > 2000
+
+    if (this.videoElem.paused || aboveThreshold) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.videoOverlay.hiddenTimestamp = performance.now()
         this.detectVideoSynced()
       }
-    } else if (canChange || this.videoOverlaySyncThreshold == 100) {
+    } else if (mayShow) {
       if (this.videoOverlay.isHidden) {
         this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
         this.detectVideoSynced()
       }
     }
-
-    this.syncInfo.push(!(ambilightFramesAdded < videoFramesAdded))
-    var syncInfoBufferLength = Math.min(120, Math.max(48, this.videoFrameRate * 2))
-    if (this.syncInfo.length > syncInfoBufferLength) {
-      this.syncInfo.splice(0, 1)
-    }
-    this.prevAmbilightFrameCountForShouldHideDetection = this.ambilightFrameCount
-    this.prevVideoFrameCountForShouldHideDetection = this.videoFrameCount
   }
 
   enable(initial = false) {
@@ -2141,20 +2181,18 @@ class Ambilight {
   start() {
     if (!this.isOnVideoPage || !this.enabled) return
 
-    this.videoFrameRateMeasureStartFrame = 0
-    this.videoFrameRateMeasureStartTime = 0
     this.showedCompareWarning = false
 
     if (!html.attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
-    
-    if(!this.detectDisplayFrameRateScheduled) {
-      this.detectDisplayFrameRateScheduled = true
-      raf(this.detectDisplayFrameRate)
-    }
 
     this.scheduleNextFrame()
+
+    if(!this.detectFrameRatesScheduled) {
+      this.detectFrameRatesScheduled = true
+      this.detectFrameRates()
+    }
   }
 
 
@@ -2166,7 +2204,7 @@ class Ambilight {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
     this.clear()
-    this.FPSListElem.style.display = 'none'
+    this.hideFPS()
 
     html.attr('data-ambilight-enabled', false)
     html.attr('data-ambilight-classic', false)
@@ -2188,8 +2226,8 @@ class Ambilight {
     if(Ambilight.isClassic) {
       html.attr('dark', true)
     }
-    if(this.showFPS) {
-      this.FPSListElem.style.display = ''
+    if(this.FPSvisible) {
+      this.showFPS()
     }
   }
 
@@ -2466,7 +2504,7 @@ class Ambilight {
             setting.name === 'frameSync' ||
             setting.name === 'frameBlending' ||
             setting.name === 'enableInFullscreen' ||
-            setting.name === 'showFPS' ||
+            setting.name === 'FPSvisible' ||
             setting.name === 'resetThemeToLightOnDisable' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
@@ -2527,11 +2565,11 @@ class Ambilight {
             }
           }
 
-          if (setting.name === 'showFPS') {
+          if (setting.name === 'FPSvisible') {
             if(setting.value) {
-              this.FPSListElem.style.display = ''
+              this.showFPS()
             } else {
-              this.FPSListElem.style.display = 'none'
+              this.hideFPS()
             }
           }
 
@@ -2541,6 +2579,21 @@ class Ambilight {
     })
 
     this.updateControlledSettings()
+  }
+
+  showFPS() {
+    this.FPSListElem.style.display = ''
+    this.displayFrameCounter.show()
+    this.videoFrameCounter.show()
+    this.ambilightFrameCounter.show()
+    this.showSkippedFrames()
+  }
+
+  hideFPS() {
+    this.FPSListElem.style.display = 'none'
+    this.displayFrameCounter.hide()
+    this.videoFrameCounter.hide()
+    this.ambilightFrameCounter.hide()
   }
 
   updateControlledSettings() {
