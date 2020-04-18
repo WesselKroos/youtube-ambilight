@@ -139,7 +139,8 @@ class Ambilight {
   isVR = false
 
   videoFrameCount = 0
-  skippedFrames = []
+  skippedFramesCount = 0
+  skippedFramesLastTimes = []
   previousVideoFrameTime = 0
   syncInfo = []
 
@@ -1730,10 +1731,14 @@ class Ambilight {
 
   updateSkippedFrames(count) {
     if(count) {
-      const now = performance.now()
+      this.skippedFramesCount += count
+      const now = Math.round(performance.now())
       for(let i = 0; i < count; i++) {
-        this.skippedFrames.push(now)
+        this.skippedFramesLastTimes.push(now)
       }
+
+      if(this.skippedFramesLastTimes.length > 240)
+        this.skippedFramesLastTimes.splice(0, this.skippedFramesLastTimes.length - 240)
     }
 
     if (this.FPSvisible)
@@ -1741,8 +1746,8 @@ class Ambilight {
   }
 
   showSkippedFrames() {
-    this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFrames.length}`
-    this.skippedFramesElem.style.color = (this.skippedFrames.length > 0) ? '#f33' : '#7f7'
+    this.skippedFramesElem.textContent = `DROPPED FRAMES: ${this.skippedFramesCount}`
+    this.skippedFramesElem.style.color = (this.skippedFramesCount > 0) ? '#f33' : '#7f7'
   }
 
   getVideoFrameCount() {
@@ -2033,21 +2038,21 @@ class Ambilight {
   }
 
   updateVideoOverlayVisibility() {
-    const frameRate = (this.videoFrameCounter.rate) ? this.videoFrameCounter.rate : 1
+    const frameRate = Math.max(this.videoFrameCounter.rate, 0.99)
     const timespan = 2 //seconds
     const fromTime = performance.now() - (timespan * 1000)
-    const skippedFramesCount = this.skippedFrames
-      .slice(Math.max(0, this.skippedFrames.length - Math.ceil(frameRate * timespan)))
+    const skippedInTimespan = this.skippedFramesLastTimes
+      .slice(Math.max(0, this.skippedFramesLastTimes.length - Math.ceil(frameRate * timespan)))
       .filter(skippedFrameTime => skippedFrameTime > fromTime)
       .length
 
     const failureThreshold = (this.videoOverlaySyncThreshold / 100)
-    const failureRate = skippedFramesCount / (frameRate * timespan)
+    const failureRate = skippedInTimespan / (frameRate * timespan)
     const aboveThreshold = failureRate > failureThreshold
 
     const mayShow = (performance.now() - this.videoOverlay.hiddenTimestamp) > 2000
 
-    if (this.videoElem.paused || aboveThreshold) {
+    if (this.videoElem.paused || aboveThreshold || frameRate < 1 || this.videoFrameCounter.count < 120) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
