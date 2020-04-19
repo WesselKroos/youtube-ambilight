@@ -934,9 +934,6 @@ class Ambilight {
       'VIDEO'
     )
 
-    const playerContainerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
-    playerContainerElem.prepend(this.FPSListElem)
-    
     if(this.FPSvisible) {
       this.showFPS()
     }
@@ -2634,6 +2631,11 @@ class Ambilight {
   }
 
   showFPS() {
+    if(this.FPSListElem && !this.FPSListElem.isConnected) {
+      const playerContainerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
+      playerContainerElem.prepend(this.FPSListElem)
+    }
+    
     this.FPSListElem.style.display = ''
     this.displayFrameCounter.show()
     this.videoFrameCounter.show()
