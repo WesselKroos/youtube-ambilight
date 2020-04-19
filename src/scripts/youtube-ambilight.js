@@ -37,6 +37,17 @@ class FrameCounter {
     this.elem = elem
     this.elemPrefix = elemPrefix
     this.getColor = getColor
+    if(elem.tagName !== 'CANVAS') return
+
+    elem.width = 300
+    elem.height = 22
+    const ctx = elem.getContext('2d', {
+      desynchronized: true
+    })
+    ctx.font = "18px Arial"
+    ctx.fillStyle = '#fff'
+    //ctx.globalCompositeOperation = 'copy'
+    this.elemCtx = ctx
   }
 
   ignorePrevious() {
@@ -98,11 +109,47 @@ class FrameCounter {
 
   show() {
     this.visible = true
-
     this.shownTime = performance.now()
-    this.elem.textContent = `${this.elemPrefix} ${this.rate.toFixed(2)}`
-    if(this.getColor)
-      this.elem.style.color = this.getColor(this.rate)
+
+    const text = `${this.elemPrefix}  ${this.rate.toFixed(2)}`
+    const color = (this.getColor) ? this.getColor(this.rate) : '#fff'
+
+    // const start = performance.now()
+
+    if(this.elemCtx) {
+      this.elemCtx.clearRect(0, 0, this.elem.width, this.elem.height)
+
+      // let pointerX = 0
+      // text.split('')
+      //   .map((char) => {
+      //     if(!FrameCounter.cachedChars[char]) {
+      //       const canvas = new OffscreenCanvas(30, 30)
+      //       const ctx = canvas.getContext('2d')
+      //       ctx.fillStyle = '#fff'
+      //       ctx.font = "18px Arial"
+      //       ctx.fillText(char, 0, 14)
+
+      //       trimCanvas(canvas)
+
+      //       FrameCounter.cachedChars[char] = canvas
+      //     }
+
+      //     this.elemCtx.drawImage(FrameCounter.cachedChars[char], pointerX, 0)
+      //     pointerX += FrameCounter.cachedChars[char].width
+      //   })
+
+      //this.elemCtx.strokeStyle = 'rgba(0,0,0,.75)'
+      //this.elemCtx.fillStyle = color
+      //this.elemCtx.clearRect(0, 0, this.elem.width, this.elem.height)
+      //this.elemCtx.strokeText(text, 0, 17)
+      this.elemCtx.fillText(text, 0, 17)
+    } else {
+      //this.elem.style.color = color
+      this.elem.textContent = text
+    }
+
+    // const end = performance.now()
+    // console.log(end - start)
   }
 
   hide() {
@@ -852,7 +899,11 @@ class Ambilight {
     this.videoSyncedElem.class('ambilight__video-synced')
     this.FPSListElem.prepend(this.videoSyncedElem)
 
-    this.displayFPSElem = document.createElement("div")
+    this.skippedFramesElem = document.createElement("div")
+    this.skippedFramesElem.class('ambilight__skipped-frames')
+    this.FPSListElem.prepend(this.skippedFramesElem)
+
+    this.displayFPSElem = document.createElement("canvas")
     this.displayFPSElem.class('ambilight__display-fps')
     this.FPSListElem.prepend(this.displayFPSElem)
     this.displayFrameCounter = new FrameCounter(
@@ -863,11 +914,7 @@ class Ambilight {
         : (rate < this.videoFrameCounter.rate - 0.01) ? '#df0' : '#7f7'
     )
 
-    this.skippedFramesElem = document.createElement("div")
-    this.skippedFramesElem.class('ambilight__skipped-frames')
-    this.FPSListElem.prepend(this.skippedFramesElem)
-
-    this.ambilightFPSElem = document.createElement("div")
+    this.ambilightFPSElem = document.createElement("canvas")
     this.ambilightFPSElem.class('ambilight__ambilight-fps')
     this.FPSListElem.prepend(this.ambilightFPSElem)
     this.ambilightFrameCounter = new FrameCounter(
@@ -879,7 +926,7 @@ class Ambilight {
         : (rate < this.videoFrameCounter.rate - 0.01) ? '#df0' : '#7f7'
     )
 
-    this.videoFPSElem = document.createElement("div")
+    this.videoFPSElem = document.createElement("canvas")
     this.videoFPSElem.class('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
     this.videoFrameCounter = new FrameCounter(
