@@ -206,4 +206,23 @@ ytd-app[is-watch-page] #top > #container > *,
   }
 }
 
+&[data-ambilight-immersive-mode="true"] {
+  #watch7-content,
+  #watch7-sidebar {
+    transition: opacity .15s ease-out;
+    will-change: opacity;
+  }
+  
+  body.at-top {
+    #watch7-content,
+    #watch7-sidebar {
+      opacity: 0;
+      transition-delay: 1s;
+      &:hover {
+        opacity: 1;
+        transition-delay: 0s;
+      }
+    }
+  }
+}
 }

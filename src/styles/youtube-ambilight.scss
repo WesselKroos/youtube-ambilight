@@ -343,8 +343,11 @@ html[data-ambilight-enabled="true"] {
         opacity: 0;
         transition-delay: 1s;
         &:hover {
-          opacity: 1;
-          transition-delay: 0s;
+          &,
+          ~ * {
+            opacity: 1;
+            transition-delay: 0s;
+          }
         }
       }
     }
