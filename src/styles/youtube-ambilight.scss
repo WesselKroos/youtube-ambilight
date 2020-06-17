@@ -356,6 +356,14 @@ html[data-ambilight-enabled="true"] {
 
 /* Settings */
 
+.ytp-ambilight-settings-shown .ytp-chrome-bottom {
+  opacity: 1 !important;
+}
+.ytp-ambilight-settings-shown .ytp-gradient-bottom {
+  opacity: 1 !important;
+  display: block !important;
+}
+
 .ytpa-ambilight-settings-menu {
   width: 320px;
   max-height: calc(100% - 70px);

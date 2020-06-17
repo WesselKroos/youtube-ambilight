@@ -2701,7 +2701,12 @@ class Ambilight {
         (this.settingsMenuOnCloseScrollBottom * percentage)
       )
     }
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.add('ytp-ambilight-settings-shown')
+    }
 
     this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
@@ -2718,7 +2723,12 @@ class Ambilight {
       (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
     this.settingsMenuElem.removeClass('is-visible')
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.remove('ytp-ambilight-settings-shown')
+    }
 
     body.off('click', this.onCloseSettingsListener)
     setTimeout(() => {
