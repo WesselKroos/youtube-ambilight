@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "YouTube Ambilight",
   "description": "Immersive yourself in YouTube videos with ambilight!",
-  "version": "2.34",
+  "version": "2.34.1",
   "author": "Wessel Kroos",
   "icons": {
     "16": "images/icon-16.png",

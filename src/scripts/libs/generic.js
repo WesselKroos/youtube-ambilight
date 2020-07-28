@@ -44,10 +44,6 @@ HTMLElement.prototype.removeClass = function (className) {
   }
   return this
 }
-HTMLElement.prototype.text = function (text) {
-  this.innerText = text
-  return this
-}
 const addEventListenerPrototype = function (eventNames, callback, getListenerCallback) {
   const reportedCallback = (...args) => {
     try {
