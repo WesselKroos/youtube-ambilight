@@ -312,7 +312,7 @@ class Ambilight {
         name: 'surroundingContentShadowSize',
         label: 'Shadow size',
         type: 'list',
-        default: 16,
+        default: 15,
         min: 0,
         max: 100
       },
@@ -320,10 +320,10 @@ class Ambilight {
         name: 'surroundingContentShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 30,
         min: 0,
         max: 100,
-        advanced: true
+        step: .1
       },
       {
         name: 'immersive',
@@ -352,16 +352,17 @@ class Ambilight {
         type: 'list',
         default: 0,
         min: 0,
-        max: 100
+        max: 100,
+        step: .1
       },
       {
         name: 'videoShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 50,
         min: 0,
         max: 100,
-        advanced: true
+        step: .1
       },
       {
         type: 'section',
@@ -1139,15 +1140,35 @@ class Ambilight {
     document.body.style.setProperty('--ambilight-video-shadow-background', 
       (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
     document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
-      (videoShadowSize)
+      (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow-size', (shadowSize) ? `${shadowSize}px` : '')
-    document.body.style.setProperty('--ambilight-filter-shadow-opacity', (shadowSize) ? shadowOpacity : '')
+    document.body.style.setProperty('--ambilight-filter-shadow', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity * 2}))`
+      )
+      : '')
+    document.body.style.setProperty('--ambilight-filter-shadow-inverted', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity * 2}))`
+      )
+      : '')
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
