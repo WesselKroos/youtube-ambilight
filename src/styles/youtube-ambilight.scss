@@ -200,6 +200,12 @@ html[data-ambilight-enabled="true"] {
     background: rgba(0,0,0,.15);
   }
 
+  /* Cosmetics - Movie offer */ 
+  #header.ytd-movie-offer-module-renderer,
+  #wide-clickable-area.ytd-movie-offer-module-renderer {
+    background: none;
+  }
+
   /* Cosmetics - Donation */
   
   #header-section.ytd-donation-shelf-renderer,
