@@ -194,6 +194,12 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
+  /* Cosmetics - Merch shelf */
+
+  ytd-merch-shelf-renderer {
+    background: rgba(0,0,0,.15);
+  }
+
   /* Cosmetics - Donation */
   
   #header-section.ytd-donation-shelf-renderer,
