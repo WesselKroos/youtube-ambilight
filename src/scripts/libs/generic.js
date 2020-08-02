@@ -84,6 +84,7 @@ HTMLElement.prototype.offset = function () {
   return this.getBoundingClientRect()
 }
 
+export const html = document.querySelector('html')
 export const body = document.body
 
 export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)

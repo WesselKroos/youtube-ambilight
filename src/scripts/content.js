@@ -1,4 +1,5 @@
 import { getOS, getVersion, getBrowser } from './libs/utils'
+import { html } from './libs/generic'
 
 const scripts = [
   chrome.extension.getURL('scripts/youtube-ambilight.js')
@@ -20,10 +21,10 @@ const setExtensionInfo = () => {
   const os = getOS() || ''
   const browser = getBrowser() || ''
 
-  document.querySelector('html').setAttribute('data-ambilight-version', version);
-  document.querySelector('html').setAttribute('data-ambilight-os', os);
-  document.querySelector('html').setAttribute('data-ambilight-browser', browser);
-  document.querySelector('html').setAttribute('data-ambilight-baseurl', chrome.extension.getURL(''));
+  html.setAttribute('data-ambilight-version', version);
+  html.setAttribute('data-ambilight-os', os);
+  html.setAttribute('data-ambilight-browser', browser);
+  html.setAttribute('data-ambilight-baseurl', chrome.extension.getURL(''));
 }
 
 setExtensionInfo()

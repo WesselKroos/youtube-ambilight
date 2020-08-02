@@ -1,4 +1,4 @@
-import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
@@ -613,7 +613,7 @@ class Ambilight {
 
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
-    $.s('html').attr('data-ambilight-enabled', this.enabled)
+    html.attr('data-ambilight-enabled', this.enabled)
 
     //Sections
     this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
@@ -799,9 +799,9 @@ class Ambilight {
   }
 
   initFeedbackLink() {
-    const version = $.s('html').getAttribute('data-ambilight-version') || ''
-    const os = $.s('html').getAttribute('data-ambilight-os') || ''
-    const browser = $.s('html').getAttribute('data-ambilight-browser') || ''
+    const version = html.getAttribute('data-ambilight-version') || ''
+    const os = html.getAttribute('data-ambilight-os') || ''
+    const browser = html.getAttribute('data-ambilight-browser') || ''
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
@@ -1128,7 +1128,7 @@ class Ambilight {
   updateStyles() {
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
-    const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
+    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
     const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
@@ -1978,10 +1978,10 @@ class Ambilight {
     this.setSetting('enabled', true)
     $.s(`#setting-enabled`).attr('aria-checked', true)
 
-    $.s('html').attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-enabled', true)
 
     if (!initial) {
-      const toLight = !$.s('html').attr('dark')
+      const toLight = !html.attr('dark')
       this.resetThemeToLightOnDisable = toLight
       this.setSetting('resetThemeToLightOnDisable', toLight)
       $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
@@ -1997,7 +1997,7 @@ class Ambilight {
 
     this.setSetting('enabled', false)
     $.s(`#setting-enabled`).attr('aria-checked', false)
-    $.s('html').attr('data-ambilight-enabled', false)
+    html.attr('data-ambilight-enabled', false)
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2021,7 +2021,7 @@ class Ambilight {
     try {
       if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
-      if ($.s('html').attr('dark')) {
+      if (html.attr('dark')) {
         if (value) return
       } else {
         if (!value) return
@@ -2091,7 +2091,7 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.showedCompareWarning = false
 
-    if (!$.s('html').attr('dark')) {
+    if (!html.attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
     
@@ -2116,10 +2116,10 @@ class Ambilight {
       this.hideFPS()
     }, 500)
 
-    $.s('html').attr('data-ambilight-enabled', false)
-    $.s('html').attr('data-ambilight-classic', false)
+    html.attr('data-ambilight-enabled', false)
+    html.attr('data-ambilight-classic', false)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', false)
+      html.attr('dark', false)
     }
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2131,10 +2131,10 @@ class Ambilight {
     this.isHidden = false
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
-    $.s('html').attr('data-ambilight-enabled', true)
-    $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
+    html.attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-classic', Ambilight.isClassic)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', true)
+      html.attr('dark', true)
     }
   }
 
@@ -2172,14 +2172,14 @@ class Ambilight {
 
   initImmersiveMode() {
     if (this.immersive)
-      $.s('html').attr('data-ambilight-immersive-mode', true)
+      html.attr('data-ambilight-immersive-mode', true)
   
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
     const enabled = !this.immersive
-    $.s('html').attr('data-ambilight-immersive-mode', enabled)
+    html.attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
     window.dispatchEvent(new Event('resize'))
