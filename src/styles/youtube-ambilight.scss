@@ -324,13 +324,8 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight__projector {
-      background: #fff;
+      background: none; //Prevent black canvas edge lines on Firefox
       /* image-rendering: pixelated; */
-  }
-  &[dark="true"] {
-    .ambilight__projector {
-        background: #000;
-    }
   }
 
   .ambilight__video-overlay {
