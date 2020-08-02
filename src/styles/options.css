@@ -5,12 +5,16 @@
 }
 html {
   background: #1f1f1f;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
 }
 body { 
-  min-width: 350px;
-  max-width: 100%;
-  padding: 5px;
+  width: 400px;
   color: #ccc;
+}
+
+main {
+  padding: 5px;
 }
 
 h1 {
@@ -31,5 +35,5 @@ a {
 }
 
 .important {
-  color: #f65;
+  color: #f22;
 }
