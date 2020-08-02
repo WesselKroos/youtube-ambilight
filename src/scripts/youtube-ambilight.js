@@ -2590,7 +2590,8 @@ class Ambilight {
     const isOpen = this.settingsMenuElem.classList.contains('is-visible')
     if (isOpen) return
 
-    this.settingsMenuElem.class('is-visible')
+    this.settingsMenuElem.removeClass('fade-out').class('is-visible')
+
     if(this.settingsMenuOnCloseScrollBottom !== -1) {
       const percentage = (this.settingsMenuElem.scrollHeight) / this.settingsMenuOnCloseScrollHeight
       this.settingsMenuElem.scrollTop = (
@@ -2598,7 +2599,13 @@ class Ambilight {
         (this.settingsMenuOnCloseScrollBottom * percentage)
       )
     }
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.add('ytp-ambilight-settings-shown')
+    }
 
     this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
@@ -2614,13 +2621,26 @@ class Ambilight {
       ? -1 : 
       (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
-    this.settingsMenuElem.removeClass('is-visible')
+
+    this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, (listener) => this.onSettingsFadeOutEndListener = listener)
+    this.settingsMenuElem.class('fade-out')
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.remove('ytp-ambilight-settings-shown')
+    }
 
     body.off('click', this.onCloseSettingsListener)
     setTimeout(() => {
       this.settingsMenuBtn.on('click', this.onSettingsBtnClicked, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
+  }
+
+  onSettingsFadeOutEnd = () => {
+    this.settingsMenuElem.removeClass('fade-out').removeClass('is-visible')
+    this.settingsMenuElem.off('animationend', this.onSettingsFadeOutEndListener)
   }
 
   setSetting(key, value) {

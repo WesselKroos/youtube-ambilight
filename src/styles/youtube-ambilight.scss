@@ -389,36 +389,67 @@ html[data-ambilight-enabled="true"] {
   @include scrollbar-dark-thin();
 }
 
+.ytp-ambilight-settings-shown .ytp-chrome-bottom {
+  opacity: 1 !important;
+}
+.ytp-ambilight-settings-shown .ytp-gradient-bottom {
+  opacity: 1 !important;
+  display: block !important;
+}
+
 .ytpa-ambilight-settings-menu {
   width: 320px;
   max-height: calc(100% - 70px);
   overflow-y: auto !important;
   right: 12px;
   bottom: 49px;
-  z-index: 71;
-  will-change: width,height;
+  z-index: 1001 !important; // above ad
   opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s;
-
+  transition: none;
+  will-change: width,height;
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
   }
+  &.is-visible {
+    opacity: 0;
+    animation: ytpa-ambilight-settings-menu-fade-in .2s 1 normal forwards;
+    @keyframes ytpa-ambilight-settings-menu-fade-in {
+      25% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  }
+  &.is-visible.fade-out {
+    animation: ytpa-ambilight-settings-menu-fade-out .15s 1 reverse forwards;
+    @keyframes ytpa-ambilight-settings-menu-fade-out {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    opacity: 0;
+  }
+  &:not(.is-visible) {
+    display: none;
+  }
+
+  .ytp-panel {
+    position: relative;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
 }
-.ytpa-ambilight-settings-menu.is-visible {
-  opacity: 1;
-  pointer-events: all;
-}
-.ytpa-ambilight-settings-menu .ytp-panel {
-  position: relative;
-  overflow-x: visible;
-  overflow-y: visible;
-}
+
 .ytp-ambilight-settings-button {
   position: relative;
   &::after {
-  content: '';
+    content: '';
     position: absolute;
     top: 10px;
     right: 5px;
@@ -433,9 +464,7 @@ html[data-ambilight-enabled="true"] {
     text-align: center;
     text-shadow: rgb(0,0,0) 1px 1px 1px;
   }
-}
-
-.ytp-ambilight-settings-button {
+  
   svg {
     transition: transform .1s cubic-bezier(0.4,0.0,1,1);
   }
