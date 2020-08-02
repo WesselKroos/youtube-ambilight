@@ -2172,13 +2172,14 @@ class Ambilight {
 
   initImmersiveMode() {
     if (this.immersive)
-      body.class('immersive-mode')
+      $.s('html').attr('data-ambilight-immersive-mode', true)
+  
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
-    body.classList.toggle('immersive-mode')
-    const enabled = body.classList.contains('immersive-mode')
+    const enabled = !this.immersive
+    $.s('html').attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
     window.dispatchEvent(new Event('resize'))

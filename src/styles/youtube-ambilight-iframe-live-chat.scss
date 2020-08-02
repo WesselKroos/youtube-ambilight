@@ -1,5 +1,21 @@
 /* Live chat iframe */
 
+@mixin scrollbar-dark-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, .15);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .2);
+    border: 0;
+  }
+}
+
 // Todo: Only style when upper frame has html[data-ambilight-enabled="true"]
 html[dark] {
   yt-live-chat-renderer,
@@ -11,19 +27,7 @@ html[dark] {
   }
 
   yt-live-chat-item-list-renderer[allow-scroll] #item-scroller.yt-live-chat-item-list-renderer {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, .1) rgba(0, 0, 0, .1);
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-    &::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, .1);
-    }
-    &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, .1);
-      border: 0;
-    }
+    @include scrollbar-dark-thin();
   }
 
   #message.yt-live-chat-text-message-renderer {
