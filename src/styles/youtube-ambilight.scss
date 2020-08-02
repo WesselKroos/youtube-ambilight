@@ -91,6 +91,7 @@ html[data-ambilight-enabled="true"] {
 
       @include scrollbar-dark-thin();
 
+      &[data-ambilight-hide-scrollbar="true"],
       &[data-ambilight-immersive-mode="true"] {
         scrollbar-width: none;
         body::-webkit-scrollbar {
