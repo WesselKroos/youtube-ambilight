@@ -2494,7 +2494,11 @@ class Ambilight {
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
             if(!setting.value) {
               if(!inputElem.dontResetControlledSetting) {
-                this.setSetting('horizontalBarsClipPercentage', 0)
+                const horizontalBarsClipPercentageSetting = this.settings.find(setting => setting.name === 'horizontalBarsClipPercentage')
+                const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
+                horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
+                horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
             } else {
               if(this.videoElem.paused) {
@@ -2510,7 +2514,11 @@ class Ambilight {
           if(setting.name === 'detectVideoFillScaleEnabled') {
             if(!setting.value) {
               if(!inputElem.dontResetControlledSetting) {
-                this.setSetting('videoScale', 100)
+                const videoScaleSetting = this.settings.find(setting => setting.name === 'videoScale')
+                const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
+                videoScaleInputElem.value = videoScaleSetting.default
+                videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                this.setSetting('videoScale', videoScaleSetting.default)
               }
             }
             if(inputElem.dontResetControlledSetting) {
