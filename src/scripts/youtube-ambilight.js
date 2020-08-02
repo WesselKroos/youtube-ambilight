@@ -1825,6 +1825,10 @@ class Ambilight {
     }
 
     if (this.frameBlending && !this.videoElem.paused) {
+      if (!this.previousProjectorBuffer) {
+        this.initFrameBlending()
+      }
+
       const drawTime = performance.now()
       if (hasNewFrame) {
         this.previousFrameTime = this.previousDrawTime
