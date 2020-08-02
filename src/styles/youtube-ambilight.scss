@@ -130,19 +130,10 @@ html[data-ambilight-enabled="true"] {
     transition: background-color 0s .01s;
   }
 
-  /* Chat */
+  /* Live chat (Iframe styling in youtube-ambilight-frame-live-chat.css */
 
-  yt-live-chat-renderer {
-      background: none !important;
-  }
-  
-  &[dark="true"] {
-    #message.yt-live-chat-text-message-renderer {
-        color: #fff;
-    }
-    #author-name.yt-live-chat-author-chip {
-        color: #bbb;
-    }
+  ytd-toggle-button-renderer {
+    background: none !important;
   }
 
   /* Video */

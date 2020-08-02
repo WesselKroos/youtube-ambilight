@@ -18,14 +18,23 @@
     "scripts" : ["scripts/background.js"],
     "persistent": false
   },
-  "content_scripts": [{
-    "matches": ["https://www.youtube.com/*"],
-    "js": ["scripts/content.js"],
-    "css": [
-      "styles/youtube-ambilight.css",
-      "styles/youtube-ambilight-classic.css"
-    ]
-  }],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["scripts/content.js"],
+      "css": [
+        "styles/youtube-ambilight.css",
+        "styles/youtube-ambilight-classic.css"
+      ]
+    },
+    {
+      "matches": ["https://www.youtube.com/live_chat_replay*"],
+      "css": [
+        "styles/youtube-ambilight-iframe-live-chat.css"
+      ],
+      "all_frames": true
+    }
+  ],
   "web_accessible_resources": [
     "styles/options.css",
     "scripts/youtube-ambilight.js",
