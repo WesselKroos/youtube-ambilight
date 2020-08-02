@@ -66,6 +66,14 @@ html[data-ambilight-enabled="true"] {
     --yt-spec-icon-inactive: rgba(20, 20, 20, 0.5);
   }
   &[dark="true"] {
+    // Make all card backgrounds transparent
+    --yt-spec-brand-background-solid: none;
+    --yt-spec-brand-background-primary: none;
+    --yt-spec-brand-background-secondary: none;
+    --yt-spec-general-background-a: none;
+    --yt-spec-general-background-b: none;
+    --yt-spec-general-background-c: none;
+    --yt-spec-snackbar-background: none;
     body {
       --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
       --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
@@ -230,7 +238,12 @@ html[data-ambilight-enabled="true"] {
   /* Cosmetics - Movie offer */ 
   #header.ytd-movie-offer-module-renderer,
   #wide-clickable-area.ytd-movie-offer-module-renderer {
-    background: none;
+    background: rgba(0,0,0,.15);
+  }
+
+  /* Cosmetics - Rich metadata */
+  ytd-rich-metadata-renderer {
+    background: rgba(0,0,0,.15);
   }
 
   /* Cosmetics - Donation */
