@@ -28,7 +28,7 @@
       ]
     },
     {
-      "matches": ["https://www.youtube.com/live_chat_replay*"],
+      "matches": ["https://www.youtube.com/live_chat*"],
       "css": [
         "styles/youtube-ambilight-iframe-live-chat.css"
       ],
