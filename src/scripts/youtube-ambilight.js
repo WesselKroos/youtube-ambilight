@@ -143,8 +143,13 @@ class Ambilight {
         const el = document.activeElement
         const tag = el.tagName
         const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
-        if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
+        if (
+          inputs.indexOf(tag) !== -1 || 
+          el.getAttribute('contenteditable') === 'true' || 
+          el.getAttribute('contenteditable') === 'plaintext-only' // YouTube classic comment
+        ) {
           return
+        }
       }
       if (e.keyCode === 70 || e.keyCode === 84) // f || t
         setTimeout(() => this.checkVideoSize(), 0)

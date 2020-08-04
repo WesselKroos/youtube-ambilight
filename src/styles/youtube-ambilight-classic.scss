@@ -67,19 +67,36 @@ body #footer-container {
 .watch-view-count,
 #watch7-sidebar .watch-sidebar-head,
 .yt-badge,
-.yt-subscription-button-subscriber-count-branded-horizontal, .yt-subscription-button-subscriber-count-unbranded-horizontal {
+.yt-subscription-button-subscriber-count-branded-horizontal, 
+.yt-subscription-button-subscriber-count-unbranded-horizontal,
+.comment-section-header-renderer {
   color: rgba(255,255,255,.95);
 }
-#watch7-sidebar .video-list-item a:visited .title, #watch7-sidebar .video-list-item a:visited .title .yt-deemphasized-text {
-  color: rgba(170,170,170,1);
+#watch7-sidebar .video-list-item:hover a .title, 
+#watch7-sidebar .video-list-item:hover a .title .yt-deemphasized-text {
+  color: #24a0ff;
 }
-#watch7-sidebar .video-list-item a:hover:visited .title, #watch7-sidebar .video-list-item a:hover:visited .title .yt-deemphasized-text,
+#watch7-sidebar .video-list-item a:visited .title, 
+#watch7-sidebar .video-list-item a:visited .title .yt-deemphasized-text {
+  color: rgba(240, 240, 240, 0.65);
+}
+#watch7-sidebar .video-list-item:hover a:visited .title, 
+#watch7-sidebar .video-list-item:hover a:visited .title .yt-deemphasized-text,
 #action-panel-details a {
-  color: #167ac6;
+  color: #24a0ff;
+}
+#watch7-sidebar .video-list .video-list-item .stat {
+  color: rgba(240, 240, 240, 0.65);
+}
+#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input {
+  color: rgba(240, 240, 240, 0.65);
 }
 
-#yt-masthead-container.at-top #masthead-search-terms:not(:hover):not(:focus-within) input {
-  color: #7d7d7d54;
+.autoplay-bar .checkbox-on-off {
+  color: rgba(240, 240, 240, 0.65);
+}
+.autoplay-bar .autoplay-info-icon {
+  filter: invert(1);
 }
 
 #footer .pickers .yt-uix-button, #footer-main > .yt-uix-button, #page .yt-uix-button,
@@ -89,6 +106,9 @@ body #footer-container {
 }
 #appbar-guide-button {
   background: none;
+}
+#yt-masthead-container:hover #appbar-guide-button {
+  filter: invert(1);
 }
 
 .guide-section-separator,
@@ -100,6 +120,16 @@ body #footer-container {
 #watch7-sidebar .watch-sidebar-separation-line,
 #footer-main {
   border-color: rgba(255,255,255,.2);
+}
+
+.comment-simplebox-arrow .arrow-inner {
+  display: none;
+}
+
+.comment-simplebox,
+.comment-simplebox-text {
+  background: none;
+  color: #fff;
 }
 
 #player-playlist:not(.watch-queue-nav) .playlist-videos-list li.currently-playing {
@@ -154,7 +184,8 @@ body #footer-container {
 #action-panel-overflow-button:before, 
 .action-panel-trigger-overflow:before,
 .yt-uix-subscription-preferences-button:before,
-.yt-uix-button-icon-bell,
+#yt-masthead-container.at-top .yt-uix-button-icon-material-upload,
+#yt-masthead-container.at-top .yt-uix-button-icon-bell,
 #yt-masthead-creation-button:before,
 .yt-uix-button-action-menu:before, 
 .yt-uix-button-lockup-action-menu:before,
