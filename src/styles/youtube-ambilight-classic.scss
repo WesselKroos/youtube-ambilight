@@ -205,4 +205,28 @@ body #footer-container {
 }
 
 
+/* Immersive mode */
+
+&[data-ambilight-immersive-mode="true"]:not(.show-guide) body[data-spf-name="watch"] {
+
+  #yt-masthead-container,
+  #watch7-content,
+  #watch7-sidebar {
+    transition: opacity .15s ease-out;
+    will-change: opacity;
+    transition-delay: 0s;
+  }
+
+  &.at-top {
+    #yt-masthead-container,
+    #watch7-content,
+    #watch7-sidebar {
+      &:not(:hover) {
+        opacity: 0;
+        transition-delay: 0.25s;
+      }
+    }
+  }
+}
+
 }

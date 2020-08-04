@@ -351,7 +351,7 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Hide everything [Z]',
+        label: 'Hide when scrolled to top [Z]',
         type: 'checkbox',
         default: false
       },
