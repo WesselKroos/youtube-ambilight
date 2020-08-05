@@ -127,7 +127,7 @@ class Ambilight {
       })
     )
 
-    window.addEventListener('resize', () => {
+    window.on('resize', () => {
       if (!this.isOnVideoPage) return
       this.checkVideoSize()
       setTimeout(() =>
@@ -137,7 +137,7 @@ class Ambilight {
         200)
     })
 
-    document.addEventListener('keydown', (e) => {
+    document.on('keydown', (e) => {
       if (!this.isOnVideoPage) return
       if (document.activeElement) {
         const el = document.activeElement
@@ -145,21 +145,23 @@ class Ambilight {
         const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
         if (
           inputs.indexOf(tag) !== -1 || 
-          el.getAttribute('contenteditable') === 'true' || 
-          el.getAttribute('contenteditable') === 'plaintext-only' // YouTube classic comment
+          (
+            el.getAttribute('contenteditable') !== null && 
+            el.getAttribute('contenteditable') !== 'false'
+          )
         ) {
           return
         }
       }
       if (e.keyCode === 70 || e.keyCode === 84) // f || t
         setTimeout(() => this.checkVideoSize(), 0)
-      if (e.keyCode === 90) // z
+      else if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
-      if (e.keyCode === 65) // a
+      else if (e.keyCode === 65) // a
         this.toggleEnabled()
-      if (e.keyCode === 66) // b
+      else if (e.keyCode === 66) // b
         $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-      if (e.keyCode === 87) // w
+      else if (e.keyCode === 87) // w
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
   }

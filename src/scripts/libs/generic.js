@@ -69,6 +69,7 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
 }
 HTMLElement.prototype.on = addEventListenerPrototype
 Window.prototype.on = addEventListenerPrototype
+HTMLDocument.prototype.on = addEventListenerPrototype
 
 const removeEventListenerPrototype = function (eventNames, callback) {
   const list = eventNames.split(' ')
