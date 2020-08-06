@@ -149,7 +149,7 @@ export default class AmbilightSentry {
 
       try {
         var selectors = {
-          'html': html,
+          'html': $.sa('html'),
           'body': $.sa('body'),
           '#page': $.sa('[id="#page"]'),
           'ytd-app': $.sa('ytd-app'),
