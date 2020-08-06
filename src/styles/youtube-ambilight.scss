@@ -171,6 +171,7 @@ html[data-ambilight-enabled="true"] {
   }
 
   /* Video */
+
   .html5-main-video {
     transform: var(--video-transform);
   }
@@ -237,12 +238,14 @@ html[data-ambilight-enabled="true"] {
   }
 
   /* Cosmetics - Movie offer */ 
+
   #header.ytd-movie-offer-module-renderer,
   #wide-clickable-area.ytd-movie-offer-module-renderer {
     background: rgba(0,0,0,.15);
   }
 
   /* Cosmetics - Rich metadata */
+
   ytd-rich-metadata-renderer {
     background: rgba(0,0,0,.15);
   }
@@ -362,15 +365,18 @@ html[data-ambilight-enabled="true"] {
       #secondary:not(:hover),
       #masthead-container:not(:hover) {
         opacity: 0;
-        transition-delay: 1s;
+        transition-delay: .25s;
       }
     
       #primary-inner > *:not(#player) {
         opacity: 0;
-        transition-delay: 1s;
+        transition-delay: .25s;
         &:hover {
-          opacity: 1;
-          transition-delay: 0s;
+          &,
+          & ~ * {
+            opacity: 1;
+            transition-delay: 0s;
+          }
         }
       }
     }
