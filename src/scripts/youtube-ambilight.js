@@ -1,4 +1,4 @@
-import { $, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
@@ -42,10 +42,7 @@ class Ambilight {
   enableMozillaBug1606251Workaround = false
 
   constructor(videoElem) {
-    this.videoElem = videoElem
-
-     //Possible fix for the getImageData SecurityError
-    this.videoElem.crossOrigin = 'anonymous'
+    this.initVideoElem(videoElem)
 
     this.detectMozillaBug1606251Workaround()
 
@@ -64,11 +61,16 @@ class Ambilight {
     this.initImmersiveMode()
 
     this.initListeners()
+    this.initGetImageDataAllowed()
 
     setTimeout(() => {
       if (this.enabled)
         this.enable(true)
     }, 0)
+  }
+
+  initVideoElem(videoElem) {
+    this.videoElem = videoElem
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -94,6 +96,7 @@ class Ambilight {
   initListeners() {
     this.videoElem
       .on('playing', () => {
+        this.initGetImageDataAllowed()
         this.start()
         this.resetSettingsIfNeeded()
       })
@@ -124,7 +127,7 @@ class Ambilight {
       })
     )
 
-    window.addEventListener('resize', () => {
+    window.on('resize', () => {
       if (!this.isOnVideoPage) return
       this.checkVideoSize()
       setTimeout(() =>
@@ -134,26 +137,48 @@ class Ambilight {
         200)
     })
 
-    document.addEventListener('keydown', (e) => {
+    document.on('keydown', (e) => {
       if (!this.isOnVideoPage) return
       if (document.activeElement) {
         const el = document.activeElement
         const tag = el.tagName
         const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
-        if (inputs.indexOf(tag) !== -1 || el.getAttribute('contenteditable') === 'true')
+        if (
+          inputs.indexOf(tag) !== -1 || 
+          (
+            el.getAttribute('contenteditable') !== null && 
+            el.getAttribute('contenteditable') !== 'false'
+          )
+        ) {
           return
+        }
       }
       if (e.keyCode === 70 || e.keyCode === 84) // f || t
         setTimeout(() => this.checkVideoSize(), 0)
-      if (e.keyCode === 90) // z
+      else if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
-      if (e.keyCode === 65) // a
+      else if (e.keyCode === 65) // a
         this.toggleEnabled()
-      if (e.keyCode === 66) // b
+      else if (e.keyCode === 66) // b
         $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-      if (e.keyCode === 87) // w
+      else if (e.keyCode === 87) // w
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
+  }
+
+  initGetImageDataAllowed() {
+    this.getImageDataAllowed = (!window.chrome || (this.videoElem.src && this.videoElem.src.indexOf('youtube.com') !== -1))
+
+    const settings = [
+      $.s(`#setting-detectHorizontalBarSizeEnabled`),
+      $.s(`#setting-detectColoredHorizontalBarSizeEnabled`),
+      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
+    ].filter(setting => setting)
+    if(this.getImageDataAllowed) {
+      settings.forEach(setting => setting.style.display = '')
+    } else {
+      settings.forEach(setting => setting.style.display = 'none')
+    }
   }
 
   initAmbilightElems() {
@@ -310,24 +335,31 @@ class Ambilight {
       },
       {
         name: 'surroundingContentShadowSize',
-        label: 'Shadow size',
+        label: 'Shadow size<br/><span class="ytpa-menuitem-description">(Can cause scroll stuttering)</span>',
         type: 'list',
-        default: 16,
+        default: 15,
         min: 0,
-        max: 100
+        max: 100,
+        step: .1
       },
       {
         name: 'surroundingContentShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 30,
         min: 0,
         max: 100,
-        advanced: true
+        step: .1
       },
       {
         name: 'immersive',
-        label: 'Hide (immersive mode) [Z]',
+        label: 'Hide when scrolled to top [Z]',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'hideScrollbar',
+        label: 'Hide scrollbar',
         type: 'checkbox',
         default: false
       },
@@ -352,16 +384,17 @@ class Ambilight {
         type: 'list',
         default: 0,
         min: 0,
-        max: 100
+        max: 100,
+        step: .1
       },
       {
         name: 'videoShadowOpacity',
         label: 'Shadow opacity',
         type: 'list',
-        default: 67,
+        default: 50,
         min: 0,
         max: 100,
-        advanced: true
+        step: .1
       },
       {
         type: 'section',
@@ -612,7 +645,7 @@ class Ambilight {
 
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
-    $.s('html').attr('data-ambilight-enabled', this.enabled)
+    html.attr('data-ambilight-enabled', this.enabled)
 
     //Sections
     this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
@@ -681,6 +714,8 @@ class Ambilight {
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
+    this.hideScrollbar = this.getSetting('hideScrollbar')
+    html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
@@ -792,15 +827,18 @@ class Ambilight {
     this.updateSizes(true)
     setTimeout(() => {
       this.setSetting('horizontalBarsClipPercentage', percentage)
-      $.s('#setting-horizontalBarsClipPercentage').value = percentage
-      $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${percentage}%`
+      const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
+      if(rangeInput) {
+        rangeInput.value = percentage
+        $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${percentage}%`
+      }
     }, 1)
   }
 
   initFeedbackLink() {
-    const version = $.s('html').getAttribute('data-ambilight-version') || ''
-    const os = $.s('html').getAttribute('data-ambilight-os') || ''
-    const browser = $.s('html').getAttribute('data-ambilight-browser') || ''
+    const version = html.getAttribute('data-ambilight-version') || ''
+    const os = html.getAttribute('data-ambilight-os') || ''
+    const browser = html.getAttribute('data-ambilight-browser') || ''
     this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
@@ -869,8 +907,10 @@ class Ambilight {
     }
 
     this.setSetting('videoScale', videoScale)
-    $.s('#setting-videoScale').value = videoScale
-    $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
+    if($.s('#setting-videoScale')) {
+      $.s('#setting-videoScale-range').value = videoScale
+      $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
+    }
   }
 
   updateSizes(isBlackBarsAdjustment = false) {
@@ -1127,7 +1167,7 @@ class Ambilight {
   updateStyles() {
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
-    const baseurl = $.s('html').getAttribute('data-ambilight-baseurl') || ''
+    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseInt(this.debandingStrength)
     const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
@@ -1139,15 +1179,35 @@ class Ambilight {
     document.body.style.setProperty('--ambilight-video-shadow-background', 
       (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
     document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
-      (videoShadowSize)
+      (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow-size', (shadowSize) ? `${shadowSize}px` : '')
-    document.body.style.setProperty('--ambilight-filter-shadow-opacity', (shadowSize) ? shadowOpacity : '')
+    document.body.style.setProperty('--ambilight-filter-shadow', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity * 2}))`
+      )
+      : '')
+    document.body.style.setProperty('--ambilight-filter-shadow-inverted', 
+      (shadowSize && shadowOpacity) 
+      ? (
+        (shadowOpacity > .5) 
+        ? `
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity}))
+        `
+        : `drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity * 2}))`
+      )
+      : '')
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
@@ -1234,17 +1294,20 @@ class Ambilight {
         !horizontal ? this.shadow.elem.height : 0
       )
 
-      gradient.addColorStop(Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`)
+      let gradientStops = []
+      gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
       keyframes.forEach((e, i) => {
-        gradient.addColorStop(Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`)
+        gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`])
       })
-      gradient.addColorStop(Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`)
-      gradient.addColorStop(Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`)
+      gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
+      gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
       keyframes.reverse().forEach((e, i) => {
-        gradient.addColorStop(Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`)
+        gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`])
       })
-      gradient.addColorStop(Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`)
+      gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
+      gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
+      gradientStops.forEach(args => gradient.addColorStop(...args))
       this.shadow.ctx.fillStyle = gradient
       this.shadow.ctx.fillRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
     }
@@ -1266,13 +1329,20 @@ class Ambilight {
           o: Math.pow(i / length, powerOf) * darkest
         })
       }
-      return keyframes
+      return keyframes.map(({p, o}) => ({
+        p: (Math.round(p * 10000) / 10000),
+        o: (Math.round(o * 10000) / 10000)
+      }))
     }
     const darkest = 1
     const easing = (16 / (this.fadeOutEasing * .64))
-    const keyframes = plotKeyframes(64, easing, darkest)
+    const keyframes = plotKeyframes(256, easing, darkest)
 
-    const fadeOutFrom = this.bloom / 100
+    let fadeOutFrom = this.bloom / 100
+    const fadeOutMinH = -(video.h / 2 / edge.h)
+    const fadeOutMinW = -(video.w / 2 / edge.w)
+    fadeOutFrom = Math.max(fadeOutFrom, fadeOutMinH, fadeOutMinW)
+
     drawGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest, false)
     drawGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest, true)
 
@@ -1698,7 +1768,7 @@ class Ambilight {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     } else if (this.frameSync == 50 || this.frameBlending) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-      if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
+      if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
           //performance.mark('comparing-compare-start')
           let lines = []
@@ -1710,9 +1780,9 @@ class Ambilight {
             }
           } catch (ex) {
             if (!this.showedCompareWarning) {
+              this.showedCompareWarning = true
               console.warn('Failed to retrieve video data. ', ex)
               AmbilightSentry.captureExceptionWithDetails(ex)
-              this.showedCompareWarning = true
             }
           }
 
@@ -1734,14 +1804,22 @@ class Ambilight {
       hasNewFrame = true
     }
     
-    if(hasNewFrame && this.detectHorizontalBarSizeEnabled) {
-      const lines = []
-      let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
-      for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
-        lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
-      }
-      if(this.detectHorizontalBarSize(lines)) {
-        return this.drawAmbilight()
+    if(this.getImageDataAllowed && hasNewFrame && this.detectHorizontalBarSizeEnabled) {
+      try {
+        const lines = []
+        let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
+        for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
+          lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
+        }
+        if(this.detectHorizontalBarSize(lines)) {
+          return this.drawAmbilight()
+        }
+      } catch (ex) {
+        if (!this.showedCompareWarning) {
+          this.showedCompareWarning = true
+          console.warn('Failed to retrieve video data. ', ex)
+          AmbilightSentry.captureExceptionWithDetails(ex)
+        }
       }
     }
     
@@ -1754,6 +1832,10 @@ class Ambilight {
     }
 
     if (this.frameBlending && !this.videoElem.paused) {
+      if (!this.previousProjectorBuffer) {
+        this.initFrameBlending()
+      }
+
       const drawTime = performance.now()
       if (hasNewFrame) {
         this.previousFrameTime = this.previousDrawTime
@@ -1955,15 +2037,17 @@ class Ambilight {
     if (this.enabled && !initial) return
 
     this.setSetting('enabled', true)
-    $.s(`#setting-enabled`).attr('aria-checked', true)
+    const enabledInput = $.s(`#setting-enabled`)
+    if(enabledInput) enabledInput.attr('aria-checked', true)
 
-    $.s('html').attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-enabled', true)
 
     if (!initial) {
-      const toLight = !$.s('html').attr('dark')
+      const toLight = !html.attr('dark')
       this.resetThemeToLightOnDisable = toLight
       this.setSetting('resetThemeToLightOnDisable', toLight)
-      $.s(`#setting-resetThemeToLightOnDisable`).attr('aria-checked', toLight)
+      const resetInput = $.s(`#setting-resetThemeToLightOnDisable`)
+      if(resetInput) resetInput.attr('aria-checked', toLight)
     }
 
     this.resetSettingsIfNeeded()
@@ -1975,8 +2059,9 @@ class Ambilight {
     if (!this.enabled) return
 
     this.setSetting('enabled', false)
-    $.s(`#setting-enabled`).attr('aria-checked', false)
-    $.s('html').attr('data-ambilight-enabled', false)
+    const enabledInput = $.s(`#setting-enabled`)
+    if(enabledInput) enabledInput.attr('aria-checked', false)
+    html.attr('data-ambilight-enabled', false)
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2000,7 +2085,7 @@ class Ambilight {
     try {
       if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
-      if ($.s('html').attr('dark')) {
+      if (html.attr('dark')) {
         if (value) return
       } else {
         if (!value) return
@@ -2070,7 +2155,7 @@ class Ambilight {
     this.videoFrameRateMeasureStartTime = 0
     this.showedCompareWarning = false
 
-    if (!$.s('html').attr('dark')) {
+    if (!html.attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
     
@@ -2095,10 +2180,10 @@ class Ambilight {
       this.hideFPS()
     }, 500)
 
-    $.s('html').attr('data-ambilight-enabled', false)
-    $.s('html').attr('data-ambilight-classic', false)
+    html.attr('data-ambilight-enabled', false)
+    html.attr('data-ambilight-classic', false)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', false)
+      html.attr('dark', false)
     }
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2110,10 +2195,10 @@ class Ambilight {
     this.isHidden = false
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
-    $.s('html').attr('data-ambilight-enabled', true)
-    $.s('html').attr('data-ambilight-classic', Ambilight.isClassic)
+    html.attr('data-ambilight-enabled', true)
+    html.attr('data-ambilight-classic', Ambilight.isClassic)
     if(Ambilight.isClassic) {
-      $.s('html').attr('dark', true)
+      html.attr('dark', true)
     }
   }
 
@@ -2151,13 +2236,14 @@ class Ambilight {
 
   initImmersiveMode() {
     if (this.immersive)
-      body.class('immersive-mode')
+      html.attr('data-ambilight-immersive-mode', true)
+  
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
-    body.classList.toggle('immersive-mode')
-    const enabled = body.classList.contains('immersive-mode')
+    const enabled = !this.immersive
+    html.attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
     window.dispatchEvent(new Event('resize'))
@@ -2211,7 +2297,7 @@ class Ambilight {
           `
         } else if (setting.type === 'list') {
           return `
-            <div class="ytp-menuitem-range-wrapper">
+            <div id="setting-${setting.name}" class="ytp-menuitem-range-wrapper">
               <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
                 <div class="ytp-menuitem-label">${setting.label}</div>
                 <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${this.getSettingListDisplayText(setting)}</div>
@@ -2221,7 +2307,7 @@ class Ambilight {
               rowspan="2" 
               title="Double click to reset">
                 <input 
-                  id="setting-${setting.name}" 
+                  id="setting-${setting.name}-range" 
                   type="range" 
                   min="${setting.min}" 
                   max="${setting.max}" 
@@ -2267,7 +2353,7 @@ class Ambilight {
       label.on('click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
-        const inputElem = document.querySelector(`#setting-${name}`)
+        const inputElem = document.querySelector(`#setting-${name}-range`)
         inputElem.value = value
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
@@ -2300,10 +2386,10 @@ class Ambilight {
     }
 
     this.settings.forEach(setting => {
-      const inputElem = $.s(`#setting-${setting.name}`)
       if (setting.type === 'list') {
+        const inputElem = $.s(`#setting-${setting.name}-range`)
         const displayedValue = $.s(`#setting-${setting.name}-value`)
-        inputElem.on('change mousemove dblclick', (e) => {
+        inputElem.on('change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = inputElem.value
@@ -2339,32 +2425,11 @@ class Ambilight {
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
-              const edgeValue = (value <= 5.5 ) ? 2 : ((value >= 24.5) ? 17 : (
-                {
-                  6: 3,
-                  7: 3.5,
-                  8: 3.5,
-                  9: 4,
-                  10: 4.5,
-                  11: 5,
-                  12: 5.75,
-                  13: 6.5,
-                  14: 7,
-                  15: 7.5,
-                  16: 8,
-                  17: 8.5,
-                  18: 8.5,
-                  19: 9,
-                  20: 10,
-                  21: 11,
-                  22: 12.5,
-                  23: 14,
-                  24: 15,
-                }
-                [Math.round(value)]
+              const edgeValue = (value <= 5 ) ? 2 : ((value >= 42.5) ? 17 : (
+                value/2.5
               ))
 
-              const edgeInputElem = $.s(`#setting-${edgeSetting.name}`)
+              const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
             }
@@ -2388,19 +2453,23 @@ class Ambilight {
           this.scheduleNextFrame()
         })
       } else if (setting.type === 'checkbox') {
+        const inputElem = $.s(`#setting-${setting.name}`)
         inputElem.on('click', () => {
           if (setting.type === 'checkbox') {
             setting.value = !setting.value
           }
 
-          if (setting.name === 'immersive') {
-            this.toggleImmersiveMode()
-          }
           if (setting.name === 'enabled') {
             if (setting.value)
               this.enable()
             else
               this.disable()
+          }
+          if (setting.name === 'immersive') {
+            this.toggleImmersiveMode()
+          }
+          if (setting.name === 'hideScrollbar') {
+            html.attr('data-ambilight-hide-scrollbar', setting.value)
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
@@ -2417,7 +2486,8 @@ class Ambilight {
             setting.name === 'directionRightEnabled' ||
             setting.name === 'directionBottomEnabled' ||
             setting.name === 'directionLeftEnabled' ||
-            setting.name === 'advancedSettings'
+            setting.name === 'advancedSettings' ||
+            setting.name === 'hideScrollbar'
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
@@ -2426,7 +2496,11 @@ class Ambilight {
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
             if(!setting.value) {
               if(!inputElem.dontResetControlledSetting) {
-                this.setSetting('horizontalBarsClipPercentage', 0)
+                const horizontalBarsClipPercentageSetting = this.settings.find(setting => setting.name === 'horizontalBarsClipPercentage')
+                const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
+                horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
+                horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
             } else {
               if(this.videoElem.paused) {
@@ -2442,7 +2516,11 @@ class Ambilight {
           if(setting.name === 'detectVideoFillScaleEnabled') {
             if(!setting.value) {
               if(!inputElem.dontResetControlledSetting) {
-                this.setSetting('videoScale', 100)
+                const videoScaleSetting = this.settings.find(setting => setting.name === 'videoScale')
+                const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
+                videoScaleInputElem.value = videoScaleSetting.default
+                videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                this.setSetting('videoScale', videoScaleSetting.default)
               }
             }
             if(inputElem.dontResetControlledSetting) {
@@ -2514,7 +2592,8 @@ class Ambilight {
     const isOpen = this.settingsMenuElem.classList.contains('is-visible')
     if (isOpen) return
 
-    this.settingsMenuElem.class('is-visible')
+    this.settingsMenuElem.removeClass('fade-out').class('is-visible')
+
     if(this.settingsMenuOnCloseScrollBottom !== -1) {
       const percentage = (this.settingsMenuElem.scrollHeight) / this.settingsMenuOnCloseScrollHeight
       this.settingsMenuElem.scrollTop = (
@@ -2522,7 +2601,13 @@ class Ambilight {
         (this.settingsMenuOnCloseScrollBottom * percentage)
       )
     }
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.add('ytp-ambilight-settings-shown')
+    }
 
     this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
@@ -2538,13 +2623,26 @@ class Ambilight {
       ? -1 : 
       (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
-    this.settingsMenuElem.removeClass('is-visible')
+
+    this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, (listener) => this.onSettingsFadeOutEndListener = listener)
+    this.settingsMenuElem.class('fade-out')
+
     $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+
+    const playerElem = $.s('.html5-video-player')
+    if(playerElem) {
+      playerElem.classList.remove('ytp-ambilight-settings-shown')
+    }
 
     body.off('click', this.onCloseSettingsListener)
     setTimeout(() => {
       this.settingsMenuBtn.on('click', this.onSettingsBtnClicked, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
+  }
+
+  onSettingsFadeOutEnd = () => {
+    this.settingsMenuElem.removeClass('fade-out').removeClass('is-visible')
+    this.settingsMenuElem.off('animationend', this.onSettingsFadeOutEndListener)
   }
 
   setSetting(key, value) {

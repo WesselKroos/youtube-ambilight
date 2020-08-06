@@ -1,0 +1,49 @@
+/* Live chat iframe */
+
+@mixin scrollbar-dark-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, .15);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .2);
+    border: 0;
+  }
+}
+
+// Todo: Only style when upper frame has html[data-ambilight-enabled="true"]
+html[dark] {
+  body {
+    --yt-live-chat-action-panel-background-color: none;
+    --yt-live-chat-ticker-arrow-background: none;
+  }
+
+  yt-live-chat-renderer,
+  yt-live-chat-header-renderer,
+  yt-live-chat-ticker-renderer,
+  #card.yt-live-chat-viewer-engagement-message-renderer,
+  #menu.yt-live-chat-text-message-renderer {
+    background: none !important;
+  }
+
+  yt-live-chat-item-list-renderer[allow-scroll] #item-scroller.yt-live-chat-item-list-renderer {
+    @include scrollbar-dark-thin();
+  }
+
+  #message.yt-live-chat-text-message-renderer {
+    color: #fff;
+  }
+
+  #author-name.yt-live-chat-author-chip {
+    color: rgba(240, 240, 240, 0.65);
+  }
+
+  #container.yt-live-chat-restricted-participation-renderer {
+    background: none;
+  }
+}

@@ -8,6 +8,22 @@
   &::-moz-range-thumb {@content}
 }
 
+@mixin scrollbar-dark-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, .15);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .2);
+    border: 0;
+  }
+}
+
 
 .ambilight {
   display: none;
@@ -45,6 +61,25 @@
 html[data-ambilight-enabled="true"] {
   /* General */
 
+  body {
+    --yt-spec-text-secondary: rgba(20, 20, 20, 0.75);
+    --yt-spec-icon-inactive: rgba(20, 20, 20, 0.5);
+  }
+  &[dark="true"] {
+    // Make all card backgrounds transparent
+    --yt-spec-brand-background-solid: none;
+    --yt-spec-brand-background-primary: none;
+    --yt-spec-brand-background-secondary: none;
+    --yt-spec-general-background-a: none;
+    --yt-spec-general-background-b: none;
+    --yt-spec-general-background-c: none;
+    --yt-spec-snackbar-background: none;
+    body {
+      --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
+      --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
+    }
+  }
+
   &[dark="true"] {
     &,
     &[lang],
@@ -53,6 +88,16 @@ html[data-ambilight-enabled="true"] {
       background: #000 !important;
       background-color: #000 !important;
       transition: background-color .1s;
+
+      @include scrollbar-dark-thin();
+
+      &[data-ambilight-hide-scrollbar="true"],
+      &[data-ambilight-immersive-mode="true"] {
+        scrollbar-width: none;
+        body::-webkit-scrollbar {
+          width: 0;
+        }
+      }
     }
   }
 
@@ -109,7 +154,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Theater mode */
 
-  body.immersive-mode ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
+  &[data-ambilight-immersive-mode="true"] ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
     margin-top: 28px;
     margin-bottom: 85px;
   }
@@ -119,22 +164,14 @@ html[data-ambilight-enabled="true"] {
     transition: background-color 0s .01s;
   }
 
-  /* Chat */
+  /* Live chat (Iframe styling in youtube-ambilight-frame-live-chat.css */
 
-  yt-live-chat-renderer {
-      background: none !important;
-  }
-  
-  &[dark="true"] {
-    #message.yt-live-chat-text-message-renderer {
-        color: #fff;
-    }
-    #author-name.yt-live-chat-author-chip {
-        color: #bbb;
-    }
+  ytd-toggle-button-renderer {
+    background: none !important;
   }
 
   /* Video */
+
   .html5-main-video {
     transform: var(--video-transform);
   }
@@ -192,6 +229,25 @@ html[data-ambilight-enabled="true"] {
     ytd-clarification-renderer {
       box-shadow: rgba(255,255,255,.15) 0 0 0 1px inset;
     }
+  }
+
+  /* Cosmetics - Merch shelf */
+
+  ytd-merch-shelf-renderer {
+    background: rgba(0,0,0,.15);
+  }
+
+  /* Cosmetics - Movie offer */ 
+
+  #header.ytd-movie-offer-module-renderer,
+  #wide-clickable-area.ytd-movie-offer-module-renderer {
+    background: rgba(0,0,0,.15);
+  }
+
+  /* Cosmetics - Rich metadata */
+
+  ytd-rich-metadata-renderer {
+    background: rgba(0,0,0,.15);
   }
 
   /* Cosmetics - Donation */
@@ -272,19 +328,14 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight__projector {
-      background: #fff;
+      background: none; //Prevent black canvas edge lines on Firefox
       /* image-rendering: pixelated; */
-  }
-  &[dark="true"] {
-    .ambilight__projector {
-        background: #000;
-    }
   }
 
   .ambilight__video-overlay {
     position: absolute;
-    width: 0;
-    height: 0;
+    width: 1px;
+    height: 1px;
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
@@ -297,38 +348,56 @@ html[data-ambilight-enabled="true"] {
 
   /* Immersive mode */
 
-  body.immersive-mode::-webkit-scrollbar {
-    width: 0;
-  }
-
   ytd-app[is-watch-page] #secondary,
   ytd-app[is-watch-page] #masthead-container {
     transition: opacity .15s ease-out;
     will-change: opacity;
     transition-delay: 0s;
   }
-  body.immersive-mode.at-top ytd-app[is-watch-page] #secondary:not(:hover),
-  body.immersive-mode.at-top ytd-app[is-watch-page] #masthead-container:not(:hover) {
-    opacity: 0;
-    transition-delay: 1s;
-  }
 
-  body.immersive-mode ytd-app[is-watch-page] #primary-inner > *:not(#player) {
-    transition: opacity .15s ease-out;
-    will-change: opacity;
-  }
-  body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player) {
-      opacity: 0;
-      transition-delay: 1s;
-  }
+  &[data-ambilight-immersive-mode="true"] {
+    ytd-app[is-watch-page] #primary-inner > *:not(#player) {
+      transition: opacity .15s ease-out;
+      will-change: opacity;
+    }
 
-  body.immersive-mode.at-top ytd-app[is-watch-page] #primary-inner > *:not(#player):hover {
-    opacity: 1;
-    transition-delay: 0s;
-  }
+    body.at-top ytd-app[is-watch-page]  {
+      #secondary:not(:hover),
+      #masthead-container:not(:hover) {
+        opacity: 0;
+        transition-delay: .25s;
+      }
+    
+      #primary-inner > *:not(#player) {
+        opacity: 0;
+        transition-delay: .25s;
+        &:hover {
+          &,
+          & ~ * {
+            opacity: 1;
+            transition-delay: 0s;
+          }
+        }
+      }
+    }
+  } 
 }
 
 /* Settings */
+
+// Firefox scrollbars
+.ytp-settings-menu,
+.ytp-panel {
+  @include scrollbar-dark-thin();
+}
+
+.ytp-ambilight-settings-shown .ytp-chrome-bottom {
+  opacity: 1 !important;
+}
+.ytp-ambilight-settings-shown .ytp-gradient-bottom {
+  opacity: 1 !important;
+  display: block !important;
+}
 
 .ytpa-ambilight-settings-menu {
   width: 320px;
@@ -336,30 +405,53 @@ html[data-ambilight-enabled="true"] {
   overflow-y: auto !important;
   right: 12px;
   bottom: 49px;
-  z-index: 71;
-  will-change: width,height;
+  z-index: 1001 !important; // above ad
   opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s;
-
+  transition: none;
+  will-change: width,height;
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
   }
+  &.is-visible {
+    opacity: 0;
+    animation: ytpa-ambilight-settings-menu-fade-in .2s 1 normal forwards;
+    @keyframes ytpa-ambilight-settings-menu-fade-in {
+      25% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  }
+  &.is-visible.fade-out {
+    animation: ytpa-ambilight-settings-menu-fade-out .15s 1 reverse forwards;
+    @keyframes ytpa-ambilight-settings-menu-fade-out {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    opacity: 0;
+  }
+  &:not(.is-visible) {
+    display: none;
+  }
+
+  .ytp-panel {
+    position: relative;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
 }
-.ytpa-ambilight-settings-menu.is-visible {
-  opacity: 1;
-  pointer-events: all;
-}
-.ytpa-ambilight-settings-menu .ytp-panel {
-  position: relative;
-  overflow-x: visible;
-  overflow-y: visible;
-}
+
 .ytp-ambilight-settings-button {
   position: relative;
   &::after {
-  content: '';
+    content: '';
     position: absolute;
     top: 10px;
     right: 5px;
@@ -374,9 +466,7 @@ html[data-ambilight-enabled="true"] {
     text-align: center;
     text-shadow: rgb(0,0,0) 1px 1px 1px;
   }
-}
-
-.ytp-ambilight-settings-button {
+  
   svg {
     transition: transform .1s cubic-bezier(0.4,0.0,1,1);
   }
@@ -764,7 +854,7 @@ html[data-ambilight-enabled="true"] {
           margin-top: -8px;
 
           $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-          @for $i from 1 through 210 {
+          @for $i from 1 through 220 {
             $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #bbb;
           }
           box-shadow: $shadow;
@@ -796,7 +886,7 @@ html[data-ambilight-enabled="true"] {
   
           .ytp-fullscreen & {
             $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
-            @for $i from 1 through 210 {
+            @for $i from 1 through 220 {
               $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
             }
             box-shadow: $shadow;
@@ -910,7 +1000,7 @@ body .toggle-auto-hide-btn {
     text-shadow: #000 0px 0px 2px;
   }
 }
-body.immersive-mode .toggle-auto-hide-btn {
+html[data-ambilight-immersive-mode="true"] .toggle-auto-hide-btn {
   font-weight: bold;
 }
 
@@ -925,9 +1015,7 @@ html[data-ambilight-enabled="true"] {
 
   &:not([dark="true"]) {
     ytd-masthead {
-      filter: drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(0,0,0,var(--ambilight-filter-shadow-opacity, 0))) 
-              drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(0,0,0,var(--ambilight-filter-shadow-opacity, 0)))
-              !important;
+      filter: var(--ambilight-filter-shadow) !important;
     }
   }
   ytd-app[is-watch-page] #top > #container > *,
@@ -935,9 +1023,7 @@ html[data-ambilight-enabled="true"] {
   ytd-app[is-watch-page] #secondary,
   #watch7-main,
   #player-playlist .watch-playlist {
-    filter: drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(255,255,255,var(--ambilight-filter-shadow-opacity, 0))) 
-            drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(255,255,255,var(--ambilight-filter-shadow-opacity, 0)))
-            !important;
+    filter: var(--ambilight-filter-shadow-inverted) !important;
   }
   &[dark="true"] {
     ytd-app[is-watch-page] #top > #container > *,
@@ -945,9 +1031,7 @@ html[data-ambilight-enabled="true"] {
     ytd-app[is-watch-page] #secondary,
     #watch7-main,
     #player-playlist .watch-playlist {
-      filter: drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(0,0,0,var(--ambilight-filter-shadow-opacity, 0))) 
-              drop-shadow(0 0 var(--ambilight-filter-shadow-size, 0px) rgba(0,0,0,var(--ambilight-filter-shadow-opacity, 0)))
-              !important;
+      filter: var(--ambilight-filter-shadow) !important;
     }
   }
 

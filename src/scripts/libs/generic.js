@@ -69,6 +69,7 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
 }
 HTMLElement.prototype.on = addEventListenerPrototype
 Window.prototype.on = addEventListenerPrototype
+HTMLDocument.prototype.on = addEventListenerPrototype
 
 const removeEventListenerPrototype = function (eventNames, callback) {
   const list = eventNames.split(' ')
@@ -84,6 +85,7 @@ HTMLElement.prototype.offset = function () {
   return this.getBoundingClientRect()
 }
 
+export const html = document.querySelector('html')
 export const body = document.body
 
 export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)

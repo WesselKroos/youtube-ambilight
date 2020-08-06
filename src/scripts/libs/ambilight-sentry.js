@@ -1,4 +1,4 @@
-import { $, setEventErrorHandler } from "./generic";
+import { $, html, setEventErrorHandler } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
 import {
   captureException,
@@ -9,7 +9,7 @@ import {
 initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
-  release: document.querySelector('html').getAttribute('data-ambilight-version') || '?',
+  release: html.getAttribute('data-ambilight-version') || '?',
   beforeSend: (event) => {
     try {
       event.request = {
@@ -61,8 +61,8 @@ export default class AmbilightSentry {
 
       try {
         setExtra('youtube', {
-          dark: !!($.s('html').attributes.dark || {}).value,
-          lang: ($.s('html').attributes.lang || {}).value,
+          dark: !!(html.attributes.dark || {}).value,
+          lang: (html.attributes.lang || {}).value,
           loggedIn: !!$.s('#avatar-btn')
         })
       } catch (ex) {
@@ -149,7 +149,7 @@ export default class AmbilightSentry {
 
       try {
         var selectors = {
-          'html': $.sa('html'),
+          'html': html,
           'body': $.sa('body'),
           '#page': $.sa('[id="#page"]'),
           'ytd-app': $.sa('ytd-app'),
