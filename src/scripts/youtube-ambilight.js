@@ -1086,11 +1086,11 @@ class Ambilight {
         this.videoShadowElem.style.display = ''
       }
 
-      this.filterElem.style.webkitFilter = `
-        blur(${this.projectorOffset.height * (this.blur * .0025)}px)
-        ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
-        ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
-        ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
+      this.filterElem.style.filter = `
+        ${(this.blur != 0) ? `blur(${this.projectorOffset.height * (this.blur * .0025)}px)` : ''}
+        ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
+        ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
+        ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
       `
 
       this.projectors.forEach((projector) => {
