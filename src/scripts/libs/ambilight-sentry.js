@@ -174,6 +174,10 @@ export default class AmbilightSentry {
           '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
           '.ytp-settings-button': $.sa('.ytp-settings-button'),
           '[class*="ambilight"]': $.sa('[class*="ambilight"]'),
+          'settingsMenuBtn': [window.ambilight.settingsMenuBtn],
+          'settingsMenuBtnParent': [window.ambilight.settingsMenuBtnParent],
+          'settingsMenuElem': [window.ambilight.settingsMenuElem],
+          'settingsMenuElemParent': [window.ambilight.settingsMenuElemParent],
         }
         Object.keys(selectors).forEach((selector) => {
           const nodes = selectors[selector]
@@ -197,6 +201,16 @@ export default class AmbilightSentry {
         })
       } catch (ex) {
         setExtra('$.exception', ex)
+      }
+
+      try {
+        if(window.ambilight.settingsMenuBtnParent) {
+          const node = window.ambilight.settingsMenuBtnParent
+          const childNodes = !node.children ? null : [...node.children].map(node => node.cloneNode(false).outerHTML.trim()).join('\n')
+          setExtra(`ambilight.settingsMenuBtnParent.childNodes`, childNodes)
+        }
+      } catch (ex) {
+        setExtra('ambilight.settingsMenuBtnParent.childNodes.exception', ex)
       }
 
       captureException(ex)
