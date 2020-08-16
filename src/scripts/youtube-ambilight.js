@@ -78,7 +78,7 @@ class Ambilight {
   detectMozillaBug1606251Workaround() {
     if(this.videoElem.mozPaintedFrames) {
       const firefoxUserAgentMatches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
-      if(firefoxUserAgentMatches.length >= 2) {
+      if(firefoxUserAgentMatches && firefoxUserAgentMatches.length >= 2) {
         const firefoxVersion = parseFloat(firefoxUserAgentMatches[1])
         if(firefoxVersion && firefoxVersion < 74) {
           this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
