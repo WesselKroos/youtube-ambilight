@@ -45,6 +45,7 @@ class Ambilight {
     this.initVideoElem(videoElem)
 
     this.detectMozillaBug1606251Workaround()
+    this.detectChromiumBug1123708Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -77,12 +78,24 @@ class Ambilight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
     if(this.videoElem.mozPaintedFrames) {
-      const firefoxUserAgentMatches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
-      if(firefoxUserAgentMatches && firefoxUserAgentMatches.length >= 2) {
-        const firefoxVersion = parseFloat(firefoxUserAgentMatches[1])
-        if(firefoxVersion && firefoxVersion < 74) {
+      const matches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
+      if(matches && matches.length >= 2) {
+        const version = parseFloat(matches[1])
+        if(version && version < 74) {
           this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
         }
+      }
+    }
+  }
+
+  // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1123708
+  detectChromiumBug1123708Workaround() {
+    const matches = navigator.userAgent.match('Chrome/((\.|[0-9])+) ')
+    if(matches && matches.length >= 2) {
+      const version = parseFloat(matches[1])
+      if(version && version >= 85) {
+        this.enableChromiumBug1123708Workaround = true
       }
     }
   }
@@ -194,6 +207,12 @@ class Ambilight {
     this.filterElem.class('ambilight__filter')
     this.elem.prepend(this.filterElem)
 
+    if (this.enableChromiumBug1123708Workaround) {
+      this.chromiumBug1123708WorkaroundElem = document.createElement("div")
+      this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
+      this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
+    }
+  
     this.clipElem = document.createElement("div")
     this.clipElem.class('ambilight__clip')
     this.filterElem.prepend(this.clipElem)
