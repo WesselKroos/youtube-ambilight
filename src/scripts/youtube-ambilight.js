@@ -40,6 +40,7 @@ class Ambilight {
   syncInfo = []
 
   enableMozillaBug1606251Workaround = false
+  enableChromiumBug1123708Workaround = false
 
   constructor(videoElem) {
     this.initVideoElem(videoElem)
@@ -78,9 +79,9 @@ class Ambilight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
     if(this.videoElem.mozPaintedFrames) {
-      const matches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
-      if(matches && matches.length >= 2) {
-        const version = parseFloat(matches[1])
+      const match = navigator.userAgent.match(/Firefox\/(?<version>(\.|[0-9])+)/)
+      if(match && match.groups.version) {
+        const version = parseFloat(match.groups.version)
         if(version && version < 74) {
           this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
         }
@@ -91,9 +92,9 @@ class Ambilight {
   // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1123708
   detectChromiumBug1123708Workaround() {
-    const matches = navigator.userAgent.match('Chrome/((\.|[0-9])+) ')
-    if(matches && matches.length >= 2) {
-      const version = parseFloat(matches[1])
+    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
+    if(match && match.groups.version) {
+      const version = parseFloat(match.groups.version)
       if(version && version >= 85) {
         this.enableChromiumBug1123708Workaround = true
       }
