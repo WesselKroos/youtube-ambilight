@@ -2625,7 +2625,7 @@ class Ambilight {
       )
     }
 
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+    this.settingsMenuBtn.attr('aria-expanded', true)
 
     const playerElem = $.s('.html5-video-player')
     if(playerElem) {
@@ -2650,7 +2650,7 @@ class Ambilight {
     this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, (listener) => this.onSettingsFadeOutEndListener = listener)
     this.settingsMenuElem.class('fade-out')
 
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+    this.settingsMenuBtn.attr('aria-expanded', false)
 
     const playerElem = $.s('.html5-video-player')
     if(playerElem) {
