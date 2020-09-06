@@ -1544,11 +1544,6 @@ class Ambilight {
       if(this.scheduled) return
       this.scheduled = true
 
-      if(this.videoHasRequestVideoFrameCallback && !this.videoElem.paused && !this.frameBlending) {
-        this.videoRafId = this.videoElem.requestVideoFrameCallback(this.onNextFrame)
-        return
-      }
-
       this.rafId = raf(this.onNextFrame)
     } catch (ex) {
       if(ex.message === 'catched') return
@@ -1609,11 +1604,6 @@ class Ambilight {
       }
       
       try {
-        // // We need to schedule it beforehand because the is a risk of it being to late
-        // // (Mostly on 4k 60fps video's) 
-        // if(this.videoHasRequestVideoFrameCallback) {
-        //   this.scheduleNextFrame()
-        // }
         this.drawAmbilight()
         if(this.enableChromiumBug1092080Workaround && this.chromiumBug1092080WorkaroundElem2) {
           this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
@@ -1644,8 +1634,7 @@ class Ambilight {
         return
       }
 
-      // if(!this.videoHasRequestVideoFrameCallback)
-        this.scheduleNextFrame()
+      this.scheduleNextFrame()
     } catch (ex) {
       if(ex.message === 'catched') return
       console.error('YouTube Ambilight | NextFrame:', ex)
@@ -1830,8 +1819,11 @@ class Ambilight {
       0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
 
     let hasNewFrame = false
-    if(this.videoHasRequestVideoFrameCallback && !this.frameBlending) {
-      hasNewFrame = true
+    if(this.videoHasRequestVideoFrameCallback) {
+      if(this.videoFrameCallbackReceived) {
+        this.videoFrameCallbackReceived = false
+        hasNewFrame = true
+      }
     } else if(this.frameSync == 0) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     } else if (this.frameSync == 50 || this.frameBlending) {
@@ -2253,9 +2245,30 @@ class Ambilight {
       raf(this.detectDisplayFrameRate)
     }
 
+    if(this.videoHasRequestVideoFrameCallback) {
+      this.videoFrameCallbackReceived = true
+      this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
+    }
     this.scheduleNextFrame()
   }
 
+  receiveVideoFrame = () => {
+    this.videoFrameCallbackReceived = true
+    if(!this.enabled || this.paused) return
+
+    let videoVisible = true
+    let videoOffset = this.videoElem.offset()
+    let videoBottom = videoOffset.top + videoOffset.height
+    if(videoBottom <= 0) {
+      videoVisible = false
+    }
+
+    // Prevent YouTube video error that forces the videostream into a lower quality
+    if(videoVisible)
+      this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
+    else
+      setTimeout(() => raf(this.receiveVideoFrame), 100)
+  }
 
   hide() {
     if (this.isHidden) return
