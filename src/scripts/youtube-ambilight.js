@@ -137,6 +137,9 @@ class Ambilight {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
       })
+      .on('error', (ex) => {
+        console.error('Video error:', ex)
+      })
       .on('ended', () => {
         this.resetSettingsIfNeeded()
         this.clear()
@@ -676,9 +679,9 @@ class Ambilight {
       },
     ]
 
-    this.videoHasRequestAnimationFrame = !!this.videoElem.requestAnimationFrame
+    this.videoHasRequestVideoFrameCallback = !!this.videoElem.requestVideoFrameCallback
     this.settings = this.settings.map(setting => {
-      if(this.videoHasRequestAnimationFrame) {
+      if(this.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
           return undefined
         }
@@ -1533,7 +1536,7 @@ class Ambilight {
       if(this.rafId) return
 
       if(this.videoRafId && this.videoElem.paused) {
-        this.videoElem.cancelAnimationFrame(this.videoRafId)
+        this.videoElem.cancelVideoFrameCallback(this.videoRafId)
         this.videoRafId = undefined
         this.scheduled = false
       }
@@ -1541,8 +1544,8 @@ class Ambilight {
       if(this.scheduled) return
       this.scheduled = true
 
-      if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
-        this.videoRafId = this.videoElem.requestAnimationFrame(this.onNextFrame)
+      if(this.videoHasRequestVideoFrameCallback && !this.videoElem.paused && !this.frameBlending) {
+        this.videoRafId = this.videoElem.requestVideoFrameCallback(this.onNextFrame)
         return
       }
 
@@ -1574,8 +1577,14 @@ class Ambilight {
       }
 
       setTimeout(() => {
-        this.lastNextFrameTime = performance.now()
-        this.nextFrame()
+        try {
+          this.lastNextFrameTime = performance.now()
+          this.nextFrame()
+        } catch (ex) {
+          if(ex.message === 'catched') return
+          console.error('YouTube Ambilight | OnNextFrame setTimeout:', ex)
+          AmbilightSentry.captureExceptionWithDetails(ex)
+        }
       }, delayTime)
     } catch (ex) {
       if(ex.message === 'catched') return
@@ -1600,6 +1609,11 @@ class Ambilight {
       }
       
       try {
+        // // We need to schedule it beforehand because the is a risk of it being to late
+        // // (Mostly on 4k 60fps video's) 
+        // if(this.videoHasRequestVideoFrameCallback) {
+        //   this.scheduleNextFrame()
+        // }
         this.drawAmbilight()
         if(this.enableChromiumBug1092080Workaround && this.chromiumBug1092080WorkaroundElem2) {
           this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
@@ -1630,7 +1644,8 @@ class Ambilight {
         return
       }
 
-      this.scheduleNextFrame()
+      // if(!this.videoHasRequestVideoFrameCallback)
+        this.scheduleNextFrame()
     } catch (ex) {
       if(ex.message === 'catched') return
       console.error('YouTube Ambilight | NextFrame:', ex)
@@ -1815,7 +1830,7 @@ class Ambilight {
       0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
 
     let hasNewFrame = false
-    if(this.videoHasRequestAnimationFrame && !this.frameBlending) {
+    if(this.videoHasRequestVideoFrameCallback && !this.frameBlending) {
       hasNewFrame = true
     } else if(this.frameSync == 0) {
       hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
