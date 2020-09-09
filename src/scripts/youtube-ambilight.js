@@ -1122,6 +1122,18 @@ class Ambilight {
 
       this.projectorBuffer.elem.width = this.p.w
       this.projectorBuffer.elem.height = this.p.h
+      
+      const edge = Math.ceil(this.edge / 100 * this.projectorBuffer.elem.height)
+      const width = this.projectorBuffer.elem.width
+      const height = this.projectorBuffer.elem.height
+      const bottom = height - edge
+      const right = width - edge
+      this.projectorsRectangles = [
+        [0    , 0     , width, edge  ],
+        [0    , bottom, width, edge  ],
+        [0    , 0     , edge , height],
+        [right, 0     , edge , height]
+      ]
 
       if (this.frameBlending && !this.previousProjectorBuffer) {
         this.initFrameBlending()
@@ -1925,8 +1937,14 @@ class Ambilight {
         this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
         0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-      this.projectors.forEach((projector) => {
-        projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+      this.projectors.forEach((projector, i) => {
+        if(i === 0) {
+          projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+          return
+        }
+        this.projectorsRectangles.forEach(rectangle => {
+          projector.ctx.drawImage(this.projectorBuffer.elem, ...rectangle, ...rectangle)
+        })
       })
     }
 
