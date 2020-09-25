@@ -115,13 +115,14 @@ class Ambilight {
         this.resetSettingsIfNeeded()
       })
       .on('canplay', () => {
-        if(!this.videoElem.paused) return;
+        if(!this.videoElem.paused && !this.videoElem.seeking) return;
         this.scheduleNextFrame()
         raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
       })
       .on('seeked', () => {
         this.resetVideoFrameCounter()
         this.scheduleNextFrame()
+        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
       })
       .on('ended', () => {
         this.resetSettingsIfNeeded()
@@ -1514,7 +1515,7 @@ class Ambilight {
 
       if(this.rafId) return
 
-      if(this.videoRafId && this.videoElem.paused) {
+      if(this.videoRafId && (this.videoElem.paused || this.videoElem.seeking)) {
         this.videoElem.cancelAnimationFrame(this.videoRafId)
         this.videoRafId = undefined
         this.scheduled = false
@@ -1523,7 +1524,7 @@ class Ambilight {
       if(this.scheduled) return
       this.scheduled = true
 
-      if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.frameBlending) {
+      if(this.videoHasRequestAnimationFrame && !this.videoElem.paused && !this.videoElem.seeking && !this.frameBlending) {
         this.videoRafId = this.videoElem.requestAnimationFrame(this.onNextFrame)
         return
       }
@@ -1546,7 +1547,7 @@ class Ambilight {
       }
 
       const nextFrameTime = performance.now()
-      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
+      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused && !this.videoElem.seeking) 
         ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
         : 0
       if(!delayTime) {
@@ -1582,7 +1583,9 @@ class Ambilight {
       }
       
       try {
-        this.drawAmbilight()
+        if(this.videoElem.readyState === 4) {
+          this.drawAmbilight()
+        }
       } catch (ex) {
         if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
           if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -1601,11 +1604,13 @@ class Ambilight {
         }
       }
 
-      this.detectVideoFrameRate()
-      this.detectAmbilightFrameRate()
-      this.detectVideoSynced()
+      if(this.videoElem.readyState === 4) {
+        this.detectVideoFrameRate()
+        this.detectAmbilightFrameRate()
+        this.detectVideoSynced()
+      }
 
-      if (this.videoElem.paused) {
+      if (this.videoElem.paused || this.videoElem.seeking) {
         return
       }
 
@@ -1716,7 +1721,7 @@ class Ambilight {
       }
     }
     
-    if(!this.enabled || this.videoElem.paused) return
+    if(!this.enabled || this.videoElem.paused || this.videoElem.seeking) return
 
     this.detectDisplayFrameRateScheduled = true
     raf(this.detectDisplayFrameRate)
@@ -1863,7 +1868,7 @@ class Ambilight {
       this.videoFrameCount = newVideoFrameCount
     }
 
-    if (this.frameBlending && !this.videoElem.paused) {
+    if (this.frameBlending && !this.videoElem.paused && !this.videoElem.seeking) {
       if (!this.previousProjectorBuffer) {
         this.initFrameBlending()
       }
@@ -2046,7 +2051,7 @@ class Ambilight {
     var outSyncCount = this.syncInfo.filter(value => !value).length
     var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if (this.videoElem.paused || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    if (this.videoElem.paused || this.videoElem.seeking || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
@@ -2544,7 +2549,7 @@ class Ambilight {
                 this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
             } else {
-              if(this.videoElem.paused) {
+              if(this.videoElem.paused || this.videoElem.seeking) {
                 this.start()
               }
             }
