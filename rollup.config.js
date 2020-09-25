@@ -43,8 +43,18 @@ const youtubeAmbilight = {
   }
 }
 
+const gpuJs = {
+  input : './node_modules/gpu.js/dist/gpu-browser.js',
+  output:  { 
+   file: './dist/scripts/gpu-browser.js',
+   format: 'iife',
+   globals: {},
+ }
+}
+
 export default [
   Object.assign({}, background, common),
   Object.assign({}, content, common),
-  Object.assign({}, youtubeAmbilight, common)
+  Object.assign({}, youtubeAmbilight, common),
+  Object.assign({}, gpuJs, common)
 ]

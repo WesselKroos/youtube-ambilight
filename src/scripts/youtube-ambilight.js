@@ -1,5 +1,6 @@
 import { $, html, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
+import sharpen from './libs/sharpen'
 
 class Ambilight {
   static isClassic = false
@@ -316,6 +317,18 @@ class Ambilight {
         label: '<span style="display: inline-block; padding: 5px 0">Sync video with ambilight <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or skipped frames." href="#" onclick="return false" style="padding: 0 5px;">?</a></span>',
         type: 'checkbox',
         default: false,
+        advanced: true
+      },
+      
+      {
+        experimental: true,
+        name: 'videoOverlaySharpenOpacity',
+        label: '<span style="display: inline-block; padding: 5px 0">Sync video sharpen strength</span>',
+        type: 'list',
+        default: 50,
+        min: 0,
+        max: 100,
+        step: 1,
         advanced: true
       },
       {
@@ -687,6 +700,7 @@ class Ambilight {
     this.innerStrength = 2
     this.videoOverlayEnabled = this.getSetting('videoOverlayEnabled')
     this.videoOverlaySyncThreshold = this.getSetting('videoOverlaySyncThreshold')
+    this.videoOverlaySharpenOpacity = this.getSetting('videoOverlaySharpenOpacity')
 
     this.contrast = this.getSetting('contrast')
     this.brightness = this.getSetting('brightness')
@@ -1932,6 +1946,13 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
+
+        try {
+          sharpen(this.videoOverlay.elem, this.videoOverlay.ctx, this.videoOverlaySharpenOpacity / 100)
+        } catch(err) {
+          console.log(err);
+        }
+
         this.checkIfNeedToHideVideoOverlay()
       }
 
