@@ -2,6 +2,7 @@ import { getOS, getVersion, getBrowser } from './libs/utils'
 import { html } from './libs/generic'
 
 const scripts = [
+  chrome.extension.getURL('scripts/gpu-browser.js'),
   chrome.extension.getURL('scripts/youtube-ambilight.js')
 ]
 scripts.forEach((path) => {
