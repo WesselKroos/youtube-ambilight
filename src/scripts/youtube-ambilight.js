@@ -1,6 +1,7 @@
 import { $, html, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import sharpen from './libs/sharpen'
+import { insertScript } from './libs/utils'
 
 class Ambilight {
   static isClassic = false
@@ -325,7 +326,7 @@ class Ambilight {
         name: 'videoOverlaySharpenOpacity',
         label: '<span style="display: inline-block; padding: 5px 0">Sync video sharpen strength</span>',
         type: 'list',
-        default: 50,
+        default: 0,
         min: 0,
         max: 100,
         step: 1,
@@ -1947,10 +1948,19 @@ class Ambilight {
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
 
-        try {
-          sharpen(this.videoOverlay.elem, this.videoOverlay.ctx, this.videoOverlaySharpenOpacity / 100)
-        } catch(err) {
-          console.log(err);
+        if(this.videoOverlaySharpenOpacity) {
+          if(!this.gpuScriptInserted) {
+            this.gpuScriptInserted = true
+            const gpuScriptSrc = html.attr('data-ambilight-gpu-script-src')
+            if(gpuScriptSrc) {
+              insertScript(gpuScriptSrc)
+            }
+          }
+          try {
+            sharpen(this.videoOverlay.elem, this.videoOverlay.ctx, this.videoOverlaySharpenOpacity / 100)
+          } catch(err) {
+            console.error(err);
+          }
         }
 
         this.checkIfNeedToHideVideoOverlay()
