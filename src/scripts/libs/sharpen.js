@@ -1,73 +1,83 @@
-let gpu;
-let convolution;
-let width;
-let height;
+let gpu
+let convolutionKernel
+let width
+let height
 
-const createConvolutionFromCanvas = (canvas) => {
-  width = canvas.width;
-  height = canvas.height;
+const createConvolutionKernelFromCanvas = (canvas) => {
+  width = canvas.width
+  height = canvas.height
 
-  gpu = new GPU();
-  convolution = gpu
+  if(convolutionKernel) {
+    convolutionKernel.destroy()
+    convolutionKernel = undefined
+  }
+  if(gpu) {
+    gpu.destroy()
+    gpu = undefined
+  }
+  gpu = new GPU()
+
+  convolutionKernel = gpu
     .createKernel(function (src, width, height, kernel, kernelRadius) {
-      const kSize = 2 * kernelRadius + 1;
-      let r = 0, g = 0, b = 0;
+      const kSize = 2 * kernelRadius + 1
+      let r = 0, g = 0, b = 0
 
-      let i = -kernelRadius;
+      let i = -kernelRadius
       while (i <= kernelRadius) {
-        const x = this.thread.x + i;
+        const x = this.thread.x + i
         if (x < 0 || x >= width) {
-          i++;
-          continue;
+          i++
+          continue
         }
 
-        let j = -kernelRadius;
+        let j = -kernelRadius
         while (j <= kernelRadius) {
-          const y = this.thread.y + j;
+          const y = this.thread.y + j
           if (y < 0 || y >= height) {
-            j++;
-            continue;
+            j++
+            continue
           }
     
-          const kernelOffset = (j + kernelRadius) * kSize + i + kernelRadius;
-          const weights = kernel[kernelOffset];
-          const pixel = src[y][x];
-          r += pixel.r * weights;
-          g += pixel.g * weights;
-          b += pixel.b * weights;
-          j++;
+          const kernelOffset = (j + kernelRadius) * kSize + i + kernelRadius
+          const weights = kernel[kernelOffset]
+          const pixel = src[y][x]
+          r += pixel.r * weights
+          g += pixel.g * weights
+          b += pixel.b * weights
+          j++
         }
-        i++;
+        i++
       }
-      this.color(r, g, b);
+      this.color(r, g, b)
     })
     .setOutput([width, height])
-    .setGraphical(true);
-};
+    .setGraphical(true)
+}
 
+const multiplier = 4
 const kernels = {
-  sharpen: [
-    0, -1, 0,
-    -1, 5, -1,
-    0, -1, 0
-  ],
-};
+  sharpen: (strength) => {
+    strength = strength * multiplier
+    const e = -strength
+    const c = 1 + (strength * 4)
+    return [
+      0, e, 0,
+      e, c, e,
+      0, e, 0
+    ]
+  }
+}
 
-// convolution
-export default (srcCanvas, srcCtx, opacity) => {
-  if(!window.GPU) return;
+export default (srcCanvas, srcCtx, strength) => {
+  if(!window.GPU) return
 
-  if(width !== srcCanvas.width || height !== srcCanvas.height) {
-    createConvolutionFromCanvas(srcCanvas);
+  if(!convolutionKernel || width !== srcCanvas.width || height !== srcCanvas.height) {
+    createConvolutionKernelFromCanvas(srcCanvas)
   }
 
-  const kernel = kernels.sharpen;
-  const kernelRadius = (Math.sqrt(kernel.length) - 1) / 2;
-  convolution(srcCanvas, srcCanvas.width, srcCanvas.height, kernel, kernelRadius);
+  const kernel = kernels.sharpen(strength)
+  const kernelRadius = (Math.sqrt(kernel.length) - 1) / 2
+  convolutionKernel(srcCanvas, srcCanvas.width, srcCanvas.height, kernel, kernelRadius)
 
-  srcCtx.globalAlpha = opacity
-  // srcCtx.globalCompositeOperation = 'screen'
-  srcCtx.drawImage(convolution.canvas, 1, 1, width - 2, height - 2, 1, 1, width - 2, height - 2)
-  srcCtx.globalAlpha = 1
-  // srcCtx.globalCompositeOperation = 'source-over'
+  srcCtx.drawImage(convolutionKernel.canvas, 1, 1, width - 2, height - 2, 1, 1, width - 2, height - 2)
 }
