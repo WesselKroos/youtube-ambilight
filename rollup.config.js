@@ -44,7 +44,7 @@ const youtubeAmbilight = {
 }
 
 const gpuJs = {
-  input : './node_modules/gpu.js/dist/gpu-browser.js',
+  input : './node_modules/gpu.js/dist/gpu-browser.min.js',
   output:  { 
    file: './dist/scripts/gpu-browser.js',
    format: 'iife',
