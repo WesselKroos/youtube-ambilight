@@ -49,7 +49,9 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
     try {
       callback(...args)
     } catch(ex) {
-      ex.message = `${ex.message} \nOn event: ${args[0].type} \nAnd element: ${this.cloneNode(false).outerHTML}`
+      const e = args[0]
+      const elem = e.currentTarget.cloneNode(false)
+      ex.message = `${ex.message} \nOn event: ${e.type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
 
       console.error(ex)
       if(eventErrorHandler)

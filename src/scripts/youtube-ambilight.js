@@ -40,11 +40,13 @@ class Ambilight {
   syncInfo = []
 
   enableMozillaBug1606251Workaround = false
+  enableChromiumBug1123708Workaround = false
 
   constructor(videoElem) {
     this.initVideoElem(videoElem)
 
     this.detectMozillaBug1606251Workaround()
+    this.detectChromiumBug1123708Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -77,12 +79,24 @@ class Ambilight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
     if(this.videoElem.mozPaintedFrames) {
-      const firefoxUserAgentMatches = navigator.userAgent.match('Firefox/((\.|[0-9])+)')
-      if(firefoxUserAgentMatches.length >= 2) {
-        const firefoxVersion = parseFloat(firefoxUserAgentMatches[1])
-        if(firefoxVersion && firefoxVersion < 74) {
+      const match = navigator.userAgent.match(/Firefox\/(?<version>(\.|[0-9])+)/)
+      if(match && match.groups.version) {
+        const version = parseFloat(match.groups.version)
+        if(version && version < 74) {
           this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
         }
+      }
+    }
+  }
+
+  // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1123708
+  detectChromiumBug1123708Workaround() {
+    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
+    if(match && match.groups.version) {
+      const version = parseFloat(match.groups.version)
+      if(version && version >= 85) {
+        this.enableChromiumBug1123708Workaround = true
       }
     }
   }
@@ -194,6 +208,12 @@ class Ambilight {
     this.filterElem.class('ambilight__filter')
     this.elem.prepend(this.filterElem)
 
+    if (this.enableChromiumBug1123708Workaround) {
+      this.chromiumBug1123708WorkaroundElem = document.createElement("div")
+      this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
+      this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
+    }
+  
     this.clipElem = document.createElement("div")
     this.clipElem.class('ambilight__clip')
     this.filterElem.prepend(this.clipElem)
@@ -1086,11 +1106,11 @@ class Ambilight {
         this.videoShadowElem.style.display = ''
       }
 
-      this.filterElem.style.webkitFilter = `
-        blur(${this.projectorOffset.height * (this.blur * .0025)}px)
-        ${(this.contrast !== 100) ? `contrast(${this.contrast}%)` : ''}
-        ${(this.brightness !== 100) ? `brightness(${this.brightness}%)` : ''}
-        ${(this.saturation !== 100) ? `saturate(${this.saturation}%)` : ''}
+      this.filterElem.style.filter = `
+        ${(this.blur != 0) ? `blur(${this.projectorOffset.height * (this.blur * .0025)}px)` : ''}
+        ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
+        ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
+        ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
       `
 
       this.projectors.forEach((projector) => {
@@ -2261,7 +2281,9 @@ class Ambilight {
     this.settingsMenuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
       <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
     </svg>`
-    this.settingsMenuBtn.prependTo($.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child'))
+
+    this.settingsMenuBtnParent = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    this.settingsMenuBtn.prependTo(this.settingsMenuBtnParent)
 
 
     this.settingsMenuElem = $.create('div')
@@ -2373,7 +2395,8 @@ class Ambilight {
         }
       })
     })
-    this.settingsMenuElem.prependTo($.s('.html5-video-player'))
+    this.settingsMenuElemParent = $.s('.html5-video-player')
+    this.settingsMenuElem.prependTo(this.settingsMenuElemParent)
     try {
       this.settingsMenuElem.scrollTop = this.settingsMenuElem.scrollHeight
       this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) 
@@ -2602,7 +2625,7 @@ class Ambilight {
       )
     }
 
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', true)
+    this.settingsMenuBtn.attr('aria-expanded', true)
 
     const playerElem = $.s('.html5-video-player')
     if(playerElem) {
@@ -2627,7 +2650,7 @@ class Ambilight {
     this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, (listener) => this.onSettingsFadeOutEndListener = listener)
     this.settingsMenuElem.class('fade-out')
 
-    $.s('.ytp-ambilight-settings-button').attr('aria-expanded', false)
+    this.settingsMenuBtn.attr('aria-expanded', false)
 
     const playerElem = $.s('.html5-video-player')
     if(playerElem) {
