@@ -41,12 +41,14 @@ class Ambilight {
 
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
+  enableChromiumBug1092080Workaround = false
 
   constructor(videoElem) {
     this.initVideoElem(videoElem)
 
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1123708Workaround()
+    this.detectChromiumBug1092080Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -97,6 +99,18 @@ class Ambilight {
       const version = parseFloat(match.groups.version)
       if(version && version >= 85) {
         this.enableChromiumBug1123708Workaround = true
+      }
+    }
+  }
+
+  // Chromium workaround: drawImage randomly disables antialiasing in the source and/or destination element
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1092080
+  detectChromiumBug1092080Workaround() {
+    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
+    if(match && match.groups.version) {
+      const version = parseFloat(match.groups.version)
+      if(version && version >= 82) {
+        this.enableChromiumBug1092080Workaround = true
       }
     }
   }
@@ -258,6 +272,18 @@ class Ambilight {
     this.projectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
+    }
+
+    if(this.enableChromiumBug1092080Workaround) {
+      const playerElem = $.s('.html5-video-player')
+
+      this.chromiumBug1092080WorkaroundElem1 = document.createElement('div')
+      this.chromiumBug1092080WorkaroundElem1.class('ambilight__chromium-bug-1092080-workaround-1')
+      playerElem.append(this.chromiumBug1092080WorkaroundElem1)
+
+      this.chromiumBug1092080WorkaroundElem2 = document.createElement('div')
+      this.chromiumBug1092080WorkaroundElem2.class('ambilight__chromium-bug-1092080-workaround-2')
+      playerElem.append(this.chromiumBug1092080WorkaroundElem2)
     }
   }
 
@@ -1571,6 +1597,9 @@ class Ambilight {
       
       try {
         this.drawAmbilight()
+        if(this.enableChromiumBug1092080Workaround) {
+          this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
+        }
       } catch (ex) {
         if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
           if(!this.catchedNS_ERROR_NOT_AVAILABLE) {

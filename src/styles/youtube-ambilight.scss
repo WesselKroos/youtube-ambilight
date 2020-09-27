@@ -1059,3 +1059,19 @@ html[data-ambilight-enabled="true"] {
     overflow: var(--ambilight-html5-video-player-overflow, hidden);
   }
 }
+
+.ambilight__chromium-bug-1092080-workaround-1,
+.ambilight__chromium-bug-1092080-workaround-2 {
+  position: absolute;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  pointer-events: none;
+}
+.ambilight__chromium-bug-1092080-workaround-2 {
+  z-index: 1000;
+  opacity: 0.001;
+  background: #000;
+}
