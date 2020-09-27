@@ -1832,7 +1832,7 @@ class Ambilight {
           lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
         }
         if(this.detectHorizontalBarSize(lines)) {
-          return this.drawAmbilight()
+          // return this.drawAmbilight()
         }
       } catch (ex) {
         if (!this.showedCompareWarning) {
@@ -1946,24 +1946,44 @@ class Ambilight {
       [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
       [2,2,2]
     const maxColorDeviation = 8
-    
+    const maxPercentage = 0.25
+
     for(const line of imageVLines) {
-      for (let i = 0; i < line.length; i += 4) {
-        if(
-          Math.abs(line[i] - color[0]) <= maxColorDeviation && 
-          Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
-          Math.abs(line[i+2] - color[2]) <= maxColorDeviation
-        ) continue;
+      const largeStep = 20
+      let step = largeStep
+      let lineLimit = (line.length * maxPercentage) + largeStep
+      for (let i = 0; i < line.length; i += (4 * step)) {
+        if(i < lineLimit) {
+          if(
+            Math.abs(line[i] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i+2] - color[2]) <= maxColorDeviation
+          ) continue;
+          if(i !== 0 && step === largeStep) {
+            i -= (4 * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
+          }
+        }
         const size = i ? (i / 4) : 0
         sizes.push(size)
         break;
       }
-      for (let i = line.length - 1; i >= 0; i -= 4) {
-        if(
-          Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
-          Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
-          Math.abs(line[i-1] - color[2]) <= maxColorDeviation
-        ) continue;
+      step = largeStep
+      lineLimit = (line.length * (1 - maxPercentage)) - largeStep
+      for (let i = line.length - 1; i >= 0; i -= (4 * step)) {
+        if(i > lineLimit) {
+          if(
+            Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i-1] - color[2]) <= maxColorDeviation
+          ) continue;
+          if(i !== line.length - 1 && step === largeStep) {
+            i += (4 * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
+          }
+        }
         const j = (line.length - 1) - i;
         const size = j ? (j / 4) : 0
         sizes.push(size)
@@ -2011,7 +2031,7 @@ class Ambilight {
 
     const adjustment = (percentage - this.horizontalBarsClipPercentage)
     if(
-      (percentage > 25) ||
+      (percentage > (maxPercentage * 100)) ||
       (adjustment > -1 && adjustment <= 0)
     ) {
       return
