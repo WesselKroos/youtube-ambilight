@@ -445,7 +445,7 @@ class Ambilight {
       {
         type: 'section',
         label: 'Black bars',
-        name: 'sectionBlackBarsCollapsed',
+        name: 'sectionHorizontalBarsCollapsed',
         default: true
       },
       {
@@ -699,7 +699,7 @@ class Ambilight {
     this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
     this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
     this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
-    this.sectionBlackBarsCollapsed = this.getSetting('sectionBlackBarsCollapsed')
+    this.sectionHorizontalBarsCollapsed = this.getSetting('sectionHorizontalBarsCollapsed')
     this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
     this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
     this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
@@ -959,7 +959,7 @@ class Ambilight {
     }
   }
 
-  updateSizes(isBlackBarsAdjustment = false) {
+  updateSizes(isHorizontalBarsAdjustment = false) {
     try {
       if(this.detectVideoFillScaleEnabled){
         this.detectVideoFillScale()
@@ -1188,7 +1188,7 @@ class Ambilight {
         }
       }
 
-      if(!isBlackBarsAdjustment) { //Prevent losing imagedata
+      if(!isHorizontalBarsAdjustment) { //Prevent losing imagedata
         this.videoSnapshotBuffer.elem.width = this.p.w
         this.videoSnapshotBuffer.elem.height = this.p.h
       }
@@ -1976,12 +1976,13 @@ class Ambilight {
       [2,2,2]
     const maxColorDeviation = 8
     const maxPercentage = 0.25
+    const ignoreEdge = 2
 
     for(const line of imageVLines) {
       const largeStep = 20
       let step = largeStep
       let lineLimit = (line.length * maxPercentage) + largeStep
-      for (let i = 0; i < line.length; i += (4 * step)) {
+      for (let i = (4 * ignoreEdge); i < line.length; i += (4 * step)) {
         if(i < lineLimit) {
           if(
             Math.abs(line[i] - color[0]) <= maxColorDeviation && 
@@ -2000,7 +2001,7 @@ class Ambilight {
       }
       step = largeStep
       lineLimit = (line.length * (1 - maxPercentage)) - largeStep
-      for (let i = line.length - 1; i >= 0; i -= (4 * step)) {
+      for (let i = (line.length - 1 - (4 * ignoreEdge)); i >= 0; i -= (4 * step)) {
         if(i > lineLimit) {
           if(
             Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
