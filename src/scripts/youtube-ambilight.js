@@ -1137,7 +1137,7 @@ class Ambilight {
         ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
         ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
         ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
-      `
+      `.trim()
 
       this.projectors.forEach((projector) => {
         if (projector.elem.width !== this.p.w)
