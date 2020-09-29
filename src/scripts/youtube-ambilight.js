@@ -1924,6 +1924,7 @@ class Ambilight {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
           this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
             0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
+          this.sharpen(this.videoOverlayBuffer.elem, this.videoOverlayBuffer.ctx)
         }
         this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
@@ -1975,21 +1976,7 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
-
-        if(this.videoOverlaySharpenOpacity) {
-          if(!this.gpuScriptInserted) {
-            this.gpuScriptInserted = true
-            const gpuScriptSrc = html.attr('data-ambilight-gpu-script-src')
-            if(gpuScriptSrc) {
-              insertScript(gpuScriptSrc)
-            }
-          }
-          try {
-            sharpen(this.videoOverlay.elem, this.videoOverlay.ctx, this.videoOverlaySharpenOpacity / 100)
-          } catch(err) {
-            console.error(err);
-          }
-        }
+        this.sharpen(this.videoOverlay.elem, this.videoOverlay.ctx)
 
         this.checkIfNeedToHideVideoOverlay()
       }
@@ -2018,6 +2005,23 @@ class Ambilight {
 
     if(this.enableMozillaBug1606251Workaround) {
       this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+    }
+  }
+
+  sharpen(elem, ctx) {
+    if(this.videoOverlaySharpenOpacity) {
+      if(!this.gpuScriptInserted) {
+        this.gpuScriptInserted = true
+        const gpuScriptSrc = html.attr('data-ambilight-gpu-script-src')
+        if(gpuScriptSrc) {
+          insertScript(gpuScriptSrc)
+        }
+      }
+      try {
+        sharpen(elem, ctx, this.videoOverlaySharpenOpacity / 100)
+      } catch(err) {
+        console.error(err);
+      }
     }
   }
 
