@@ -275,15 +275,19 @@ class Ambilight {
     }
 
     if(this.enableChromiumBug1092080Workaround) {
-      const playerElem = $.s('.html5-video-player')
+      try {
+        const playerElem = $.s('.html5-video-player')
 
-      this.chromiumBug1092080WorkaroundElem1 = document.createElement('div')
-      this.chromiumBug1092080WorkaroundElem1.class('ambilight__chromium-bug-1092080-workaround-1')
-      playerElem.append(this.chromiumBug1092080WorkaroundElem1)
+        this.chromiumBug1092080WorkaroundElem1 = document.createElement('div')
+        this.chromiumBug1092080WorkaroundElem1.class('ambilight__chromium-bug-1092080-workaround-1')
+        playerElem.append(this.chromiumBug1092080WorkaroundElem1)
 
-      this.chromiumBug1092080WorkaroundElem2 = document.createElement('div')
-      this.chromiumBug1092080WorkaroundElem2.class('ambilight__chromium-bug-1092080-workaround-2')
-      playerElem.append(this.chromiumBug1092080WorkaroundElem2)
+        this.chromiumBug1092080WorkaroundElem2 = document.createElement('div')
+        this.chromiumBug1092080WorkaroundElem2.class('ambilight__chromium-bug-1092080-workaround-2')
+        playerElem.append(this.chromiumBug1092080WorkaroundElem2)
+      } catch(ex) {
+        AmbilightSentry.captureExceptionWithDetails(ex)
+      }
     }
   }
 
@@ -1597,7 +1601,7 @@ class Ambilight {
       
       try {
         this.drawAmbilight()
-        if(this.enableChromiumBug1092080Workaround) {
+        if(this.enableChromiumBug1092080Workaround && this.chromiumBug1092080WorkaroundElem2) {
           this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
         }
       } catch (ex) {
