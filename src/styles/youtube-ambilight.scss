@@ -348,6 +348,7 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
+    opacity: 0.9899999; // Prevent Firefox from stopping the video rendering
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
