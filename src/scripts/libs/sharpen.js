@@ -2,10 +2,14 @@ let gpu
 let convolutionKernel
 let width
 let height
+let kernelCreatedAt
+let kernelMaxDuration = 10000
 
 const createConvolutionKernelFromCanvas = (canvas) => {
   width = canvas.width
   height = canvas.height
+  kernelCreatedAt = performance.now()
+  // console.log('new kernel', kernelCreatedAt, width, height)
 
   if(convolutionKernel) {
     convolutionKernel.destroy()
@@ -71,7 +75,12 @@ const kernels = {
 export default (srcCanvas, srcCtx, strength) => {
   if(!window.GPU) return
 
-  if(!convolutionKernel || width !== srcCanvas.width || height !== srcCanvas.height) {
+  if(
+    !convolutionKernel || 
+    width !== srcCanvas.width || 
+    height !== srcCanvas.height || 
+    kernelCreatedAt < performance.now() - kernelMaxDuration
+  ) {
     createConvolutionKernelFromCanvas(srcCanvas)
   }
 
