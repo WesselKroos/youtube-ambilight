@@ -52,9 +52,19 @@ const gpuJs = {
  }
 }
 
+const glfx = {
+  input : './src/scripts/libs/glfx.js',
+  output:  { 
+   file: './dist/scripts/glfx.js',
+   format: 'iife',
+   globals: {},
+ }
+}
+
 export default [
   Object.assign({}, background, common),
   Object.assign({}, content, common),
   Object.assign({}, youtubeAmbilight, common),
-  Object.assign({}, gpuJs, common)
+  Object.assign({}, gpuJs, common),
+  Object.assign({}, glfx, common)
 ]
