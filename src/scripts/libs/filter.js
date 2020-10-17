@@ -14,10 +14,12 @@ export default (srcCanvas, srcCtx, filters) => {
   }
 
   texture.loadContentsOf(srcCanvas);
-  let filteredCanvas = canvas.draw(texture);
+  canvas.draw(texture);
+
   filters.forEach(([filter, args]) => {
-    filteredCanvas = filteredCanvas[filter](...args);
+    canvas[filter](...args);
   });
-  filteredCanvas.update();
-  srcCtx.drawImage(canvas, 0 , 0);
+  canvas.update();
+
+  srcCtx.drawImage(canvas, 0, 0);
 }
