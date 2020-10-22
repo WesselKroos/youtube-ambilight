@@ -2071,9 +2071,20 @@ class Ambilight {
       this.blendedProjectorBuffer.ctx.globalAlpha = alpha
       this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
       this.blendedProjectorBuffer.ctx.globalAlpha = 1
+
       this.projectors.forEach((projector) => {
         projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
       })
+      // this.projectors.forEach((projector, i) => {
+      //   if(i === 0) {
+      //     projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
+      //     return
+      //   }
+      //   this.projectorsRectangles.forEach(rectangle => {
+      //     projector.ctx.drawImage(this.blendedProjectorBuffer.elem, ...rectangle, ...rectangle)
+      //   })
+      // })
+
       this.previousDrawTime = drawTime
     } else {
       if (!hasNewFrame) return
@@ -2095,14 +2106,17 @@ class Ambilight {
         0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
       this.projectors.forEach((projector, i) => {
-        if(i === 0) {
-          projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-          return
-        }
-        this.projectorsRectangles.forEach(rectangle => {
-          projector.ctx.drawImage(this.projectorBuffer.elem, ...rectangle, ...rectangle)
-        })
+        projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
       })
+      // this.projectors.forEach((projector, i) => {
+      //   if(i === 0) {
+      //     projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+      //     return
+      //   }
+      //   this.projectorsRectangles.forEach(rectangle => {
+      //     projector.ctx.drawImage(this.projectorBuffer.elem, ...rectangle, ...rectangle)
+      //   })
+      // })
     }
 
     this.ambilightFrameCount++
