@@ -2276,7 +2276,7 @@ class Ambilight {
     var outSyncCount = this.syncInfo.filter(value => !value).length
     var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if ((outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    if (this.videoElem.paused || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
