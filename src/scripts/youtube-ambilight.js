@@ -892,6 +892,9 @@ class Ambilight {
 
     this.FPSListElem = document.createElement("div")
     this.FPSListElem.class('ambilight__fps-list')
+    this.videoSyncedScaleElem = document.createElement("div")
+    this.videoSyncedScaleElem.class('ambilight__video-synced')
+    this.FPSListElem.prepend(this.videoSyncedScaleElem)
 
     this.videoSyncedElem = document.createElement("div")
     this.videoSyncedElem.class('ambilight__video-synced')
@@ -1297,8 +1300,10 @@ class Ambilight {
       if (this.videoOverlayEnabled && this.videoOverlay) {
         this.videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
         if(this.videoMatchScreenResolution) {
-          this.videoOverlay.elem.width = Math.min(this.srcVideoOffset.width * 2, Math.round(this.videoOverlay.elem.offset().width))
-          this.videoOverlay.elem.height = Math.min(this.srcVideoOffset.height * 2, Math.round((this.srcVideoOffset.height / this.srcVideoOffset.width) * this.videoOverlay.elem.width))
+          this.videoOverlayScale = Math.round(this.videoOverlay.elem.offset().width) / this.srcVideoOffset.width
+          this.videoOverlayScale = Math.max(0.5, Math.min(2, Math.floor(this.videoOverlayScale * 4) / 4))
+          this.videoOverlay.elem.width = Math.round(this.srcVideoOffset.width * this.videoOverlayScale)
+          this.videoOverlay.elem.height = Math.round(this.srcVideoOffset.height * this.videoOverlayScale)
         } else {
           this.videoOverlay.elem.width = this.srcVideoOffset.width
           this.videoOverlay.elem.height = this.srcVideoOffset.height
@@ -1781,10 +1786,15 @@ class Ambilight {
     this.ambilightFPSElem.textContent = ''
     this.skippedFramesElem.textContent = ''
     this.videoSyncedElem.textContent = ''
+    this.videoSyncedScaleElem.textContent = ''
   }
 
   detectVideoSynced() {
     if (!this.showFPS || !this.videoOverlay) return
+
+    this.videoSyncedScaleElem.textContent = this.videoOverlayEnabled ? `VIDEO SYNCED SCALE: ${this.videoOverlayScale || ''}` : ''
+    this.videoSyncedScaleElem.style.color = this.videoOverlay.isHidden ? '#f33' : '#7f7'
+
     if (this.videoSyncedElem.textContent) {
       if (!this.videoOverlayEnabled) {
         this.videoSyncedElem.textContent = ''
