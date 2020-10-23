@@ -2,14 +2,10 @@ let gpu
 let convolutionKernel
 let width
 let height
-let kernelCreatedAt
-let kernelMaxDuration = 10000
 
 const createConvolutionKernelFromCanvas = (canvas) => {
   width = canvas.width
   height = canvas.height
-  kernelCreatedAt = performance.now()
-  // console.log('new kernel', kernelCreatedAt, width, height)
 
   if(convolutionKernel) {
     convolutionKernel.destroy()
@@ -53,9 +49,13 @@ const createConvolutionKernelFromCanvas = (canvas) => {
         i++
       }
       this.color(r, g, b)
-    })
-    .setOutput([width, height])
-    .setGraphical(true)
+    }, {
+      output: [width, height],
+      dynamicOutput: false,
+      graphical: true,
+      loopMaxIterations: 3,
+      immutable: true, // Fixes flashing frames
+    });
 }
 
 const multiplier = 4
@@ -72,21 +72,20 @@ const kernels = {
   }
 }
 
-export default (srcCanvas, srcCtx, strength) => {
+export default (canvas, srcCtx, strength) => {
   if(!window.GPU) return
 
   if(
     !convolutionKernel || 
-    width !== srcCanvas.width || 
-    height !== srcCanvas.height || 
-    kernelCreatedAt < performance.now() - kernelMaxDuration
+    width !== canvas.width || 
+    height !== canvas.height
   ) {
-    createConvolutionKernelFromCanvas(srcCanvas)
+    createConvolutionKernelFromCanvas(canvas)
   }
 
   const kernel = kernels.sharpen(strength)
   const kernelRadius = (Math.sqrt(kernel.length) - 1) / 2
-  convolutionKernel(srcCanvas, srcCanvas.width, srcCanvas.height, kernel, kernelRadius)
+  convolutionKernel(canvas, canvas.width, canvas.height, kernel, kernelRadius)
 
   srcCtx.drawImage(convolutionKernel.canvas, 1, 1, width - 2, height - 2, 1, 1, width - 2, height - 2)
 }
