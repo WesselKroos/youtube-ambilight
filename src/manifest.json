@@ -38,6 +38,8 @@
   "web_accessible_resources": [
     "styles/options.css",
     "scripts/youtube-ambilight.js",
+    "scripts/gpu-browser.js",
+    "scripts/glfx.js",
     "images/noise-1.png",
     "images/noise-2.png",
     "images/noise-3.png"
