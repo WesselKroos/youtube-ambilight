@@ -763,7 +763,7 @@ class Ambilight {
       this.frameSync = this.getSetting('frameSync')
     }
 
-    this.framerateLimit = this.getSetting('framerateLimit')
+    this.framerateLimit = parseInt(this.getSetting('framerateLimit') || 0)
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
