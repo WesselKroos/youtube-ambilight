@@ -1588,10 +1588,8 @@ class Ambilight {
     }
   }
 
-  nextFrame = (time, { presentedFrames } = {}) => {
+  nextFrame = () => {
     try {
-      this.requestAnimationFramePresentedFrames = presentedFrames
-
       if (!this.scheduled) return
       this.scheduled = false
 
@@ -1791,7 +1789,6 @@ class Ambilight {
 
   getVideoFrameCount() {
     if (!this.videoElem) return 0
-    if (this.requestAnimationFramePresentedFrames) return this.requestAnimationFramePresentedFrames
     return this.videoElem.mozPaintedFrames || // Firefox
       (this.videoElem.webkitDecodedFrameCount + this.videoElem.webkitDroppedFrameCount) // Chrome
   }
@@ -2245,29 +2242,24 @@ class Ambilight {
       raf(this.detectDisplayFrameRate)
     }
 
-    if(this.videoHasRequestVideoFrameCallback) {
+    this.scheduleNextFrame()
+    if (this.videoHasRequestVideoFrameCallback && !this.awaitingVideoFrameCallback) {
       this.videoFrameCallbackReceived = true
+      this.awaitingVideoFrameCallback = true
       this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
     }
-    this.scheduleNextFrame()
   }
 
   receiveVideoFrame = () => {
+    if (!this.awaitingVideoFrameCallback) return
+
+    this.awaitingVideoFrameCallback = false
+    if(!this.enabled) return
+
     this.videoFrameCallbackReceived = true
-    if(!this.enabled || this.paused) return
 
-    let videoVisible = true
-    let videoOffset = this.videoElem.offset()
-    let videoBottom = videoOffset.top + videoOffset.height
-    if(videoBottom <= 0) {
-      videoVisible = false
-    }
-
-    // Prevent YouTube video error that forces the videostream into a lower quality
-    if(videoVisible)
-      this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
-    else
-      setTimeout(() => raf(this.receiveVideoFrame), 100)
+    this.awaitingVideoFrameCallback = true
+    this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
   }
 
   hide() {
