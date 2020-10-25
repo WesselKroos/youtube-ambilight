@@ -270,6 +270,12 @@ class Ambilight {
       ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
     }
 
+    const videoSnapshotGetImageDataBufferElem = document.createElement("canvas")
+    this.videoSnapshotGetImageDataBuffer = {
+      elem: videoSnapshotGetImageDataBufferElem,
+      ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', ctxOptions)
+    }
+
     const projectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
     //this.buffersElem.appendChild(projectorsBufferElem)
     this.projectorBuffer = {
@@ -1198,6 +1204,8 @@ class Ambilight {
       if(!isHorizontalBarsAdjustment) { //Prevent losing imagedata
         this.videoSnapshotBuffer.elem.width = this.p.w
         this.videoSnapshotBuffer.elem.height = this.p.h
+        this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
+        this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
       }
       this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
 
@@ -1814,6 +1822,11 @@ class Ambilight {
     let newVideoFrameCount = this.getVideoFrameCount()
     this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
       0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
+      
+    // Execute getImageData on a separate buffer for performance:
+    // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
+    // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
+    let getImageDataBuffer = undefined
 
     let hasNewFrame = false
     if(this.videoHasRequestVideoFrameCallback) {
@@ -1828,12 +1841,17 @@ class Ambilight {
       if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
           //performance.mark('comparing-compare-start')
-          let lines = []
-          let partSize = Math.ceil(this.videoSnapshotBuffer.elem.height / 3)
 
+          if(!getImageDataBuffer) {
+            getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
+            getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
+          }
+
+          let lines = []
+          let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
           try {
-            for (let i = partSize; i < this.videoSnapshotBuffer.elem.height; i += partSize) {
-              lines.push(this.videoSnapshotBuffer.ctx.getImageData(0, i, this.videoSnapshotBuffer.elem.width, 1).data)
+            for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
+              lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
             }
           } catch (ex) {
             if (!this.showedCompareWarning) {
@@ -1863,10 +1881,15 @@ class Ambilight {
     
     if(this.getImageDataAllowed && hasNewFrame && this.detectHorizontalBarSizeEnabled) {
       try {
+        if(!getImageDataBuffer) {
+          getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
+          getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
+        }
+
         const lines = []
-        let partSize = Math.ceil(this.videoSnapshotBuffer.elem.width / 6)
-        for (let i = partSize; i < this.videoSnapshotBuffer.elem.width; i += partSize) {
-          lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
+        let partSize = Math.ceil(getImageDataBuffer.elem.width / 6)
+        for (let i = partSize; i < getImageDataBuffer.elem.width; i += partSize) {
+          lines.push(getImageDataBuffer.ctx.getImageData(i, 0, 1, getImageDataBuffer.elem.height).data)
         }
         if(this.detectHorizontalBarSize(lines)) {
           // return this.drawAmbilight()
