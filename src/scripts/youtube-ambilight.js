@@ -1976,6 +1976,7 @@ class Ambilight {
         this.checkIfNeedToHideVideoOverlay()
       }
 
+      //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
       this.blendedProjectorBuffer.ctx.globalAlpha = 1
       this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
       this.blendedProjectorBuffer.ctx.globalAlpha = alpha
@@ -2298,6 +2299,14 @@ class Ambilight {
     this.videoFrameCallbackReceived = true
 
     this.awaitingVideoFrameCallback = true
+    // Prevent video crashing into a lower resolution when the video is not visible
+    // And fallback to getVideoFrameCount in drawAmbilight
+    const videoInvisible = (this.videoElem.offset().bottom <= 0)
+    if(videoInvisible) {
+      if(this.videoElem.paused) return
+      setTimeout(this.receiveVideoFrame, 1000)
+      return
+    }
     this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
   }
 
