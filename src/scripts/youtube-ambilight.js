@@ -1830,24 +1830,38 @@ class Ambilight {
     //performance.mark('start-drawing')
 
     let newVideoFrameCount = this.getVideoFrameCount()
-    this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
-      0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
+
+    let updateVideoSnapshot = false
+    if(this.videoHasRequestVideoFrameCallback) { // videoFrameCallback
+      if(this.videoFrameCallbackReceived) {
+        this.videoFrameCallbackReceived = false
+        updateVideoSnapshot = true
+      } else {
+        updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
+      }
+    } else if(this.frameSync == 0) { // PERFORMANCE
+      updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
+    } else if (this.frameSync == 50) { // BALANCED
+      updateVideoSnapshot = true
+    } else if (this.frameSync == 100) { // HIGH PRECISION
+      updateVideoSnapshot = true
+    }
+
+    if(updateVideoSnapshot) {
+      this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
+        0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
+    }
       
     // Execute getImageData on a separate buffer for performance:
     // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
     // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
     let getImageDataBuffer = undefined
 
-    let hasNewFrame = false
-    if(this.videoHasRequestVideoFrameCallback) {
-      if(this.videoFrameCallbackReceived) {
-        this.videoFrameCallbackReceived = false
-        hasNewFrame = true
-      }
-    } else if(this.frameSync == 0) {
-      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-    } else if (this.frameSync == 50 || this.frameBlending) {
-      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+    let hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+    if(this.videoHasRequestVideoFrameCallback) { // videoFrameCallback
+      hasNewFrame = hasNewFrame || updateVideoSnapshot
+    } else if(this.frameSync == 0) { // PERFORMANCE
+    } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
       if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
           //performance.mark('comparing-compare-start')
@@ -1885,7 +1899,7 @@ class Ambilight {
           }
         }
       }
-    } else if (this.frameSync == 100) {
+    } else if (this.frameSync == 100) { // HIGH PRECISION
       hasNewFrame = true
     }
     
@@ -1927,7 +1941,7 @@ class Ambilight {
       this.videoFrameCount = newVideoFrameCount
     }
 
-    if (this.frameBlending && !this.videoElem.paused) {
+    if (this.frameBlending) {
       if (!this.previousProjectorBuffer) {
         this.initFrameBlending()
       }
@@ -2282,21 +2296,21 @@ class Ambilight {
       raf(this.detectDisplayFrameRate)
     }
 
-    this.scheduleNextFrame()
     if (this.videoHasRequestVideoFrameCallback && !this.awaitingVideoFrameCallback) {
       this.videoFrameCallbackReceived = true
       this.awaitingVideoFrameCallback = true
       this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
     }
+    this.scheduleNextFrame()
   }
 
   receiveVideoFrame = () => {
     if (!this.awaitingVideoFrameCallback) return
-
     this.awaitingVideoFrameCallback = false
     if(!this.enabled) return
 
     this.videoFrameCallbackReceived = true
+    this.videoFrameCount++
 
     this.awaitingVideoFrameCallback = true
     // Prevent video crashing into a lower resolution when the video is not visible
