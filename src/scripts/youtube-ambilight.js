@@ -1700,9 +1700,11 @@ class Ambilight {
     const videoFrameRateTime = performance.now()
     if (this.videoFrameRateStartTime + 2000 < videoFrameRateTime) {
       if (this.videoFrameRateStartFrame !== 0) {
-        this.videoFrameRate = (
-          (videoFrameRateFrame - this.videoFrameRateStartFrame) / 
-          ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
+        this.videoFrameRate = Math.max(0,
+          (
+            (videoFrameRateFrame - this.videoFrameRateStartFrame) / 
+            ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
+          )
         )
         if (this.showFPS) {
           const frameRateText = (
@@ -1726,7 +1728,12 @@ class Ambilight {
 
     const displayFrameRateTime = performance.now()
     if (this.displayFrameRateStartTime < displayFrameRateTime - 2000) {
-      this.displayFrameRate = this.displayFrameRateFrame / ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
+      this.displayFrameRate = Math.max(0, 
+        (
+          this.displayFrameRateFrame / 
+          ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
+        )
+      )
       if (this.showFPS) {
         const frameRateText = (Math.round(Math.max(0, this.displayFrameRate) * 100) / 100).toFixed(2)
         this.displayFPSElem.textContent = `DISPLAY: ${frameRateText}`
@@ -1772,9 +1779,11 @@ class Ambilight {
 
     if (this.ambilightFrameRateStartTime + 2000 < ambilightFrameRateTime) {
       if (this.ambilightFrameRateStartFrame !== 0) {
-        this.ambilightFrameRate = (
-          (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / 
-          ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
+        this.ambilightFrameRate = Math.max(0, 
+          (
+            (ambilightFrameRateFrame - this.ambilightFrameRateStartFrame) / 
+            ((ambilightFrameRateTime - this.ambilightFrameRateStartTime) / 1000)
+          )
         )
         if (this.showFPS) {
           const frameRateText = (
@@ -1806,7 +1815,7 @@ class Ambilight {
 
     if (
       this.isVR ||
-      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled && !this.frameBlending) ||
+      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled && !this.frameBlending && !this.videoOverlayEnabled) ||
       (!this.enableInFullscreen && this.isFullscreen)
     ) {
       this.hide()
