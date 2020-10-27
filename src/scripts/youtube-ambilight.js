@@ -13,6 +13,7 @@ class Ambilight {
   showVideoFrameRate = true
 
   horizontalBarsClipPX = 0
+  detectHorizontalBarSizeThrottlePerFrameCount = 12
 
   projectorOffset = {}
   srcVideoOffset = {}
@@ -1888,7 +1889,13 @@ class Ambilight {
       hasNewFrame = true
     }
     
-    if(this.getImageDataAllowed && hasNewFrame && this.detectHorizontalBarSizeEnabled) {
+    // Horizontal bar detection
+    if(
+      this.detectHorizontalBarSizeEnabled && 
+      this.getImageDataAllowed &&
+      hasNewFrame && 
+      (newVideoFrameCount % this.detectHorizontalBarSizeThrottlePerFrameCount) === 0
+    ) {
       try {
         if(!getImageDataBuffer) {
           getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
