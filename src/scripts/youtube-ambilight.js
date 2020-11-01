@@ -690,10 +690,15 @@ class Ambilight {
     this.settings = this.settings.map(setting => {
       if(this.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
-          return undefined
+          setting.min = -50
+          setting.default = -50
+          // setting.advanced = true
         }
+        // if(setting.name === 'frameSync') {
+        //   return undefined
+        // }
         if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
-          setting.advanced = true
+          // setting.advanced = true
         }
       }
       return setting
@@ -1831,20 +1836,22 @@ class Ambilight {
 
     let newVideoFrameCount = this.getVideoFrameCount()
 
-    let updateVideoSnapshot = false
-    if(this.videoHasRequestVideoFrameCallback) { // videoFrameCallback
-      if(this.videoFrameCallbackReceived) {
-        this.videoFrameCallbackReceived = false
-        updateVideoSnapshot = true
-      } else {
+    let updateVideoSnapshot = this.buffersCleared
+    if(!updateVideoSnapshot) {
+      if (this.frameSync == -50) { // BEST
+        if(this.videoFrameCallbackReceived) {
+          this.videoFrameCallbackReceived = false
+          updateVideoSnapshot = true
+        } else {
+          updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
+        }
+      } else if(this.frameSync == 0) { // PERFORMANCE
         updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
+      } else if (this.frameSync == 50) { // BALANCED
+        updateVideoSnapshot = true
+      } else if (this.frameSync == 100) { // HIGH PRECISION
+        updateVideoSnapshot = true
       }
-    } else if(this.frameSync == 0) { // PERFORMANCE
-      updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-    } else if (this.frameSync == 50) { // BALANCED
-      updateVideoSnapshot = true
-    } else if (this.frameSync == 100) { // HIGH PRECISION
-      updateVideoSnapshot = true
     }
 
     if(updateVideoSnapshot) {
@@ -1857,8 +1864,8 @@ class Ambilight {
     // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
     let getImageDataBuffer = undefined
 
-    let hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
-    if(this.videoHasRequestVideoFrameCallback) { // videoFrameCallback
+    let hasNewFrame = this.buffersCleared || (this.videoFrameCount < newVideoFrameCount)
+    if(this.frameSync == -50) { // BEST
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if(this.frameSync == 0) { // PERFORMANCE
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
@@ -2296,7 +2303,7 @@ class Ambilight {
       raf(this.detectDisplayFrameRate)
     }
 
-    if (this.videoHasRequestVideoFrameCallback && !this.awaitingVideoFrameCallback) {
+    if (this.frameSync == -50 && !this.awaitingVideoFrameCallback) {
       this.videoFrameCallbackReceived = true
       this.awaitingVideoFrameCallback = true
       this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
@@ -2732,6 +2739,8 @@ class Ambilight {
 
   getSettingListDisplayText(setting) {
     if (setting.name === 'frameSync') {
+      if (setting.value == -50)
+        return 'Best (new)'
       if (setting.value == 0)
         return 'Power Saver'
       if (setting.value == 50)
