@@ -161,10 +161,10 @@ class Ambilight {
 
     window.on('resize', () => {
       if (!this.isOnVideoPage) return
-      this.checkVideoSize()
+      this.checkVideoSize(true)
       setTimeout(() =>
         raf(() =>
-          setTimeout(() => this.checkVideoSize(), 200)
+          setTimeout(() => this.checkVideoSize(true), 200)
         ),
         200)
     })
@@ -889,7 +889,8 @@ class Ambilight {
 
   setHorizontalBars(percentage) {
     this.horizontalBarsClipPercentage = percentage
-    this.updateSizes(true)
+    this.updateSizes()
+    this.scheduleNextFrame()
     setTimeout(() => {
       this.setSetting('horizontalBarsClipPercentage', percentage)
       const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
@@ -978,7 +979,7 @@ class Ambilight {
     }
   }
 
-  updateSizes(isHorizontalBarsAdjustment = false) {
+  updateSizes() {
     try {
       if(this.detectVideoFillScaleEnabled){
         this.detectVideoFillScale()
@@ -1168,8 +1169,14 @@ class Ambilight {
       this.projectorBuffer.elem.width = this.p.w
       this.projectorBuffer.elem.height = this.p.h
 
-      if (this.frameBlending && !this.previousProjectorBuffer) {
-        this.initFrameBlending()
+      if (this.frameBlending) {
+        if(!this.previousProjectorBuffer || !this.blendedProjectorBuffer) {
+          this.initFrameBlending()
+        }
+        this.previousProjectorBuffer.elem.width = this.p.w
+        this.previousProjectorBuffer.elem.height = this.p.h
+        this.blendedProjectorBuffer.elem.width = this.p.w
+        this.blendedProjectorBuffer.elem.height = this.p.h
       }
       if (this.videoOverlayEnabled && !this.videoOverlay) {
         this.initVideoOverlay()
@@ -1179,14 +1186,6 @@ class Ambilight {
       }
       if(this.videoOverlayEnabled && this.videoOverlay)
         this.checkIfNeedToHideVideoOverlay()
-
-      if (this.frameBlending) {
-        this.previousProjectorBuffer.elem.width = this.p.w
-        this.previousProjectorBuffer.elem.height = this.p.h
-        
-        this.blendedProjectorBuffer.elem.width = this.p.w
-        this.blendedProjectorBuffer.elem.height = this.p.h
-      }
 
       if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.elem.parentNode) {
         this.videoOverlay.elem.appendTo($.s('.html5-video-container'))
@@ -1207,18 +1206,14 @@ class Ambilight {
         }
       }
 
-      if(!isHorizontalBarsAdjustment) { //Prevent losing imagedata
-        this.videoSnapshotBuffer.elem.width = this.p.w
-        this.videoSnapshotBuffer.elem.height = this.p.h
-        this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
-        this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
-      }
+      this.videoSnapshotBuffer.elem.width = this.p.w
+      this.videoSnapshotBuffer.elem.height = this.p.h
+      this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
+      this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
       this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
 
 
       this.resizeCanvasses()
-
-      this.resetVideoFrameCounter()
       this.initFPSListElem()
 
       this.sizesInvalidated = false
@@ -1468,7 +1463,7 @@ class Ambilight {
     }
   }
 
-  checkVideoSize() {
+  checkVideoSize(checkPosition = false) {
     if (this.canvassesInvalidated) {
       this.canvassesInvalidated = false
       this.recreateProjectors()
@@ -1813,7 +1808,7 @@ class Ambilight {
   getVideoFrameCount() {
     if (!this.videoElem) return 0
     return this.videoElem.mozPaintedFrames || // Firefox
-      (this.videoElem.webkitDecodedFrameCount + this.videoElem.webkitDroppedFrameCount) // Chrome
+      this.videoElem.webkitDecodedFrameCount // Chrome
   }
 
   drawAmbilight() {
@@ -1954,21 +1949,31 @@ class Ambilight {
       }
 
       const drawTime = performance.now()
-      if (hasNewFrame) {
+      if (hasNewFrame || this.buffersCleared) {
         this.previousFrameTime = this.previousDrawTime
 
         if (this.videoOverlayEnabled) {
           this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
           this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
             0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
+          if(this.buffersCleared) {
+            this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
+          }
         }
         this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+        if(this.buffersCleared) {
+          // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
+          this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+        }
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
           0,
           this.videoSnapshotBufferBarsClipPx,
           this.videoSnapshotBuffer.elem.width,
           this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+        if(this.buffersCleared) {
+          this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+        }
       }
       const frameDuration = (drawTime - this.previousFrameTime)
       let alpha =  1
@@ -1998,6 +2003,7 @@ class Ambilight {
       }
 
       //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
+      //this.previousProjectorBuffer can also contain an old frame
       this.blendedProjectorBuffer.ctx.globalAlpha = 1
       this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
       this.blendedProjectorBuffer.ctx.globalAlpha = alpha
@@ -2708,6 +2714,7 @@ class Ambilight {
           }
 
           this.updateSizes()
+          this.scheduleNextFrame()
         })
       }
     })
