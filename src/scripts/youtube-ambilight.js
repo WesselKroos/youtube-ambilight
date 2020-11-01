@@ -1487,18 +1487,6 @@ class Ambilight {
     if (this.videoOverlayEnabled && this.videoOverlay && this.videoElem.getAttribute('style') !== this.videoOverlay.elem.getAttribute('style')) {
       return this.updateSizes()
     }
-
-    const projectorsElemRect = this.projectorsElem.getBoundingClientRect()
-    const videoElemRec = this.videoElem.getBoundingClientRect()
-    const expectedProjectsElemRectY = videoElemRec.y + (videoElemRec.height * (this.horizontalBarsClipPercentage/100))
-    if (
-      Math.abs(projectorsElemRect.width - videoElemRec.width) > 1 ||
-      Math.abs(projectorsElemRect.x - videoElemRec.x) > 1 ||
-      Math.abs(projectorsElemRect.y - expectedProjectsElemRectY) > 2
-    ) {
-      return this.updateSizes()
-    }
-
     
     const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
     if(!noClipOrScale) {
@@ -1516,22 +1504,18 @@ class Ambilight {
       }
     }
 
-    //What use case is this?
-    // if(this.videoShadowOpacity != 0 && this.videoShadowSize != 0) {
-    //   const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-    //   const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
-    //   if(this.videoShadowElem.style.transform !== `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`) {
-    //     console.log('nope!', 
-    //       this.videoShadowElem.style.transform, 
-    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
-    //     return this.updateSizes()
-    //   } else {
-    //     console.log('yes!', 
-    //       this.videoShadowElem.style.transform, 
-    //       `translate3d(0px, 0px, 0px) translateY(${(unscaledHeight * horizontalBarsClip)}px) scale(${(this.videoScale / 100)})`)
-    //   }
-    // }
-
+    if(checkPosition) {
+      const projectorsElemRect = this.projectorsElem.getBoundingClientRect()
+      const videoElemRec = this.videoElem.getBoundingClientRect()
+      const expectedProjectsElemRectY = videoElemRec.y + (videoElemRec.height * (this.horizontalBarsClipPercentage/100))
+      if (
+        Math.abs(projectorsElemRect.width - videoElemRec.width) > 1 ||
+        Math.abs(projectorsElemRect.x - videoElemRec.x) > 1 ||
+        Math.abs(projectorsElemRect.y - expectedProjectsElemRectY) > 2
+      ) {
+        return this.updateSizes()
+      }
+    }
 
     return true
   }
