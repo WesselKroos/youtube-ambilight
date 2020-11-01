@@ -1,5 +1,6 @@
 import { $, html, body, waitForDomElement, raf, ctxOptions, SafeOffscreenCanvas } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
+import detectHorizontalBarSize from './horizontal-bar-detection'
 
 class Ambilight {
   static isClassic = false
@@ -13,7 +14,6 @@ class Ambilight {
   showVideoFrameRate = true
 
   horizontalBarsClipPX = 0
-  detectHorizontalBarSizeThrottlePerFrameCount = 12
 
   projectorOffset = {}
   srcVideoOffset = {}
@@ -1891,23 +1891,10 @@ class Ambilight {
     if(
       this.detectHorizontalBarSizeEnabled && 
       this.getImageDataAllowed &&
-      hasNewFrame && 
-      (newVideoFrameCount % this.detectHorizontalBarSizeThrottlePerFrameCount) === 0
+      hasNewFrame
     ) {
       try {
-        if(!getImageDataBuffer) {
-          getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
-          getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
-        }
-
-        const lines = []
-        let partSize = Math.ceil(getImageDataBuffer.elem.width / 6)
-        for (let i = partSize; i < getImageDataBuffer.elem.width; i += partSize) {
-          lines.push(getImageDataBuffer.ctx.getImageData(i, 0, 1, getImageDataBuffer.elem.height).data)
-        }
-        if(this.detectHorizontalBarSize(lines)) {
-          // return this.drawAmbilight()
-        }
+        this.detectHorizontalBarSize()
       } catch (ex) {
         if (!this.showedCompareWarning) {
           this.showedCompareWarning = true
@@ -2041,107 +2028,15 @@ class Ambilight {
     }
   }
 
-  detectHorizontalBarSize(imageVLines) {
-    let sizes = []
-    const colorIndex = (4* 4)
-    let color = this.detectColoredHorizontalBarSizeEnabled ?
-      [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
-      [2,2,2]
-    const maxColorDeviation = 8
-    const maxPercentage = 0.25
-    const ignoreEdge = 2
-
-    for(const line of imageVLines) {
-      const largeStep = 20
-      let step = largeStep
-      let lineLimit = (line.length * maxPercentage) + largeStep
-      for (let i = (4 * ignoreEdge); i < line.length; i += (4 * step)) {
-        if(i < lineLimit) {
-          if(
-            Math.abs(line[i] - color[0]) <= maxColorDeviation && 
-            Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
-            Math.abs(line[i+2] - color[2]) <= maxColorDeviation
-          ) continue;
-          if(i !== 0 && step === largeStep) {
-            i -= (4 * step)
-            step = Math.ceil(1, Math.floor(step / 2))
-            continue
-          }
-        }
-        const size = i ? (i / 4) : 0
-        sizes.push(size)
-        break;
-      }
-      step = largeStep
-      lineLimit = (line.length * (1 - maxPercentage)) - largeStep
-      for (let i = (line.length - 1 - (4 * ignoreEdge)); i >= 0; i -= (4 * step)) {
-        if(i > lineLimit) {
-          if(
-            Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
-            Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
-            Math.abs(line[i-1] - color[2]) <= maxColorDeviation
-          ) continue;
-          if(i !== line.length - 1 && step === largeStep) {
-            i += (4 * step)
-            step = Math.ceil(1, Math.floor(step / 2))
-            continue
-          }
-        }
-        const j = (line.length - 1) - i;
-        const size = j ? (j / 4) : 0
-        sizes.push(size)
-        break;
-      }
-    }
-
-    if(!sizes.length) {
-      return
-    }
-
-    const averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-    sizes = sizes.sort((a, b) => {
-      const aGap = Math.abs(averageSize - a)
-      const bGap = Math.abs(averageSize - b)
-      return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
-    }).splice(0, 6)
-    const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
-    const height = (imageVLines[0].length / 4)
-    const allowed = height * 0.01
-    const valid = (maxDeviation <= allowed)
-    
-    let size = 0;
-    if(!valid) {
-      let lowestSize = Math.min(...sizes)
-      let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
-      if(lowestPercentage >= this.horizontalBarsClipPercentage - 4) {
-        return
-      }
-
-      size = lowestSize
-    } else {
-      size = Math.max(...sizes)// (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-    }
-
-    
-    if(size < (height * 0.01)) {
-      size = 0
-    } else {
-      size += (height * 0.004) + (height * (this.detectHorizontalBarSizeOffsetPercentage/100))
-    }
-    
-    let percentage = Math.round((size / height) * 10000) / 100
-    percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
-
-    const adjustment = (percentage - this.horizontalBarsClipPercentage)
-    if(
-      (percentage > (maxPercentage * 100)) ||
-      (adjustment > -1 && adjustment <= 0)
-    ) {
-      return
-    }
-
-    this.setHorizontalBars(percentage)
-    return true
+  detectHorizontalBarSize = async () => {
+    const percentage = await detectHorizontalBarSize(
+      this.videoSnapshotBuffer,
+      this.detectColoredHorizontalBarSizeEnabled,
+      this.detectHorizontalBarSizeOffsetPercentage,
+      this.horizontalBarsClipPercentage
+    )
+    if(percentage !== undefined)
+      this.setHorizontalBars(percentage)
   }
 
   checkIfNeedToHideVideoOverlay() {
