@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions, SafeOffscreenCanvas } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 
 class Ambilight {
@@ -264,21 +264,19 @@ class Ambilight {
   }
 
   initBuffers() {
-    const videoSnapshotBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(videoSnapshotBufferElem)
+    const videoSnapshotBufferElem = new SafeOffscreenCanvas(1, 1)
     this.videoSnapshotBuffer = {
       elem: videoSnapshotBufferElem,
       ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
     }
 
-    const videoSnapshotGetImageDataBufferElem = document.createElement("canvas")
+    const videoSnapshotGetImageDataBufferElem = new SafeOffscreenCanvas(1, 1)
     this.videoSnapshotGetImageDataBuffer = {
       elem: videoSnapshotGetImageDataBufferElem,
       ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', ctxOptions)
     }
 
-    const projectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
-    //this.buffersElem.appendChild(projectorsBufferElem)
+    const projectorsBufferElem = new SafeOffscreenCanvas(1, 1)
     this.projectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
@@ -840,7 +838,7 @@ class Ambilight {
 
   initFrameBlending() {
     //this.previousProjectorBuffer
-    const previousProjectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    const previousProjectorsBufferElem = new SafeOffscreenCanvas(1, 1) 
     //this.buffersElem.appendChild(previousProjectorsBufferElem)
     this.previousProjectorBuffer = {
       elem: previousProjectorsBufferElem,
@@ -848,7 +846,7 @@ class Ambilight {
     }
 
     //this.blendedProjectorBuffer
-    const blendedProjectorsBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    const blendedProjectorsBufferElem = new SafeOffscreenCanvas(1, 1) 
     //this.buffersElem.appendChild(blendedProjectorsBufferElem)
     this.blendedProjectorBuffer = {
       elem: blendedProjectorsBufferElem,
@@ -858,7 +856,7 @@ class Ambilight {
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
-    const videoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    const videoOverlayBufferElem = new SafeOffscreenCanvas(1, 1) 
     //this.buffersElem.appendChild(videoOverlayBufferElem)
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
@@ -866,7 +864,7 @@ class Ambilight {
     }
 
     //this.previousVideoOverlayBuffer
-    const previousVideoOverlayBufferElem = document.createElement("canvas") //new OffscreenCanvas(1, 1) 
+    const previousVideoOverlayBufferElem = new SafeOffscreenCanvas(1, 1) 
     //this.buffersElem.appendChild(previousVideoOverlayBufferElem)
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
@@ -924,7 +922,7 @@ class Ambilight {
     })
 
     for (let i = this.projectors.length; i < spreadLevels; i++) {
-      const projectorElem = $.create('canvas')
+      const projectorElem = document.createElement('canvas')
       projectorElem.class('ambilight__projector')
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
@@ -2421,7 +2419,7 @@ class Ambilight {
 
 
   initSettingsMenu() {
-    this.settingsMenuBtn = $.create('button')
+    this.settingsMenuBtn = document.createElement('button')
       .class('ytp-button ytp-ambilight-settings-button')
       .attr('title', 'Ambilight settings')
       .attr('aria-owns', 'ytp-id-190')
@@ -2435,7 +2433,7 @@ class Ambilight {
     this.settingsMenuBtn.prependTo(this.settingsMenuBtnParent)
 
 
-    this.settingsMenuElem = $.create('div')
+    this.settingsMenuElem = document.createElement('div')
       .class(`ytp-popup ytp-settings-menu ytpa-ambilight-settings-menu ${
         (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : ''
       }`)

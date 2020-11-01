@@ -93,13 +93,12 @@ export const body = document.body
 export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)
 
 export const ctxOptions = {
-  alpha: false,
-  // desynchronized: false,
+  alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
+  // desynchronized: true,
   imageSmoothingQuality: 'low'
 }
 
 export const $ = {
-  create: (tag) => { return document.createElement(tag) },
   s: (selector) => { return document.querySelector(selector) },
   sa: (selector) => { return document.querySelectorAll(selector) },
   param: (name, url) => {
@@ -127,5 +126,18 @@ export const waitForDomElement = (check, containerSelector, callback) => {
       subtree: true
     })
     return observer
+  }
+}
+
+export class SafeOffscreenCanvas {
+  constructor(width, height) {
+    if(typeof OffscreenCanvas !== 'undefined') {
+      return new OffscreenCanvas(width, height)
+    } else {
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      return canvas
+    }
   }
 }
