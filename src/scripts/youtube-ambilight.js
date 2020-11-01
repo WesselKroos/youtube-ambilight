@@ -104,7 +104,8 @@ class Ambilight {
     }
   }
 
-  // Chromium workaround: drawImage randomly disables antialiasing in the source and/or destination element
+  // Chromium workaround: drawImage randomly disables antialiasing in the videoOverlay and/or projectors
+  // Adds 2.5ms updateLayout extra per frame
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1092080
   detectChromiumBug1092080Workaround() {
     const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
@@ -288,10 +289,12 @@ class Ambilight {
 
         this.chromiumBug1092080WorkaroundElem1 = document.createElement('div')
         this.chromiumBug1092080WorkaroundElem1.class('ambilight__chromium-bug-1092080-workaround-1')
+        this.chromiumBug1092080WorkaroundElem1.style.display = 'none'
         playerElem.append(this.chromiumBug1092080WorkaroundElem1)
 
         this.chromiumBug1092080WorkaroundElem2 = document.createElement('div')
         this.chromiumBug1092080WorkaroundElem2.class('ambilight__chromium-bug-1092080-workaround-2')
+        this.chromiumBug1092080WorkaroundElem2.style.display = 'none'
         playerElem.append(this.chromiumBug1092080WorkaroundElem2)
       } catch(ex) {
         AmbilightSentry.captureExceptionWithDetails(ex)
@@ -1594,9 +1597,6 @@ class Ambilight {
       
       try {
         this.drawAmbilight()
-        if(this.enableChromiumBug1092080Workaround && this.chromiumBug1092080WorkaroundElem2) {
-          this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
-        }
       } catch (ex) {
         if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
           if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -2019,6 +2019,22 @@ class Ambilight {
     this.ambilightFrameCount++
 
     this.buffersCleared = false
+
+    if(this.enableChromiumBug1092080Workaround) {
+      if(
+        this.videoOverlayEnabled && 
+        !this.frameBlending &&
+        this.chromiumBug1092080WorkaroundElem2
+      ) {
+        this.chromiumBug1092080WorkaroundElem1.style.display = ''
+        this.chromiumBug1092080WorkaroundElem2.style.display = ''
+        this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
+      } else {
+        this.chromiumBug1092080WorkaroundElem1.style.display = 'none'
+        this.chromiumBug1092080WorkaroundElem2.style.display = 'none'
+        this.chromiumBug1092080WorkaroundElem2.style.transform = ''
+      }
+    }
 
     if(this.enableMozillaBug1606251Workaround) {
       this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
