@@ -1538,6 +1538,7 @@ class Ambilight {
       if(this.scheduled) return
       this.scheduled = true
 
+      this.scheduleRequestVideoFrame()
       this.rafId = raf(this.onNextFrame)
     } catch (ex) {
       if(ex.message === 'catched') return
@@ -1841,10 +1842,11 @@ class Ambilight {
     // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
     let getImageDataBuffer = undefined
 
-    let hasNewFrame = this.buffersCleared || (this.videoFrameCount < newVideoFrameCount)
+    let hasNewFrame = this.buffersCleared
     if(this.frameSync == -50) { // BEST
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if(this.frameSync == 0) { // PERFORMANCE
+      hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
       if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
@@ -2202,32 +2204,38 @@ class Ambilight {
       raf(this.detectDisplayFrameRate)
     }
 
-    if (this.frameSync == -50 && !this.awaitingVideoFrameCallback) {
-      this.videoFrameCallbackReceived = true
-      this.awaitingVideoFrameCallback = true
+    this.scheduleNextFrame()
+  }
+
+  scheduleRequestVideoFrame = () => {
+    if (
+      !this.enabled ||
+      this.videoElem.paused ||
+      this.frameSync != -50 ||
+      this.awaitingVideoFrameCallback
+    ) return
+
+    // if(!this.enabled) return
+    this.awaitingVideoFrameCallback = true
+
+    // Prevent video crashing into a lower resolution when the video is not visible
+    // And fallback to getVideoFrameCount in drawAmbilight
+    const videoInvisible = (this.videoElem.offset().bottom <= 0)
+    if(videoInvisible) {
+      setTimeout(this.receiveVideoFrame, 1000)
+    } else {
       this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
     }
-    this.scheduleNextFrame()
   }
 
   receiveVideoFrame = () => {
     if (!this.awaitingVideoFrameCallback) return
     this.awaitingVideoFrameCallback = false
-    if(!this.enabled) return
 
     this.videoFrameCallbackReceived = true
     this.videoFrameCount++
 
-    this.awaitingVideoFrameCallback = true
-    // Prevent video crashing into a lower resolution when the video is not visible
-    // And fallback to getVideoFrameCount in drawAmbilight
-    const videoInvisible = (this.videoElem.offset().bottom <= 0)
-    if(videoInvisible) {
-      if(this.videoElem.paused) return
-      setTimeout(this.receiveVideoFrame, 1000)
-      return
-    }
-    this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
+    this.scheduleRequestVideoFrame()
   }
 
   hide() {
