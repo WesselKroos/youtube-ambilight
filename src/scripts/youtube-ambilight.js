@@ -154,8 +154,8 @@ class Ambilight {
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => {
         raf(() => {
-          setTimeout(() => this.checkVideoSize(), 1)
-          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
+          setTimeout(() => this.checkVideoSize(true), 1)
+          setTimeout(() => this.checkVideoSize(true), 500) //Classic layout
         })
       })
     )
@@ -187,7 +187,7 @@ class Ambilight {
         }
       }
       if (e.keyCode === 70 || e.keyCode === 84) // f || t
-        setTimeout(() => this.checkVideoSize(), 0)
+        setTimeout(() => this.checkVideoSize(true), 0)
       else if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       else if (e.keyCode === 65) // a
@@ -2089,7 +2089,7 @@ class Ambilight {
     }
 
     this.resetSettingsIfNeeded()
-    this.checkVideoSize()
+    this.checkVideoSize(true)
     this.start()
   }
 
@@ -2115,7 +2115,7 @@ class Ambilight {
       videoElemParentElem.style.marginBottom = ''
     }
 
-    this.checkVideoSize()
+    this.checkVideoSize(true)
     this.hide()
   }
 
