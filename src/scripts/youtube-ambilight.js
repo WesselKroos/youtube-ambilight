@@ -154,18 +154,18 @@ class Ambilight {
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
       btn.on('click', () => {
         raf(() => {
-          setTimeout(() => this.checkVideoSize(true), 1)
-          setTimeout(() => this.checkVideoSize(true), 500) //Classic layout
+          setTimeout(() => this.checkVideoSize(), 1)
+          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
         })
       })
     )
 
     window.on('resize', () => {
       if (!this.isOnVideoPage) return
-      this.checkVideoSize(true)
+      this.checkVideoSize()
       setTimeout(() =>
         raf(() =>
-          setTimeout(() => this.checkVideoSize(true), 200)
+          setTimeout(() => this.checkVideoSize(), 200)
         ),
         200)
     })
@@ -187,7 +187,7 @@ class Ambilight {
         }
       }
       if (e.keyCode === 70 || e.keyCode === 84) // f || t
-        setTimeout(() => this.checkVideoSize(true), 0)
+        setTimeout(() => this.checkVideoSize(), 0)
       else if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       else if (e.keyCode === 65) // a
@@ -1464,7 +1464,7 @@ class Ambilight {
     }
   }
 
-  checkVideoSize(checkPosition = false) {
+  checkVideoSize(checkPosition = true) {
     if (this.canvassesInvalidated) {
       this.canvassesInvalidated = false
       this.recreateProjectors()
@@ -1595,7 +1595,7 @@ class Ambilight {
       if (!this.scheduled) return
       this.scheduled = false
 
-      if (!this.checkVideoSize()) {
+      if (!this.checkVideoSize(false)) {
         this.videoFrameCount = 0
         return
       } else if (!this.p) {
@@ -1853,6 +1853,7 @@ class Ambilight {
     } else if(this.frameSync == 0) { // PERFORMANCE
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
+      hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount)
       if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
           //performance.mark('comparing-compare-start')
@@ -1892,23 +1893,6 @@ class Ambilight {
       }
     } else if (this.frameSync == 100) { // HIGH PRECISION
       hasNewFrame = true
-    }
-
-    // Horizontal bar detection
-    if(
-      this.detectHorizontalBarSizeEnabled && 
-      this.getImageDataAllowed &&
-      hasNewFrame
-    ) {
-      try {
-        this.detectHorizontalBarSize()
-      } catch (ex) {
-        if (!this.showedCompareWarning) {
-          this.showedCompareWarning = true
-          console.warn('Failed to retrieve video data. ', ex)
-          AmbilightSentry.captureExceptionWithDetails(ex)
-        }
-      }
     }
     
     const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
@@ -2033,6 +2017,24 @@ class Ambilight {
     if(this.enableMozillaBug1606251Workaround) {
       this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
     }
+
+    // Horizontal bar detection
+    if(
+      this.detectHorizontalBarSizeEnabled && 
+      this.getImageDataAllowed &&
+      hasNewFrame
+    ) {
+      // Don't interrupt rendering
+      try {
+        this.detectHorizontalBarSize()
+      } catch (ex) {
+        if (!this.showedCompareWarning) {
+          this.showedCompareWarning = true
+          console.warn('Failed to retrieve video data. ', ex)
+          AmbilightSentry.captureExceptionWithDetails(ex)
+        }
+      }
+    }
   }
 
   detectHorizontalBarSize = async () => {
@@ -2096,7 +2098,7 @@ class Ambilight {
     }
 
     this.resetSettingsIfNeeded()
-    this.checkVideoSize(true)
+    this.checkVideoSize()
     this.start()
   }
 
@@ -2122,7 +2124,7 @@ class Ambilight {
       videoElemParentElem.style.marginBottom = ''
     }
 
-    this.checkVideoSize(true)
+    this.checkVideoSize()
     this.hide()
   }
 
@@ -2204,12 +2206,12 @@ class Ambilight {
       Ambilight.setDarkTheme(true)
     }
     
+    this.scheduleNextFrame()
+
     if(!this.detectDisplayFrameRateScheduled) {
       this.detectDisplayFrameRateScheduled = true
       raf(this.detectDisplayFrameRate)
     }
-
-    this.scheduleNextFrame()
   }
 
   scheduleRequestVideoFrame = () => {
