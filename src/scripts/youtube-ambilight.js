@@ -1556,20 +1556,18 @@ class Ambilight {
         return
       }
 
-      const nextFrameTime = performance.now()
-      const delayTime = (this.lastNextFrameTime && !this.videoElem.paused) 
-        ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (nextFrameTime - this.lastNextFrameTime))) 
+      let onNextFrameTime = performance.now()
+      const delayTime = (this.lastOnNextFrameTime && !this.videoElem.paused) 
+        ? Math.max(0, (1000 / this.framerateLimit) - Math.max(0, (onNextFrameTime - this.lastOnNextFrameTime))) 
         : 0
       if(!delayTime) {
-        this.lastNextFrameTime = performance.now()
-        this.nextFrame()
+        this.onLimitedNextFrame(onNextFrameTime, delayTime)
         return
       }
 
       setTimeout(() => {
         try {
-          this.lastNextFrameTime = performance.now()
-          this.nextFrame()
+          this.onLimitedNextFrame(onNextFrameTime, delayTime)
         } catch (ex) {
           if(ex.message === 'catched') return
           console.error('YouTube Ambilight | OnNextFrame setTimeout:', ex)
@@ -1580,6 +1578,15 @@ class Ambilight {
       if(ex.message === 'catched') return
       console.error('YouTube Ambilight | OnNextFrame:', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }
+
+  onLimitedNextFrame = (onNextFrameTime, delayTime) => {
+    onNextFrameTime = performance.now() - ((performance.now() - onNextFrameTime) - delayTime)
+    const frameCount = this.ambilightFrameCount
+    this.nextFrame()
+    if(this.ambilightFrameCount > frameCount) {
+      this.lastOnNextFrameTime = onNextFrameTime
     }
   }
 
@@ -1820,8 +1827,6 @@ class Ambilight {
         if(this.videoFrameCallbackReceived) {
           this.videoFrameCallbackReceived = false
           updateVideoSnapshot = true
-        } else {
-          updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
         }
       } else if(this.frameSync == 0) { // PERFORMANCE
         updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
@@ -1888,7 +1893,7 @@ class Ambilight {
     } else if (this.frameSync == 100) { // HIGH PRECISION
       hasNewFrame = true
     }
-    
+
     // Horizontal bar detection
     if(
       this.detectHorizontalBarSizeEnabled && 
@@ -2231,9 +2236,7 @@ class Ambilight {
   receiveVideoFrame = () => {
     if (!this.awaitingVideoFrameCallback) return
     this.awaitingVideoFrameCallback = false
-
     this.videoFrameCallbackReceived = true
-    this.videoFrameCount++
 
     this.scheduleRequestVideoFrame()
   }
