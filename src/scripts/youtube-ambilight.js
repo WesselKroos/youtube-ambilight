@@ -1597,10 +1597,12 @@ class Ambilight {
       this.scheduled = false
 
       if (!this.p) {
-        if(!this.checkVideoSize(true)) {
+        if(!this.checkVideoSize()) {
           //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
           return
         }
+      } else if(this.sizesInvalidated) {
+        this.checkVideoSize(false)
       } else {
         const checkPosition = (performance.now() - this.lastCheckVideoSizeTime) > 2000
         if(checkPosition) {
@@ -2538,7 +2540,6 @@ class Ambilight {
           }
 
           this.sizesInvalidated = true
-          this.checkVideoSize(false)
           this.scheduleNextFrame()
         })
       } else if (setting.type === 'checkbox') {
