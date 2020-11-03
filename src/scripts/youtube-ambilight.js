@@ -1526,17 +1526,12 @@ class Ambilight {
 
   scheduleNextFrame() {
     try {
-      if (!this.enabled || !this.isOnVideoPage) return
-
-      if(this.rafId) return
-
-      if(this.videoRafId && this.videoElem.paused) {
-        this.videoElem.cancelVideoFrameCallback(this.videoRafId)
-        this.videoRafId = undefined
-        this.scheduled = false
-      }
-
-      if(this.scheduled) return
+      if (
+        !this.enabled || 
+        !this.isOnVideoPage ||
+        this.rafId ||
+        this.scheduled
+      ) return
       this.scheduled = true
 
       this.scheduleRequestVideoFrame()
@@ -1551,7 +1546,6 @@ class Ambilight {
   onNextFrame = () => {
     try {
       this.rafId = undefined
-      this.videoRafId = undefined
       if(!this.framerateLimit) {
         this.nextFrame()
         return
@@ -2228,9 +2222,9 @@ class Ambilight {
 
   scheduleRequestVideoFrame = () => {
     if (
+      this.frameSync != -50 ||
       !this.enabled ||
       this.videoElem.paused ||
-      this.frameSync != -50 ||
       this.awaitingVideoFrameCallback
     ) return
 
