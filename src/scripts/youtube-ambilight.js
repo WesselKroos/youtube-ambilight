@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions, SafeOffscreenCanvas } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
@@ -14,6 +14,7 @@ class Ambilight {
   showVideoFrameRate = true
 
   horizontalBarsClipPX = 0
+  lastCheckVideoSizeTime = 0
 
   projectorOffset = {}
   srcVideoOffset = {}
@@ -1595,12 +1596,17 @@ class Ambilight {
       if (!this.scheduled) return
       this.scheduled = false
 
-      if (!this.checkVideoSize(false)) {
-        this.videoFrameCount = 0
-        return
-      } else if (!this.p) {
-        //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
-        return
+      if (!this.p) {
+        if(!this.checkVideoSize(true)) {
+          //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
+          return
+        }
+      } else {
+        const checkPosition = (performance.now() - this.lastCheckVideoSizeTime) > 2000
+        if(checkPosition) {
+          this.lastCheckVideoSizeTime = performance.now()
+        }
+        safeRequestIdleCallback(() => this.checkVideoSize(checkPosition), { timeout: 10 })
       }
       
       try {
@@ -1623,9 +1629,11 @@ class Ambilight {
         }
       }
 
-      this.detectVideoFrameRate()
-      this.detectAmbilightFrameRate()
-      this.detectVideoSynced()
+      safeRequestIdleCallback(() => {
+        this.detectVideoFrameRate()
+        this.detectAmbilightFrameRate()
+        this.detectVideoSynced()
+      }, { timeout: 10 })
 
       if (this.videoElem.paused) {
         return
@@ -1748,7 +1756,7 @@ class Ambilight {
     if(!this.enabled || this.videoElem.paused) return
 
     this.detectDisplayFrameRateScheduled = true
-    raf(this.detectDisplayFrameRate)
+    safeRequestIdleCallback(() => raf(this.detectDisplayFrameRate), { timeout: 10 })
   }
 
   detectAmbilightFrameRate() {
@@ -2037,15 +2045,17 @@ class Ambilight {
     }
   }
 
-  detectHorizontalBarSize = async () => {
-    const percentage = await detectHorizontalBarSize(
+  detectHorizontalBarSize = () => {
+    detectHorizontalBarSize(
       this.videoSnapshotBuffer,
       this.detectColoredHorizontalBarSizeEnabled,
       this.detectHorizontalBarSizeOffsetPercentage,
-      this.horizontalBarsClipPercentage
+      this.horizontalBarsClipPercentage,
+      (percentage) => {
+        if(percentage !== undefined)
+          this.setHorizontalBars(percentage)
+      }
     )
-    if(percentage !== undefined)
-      this.setHorizontalBars(percentage)
   }
 
   checkIfNeedToHideVideoOverlay() {
@@ -2528,6 +2538,7 @@ class Ambilight {
           }
 
           this.sizesInvalidated = true
+          this.checkVideoSize(false)
           this.scheduleNextFrame()
         })
       } else if (setting.type === 'checkbox') {

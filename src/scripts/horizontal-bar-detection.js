@@ -1,4 +1,4 @@
-import { SafeOffscreenCanvas } from './libs/generic'
+import { SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import { workerFromCode } from './libs/worker'
 
 const workerCode = function () {
@@ -204,73 +204,72 @@ let busy = false
 let canvas;
 let ctx;
 
-const detectHorizontalBarSize = async (buffer, detectColored, offsetPercentage, clipPercentage) => {
-  try {
-    if(busy) return
-    busy = true
-    const start = performance.now()
+const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPercentage, callback) => {
+  if(busy) return
+  busy = true
 
-    let percentage;
-    if(!canvas) {
-      canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-      ctx = canvas.getContext('2d', {
-        alpha: false,
-        desynchronized: true
-      })
-      ctx.imageSmoothingEnabled = false
-    }
+  safeRequestIdleCallback(async () => {
+    try {
+      const start = performance.now()
 
-    ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
-    const canvasInfo = worker.isFallbackWorker ? {
-      canvas,
-      ctx
-     } : {
-      bitmap: canvas.transferToImageBitmap()
-     }
-
-    workerMessageId++;
-    const onMessagePromise = new Promise((resolve, reject) => {
-      worker.onerror = (err) => reject(err)
-      worker.onmessage = (e) => {
-        try {
-          if(e.data.id !== workerMessageId) {
-            console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
-            return
-          }
-          if(e.data.error) {
-            throw e.data.error
-          }
-          percentage = e.data.percentage
-          resolve()
-        } catch(err) {
-          console.error('onmessage error:', err)
-          reject(err)
-        }
+      if(!canvas) {
+        canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        ctx = canvas.getContext('2d', {
+          alpha: false,
+          desynchronized: true
+        })
+        ctx.imageSmoothingEnabled = false
       }
-    })
-    worker.postMessage(
-      {
-        id: workerMessageId,
-        canvasInfo,
-        detectColored,
-        offsetPercentage,
-        clipPercentage
-      }, 
-      canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
-    )
-    await onMessagePromise;
 
-    const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
-    setTimeout(() => {
+      ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
+      const canvasInfo = worker.isFallbackWorker ? {
+        canvas,
+        ctx
+      } : {
+        bitmap: canvas.transferToImageBitmap()
+      }
+
+      workerMessageId++;
+      const onMessagePromise = new Promise((resolve, reject) => {
+        worker.onerror = (err) => reject(err)
+        worker.onmessage = (e) => {
+          try {
+            if(e.data.id !== workerMessageId) {
+              console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
+              return
+            }
+            if(e.data.error) {
+              throw e.data.error
+            }
+            callback(e.data.percentage)
+            resolve()
+          } catch(err) {
+            console.error('onmessage error:', err)
+            reject(err)
+          }
+        }
+      })
+      worker.postMessage(
+        {
+          id: workerMessageId,
+          canvasInfo,
+          detectColored,
+          offsetPercentage,
+          clipPercentage
+        }, 
+        canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
+      )
+      await onMessagePromise;
+
+      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+      setTimeout(() => {
+        busy = false
+      }, throttle)
+    } catch(err) {
+      console.error('detectHorizontalBar error:', err)
       busy = false
-    }, throttle)
-
-    return percentage
-  } catch(err) {
-    console.error('detectHorizontalBar error:', err)
-    busy = false
-    return 0
-  }
+    }
+  }, { timeout: 1000 })
 }
 
 export default detectHorizontalBarSize
