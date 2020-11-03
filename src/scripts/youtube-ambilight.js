@@ -776,7 +776,7 @@ class Ambilight {
       this.frameSync = this.getSetting('frameSync')
     }
 
-    this.framerateLimit = parseInt(this.getSetting('framerateLimit') || 0)
+    this.framerateLimit = this.getSetting('framerateLimit')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
@@ -1231,8 +1231,8 @@ class Ambilight {
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
-    const debandingStrength = parseInt(this.debandingStrength)
-    const videoShadowSize = parseInt(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
+    const debandingStrength = parseFloat(this.debandingStrength)
+    const videoShadowSize = parseFloat(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.videoShadowOpacity / 100
     
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
@@ -1896,7 +1896,7 @@ class Ambilight {
     }
     
     const skippedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
-    if (skippedFrames) {
+    if (skippedFrames && !this.videoElem.seeking) {
       this.skippedFramesCount += newVideoFrameCount - (this.videoFrameCount + 1)
     }
     if (newVideoFrameCount > this.videoFrameCount) {
@@ -2470,7 +2470,7 @@ class Ambilight {
         inputElem.on('change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
-          let value = inputElem.value
+          let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick') {
             value = this.settings.find(s => s.name === setting.name).default
           } else if (inputElem.value === inputElem.attr('data-previous-value')) {
@@ -2764,11 +2764,12 @@ class Ambilight {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (value === 'true')
-    } else {
+    } else if (setting.type === 'list') {
+      value = parseFloat(value)
       if (key === 'blur')
-        value = parseInt(value) + 30
+        value += 30
       if (key === 'bloom')
-        value = parseInt(value) + 7
+        value += 7
     }
 
     return value
