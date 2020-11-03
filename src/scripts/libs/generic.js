@@ -142,10 +142,6 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export const safeRequestIdleCallback = (callback, options) => {
-  if(requestIdleCallback) {
-    requestIdleCallback(callback, options)
-  } else {
-    setTimeout(callback, 0)
-  }
-}
+export const safeRequestIdleCallback = (window.requestIdleCallback) 
+  ? window.requestIdleCallback
+  : (callback) => setTimeout(callback, 0)

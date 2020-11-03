@@ -1590,6 +1590,7 @@ class Ambilight {
       if (!this.scheduled) return
       this.scheduled = false
 
+      let delayedCheckVideoSize = false
       if (!this.p) {
         if(!this.checkVideoSize()) {
           //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
@@ -1598,11 +1599,7 @@ class Ambilight {
       } else if(this.sizesInvalidated) {
         this.checkVideoSize(false)
       } else {
-        const checkPosition = (performance.now() - this.lastCheckVideoSizeTime) > 2000
-        if(checkPosition) {
-          this.lastCheckVideoSizeTime = performance.now()
-        }
-        safeRequestIdleCallback(() => this.checkVideoSize(checkPosition), { timeout: 10 })
+        delayedCheckVideoSize = true
       }
       
       try {
@@ -1625,17 +1622,21 @@ class Ambilight {
         }
       }
 
-      safeRequestIdleCallback(() => {
-        this.detectVideoFrameRate()
-        this.detectAmbilightFrameRate()
-        this.detectVideoSynced()
-      }, { timeout: 10 })
-
-      if (this.videoElem.paused) {
-        return
+      if (!this.videoElem.paused) {
+        this.scheduleNextFrame()
       }
 
-      this.scheduleNextFrame()
+      this.detectVideoFrameRate()
+      this.detectAmbilightFrameRate()
+      this.detectVideoSynced()
+
+      if(delayedCheckVideoSize) {
+        const checkPosition = (performance.now() - this.lastCheckVideoSizeTime) > 2000
+        if(checkPosition) {
+          this.lastCheckVideoSizeTime = performance.now()
+        }
+        this.checkVideoSize(checkPosition)
+      }
     } catch (ex) {
       if(ex.message === 'catched') return
       console.error('YouTube Ambilight | NextFrame:', ex)
@@ -1752,7 +1753,7 @@ class Ambilight {
     if(!this.enabled || this.videoElem.paused) return
 
     this.detectDisplayFrameRateScheduled = true
-    safeRequestIdleCallback(() => raf(this.detectDisplayFrameRate), { timeout: 10 })
+    raf(() => safeRequestIdleCallback(this.detectDisplayFrameRate, { timeout: 1000 }))
   }
 
   detectAmbilightFrameRate() {
@@ -1831,6 +1832,8 @@ class Ambilight {
         if(this.videoFrameCallbackReceived) {
           this.videoFrameCallbackReceived = false
           updateVideoSnapshot = true
+        } else if(this.videoElem.paused || this.videoElem.seeking) {
+          updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
         }
       } else if(this.frameSync == 0) { // PERFORMANCE
         updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
@@ -2246,7 +2249,7 @@ class Ambilight {
     this.awaitingVideoFrameCallback = false
     this.videoFrameCallbackReceived = true
 
-    this.scheduleRequestVideoFrame()
+    safeRequestIdleCallback(this.scheduleRequestVideoFrame, { timeout: 1000 })
   }
 
   hide() {
@@ -2736,9 +2739,9 @@ class Ambilight {
     this[key] = value
 
     if (key === 'blur')
-      value -= 30
+      value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
     if (key === 'bloom')
-      value -= 7
+      value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
     if (!this.setSettingTimeout)
       this.setSettingTimeout = {}
@@ -2773,9 +2776,9 @@ class Ambilight {
     } else if (setting.type === 'list') {
       value = parseFloat(value)
       if (key === 'blur')
-        value += 30
+        value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
       if (key === 'bloom')
-        value += 7
+        value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
     }
 
     return value
