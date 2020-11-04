@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
@@ -266,7 +266,7 @@ class Ambilight {
   }
 
   initBuffers() {
-    const videoSnapshotBufferElem = new SafeOffscreenCanvas(1, 1)
+    const videoSnapshotBufferElem = new Canvas(1, 1)
     this.videoSnapshotBuffer = {
       elem: videoSnapshotBufferElem,
       ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
@@ -275,10 +275,13 @@ class Ambilight {
     const videoSnapshotGetImageDataBufferElem = new SafeOffscreenCanvas(1, 1)
     this.videoSnapshotGetImageDataBuffer = {
       elem: videoSnapshotGetImageDataBufferElem,
-      ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', ctxOptions)
+      ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', {
+        ...ctxOptions,
+        desynchronized: true
+      })
     }
 
-    const projectorsBufferElem = new SafeOffscreenCanvas(1, 1)
+    const projectorsBufferElem = new Canvas(1, 1)
     this.projectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
@@ -842,7 +845,7 @@ class Ambilight {
 
   initFrameBlending() {
     //this.previousProjectorBuffer
-    const previousProjectorsBufferElem = new SafeOffscreenCanvas(1, 1) 
+    const previousProjectorsBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(previousProjectorsBufferElem)
     this.previousProjectorBuffer = {
       elem: previousProjectorsBufferElem,
@@ -850,7 +853,7 @@ class Ambilight {
     }
 
     //this.blendedProjectorBuffer
-    const blendedProjectorsBufferElem = new SafeOffscreenCanvas(1, 1) 
+    const blendedProjectorsBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(blendedProjectorsBufferElem)
     this.blendedProjectorBuffer = {
       elem: blendedProjectorsBufferElem,
@@ -860,7 +863,7 @@ class Ambilight {
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
-    const videoOverlayBufferElem = new SafeOffscreenCanvas(1, 1) 
+    const videoOverlayBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(videoOverlayBufferElem)
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
@@ -868,7 +871,7 @@ class Ambilight {
     }
 
     //this.previousVideoOverlayBuffer
-    const previousVideoOverlayBufferElem = new SafeOffscreenCanvas(1, 1) 
+    const previousVideoOverlayBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(previousVideoOverlayBufferElem)
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
@@ -1626,6 +1629,7 @@ class Ambilight {
         this.scheduleNextFrame()
       }
 
+      this.detectDisplayFrameRate()
       this.detectVideoFrameRate()
       this.detectAmbilightFrameRate()
       this.detectVideoSynced()
@@ -1719,9 +1723,6 @@ class Ambilight {
   }
 
   detectDisplayFrameRate = () => {
-    if(!this.detectDisplayFrameRateScheduled) return
-    this.detectDisplayFrameRateScheduled = false
-
     const displayFrameRateTime = performance.now()
     if (this.displayFrameRateStartTime < displayFrameRateTime - 2000) {
       this.displayFrameRate = Math.max(0, 
@@ -1749,11 +1750,6 @@ class Ambilight {
         this.displayFrameRateFrame++
       }
     }
-    
-    if(!this.enabled || this.videoElem.paused) return
-
-    this.detectDisplayFrameRateScheduled = true
-    raf(() => safeRequestIdleCallback(this.detectDisplayFrameRate, { timeout: 1000 }))
   }
 
   detectAmbilightFrameRate() {
@@ -1803,7 +1799,8 @@ class Ambilight {
   getVideoFrameCount() {
     if (!this.videoElem) return 0
     return this.videoElem.mozPaintedFrames || // Firefox
-      this.videoElem.webkitDecodedFrameCount // Chrome
+      this.videoElem.webkitDecodedFrameCount || // Chrome
+      0
   }
 
   drawAmbilight() {
@@ -1823,7 +1820,6 @@ class Ambilight {
     }
 
     //performance.mark('start-drawing')
-
     let newVideoFrameCount = this.getVideoFrameCount()
 
     let updateVideoSnapshot = this.buffersCleared
@@ -2216,19 +2212,14 @@ class Ambilight {
     }
     
     this.scheduleNextFrame()
-
-    if(!this.detectDisplayFrameRateScheduled) {
-      this.detectDisplayFrameRateScheduled = true
-      raf(this.detectDisplayFrameRate)
-    }
   }
 
   scheduleRequestVideoFrame = () => {
     if (
+      this.awaitingVideoFrameCallback ||
       this.frameSync != -50 ||
       !this.enabled ||
-      this.videoElem.paused ||
-      this.awaitingVideoFrameCallback
+      this.videoElem.paused
     ) return
 
     // if(!this.enabled) return
@@ -2236,12 +2227,18 @@ class Ambilight {
 
     // Prevent video crashing into a lower resolution when the video is not visible
     // And fallback to getVideoFrameCount in drawAmbilight
-    const videoInvisible = (this.videoElem.offset().bottom <= 0)
-    if(videoInvisible) {
-      setTimeout(this.receiveVideoFrame, 1000)
+    if(this.videoInvisible) {
+      setTimeout(this.receiveVideoFrame, (1000 / 15))
     } else {
       this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
     }
+    
+    if(this.videoInvisibleDetectionId) return
+
+    this.videoInvisibleDetectionId = setTimeout(() => {
+      this.videoInvisibleDetectionId = undefined
+      this.videoInvisible = (this.videoElem.offset().bottom <= 0)
+    }, (1000 / 2))
   }
 
   receiveVideoFrame = () => {
@@ -2249,7 +2246,7 @@ class Ambilight {
     this.awaitingVideoFrameCallback = false
     this.videoFrameCallbackReceived = true
 
-    safeRequestIdleCallback(this.scheduleRequestVideoFrame, { timeout: 1000 })
+    this.scheduleRequestVideoFrame()
   }
 
   hide() {

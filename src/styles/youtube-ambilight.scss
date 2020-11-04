@@ -179,6 +179,16 @@ html[data-ambilight-enabled="true"] {
     transform: var(--video-transform);
   }
 
+  /* Cosmetics - Chapters */
+
+  #header.ytd-engagement-panel-title-header-renderer,
+  #content.ytd-engagement-panel-section-list-renderer {
+    background: none;
+  }
+  #time.ytd-macro-markers-list-item-renderer {
+    background: rgba(0, 0, 0, .15);
+  }
+
   /* Cosmetics - Search */
 
   ytd-app[is-watch-page] {

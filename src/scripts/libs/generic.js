@@ -129,6 +129,15 @@ export const waitForDomElement = (check, containerSelector, callback) => {
   }
 }
 
+export class Canvas {
+  constructor(width, height) {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    return canvas
+  }
+}
+
 export class SafeOffscreenCanvas {
   constructor(width, height) {
     if(typeof OffscreenCanvas !== 'undefined') {
