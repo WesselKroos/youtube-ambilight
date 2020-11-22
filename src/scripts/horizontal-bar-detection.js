@@ -197,7 +197,7 @@ const workerCode = function () {
   }
 }
 
-const worker = workerFromCode(workerCode)
+let worker
 
 let workerMessageId = 0
 let busy = false
@@ -207,6 +207,10 @@ let ctx;
 const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPercentage, callback) => {
   if(busy) return
   busy = true
+
+  if(!worker) {
+    worker = workerFromCode(workerCode)
+  }
 
   safeRequestIdleCallback(async () => {
     try {
