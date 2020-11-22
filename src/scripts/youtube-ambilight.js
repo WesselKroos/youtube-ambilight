@@ -2107,7 +2107,7 @@ class Ambilight {
       if (!hasNewFrame) return
 
       if (this.videoOverlayEnabled && this.videoOverlay) {
-        if(this.enableChromiumBug1092080Workaround && this.displayFrameRate >= this.ambilightFrameRate) {
+        if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
           this.videoOverlay.ctx.clearRect(0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         }
         this.videoOverlay.ctx.drawImage(this.videoElem, 
@@ -2123,7 +2123,7 @@ class Ambilight {
         this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
         0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-      if(this.enableChromiumBug1092080Workaround && this.displayFrameRate >= this.ambilightFrameRate) {
+      if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
         for(const projector of this.projectors) {
           projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
         }
