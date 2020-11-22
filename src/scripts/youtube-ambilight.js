@@ -1927,7 +1927,7 @@ class Ambilight {
     if(!updateVideoSnapshot) {
       if (this.frameSync == 150) { // PERFECT
         if(this.videoIsHidden) {
-          updateVideoSnapshot = this.buffersCleared || (this.videoFrameCount < newVideoFrameCount)
+          updateVideoSnapshot = this.buffersCleared || (this.videoFrameCount < (newVideoFrameCount + (this.videoElem.webkitDroppedFrameCount || 0)))
         } else {
           updateVideoSnapshot = this.buffersCleared || this.videoFrameCallbackReceived
           this.videoFrameCallbackReceived = false
