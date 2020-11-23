@@ -312,7 +312,9 @@ class Ambilight {
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
-      this.chromiumBug1123708WorkaroundElem = document.createElement("div")
+      this.chromiumBug1123708WorkaroundElem = document.createElement("canvas")
+      this.chromiumBug1123708WorkaroundElem.width = 1
+      this.chromiumBug1123708WorkaroundElem.height = 1
       this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }

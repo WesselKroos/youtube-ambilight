@@ -344,13 +344,12 @@ html[data-ambilight-enabled="true"] {
       /* image-rendering: pixelated; */
   }
 
+  // Has -20% performance impact
   .ambilight__chromium-bug-1123708-workaround {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: #00000001;
-    transform: scale(2) rotate(45deg);
-    opacity: 0.000001;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform: scale(1.15) rotate(5deg);
   }
 
   .ambilight__video-overlay {
