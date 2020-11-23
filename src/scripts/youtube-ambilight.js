@@ -1765,7 +1765,7 @@ class Ambilight {
 
     const videoFrameRateTime = performance.now()
     if (this.videoFrameRateStartTime + 2000 < videoFrameRateTime) {
-      const videoFrameRateCount = this.getVideoFrameCount() // - this.ambilightVideoDroppedFrameCount
+      const videoFrameRateCount = this.getVideoFrameCount() + this.getVideoDroppedFrameCount()
       if (this.videoFrameRateStartCount !== 0) {
         this.videoFrameRate = Math.max(0,
           (
