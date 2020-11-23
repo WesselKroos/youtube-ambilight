@@ -2123,11 +2123,11 @@ class Ambilight {
         this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
         0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-      if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
-        for(const projector of this.projectors) {
-          projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
-        }
-      }
+      // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
+      //   for(const projector of this.projectors) {
+      //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
+      //   }
+      // }
       for(const projector of this.projectors) {
         projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
       }
