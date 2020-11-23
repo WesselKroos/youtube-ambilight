@@ -299,35 +299,35 @@ class Ambilight {
   }
 
   initAmbilightElems() {
-    this.elem = document.createElement("div")
+    this.elem = document.createElement('div')
     this.elem.class('ambilight')
     body.prepend(this.elem)
 
-    this.videoShadowElem = document.createElement("div")
+    this.videoShadowElem = document.createElement('div')
     this.videoShadowElem.class('ambilight__video-shadow')
     this.elem.prepend(this.videoShadowElem)
 
-    this.filterElem = document.createElement("div")
+    this.filterElem = document.createElement('div')
     this.filterElem.class('ambilight__filter')
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
-      this.chromiumBug1123708WorkaroundElem = document.createElement("canvas")
+      this.chromiumBug1123708WorkaroundElem = document.createElement('canvas')
       this.chromiumBug1123708WorkaroundElem.width = 1
       this.chromiumBug1123708WorkaroundElem.height = 1
       this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }
   
-    this.clipElem = document.createElement("div")
+    this.clipElem = document.createElement('div')
     this.clipElem.class('ambilight__clip')
     this.filterElem.prepend(this.clipElem)
 
-    this.projectorsElem = document.createElement("div")
+    this.projectorsElem = document.createElement('div')
     this.projectorsElem.class('ambilight__projectors')
     this.clipElem.prepend(this.projectorsElem)
 
-    this.projectorListElem = document.createElement("div")
+    this.projectorListElem = document.createElement('div')
     this.projectorListElem.class('ambilight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
@@ -869,30 +869,30 @@ class Ambilight {
   initFPSListElem() {
     if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
 
-    this.FPSListElem = document.createElement("div")
+    this.FPSListElem = document.createElement('div')
     this.FPSListElem.class('ambilight__fps-list')
 
-    this.displayFPSElem = document.createElement("div")
+    this.displayFPSElem = document.createElement('div')
     this.displayFPSElem.class('ambilight__display-fps')
     this.FPSListElem.prepend(this.displayFPSElem)
 
-    this.ambilightDroppedFramesElem = document.createElement("div")
+    this.ambilightDroppedFramesElem = document.createElement('div')
     this.ambilightDroppedFramesElem.class('ambilight__ambilight-dropped-frames')
     this.FPSListElem.prepend(this.ambilightDroppedFramesElem)
 
-    this.ambilightFPSElem = document.createElement("div")
+    this.ambilightFPSElem = document.createElement('div')
     this.ambilightFPSElem.class('ambilight__ambilight-fps')
     this.FPSListElem.prepend(this.ambilightFPSElem)
 
-    this.videoSyncedElem = document.createElement("div")
+    this.videoSyncedElem = document.createElement('div')
     this.videoSyncedElem.class('ambilight__video-synced')
     this.FPSListElem.prepend(this.videoSyncedElem)
 
-    this.videoDroppedFramesElem = document.createElement("div")
+    this.videoDroppedFramesElem = document.createElement('div')
     this.videoDroppedFramesElem.class('ambilight__video-dropped-frames')
     this.FPSListElem.prepend(this.videoDroppedFramesElem)
 
-    this.videoFPSElem = document.createElement("div")
+    this.videoFPSElem = document.createElement('div')
     this.videoFPSElem.class('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
 
@@ -3047,7 +3047,7 @@ const ambilightDetectDetachedVideo = () => {
 
 const tryInitClassicAmbilight = () => {
   const classicBodyElem = $.s('body[data-spf-name="watch"]')
-  const classicVideoElem = $.s("video.html5-main-video")
+  const classicVideoElem = $.s('video.html5-main-video')
   if(!classicBodyElem || !classicVideoElem) return false
 
   Ambilight.isClassic = true
@@ -3057,7 +3057,7 @@ const tryInitClassicAmbilight = () => {
 const tryInitAmbilight = () => {
   if (!$.s('ytd-app[is-watch-page]')) return
 
-  const videoElem = $.s("ytd-watch-flexy video")
+  const videoElem = $.s('ytd-watch-flexy video')
   if (!videoElem) return false
 
   const settingsBtnContainerElem = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
