@@ -1,6 +1,7 @@
 import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
+import { getGPUBenchmarkScore } from './libs/benchmark'
 
 class Ambilight {
   static isClassic = false
@@ -45,6 +46,9 @@ class Ambilight {
   enableChromiumBug1123708Workaround = false
   enableChromiumBug1092080Workaround = false
 
+  getGPUBenchmarkScore = () => {
+    return getGPUBenchmarkScore()
+  }
   constructor(videoElem) {
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
     this.detectChromiumBug1142112Workaround()
@@ -52,6 +56,8 @@ class Ambilight {
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1123708Workaround()
     this.detectChromiumBug1092080Workaround()
+
+    this.getGPUBenchmarkScore()
 
     this.initFeedbackLink()
     this.initSettings()
