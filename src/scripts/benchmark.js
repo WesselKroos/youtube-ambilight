@@ -2,11 +2,11 @@ import { workerFromCode } from "./libs/worker"
 
 const workerCode = function () {
   const getGPUBenchmarkScore = async () => {
-    const srcCanvas = new OffscreenCanvas(512, 512)
+    const srcCanvas = new OffscreenCanvas(7680 , 4320)
     const srcContext = srcCanvas.getContext('2d', { desynchronized: true })
     srcContext.fillStyle = '#ff0000'
 
-    const targetCanvas = new OffscreenCanvas(512, 512)
+    const targetCanvas = new OffscreenCanvas(7680 , 4320)
     const targetContext = targetCanvas.getContext('2d', { desynchronized: true })
     targetContext.filter = 'blur(50px)'
 
@@ -16,15 +16,15 @@ const workerCode = function () {
     const durations = []
     for(let i = 1; i <= 10; i++) {
       await new Promise((resolve) => setTimeout(resolve, 0))
-      let duration = 0
+      // let duration = 0
+      let start = performance.now()
       for(let j = 1; j <= 100; j++) {
         await new Promise((resolve) => setTimeout(resolve, 0))
-        let start = performance.now()
         srcContext.fillRect(0, j, 1, 1)
         targetContext.drawImage(srcCanvas, 0, 0)
-        duration += performance.now() - start
+        // duration += performance.now() - start
       }
-      durations.push(duration)
+      durations.push(performance.now() - start)
     }
     console.log('Durations: ', durations)
     const sortedDurations = [...durations].sort((a, b) => b - a)
