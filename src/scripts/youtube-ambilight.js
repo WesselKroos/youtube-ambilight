@@ -64,7 +64,7 @@ class Ambilight {
       console.error(error)
     }
   }
-  }
+
   constructor(videoElem) {
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
     this.detectChromiumBug1142112Workaround()

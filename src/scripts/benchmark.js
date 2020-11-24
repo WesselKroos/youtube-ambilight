@@ -3,25 +3,28 @@ import { workerFromCode } from "./libs/worker"
 const workerCode = function () {
   const getGPUBenchmarkScore = async () => {
     const srcCanvas = new OffscreenCanvas(512, 512)
-    const srcContext = srcCanvas.getContext('2d')
+    const srcContext = srcCanvas.getContext('2d', { desynchronized: true })
     srcContext.fillStyle = '#ff0000'
 
     const targetCanvas = new OffscreenCanvas(512, 512)
-    const targetContext = targetCanvas.getContext('2d')
+    const targetContext = targetCanvas.getContext('2d', { desynchronized: true })
     targetContext.filter = 'blur(50px)'
 
     srcContext.fillRect(0, 0, 1, 1)
     targetContext.drawImage(srcCanvas, 0, 0) // First draw is always slow
 
     const durations = []
-    for(let i = 1; i <= 100; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1))
-      const start = performance.now()
+    for(let i = 1; i <= 10; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      let duration = 0
       for(let j = 1; j <= 100; j++) {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        let start = performance.now()
         srcContext.fillRect(0, j, 1, 1)
         targetContext.drawImage(srcCanvas, 0, 0)
+        duration += performance.now() - start
       }
-      durations.push(performance.now() - start)
+      durations.push(duration)
     }
     console.log('Durations: ', durations)
     const sortedDurations = [...durations].sort((a, b) => b - a)
@@ -32,7 +35,7 @@ const workerCode = function () {
     averageDurations.splice(10, 10)
 
     const averageDuration = averageDurations.reduce((sum, d) => sum + d, 0) / averageDurations.length
-    const score = 1 / sortedDurations[sortedDurations.length - 1]
+    const score = 100 / sortedDurations[sortedDurations.length - 1]
 
     // Durations in 512p:
     //
@@ -40,7 +43,7 @@ const workerCode = function () {
     // 0.120 - 0.132
     //
     // Intel Integrated graphics
-    // ? - ?
+    // 1.485 - 3.485
 
     console.log('GPU Benchmark score: ', score, ' (duration ', averageDuration, ' ms)')
     console.log('Average durations', averageDurations)
