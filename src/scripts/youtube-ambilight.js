@@ -123,11 +123,11 @@ class Ambilight {
             this.videoIsHidden = (entry.intersectionRatio === 0)
             this.videoVisibilityChangeTime = performance.now()
             this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-            if(!this.videoIsHidden) {
-              safeRequestIdleCallback(() => {
-                this.clear() // Might fix frozen, delayed and flickering canvas bug
-              })
-            }
+            // if(!this.videoIsHidden) {
+            //   safeRequestIdleCallback(() => {
+            //     this.clear() // Might fix frozen, delayed and flickering canvas bug
+            //   })
+            // }
           })
         },
         {
@@ -207,51 +207,64 @@ class Ambilight {
   initListeners() {
     this.videoElem
       .on('playing', () => {
-        this.initGetImageDataAllowed()
-        this.resetSettingsIfNeeded()
-        this.clear()
+        // console.error('playing')
+        //safeRequestIdleCallback(() => {
+        this.clear() // Prevent old video frame from being drawn
         this.start()
+        //})
       })
       .on('canplay', () => {
+        // console.error('canplay')
+        this.initGetImageDataAllowed()
+        this.resetSettingsIfNeeded()
         if(!this.videoElem.paused) return;
-        this.clear()
+
+        // this.clear()
+        this.clear() // Prevent old video frame from being drawn
         this.scheduleNextFrame()
-        raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
+        // raf(() => this.scheduleNextFrame())
+        // raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
       })
-      .on('seeked', () => {
-        this.scheduleNextFrame()
-      })
+      // .on('seeked', () => {
+      //   console.error('seeked')
+      //   if(!this.videoElem.paused) return;
+      //   this.scheduleNextFrame()
+      // })
       .on('error', (ex) => {
         console.error('Video error:', ex)
         this.resetSettingsIfNeeded()
         this.clear()
       })
       .on('ended', () => {
+        // console.error('ended')
         // Next event: emptied
       })
       .on('emptied', () => {
+        // console.error('emptied')
         this.resetSettingsIfNeeded()
         this.clear()
         this.ambilightVideoDroppedFrameCount = 0
       })
 
     $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => {
-        raf(() => {
-          setTimeout(() => this.checkVideoSize(), 1)
-          setTimeout(() => this.checkVideoSize(), 500) //Classic layout
-        })
-      })
+      btn.on('click', () => raf(() => setTimeout(() => {
+        this.checkVideoSize()
+        if(Ambilight.isClassic || this.detectVideoFillScaleEnabled) {
+          setTimeout(() => this.checkVideoSize(), 500) 
+        }
+      }, 1)))
     )
 
     window.on('resize', () => {
       if (!this.isOnVideoPage) return
       this.checkVideoSize()
-      setTimeout(() =>
-        raf(() =>
-          setTimeout(() => this.checkVideoSize(), 200)
-        ),
-        200)
+      setTimeout(
+        () => raf(() => setTimeout(
+          () => this.checkVideoSize(), 
+          200
+        )),
+        200
+      )
     })
 
     document.on('keydown', (e) => {
@@ -270,9 +283,9 @@ class Ambilight {
           return
         }
       }
-      if (e.keyCode === 70 || e.keyCode === 84) // f || t
-        setTimeout(() => this.checkVideoSize(), 0)
-      else if (e.keyCode === 90) // z
+      if (e.keyCode === 70 || e.keyCode === 84) { // f || t
+        raf(() => this.checkVideoSize()) // Wait for drawn resized video element
+      } else if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       else if (e.keyCode === 65) // a
         this.toggleEnabled()
@@ -349,13 +362,20 @@ class Ambilight {
   }
 
   initBuffers() {
+    this.buffersWrapperElem = document.createElement('div')
+    this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
+
     const videoSnapshotBufferElem = new Canvas(1, 1)
+    this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
     this.videoSnapshotBuffer = {
       elem: videoSnapshotBufferElem,
       ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
     }
 
     const videoSnapshotGetImageDataBufferElem = new SafeOffscreenCanvas(1, 1)
+    if (videoSnapshotGetImageDataBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(videoSnapshotGetImageDataBufferElem)
+    }
     this.videoSnapshotGetImageDataBuffer = {
       elem: videoSnapshotGetImageDataBufferElem,
       ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', {
@@ -365,10 +385,13 @@ class Ambilight {
     }
 
     const projectorsBufferElem = new Canvas(1, 1)
+    this.buffersWrapperElem.appendChild(projectorsBufferElem)
     this.projectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
     }
+
+    this.elem.appendChild(this.buffersWrapperElem)
   }
 
   initSettings() {
@@ -914,6 +937,7 @@ class Ambilight {
     //this.previousProjectorBuffer
     const previousProjectorsBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(previousProjectorsBufferElem)
+    this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
     this.previousProjectorBuffer = {
       elem: previousProjectorsBufferElem,
       ctx: previousProjectorsBufferElem.getContext('2d', ctxOptions)
@@ -922,6 +946,7 @@ class Ambilight {
     //this.blendedProjectorBuffer
     const blendedProjectorsBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(blendedProjectorsBufferElem)
+    this.buffersWrapperElem.appendChild(blendedProjectorsBufferElem)
     this.blendedProjectorBuffer = {
       elem: blendedProjectorsBufferElem,
       ctx: blendedProjectorsBufferElem.getContext('2d', ctxOptions)
@@ -932,6 +957,7 @@ class Ambilight {
     //this.videoOverlayBuffer
     const videoOverlayBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(videoOverlayBufferElem)
+    this.buffersWrapperElem.appendChild(videoOverlayBufferElem)
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -940,6 +966,7 @@ class Ambilight {
     //this.previousVideoOverlayBuffer
     const previousVideoOverlayBufferElem = new Canvas(1, 1) 
     //this.buffersElem.appendChild(previousVideoOverlayBufferElem)
+    this.buffersWrapperElem.appendChild(previousVideoOverlayBufferElem)
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
       ctx: previousVideoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -1042,6 +1069,8 @@ class Ambilight {
     this.scheduleNextFrame()
   }
 
+  // Todo: Fix the case when clicking the theater toggle button and the video is not completely resized
+  // This causes the video to get a 150% scale which is incorrect once the video is resized causing the video to cut off at the bottom
   detectVideoFillScale() {
     let videoScale = 100
     if(this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
@@ -2187,7 +2216,7 @@ class Ambilight {
     var outSyncCount = this.syncInfo.filter(value => !value).length
     var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if (this.videoElem.paused || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    if (this.videoElem.paused || this.videoElem.seeking || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
@@ -3142,12 +3171,22 @@ const ambilightDetectVideoPage = () => {
   })
 }
 
-try {
-  if(!window.ambilight) {
-    ambilightDetectPageTransition()
-    ambilightDetectVideoPage()
-  }
-} catch (ex) {
-  console.error('YouTube Ambilight | Initialization', ex)
-  AmbilightSentry.captureExceptionWithDetails(ex)
+const onLoad = () => {
+  safeRequestIdleCallback(() => {
+    try {
+      if(!window.ambilight) {
+        ambilightDetectPageTransition()
+        ambilightDetectVideoPage()
+      }
+    } catch (ex) {
+      console.error('YouTube Ambilight | Initialization', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }, { timeout: 5000 })
+};
+
+if(document.readyState === 'complete') {
+  onLoad();
+} else {
+  window.addEventListener('load', onLoad);
 }

@@ -6,6 +6,7 @@ const scripts = [
 ]
 scripts.forEach((path) => {
   const s = document.createElement('script')
+  s.defer = true
   s.src = path
   s.onload = () => {
     s.parentNode.removeChild(s)
@@ -13,7 +14,7 @@ scripts.forEach((path) => {
   s.onerror = (e) => {
     console.error('Adding script failed:', e.target.src, e);
   }
-  document.head.appendChild(s)
+  document.body.appendChild(s)
 })
 
 const setExtensionInfo = () => {
