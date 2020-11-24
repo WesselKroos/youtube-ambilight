@@ -44,8 +44,13 @@ export const getGPUBenchmarkScore = async () => {
   console.log('GPU Benchmark score: ', score, ' (duration ', averageDuration, ' ms)')
   console.log('Average durations', averageDurations)
   
-  const title = document.querySelector('.title.ytd-video-primary-info-renderer')
-  title.textContent = `${Math.round(score * 100) / 100} (${Math.round(averageDuration * 1000) / 1000}ms)`
+  const infoElem = document.querySelector('#info-text')
+  if(infoElem) {
+    const scoreElem = document.createElement('span')
+    scoreElem.style.color = '#fff'
+    scoreElem.textContent = ` - GPU Score: ${Math.round(score * 100) / 100} (${Math.round(averageDuration * 1000) / 1000}ms)`
+    infoElem.appendChild(scoreElem)
+  }
 
   return score
 }
