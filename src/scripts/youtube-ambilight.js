@@ -1,7 +1,7 @@
 import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
-import { getGPUBenchmarkScore } from './libs/benchmark'
+import { getGPUBenchmarkScore } from './benchmark'
 
 class Ambilight {
   static isClassic = false
@@ -46,8 +46,24 @@ class Ambilight {
   enableChromiumBug1123708Workaround = false
   enableChromiumBug1092080Workaround = false
 
-  getGPUBenchmarkScore = () => {
-    return getGPUBenchmarkScore()
+  calculateGPUBenchmarkScore = async () => {
+    try {
+      const score = await getGPUBenchmarkScore()
+      console.log('awaited score:', score)
+      
+      const infoElem = document.querySelector('#info-text')
+      if(infoElem) {
+        const scoreElem = document.createElement('span')
+        scoreElem.style.color = '#fff'
+        scoreElem.textContent = ` - GPU Score: ${Math.round(score * 1000) / 1000}`
+        infoElem.appendChild(scoreElem)
+      } else {
+        console.log('no elem but score:', score)
+      }
+    } catch(error) {
+      console.error(error)
+    }
+  }
   }
   constructor(videoElem) {
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
@@ -56,8 +72,6 @@ class Ambilight {
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1123708Workaround()
     this.detectChromiumBug1092080Workaround()
-
-    this.getGPUBenchmarkScore()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -80,6 +94,10 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
+
+    setTimeout(() => {
+      this.calculateGPUBenchmarkScore()
+    }, 1)
   }
 
   initVideoElem(videoElem) {
