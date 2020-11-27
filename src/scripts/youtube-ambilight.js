@@ -51,15 +51,21 @@ class Ambilight {
       const score = await getGPUBenchmarkScore()
       console.log('awaited score:', score)
       
-      const infoElem = document.querySelector('#info-text')
-      if(infoElem) {
-        const scoreElem = document.createElement('span')
-        scoreElem.style.color = '#fff'
-        scoreElem.textContent = ` - GPU Score: ${Math.round(score * 1000) / 1000}`
-        infoElem.appendChild(scoreElem)
-      } else {
-        console.log('no elem but score:', score)
+      let scoreElem = document.querySelector('#info-text-score')
+      if(!scoreElem) {
+        const infoElem = document.querySelector('#info-text')
+        if(infoElem) {
+          scoreElem = document.createElement('span')
+          scoreElem.id = 'info-text-score';
+          scoreElem.style.color = '#fff'
+          infoElem.appendChild(scoreElem);
+        } else {
+          console.log('no elem but score:', score)
+          return
+        }
       }
+      
+      scoreElem.textContent = ` - GPU Score: ${Math.round(score * 1000) / 1000}`
     } catch(error) {
       console.error(error)
     }
@@ -94,10 +100,14 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
+    // setTimeout(() => {
+    //   this.calculateGPUBenchmarkScoreInfinite()
+    // }, 1)
+  }
 
-    setTimeout(() => {
-      this.calculateGPUBenchmarkScore()
-    }, 1)
+  calculateGPUBenchmarkScoreInfinite = async () => {
+      await this.calculateGPUBenchmarkScore()
+      this.calculateGPUBenchmarkScoreInfinite()
   }
 
   initVideoElem(videoElem) {
