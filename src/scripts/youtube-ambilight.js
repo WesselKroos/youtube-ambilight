@@ -100,14 +100,14 @@ class Ambilight {
       if (this.enabled)
         this.enable(true)
     }, 0)
-    // setTimeout(() => {
-    //   this.calculateGPUBenchmarkScoreInfinite()
-    // }, 1)
+    setTimeout(() => {
+      this.calculateGPUBenchmarkScoreInfinite()
+    }, 5000)
   }
 
   calculateGPUBenchmarkScoreInfinite = async () => {
       await this.calculateGPUBenchmarkScore()
-      this.calculateGPUBenchmarkScoreInfinite()
+      raf(() => setTimeout(() => this.calculateGPUBenchmarkScoreInfinite(), 10000))
   }
 
   initVideoElem(videoElem) {

@@ -17,8 +17,8 @@ const workerCode = function () {
     const start = performance.now()
     let i = 0
     for(; start + 1000 > performance.now(); i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      srcContext.fillRect(i, 0, 1, 1)
+      //await new Promise((resolve) => setTimeout(resolve, 0))
+      srcContext.fillRect(0, 0, 1, 1)
       targetContext.drawImage(srcCanvas, 0, 0)
       // duration += performance.now() - start
       // await new Promise((resolve) => setTimeout(resolve, 0))
