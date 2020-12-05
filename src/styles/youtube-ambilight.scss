@@ -373,7 +373,9 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
-    opacity: 0.9899999; // Prevent Firefox from stopping the video rendering
+    // Prevent Firefox from stopping the video rendering
+    // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
+    opacity: 0.9899999;
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
@@ -398,7 +400,7 @@ html[data-ambilight-enabled="true"] {
 
     body.at-top ytd-app[is-watch-page]  {
       #secondary:not(:hover),
-      #masthead-container:not(:hover) {
+      #masthead-container:not(:hover):not(:focus-within) {
         opacity: 0;
         transition-delay: .25s;
       }

@@ -76,9 +76,21 @@ class Ambilight {
     }, 0)
   }
 
+  handleVideoResize = (checkPosition = true) => {
+    this.checkVideoSize(checkPosition)
+    this.buffersCleared = true
+    this.sizesInvalidated = true
+    this.scheduleNextFrame()
+  }
+
   initVideoElem(videoElem) {
     this.applyChromiumBug1142112Workaround(videoElem)
     this.videoElem = videoElem
+
+    this.videoResizeObserver = new ResizeObserver(entries => {
+      this.handleVideoResize(false)
+    })
+    this.videoResizeObserver.observe(this.videoElem)
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -123,11 +135,6 @@ class Ambilight {
             this.videoIsHidden = (entry.intersectionRatio === 0)
             this.videoVisibilityChangeTime = performance.now()
             this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-            // if(!this.videoIsHidden) {
-            //   safeRequestIdleCallback(() => {
-            //     this.clear() // Might fix frozen, delayed and flickering canvas bug
-            //   })
-            // }
           })
         },
         {
@@ -208,10 +215,8 @@ class Ambilight {
     this.videoElem
       .on('playing', () => {
         // console.error('playing')
-        //safeRequestIdleCallback(() => {
         this.clear() // Prevent old video frame from being drawn
         this.start()
-        //})
       })
       .on('canplay', () => {
         // console.error('canplay')
@@ -219,7 +224,6 @@ class Ambilight {
         this.resetSettingsIfNeeded()
         if(!this.videoElem.paused) return;
 
-        // this.clear()
         this.clear() // Prevent old video frame from being drawn
         this.scheduleNextFrame()
         // raf(() => this.scheduleNextFrame())
@@ -236,8 +240,7 @@ class Ambilight {
         this.clear()
       })
       .on('ended', () => {
-        // console.error('ended')
-        // Next event: emptied
+        this.clear()
       })
       .on('emptied', () => {
         // console.error('emptied')
@@ -245,27 +248,6 @@ class Ambilight {
         this.clear()
         this.ambilightVideoDroppedFrameCount = 0
       })
-
-    $.sa('.ytp-size-button, .ytp-miniplayer-button').forEach(btn =>
-      btn.on('click', () => raf(() => setTimeout(() => {
-        this.checkVideoSize()
-        if(Ambilight.isClassic || this.detectVideoFillScaleEnabled) {
-          setTimeout(() => this.checkVideoSize(), 500) 
-        }
-      }, 1)))
-    )
-
-    window.on('resize', () => {
-      if (!this.isOnVideoPage) return
-      this.checkVideoSize()
-      setTimeout(
-        () => raf(() => setTimeout(
-          () => this.checkVideoSize(), 
-          200
-        )),
-        200
-      )
-    })
 
     document.on('keydown', (e) => {
       if (!this.isOnVideoPage) return
@@ -283,9 +265,7 @@ class Ambilight {
           return
         }
       }
-      if (e.keyCode === 70 || e.keyCode === 84) { // f || t
-        raf(() => this.checkVideoSize()) // Wait for drawn resized video element
-      } else if (e.keyCode === 90) // z
+      if (e.keyCode === 90) // z
         this.toggleImmersiveMode()
       else if (e.keyCode === 65) // a
         this.toggleEnabled()
@@ -294,6 +274,11 @@ class Ambilight {
       else if (e.keyCode === 87) // w
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
+
+    this.bodyResizeObserver = new ResizeObserver(entries => {
+      this.handleVideoResize()
+    })
+    this.bodyResizeObserver.observe(document.body)
   }
 
   initGetImageDataAllowed() {
@@ -325,9 +310,7 @@ class Ambilight {
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
-      this.chromiumBug1123708WorkaroundElem = document.createElement('canvas')
-      this.chromiumBug1123708WorkaroundElem.width = 1
-      this.chromiumBug1123708WorkaroundElem.height = 1
+      this.chromiumBug1123708WorkaroundElem = new Canvas(1, 1, true)
       this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }
@@ -344,7 +327,7 @@ class Ambilight {
     this.projectorListElem.class('ambilight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    const shadowElem = new Canvas(1920, 1080)
+    const shadowElem = new Canvas(1920, 1080, true)
     shadowElem.class('ambilight__shadow')
     this.projectorsElem.appendChild(shadowElem)
     const shadowCtx = shadowElem.getContext('2d', { ...ctxOptions, alpha: true })
@@ -365,8 +348,10 @@ class Ambilight {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
-    const videoSnapshotBufferElem = new Canvas(1, 1)
-    this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
+    const videoSnapshotBufferElem = new Canvas(1, 1, true)
+    if (videoSnapshotBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
+    }
     this.videoSnapshotBuffer = {
       elem: videoSnapshotBufferElem,
       ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
@@ -384,8 +369,10 @@ class Ambilight {
       })
     }
 
-    const projectorsBufferElem = new Canvas(1, 1)
-    this.buffersWrapperElem.appendChild(projectorsBufferElem)
+    const projectorsBufferElem = new Canvas(1, 1, true)
+    if (projectorsBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(projectorsBufferElem)
+    }
     this.projectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
@@ -783,15 +770,17 @@ class Ambilight {
       if(this.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
           setting.max = 150
-          setting.default = 150
-          // setting.advanced = true
+          // setting.default = 150 // Change this default in a future release
+          // setting.advanced = true // Change this in the future when frameSync setting is set to 150 by default
         }
+
+        // Change this in the future when frameSync setting is set to 150 by default
         // if(setting.name === 'frameSync') {
         //   return undefined
         // }
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
-          // setting.advanced = true
-        }
+        // if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+        //   setting.advanced = true
+        // }
       }
       return setting
     }).filter(setting => setting)
@@ -928,25 +917,30 @@ class Ambilight {
     videoOverlayElem.class('ambilight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
-      ctx: videoOverlayElem.getContext('2d', ctxOptions),
+      ctx: videoOverlayElem.getContext('2d', {
+        ctxOptions,
+        alpha: true
+      }),
       isHiddenChangeTimestamp: 0
     }
   }
 
   initFrameBlending() {
     //this.previousProjectorBuffer
-    const previousProjectorsBufferElem = new Canvas(1, 1) 
-    //this.buffersElem.appendChild(previousProjectorsBufferElem)
-    this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
+    const previousProjectorsBufferElem = new Canvas(1, 1, true) 
+    if (previousProjectorsBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
+    }
     this.previousProjectorBuffer = {
       elem: previousProjectorsBufferElem,
       ctx: previousProjectorsBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.blendedProjectorBuffer
-    const blendedProjectorsBufferElem = new Canvas(1, 1) 
-    //this.buffersElem.appendChild(blendedProjectorsBufferElem)
-    this.buffersWrapperElem.appendChild(blendedProjectorsBufferElem)
+    const blendedProjectorsBufferElem = new Canvas(1, 1, true) 
+    if (blendedProjectorsBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(blendedProjectorsBufferElem)
+    }
     this.blendedProjectorBuffer = {
       elem: blendedProjectorsBufferElem,
       ctx: blendedProjectorsBufferElem.getContext('2d', ctxOptions)
@@ -955,18 +949,20 @@ class Ambilight {
 
   initVideoOverlayWithFrameBlending() {
     //this.videoOverlayBuffer
-    const videoOverlayBufferElem = new Canvas(1, 1) 
-    //this.buffersElem.appendChild(videoOverlayBufferElem)
-    this.buffersWrapperElem.appendChild(videoOverlayBufferElem)
+    const videoOverlayBufferElem = new Canvas(1, 1, true) 
+    if (videoOverlayBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(videoOverlayBufferElem)
+    }
     this.videoOverlayBuffer = {
       elem: videoOverlayBufferElem,
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
     }
 
     //this.previousVideoOverlayBuffer
-    const previousVideoOverlayBufferElem = new Canvas(1, 1) 
-    //this.buffersElem.appendChild(previousVideoOverlayBufferElem)
-    this.buffersWrapperElem.appendChild(previousVideoOverlayBufferElem)
+    const previousVideoOverlayBufferElem = new Canvas(1, 1, true) 
+    if (previousVideoOverlayBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(previousVideoOverlayBufferElem)
+    }
     this.previousVideoOverlayBuffer = {
       elem: previousVideoOverlayBufferElem,
       ctx: previousVideoOverlayBufferElem.getContext('2d', ctxOptions)
@@ -1066,6 +1062,8 @@ class Ambilight {
     this.buffersCleared = true
     this.sizesInvalidated = true
     this.checkIfNeedToHideVideoOverlay()
+    if(this.videoElem.ended) return;
+
     this.scheduleNextFrame()
   }
 
@@ -1665,7 +1663,9 @@ class Ambilight {
   onNextFrame = () => {
     try {
       if (!this.scheduledNextFrame) return
+
       this.scheduledNextFrame = false
+      if(this.videoElem.ended) return
 
       if(this.framerateLimit) {
         this.onNextLimitedFrame()
@@ -1743,6 +1743,7 @@ class Ambilight {
       }
 
       if(
+        this.videoElem.ended || 
         this.videoElem.paused || 
         this.videoElem.seeking ||
         this.videoElem.readyState === 0 || 
