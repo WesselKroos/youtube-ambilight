@@ -2917,6 +2917,9 @@ class Ambilight {
     if (key === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
+    const setting = this.settings.find(setting => setting.name === key) || {}
+    setting.value = value
+
     if (!this.setSettingTimeout)
       this.setSettingTimeout = {}
 
