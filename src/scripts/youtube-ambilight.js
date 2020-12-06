@@ -2184,9 +2184,9 @@ class Ambilight {
       try {
         this.detectHorizontalBarSize()
       } catch (ex) {
-        if (!this.showedCompareWarning) {
-          this.showedCompareWarning = true
-          console.warn('Failed to retrieve video data. ', ex)
+        if (!this.showedDetectHorizontalBarSizeWarning) {
+          this.showedDetectHorizontalBarSizeWarning = true
+          console.warn('Failed to detect horizontal bar size:', ex)
           AmbilightSentry.captureExceptionWithDetails(ex)
         }
       }
@@ -2361,6 +2361,7 @@ class Ambilight {
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
     this.showedCompareWarning = false
+    this.showedDetectHorizontalBarSizeWarning = false
     this.requestVideoFrameCallbackId = undefined
     this.nextFrameTime = undefined
 
