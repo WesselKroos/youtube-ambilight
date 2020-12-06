@@ -230,7 +230,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
         return
       }
       if(e.data.error) {
-        console.error('received workerCreation error:', e.data.error)
+        console.error('YouTube Ambilight | received detectHorizontalBarSize workerCreation error:', e.data.error)
         AmbilightSentry.captureExceptionWithDetails(e.data.error)
       }
     }
@@ -295,7 +295,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     } catch(ex) {
       if (!catchedDetectHorizontalBarSizeError) {
         catchedDetectHorizontalBarSizeError = true
-        console.error('detectHorizontalBarSize error:', ex)
+        console.error('YouTube Ambilight | detectHorizontalBarSize error:', ex)
         AmbilightSentry.captureExceptionWithDetails(ex)
       }
     }

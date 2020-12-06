@@ -123,60 +123,65 @@ class Ambilight {
   applyChromiumBug1142112Workaround(videoElem) {
     if(!this.enableChromiumBug1142112Workaround) return;
 
-    if(this.videoObserver && this.videoElem) {
-      this.videoObserver.unobserve(this.videoElem)
-    }
+    try {
+      if(this.videoObserver && this.videoElem) {
+        this.videoObserver.unobserve(this.videoElem)
+      }
 
-    this.videoIsHidden = false
-    if(!this.videoObserver) {
-      this.videoObserver = new IntersectionObserver(
-        (entries, observer) => {
-          entries.forEach(entry => {
-            this.videoIsHidden = (entry.intersectionRatio === 0)
-            this.videoVisibilityChangeTime = performance.now()
-            this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-          })
-        },
-        {
-          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+      this.videoIsHidden = false
+      if(!this.videoObserver) {
+        this.videoObserver = new IntersectionObserver(
+          (entries, observer) => {
+            entries.forEach(entry => {
+              this.videoIsHidden = (entry.intersectionRatio === 0)
+              this.videoVisibilityChangeTime = performance.now()
+              this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
+            })
+          },
+          {
+            threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+          }
+        )
+      }
+      this.videoObserver.observe(videoElem)
+      
+      const ambilight = this
+      Object.defineProperty(videoElem, 'ambilightGetVideoPlaybackQuality', {
+        value: videoElem.getVideoPlaybackQuality
+      })
+      this.previousDroppedVideoFrames = 0
+      this.droppedVideoFramesCorrection = 0
+      let previousGetVideoPlaybackQualityTime = performance.now()
+      videoElem.getVideoPlaybackQuality = function() {
+        const original = videoElem.ambilightGetVideoPlaybackQuality()
+        let droppedVideoFrames = original.droppedVideoFrames
+        if(droppedVideoFrames < ambilight.previousDroppedVideoFrames) {
+          ambilight.previousDroppedVideoFrames = 0
+          ambilight.droppedVideoFramesCorrection = 0
         }
-      )
-    }
-    this.videoObserver.observe(videoElem)
-    
-    const ambilight = this
-    Object.defineProperty(videoElem, 'ambilightGetVideoPlaybackQuality', {
-      value: videoElem.getVideoPlaybackQuality
-    })
-    this.previousDroppedVideoFrames = 0
-    this.droppedVideoFramesCorrection = 0
-    let previousGetVideoPlaybackQualityTime = performance.now()
-    videoElem.getVideoPlaybackQuality = function() {
-      const original = videoElem.ambilightGetVideoPlaybackQuality()
-      let droppedVideoFrames = original.droppedVideoFrames
-      if(droppedVideoFrames < ambilight.previousDroppedVideoFrames) {
-        ambilight.previousDroppedVideoFrames = 0
-        ambilight.droppedVideoFramesCorrection = 0
+        // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
+        if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
+          ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
+          // console.log('droppedVideoFramesCorrection ', ambilight.droppedVideoFramesCorrection)
+        } else {
+          // console.log('Reporting original', original.droppedVideoFrames, ' dropped frames')
+        }
+        ambilight.previousDroppedVideoFrames = droppedVideoFrames
+        droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
+        // if(ambilight.droppedVideoFramesCorrection) {
+        //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected:', droppedVideoFrames)
+        // }
+        previousGetVideoPlaybackQualityTime = performance.now()
+        return {
+          corruptedVideoFrames: original.corruptedVideoFrames,
+          creationTime: original.creationTime,
+          droppedVideoFrames,
+          totalVideoFrames: original.totalVideoFrames,
+        }
       }
-      // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
-      if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
-        ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
-        // console.log('droppedVideoFramesCorrection ', ambilight.droppedVideoFramesCorrection)
-      } else {
-        // console.log('Reporting original', original.droppedVideoFrames, ' dropped frames')
-      }
-      ambilight.previousDroppedVideoFrames = droppedVideoFrames
-      droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
-      // if(ambilight.droppedVideoFramesCorrection) {
-      //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected:', droppedVideoFrames)
-      // }
-      previousGetVideoPlaybackQualityTime = performance.now()
-      return {
-        corruptedVideoFrames: original.corruptedVideoFrames,
-        creationTime: original.creationTime,
-        droppedVideoFrames,
-        totalVideoFrames: original.totalVideoFrames,
-      }
+    } catch(ex) {
+      console.error('YouTube Ambilight | applyChromiumBug1142112Workaround. Continuing ambilight initialization...', ex)
+      AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
 
@@ -2342,7 +2347,7 @@ class Ambilight {
         )
       }
     } catch (ex) {
-      console.error('Error while setting dark mode', ex)
+      console.error('YouTube Ambilight | Error while setting dark mode', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
       Ambilight.setDarkThemeBusy = false
     }
