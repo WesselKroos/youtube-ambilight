@@ -51,7 +51,8 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
     } catch(ex) {
       const e = args[0]
       const elem = e.currentTarget.cloneNode(false)
-      ex.message = `${ex.message} \nOn event: ${e.type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
+      const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+      ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
 
       console.error(ex)
       if(eventErrorHandler)

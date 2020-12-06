@@ -1745,9 +1745,7 @@ class Ambilight {
       if(
         this.videoElem.ended || 
         this.videoElem.paused || 
-        this.videoElem.seeking ||
-        this.videoElem.readyState === 0 || 
-        this.videoElem.readyState === 1
+        this.videoElem.seeking
       ) {
         return;
       }
