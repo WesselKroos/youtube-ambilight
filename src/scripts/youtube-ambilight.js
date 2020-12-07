@@ -219,26 +219,20 @@ class Ambilight {
   initListeners() {
     this.videoElem
       .on('playing', () => {
-        // console.error('playing')
-        this.clear() // Prevent old video frame from being drawn
+        // Prevent old video frame from being drawn
+        this.buffersCleared = true
+        this.sizesInvalidated = true
         this.start()
       })
       .on('canplay', () => {
-        // console.error('canplay')
         this.initGetImageDataAllowed()
         this.resetSettingsIfNeeded()
         if(!this.videoElem.paused) return;
 
-        this.clear() // Prevent old video frame from being drawn
+        // Prevent old video frame from being drawn
+        this.clear()
         this.scheduleNextFrame()
-        // raf(() => this.scheduleNextFrame())
-        // raf(() => setTimeout(() => this.scheduleNextFrame(), 100)) //Sometimes the first frame was not rendered yet
       })
-      // .on('seeked', () => {
-      //   console.error('seeked')
-      //   if(!this.videoElem.paused) return;
-      //   this.scheduleNextFrame()
-      // })
       .on('error', (ex) => {
         console.error('Video error:', ex)
         this.resetSettingsIfNeeded()
@@ -246,9 +240,9 @@ class Ambilight {
       })
       .on('ended', () => {
         this.clear()
+        this.resetVideoContainerStyle()
       })
       .on('emptied', () => {
-        // console.error('emptied')
         this.resetSettingsIfNeeded()
         this.clear()
         this.ambilightVideoDroppedFrameCount = 0
@@ -284,6 +278,37 @@ class Ambilight {
       this.handleVideoResize()
     })
     this.bodyResizeObserver.observe(document.body)
+
+    
+    // More reliable way to detect the end screen and other modes in which the video is invisible.
+    // Because when seeking to the end the ended event is not fired from the videoElem
+    const videoPlayer = $.s('.html5-video-player')
+    if (videoPlayer) {
+      const observer = new MutationObserver((mutationsList, observer) => {
+        const mutation = mutationsList[0]
+        const classList = mutation.target.classList
+        const isVideoHiddenOnWatchPage = (
+          classList.contains('ended-mode') || 
+          classList.contains('unstarted-mode')  || 
+          classList.contains('ytp-player-minimized')
+        )
+        if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
+
+        this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
+        if(!this.isVideoHiddenOnWatchPage) return
+
+        this.clear()
+        this.resetVideoContainerStyle()
+      })
+    
+      observer.observe(videoPlayer, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['class']
+      })
+    } else {
+      console.warn('YouTube Ambilight | html5-video-player not found')
+    }
   }
 
   initGetImageDataAllowed() {
@@ -1062,13 +1087,9 @@ class Ambilight {
       elem.width = 1;
     })
 
-    
-
     this.buffersCleared = true
     this.sizesInvalidated = true
     this.checkIfNeedToHideVideoOverlay()
-    if(this.videoElem.ended) return;
-
     this.scheduleNextFrame()
   }
 
@@ -1158,13 +1179,7 @@ class Ambilight {
         (this.isFullscreen && !this.enableInFullscreen)
       )
       if (notVisible || noClipOrScale) {
-        if (videoElemParentElem) {
-          videoElemParentElem.style.transform = ''
-          videoElemParentElem.style.overflow = ''
-          videoElemParentElem.style.height = ''
-          videoElemParentElem.style.marginBottom = ''
-          videoElemParentElem.style.setProperty('--video-transform', '')
-        }
+        this.resetVideoContainerStyle()
       }
       if (notVisible) {
         this.hide()
@@ -1182,7 +1197,8 @@ class Ambilight {
       }
 
       const horizontalBarsClip = this.horizontalBarsClipPercentage / 100
-      if (!noClipOrScale) {
+      const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale
+      if (shouldStyleVideoContainer) {
         const top = Math.max(0, parseInt(this.videoElem.style.top))
         videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
         videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
@@ -1348,6 +1364,17 @@ class Ambilight {
       console.error('YouTube Ambilight | Resize | UpdateSizes:', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
       throw new Error('catched')
+    }
+  }
+
+  resetVideoContainerStyle() {
+    const videoContainer = this.videoElem.parentElement
+    if (videoContainer) {
+      videoContainer.style.transform = ''
+      videoContainer.style.overflow = ''
+      videoContainer.style.height = ''
+      videoContainer.style.marginBottom = ''
+      videoContainer.style.setProperty('--video-transform', '')
     }
   }
 
@@ -1748,8 +1775,8 @@ class Ambilight {
       }
 
       if(
-        this.videoElem.ended || 
-        this.videoElem.paused || 
+        this.videoElem.ended ||
+        this.videoElem.paused ||
         this.videoElem.seeking
       ) {
         return;
@@ -1937,6 +1964,8 @@ class Ambilight {
     if (
       !this.enabled ||
       !this.isOnVideoPage ||
+      this.isVideoHiddenOnWatchPage || 
+      this.videoElem.ended || 
       this.videoElem.readyState === 0 || 
       this.videoElem.readyState === 1
     ) return
@@ -2407,14 +2436,7 @@ class Ambilight {
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
-    const videoElemParentElem = this.videoElem.parentElement
-    if(videoElemParentElem) {
-      videoElemParentElem.style.transform = ''
-      videoElemParentElem.style.overflow = ''
-      videoElemParentElem.style.height = ''
-      videoElemParentElem.style.marginBottom = ''
-      videoElemParentElem.style.setProperty('--video-transform', '')
-    }
+    this.resetVideoContainerStyle()
 
     setTimeout(() => {
       this.clear()
