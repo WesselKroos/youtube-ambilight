@@ -243,12 +243,6 @@ html[data-ambilight-enabled="true"] {
   ytd-clarification-renderer {
     margin-top: 24px;
     background: none;
-    box-shadow: rgba(0,0,0,.1) 0 0 0 1px inset;
-  }
-  &[dark="true"] {
-    ytd-clarification-renderer {
-      box-shadow: rgba(255,255,255,.1) 0 0 0 1px inset;
-    }
   }
 
   /* Cosmetics - Clarify box info panel */
