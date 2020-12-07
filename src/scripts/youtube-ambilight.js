@@ -2064,7 +2064,7 @@ class Ambilight {
     }
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
-    if (droppedFrames && !this.videoElem.seeking) {
+    if (droppedFrames && !this.buffersCleared) {
       this.ambilightVideoDroppedFrameCount += newVideoFrameCount - (this.videoFrameCount + 1)
     }
     if (newVideoFrameCount > this.videoFrameCount || newVideoFrameCount < this.videoFrameCount - 60) {
