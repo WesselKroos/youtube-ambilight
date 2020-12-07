@@ -223,31 +223,37 @@ html[data-ambilight-enabled="true"] {
   ytd-clarification-renderer {
     margin-top: 24px;
     background: none;
-    box-shadow: rgba(0,0,0,.15) 0 0 0 1px inset;
+    box-shadow: rgba(0,0,0,.1) 0 0 0 1px inset;
   }
   &[dark="true"] {
     ytd-clarification-renderer {
-      box-shadow: rgba(255,255,255,.15) 0 0 0 1px inset;
+      box-shadow: rgba(255,255,255,.1) 0 0 0 1px inset;
     }
+  }
+
+  /* Cosmetics - Clarify box info panel */
+
+  ytd-info-panel-content-renderer[has-menu] {
+    background: rgba(0,0,0,.1);
   }
 
   /* Cosmetics - Merch shelf */
 
   ytd-merch-shelf-renderer {
-    background: rgba(0,0,0,.15);
+    background: rgba(0,0,0,.1);
   }
 
   /* Cosmetics - Movie offer */ 
 
   #header.ytd-movie-offer-module-renderer,
   #wide-clickable-area.ytd-movie-offer-module-renderer {
-    background: rgba(0,0,0,.15);
+    background: rgba(0,0,0,.1);
   }
 
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: rgba(0,0,0,.15);
+    background: rgba(0,0,0,.1);
   }
 
   /* Cosmetics - Donation */
