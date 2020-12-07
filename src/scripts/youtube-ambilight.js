@@ -41,12 +41,14 @@ class Ambilight {
 
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
+  enableChromiumBug1092080Workaround = false
 
   constructor(videoElem) {
     this.initVideoElem(videoElem)
 
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1123708Workaround()
+    this.detectChromiumBug1092080Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
@@ -97,6 +99,18 @@ class Ambilight {
       const version = parseFloat(match.groups.version)
       if(version && version >= 85) {
         this.enableChromiumBug1123708Workaround = true
+      }
+    }
+  }
+
+  // Chromium workaround: drawImage randomly disables antialiasing in the source and/or destination element
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1092080
+  detectChromiumBug1092080Workaround() {
+    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
+    if(match && match.groups.version) {
+      const version = parseFloat(match.groups.version)
+      if(version && version >= 82) {
+        this.enableChromiumBug1092080Workaround = true
       }
     }
   }
@@ -259,6 +273,22 @@ class Ambilight {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
     }
+
+    if(this.enableChromiumBug1092080Workaround) {
+      try {
+        const playerElem = $.s('.html5-video-player')
+
+        this.chromiumBug1092080WorkaroundElem1 = document.createElement('div')
+        this.chromiumBug1092080WorkaroundElem1.class('ambilight__chromium-bug-1092080-workaround-1')
+        playerElem.append(this.chromiumBug1092080WorkaroundElem1)
+
+        this.chromiumBug1092080WorkaroundElem2 = document.createElement('div')
+        this.chromiumBug1092080WorkaroundElem2.class('ambilight__chromium-bug-1092080-workaround-2')
+        playerElem.append(this.chromiumBug1092080WorkaroundElem2)
+      } catch(ex) {
+        AmbilightSentry.captureExceptionWithDetails(ex)
+      }
+    }
   }
 
   initSettings() {
@@ -419,7 +449,7 @@ class Ambilight {
       {
         type: 'section',
         label: 'Black bars',
-        name: 'sectionBlackBarsCollapsed',
+        name: 'sectionHorizontalBarsCollapsed',
         default: true
       },
       {
@@ -673,7 +703,7 @@ class Ambilight {
     this.sectionDirectionsCollapsed = this.getSetting('sectionDirectionsCollapsed')
     this.sectionAmbilightImageAdjustmentCollapsed = this.getSetting('sectionAmbilightImageAdjustmentCollapsed')
     this.sectionVideoResizingCollapsed = this.getSetting('sectionVideoResizingCollapsed')
-    this.sectionBlackBarsCollapsed = this.getSetting('sectionBlackBarsCollapsed')
+    this.sectionHorizontalBarsCollapsed = this.getSetting('sectionHorizontalBarsCollapsed')
     this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
     this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
     this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
@@ -933,7 +963,7 @@ class Ambilight {
     }
   }
 
-  updateSizes(isBlackBarsAdjustment = false) {
+  updateSizes(isHorizontalBarsAdjustment = false) {
     try {
       if(this.detectVideoFillScaleEnabled){
         this.detectVideoFillScale()
@@ -1107,11 +1137,11 @@ class Ambilight {
       }
 
       this.filterElem.style.filter = `
-        ${(this.blur != 0) ? `blur(${this.projectorOffset.height * (this.blur * .0025)}px)` : ''}
+        ${(this.blur != 0) ? `blur(${Math.round(this.projectorOffset.height) * (this.blur * .0025)}px)` : ''}
         ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
         ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
         ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
-      `
+      `.trim()
 
       this.projectors.forEach((projector) => {
         if (projector.elem.width !== this.p.w)
@@ -1162,7 +1192,7 @@ class Ambilight {
         }
       }
 
-      if(!isBlackBarsAdjustment) { //Prevent losing imagedata
+      if(!isHorizontalBarsAdjustment) { //Prevent losing imagedata
         this.videoSnapshotBuffer.elem.width = this.p.w
         this.videoSnapshotBuffer.elem.height = this.p.h
       }
@@ -1571,6 +1601,9 @@ class Ambilight {
       
       try {
         this.drawAmbilight()
+        if(this.enableChromiumBug1092080Workaround && this.chromiumBug1092080WorkaroundElem2) {
+          this.chromiumBug1092080WorkaroundElem2.style.transform = `scaleX(${Math.random()})`
+        }
       } catch (ex) {
         if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
           if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -1832,7 +1865,7 @@ class Ambilight {
           lines.push(this.videoSnapshotBuffer.ctx.getImageData(i, 0, 1, this.videoSnapshotBuffer.elem.height).data)
         }
         if(this.detectHorizontalBarSize(lines)) {
-          return this.drawAmbilight()
+          // return this.drawAmbilight()
         }
       } catch (ex) {
         if (!this.showedCompareWarning) {
@@ -1946,24 +1979,45 @@ class Ambilight {
       [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
       [2,2,2]
     const maxColorDeviation = 8
-    
+    const maxPercentage = 0.25
+    const ignoreEdge = 2
+
     for(const line of imageVLines) {
-      for (let i = 0; i < line.length; i += 4) {
-        if(
-          Math.abs(line[i] - color[0]) <= maxColorDeviation && 
-          Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
-          Math.abs(line[i+2] - color[2]) <= maxColorDeviation
-        ) continue;
+      const largeStep = 20
+      let step = largeStep
+      let lineLimit = (line.length * maxPercentage) + largeStep
+      for (let i = (4 * ignoreEdge); i < line.length; i += (4 * step)) {
+        if(i < lineLimit) {
+          if(
+            Math.abs(line[i] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i+2] - color[2]) <= maxColorDeviation
+          ) continue;
+          if(i !== 0 && step === largeStep) {
+            i -= (4 * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
+          }
+        }
         const size = i ? (i / 4) : 0
         sizes.push(size)
         break;
       }
-      for (let i = line.length - 1; i >= 0; i -= 4) {
-        if(
-          Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
-          Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
-          Math.abs(line[i-1] - color[2]) <= maxColorDeviation
-        ) continue;
+      step = largeStep
+      lineLimit = (line.length * (1 - maxPercentage)) - largeStep
+      for (let i = (line.length - 1 - (4 * ignoreEdge)); i >= 0; i -= (4 * step)) {
+        if(i > lineLimit) {
+          if(
+            Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i-1] - color[2]) <= maxColorDeviation
+          ) continue;
+          if(i !== line.length - 1 && step === largeStep) {
+            i += (4 * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
+          }
+        }
         const j = (line.length - 1) - i;
         const size = j ? (j / 4) : 0
         sizes.push(size)
@@ -2011,7 +2065,7 @@ class Ambilight {
 
     const adjustment = (percentage - this.horizontalBarsClipPercentage)
     if(
-      (percentage > 25) ||
+      (percentage > (maxPercentage * 100)) ||
       (adjustment > -1 && adjustment <= 0)
     ) {
       return

@@ -348,6 +348,7 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
+    opacity: 0.9899999; // Prevent Firefox from stopping the video rendering
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
@@ -1058,4 +1059,20 @@ html[data-ambilight-enabled="true"] {
  .html5-video-player {
     overflow: var(--ambilight-html5-video-player-overflow, hidden);
   }
+}
+
+.ambilight__chromium-bug-1092080-workaround-1,
+.ambilight__chromium-bug-1092080-workaround-2 {
+  position: absolute;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  pointer-events: none;
+}
+.ambilight__chromium-bug-1092080-workaround-2 {
+  z-index: 1000;
+  opacity: 0.001;
+  background: #000;
 }
