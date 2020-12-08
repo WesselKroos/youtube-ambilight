@@ -21,7 +21,6 @@ class Ambilight {
   showedCompareWarning = false
 
   p = null
-  a = null
   view = -1
   isFullscreen = false
   isFillingFullscreen = false
@@ -66,9 +65,9 @@ class Ambilight {
 
     this.initScrollPosition()
     this.initImmersiveMode()
+    this.initGetImageDataAllowed()
 
     this.initListeners()
-    this.initGetImageDataAllowed()
 
     setTimeout(() => {
       if (this.enabled)
@@ -84,13 +83,8 @@ class Ambilight {
   }
 
   initVideoElem(videoElem) {
-    this.applyChromiumBug1142112Workaround(videoElem)
     this.videoElem = videoElem
-
-    this.videoResizeObserver = new ResizeObserver(entries => {
-      this.handleVideoResize(false)
-    })
-    this.videoResizeObserver.observe(this.videoElem)
+    this.applyChromiumBug1142112Workaround()
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -120,18 +114,24 @@ class Ambilight {
   }
 
   
-  applyChromiumBug1142112Workaround(videoElem) {
+  applyChromiumBug1142112Workaround() {
     if(!this.enableChromiumBug1142112Workaround) return;
 
     try {
-      if(this.videoObserver && this.videoElem) {
-        this.videoObserver.unobserve(this.videoElem)
+      if(this.videoObserver) {
+        this.videoObserver.disconnect()
       }
 
       this.videoIsHidden = false
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
           (entries, observer) => {
+            // Disconnect when ambilight crashed on initialization to avoid invalid error reports
+            if(!window.ambilight) {
+              observer.disconnect()
+              return
+            }
+
             entries.forEach(entry => {
               this.videoIsHidden = (entry.intersectionRatio === 0)
               this.videoVisibilityChangeTime = performance.now()
@@ -143,8 +143,12 @@ class Ambilight {
           }
         )
       }
+
+      const videoElem = this.videoElem
       this.videoObserver.observe(videoElem)
       
+      if(videoElem.ambilightGetVideoPlaybackQuality) return
+
       const ambilight = this
       Object.defineProperty(videoElem, 'ambilightGetVideoPlaybackQuality', {
         value: videoElem.getVideoPlaybackQuality
@@ -279,7 +283,11 @@ class Ambilight {
     })
     this.bodyResizeObserver.observe(document.body)
 
-    
+    this.videoResizeObserver = new ResizeObserver(entries => {
+      this.handleVideoResize(false)
+    })
+    this.videoResizeObserver.observe(this.videoElem)
+
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     const videoPlayer = $.s('.html5-video-player')
