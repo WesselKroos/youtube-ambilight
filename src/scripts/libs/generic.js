@@ -51,7 +51,8 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
     } catch(ex) {
       const e = args[0]
       const elem = e.currentTarget.cloneNode(false)
-      ex.message = `${ex.message} \nOn event: ${e.type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
+      const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+      ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
 
       console.error(ex)
       if(eventErrorHandler)
@@ -93,13 +94,12 @@ export const body = document.body
 export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)
 
 export const ctxOptions = {
-  alpha: false,
-  // desynchronized: false,
+  alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
+  // desynchronized: true,
   imageSmoothingQuality: 'low'
 }
 
 export const $ = {
-  create: (tag) => { return document.createElement(tag) },
   s: (selector) => { return document.querySelector(selector) },
   sa: (selector) => { return document.querySelectorAll(selector) },
   param: (name, url) => {
@@ -129,3 +129,35 @@ export const waitForDomElement = (check, containerSelector, callback) => {
     return observer
   }
 }
+
+export class Canvas {
+  constructor(width, height, pixelated) {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    if (pixelated) {
+      canvas.style.imageRendering = 'pixelated'
+    }
+    return canvas
+  }
+}
+
+export class SafeOffscreenCanvas {
+  constructor(width, height, pixelated) {
+    if(typeof OffscreenCanvas !== 'undefined') {
+      return new OffscreenCanvas(width, height)
+    } else {
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      if (pixelated) {
+        canvas.style.imageRendering = 'pixelated'
+      }
+      return canvas
+    }
+  }
+}
+
+export const safeRequestIdleCallback = (window.requestIdleCallback) 
+  ? window.requestIdleCallback
+  : (callback) => setTimeout(callback, 0)

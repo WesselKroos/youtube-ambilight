@@ -38,6 +38,20 @@
   overflow: hidden;
 }
 
+/* Workaround for flickering canvasses */
+.ambilight__buffers-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  opacity: 0.00001;
+  pointer-events: none;
+  display: flex;
+  * {
+    width: 1px;
+    height: 1px;
+  }
+}
+
 /* FPS */
 
 .ambilight__fps-list {
@@ -52,10 +66,6 @@
   font-size: 18px;
   pointer-events: none;
   user-select: none;
-
-  * {
-    height: 22px;
-  }
 }
 
 html[data-ambilight-enabled="true"] {
@@ -68,9 +78,9 @@ html[data-ambilight-enabled="true"] {
   &[dark="true"] {
     // Make all card backgrounds transparent
     --yt-spec-brand-background-solid: none;
-    --yt-spec-brand-background-primary: none;
+    //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
     --yt-spec-brand-background-secondary: none;
-    --yt-spec-general-background-a: none;
+    // --yt-spec-general-background-a: none; // Causes menu on Firefox
     --yt-spec-general-background-b: none;
     --yt-spec-general-background-c: none;
     --yt-spec-snackbar-background: none;
@@ -179,6 +189,16 @@ html[data-ambilight-enabled="true"] {
     transform: var(--video-transform);
   }
 
+  /* Cosmetics - Chapters */
+
+  #header.ytd-engagement-panel-title-header-renderer,
+  #content.ytd-engagement-panel-section-list-renderer {
+    background: none;
+  }
+  #time.ytd-macro-markers-list-item-renderer {
+    background: rgba(0, 0, 0, .15);
+  }
+
   /* Cosmetics - Search */
 
   ytd-app[is-watch-page] {
@@ -223,12 +243,6 @@ html[data-ambilight-enabled="true"] {
   ytd-clarification-renderer {
     margin-top: 24px;
     background: none;
-    box-shadow: rgba(0,0,0,.1) 0 0 0 1px inset;
-  }
-  &[dark="true"] {
-    ytd-clarification-renderer {
-      box-shadow: rgba(255,255,255,.1) 0 0 0 1px inset;
-    }
   }
 
   /* Cosmetics - Clarify box info panel */
@@ -338,13 +352,12 @@ html[data-ambilight-enabled="true"] {
       /* image-rendering: pixelated; */
   }
 
+  // Has -20% performance impact
   .ambilight__chromium-bug-1123708-workaround {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: #00000001;
-    transform: scale(2) rotate(45deg);
-    opacity: 0.000001;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform: scale(2) rotate(30deg);
   }
 
   .ambilight__video-overlay {
@@ -354,7 +367,9 @@ html[data-ambilight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
-    opacity: 0.9899999; // Prevent Firefox from stopping the video rendering
+    // Prevent Firefox from stopping the video rendering
+    // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
+    opacity: 0.9899999;
     transition: opacity .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
@@ -379,7 +394,7 @@ html[data-ambilight-enabled="true"] {
 
     body.at-top ytd-app[is-watch-page]  {
       #secondary:not(:hover),
-      #masthead-container:not(:hover) {
+      #masthead-container:not(:hover):not(:focus-within) {
         opacity: 0;
         transition-delay: .25s;
       }
@@ -1065,20 +1080,4 @@ html[data-ambilight-enabled="true"] {
  .html5-video-player {
     overflow: var(--ambilight-html5-video-player-overflow, hidden);
   }
-}
-
-.ambilight__chromium-bug-1092080-workaround-1,
-.ambilight__chromium-bug-1092080-workaround-2 {
-  position: absolute;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 1px;
-  height: 100%;
-  pointer-events: none;
-}
-.ambilight__chromium-bug-1092080-workaround-2 {
-  z-index: 1000;
-  opacity: 0.001;
-  background: #000;
 }
