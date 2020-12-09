@@ -90,14 +90,10 @@ class Ambilight {
   // FireFox workaround: Force to rerender the outer blur of the canvasses
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
-    if(this.videoElem.mozPaintedFrames) {
-      const match = navigator.userAgent.match(/Firefox\/(?<version>(\.|[0-9])+)/)
-      if(match && match.groups.version) {
-        const version = parseFloat(match.groups.version)
-        if(version && version < 74) {
-          this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
-        }
-      }
+    const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && version < 74) {
+      this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
     }
   }
 
@@ -105,15 +101,13 @@ class Ambilight {
   // when requestVideoFrameCallback is used and the video is offscreen 
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1142112
   detectChromiumBug1142112Workaround() {
-    if(!this.videoHasRequestVideoFrameCallback) return
-
-    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
-    if(match && match.groups.version) {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && this.videoHasRequestVideoFrameCallback) {
       this.enableChromiumBug1142112Workaround = true
     }
   }
 
-  
   applyChromiumBug1142112Workaround() {
     if(!this.enableChromiumBug1142112Workaround) return;
 
@@ -192,12 +186,10 @@ class Ambilight {
   // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1123708
   detectChromiumBug1123708Workaround() {
-    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
-    if(match && match.groups.version) {
-      const version = parseFloat(match.groups.version)
-      if(version && version >= 85) {
-        this.enableChromiumBug1123708Workaround = true
-      }
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && version >= 85) {
+      this.enableChromiumBug1123708Workaround = true
     }
   }
 
@@ -205,12 +197,10 @@ class Ambilight {
   // Additional 0.05ms performance impact per clearRect()
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1092080
   detectChromiumBug1092080Workaround() {
-    const match = navigator.userAgent.match(/Chrome\/(?<version>(\.|[0-9])+)/)
-    if(match && match.groups.version) {
-      const version = parseFloat(match.groups.version)
-      if(version && version >= 82) {
-        this.enableChromiumBug1092080Workaround = true
-      }
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && version >= 82) {
+      this.enableChromiumBug1092080Workaround = true
     }
   }
 

@@ -3,6 +3,7 @@ Immersive yourself in YouTube videos with ambilight!
 
 ![Preview](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/readme/screenshot-1.jpg?raw=true)
 
+
 ## Installation
 Go to the extensions site of your browser and add the extension:
 
@@ -14,10 +15,23 @@ Go to the extensions site of your browser and add the extension:
 
 [![Microsoft Edge Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Microsoft%20Edge.png?raw=true)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf)
 
-## Requirement
+
+## Minimum requirements
+
+### Performance
 A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
-Check your video card's score here: https://www.videocardbenchmark.net/gpu_list.php
+Check your video card's score here:
+
+https://www.videocardbenchmark.net/gpu_list.php
+
 With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+
+### Browser versions
+| Browser  | Version | Reason |
+| -------- | ------- | ------ |
+| Chromium | 69      | [OffscreenCanvas.getContext('2d')](https://caniuse.com/mdn-api_offscreencanvas_getcontext) |
+| Firefox  | 69.0    | [ResizeObserver](https://caniuse.com/resizeobserver) |
+
 
 ## Privacy & Security
 - This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
@@ -29,12 +43,14 @@ The following projectfiles are inserted into that specific webpage:
 The only requests being sent are crash reports. If a crash occures a request is being sent to [Sentri.io](https://sentry.io). 
 No other requests are sent to any webserver, website or api.
 
+
 ## Report, request or contribute
 Feel free to 
 - contribute to the project at https://github.com/WesselKroos/youtube-ambilight
 - report bugs at https://github.com/WesselKroos/youtube-ambilight/issues
 - request a feature at https://github.com/WesselKroos/youtube-ambilight/issues
 - or ask a question at https://github.com/WesselKroos/youtube-ambilight/issues
+
 
 ## Development
 1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
