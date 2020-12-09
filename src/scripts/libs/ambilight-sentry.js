@@ -148,7 +148,7 @@ export default class AmbilightSentry {
       }
 
       try {
-        var selectors = {
+        const selectors = {
           'html': $.sa('html'),
           'body': $.sa('body'),
           '#page': $.sa('[id="#page"]'),
@@ -173,11 +173,13 @@ export default class AmbilightSentry {
           '.ytp-right-controls': $.sa('.ytp-right-controls'),
           '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
           '.ytp-settings-button': $.sa('.ytp-settings-button'),
-          '[class*="ambilight"]': $.sa('[class*="ambilight"]'),
-          'settingsMenuBtn': [window.ambilight.settingsMenuBtn],
-          'settingsMenuBtnParent': [window.ambilight.settingsMenuBtnParent],
-          'settingsMenuElem': [window.ambilight.settingsMenuElem],
-          'settingsMenuElemParent': [window.ambilight.settingsMenuElemParent],
+          '[class*="ambilight"]': $.sa('[class*="ambilight"]')
+        };
+        if(window.ambilight) {
+          selectors['settingsMenuBtn'] = [window.ambilight.settingsMenuBtn]
+          selectors['settingsMenuBtnParent'] = [window.ambilight.settingsMenuBtnParent]
+          selectors['settingsMenuElem'] = [window.ambilight.settingsMenuElem]
+          selectors['settingsMenuElemParent'] = [window.ambilight.settingsMenuElemParent]
         }
         Object.keys(selectors).forEach((selector) => {
           const nodes = selectors[selector]
@@ -204,13 +206,23 @@ export default class AmbilightSentry {
       }
 
       try {
-        if(window.ambilight.settingsMenuBtnParent) {
-          const node = window.ambilight.settingsMenuBtnParent
-          const childNodes = !node.children ? null : [...node.children].map(node => node.cloneNode(false).outerHTML.trim()).join('\n')
-          setExtra(`ambilight.settingsMenuBtnParent.childNodes`, childNodes)
+        const selectors = {
+          '.ytp-chrome-bottom': $.sa('.ytp-chrome-bottom'),
+          '.ytp-chrome-controls': $.sa('.ytp-chrome-controls'),
+          '.ytp-right-controls': $.sa('.ytp-right-controls'),
         }
+        Object.keys(selectors).forEach((selector) => {
+          const nodes = selectors[selector]
+          if(!nodes) return
+          [...nodes].forEach((node, i) => {
+            try {
+              const childNodes = !node.children ? null : [...node.children].map(node => node.cloneNode(false).outerHTML.trim()).join('\n')
+              setExtra(`»(${selector})[${i}].childNodes`, childNodes)
+            } catch (ex) { console.warn(ex) }
+          })
+        })
       } catch (ex) {
-        setExtra('ambilight.settingsMenuBtnParent.childNodes.exception', ex)
+        setExtra('$.childNodes.exception', ex)
       }
 
       captureException(ex)

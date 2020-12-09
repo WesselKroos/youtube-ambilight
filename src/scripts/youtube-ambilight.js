@@ -2535,6 +2535,9 @@ class Ambilight {
     </svg>`
 
     this.settingsMenuBtnParent = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    if(!this.settingsMenuBtnParent) {
+      throw new Error('Cannot find the video controls container')
+    }
     this.settingsMenuBtn.prependTo(this.settingsMenuBtnParent)
 
 
