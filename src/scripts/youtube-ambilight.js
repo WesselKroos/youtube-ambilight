@@ -2212,7 +2212,7 @@ class Ambilight {
     ) {
       // Don't interrupt rendering
       try {
-        this.detectHorizontalBarSize()
+        this.scheduleHorizontalBarSizeDetection()
       } catch (ex) {
         if (!this.showedDetectHorizontalBarSizeWarning) {
           this.showedDetectHorizontalBarSizeWarning = true
@@ -2223,7 +2223,7 @@ class Ambilight {
     }
   }
 
-  detectHorizontalBarSize = () => {
+  scheduleHorizontalBarSizeDetection() {
     detectHorizontalBarSize(
       this.videoSnapshotBuffer,
       this.detectColoredHorizontalBarSizeEnabled,

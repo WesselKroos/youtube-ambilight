@@ -161,3 +161,13 @@ export class SafeOffscreenCanvas {
 export const safeRequestIdleCallback = (window.requestIdleCallback) 
   ? window.requestIdleCallback
   : (callback) => setTimeout(callback, 0)
+
+export const appendNonAsyncStack = (error, nonAsyncStack) => {
+  try {
+    const stackToAppend = nonAsyncStack.substring(nonAsyncStack.indexOf('\n') + 1)
+    const alreadyContainsNonAsyncStack = (error.stack.indexOf(stackToAppend) !== -1)
+    if(alreadyContainsNonAsyncStack) return
+
+    error.stack = `${error.stack}\n${stackToAppend}`
+  } catch(ex) {}
+}
