@@ -1,26 +1,40 @@
-import { SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
+import { appendNonAsyncStack, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import { workerFromCode } from './libs/worker'
 
 let catchedDetectHorizontalBarSizeError = false
 
 const workerCode = function () {
+  // Cannot access appendNonAsyncStack in import from a worker
+  const appendNonAsyncStack = (error, nonAsyncStack) => {
+    try {
+      const stackToAppend = nonAsyncStack.substring(nonAsyncStack.indexOf('\n') + 1)
+      const alreadyContainsNonAsyncStack = (error.stack.indexOf(stackToAppend) !== -1)
+      if(alreadyContainsNonAsyncStack) return
+
+      error.stack = `${error.stack}\n${stackToAppend}`
+    } catch(ex) {}
+  }
+
   let catchedWorkerCreationError = false
+
   try {
     let throttle = 0
-    const detectHorizontalBarSize = async (id, buffer, detectColored, offsetPercentage, clipPercentage) => {
+    const workerDetectHorizontalBarSize = async (id, buffer, detectColored, offsetPercentage, clipPercentage) => {
       const imageVLines = []
       let partSize = Math.ceil(buffer.canvas.width / 6)
       for (let i = (partSize - 1); i < buffer.canvas.width; i += partSize) {
-        await new Promise((resolve, reject) => setTimeout(() => {
+        const startStack = new Error().stack
+        await new Promise((resolve, reject) => setTimeout(function getBufferImageData() {
           const start = performance.now()
           try {
             imageVLines.push(buffer.ctx.getImageData(i, 0, 1, buffer.canvas.height).data)
             throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
             resolve()
-          } catch(err) {
+          } catch(ex) {
             throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            reject(err)
+            appendNonAsyncStack(ex, startStack)
+            reject(ex)
           }
         }, throttle)) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
       }
@@ -178,7 +192,7 @@ const workerCode = function () {
         // ctx2.transferFromImageBitmap(bitmap)
         // ctx.drawImage(canvas2, 0, 0)
         
-        const percentage = await detectHorizontalBarSize(
+        const percentage = await workerDetectHorizontalBarSize(
           id,
           {
             canvas,
@@ -236,6 +250,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     }
   }
 
+  const startStack = new Error().stack
   safeRequestIdleCallback(async () => {
     try {
       const start = performance.now()
@@ -258,6 +273,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
       }
 
       workerMessageId++;
+      const startStack = new Error().stack
       const onMessagePromise = new Promise((resolve, reject) => {
         worker.onerror = (err) => reject(err)
         worker.onmessage = (e) => {
@@ -267,12 +283,15 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
               return
             }
             if(e.data.error) {
+              // Readable name for the worker script
+              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
+              appendNonAsyncStack(e.data.error, startStack)
               throw e.data.error
             }
             callback(e.data.percentage)
             resolve()
-          } catch(err) {
-            reject(err)
+          } catch(ex) {
+            reject(ex)
           }
         }
       })
@@ -295,6 +314,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     } catch(ex) {
       if (!catchedDetectHorizontalBarSizeError) {
         catchedDetectHorizontalBarSizeError = true
+        appendNonAsyncStack(ex, startStack)
         console.error('YouTube Ambilight | detectHorizontalBarSize error:', ex)
         AmbilightSentry.captureExceptionWithDetails(ex)
       }

@@ -7,7 +7,7 @@ export const workerFromCode = (func) => {
     }
     return new Worker(URL.createObjectURL(new Blob(['(', func.toString(), ')()'], { type:'text/javascript' })))
   } catch(error) {
-    console.warn('Failed to create a native worker. Creating a fallback worker on the main thread instead', error)
+    console.warn('Failed to create a native worker. Creating a fallback worker on the main thread instead')
     
     class FallbackWorker {
       isFallbackWorker = true;

@@ -13,11 +13,17 @@ initAndBind(BrowserClient, {
   beforeSend: (event) => {
     try {
       event.request = {
-        url: (!navigator.doNotTrack) ? location.href : '?',
+        url: (!navigator.doNotTrack) ? location.href : '?', // Respect DoNotTrack
         headers: {
-          "User-Agent": navigator.userAgent
+          "User-Agent": navigator.userAgent // Add UserAgent
         }
       };
+      // Normalize stacktrace domain of all browsers
+      for(const value of event.exception.values) {
+        for(const frame of value.stacktrace.frames) {
+          frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+        }
+      }
     } catch (ex) { console.warn(ex) }
     return event
   }
