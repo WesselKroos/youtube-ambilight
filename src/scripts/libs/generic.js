@@ -1,6 +1,35 @@
-let eventErrorHandler;
-export const setEventErrorHandler = (handler) => {
-  eventErrorHandler = handler
+let errorHandler;
+export const setErrorHandler = (handler) => {
+  errorHandler = handler
+}
+
+const safeFunctionErrorHandler = (stack, ex) => {
+  appendErrorStack(stack, ex)
+  if(errorHandler)
+    errorHandler(ex)
+}
+
+export const getSafeFunction = (callback) => {
+  const stack = new Error().stack
+  return (callback.constructor.name === 'AsyncFunction')
+    ? async function safeFunction(...args) {
+      try {
+        return await callback(...args)
+      } catch(ex) {
+        safeFunctionErrorHandler(stack, ex)
+      }
+    }
+    : function safeFunction(...args) {
+      try {
+        return callback(...args)
+      } catch(ex) {
+        safeFunctionErrorHandler(stack, ex)
+      }
+    }
+}
+
+export const setTimeout = (handler, timeout) => {
+  return window.setTimeout(getSafeFunction(handler), timeout)
 }
 
 HTMLElement.prototype.attr = function (name, value) {
@@ -45,28 +74,36 @@ HTMLElement.prototype.removeClass = function (className) {
   return this
 }
 const addEventListenerPrototype = function (eventNames, callback, getListenerCallback) {
-  const reportedCallback = (...args) => {
+  const stack = new Error().stack
+  const eventListenerCallback = (...args) => {
     try {
       callback(...args)
     } catch(ex) {
       const e = args[0]
-      const elem = e.currentTarget.cloneNode(false)
+      let elem = {}
+      if(e && e.currentTarget) {
+        if(e.currentTarget.cloneNode) {
+          elem = e.currentTarget.cloneNode(false)
+        } else {
+          elem.nodeName = e.currentTarget.toString()
+        }
+      }
       const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
-      ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName}`
+      ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName || 'Unknown'}`
 
-      console.error(ex)
-      if(eventErrorHandler)
-        eventErrorHandler(ex)
+      appendErrorStack(stack, ex)
+      if(errorHandler)
+        errorHandler(ex)
     }
   }
 
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
-    this.addEventListener(eventName, reportedCallback)
+    this.addEventListener(eventName, eventListenerCallback)
   })
 
   if(getListenerCallback)
-    getListenerCallback(reportedCallback)
+    getListenerCallback(eventListenerCallback)
 
   return this
 }
@@ -91,7 +128,7 @@ HTMLElement.prototype.offset = function () {
 export const html = document.querySelector('html')
 export const body = document.body
 
-export const raf = (requestAnimationFrame || webkitRequestAnimationFrame)
+export const raf = (callback) => (requestAnimationFrame || webkitRequestAnimationFrame)(getSafeFunction(callback))
 
 export const ctxOptions = {
   alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
@@ -117,11 +154,11 @@ export const waitForDomElement = (check, containerSelector, callback) => {
   if (check()) {
     callback()
   } else {
-    const observer = new MutationObserver((mutationsList, observer) => {
+    const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
       if (!check()) return
       observer.disconnect()
       callback()
-    })
+    }))
     observer.observe($.s(containerSelector), {
       childList: true,
       subtree: true
@@ -158,16 +195,17 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export const safeRequestIdleCallback = (window.requestIdleCallback) 
-  ? window.requestIdleCallback
-  : (callback) => setTimeout(callback, 0)
+export const requestIdleCallback = (window.requestIdleCallback)
+  ? function requestIdleCallback(callback, options) { return window.requestIdleCallback(getSafeFunction(callback), options) }
+  : function setTimeout(callback) { return setTimeout(getSafeFunction(callback), 0) }
 
-export const appendNonAsyncStack = (error, nonAsyncStack) => {
+export const appendErrorStack = (stack, ex) => {
   try {
-    const stackToAppend = nonAsyncStack.substring(nonAsyncStack.indexOf('\n') + 1)
-    const alreadyContainsNonAsyncStack = (error.stack.indexOf(stackToAppend) !== -1)
-    if(alreadyContainsNonAsyncStack) return
+    const stackToAppend = stack.substring(stack.indexOf('\n') + 1)
+    const stackToSearch = stackToAppend.substring(stackToAppend.indexOf('\n') + 1) // The first line in the stack trace can contain an extra function name
+    const alreadyContainsStack = ((ex.stack || ex.message).indexOf(stackToSearch) !== -1)
+    if(alreadyContainsStack) return
 
-    error.stack = `${error.stack}\n${stackToAppend}`
-  } catch(ex) {}
+    ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
+  } catch(ex) { console.warn(ex) }
 }

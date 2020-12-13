@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, getSafeFunction } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
@@ -178,7 +178,7 @@ class Ambilight {
         }
       }
     } catch(ex) {
-      console.error('YouTube Ambilight | applyChromiumBug1142112Workaround. Continuing ambilight initialization...', ex)
+      console.warn('YouTube Ambilight | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -268,21 +268,21 @@ class Ambilight {
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
 
-    this.bodyResizeObserver = new ResizeObserver(entries => {
+    this.bodyResizeObserver = new ResizeObserver(getSafeFunction(entries => {
       this.handleVideoResize()
-    })
+    }))
     this.bodyResizeObserver.observe(document.body)
 
-    this.videoResizeObserver = new ResizeObserver(entries => {
+    this.videoResizeObserver = new ResizeObserver(getSafeFunction(entries => {
       this.handleVideoResize(false)
-    })
+    }))
     this.videoResizeObserver.observe(this.videoElem)
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     const videoPlayer = $.s('.html5-video-player')
     if (videoPlayer) {
-      const observer = new MutationObserver((mutationsList, observer) => {
+      const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
         const mutation = mutationsList[0]
         const classList = mutation.target.classList
         const isVideoHiddenOnWatchPage = (
@@ -297,7 +297,7 @@ class Ambilight {
 
         this.clear()
         this.resetVideoContainerStyle()
-      })
+      }))
     
       observer.observe(videoPlayer, {
         attributes: true,
@@ -3082,7 +3082,7 @@ const ambilightDetectDetachedVideo = () => {
   const containerElem = $.s('.html5-video-container')
   const ytpAppElem = $.s('ytd-app')
 
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (!ytpAppElem.hasAttribute('is-watch-page')) return
 
     const videoElem = containerElem.querySelector('video')
@@ -3092,7 +3092,7 @@ const ambilightDetectDetachedVideo = () => {
     if (!isDetached) return
 
     ambilight.initVideoElem(videoElem)
-  })
+  }))
 
   observer.observe(containerElem, {
     attributes: true,
@@ -3148,7 +3148,7 @@ const tryInitAmbilight = () => {
 }
 
 const ambilightDetectPageTransition = () => {
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (!window.ambilight) return
 
     const ytdAppOrBody = mutationsList[0].target
@@ -3167,7 +3167,7 @@ const ambilightDetectPageTransition = () => {
         Ambilight.setDarkTheme(false)
       }
     }
-  })
+  }))
   var appElem = $.s('ytd-app, body[data-spf-name]')
   if(!appElem) return
   observer.observe(appElem, {
@@ -3184,7 +3184,7 @@ const ambilightDetectVideoPage = () => {
     resetThemeToLightIfSettingIsTrue()
   }
 
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (window.ambilight) {
       observer.disconnect()
       return
@@ -3192,7 +3192,7 @@ const ambilightDetectVideoPage = () => {
 
     tryInitAmbilight()
     tryInitClassicAmbilight()
-  })
+  }))
   var appElem = $.s('ytd-app, body[data-spf-name]')
   if(!appElem) return
   observer.observe(appElem, {
@@ -3202,21 +3202,16 @@ const ambilightDetectVideoPage = () => {
 }
 
 const onLoad = () => {
-  safeRequestIdleCallback(() => {
-    try {
-      if(!window.ambilight) {
-        ambilightDetectPageTransition()
-        ambilightDetectVideoPage()
-      }
-    } catch (ex) {
-      console.error('YouTube Ambilight | Initialization', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+  requestIdleCallback(function onLoad() {
+    if(!window.ambilight) {
+      ambilightDetectPageTransition()
+      ambilightDetectVideoPage()
     }
   }, { timeout: 5000 })
-};
+}
 
 if(document.readyState === 'complete') {
-  onLoad();
+  onLoad()
 } else {
-  window.addEventListener('load', onLoad);
+  window.addEventListener('load', onLoad)
 }

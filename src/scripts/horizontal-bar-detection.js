@@ -1,19 +1,19 @@
-import { appendNonAsyncStack, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
+import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import { workerFromCode } from './libs/worker'
 
 let catchedDetectHorizontalBarSizeError = false
 
 const workerCode = function () {
-  // Cannot access appendNonAsyncStack in import from a worker
-  const appendNonAsyncStack = (error, nonAsyncStack) => {
+  // Cannot access appendErrorStack in import from a worker
+  const appendErrorStack = (stack, ex) => {
     try {
-      const stackToAppend = nonAsyncStack.substring(nonAsyncStack.indexOf('\n') + 1)
-      const alreadyContainsNonAsyncStack = (error.stack.indexOf(stackToAppend) !== -1)
-      if(alreadyContainsNonAsyncStack) return
-
-      error.stack = `${error.stack}\n${stackToAppend}`
-    } catch(ex) {}
+      const stackToAppend = stack.substring(stack.indexOf('\n') + 1)
+      const alreadyContainsStack = ((ex.stack || ex.message).indexOf(stackToAppend) !== -1)
+      if(alreadyContainsStack) return
+  
+      ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
+    } catch(ex) { console.warn(ex) }
   }
 
   let catchedWorkerCreationError = false
@@ -24,7 +24,7 @@ const workerCode = function () {
       const imageVLines = []
       let partSize = Math.ceil(buffer.canvas.width / 6)
       for (let i = (partSize - 1); i < buffer.canvas.width; i += partSize) {
-        const startStack = new Error().stack
+        const stack = new Error().stack
         await new Promise((resolve, reject) => setTimeout(function getBufferImageData() {
           const start = performance.now()
           try {
@@ -33,7 +33,7 @@ const workerCode = function () {
             resolve()
           } catch(ex) {
             throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            appendNonAsyncStack(ex, startStack)
+            appendErrorStack(stack, ex)
             reject(ex)
           }
         }, throttle)) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
@@ -244,14 +244,12 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
         return
       }
       if(e.data.error) {
-        console.error('YouTube Ambilight | received detectHorizontalBarSize workerCreation error:', e.data.error)
         AmbilightSentry.captureExceptionWithDetails(e.data.error)
       }
     }
   }
 
-  const startStack = new Error().stack
-  safeRequestIdleCallback(async () => {
+  requestIdleCallback(async () => {
     try {
       const start = performance.now()
 
@@ -273,7 +271,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
       }
 
       workerMessageId++;
-      const startStack = new Error().stack
+      const stack = new Error().stack
       const onMessagePromise = new Promise((resolve, reject) => {
         worker.onerror = (err) => reject(err)
         worker.onmessage = (e) => {
@@ -285,7 +283,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
             if(e.data.error) {
               // Readable name for the worker script
               e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
-              appendNonAsyncStack(e.data.error, startStack)
+              appendErrorStack(stack, e.data.error)
               throw e.data.error
             }
             callback(e.data.percentage)
@@ -314,9 +312,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     } catch(ex) {
       if (!catchedDetectHorizontalBarSizeError) {
         catchedDetectHorizontalBarSizeError = true
-        appendNonAsyncStack(ex, startStack)
-        console.error('YouTube Ambilight | detectHorizontalBarSize error:', ex)
-        AmbilightSentry.captureExceptionWithDetails(ex)
+        throw ex
       }
     }
   }, { timeout: 1000 })
