@@ -2237,38 +2237,61 @@ class Ambilight {
     )
   }
 
-  // Check for dropped frames as well
   checkIfNeedToHideVideoOverlay() {
     if(!this.videoOverlay) return
-    var ambilightFramesAdded = this.ambilightFrameCount - this.prevAmbilightFrameCountForShouldHideDetection
-    var videoFramesAdded = this.videoFrameCount - this.prevVideoFrameCountForShouldHideDetection
-    var canChange = (performance.now() - this.videoOverlay.isHiddenChangeTimestamp) > 2000
-    var outSyncCount = this.syncInfo.filter(value => !value).length
-    var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if (this.videoElem.paused || this.videoElem.seeking || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    if(!this.hideVideoOverlayCache) {
+      this.hideVideoOverlayCache = {
+        prevAmbilightVideoDroppedFrameCount: this.ambilightVideoDroppedFrameCount,
+        frameDrops: [],
+        isHiddenChangeTimestamp: 0
+      }
+    }
+
+    let {
+      prevAmbilightVideoDroppedFrameCount,
+      frameDrops,
+      isHiddenChangeTimestamp
+    } = this.hideVideoOverlayCache
+
+    const newFramesDropped = Math.max(0, this.ambilightVideoDroppedFrameCount - prevAmbilightVideoDroppedFrameCount)
+    this.hideVideoOverlayCache.prevAmbilightVideoDroppedFrameCount = this.ambilightVideoDroppedFrameCount
+    if(newFramesDropped) {
+      frameDrops.push({
+        time: performance.now(),
+        count: newFramesDropped
+      })
+    }
+    const frameDropTimeLimit = performance.now() - 2000
+    frameDrops = frameDrops.filter(drop => drop.time > frameDropTimeLimit)
+    this.hideVideoOverlayCache.frameDrops = frameDrops
+    
+    let aboveThreshold = false
+    if(this.videoOverlaySyncThreshold !== 100) {
+      const droppedFramesCount = frameDrops.reduce((sum, drop) => sum + drop.count, 0)
+      const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
+      aboveThreshold = droppedFramesCount > droppedFramesThreshold
+    }
+
+    const hide = this.videoElem.paused || this.videoElem.seeking || aboveThreshold
+    if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
       }
-    } else if (canChange || this.videoOverlaySyncThreshold == 100) {
+    } else if (
+      this.videoOverlaySyncThreshold == 100 ||
+      isHiddenChangeTimestamp + 2000 < performance.now()
+    ) {
       if (this.videoOverlay.isHidden) {
         this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
       }
     }
-
-    this.syncInfo.push(!(ambilightFramesAdded < videoFramesAdded))
-    var syncInfoBufferLength = Math.min(120, Math.max(48, this.videoFrameRate * 2))
-    if (this.syncInfo.length > syncInfoBufferLength) {
-      this.syncInfo.splice(0, 1)
-    }
-    this.prevAmbilightFrameCountForShouldHideDetection = this.ambilightFrameCount
-    this.prevVideoFrameCountForShouldHideDetection = this.videoFrameCount
   }
 
   enable(initial = false) {
