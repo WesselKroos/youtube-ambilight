@@ -279,6 +279,15 @@ class Ambilight {
     }))
     this.videoResizeObserver.observe(this.videoElem)
 
+
+    // Fix YouTube bug: focus on video element without scrolling to the top
+    this.videoElem.addEventListener('focus', () => {
+      if(this.videoElem.offsetTop !== 0) return
+      
+      window.scrollTo(window.scrollX, 0)
+    }, true)
+
+
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     const videoPlayer = $.s('.html5-video-player')
