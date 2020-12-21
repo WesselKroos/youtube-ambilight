@@ -1123,6 +1123,10 @@ class Ambilight {
     }
   }
 
+  getScrollTop() {
+    return (this.isFullscreen ? (Ambilight.isClassic ? 0 : this.ytdAppElem.scrollTop) : window.scrollY)
+  }
+
   updateSizes() {
     try {
       if(this.detectVideoFillScaleEnabled){
@@ -1158,9 +1162,11 @@ class Ambilight {
       // }
 
       this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
+      const scrollTop = this.getScrollTop()
       const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
       this.isFillingFullscreen = (
         this.isFullscreen &&
+        scrollTop === 0 &&
         Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
         Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
         noClipOrScale
@@ -1185,8 +1191,8 @@ class Ambilight {
       }
       
       if(this.isFullscreen) {
-        if(this.elem.parentElement !== playerElem) {
-          playerElem.prepend(this.elem)
+        if(this.elem.parentElement !== this.ytdAppElem) {
+          this.ytdAppElem.prepend(this.elem)
         }
       } else {
         if(this.elem.parentElement !== body) {
@@ -1223,7 +1229,6 @@ class Ambilight {
         !this.videoElem.videoHeight
       ) return false //Not ready
 
-      const scrollTop = (this.isFullscreen ? (Ambilight.isClassic ? 0 : $.s('ytd-app').scrollTop) : window.scrollY)
       this.projectorOffset = {
         left: this.projectorOffset.left,
         top: this.projectorOffset.top + scrollTop,
@@ -2486,30 +2491,33 @@ class Ambilight {
     }
   }
 
-
   initScrollPosition() {
     this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
+    this.ytdAppElem = $.s('ytd-app, body[data-spf-name]')
 
-    window.on('scroll', () => {
-      if (this.changedTopTimeout) {
-        clearTimeout(this.changedTopTimeout)
-      } else {
-        this.checkScrollPosition()
-      }
-
-      this.changedTopTimeout = setTimeout(() => {
-        this.checkScrollPosition()
-        this.changedTopTimeout = undefined
-      }, 100)
-    })
+    window.on('scroll', this.handleScroll)
+    this.ytdAppElem.on('scroll', this.handleScroll) // Fullscreen
     this.checkScrollPosition()
+  }
+
+  handleScroll = () => {
+    if (this.changedTopTimeout) {
+      clearTimeout(this.changedTopTimeout)
+    } else {
+      this.checkScrollPosition()
+    }
+
+    this.changedTopTimeout = setTimeout(() => {
+      this.checkScrollPosition()
+      this.changedTopTimeout = undefined
+    }, 100)
   }
 
   checkScrollPosition() {
     if (!this.immersive)
       body.removeClass('at-top').removeClass('not-at-top')
 
-    if (window.scrollY > 0) {
+    if (this.getScrollTop() > 0) {
       this.mastheadElem.class('not-at-top').removeClass('at-top')
       if (this.immersive)
         body.class('not-at-top').removeClass('at-top')
