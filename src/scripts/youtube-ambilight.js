@@ -76,6 +76,7 @@ class Ambilight {
   }
 
   handleVideoResize = (checkPosition = true) => {
+    this.checkScrollPosition()
     this.checkVideoSize(checkPosition)
     this.buffersCleared = true
     this.sizesInvalidated = true
