@@ -282,7 +282,7 @@ class Ambilight {
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     this.videoElem.addEventListener('focus', () => {
-      if(this.videoElem.offsetTop !== 0) return
+      if(this.videoElem.offset().top !== 0) return
       
       window.scrollTo(window.scrollX, 0)
     }, true)
