@@ -290,6 +290,9 @@ html[data-ambilight-enabled="true"] {
     .playlist-items.ytd-playlist-panel-renderer {
       background: none !important;
     }
+    #left-arrow.yt-chip-cloud-renderer, #right-arrow.yt-chip-cloud-renderer {
+      background-color: rgba(20,20,20,.3);
+    }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
     }
@@ -1076,14 +1079,15 @@ html[data-ambilight-enabled="true"] {
       ytd-app[is-watch-page] #primary-inner > *:not(#player),
       ytd-app[is-watch-page] #secondary {
         ytd-menu-renderer.ytd-video-primary-info-renderer,
-        #playlist-actions,
+        #header-contents.ytd-playlist-panel-renderer,
         #subscribe-button,
         #action, // Ad button: More info
         #action-button, // Ad button: Visite website
+        ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
         paper-toggle-button.ytd-compact-autoplay-renderer,
-        yt-chip-cloud-chip-renderer,
         #chatframe,
-        paper-menu-button {
+        paper-menu-button,
+        yt-related-chip-cloud-renderer {
           filter: var(--ambilight-button-shadow) !important;
           text-shadow: none !important;
         }
@@ -1102,8 +1106,6 @@ html[data-ambilight-enabled="true"] {
     #info-text.ytd-video-primary-info-renderer,
     yt-formatted-string.ytd-button-renderer,
     ytd-video-secondary-info-renderer .ytd-channel-name,
-    yt-chip-cloud-chip-renderer,
-    yt-chip-cloud-chip-renderer yt-formatted-string[ellipsis-truncate],
     #byline-container.ytd-video-meta-block,
     #metadata-line.ytd-video-meta-block {
       overflow: initial !important;
@@ -1111,7 +1113,8 @@ html[data-ambilight-enabled="true"] {
 
     // Remove a bit of the shadow capping from elements that cap lines as well
     ytd-expander[collapsed] > #content.ytd-expander,
-    #video-title.ytd-compact-video-renderer,
+    #video-title,
+    #meta #byline,
     ytd-video-meta-block .ytd-channel-name {
       margin-left: -10px !important;
       margin-top: -10px !important;
