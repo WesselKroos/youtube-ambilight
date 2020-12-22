@@ -539,14 +539,14 @@ class Ambilight {
       },
       {
         name: 'surroundingContentTextAndBtnOnly',
-        label: 'Shadow on text and buttons only<br/><span class="ytpa-menuitem-description">(Fixes scroll stutter on slow devices)</span>',
+        label: 'Shadow only on text and buttons<br/><span class="ytpa-menuitem-description">(Decreases scroll & video stutter)</span>',
         type: 'checkbox',
         advanced: true,
         default: true
       },
       {
         name: 'surroundingContentShadowSize',
-        label: 'Shadow size<br/><span class="ytpa-menuitem-description">(Can cause scroll stuttering)</span>',
+        label: 'Shadow size',
         type: 'list',
         default: 15,
         min: 0,
