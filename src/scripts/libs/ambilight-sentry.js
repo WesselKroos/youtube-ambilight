@@ -24,6 +24,7 @@ initAndBind(BrowserClient, {
         if(value.stacktrace && value.stacktrace.frames) {
           for(const frame of value.stacktrace.frames) {
             frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+            frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
           }
         }
       }
