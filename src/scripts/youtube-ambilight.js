@@ -303,7 +303,10 @@ class Ambilight {
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
 
         this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
-        if(!this.isVideoHiddenOnWatchPage) return
+        if(!this.isVideoHiddenOnWatchPage) {
+          this.scheduleNextFrame()
+          return
+        }
 
         this.clear()
         this.resetVideoContainerStyle()
@@ -374,6 +377,28 @@ class Ambilight {
       elem: shadowElem,
       ctx: shadowCtx
     }
+
+    // Dont draw ambilight when its not in viewport
+    this.isAmbilightHiddenOnWatchPage = false
+    if(this.shadowObserver) {
+      this.shadowObserver.disconnect()
+    }
+    if(!this.shadowObserver) {
+      this.shadowObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach(entry => {
+            this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
+            if(!this.isAmbilightHiddenOnWatchPage) {
+              this.scheduleNextFrame()
+            }
+          })
+        },
+        {
+          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+        }
+      )
+    }
+    this.shadowObserver.observe(shadowElem)
 
     // Warning: Using Canvas elements in this div instead of OffScreenCanvas
     // while waiting for a fix for this issue:
@@ -511,6 +536,13 @@ class Ambilight {
         label: 'Page content',
         name: 'sectionOtherPageContentCollapsed',
         default: false
+      },
+      {
+        name: 'surroundingContentTextAndBtnOnly',
+        label: 'Shadow on text and buttons only<br/><span class="ytpa-menuitem-description">(Fixes scroll stutter on slow devices)</span>',
+        type: 'checkbox',
+        advanced: true,
+        default: true
       },
       {
         name: 'surroundingContentShadowSize',
@@ -708,7 +740,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Blur<br/>
           <span class="ytpa-menuitem-description">(More GPU memory)</span></span>`,
         type: 'list',
-        default: 50,
+        default: 30,
         min: 0,
         max: 100,
         step: .1
@@ -719,7 +751,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Spread<br/>
           <span class="ytpa-menuitem-description">(More GPU usage)</span></span>`,
         type: 'list',
-        default: 20,
+        default: 17,
         min: 0,
         max: 200,
         step: .1
@@ -730,7 +762,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Edge size<br/>
           <span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>`,
         type: 'list',
-        default: 17,
+        default: 12,
         min: 2,
         max: 50,
         step: .1,
@@ -905,6 +937,7 @@ class Ambilight {
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
 
+    this.surroundingContentTextAndBtnOnly = this.getSetting('surroundingContentTextAndBtnOnly')
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
     this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
     this.debandingStrength = this.getSetting('debandingStrength')
@@ -1391,6 +1424,7 @@ class Ambilight {
   }
 
   updateStyles() {
+    const textAndBtnOnly = this.surroundingContentTextAndBtnOnly
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
@@ -1403,7 +1437,7 @@ class Ambilight {
     
     
     document.body.style.setProperty('--ambilight-video-shadow-background', 
-      (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
+      (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
     document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
@@ -1412,28 +1446,29 @@ class Ambilight {
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow', 
-      (shadowSize && shadowOpacity) 
+    const getFilterShadow = (color) => (shadowSize && shadowOpacity) 
       ? (
         (shadowOpacity > .5) 
         ? `
-          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
-          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity}))
         `
-        : `drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity * 2}))`
+        : `drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity * 2}))`
       )
-      : '')
-    document.body.style.setProperty('--ambilight-filter-shadow-inverted', 
-      (shadowSize && shadowOpacity) 
-      ? (
-        (shadowOpacity > .5) 
+      : ''
+    document.body.style.setProperty(`--ambilight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambilight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambilight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    
+    const getTextShadow = (color) => (shadowSize && shadowOpacity) 
         ? `
-          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity})) 
-          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity}))
+        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
+        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
         `
-        : `drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity * 2}))`
-      )
-      : '')
+      : ''
+    document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
@@ -1975,11 +2010,7 @@ class Ambilight {
   drawAmbilight() {
     if (
       !this.enabled ||
-      !this.isOnVideoPage ||
-      this.isVideoHiddenOnWatchPage || 
-      this.videoElem.ended || 
-      this.videoElem.readyState === 0 || 
-      this.videoElem.readyState === 1
+      !this.isOnVideoPage
     ) return
 
     if (
@@ -1995,6 +2026,14 @@ class Ambilight {
     if (this.isHidden) {
       this.show()
     }
+
+    if (
+      this.isVideoHiddenOnWatchPage || 
+      this.isAmbilightHiddenOnWatchPage ||
+      this.videoElem.ended || 
+      this.videoElem.readyState === 0 || 
+      this.videoElem.readyState === 1
+    ) return
 
     //performance.mark('start-drawing')
     let newVideoFrameCount = this.getVideoFrameCount()
@@ -2797,6 +2836,7 @@ class Ambilight {
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
             setting.name === 'resetThemeToLightOnDisable' ||
+            setting.name === 'surroundingContentTextAndBtnOnly' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
             setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
@@ -2862,6 +2902,11 @@ class Ambilight {
             } else {
               this.hideStats()
             }
+            return
+          }
+
+          if(setting.name === 'surroundingContentTextAndBtnOnly') {
+            this.updateStyles()
             return
           }
 
