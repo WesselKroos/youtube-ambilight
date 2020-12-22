@@ -1080,7 +1080,8 @@ html[data-ambilight-enabled="true"] {
         #action, // Ad button: More info
         #action-button, // Ad button: Visite website
         paper-toggle-button.ytd-compact-autoplay-renderer,
-        yt-chip-cloud-chip-renderer {
+        yt-chip-cloud-chip-renderer,
+        #chatframe {
           filter: var(--ambilight-button-shadow) !important;
           text-shadow: none !important;
         }
