@@ -329,6 +329,7 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight {
+      z-index: -1; // Fullscreen behind video info text
       display: block;
       height: 300%;
       overflow: hidden;
