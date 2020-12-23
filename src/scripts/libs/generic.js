@@ -73,7 +73,7 @@ HTMLElement.prototype.removeClass = function (className) {
   }
   return this
 }
-const addEventListenerPrototype = function (eventNames, callback, getListenerCallback) {
+const addEventListenerPrototype = function (eventNames, callback, options, getListenerCallback) {
   const stack = new Error().stack
   const eventListenerCallback = (...args) => {
     try {
@@ -99,7 +99,7 @@ const addEventListenerPrototype = function (eventNames, callback, getListenerCal
 
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
-    this.addEventListener(eventName, eventListenerCallback)
+    this.addEventListener(eventName, eventListenerCallback, options)
   })
 
   if(getListenerCallback)
