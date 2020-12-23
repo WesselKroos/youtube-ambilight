@@ -64,7 +64,7 @@ class Ambilight {
     this.updateStyles()
 
     this.initScrollPosition()
-    this.initImmersiveMode()
+    this.updateImmersiveMode()
     this.initGetImageDataAllowed()
 
     this.initListeners()
@@ -76,8 +76,9 @@ class Ambilight {
   }
 
   handleVideoResize = (checkPosition = true) => {
-    this.checkScrollPosition()
     this.checkVideoSize(checkPosition)
+    this.updateImmersiveMode()
+    this.checkScrollPosition()
     this.buffersCleared = true
     this.sizesInvalidated = true
     this.scheduleNextFrame()
@@ -569,6 +570,12 @@ class Ambilight {
         default: false
       },
       {
+        name: 'immersiveTheaterView',
+        label: 'Hide in theater mode',
+        type: 'checkbox',
+        default: false
+      },
+      {
         name: 'hideScrollbar',
         label: 'Hide scrollbar',
         type: 'checkbox',
@@ -931,6 +938,7 @@ class Ambilight {
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
+    this.immersiveTheaterView = this.getSetting('immersiveTheaterView')
     this.hideScrollbar = this.getSetting('hideScrollbar')
     html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
@@ -2562,37 +2570,37 @@ class Ambilight {
   }
 
   checkScrollPosition() {
-    if (!this.immersive)
-      body.removeClass('at-top').removeClass('not-at-top')
-
-    if (this.getScrollTop() > 0) {
-      this.mastheadElem.class('not-at-top').removeClass('at-top')
-      if (this.immersive)
-        body.class('not-at-top').removeClass('at-top')
+    const atTop  = this.getScrollTop() === 0
+    if (atTop) {
+      this.mastheadElem.class('at-top')
     } else {
-      this.mastheadElem.class('at-top').removeClass('not-at-top')
-      if (this.immersive)
-        body.class('at-top').removeClass('not-at-top')
+      this.mastheadElem.removeClass('at-top')
+    }
+
+    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const immersiveAtTop = (immersive && atTop)
+
+    if (immersiveAtTop) {
+      body.class('at-top')
+    } else {
+      body.removeClass('at-top')
     }
   }
 
-
-  initImmersiveMode() {
-    if (this.immersive)
-      html.attr('data-ambilight-immersive-mode', true)
+  updateImmersiveMode() {
+    const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    html.attr('data-ambilight-immersive-mode', immersiveMode)
   
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
     const enabled = !this.immersive
-    html.attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
-    window.dispatchEvent(new Event('resize'))
-    window.dispatchEvent(new Event('scroll'))
-  }
 
+    this.updateImmersiveMode()
+  }
 
   initSettingsMenu() {
     this.settingsMenuBtn = document.createElement('button')
@@ -2846,10 +2854,15 @@ class Ambilight {
             setting.name === 'directionBottomEnabled' ||
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings' ||
-            setting.name === 'hideScrollbar'
+            setting.name === 'hideScrollbar' ||
+            setting.name === 'immersiveTheaterView'
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+          }
+
+          if(setting.name === 'immersiveTheaterView') {
+            this.updateImmersiveMode()
           }
 
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
