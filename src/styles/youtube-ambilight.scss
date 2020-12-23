@@ -1078,16 +1078,27 @@ html[data-ambilight-enabled="true"] {
       // Buttons & icons shadows
       ytd-app[is-watch-page] #primary-inner > *:not(#player),
       ytd-app[is-watch-page] #secondary {
-        ytd-menu-renderer.ytd-video-primary-info-renderer,
-        #header-contents.ytd-playlist-panel-renderer,
+        $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
+        $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
+
+        #{$info} ytd-toggle-button-renderer,
+        #{$info} ytd-button-renderer,
+        #{$info} yt-icon.ytd-menu-renderer,
+
+        #{$playlist-header} h3,
+        #{$playlist-header} ytd-badge-supported-renderer,
+        #{$playlist-header} .publisher,
+        #{$playlist-header} .index-message-wrapper,
+        #{$playlist-header} yt-icon-button,
+        ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
+
         #subscribe-button,
         #action, // Ad button: More info
         #action-button, // Ad button: Visite website
         ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
-        paper-menu-button,
-        yt-related-chip-cloud-renderer {
+        paper-menu-button {
           filter: var(--ambilight-button-shadow) !important;
           text-shadow: none !important;
         }

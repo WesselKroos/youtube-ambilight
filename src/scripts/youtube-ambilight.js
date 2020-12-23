@@ -1462,10 +1462,10 @@ class Ambilight {
     document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
     
     const getTextShadow = (color) => (shadowSize && shadowOpacity) 
-        ? `
+      ? `
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
-        `
+      `
       : ''
     document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
     document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
