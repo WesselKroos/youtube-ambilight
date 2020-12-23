@@ -76,6 +76,9 @@ class Ambilight {
   }
 
   handleVideoResize = (checkPosition = true) => {
+    // Make sure to trigger checkVideoSize to call updateSizes. So that
+    // this.view is updated before this.updateImmersiveMode is called
+    this.sizesInvalidated = true
     this.checkVideoSize(checkPosition)
     this.updateImmersiveMode()
     this.checkScrollPosition()
