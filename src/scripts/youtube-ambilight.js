@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, safeRequestIdleCallback } from './libs/generic'
+import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, getSafeFunction } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
@@ -64,7 +64,7 @@ class Ambilight {
     this.updateStyles()
 
     this.initScrollPosition()
-    this.initImmersiveMode()
+    this.updateImmersiveMode()
     this.initGetImageDataAllowed()
 
     this.initListeners()
@@ -76,7 +76,12 @@ class Ambilight {
   }
 
   handleVideoResize = (checkPosition = true) => {
+    // Make sure to trigger checkVideoSize to call updateSizes. So that
+    // this.view is updated before this.updateImmersiveMode is called
+    this.sizesInvalidated = true
     this.checkVideoSize(checkPosition)
+    this.updateImmersiveMode()
+    this.checkScrollPosition()
     this.buffersCleared = true
     this.sizesInvalidated = true
     this.scheduleNextFrame()
@@ -178,7 +183,7 @@ class Ambilight {
         }
       }
     } catch(ex) {
-      console.error('YouTube Ambilight | applyChromiumBug1142112Workaround. Continuing ambilight initialization...', ex)
+      console.warn('YouTube Ambilight | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -268,21 +273,30 @@ class Ambilight {
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
     })
 
-    this.bodyResizeObserver = new ResizeObserver(entries => {
+    this.bodyResizeObserver = new ResizeObserver(getSafeFunction(entries => {
       this.handleVideoResize()
-    })
+    }))
     this.bodyResizeObserver.observe(document.body)
 
-    this.videoResizeObserver = new ResizeObserver(entries => {
+    this.videoResizeObserver = new ResizeObserver(getSafeFunction(entries => {
       this.handleVideoResize(false)
-    })
+    }))
     this.videoResizeObserver.observe(this.videoElem)
+
+
+    // Fix YouTube bug: focus on video element without scrolling to the top
+    this.videoElem.on('focus', () => {
+      if(this.videoElem.offset().top !== 0) return
+      
+      window.scrollTo(window.scrollX, 0)
+    }, true)
+
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     const videoPlayer = $.s('.html5-video-player')
     if (videoPlayer) {
-      const observer = new MutationObserver((mutationsList, observer) => {
+      const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
         const mutation = mutationsList[0]
         const classList = mutation.target.classList
         const isVideoHiddenOnWatchPage = (
@@ -293,11 +307,14 @@ class Ambilight {
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
 
         this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
-        if(!this.isVideoHiddenOnWatchPage) return
+        if(!this.isVideoHiddenOnWatchPage) {
+          this.scheduleNextFrame()
+          return
+        }
 
         this.clear()
         this.resetVideoContainerStyle()
-      })
+      }))
     
       observer.observe(videoPlayer, {
         attributes: true,
@@ -310,7 +327,8 @@ class Ambilight {
   }
 
   initGetImageDataAllowed() {
-    this.getImageDataAllowed = (!window.chrome || (this.videoElem.src && this.videoElem.src.indexOf('youtube.com') !== -1))
+    const isSameOriginVideo = (this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
+    this.getImageDataAllowed = (!window.chrome || isSameOriginVideo)
 
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
@@ -363,6 +381,28 @@ class Ambilight {
       elem: shadowElem,
       ctx: shadowCtx
     }
+
+    // Dont draw ambilight when its not in viewport
+    this.isAmbilightHiddenOnWatchPage = false
+    if(this.shadowObserver) {
+      this.shadowObserver.disconnect()
+    }
+    if(!this.shadowObserver) {
+      this.shadowObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach(entry => {
+            this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
+            if(!this.isAmbilightHiddenOnWatchPage) {
+              this.scheduleNextFrame()
+            }
+          })
+        },
+        {
+          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+        }
+      )
+    }
+    this.shadowObserver.observe(shadowElem)
 
     // Warning: Using Canvas elements in this div instead of OffScreenCanvas
     // while waiting for a fix for this issue:
@@ -502,8 +542,15 @@ class Ambilight {
         default: false
       },
       {
+        name: 'surroundingContentTextAndBtnOnly',
+        label: 'Shadow only on text and buttons<br/><span class="ytpa-menuitem-description">(Decreases scroll & video stutter)</span>',
+        type: 'checkbox',
+        advanced: true,
+        default: true
+      },
+      {
         name: 'surroundingContentShadowSize',
-        label: 'Shadow size<br/><span class="ytpa-menuitem-description">(Can cause scroll stuttering)</span>',
+        label: 'Shadow size',
         type: 'list',
         default: 15,
         min: 0,
@@ -522,6 +569,12 @@ class Ambilight {
       {
         name: 'immersive',
         label: 'Hide when scrolled to top [Z]',
+        type: 'checkbox',
+        default: false
+      },
+      {
+        name: 'immersiveTheaterView',
+        label: 'Hide in theater mode',
         type: 'checkbox',
         default: false
       },
@@ -697,7 +750,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Blur<br/>
           <span class="ytpa-menuitem-description">(More GPU memory)</span></span>`,
         type: 'list',
-        default: 50,
+        default: 30,
         min: 0,
         max: 100,
         step: .1
@@ -708,7 +761,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Spread<br/>
           <span class="ytpa-menuitem-description">(More GPU usage)</span></span>`,
         type: 'list',
-        default: 20,
+        default: 17,
         min: 0,
         max: 200,
         step: .1
@@ -719,7 +772,7 @@ class Ambilight {
           <span style="display: inline-block; padding: 5px 0">Edge size<br/>
           <span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>`,
         type: 'list',
-        default: 17,
+        default: 12,
         min: 2,
         max: 50,
         step: .1,
@@ -888,12 +941,14 @@ class Ambilight {
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
     this.immersive = this.getSetting('immersive')
+    this.immersiveTheaterView = this.getSetting('immersiveTheaterView')
     this.hideScrollbar = this.getSetting('hideScrollbar')
     html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
 
+    this.surroundingContentTextAndBtnOnly = this.getSetting('surroundingContentTextAndBtnOnly')
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
     this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
     this.debandingStrength = this.getSetting('debandingStrength')
@@ -1121,6 +1176,10 @@ class Ambilight {
     }
   }
 
+  getScrollTop() {
+    return (this.isFullscreen ? (Ambilight.isClassic ? 0 : this.ytdAppElem.scrollTop) : window.scrollY)
+  }
+
   updateSizes() {
     try {
       if(this.detectVideoFillScaleEnabled){
@@ -1156,9 +1215,11 @@ class Ambilight {
       // }
 
       this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
+      const scrollTop = this.getScrollTop()
       const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
       this.isFillingFullscreen = (
         this.isFullscreen &&
+        scrollTop === 0 &&
         Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
         Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
         noClipOrScale
@@ -1183,8 +1244,8 @@ class Ambilight {
       }
       
       if(this.isFullscreen) {
-        if(this.elem.parentElement !== playerElem) {
-          playerElem.prepend(this.elem)
+        if(this.elem.parentElement !== this.ytdAppElem) {
+          this.ytdAppElem.prepend(this.elem)
         }
       } else {
         if(this.elem.parentElement !== body) {
@@ -1221,7 +1282,6 @@ class Ambilight {
         !this.videoElem.videoHeight
       ) return false //Not ready
 
-      const scrollTop = (this.isFullscreen ? (Ambilight.isClassic ? 0 : $.s('ytd-app').scrollTop) : window.scrollY)
       this.projectorOffset = {
         left: this.projectorOffset.left,
         top: this.projectorOffset.top + scrollTop,
@@ -1375,6 +1435,7 @@ class Ambilight {
   }
 
   updateStyles() {
+    const textAndBtnOnly = this.surroundingContentTextAndBtnOnly
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
     const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
@@ -1387,7 +1448,7 @@ class Ambilight {
     
     
     document.body.style.setProperty('--ambilight-video-shadow-background', 
-      (videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
+      (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
     document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
@@ -1396,28 +1457,29 @@ class Ambilight {
         `
         : '')
 
-    document.body.style.setProperty('--ambilight-filter-shadow', 
-      (shadowSize && shadowOpacity) 
+    const getFilterShadow = (color) => (shadowSize && shadowOpacity) 
       ? (
         (shadowOpacity > .5) 
         ? `
-          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
-          drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity}))
+          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity})) 
+          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity}))
         `
-        : `drop-shadow(0 0 ${shadowSize}px rgba(0,0,0,${shadowOpacity * 2}))`
+        : `drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity * 2}))`
       )
-      : '')
-    document.body.style.setProperty('--ambilight-filter-shadow-inverted', 
-      (shadowSize && shadowOpacity) 
-      ? (
-        (shadowOpacity > .5) 
-        ? `
-          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity})) 
-          drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity}))
-        `
-        : `drop-shadow(0 0 ${shadowSize}px rgba(255,255,255,${shadowOpacity * 2}))`
-      )
-      : '')
+      : ''
+    document.body.style.setProperty(`--ambilight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambilight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambilight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    
+    const getTextShadow = (color) => (shadowSize && shadowOpacity) 
+      ? `
+        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
+        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
+      `
+      : ''
+    document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
     document.body.style.setProperty('--ambilight-after-content', 
       debandingStrength ? `''` : '')
@@ -1959,11 +2021,7 @@ class Ambilight {
   drawAmbilight() {
     if (
       !this.enabled ||
-      !this.isOnVideoPage ||
-      this.isVideoHiddenOnWatchPage || 
-      this.videoElem.ended || 
-      this.videoElem.readyState === 0 || 
-      this.videoElem.readyState === 1
+      !this.isOnVideoPage
     ) return
 
     if (
@@ -1979,6 +2037,14 @@ class Ambilight {
     if (this.isHidden) {
       this.show()
     }
+
+    if (
+      this.isVideoHiddenOnWatchPage || 
+      this.isAmbilightHiddenOnWatchPage ||
+      this.videoElem.ended || 
+      this.videoElem.readyState === 0 || 
+      this.videoElem.readyState === 1
+    ) return
 
     //performance.mark('start-drawing')
     let newVideoFrameCount = this.getVideoFrameCount()
@@ -2236,38 +2302,61 @@ class Ambilight {
     )
   }
 
-  // Check for dropped frames as well
   checkIfNeedToHideVideoOverlay() {
     if(!this.videoOverlay) return
-    var ambilightFramesAdded = this.ambilightFrameCount - this.prevAmbilightFrameCountForShouldHideDetection
-    var videoFramesAdded = this.videoFrameCount - this.prevVideoFrameCountForShouldHideDetection
-    var canChange = (performance.now() - this.videoOverlay.isHiddenChangeTimestamp) > 2000
-    var outSyncCount = this.syncInfo.filter(value => !value).length
-    var outSyncMaxFrames = this.syncInfo.length * (this.videoOverlaySyncThreshold / 100)
 
-    if (this.videoElem.paused || this.videoElem.seeking || (outSyncCount > outSyncMaxFrames && this.videoOverlaySyncThreshold !== 100)) {
+    if(!this.hideVideoOverlayCache) {
+      this.hideVideoOverlayCache = {
+        prevAmbilightVideoDroppedFrameCount: this.ambilightVideoDroppedFrameCount,
+        frameDrops: [],
+        isHiddenChangeTimestamp: 0
+      }
+    }
+
+    let {
+      prevAmbilightVideoDroppedFrameCount,
+      frameDrops,
+      isHiddenChangeTimestamp
+    } = this.hideVideoOverlayCache
+
+    const newFramesDropped = Math.max(0, this.ambilightVideoDroppedFrameCount - prevAmbilightVideoDroppedFrameCount)
+    this.hideVideoOverlayCache.prevAmbilightVideoDroppedFrameCount = this.ambilightVideoDroppedFrameCount
+    if(newFramesDropped) {
+      frameDrops.push({
+        time: performance.now(),
+        count: newFramesDropped
+      })
+    }
+    const frameDropTimeLimit = performance.now() - 2000
+    frameDrops = frameDrops.filter(drop => drop.time > frameDropTimeLimit)
+    this.hideVideoOverlayCache.frameDrops = frameDrops
+    
+    let aboveThreshold = false
+    if(this.videoOverlaySyncThreshold !== 100) {
+      const droppedFramesCount = frameDrops.reduce((sum, drop) => sum + drop.count, 0)
+      const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
+      aboveThreshold = droppedFramesCount > droppedFramesThreshold
+    }
+
+    const hide = this.videoElem.paused || this.videoElem.seeking || aboveThreshold
+    if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
       }
-    } else if (canChange || this.videoOverlaySyncThreshold == 100) {
+    } else if (
+      this.videoOverlaySyncThreshold == 100 ||
+      isHiddenChangeTimestamp + 2000 < performance.now()
+    ) {
       if (this.videoOverlay.isHidden) {
         this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
-        this.videoOverlay.isHiddenChangeTimestamp = performance.now()
+        this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
       }
     }
-
-    this.syncInfo.push(!(ambilightFramesAdded < videoFramesAdded))
-    var syncInfoBufferLength = Math.min(120, Math.max(48, this.videoFrameRate * 2))
-    if (this.syncInfo.length > syncInfoBufferLength) {
-      this.syncInfo.splice(0, 1)
-    }
-    this.prevAmbilightFrameCountForShouldHideDetection = this.ambilightFrameCount
-    this.prevVideoFrameCountForShouldHideDetection = this.videoFrameCount
   }
 
   enable(initial = false) {
@@ -2461,64 +2550,67 @@ class Ambilight {
     }
   }
 
-
   initScrollPosition() {
     this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
+    this.ytdAppElem = $.s('ytd-app, body[data-spf-name]')
 
-    window.on('scroll', () => {
-      if (this.changedTopTimeout) {
-        clearTimeout(this.changedTopTimeout)
-      } else {
-        this.checkScrollPosition()
-      }
-
-      this.changedTopTimeout = setTimeout(() => {
-        this.checkScrollPosition()
-        this.changedTopTimeout = undefined
-      }, 100)
-    })
+    window.on('scroll', this.handleScroll)
+    this.ytdAppElem.on('scroll', this.handleScroll) // Fullscreen
     this.checkScrollPosition()
   }
 
-  checkScrollPosition() {
-    if (!this.immersive)
-      body.removeClass('at-top').removeClass('not-at-top')
-
-    if (window.scrollY > 0) {
-      this.mastheadElem.class('not-at-top').removeClass('at-top')
-      if (this.immersive)
-        body.class('not-at-top').removeClass('at-top')
+  handleScroll = () => {
+    if (this.changedTopTimeout) {
+      clearTimeout(this.changedTopTimeout)
     } else {
-      this.mastheadElem.class('at-top').removeClass('not-at-top')
-      if (this.immersive)
-        body.class('at-top').removeClass('not-at-top')
+      this.checkScrollPosition()
+    }
+
+    this.changedTopTimeout = setTimeout(() => {
+      this.checkScrollPosition()
+      this.changedTopTimeout = undefined
+    }, 100)
+  }
+
+  checkScrollPosition() {
+    const atTop  = this.getScrollTop() === 0
+    if (atTop) {
+      this.mastheadElem.class('at-top')
+    } else {
+      this.mastheadElem.removeClass('at-top')
+    }
+
+    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const immersiveAtTop = (immersive && atTop)
+
+    if (immersiveAtTop) {
+      body.class('at-top')
+    } else {
+      body.removeClass('at-top')
     }
   }
 
-
-  initImmersiveMode() {
-    if (this.immersive)
-      html.attr('data-ambilight-immersive-mode', true)
+  updateImmersiveMode() {
+    const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    html.attr('data-ambilight-immersive-mode', immersiveMode)
   
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
     const enabled = !this.immersive
-    html.attr('data-ambilight-immersive-mode', enabled)
     $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
-    window.dispatchEvent(new Event('resize'))
-    window.dispatchEvent(new Event('scroll'))
-  }
 
+    this.updateImmersiveMode()
+  }
 
   initSettingsMenu() {
     this.settingsMenuBtn = document.createElement('button')
       .class('ytp-button ytp-ambilight-settings-button')
       .attr('title', 'Ambilight settings')
       .attr('aria-owns', 'ytp-id-190')
-      .on('click', this.onSettingsBtnClicked, (listener) => this.onSettingsBtnClickedListener = listener)
+      .on('click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
 
     this.settingsMenuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
       <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
@@ -2755,6 +2847,7 @@ class Ambilight {
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
             setting.name === 'resetThemeToLightOnDisable' ||
+            setting.name === 'surroundingContentTextAndBtnOnly' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
             setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
@@ -2764,10 +2857,15 @@ class Ambilight {
             setting.name === 'directionBottomEnabled' ||
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings' ||
-            setting.name === 'hideScrollbar'
+            setting.name === 'hideScrollbar' ||
+            setting.name === 'immersiveTheaterView'
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+          }
+
+          if(setting.name === 'immersiveTheaterView') {
+            this.updateImmersiveMode()
           }
 
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
@@ -2820,6 +2918,11 @@ class Ambilight {
             } else {
               this.hideStats()
             }
+            return
+          }
+
+          if(setting.name === 'surroundingContentTextAndBtnOnly') {
+            this.updateStyles()
             return
           }
 
@@ -2896,7 +2999,7 @@ class Ambilight {
 
     this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
-      body.on('click', this.onCloseSettings, (listener) => this.onCloseSettingsListener = listener)
+      body.on('click', this.onCloseSettings, undefined, (listener) => this.onCloseSettingsListener = listener)
     }, 100)
   }
 
@@ -2909,7 +3012,7 @@ class Ambilight {
       (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
 
-    this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, (listener) => this.onSettingsFadeOutEndListener = listener)
+    this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, undefined, (listener) => this.onSettingsFadeOutEndListener = listener)
     this.settingsMenuElem.class('fade-out')
 
     this.settingsMenuBtn.attr('aria-expanded', false)
@@ -2921,7 +3024,7 @@ class Ambilight {
 
     body.off('click', this.onCloseSettingsListener)
     setTimeout(() => {
-      this.settingsMenuBtn.on('click', this.onSettingsBtnClicked, (listener) => this.onSettingsBtnClickedListener = listener)
+      this.settingsMenuBtn.on('click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
   }
 
@@ -3081,7 +3184,7 @@ const ambilightDetectDetachedVideo = () => {
   const containerElem = $.s('.html5-video-container')
   const ytpAppElem = $.s('ytd-app')
 
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (!ytpAppElem.hasAttribute('is-watch-page')) return
 
     const videoElem = containerElem.querySelector('video')
@@ -3091,7 +3194,7 @@ const ambilightDetectDetachedVideo = () => {
     if (!isDetached) return
 
     ambilight.initVideoElem(videoElem)
-  })
+  }))
 
   observer.observe(containerElem, {
     attributes: true,
@@ -3147,7 +3250,7 @@ const tryInitAmbilight = () => {
 }
 
 const ambilightDetectPageTransition = () => {
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (!window.ambilight) return
 
     const ytdAppOrBody = mutationsList[0].target
@@ -3166,7 +3269,7 @@ const ambilightDetectPageTransition = () => {
         Ambilight.setDarkTheme(false)
       }
     }
-  })
+  }))
   var appElem = $.s('ytd-app, body[data-spf-name]')
   if(!appElem) return
   observer.observe(appElem, {
@@ -3183,7 +3286,7 @@ const ambilightDetectVideoPage = () => {
     resetThemeToLightIfSettingIsTrue()
   }
 
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
     if (window.ambilight) {
       observer.disconnect()
       return
@@ -3191,7 +3294,7 @@ const ambilightDetectVideoPage = () => {
 
     tryInitAmbilight()
     tryInitClassicAmbilight()
-  })
+  }))
   var appElem = $.s('ytd-app, body[data-spf-name]')
   if(!appElem) return
   observer.observe(appElem, {
@@ -3201,21 +3304,20 @@ const ambilightDetectVideoPage = () => {
 }
 
 const onLoad = () => {
-  safeRequestIdleCallback(() => {
-    try {
-      if(!window.ambilight) {
-        ambilightDetectPageTransition()
-        ambilightDetectVideoPage()
-      }
-    } catch (ex) {
-      console.error('YouTube Ambilight | Initialization', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+  requestIdleCallback(function onLoad() {
+    if(!window.ambilight) {
+      ambilightDetectPageTransition()
+      ambilightDetectVideoPage()
     }
   }, { timeout: 5000 })
-};
+}
 
-if(document.readyState === 'complete') {
-  onLoad();
-} else {
-  window.addEventListener('load', onLoad);
+try {
+  if(document.readyState === 'complete') {
+    onLoad()
+  } else {
+    window.addEventListener('load', onLoad)
+  }
+} catch (ex) {
+  AmbilightSentry.captureExceptionWithDetails(ex)
 }

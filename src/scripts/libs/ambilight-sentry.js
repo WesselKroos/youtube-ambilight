@@ -1,4 +1,4 @@
-import { $, html, setEventErrorHandler } from "./generic";
+import { $, html, setErrorHandler } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
 import {
   captureException,
@@ -10,6 +10,7 @@ initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
   release: html.getAttribute('data-ambilight-version') || '?',
+  attachStacktrace: true,
   beforeSend: (event) => {
     try {
       event.request = {
@@ -20,8 +21,11 @@ initAndBind(BrowserClient, {
       };
       // Normalize stacktrace domain of all browsers
       for(const value of event.exception.values) {
-        for(const frame of value.stacktrace.frames) {
-          frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+        if(value.stacktrace && value.stacktrace.frames) {
+          for(const frame of value.stacktrace.frames) {
+            frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+            frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
+          }
         }
       }
     } catch (ex) { console.warn(ex) }
@@ -31,6 +35,23 @@ initAndBind(BrowserClient, {
 
 export default class AmbilightSentry {
   static captureExceptionWithDetails(ex) {
+
+    try {
+      // Include stack trace in report (ex.name = 'SecurityError')
+      if (ex.stack && (
+        Object.prototype.toString.call(ex) === '[object DOMException]' ||
+        Object.prototype.toString.call(ex) === '[object DOMError]'
+      )) {
+        const exWithStack = new Error(ex.message)
+        exWithStack.code = ex.code
+        exWithStack.stack = ex.stack
+        exWithStack.name = ex.name
+        ex = exWithStack
+      }
+    } catch (ex) { console.warn(ex) }
+
+    console.error('YouTube Ambilight | ', ex)
+
     withScope(scope => {
       const setExtra = (name, value) => {
         try {
@@ -237,4 +258,4 @@ export default class AmbilightSentry {
   }
 }
 
-setEventErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
