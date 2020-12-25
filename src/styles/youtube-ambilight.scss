@@ -418,6 +418,12 @@ html[data-ambilight-enabled="true"] {
   } 
 }
 
+/* Markers */
+
+#contents.ytd-macro-markers-list-renderer {
+  @include scrollbar-dark-thin();
+}
+
 /* Settings */
 
 // Firefox scrollbars
@@ -1075,11 +1081,15 @@ html[data-ambilight-enabled="true"] {
       ytd-app[is-watch-page] #primary-inner > *:not(#player),
       ytd-app[is-watch-page] #secondary {
         $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
+        $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
 
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
+
+        #{$chapters-header} yt-icon,
+        #{$chapters-header} #title-container,
 
         #{$playlist-header} h3,
         #{$playlist-header} ytd-badge-supported-renderer,
@@ -1096,6 +1106,12 @@ html[data-ambilight-enabled="true"] {
         #chatframe,
         paper-menu-button {
           filter: var(--ambilight-button-shadow) !important;
+          text-shadow: none !important;
+        }
+
+        $chapters-content: '#content.ytd-engagement-panel-section-list-renderer';
+
+        #{$chapters-content} #sync-button {
           text-shadow: none !important;
         }
       }
