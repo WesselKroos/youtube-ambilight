@@ -301,7 +301,7 @@ class Ambilight {
         const classList = mutation.target.classList
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
-          classList.contains('unstarted-mode')  || 
+          // classList.contains('unstarted-mode')  || // Unstarted is not hidden? Causes initial render without ambilight
           classList.contains('ytp-player-minimized')
         )
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
