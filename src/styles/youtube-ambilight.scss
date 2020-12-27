@@ -77,10 +77,10 @@ html[data-ambilight-enabled="true"] {
   }
   &[dark="true"] {
     // Make all card backgrounds transparent
-    --yt-spec-brand-background-solid: none;
+    // --yt-spec-brand-background-solid: none; // Causes transparent add-to-playlist popup on Firefox
     //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
     --yt-spec-brand-background-secondary: none;
-    // --yt-spec-general-background-a: none; // Causes menu on Firefox
+    // --yt-spec-general-background-a: none; // Causes transparent menu on Firefox
     --yt-spec-general-background-b: none;
     --yt-spec-general-background-c: none;
     --yt-spec-snackbar-background: none;
