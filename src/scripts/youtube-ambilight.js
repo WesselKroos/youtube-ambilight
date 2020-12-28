@@ -1851,7 +1851,8 @@ class Ambilight {
         this.videoElem.ended ||
         this.videoElem.paused ||
         this.videoElem.seeking ||
-        this.isBuffering
+        this.isBuffering ||
+        this.isAmbilightHiddenOnWatchPage
       ) {
         return;
       }
