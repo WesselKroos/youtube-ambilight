@@ -247,6 +247,13 @@ class Ambilight {
         this.ambilightVideoDroppedFrameCount = 0
       })
 
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState !== 'hidden') return
+
+      this.buffersCleared = true
+      this.checkIfNeedToHideVideoOverlay()
+    }, false);
+
     document.on('keydown', (e) => {
       if (!this.isOnVideoPage) return
       if (document.activeElement) {
