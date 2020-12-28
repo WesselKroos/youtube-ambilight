@@ -82,9 +82,7 @@ class Ambilight {
     this.checkVideoSize(checkPosition)
     this.updateImmersiveMode()
     this.checkScrollPosition()
-    this.buffersCleared = true
-    this.sizesInvalidated = true
-    this.scheduleNextFrame()
+    this.nextFrame()
   }
 
   initVideoElem(videoElem) {
@@ -2383,7 +2381,7 @@ class Ambilight {
       aboveThreshold = droppedFramesCount > droppedFramesThreshold
     }
 
-    const hide = this.buffersCleared || this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
+    const hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
     if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
