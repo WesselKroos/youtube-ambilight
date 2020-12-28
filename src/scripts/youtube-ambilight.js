@@ -2583,33 +2583,34 @@ class Ambilight {
   }
 
   handleScroll = () => {
-    if (this.changedTopTimeout) {
-      clearTimeout(this.changedTopTimeout)
+    if (this.scrollEndTimeout) {
+      clearTimeout(this.scrollEndTimeout)
     } else {
       this.checkScrollPosition()
     }
 
-    this.changedTopTimeout = setTimeout(() => {
-      this.checkScrollPosition()
-      this.changedTopTimeout = undefined
-    }, 100)
+    this.scrollEndTimeout = setTimeout(this.handleScrollEnd, 100)
+  }
+
+  handleScrollEnd = () => {
+    this.checkScrollPosition()
+    this.scrollEndTimeout = undefined
   }
 
   checkScrollPosition() {
     const atTop  = this.getScrollTop() === 0
+    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+
+    if (atTop && immersive) {
+      body.class('at-top')
+    } else {
+      body.removeClass('at-top')
+    }
+
     if (atTop) {
       this.mastheadElem.class('at-top')
     } else {
       this.mastheadElem.removeClass('at-top')
-    }
-
-    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
-    const immersiveAtTop = (immersive && atTop)
-
-    if (immersiveAtTop) {
-      body.class('at-top')
-    } else {
-      body.removeClass('at-top')
     }
   }
 
