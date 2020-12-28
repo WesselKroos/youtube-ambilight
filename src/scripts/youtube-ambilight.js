@@ -270,6 +270,7 @@ class Ambilight {
       })
 
     document.addEventListener('visibilitychange', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       if(document.visibilityState !== 'hidden') return
 
       this.buffersCleared = true
@@ -303,11 +304,13 @@ class Ambilight {
     })
 
     this.bodyResizeObserver = new ResizeObserver(getSafeFunction(entries => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.handleVideoResize()
     }))
     this.bodyResizeObserver.observe(document.body)
 
     this.videoResizeObserver = new ResizeObserver(getSafeFunction(entries => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.handleVideoResize(false)
     }))
     this.videoResizeObserver.observe(this.videoElem)
@@ -2058,10 +2061,7 @@ class Ambilight {
   }
 
   drawAmbilight() {
-    if (
-      !this.enabled ||
-      !this.isOnVideoPage
-    ) return
+    if (!this.enabled || !this.isOnVideoPage) return
 
     if (
       this.isVR ||
