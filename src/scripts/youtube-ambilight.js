@@ -299,6 +299,14 @@ class Ambilight {
       const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
         const mutation = mutationsList[0]
         const classList = mutation.target.classList
+
+        const isBuffering = classList.contains('buffering-mode')
+        if(isBuffering !== this.isBuffering) {
+          this.isBuffering = isBuffering
+          if(!this.isBuffering)
+            this.scheduleNextFrame()
+        }
+        
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
           // classList.contains('unstarted-mode')  || // Unstarted is not hidden? Causes initial render without ambilight
@@ -1835,7 +1843,8 @@ class Ambilight {
       if(
         this.videoElem.ended ||
         this.videoElem.paused ||
-        this.videoElem.seeking
+        this.videoElem.seeking ||
+        this.isBuffering
       ) {
         return;
       }
@@ -2042,8 +2051,8 @@ class Ambilight {
       this.isVideoHiddenOnWatchPage || 
       this.isAmbilightHiddenOnWatchPage ||
       this.videoElem.ended || 
-      this.videoElem.readyState === 0 || 
-      this.videoElem.readyState === 1
+      this.videoElem.readyState === 0 || // HAVE_NOTHING
+      this.videoElem.readyState === 1    // HAVE_METADATA
     ) return
 
     //performance.mark('start-drawing')
@@ -2141,93 +2150,97 @@ class Ambilight {
         this.initVideoOverlayWithFrameBlending()
       }
 
-      if (hasNewFrame || this.buffersCleared) {
-        if (this.videoOverlayEnabled) {
-          this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-          this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
-            0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
-          if(this.buffersCleared) {
+      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambilightFrameRate
+      if(hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
+
+        if (hasNewFrame || this.buffersCleared) {
+          if (this.videoOverlayEnabled) {
             this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
+            this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
+              0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
+            if(this.buffersCleared) {
+              this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
+            }
+          }
+          if(!this.buffersCleared) {
+            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+          }
+          // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
+          this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+          this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
+            0,
+            this.videoSnapshotBufferBarsClipPx,
+            this.videoSnapshotBuffer.elem.width,
+            this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
+            0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+          if(this.buffersCleared) {
+            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
           }
         }
-        if(!this.buffersCleared) {
-          this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+
+        let alpha =  1
+        const ambilightFrameDuration = 1000 / this.ambilightFrameRate
+        if(hasNewFrame) {
+          this.frameBlendingFrameTimeStart = drawTime - (ambilightFrameDuration / 2)
         }
-        // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
-        this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-        this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
-          0,
-          this.videoSnapshotBufferBarsClipPx,
-          this.videoSnapshotBuffer.elem.width,
-          this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
-          0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-        if(this.buffersCleared) {
-          this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-        }
-      }
-      let alpha =  1
-      const ambilightFrameDuration = 1000 / this.ambilightFrameRate
-      if(hasNewFrame) {
-        this.frameBlendingFrameTimeStart = drawTime - (ambilightFrameDuration / 2)
-      }
-      if(this.displayFrameRate >= this.videoFrameRate * 1.33) {
-        if(hasNewFrame && !this.previousDrawFullAlpha) {
-          alpha = 0 // Show previous frame fully to prevent seams
-        } else {
-          const videoFrameDuration = 1000 / this.videoFrameRate
-          const frameToDrawDuration = drawTime - this.frameBlendingFrameTimeStart
-          const frameToDrawDurationThresshold = (frameToDrawDuration + (ambilightFrameDuration / 2)) / (this.frameBlendingSmoothness / 100)
-          // console.log(frameToDrawDurationThresshold, frameToDrawDuration, ambilightFrameDuration, videoFrameDuration)
-          if (frameToDrawDurationThresshold < videoFrameDuration) {
-            alpha = Math.min(1, (
-              frameToDrawDuration / (
-                1000 / (
-                  this.videoFrameRate / 
-                  (this.frameBlendingSmoothness / 100) || 1
+        if(this.displayFrameRate >= this.videoFrameRate * 1.33) {
+          if(hasNewFrame && !this.previousDrawFullAlpha) {
+            alpha = 0 // Show previous frame fully to prevent seams
+          } else {
+            const videoFrameDuration = 1000 / this.videoFrameRate
+            const frameToDrawDuration = drawTime - this.frameBlendingFrameTimeStart
+            const frameToDrawDurationThresshold = (frameToDrawDuration + (ambilightFrameDuration / 2)) / (this.frameBlendingSmoothness / 100)
+            // console.log(frameToDrawDurationThresshold, frameToDrawDuration, ambilightFrameDuration, videoFrameDuration)
+            if (frameToDrawDurationThresshold < videoFrameDuration) {
+              alpha = Math.min(1, (
+                frameToDrawDuration / (
+                  1000 / (
+                    this.videoFrameRate / 
+                    (this.frameBlendingSmoothness / 100) || 1
+                  )
                 )
-              )
-            ))
+              ))
+            }
           }
         }
+        if(alpha === 1) {
+          this.previousDrawFullAlpha = true
+        } else {
+          this.previousDrawFullAlpha = false
+        }
+        // console.log(hasNewFrame, this.buffersCleared, alpha)
 
-      }
-      if(alpha === 1) {
-        this.previousDrawFullAlpha = true
-      } else {
-        this.previousDrawFullAlpha = false
-      }
-      // console.log(hasNewFrame, this.buffersCleared, alpha)
-
-      if (this.videoOverlayEnabled && this.videoOverlay) {
-        if(alpha !== 1) {
-          if(this.videoOverlay.ctx.globalAlpha !== 1) {
-            this.videoOverlay.ctx.globalAlpha = 1
+        if (this.videoOverlayEnabled && this.videoOverlay) {
+          if(alpha !== 1) {
+            if(this.videoOverlay.ctx.globalAlpha !== 1) {
+              this.videoOverlay.ctx.globalAlpha = 1
+            }
+            this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
           }
-          this.videoOverlay.ctx.drawImage(this.previousVideoOverlayBuffer.elem, 0, 0)
+          if(alpha > 0.005) {
+            this.videoOverlay.ctx.globalAlpha = alpha
+            this.videoOverlay.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
+          }
+          this.videoOverlay.ctx.globalAlpha = 1
+        }
+
+        //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
+        //this.previousProjectorBuffer can also contain an old frame
+        
+        if(alpha !== 1) {
+          if(this.blendedProjectorBuffer.ctx.globalAlpha !== 1)
+            this.blendedProjectorBuffer.ctx.globalAlpha = 1
+          this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
         }
         if(alpha > 0.005) {
-          this.videoOverlay.ctx.globalAlpha = alpha
-          this.videoOverlay.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
+          this.blendedProjectorBuffer.ctx.globalAlpha = alpha
+          this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
         }
-        this.videoOverlay.ctx.globalAlpha = 1
-      }
+        this.blendedProjectorBuffer.ctx.globalAlpha = 1
 
-      //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
-      //this.previousProjectorBuffer can also contain an old frame
-      
-      if(alpha !== 1) {
-        if(this.blendedProjectorBuffer.ctx.globalAlpha !== 1)
-          this.blendedProjectorBuffer.ctx.globalAlpha = 1
-        this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
-      }
-      if(alpha > 0.005) {
-        this.blendedProjectorBuffer.ctx.globalAlpha = alpha
-        this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-      }
-      this.blendedProjectorBuffer.ctx.globalAlpha = 1
-
-      for(const projector of this.projectors) {
-        projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
+        for(const projector of this.projectors) {
+          projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
+        }
       }
     } else {
       if (!hasNewFrame) return
@@ -2338,7 +2351,7 @@ class Ambilight {
       aboveThreshold = droppedFramesCount > droppedFramesThreshold
     }
 
-    const hide = this.videoElem.paused || this.videoElem.seeking || aboveThreshold
+    const hide = this.buffersCleared || this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
     if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.class('ambilight__video-overlay--hide')
@@ -2483,6 +2496,8 @@ class Ambilight {
     this.showedDetectHorizontalBarSizeWarning = false
     this.requestVideoFrameCallbackId = undefined
     this.nextFrameTime = undefined
+    this.buffersCleared = true
+    this.sizesInvalidated = true
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
@@ -2878,9 +2893,7 @@ class Ambilight {
                 this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
             } else {
-              if(this.videoElem.paused) {
-                this.start()
-              }
+              this.scheduleNextFrame()  
             }
             if(inputElem.dontResetControlledSetting) {
               delete inputElem.dontResetControlledSetting
