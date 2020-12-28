@@ -216,35 +216,59 @@ class Ambilight {
   }
 
   initListeners() {
+    ////// PLAYER FLOW
+    //
+    // LEGEND
+    //
+    // [  Start
+    // ]  End
+    // *  When drawImage is called
+    //
+    // FLOWS
+    //
+    // Start from previous video:    [ emptied 2x -> play    ->                               *loadeddata -> canplay -> *playing ]
+    // Start:                                      [ play    ->                               *loadeddata -> canplay -> *playing ]
+    // Video src change (paused):    [    emptied ->                               *seeked ->  loadeddata -> canplay ]
+    // Video src change (playing):   [    emptied -> play                                     *loadeddata -> canplay -> *playing ]
+    // Quality change (paused):      [    emptied ->            seeking ->         *seeked ->  loadeddata -> canplay ]
+    // Quality change (playing):     [    emptied -> play    -> seeking ->          seeked -> *loadeddata -> canplay -> *playing ]
+    // Seek (paused):                                         [ seeking ->         *seeked ->                canplay ]
+    // Seek (playing):                             [ pause   -> seeking -> play ->  seeked ->                canplay -> *playing ]
+    // Play:                                                             [ play ->                                      *playing ]
+    // Load more data (playing):                   [ waiting ->                                              canplay -> *playing ]
+    // End video:  [ pause -> ended ]
+    //
+    //////
+
     this.videoElem
-      .on('playing', () => {
-        // Prevent old video frame from being drawn
-        this.buffersCleared = true
-        this.sizesInvalidated = true
+      .on('seeked', () => {
+        this.buffersCleared = true // Prevent old frame from being drawn
+
+        if (!this.videoElem.paused) return // When not paused handled by [loadeddata] or [playing]
+        this.initGetImageDataAllowed() // src can be changed
+        this.sizesInvalidated = true // Prevent wrong size from being used
+        this.nextFrame()
+      })
+      .on('loadeddata', () => {
+        if (this.videoElem.paused) return // When paused handled by [seeked]
+        this.initGetImageDataAllowed() // src can be changed
         this.start()
       })
-      .on('canplay', () => {
-        this.initGetImageDataAllowed()
-        this.resetSettingsIfNeeded()
-        if(!this.videoElem.paused) return;
-
-        // Prevent old video frame from being drawn
-        this.clear()
+      .on('playing', () => {
+        if (this.videoElem.paused) return // When paused handled by [seeked]
         this.scheduleNextFrame()
-      })
-      .on('error', (ex) => {
-        console.error('Video error:', ex)
-        this.resetSettingsIfNeeded()
-        this.clear()
       })
       .on('ended', () => {
         this.clear()
-        this.resetVideoContainerStyle()
+        this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
       })
       .on('emptied', () => {
-        this.resetSettingsIfNeeded()
         this.clear()
+        this.resetSettingsIfNeeded()
         this.ambilightVideoDroppedFrameCount = 0
+      })
+      .on('error', (ex) => {
+        console.error('Video error:', ex)
       })
 
     document.addEventListener('visibilitychange', () => {
