@@ -299,10 +299,7 @@ html[data-ambilight-enabled="true"] {
   }
   &[dark="true"] {
     ytd-app[is-watch-page] {
-      #playlist yt-icon {
-        fill: rgba(255, 255, 255, 0.882) !important;
-      }
-      #playlist a,
+      #playlist #header-description a,
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
         color: rgba(255, 255, 255, 0.882) !important;
