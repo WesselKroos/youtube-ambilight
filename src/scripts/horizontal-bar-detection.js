@@ -16,27 +16,54 @@ const workerCode = function () {
     } catch(ex) { console.warn(ex) }
   }
 
+  let id;
   let catchedWorkerCreationError = false
+  let canvas;
+  let ctx;
+  let imageVLines = []
+  let imageVLinesIndex = 0
+  let partSize = 1
+  let throttle = 0
+  let getLineImageDataStack;
+  let getLineImageDataResolve;
+  let getLineImageDataReject;
+
+  function getLineImageData() {
+    const start = performance.now()
+    try {
+      imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
+      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      getLineImageDataResolve()
+    } catch(ex) {
+      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      appendErrorStack(getLineImageDataStack, ex)
+      getLineImageDataReject(ex)
+    }
+  }
+
+  function getLineImageDataPromise(resolve, reject) {
+    getLineImageDataResolve = resolve
+    getLineImageDataReject = reject
+    setTimeout(getLineImageData, throttle)
+  }
+
+  let averageSize = 0;
+  function sortSizes(a, b) {
+    const aGap = Math.abs(averageSize - a)
+    const bGap = Math.abs(averageSize - b)
+    return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
+  }
 
   try {
-    let throttle = 0
-    const workerDetectHorizontalBarSize = async (id, buffer, detectColored, offsetPercentage, clipPercentage) => {
-      const imageVLines = []
-      let partSize = Math.ceil(buffer.canvas.width / 6)
-      for (let i = (partSize - 1); i < buffer.canvas.width; i += partSize) {
-        const stack = new Error().stack
-        await new Promise((resolve, reject) => setTimeout(function getBufferImageData() {
-          const start = performance.now()
-          try {
-            imageVLines.push(buffer.ctx.getImageData(i, 0, 1, buffer.canvas.height).data)
-            throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            resolve()
-          } catch(ex) {
-            throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            appendErrorStack(stack, ex)
-            reject(ex)
-          }
-        }, throttle)) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+    const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, clipPercentage) => {
+      imageVLines.length = 0
+
+      partSize = Math.ceil(canvas.width / 6)
+      for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
+        if(!getLineImageDataStack) {
+          getLineImageDataStack = new Error().stack
+        }
+        await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
       }
     
       const channels = 4
@@ -97,12 +124,8 @@ const workerCode = function () {
         return
       }
     
-      const averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      sizes = sizes.sort((a, b) => {
-        const aGap = Math.abs(averageSize - a)
-        const bGap = Math.abs(averageSize - b)
-        return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
-      }).splice(0, 6)
+      averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+      sizes = sizes.sort(sortSizes).splice(0, 6)
       const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
       const height = (imageVLines[0].length / channels)
       const allowed = height * 0.01
@@ -139,17 +162,12 @@ const workerCode = function () {
         return
       }
     
+      imageVLines.length = 0
       return percentage
     }
     
-    let canvas;
-    let ctx;
-    
-    // let canvas2;
-    // let ctx2;
-    
     this.onmessage = async (e) => {
-      const id = e.data.id
+      id = e.data.id
       try {
         const detectColored = e.data.detectColored
         const offsetPercentage = e.data.offsetPercentage
@@ -193,11 +211,6 @@ const workerCode = function () {
         // ctx.drawImage(canvas2, 0, 0)
         
         const percentage = await workerDetectHorizontalBarSize(
-          id,
-          {
-            canvas,
-            ctx
-          },
           detectColored, 
           offsetPercentage, 
           clipPercentage
