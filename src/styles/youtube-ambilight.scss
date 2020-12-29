@@ -1151,9 +1151,9 @@ html[data-ambilight-enabled="true"] {
     height: 100%;
     left: 0;
     top: 0;
-    content: var(--ambilight-after-content, none);
-    background: var(--ambilight-after-background, none);
-    opacity: var(--ambilight-after-opacity, 0);
+    content: var(--ambilight-debanding-content, none);
+    background: var(--ambilight-debanding-background, none);
+    opacity: var(--ambilight-debanding-opacity, 0);
   }
 
  .html5-video-player {

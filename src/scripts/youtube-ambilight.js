@@ -243,7 +243,7 @@ class Ambilight {
         this.buffersCleared = true // Prevent old frame from being drawn
 
         if (!this.videoElem.paused) return // When not paused handled by [loadeddata] or [playing]
-        this.initGetImageDataAllowed() // src can be changed
+        this.initGetImageDataAllowed() // src can be changed before the [loadeddata] event
         this.sizesInvalidated = true // Prevent wrong size from being used
         this.nextFrame()
       })
@@ -1521,11 +1521,11 @@ class Ambilight {
     document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
     document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
-    document.body.style.setProperty('--ambilight-after-content', 
+    document.body.style.setProperty('--ambilight-debanding-content', 
       debandingStrength ? `''` : '')
-    document.body.style.setProperty('--ambilight-after-background', 
+    document.body.style.setProperty('--ambilight-debanding-background', 
       debandingStrength ? `url('${baseurl}images/noise-${noiseImageIndex}.png')` : '')
-    document.body.style.setProperty('--ambilight-after-opacity', 
+    document.body.style.setProperty('--ambilight-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
 
     document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
@@ -2156,6 +2156,9 @@ class Ambilight {
           //performance.mark('comparing-compare-end')
 
           if (hasNewFrame) {
+            if(this.oldLines) {
+              this.oldLines.length = 0 // Free memory
+            }
             this.oldLines = lines
           }
         }
