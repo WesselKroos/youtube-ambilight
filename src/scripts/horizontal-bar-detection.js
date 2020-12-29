@@ -56,8 +56,6 @@ const workerCode = function () {
 
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, clipPercentage) => {
-      imageVLines.length = 0
-
       partSize = Math.ceil(canvas.width / 6)
       for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
@@ -65,6 +63,8 @@ const workerCode = function () {
         }
         await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
       }
+      getLineImageDataResolve = undefined
+      getLineImageDataReject = undefined
     
       const channels = 4
       let sizes = []
@@ -120,6 +120,9 @@ const workerCode = function () {
           break;
         }
       }
+      const height = (imageVLines[0].length / channels)
+      imageVLines.length = 0
+
       if(!sizes.length) {
         return
       }
@@ -127,7 +130,6 @@ const workerCode = function () {
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
       sizes = sizes.sort(sortSizes).splice(0, 6)
       const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
-      const height = (imageVLines[0].length / channels)
       const allowed = height * 0.01
       const valid = (maxDeviation <= allowed)
       
@@ -162,7 +164,6 @@ const workerCode = function () {
         return
       }
     
-      imageVLines.length = 0
       return percentage
     }
     
@@ -215,6 +216,7 @@ const workerCode = function () {
           offsetPercentage, 
           clipPercentage
         )
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
       
         this.postMessage({ 
           id,
