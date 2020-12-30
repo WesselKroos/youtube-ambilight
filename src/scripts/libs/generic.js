@@ -3,33 +3,33 @@ export const setErrorHandler = (handler) => {
   errorHandler = handler
 }
 
-const safeFunctionErrorHandler = (stack, ex) => {
+const wrapErrorHandlerHandleError = (stack, ex) => {
   appendErrorStack(stack, ex)
   if(errorHandler)
     errorHandler(ex)
 }
 
-export const getSafeFunction = (callback) => {
+export const wrapErrorHandler = (callback) => {
   const stack = new Error().stack
   return (callback.constructor.name === 'AsyncFunction')
-    ? async function safeFunction(...args) {
+    ? async function withAsyncErrorHandler(...args) {
       try {
         return await callback(...args)
       } catch(ex) {
-        safeFunctionErrorHandler(stack, ex)
+        wrapErrorHandlerHandleError(stack, ex)
       }
     }
-    : function safeFunction(...args) {
+    : function withErrorHandler(...args) {
       try {
         return callback(...args)
       } catch(ex) {
-        safeFunctionErrorHandler(stack, ex)
+        wrapErrorHandlerHandleError(stack, ex)
       }
     }
 }
 
 export const setTimeout = (handler, timeout) => {
-  return window.setTimeout(getSafeFunction(handler), timeout)
+  return window.setTimeout(wrapErrorHandler(handler), timeout)
 }
 
 HTMLElement.prototype.attr = function (name, value) {
@@ -128,7 +128,7 @@ HTMLElement.prototype.offset = function () {
 export const html = document.querySelector('html')
 export const body = document.body
 
-export const raf = (callback) => (requestAnimationFrame || webkitRequestAnimationFrame)(getSafeFunction(callback))
+export const raf = (callback) => (requestAnimationFrame || webkitRequestAnimationFrame)(wrapErrorHandler(callback))
 
 export const ctxOptions = {
   alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
@@ -154,7 +154,7 @@ export const waitForDomElement = (check, containerSelector, callback) => {
   if (check()) {
     callback()
   } else {
-    const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
+    const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
       if (!check()) return
       observer.disconnect()
       callback()
@@ -195,9 +195,9 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export const requestIdleCallback = (window.requestIdleCallback)
-  ? function requestIdleCallback(callback, options) { return window.requestIdleCallback(getSafeFunction(callback), options) }
-  : function setTimeout(callback) { return setTimeout(getSafeFunction(callback), 0) }
+export const requestIdleCallback = function requestIdleCallback(callback, options) {
+  return window.requestIdleCallback(wrapErrorHandler(callback), options)
+}
 
 export const appendErrorStack = (stack, ex) => {
   try {

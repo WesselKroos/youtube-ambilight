@@ -1,8 +1,6 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback } from './libs/generic'
+import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import { workerFromCode } from './libs/worker'
-
-let catchedDetectHorizontalBarSizeError = false
 
 const workerCode = function () {
   // Cannot access appendErrorStack in import from a worker
@@ -241,11 +239,12 @@ const workerCode = function () {
 }
 
 let worker
-
 let workerMessageId = 0
 let busy = false
 let canvas;
 let ctx;
+let catchedDetectHorizontalBarSizeError = false
+let detectHorizontalBarSizeArguments;
 
 const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPercentage, callback) => {
   if(busy) return
@@ -264,73 +263,91 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     }
   }
 
-  requestIdleCallback(async () => {
-    try {
-      const start = performance.now()
+  detectHorizontalBarSizeArguments = {
+    buffer,
+    detectColored,
+    offsetPercentage,
+    clipPercentage,
+    callback
+  }
 
-      if(!canvas) {
-        canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-        ctx = canvas.getContext('2d', {
-          alpha: false,
-          desynchronized: true
-        })
-        ctx.imageSmoothingEnabled = false
-      }
+  requestIdleCallback(wrapErrorHandler(detectHorizontalBarSizeCallback), { timeout: 1000 })
+}
 
-      ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
-      const canvasInfo = worker.isFallbackWorker ? {
-        canvas,
-        ctx
-      } : {
-        bitmap: canvas.transferToImageBitmap()
-      }
+const detectHorizontalBarSizeCallback = async () => {
+  const {
+    buffer,
+    detectColored,
+    offsetPercentage,
+    clipPercentage,
+    callback
+  } = detectHorizontalBarSizeArguments
 
-      workerMessageId++;
-      const stack = new Error().stack
-      const onMessagePromise = new Promise((resolve, reject) => {
-        worker.onerror = (err) => reject(err)
-        worker.onmessage = (e) => {
-          try {
-            if(e.data.id !== workerMessageId) {
-              console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
-              return
-            }
-            if(e.data.error) {
-              // Readable name for the worker script
-              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
-              appendErrorStack(stack, e.data.error)
-              throw e.data.error
-            }
-            callback(e.data.percentage)
-            resolve()
-          } catch(ex) {
-            reject(ex)
-          }
-        }
+  try {
+    const start = performance.now()
+
+    if(!canvas) {
+      canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+      ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true
       })
-      worker.postMessage(
-        {
-          id: workerMessageId,
-          canvasInfo,
-          detectColored,
-          offsetPercentage,
-          clipPercentage
-        }, 
-        canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
-      )
-      await onMessagePromise;
-
-      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
-      setTimeout(() => {
-        busy = false
-      }, throttle)
-    } catch(ex) {
-      if (!catchedDetectHorizontalBarSizeError) {
-        catchedDetectHorizontalBarSizeError = true
-        throw ex
-      }
+      ctx.imageSmoothingEnabled = false
     }
-  }, { timeout: 1000 })
+
+    ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
+    const canvasInfo = worker.isFallbackWorker ? {
+      canvas,
+      ctx
+    } : {
+      bitmap: canvas.transferToImageBitmap()
+    }
+
+    workerMessageId++;
+    const stack = new Error().stack
+    const onMessagePromise = new Promise((resolve, reject) => {
+      worker.onerror = (err) => reject(err)
+      worker.onmessage = (e) => {
+        try {
+          if(e.data.id !== workerMessageId) {
+            console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
+            return
+          }
+          if(e.data.error) {
+            // Readable name for the worker script
+            e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
+            appendErrorStack(stack, e.data.error)
+            throw e.data.error
+          }
+          callback(e.data.percentage)
+          resolve()
+        } catch(ex) {
+          reject(ex)
+        }
+      }
+    })
+    worker.postMessage(
+      {
+        id: workerMessageId,
+        canvasInfo,
+        detectColored,
+        offsetPercentage,
+        clipPercentage
+      }, 
+      canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
+    )
+    await onMessagePromise;
+
+    const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+    setTimeout(() => {
+      busy = false
+    }, throttle)
+  } catch(ex) {
+    if (!catchedDetectHorizontalBarSizeError) {
+      catchedDetectHorizontalBarSizeError = true
+      throw ex
+    }
+  }
 }
 
 export default detectHorizontalBarSize
