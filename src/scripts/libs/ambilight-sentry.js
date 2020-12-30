@@ -25,6 +25,7 @@ initAndBind(BrowserClient, {
           for(const frame of value.stacktrace.frames) {
             frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
             frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
+            frame.filename = frame.filename.replace(/\/s\/player\/[a-z|0-9]+?\//g, '/s/player/_hash_/')
           }
         }
       }
@@ -125,7 +126,7 @@ export default class AmbilightSentry {
       }
 
       try {
-        const videoElem = document.querySelector('video')
+        const videoElem = $.s('video')
         if (videoElem) {
           let keys = []
           for(let i = 0, obj = videoElem; i <= 1; i++) {
@@ -147,7 +148,23 @@ export default class AmbilightSentry {
         }
       } catch (ex) { 
         setExtra('videoElem.exception', ex)
-       }
+      }
+
+      try {
+        const videoPlayerElem = $.s('#movie_player')
+        if (videoPlayerElem) {
+          const stats = videoPlayerElem.getStatsForNerds()
+          Object.keys(stats)
+            .filter(key => (
+              key.includes('_style') ||
+              key === 'video_id_and_cpn'
+            ))
+            .forEach(key => delete stats[key])
+          setExtra('videoPlayerElem.stats', stats)
+        }
+      } catch (ex) { 
+        setExtra('videoPlayerElem.exception', ex)
+      }
 
       let ambilightExtra = {}
       try {

@@ -1158,8 +1158,6 @@ class Ambilight {
   }
 
   clear() {
-    ambilightSetVideoInfo()
-
     // Clear canvasses
     const canvasses = [
       this.videoSnapshotBuffer,
@@ -3146,76 +3144,6 @@ class Ambilight {
     }
   }
 }
-
-const ambilightSetVideoInfo = () => {
-  window.currentVideoInfo = {
-    mimeType: {
-      available: [],
-      current: {
-        video: undefined,
-        audio: undefined
-      }
-    }
-  }
-}
-const ambilightDetectVideoInfo = () => {
-  try {
-    const saveStreamingData = () => {
-      try {
-        if(!ytplayer.config || !ytplayer.config.args || !ytplayer.config.args.player_response) return
-
-        const videoInfo = window.currentVideoInfo
-        const streamingData = (JSON.parse(ytplayer.config.args.player_response).streamingData)
-        if(streamingData.formats)
-          streamingData.formats.forEach(format => {
-            if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
-            videoInfo.mimeType.available.push(format.mimeType)
-          })
-        if(streamingData.adaptiveFormats)
-          streamingData.adaptiveFormats.forEach(format => {
-            if(!videoInfo.mimeType.available.find(mimeType => mimeType === format.mimeType))
-            videoInfo.mimeType.available.push(format.mimeType)
-          })
-      } catch(ex) { 
-        console.warn('YouTube Ambilight | ambilightDetectVideoInfo | saveStreamingData:', ex.message)
-      }
-    };
-
-    var origOpen = XMLHttpRequest.prototype.open
-    XMLHttpRequest.prototype.open = function() {
-      this.addEventListener('load', function() {
-        try {
-          const querystring = new URLSearchParams(this.responseURL.substr(this.responseURL.indexOf('?') + 1))
-          const mime = querystring.get('mime')
-          if(!mime) return
-
-          const videoInfo = window.currentVideoInfo
-
-          if(mime.indexOf('video') === 0) {
-            if(videoInfo.mimeType.current.video !== mime)
-            videoInfo.mimeType.current.video = mime
-          } else if(mime.indexOf('audio') === 0) {
-            if(videoInfo.mimeType.current.audio !== mime)
-            videoInfo.mimeType.current.audio = mime
-          }
-          saveStreamingData()
-        } catch (ex) {
-          console.warn('YouTube Ambilight | ambilightDetectVideoInfo | load:', ex.message)
-          //AmbilightSentry.captureExceptionWithDetails(ex)
-        }
-      })
-      origOpen.apply(this, arguments)
-    }
-
-    saveStreamingData()
-  } catch (ex) {
-    console.warn('YouTube Ambilight | ambilightDetectVideoInfo:', ex.message)
-    //AmbilightSentry.captureExceptionWithDetails(ex)
-  }
-}
-ambilightSetVideoInfo()
-ambilightDetectVideoInfo()
-
 
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
