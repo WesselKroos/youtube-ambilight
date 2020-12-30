@@ -2619,15 +2619,17 @@ class Ambilight {
     if (this.scrollEndTimeout) {
       clearTimeout(this.scrollEndTimeout)
     } else {
-      this.checkScrollPosition()
+      setTimeout(() => {
+        this.checkScrollPosition()
+      }, 1)
     }
 
-    this.scrollEndTimeout = setTimeout(this.handleScrollEnd, 100)
+    this.scrollEndTimeout = setTimeout(this.handleScrollEnd, 200)
   }
 
   handleScrollEnd = () => {
-    this.checkScrollPosition()
     this.scrollEndTimeout = undefined
+    this.checkScrollPosition()
   }
 
   checkScrollPosition() {
