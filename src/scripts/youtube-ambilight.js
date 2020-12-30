@@ -88,6 +88,8 @@ class Ambilight {
   initVideoElem(videoElem) {
     this.videoElem = videoElem
     this.applyChromiumBug1142112Workaround()
+
+    this.videoPlayerElem = $.s('.html5-video-player')
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -326,18 +328,18 @@ class Ambilight {
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
-    const videoPlayer = $.s('.html5-video-player')
-    if (videoPlayer) {
+    if (this.videoPlayerElem) {
+      this.videoPlayerElem.addEventListener('onStateChange', getSafeFunction((state) => {
+        this.isBuffering = (state === 3)
+
+        if(!this.isBuffering)
+          this.scheduleNextFrame()
+      }))
+      this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
+
       const observer = new MutationObserver(getSafeFunction((mutationsList, observer) => {
         const mutation = mutationsList[0]
         const classList = mutation.target.classList
-
-        const isBuffering = classList.contains('buffering-mode')
-        if(isBuffering !== this.isBuffering) {
-          this.isBuffering = isBuffering
-          if(!this.isBuffering)
-            this.scheduleNextFrame()
-        }
         
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
@@ -356,7 +358,7 @@ class Ambilight {
         this.resetVideoContainerStyle()
       }))
     
-      observer.observe(videoPlayer, {
+      observer.observe(this.videoPlayerElem, {
         attributes: true,
         attributeOldValue: true,
         attributeFilter: ['class']
@@ -1189,13 +1191,12 @@ class Ambilight {
   detectVideoFillScale() {
     let videoScale = 100
     if(this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
-      const videoContainer = this.videoElem.closest('.html5-video-player')
-      if(videoContainer) {
+      if(this.videoPlayerElem) {
         const videoScaleY = (100 - (this.horizontalBarsClipPercentage * 2)) / 100
         const videoWidth = this.videoElem.offsetWidth
         const videoHeight = this.videoElem.offsetHeight * videoScaleY
-        const containerWidth = videoContainer.offsetWidth
-        const containerHeight = videoContainer.offsetHeight
+        const containerWidth = this.videoPlayerElem.offsetWidth
+        const containerHeight = this.videoPlayerElem.offsetHeight
         const scaleX = containerWidth / videoWidth
         const scaleY = containerHeight / videoHeight
 
@@ -1226,21 +1227,20 @@ class Ambilight {
         this.detectVideoFillScale()
       }
 
-      const playerElem = $.s('.html5-video-player')
       const flexyElem = $.s('ytd-watch-flexy')
       const pageElem = $.s('#page')
       this.isVR = !!$.s('.ytp-webgl-spherical')
 
-      if(playerElem) {
+      if(this.videoPlayerElem) {
         const prevView = this.view
-        if(playerElem.classList.contains('ytp-fullscreen'))
+        if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
           this.view = this.VIEW_FULLSCREEN
         else if(
           (flexyElem && flexyElem.attr('theater') !== null) ||
           (pageElem && pageElem.classList.contains('watch-stage-mode'))
         )
           this.view = this.VIEW_THEATER
-        else if(playerElem.classList.contains('ytp-player-minimized'))
+        else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
           this.view = this.VIEW_POPUP
         else
           this.view = this.VIEW_SMALL
@@ -1271,8 +1271,8 @@ class Ambilight {
         !this.enabled ||
         this.isVR ||
         !videoElemParentElem ||
-        !playerElem ||
-        playerElem.classList.contains('ytp-player-minimized') ||
+        !this.videoPlayerElem ||
+        this.videoPlayerElem.classList.contains('ytp-player-minimized') ||
         (this.isFullscreen && !this.enableInFullscreen)
       )
       if (notVisible || noClipOrScale) {
@@ -1775,8 +1775,7 @@ class Ambilight {
   scheduleNextFrame() {
     try {
       if (
-        !this.enabled || 
-        !this.isOnVideoPage ||
+        !this.canScheduleNextFrame() ||
         this.scheduledNextFrame
       ) return
 
@@ -1833,6 +1832,16 @@ class Ambilight {
     this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / this.framerateLimit), time)
   }
 
+  canScheduleNextFrame = () => (!(
+    !this.enabled ||
+    !this.isOnVideoPage ||
+    this.videoElem.ended ||
+    this.videoElem.paused ||
+    this.videoElem.seeking ||
+    // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
+    this.isAmbilightHiddenOnWatchPage
+  ))
+
   nextFrame = () => {
     try {
       let delayedCheckVideoSizeAndPosition = false
@@ -1872,13 +1881,7 @@ class Ambilight {
         this.checkIfNeedToHideVideoOverlay()
       }
 
-      if(
-        this.videoElem.ended ||
-        this.videoElem.paused ||
-        this.videoElem.seeking ||
-        this.isBuffering ||
-        this.isAmbilightHiddenOnWatchPage
-      ) {
+      if(!this.canScheduleNextFrame() || this.isBuffering) {
         return;
       }
 
@@ -2545,11 +2548,12 @@ class Ambilight {
 
   scheduleRequestVideoFrame = () => {
     if (
-      this.videoFrameCallbackReceived ||
+      !this.canScheduleNextFrame() ||
+      
+      // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
       this.requestVideoFrameCallbackId ||
       this.frameSync != 150 ||
-      !this.enabled ||
-      // this.videoElem.paused ||
+
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
@@ -2559,6 +2563,10 @@ class Ambilight {
   receiveVideoFrame = () => {
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
+
+     // Call here instead of in nextFrame() because new video detection 
+     // can be to slow when the video framerate matches the display framerate
+    this.scheduleRequestVideoFrame()
   }
 
   hide() {
@@ -2781,7 +2789,7 @@ class Ambilight {
         }
       })
     })
-    this.settingsMenuElemParent = $.s('.html5-video-player')
+    this.settingsMenuElemParent = this.videoPlayerElem
     this.settingsMenuElem.prependTo(this.settingsMenuElemParent)
     try {
       this.settingsMenuElem.scrollTop = this.settingsMenuElem.scrollHeight
@@ -3039,9 +3047,8 @@ class Ambilight {
 
     this.settingsMenuBtn.attr('aria-expanded', true)
 
-    const playerElem = $.s('.html5-video-player')
-    if(playerElem) {
-      playerElem.classList.add('ytp-ambilight-settings-shown')
+    if(this.videoPlayerElem) {
+      this.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
     }
 
     this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
@@ -3064,9 +3071,8 @@ class Ambilight {
 
     this.settingsMenuBtn.attr('aria-expanded', false)
 
-    const playerElem = $.s('.html5-video-player')
-    if(playerElem) {
-      playerElem.classList.remove('ytp-ambilight-settings-shown')
+    if(this.videoPlayerElem) {
+      this.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
     }
 
     body.off('click', this.onCloseSettingsListener)
