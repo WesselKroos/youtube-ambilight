@@ -2564,9 +2564,14 @@ class Ambilight {
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
 
-     // Call here instead of in nextFrame() because new video detection 
-     // can be to slow when the video framerate matches the display framerate
-    this.scheduleRequestVideoFrame()
+    // Chromium issue: <todo>
+    //
+    // Call requestVideoFrameCallback immediately because the next callback sometimes 
+    // misses the next video frame when the video framerate matches the display framerate
+    // and requestVideoFrameCallback is called after drawing the ambilight canvas.
+    // Calling requestVideoFrameCallback immediately makes sure we always get the next 
+    // video frame as long as drawAmbilight is finished before the next video frame is presented.
+    this.videoElem.requestVideoFrameCallback(() => {})
   }
 
   hide() {
