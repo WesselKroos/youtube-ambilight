@@ -500,6 +500,15 @@ html[data-ambilight-enabled="true"] {
     border-radius: 1px;
     line-height: normal;
   }
+  .ytp-big-mode & {
+    &::after {
+      top: 15px;
+      right: 6px;
+      width: 21px;
+      height: 16px;
+      border-radius: 1.5px;
+    }
+  }
   
   svg {
     transition: transform .1s cubic-bezier(0.4,0.0,1,1);
