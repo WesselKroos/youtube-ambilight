@@ -502,11 +502,19 @@ html[data-ambilight-enabled="true"] {
   }
   .ytp-big-mode & {
     &::after {
+      content: 'AL';
       top: 15px;
       right: 6px;
-      width: 21px;
-      height: 16px;
+      padding: 2px 2.5px 2px 3.5px;
+      font-family: Verdana,sans-serif;
+      font-size: 10px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.6);
+      background-image: none;
       border-radius: 1.5px;
+      height: auto;
+      width: auto;
     }
   }
   
