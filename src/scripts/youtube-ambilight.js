@@ -521,7 +521,7 @@ class Ambilight {
       },
       {
         name: 'frameSync',
-        label: '<span style="display: inline-block; padding: 5px 0">Synchronization <a title="How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (!Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique." href="#" onclick="return false" style="padding: 0 5px;">?</a>',
+        label: '<span style="display: inline-block; padding: 5px 0">Synchronization <a title="How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique." href="#" onclick="return false" style="padding: 0 5px;">?</a>',
         type: 'list',
         default: 50,
         min: 0,
@@ -3018,7 +3018,7 @@ class Ambilight {
       if (setting.value == 100)
         return 'High Performance'
       if (setting.value == 150)
-        return 'Perfect (! Experimental)'
+        return 'Perfect (Experimental)'
     }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${setting.value} fps`
