@@ -226,8 +226,9 @@ class Ambilight {
     //
     // FLOWS
     //
-    // Start from previous video:    [ emptied 2x -> play    ->                               *loadeddata -> canplay -> *playing ]
-    // Start:                                      [ play    ->                               *loadeddata -> canplay -> *playing ]
+    // Start (paused):                                                                      [ *loadeddata -> canplay ]
+    // Start (playing):                            [ play    ->                               *loadeddata -> canplay -> *playing ]
+    // Start (from previous video):  [ emptied 2x -> play    ->                               *loadeddata -> canplay -> *playing ]
     // Video src change (paused):    [    emptied ->                               *seeked ->  loadeddata -> canplay ]
     // Video src change (playing):   [    emptied -> play                                     *loadeddata -> canplay -> *playing ]
     // Quality change (paused):      [    emptied ->            seeking ->         *seeked ->  loadeddata -> canplay ]
@@ -249,8 +250,8 @@ class Ambilight {
         this.sizesInvalidated = true // Prevent wrong size from being used
         this.nextFrame()
       })
-      .on('loadeddata', () => {
-        if (this.videoElem.paused) return // When paused handled by [seeked]
+      .on('loadeddata', (e) => {
+        // if (this.videoElem.paused) return // When paused handled by [seeked] except this is the first load in paused mode
         this.initGetImageDataAllowed() // src can be changed
         this.start()
       })
@@ -2535,7 +2536,7 @@ class Ambilight {
     }
     
     this.checkVideoSize(true)
-    this.scheduleNextFrame()
+    this.nextFrame()
   }
 
   scheduleRequestVideoFrame = () => {
