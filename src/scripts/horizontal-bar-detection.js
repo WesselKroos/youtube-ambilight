@@ -1,8 +1,6 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback } from './libs/generic'
+import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import { workerFromCode } from './libs/worker'
-
-let catchedDetectHorizontalBarSizeError = false
 
 const workerCode = function () {
   // Cannot access appendErrorStack in import from a worker
@@ -16,28 +14,55 @@ const workerCode = function () {
     } catch(ex) { console.warn(ex) }
   }
 
+  let id;
   let catchedWorkerCreationError = false
+  let canvas;
+  let ctx;
+  let imageVLines = []
+  let imageVLinesIndex = 0
+  let partSize = 1
+  let throttle = 0
+  let getLineImageDataStack;
+  let getLineImageDataResolve;
+  let getLineImageDataReject;
+
+  function getLineImageData() {
+    const start = performance.now()
+    try {
+      imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
+      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      getLineImageDataResolve()
+    } catch(ex) {
+      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      appendErrorStack(getLineImageDataStack, ex)
+      getLineImageDataReject(ex)
+    }
+  }
+
+  function getLineImageDataPromise(resolve, reject) {
+    getLineImageDataResolve = resolve
+    getLineImageDataReject = reject
+    setTimeout(getLineImageData, throttle)
+  }
+
+  let averageSize = 0;
+  function sortSizes(a, b) {
+    const aGap = Math.abs(averageSize - a)
+    const bGap = Math.abs(averageSize - b)
+    return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
+  }
 
   try {
-    let throttle = 0
-    const workerDetectHorizontalBarSize = async (id, buffer, detectColored, offsetPercentage, clipPercentage) => {
-      const imageVLines = []
-      let partSize = Math.ceil(buffer.canvas.width / 6)
-      for (let i = (partSize - 1); i < buffer.canvas.width; i += partSize) {
-        const stack = new Error().stack
-        await new Promise((resolve, reject) => setTimeout(function getBufferImageData() {
-          const start = performance.now()
-          try {
-            imageVLines.push(buffer.ctx.getImageData(i, 0, 1, buffer.canvas.height).data)
-            throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            resolve()
-          } catch(ex) {
-            throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
-            appendErrorStack(stack, ex)
-            reject(ex)
-          }
-        }, throttle)) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+    const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, clipPercentage) => {
+      partSize = Math.ceil(canvas.width / 6)
+      for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
+        if(!getLineImageDataStack) {
+          getLineImageDataStack = new Error().stack
+        }
+        await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
       }
+      getLineImageDataResolve = undefined
+      getLineImageDataReject = undefined
     
       const channels = 4
       let sizes = []
@@ -93,18 +118,16 @@ const workerCode = function () {
           break;
         }
       }
+      const height = (imageVLines[0].length / channels)
+      imageVLines.length = 0
+
       if(!sizes.length) {
         return
       }
     
-      const averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      sizes = sizes.sort((a, b) => {
-        const aGap = Math.abs(averageSize - a)
-        const bGap = Math.abs(averageSize - b)
-        return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
-      }).splice(0, 6)
+      averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+      sizes = sizes.sort(sortSizes).splice(0, 6)
       const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
-      const height = (imageVLines[0].length / channels)
       const allowed = height * 0.01
       const valid = (maxDeviation <= allowed)
       
@@ -142,14 +165,8 @@ const workerCode = function () {
       return percentage
     }
     
-    let canvas;
-    let ctx;
-    
-    // let canvas2;
-    // let ctx2;
-    
     this.onmessage = async (e) => {
-      const id = e.data.id
+      id = e.data.id
       try {
         const detectColored = e.data.detectColored
         const offsetPercentage = e.data.offsetPercentage
@@ -193,15 +210,11 @@ const workerCode = function () {
         // ctx.drawImage(canvas2, 0, 0)
         
         const percentage = await workerDetectHorizontalBarSize(
-          id,
-          {
-            canvas,
-            ctx
-          },
           detectColored, 
           offsetPercentage, 
           clipPercentage
         )
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
       
         this.postMessage({ 
           id,
@@ -226,11 +239,12 @@ const workerCode = function () {
 }
 
 let worker
-
 let workerMessageId = 0
 let busy = false
 let canvas;
 let ctx;
+let catchedDetectHorizontalBarSizeError = false
+let detectHorizontalBarSizeArguments;
 
 const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPercentage, callback) => {
   if(busy) return
@@ -249,73 +263,91 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     }
   }
 
-  requestIdleCallback(async () => {
-    try {
-      const start = performance.now()
+  detectHorizontalBarSizeArguments = {
+    buffer,
+    detectColored,
+    offsetPercentage,
+    clipPercentage,
+    callback
+  }
 
-      if(!canvas) {
-        canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-        ctx = canvas.getContext('2d', {
-          alpha: false,
-          desynchronized: true
-        })
-        ctx.imageSmoothingEnabled = false
-      }
+  requestIdleCallback(wrapErrorHandler(detectHorizontalBarSizeCallback), { timeout: 1000 })
+}
 
-      ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
-      const canvasInfo = worker.isFallbackWorker ? {
-        canvas,
-        ctx
-      } : {
-        bitmap: canvas.transferToImageBitmap()
-      }
+const detectHorizontalBarSizeCallback = async () => {
+  const {
+    buffer,
+    detectColored,
+    offsetPercentage,
+    clipPercentage,
+    callback
+  } = detectHorizontalBarSizeArguments
 
-      workerMessageId++;
-      const stack = new Error().stack
-      const onMessagePromise = new Promise((resolve, reject) => {
-        worker.onerror = (err) => reject(err)
-        worker.onmessage = (e) => {
-          try {
-            if(e.data.id !== workerMessageId) {
-              console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
-              return
-            }
-            if(e.data.error) {
-              // Readable name for the worker script
-              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
-              appendErrorStack(stack, e.data.error)
-              throw e.data.error
-            }
-            callback(e.data.percentage)
-            resolve()
-          } catch(ex) {
-            reject(ex)
-          }
-        }
+  try {
+    const start = performance.now()
+
+    if(!canvas) {
+      canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+      ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true
       })
-      worker.postMessage(
-        {
-          id: workerMessageId,
-          canvasInfo,
-          detectColored,
-          offsetPercentage,
-          clipPercentage
-        }, 
-        canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
-      )
-      await onMessagePromise;
-
-      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
-      setTimeout(() => {
-        busy = false
-      }, throttle)
-    } catch(ex) {
-      if (!catchedDetectHorizontalBarSizeError) {
-        catchedDetectHorizontalBarSizeError = true
-        throw ex
-      }
+      ctx.imageSmoothingEnabled = false
     }
-  }, { timeout: 1000 })
+
+    ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
+    const canvasInfo = worker.isFallbackWorker ? {
+      canvas,
+      ctx
+    } : {
+      bitmap: canvas.transferToImageBitmap()
+    }
+
+    workerMessageId++;
+    const stack = new Error().stack
+    const onMessagePromise = new Promise((resolve, reject) => {
+      worker.onerror = (err) => reject(err)
+      worker.onmessage = (e) => {
+        try {
+          if(e.data.id !== workerMessageId) {
+            console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
+            return
+          }
+          if(e.data.error) {
+            // Readable name for the worker script
+            e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
+            appendErrorStack(stack, e.data.error)
+            throw e.data.error
+          }
+          callback(e.data.percentage)
+          resolve()
+        } catch(ex) {
+          reject(ex)
+        }
+      }
+    })
+    worker.postMessage(
+      {
+        id: workerMessageId,
+        canvasInfo,
+        detectColored,
+        offsetPercentage,
+        clipPercentage
+      }, 
+      canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
+    )
+    await onMessagePromise;
+
+    const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+    setTimeout(() => {
+      busy = false
+    }, throttle)
+  } catch(ex) {
+    if (!catchedDetectHorizontalBarSizeError) {
+      catchedDetectHorizontalBarSizeError = true
+      throw ex
+    }
+  }
 }
 
 export default detectHorizontalBarSize

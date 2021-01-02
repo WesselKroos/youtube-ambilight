@@ -77,10 +77,10 @@ html[data-ambilight-enabled="true"] {
   }
   &[dark="true"] {
     // Make all card backgrounds transparent
-    --yt-spec-brand-background-solid: none;
+    // --yt-spec-brand-background-solid: none; // Causes transparent add-to-playlist popup on Firefox
     //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
     --yt-spec-brand-background-secondary: none;
-    // --yt-spec-general-background-a: none; // Causes menu on Firefox
+    // --yt-spec-general-background-a: none; // Causes transparent menu on Firefox
     --yt-spec-general-background-b: none;
     --yt-spec-general-background-c: none;
     --yt-spec-snackbar-background: none;
@@ -299,10 +299,7 @@ html[data-ambilight-enabled="true"] {
   }
   &[dark="true"] {
     ytd-app[is-watch-page] {
-      #playlist yt-icon {
-        fill: rgba(255, 255, 255, 0.882) !important;
-      }
-      #playlist a,
+      #playlist #header-description a,
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
         color: rgba(255, 255, 255, 0.882) !important;
@@ -418,6 +415,12 @@ html[data-ambilight-enabled="true"] {
   } 
 }
 
+/* Markers */
+
+#contents.ytd-macro-markers-list-renderer {
+  @include scrollbar-dark-thin();
+}
+
 /* Settings */
 
 // Firefox scrollbars
@@ -496,6 +499,23 @@ html[data-ambilight-enabled="true"] {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 13 9'%3E%3Cg transform='translate(1.5, 0.5)'%3E%3Cpath d='M2.5 1.5v1h2v-1h-2m4 0v5h3v-1h-2v-4h-1m-5 1v4h1v-1h2v1h1v-4h-1v2h-2v-2h-1' fill='%23fff' /%3E%3Cpath d='M2.5 3v.5h2v-1h-2V3m0 2.5v1h2v-1h-2m-1 1v1h1v-1h-1m3 .5v.5h1v-1h-1V7m2-.5v1h3v-1h-3' fill-opacity='0.6471' fill='%23000' /%3E%3C/g%3E%3C/svg%3E");
     border-radius: 1px;
     line-height: normal;
+  }
+  .ytp-big-mode & {
+    &::after {
+      content: 'AL';
+      top: 15px;
+      right: 6px;
+      padding: 2px 3px;
+      font-family: Verdana,sans-serif;
+      font-size: 10px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.6);
+      background-image: none;
+      border-radius: 1.5px;
+      height: auto;
+      width: auto;
+    }
   }
   
   svg {
@@ -1075,11 +1095,15 @@ html[data-ambilight-enabled="true"] {
       ytd-app[is-watch-page] #primary-inner > *:not(#player),
       ytd-app[is-watch-page] #secondary {
         $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
+        $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
 
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
+
+        #{$chapters-header} yt-icon,
+        #{$chapters-header} #title-container,
 
         #{$playlist-header} h3,
         #{$playlist-header} ytd-badge-supported-renderer,
@@ -1096,6 +1120,12 @@ html[data-ambilight-enabled="true"] {
         #chatframe,
         paper-menu-button {
           filter: var(--ambilight-button-shadow) !important;
+          text-shadow: none !important;
+        }
+
+        $chapters-content: '#content.ytd-engagement-panel-section-list-renderer';
+
+        #{$chapters-content} #sync-button {
           text-shadow: none !important;
         }
       }
@@ -1138,9 +1168,9 @@ html[data-ambilight-enabled="true"] {
     height: 100%;
     left: 0;
     top: 0;
-    content: var(--ambilight-after-content, none);
-    background: var(--ambilight-after-background, none);
-    opacity: var(--ambilight-after-opacity, 0);
+    content: var(--ambilight-debanding-content, none);
+    background: var(--ambilight-debanding-background, none);
+    opacity: var(--ambilight-debanding-opacity, 0);
   }
 
  .html5-video-player {
