@@ -81,7 +81,6 @@ class Ambilight {
     this.sizesInvalidated = true
     this.checkVideoSize(checkPosition)
     this.updateImmersiveMode()
-    this.checkScrollPosition()
     this.nextFrame()
   }
 
@@ -215,6 +214,18 @@ class Ambilight {
     document.head.appendChild(this.styleElem)
   }
 
+  lastVideoElemSrc = ''
+  initVideoIfSrcChanged() {
+    if(this.lastVideoElemSrc === this.videoElem.src) {
+      return false
+    }
+
+    this.lastVideoElemSrc = this.videoElem.src
+    this.start()
+
+    return true
+  }
+
   initListeners() {
     ////// PLAYER FLOW
     //
@@ -232,9 +243,9 @@ class Ambilight {
     // Video src change (paused):    [    emptied ->                               *seeked ->  loadeddata -> canplay ]
     // Video src change (playing):   [    emptied -> play                                     *loadeddata -> canplay -> *playing ]
     // Quality change (paused):      [    emptied ->            seeking ->         *seeked ->  loadeddata -> canplay ]
-    // Quality change (playing):     [    emptied -> play    -> seeking ->          seeked -> *loadeddata -> canplay -> *playing ]
+    // Quality change (playing):     [    emptied -> play    -> seeking ->         *seeked ->  loadeddata -> canplay -> *playing ]
     // Seek (paused):                                         [ seeking ->         *seeked ->                canplay ]
-    // Seek (playing):                             [ pause   -> seeking -> play ->  seeked ->                canplay -> *playing ]
+    // Seek (playing):                             [ pause   -> seeking -> play -> *seeked ->                canplay -> *playing ]
     // Play:                                                             [ play ->                                      *playing ]
     // Load more data (playing):                   [ waiting ->                                              canplay -> *playing ]
     // End video:  [ pause -> ended ]
@@ -243,17 +254,15 @@ class Ambilight {
 
     this.videoElem
       .on('seeked', () => {
-        this.buffersCleared = true // Prevent old frame from being drawn
-
-        if (!this.videoElem.paused) return // When not paused handled by [loadeddata] or [playing]
-        this.initGetImageDataAllowed() // src can be changed before the [loadeddata] event
-        this.sizesInvalidated = true // Prevent wrong size from being used
+        // When the video is paused this is the first event. Else [loadeddata] is first
+        if (this.initVideoIfSrcChanged()) return
+  
+        this.buffersCleared = true // Always prevent old frame from being drawn
         this.nextFrame()
       })
       .on('loadeddata', (e) => {
-        // if (this.videoElem.paused) return // When paused handled by [seeked] except this is the first load in paused mode
-        this.initGetImageDataAllowed() // src can be changed
-        this.start()
+        // Whent the video is playing this is the first event. Else [seeked] is first
+        this.initVideoIfSrcChanged()
       })
       .on('playing', () => {
         if (this.videoElem.paused) return // When paused handled by [seeked]
@@ -261,12 +270,12 @@ class Ambilight {
       })
       .on('ended', () => {
         this.clear()
+        this.scheduledNextFrame = false
         this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
       })
       .on('emptied', () => {
         this.clear()
-        this.resetSettingsIfNeeded()
-        this.ambilightVideoDroppedFrameCount = 0
+        this.scheduledNextFrame = false
       })
       .on('error', (ex) => {
         console.error('Video error:', ex)
@@ -351,7 +360,7 @@ class Ambilight {
 
         this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
         if(!this.isVideoHiddenOnWatchPage) {
-          this.scheduleNextFrame()
+          this.optionalFrame()
           return
         }
 
@@ -436,7 +445,7 @@ class Ambilight {
           entries.forEach(entry => {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
             if(!this.isAmbilightHiddenOnWatchPage) {
-              this.scheduleNextFrame()
+              this.optionalFrame()
             }
           })
         },
@@ -1109,9 +1118,11 @@ class Ambilight {
   }
 
   setHorizontalBars(percentage) {
+    if(this.horizontalBarsClipPercentage === percentage) return
+
     this.horizontalBarsClipPercentage = percentage
-    this.updateSizes()
-    this.scheduleNextFrame()
+    this.sizesInvalidated = true
+    this.optionalFrame()
     setTimeout(() => {
       this.setSetting('horizontalBarsClipPercentage', percentage)
       const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
@@ -1208,6 +1219,7 @@ class Ambilight {
         }
       }
     }
+    if(this.videoScale === videoScale) return
 
     this.setSetting('videoScale', videoScale)
     if($.s('#setting-videoScale')) {
@@ -1823,6 +1835,18 @@ class Ambilight {
     this.isAmbilightHiddenOnWatchPage
   ))
 
+  optionalFrame = () => {
+    if(
+      !this.enabled ||
+      !this.isOnVideoPage ||
+      this.isAmbilightHiddenOnWatchPage ||
+      this.videoElem.ended ||
+      ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
+    ) return
+    
+    this.nextFrame()
+  }
+
   nextFrame = () => {
     this.delayedCheckVideoSizeAndPosition = false
     if (!this.p) {
@@ -2418,8 +2442,6 @@ class Ambilight {
       if(resetInput) resetInput.attr('aria-checked', toLight)
     }
 
-    this.resetSettingsIfNeeded()
-    this.checkVideoSize()
     this.start()
   }
 
@@ -2521,12 +2543,18 @@ class Ambilight {
 
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
+    this.ambilightVideoDroppedFrameCount = 0
+
     this.showedCompareWarning = false
     this.showedDetectHorizontalBarSizeWarning = false
+
     this.requestVideoFrameCallbackId = undefined
     this.nextFrameTime = undefined
-    this.buffersCleared = true
-    this.sizesInvalidated = true
+
+    this.sizesInvalidated = true // Prevent wrong size from being used
+    this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
+    this.initGetImageDataAllowed()
+    this.resetSettingsIfNeeded()
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
@@ -2534,8 +2562,7 @@ class Ambilight {
     if (!html.attr('dark')) {
       Ambilight.setDarkTheme(true)
     }
-    
-    this.checkVideoSize(true)
+
     this.nextFrame()
   }
 
@@ -2818,25 +2845,6 @@ class Ambilight {
           this.setSetting(setting.name, value)
           displayedValue.textContent = this.getSettingListDisplayText({...setting, value})
 
-          if (
-            setting.name === 'surroundingContentShadowSize' ||
-            setting.name === 'surroundingContentShadowOpacity' ||
-            setting.name === 'debandingStrength' ||
-            setting.name === 'videoShadowSize' ||
-            setting.name === 'videoShadowOpacity' ||
-            setting.name === 'videoScale'
-          ) {
-            this.updateStyles()
-          }
-
-          if (
-            setting.name === 'spread' || 
-            setting.name === 'edge' || 
-            setting.name === 'fadeOutEasing'
-          ) {
-            this.canvassesInvalidated = true
-          }
-
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
@@ -2850,7 +2858,10 @@ class Ambilight {
             }
           }
 
-          if(setting.name === 'horizontalBarsClipPercentage' && this.detectHorizontalBarSizeEnabled) {
+          if(
+            setting.name === 'horizontalBarsClipPercentage' &&
+            this.detectHorizontalBarSizeEnabled
+          ) {
             const controllerInput = $.s(`#setting-detectHorizontalBarSizeEnabled`)
             controllerInput.dontResetControlledSetting = true
             controllerInput.click()
@@ -2864,17 +2875,34 @@ class Ambilight {
             }
           }
 
-          if(
-            setting.name === 'frameSync' ||
-            setting.name === 'framerateLimit' ||
-            setting.name === 'videoOverlaySyncThreshold' ||
-            setting.name === 'frameBlendingSmoothness'
+          if (
+            setting.name === 'surroundingContentShadowSize' ||
+            setting.name === 'surroundingContentShadowOpacity' ||
+            setting.name === 'debandingStrength' ||
+            setting.name === 'videoShadowSize' ||
+            setting.name === 'videoShadowOpacity' ||
+            setting.name === 'videoScale'
           ) {
-            return
+            this.updateStyles()
           }
 
+          if (
+            this.detectHorizontalBarSizeEnabled &&
+            setting.name === 'detectHorizontalBarSizeOffsetPercentage'
+          ) {
+            this.scheduleHorizontalBarSizeDetection()
+          }
+
+          if (
+            setting.name === 'spread' || 
+            setting.name === 'edge'
+          ) {
+            this.canvassesInvalidated = true
+          }
+
+          this.buffersCleared = true
           this.sizesInvalidated = true
-          this.scheduleNextFrame()
+          this.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
         const inputElem = $.s(`#setting-${setting.name}`)
@@ -2932,8 +2960,6 @@ class Ambilight {
                 horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
                 this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
-            } else {
-              this.scheduleNextFrame()  
             }
             if(inputElem.dontResetControlledSetting) {
               delete inputElem.dontResetControlledSetting
@@ -2980,7 +3006,7 @@ class Ambilight {
           }
 
           this.updateSizes()
-          this.scheduleNextFrame()
+          this.optionalFrame()
         })
       }
     })
