@@ -9,13 +9,16 @@ const wrapErrorHandlerHandleError = (stack, ex) => {
     errorHandler(ex)
 }
 
-export const wrapErrorHandler = (callback) => {
+export const wrapErrorHandler = (callback, reportOnce = false) => {
   const stack = new Error().stack
+  let reported = false
   return (callback.constructor.name === 'AsyncFunction')
     ? async function withAsyncErrorHandler(...args) {
       try {
         return await callback(...args)
       } catch(ex) {
+        if(reportOnce && reported) return
+        reported = true
         wrapErrorHandlerHandleError(stack, ex)
       }
     }
@@ -23,6 +26,8 @@ export const wrapErrorHandler = (callback) => {
       try {
         return callback(...args)
       } catch(ex) {
+        if(reportOnce && reported) return
+        reported = true
         wrapErrorHandlerHandleError(stack, ex)
       }
     }
@@ -32,48 +37,7 @@ export const setTimeout = (handler, timeout) => {
   return window.setTimeout(wrapErrorHandler(handler), timeout)
 }
 
-HTMLElement.prototype.attr = function (name, value) {
-  if (typeof value === 'undefined') {
-    return this.getAttribute(name)
-  } else {
-    this.setAttribute(name, value)
-    return this
-  }
-}
-HTMLElement.prototype.append = function (elem) {
-  if (typeof elem === 'string')
-    elem = document.createTextNode(elem)
-  this.appendChild(elem)
-  return this
-}
-HTMLElement.prototype.appendTo = function (elem) {
-  elem.append(this)
-  return this
-}
-HTMLElement.prototype.prependChild = function (elem) {
-  this.prepend(elem)
-  return this
-}
-HTMLElement.prototype.prependTo = function (elem) {
-  elem.prepend(this)
-  return this
-}
-HTMLElement.prototype.class = function (className) {
-  const existingClasses = this.className.split(' ')
-  if (existingClasses.indexOf(className) === -1)
-    this.className += ' ' + className
-  return this
-}
-HTMLElement.prototype.removeClass = function (className) {
-  const classList = this.className.split(' ')
-  const pos = classList.indexOf(className)
-  if (pos !== -1) {
-    classList.splice(pos, 1)
-    this.className = classList.join(' ')
-  }
-  return this
-}
-const addEventListenerPrototype = function (eventNames, callback, options, getListenerCallback) {
+export const on = (elem, eventNames, callback, options, getListenerCallback) => {
   const stack = new Error().stack
   const eventListenerCallback = (...args) => {
     try {
@@ -99,30 +63,18 @@ const addEventListenerPrototype = function (eventNames, callback, options, getLi
 
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
-    this.addEventListener(eventName, eventListenerCallback, options)
+    elem.addEventListener(eventName, eventListenerCallback, options)
   })
 
   if(getListenerCallback)
     getListenerCallback(eventListenerCallback)
-
-  return this
 }
-HTMLElement.prototype.on = addEventListenerPrototype
-Window.prototype.on = addEventListenerPrototype
-HTMLDocument.prototype.on = addEventListenerPrototype
 
-const removeEventListenerPrototype = function (eventNames, callback) {
+export const off = (elem, eventNames, callback) => {
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
-    this.removeEventListener(eventName, callback)
+    elem.removeEventListener(eventName, callback)
   })
-  return this
-}
-HTMLElement.prototype.off = removeEventListenerPrototype
-Window.prototype.off = removeEventListenerPrototype
-
-HTMLElement.prototype.offset = function () {
-  return this.getBoundingClientRect()
 }
 
 export const html = document.querySelector('html')

@@ -1,4 +1,4 @@
-import { $, html, body, waitForDomElement, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
+import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
@@ -44,7 +44,14 @@ class Ambilight {
   enableChromiumBug1123708Workaround = false
   enableChromiumBug1092080Workaround = false
 
-  constructor(videoElem) {
+  constructor(ytdAppElem, videoElem) {
+    this.ytdAppElem = ytdAppElem
+    const mastheadSelector = Ambilight.isClassic ? '#yt-masthead-container' : '#masthead-container'
+    this.mastheadElem = ytdAppElem.querySelector(mastheadSelector)
+    if(!this.mastheadElem) {
+      throw new Error(`Cannot find mastheadElem: ${mastheadSelector}`)
+    }
+
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
     this.detectChromiumBug1142112Workaround()
     this.initVideoElem(videoElem)
@@ -86,9 +93,41 @@ class Ambilight {
 
   initVideoElem(videoElem) {
     this.videoElem = videoElem
-    this.applyChromiumBug1142112Workaround()
+    
+    if(!Ambilight.isClassic) {
+      this.ytdWatchFlexyElem = this.videoElem.closest('ytd-watch-flexy')
+      if(!this.ytdWatchFlexyElem) {
+        throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
+      }
+    } else {
+      this.pageElem = $.s('#page')
+      if(!this.pageElem) {
+        throw new Error('Cannot find pageElem: #page')
+      }
+    }
 
-    this.videoPlayerElem = $.s('.html5-video-player')
+    const videoPlayerContainerSelector = Ambilight.isClassic ? '#player-api' : '#player-container'
+    this.videoPlayerContainerElem = this.videoElem.closest(videoPlayerContainerSelector)
+    if(!this.videoPlayerContainerElem) {
+      throw new Error(`Cannot find videoPlayerContainerElem: ${videoPlayerContainerSelector}`)
+    }
+
+    this.videoPlayerElem = this.videoElem.closest('.html5-video-player')
+    if(!this.videoPlayerElem) {
+      throw new Error('Cannot find videoPlayerElem: .html5-video-player')
+    }
+
+    this.videoContainerElem = this.videoElem.closest('.html5-video-container')
+    if (!this.videoContainerElem) {
+      throw new Error('Cannot find videoContainerElem: .html5-video-container')
+    }
+    
+    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    if(!this.settingsMenuBtnParent) {
+      throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    }
+
+    this.applyChromiumBug1142112Workaround()
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -252,36 +291,35 @@ class Ambilight {
     //
     //////
 
-    this.videoElem
-      .on('seeked', () => {
-        // When the video is paused this is the first event. Else [loadeddata] is first
-        if (this.initVideoIfSrcChanged()) return
-  
-        this.buffersCleared = true // Always prevent old frame from being drawn
-        this.nextFrame()
-      })
-      .on('loadeddata', (e) => {
-        // Whent the video is playing this is the first event. Else [seeked] is first
-        this.initVideoIfSrcChanged()
-      })
-      .on('playing', () => {
-        if (this.videoElem.paused) return // When paused handled by [seeked]
-        this.scheduleNextFrame()
-      })
-      .on('ended', () => {
-        this.clear()
-        this.scheduledNextFrame = false
-        this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
-      })
-      .on('emptied', () => {
-        this.clear()
-        this.scheduledNextFrame = false
-      })
-      .on('error', (ex) => {
-        console.error('Video error:', ex)
-      })
+    on(this.videoElem, 'seeked', () => {
+      // When the video is paused this is the first event. Else [loadeddata] is first
+      if (this.initVideoIfSrcChanged()) return
 
-    document.addEventListener('visibilitychange', () => {
+      this.buffersCleared = true // Always prevent old frame from being drawn
+      this.nextFrame()
+    })
+    on(this.videoElem, 'loadeddata', (e) => {
+      // Whent the video is playing this is the first event. Else [seeked] is first
+      this.initVideoIfSrcChanged()
+    })
+    on(this.videoElem, 'playing', () => {
+      if (this.videoElem.paused) return // When paused handled by [seeked]
+      this.scheduleNextFrame()
+    })
+    on(this.videoElem, 'ended', () => {
+      this.clear()
+      this.scheduledNextFrame = false
+      this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
+    })
+    on(this.videoElem, 'emptied', () => {
+      this.clear()
+      this.scheduledNextFrame = false
+    })
+    on(this.videoElem, 'error', (ex) => {
+      console.error('Video error:', ex)
+    })
+
+    on(document, 'visibilitychange', () => {
       if (!this.enabled || !this.isOnVideoPage) return
       if(document.visibilityState !== 'hidden') return
 
@@ -289,7 +327,7 @@ class Ambilight {
       this.checkIfNeedToHideVideoOverlay()
     }, false);
 
-    document.on('keydown', (e) => {
+    on(document, 'keydown', (e) => {
       if (!this.isOnVideoPage) return
       if (document.activeElement) {
         const el = document.activeElement
@@ -329,8 +367,8 @@ class Ambilight {
 
 
     // Fix YouTube bug: focus on video element without scrolling to the top
-    this.videoElem.on('focus', () => {
-      if(this.videoElem.offset().top !== 0) return
+    on(this.videoElem, 'focus', () => {
+      if(this.videoElem.getBoundingClientRect().top !== 0) return
       
       window.scrollTo(window.scrollX, 0)
     }, true)
@@ -339,7 +377,7 @@ class Ambilight {
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     if (this.videoPlayerElem) {
-      this.videoPlayerElem.on('onStateChange', (state) => {
+      on(this.videoPlayerElem, 'onStateChange', (state) => {
         this.isBuffering = (state === 3)
 
         if(!this.isBuffering)
@@ -396,37 +434,37 @@ class Ambilight {
 
   initAmbilightElems() {
     this.elem = document.createElement('div')
-    this.elem.class('ambilight')
+    this.elem.classList.add('ambilight')
     body.prepend(this.elem)
 
     this.videoShadowElem = document.createElement('div')
-    this.videoShadowElem.class('ambilight__video-shadow')
+    this.videoShadowElem.classList.add('ambilight__video-shadow')
     this.elem.prepend(this.videoShadowElem)
 
     this.filterElem = document.createElement('div')
-    this.filterElem.class('ambilight__filter')
+    this.filterElem.classList.add('ambilight__filter')
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
       this.chromiumBug1123708WorkaroundElem = new Canvas(1, 1, true)
-      this.chromiumBug1123708WorkaroundElem.class('ambilight__chromium-bug-1123708-workaround')
+      this.chromiumBug1123708WorkaroundElem.classList.add('ambilight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }
   
     this.clipElem = document.createElement('div')
-    this.clipElem.class('ambilight__clip')
+    this.clipElem.classList.add('ambilight__clip')
     this.filterElem.prepend(this.clipElem)
 
     this.projectorsElem = document.createElement('div')
-    this.projectorsElem.class('ambilight__projectors')
+    this.projectorsElem.classList.add('ambilight__projectors')
     this.clipElem.prepend(this.projectorsElem)
 
     this.projectorListElem = document.createElement('div')
-    this.projectorListElem.class('ambilight__projector-list')
+    this.projectorListElem.classList.add('ambilight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
     const shadowElem = new Canvas(1920, 1080, true)
-    shadowElem.class('ambilight__shadow')
+    shadowElem.classList.add('ambilight__shadow')
     this.projectorsElem.appendChild(shadowElem)
     const shadowCtx = shadowElem.getContext('2d', { ...ctxOptions, alpha: true })
     this.shadow = {
@@ -460,7 +498,7 @@ class Ambilight {
     // while waiting for a fix for this issue:
     // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
     //this.buffersElem = document.createElement('div')
-    //this.buffersElem.class('ambilight__buffers')
+    //this.buffersElem.classList.add('ambilight__buffers')
     //this.elem.prepend(this.buffersElem)
   }
 
@@ -920,11 +958,13 @@ class Ambilight {
 
     this.getAllSettings()
     this.initSettingsMenu()
+
+    html.setAttribute('data-ambilight-enabled', this.enabled)
+    html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
   }
 
   getAllSettings() {
     this.enabled = this.getSetting('enabled')
-    html.attr('data-ambilight-enabled', this.enabled)
 
     //Sections
     this.sectionSettingsCollapsed = this.getSetting('sectionSettingsCollapsed')
@@ -995,7 +1035,6 @@ class Ambilight {
     this.immersive = this.getSetting('immersive')
     this.immersiveTheaterView = this.getSetting('immersiveTheaterView')
     this.hideScrollbar = this.getSetting('hideScrollbar')
-    html.attr('data-ambilight-hide-scrollbar', this.hideScrollbar)
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
     this.showFPS = this.getSetting('showFPS')
@@ -1017,39 +1056,38 @@ class Ambilight {
     if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
 
     this.FPSListElem = document.createElement('div')
-    this.FPSListElem.class('ambilight__fps-list')
+    this.FPSListElem.classList.add('ambilight__fps-list')
 
     this.displayFPSElem = document.createElement('div')
-    this.displayFPSElem.class('ambilight__display-fps')
+    this.displayFPSElem.classList.add('ambilight__display-fps')
     this.FPSListElem.prepend(this.displayFPSElem)
 
     this.ambilightDroppedFramesElem = document.createElement('div')
-    this.ambilightDroppedFramesElem.class('ambilight__ambilight-dropped-frames')
+    this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
     this.FPSListElem.prepend(this.ambilightDroppedFramesElem)
 
     this.ambilightFPSElem = document.createElement('div')
-    this.ambilightFPSElem.class('ambilight__ambilight-fps')
+    this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
     this.FPSListElem.prepend(this.ambilightFPSElem)
 
     this.videoSyncedElem = document.createElement('div')
-    this.videoSyncedElem.class('ambilight__video-synced')
+    this.videoSyncedElem.classList.add('ambilight__video-synced')
     this.FPSListElem.prepend(this.videoSyncedElem)
 
     this.videoDroppedFramesElem = document.createElement('div')
-    this.videoDroppedFramesElem.class('ambilight__video-dropped-frames')
+    this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
     this.FPSListElem.prepend(this.videoDroppedFramesElem)
 
     this.videoFPSElem = document.createElement('div')
-    this.videoFPSElem.class('ambilight__video-fps')
+    this.videoFPSElem.classList.add('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
 
-    const playerContainerElem = (Ambilight.isClassic) ? $.s('#player-api') : $.s('#player-container')
-    playerContainerElem.prepend(this.FPSListElem)
+    this.videoPlayerContainerElem.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
     const videoOverlayElem = new Canvas(1, 1)
-    videoOverlayElem.class('ambilight__video-overlay')
+    videoOverlayElem.classList.add('ambilight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
       ctx: videoOverlayElem.getContext('2d', {
@@ -1157,7 +1195,7 @@ class Ambilight {
 
     for (let i = this.projectors.length; i < spreadLevels; i++) {
       const projectorElem = new Canvas(1, 1)
-      projectorElem.class('ambilight__projector')
+      projectorElem.classList.add('ambilight__projector')
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
       this.projectorListElem.prepend(projectorElem)
@@ -1237,17 +1275,15 @@ class Ambilight {
       this.detectVideoFillScale()
     }
 
-    const flexyElem = $.s('ytd-watch-flexy')
-    const pageElem = $.s('#page')
-    this.isVR = !!$.s('.ytp-webgl-spherical')
+    this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
 
-    if(this.videoPlayerElem) {
-      const prevView = this.view
+    // const prevView = this.view
+    if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
         this.view = this.VIEW_FULLSCREEN
       else if(
-        (flexyElem && flexyElem.attr('theater') !== null) ||
-        (pageElem && pageElem.classList.contains('watch-stage-mode'))
+        (this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null) ||
+        (this.pageElem && this.pageElem.classList.contains('watch-stage-mode'))
       )
         this.view = this.VIEW_THEATER
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
@@ -1257,7 +1293,6 @@ class Ambilight {
     } else {
       this.view = this.VIEW_DETACHED
     }
-
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -1323,7 +1358,7 @@ class Ambilight {
       `)
     }
 
-    this.projectorOffset = this.videoElem.offset()
+    this.projectorOffset = this.videoElem.getBoundingClientRect()
     if (
       this.projectorOffset.top === undefined ||
       !this.projectorOffset.width ||
@@ -1435,7 +1470,7 @@ class Ambilight {
       this.checkIfNeedToHideVideoOverlay()
 
     if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.elem.parentNode) {
-      this.videoOverlay.elem.appendTo($.s('.html5-video-container'))
+      this.videoContainerElem.appendChild(this.videoOverlay.elem)
     } else if (!this.videoOverlayEnabled && this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
@@ -2407,7 +2442,7 @@ class Ambilight {
     const hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
     if (hide) {
       if (!this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.class('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.add('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = true
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2417,7 +2452,7 @@ class Ambilight {
       isHiddenChangeTimestamp + 2000 < performance.now()
     ) {
       if (this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.removeClass('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.remove('ambilight__video-overlay--hide')
         this.videoOverlay.isHidden = false
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2430,16 +2465,16 @@ class Ambilight {
 
     this.setSetting('enabled', true)
     const enabledInput = $.s(`#setting-enabled`)
-    if(enabledInput) enabledInput.attr('aria-checked', true)
+    if(enabledInput) enabledInput.setAttribute('aria-checked', true)
 
-    html.attr('data-ambilight-enabled', true)
+    html.setAttribute('data-ambilight-enabled', true)
 
     if (!initial) {
-      const toLight = !html.attr('dark')
+      const toLight = !html.getAttribute('dark')
       this.resetThemeToLightOnDisable = toLight
       this.setSetting('resetThemeToLightOnDisable', toLight)
       const resetInput = $.s(`#setting-resetThemeToLightOnDisable`)
-      if(resetInput) resetInput.attr('aria-checked', toLight)
+      if(resetInput) resetInput.setAttribute('aria-checked', toLight)
     }
 
     this.start()
@@ -2450,8 +2485,8 @@ class Ambilight {
 
     this.setSetting('enabled', false)
     const enabledInput = $.s(`#setting-enabled`)
-    if(enabledInput) enabledInput.attr('aria-checked', false)
-    html.attr('data-ambilight-enabled', false)
+    if(enabledInput) enabledInput.setAttribute('aria-checked', false)
+    html.setAttribute('data-ambilight-enabled', false)
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2475,7 +2510,7 @@ class Ambilight {
     try {
       if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
-      if (html.attr('dark')) {
+      if (html.getAttribute('dark')) {
         if (value) return
       } else {
         if (!value) return
@@ -2559,7 +2594,7 @@ class Ambilight {
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
 
-    if (!html.attr('dark')) {
+    if (!html.getAttribute('dark')) {
       Ambilight.setDarkTheme(true)
     }
 
@@ -2609,10 +2644,10 @@ class Ambilight {
       this.hideStats()
     }, 500)
 
-    html.attr('data-ambilight-enabled', false)
-    html.attr('data-ambilight-classic', false)
+    html.setAttribute('data-ambilight-enabled', false)
+    html.setAttribute('data-ambilight-classic', false)
     if(Ambilight.isClassic) {
-      html.attr('dark', false)
+      html.setAttribute('dark', false)
     }
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2624,19 +2659,16 @@ class Ambilight {
     this.isHidden = false
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
-    html.attr('data-ambilight-enabled', true)
-    html.attr('data-ambilight-classic', Ambilight.isClassic)
+    html.setAttribute('data-ambilight-enabled', true)
+    html.setAttribute('data-ambilight-classic', Ambilight.isClassic)
     if(Ambilight.isClassic) {
-      html.attr('dark', true)
+      html.setAttribute('dark', true)
     }
   }
 
   initScrollPosition() {
-    this.mastheadElem = Ambilight.isClassic ? $.s('#yt-masthead-container') : $.s('#masthead-container')
-    this.ytdAppElem = $.s('ytd-app, body[data-spf-name]')
-
-    window.on('scroll', this.handleScroll)
-    this.ytdAppElem.on('scroll', this.handleScroll) // Fullscreen
+    on(window, 'scroll', this.handleScroll)
+    on(this.ytdAppElem, 'scroll', this.handleScroll) // Fullscreen
     this.checkScrollPosition()
   }
 
@@ -2660,28 +2692,28 @@ class Ambilight {
     const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
 
     if (atTop && immersive) {
-      body.class('at-top')
+      body.classList.add('at-top')
     } else {
-      body.removeClass('at-top')
+      body.classList.remove('at-top')
     }
 
     if (atTop) {
-      this.mastheadElem.class('at-top')
+      this.mastheadElem.classList.add('at-top')
     } else {
-      this.mastheadElem.removeClass('at-top')
+      this.mastheadElem.classList.remove('at-top')
     }
   }
 
   updateImmersiveMode() {
     const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
-    html.attr('data-ambilight-immersive-mode', immersiveMode)
+    html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
   
     this.checkScrollPosition()
   }
 
   toggleImmersiveMode() {
     const enabled = !this.immersive
-    $.s(`#setting-immersive`).attr('aria-checked', enabled ? 'true' : 'false')
+    $.s(`#setting-immersive`).setAttribute('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
 
     this.updateImmersiveMode()
@@ -2689,27 +2721,25 @@ class Ambilight {
 
   initSettingsMenu() {
     this.settingsMenuBtn = document.createElement('button')
-      .class('ytp-button ytp-ambilight-settings-button')
-      .attr('title', 'Ambilight settings')
-      .attr('aria-owns', 'ytp-id-190')
-      .on('click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
-
+    this.settingsMenuBtn.classList.add('ytp-button', 'ytp-ambilight-settings-button')
+    this.settingsMenuBtn.setAttribute('title', 'Ambilight settings')
+    this.settingsMenuBtn.setAttribute('aria-owns', 'ytp-id-190')
+    on(this.settingsMenuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     this.settingsMenuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
       <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
     </svg>`
-
-    this.settingsMenuBtnParent = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
-    if(!this.settingsMenuBtnParent) {
-      throw new Error('Cannot find the video controls container')
-    }
-    this.settingsMenuBtn.prependTo(this.settingsMenuBtnParent)
-
+    this.settingsMenuBtnParent.prepend(this.settingsMenuBtn)
 
     this.settingsMenuElem = document.createElement('div')
-      .class(`ytp-popup ytp-settings-menu ytpa-ambilight-settings-menu ${
-        (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : ''
-      }`)
-      .attr('id', 'ytp-id-190')
+    this.settingsMenuElem.classList.add(
+      ...([
+        'ytp-popup', 
+        'ytp-settings-menu', 
+        'ytpa-ambilight-settings-menu', 
+        (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : undefined
+      ].filter(c => c))
+    )
+    this.settingsMenuElem.setAttribute('id', 'ytp-id-190')
     this.settingsMenuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
@@ -2791,7 +2821,7 @@ class Ambilight {
         </div>
       </div>`
     this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label').forEach(label => {
-      label.on('click', (e) => {
+      on(label, 'click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
         const inputElem = document.querySelector(`#setting-${name}-range`)
@@ -2800,22 +2830,22 @@ class Ambilight {
       })
     })
     this.settingsMenuElem.querySelectorAll('.ytpa-section').forEach(section => {
-      section.on('click', (e) => {
-        const name = section.attr('data-name')
+      on(section, 'click', (e) => {
+        const name = section.getAttribute('data-name')
         const settingSection = this.settings.find(setting => setting.type == 'section' && setting.name == name)
         if (!settingSection) return
         settingSection.value = !settingSection.value
         this.setSetting(name, settingSection.value)
 
         if (settingSection.value) {
-          section.class('is-collapsed')
+          section.classList.add('is-collapsed')
         } else {
-          section.removeClass('is-collapsed')
+          section.classList.remove('is-collapsed')
         }
       })
     })
     this.settingsMenuElemParent = this.videoPlayerElem
-    this.settingsMenuElem.prependTo(this.settingsMenuElemParent)
+    this.settingsMenuElemParent.prepend(this.settingsMenuElem)
     try {
       this.settingsMenuElem.scrollTop = this.settingsMenuElem.scrollHeight
       this.settingsMenuOnCloseScrollBottom = (!this.settingsMenuElem.scrollTop) 
@@ -2831,17 +2861,17 @@ class Ambilight {
       if (setting.type === 'list') {
         const inputElem = $.s(`#setting-${setting.name}-range`)
         const displayedValue = $.s(`#setting-${setting.name}-value`)
-        inputElem.on('change mousemove dblclick touchmove', (e) => {
+        on(inputElem, 'change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick') {
             value = this.settings.find(s => s.name === setting.name).default
-          } else if (inputElem.value === inputElem.attr('data-previous-value')) {
+          } else if (inputElem.value === inputElem.getAttribute('data-previous-value')) {
             return
           }
           inputElem.value = value
-          inputElem.attr('data-previous-value', value)
+          inputElem.setAttribute('data-previous-value', value)
           this.setSetting(setting.name, value)
           displayedValue.textContent = this.getSettingListDisplayText({...setting, value})
 
@@ -2906,7 +2936,7 @@ class Ambilight {
         })
       } else if (setting.type === 'checkbox') {
         const inputElem = $.s(`#setting-${setting.name}`)
-        inputElem.on('click', () => {
+        on(inputElem, 'click', () => {
           if (setting.type === 'checkbox') {
             setting.value = !setting.value
           }
@@ -2921,7 +2951,7 @@ class Ambilight {
             this.toggleImmersiveMode()
           }
           if (setting.name === 'hideScrollbar') {
-            html.attr('data-ambilight-hide-scrollbar', setting.value)
+            html.setAttribute('data-ambilight-hide-scrollbar', setting.value)
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
@@ -2944,7 +2974,7 @@ class Ambilight {
             setting.name === 'immersiveTheaterView'
           ) {
             this.setSetting(setting.name, setting.value)
-            $.s(`#setting-${setting.name}`).attr('aria-checked', setting.value)
+            $.s(`#setting-${setting.name}`).setAttribute('aria-checked', setting.value)
           }
 
           if(setting.name === 'immersiveTheaterView') {
@@ -2985,9 +3015,9 @@ class Ambilight {
 
           if(setting.name === 'advancedSettings') {
             if(setting.value) {
-              this.settingsMenuElem.class('ytpa-ambilight-settings-menu--advanced')
+              this.settingsMenuElem.classList.add('ytpa-ambilight-settings-menu--advanced')
             } else {
-              this.settingsMenuElem.removeClass('ytpa-ambilight-settings-menu--advanced')
+              this.settingsMenuElem.classList.remove('ytpa-ambilight-settings-menu--advanced')
             }
           }
 
@@ -3015,24 +3045,22 @@ class Ambilight {
   }
 
   updateControlledSettings() {
+    const videoScaleValue = $.s(`#setting-videoScale-value`)
     if(!this.detectVideoFillScaleEnabled) {
-      $.s(`#setting-videoScale-value`)
-        .removeClass('is-controlled-by-setting')
-        .attr('title', '')
+      videoScaleValue.classList.remove('is-controlled-by-setting')
+      videoScaleValue.setAttribute('title', '')
     } else {
-      $.s(`#setting-videoScale-value`)
-        .class('is-controlled-by-setting')
-        .attr('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
+      videoScaleValue.classList.remove('is-controlled-by-setting')
+      videoScaleValue.setAttribute('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
     }
 
+    const horizontalBarsClipPercentageValue = $.s(`#setting-horizontalBarsClipPercentage-value`)
     if(!this.detectHorizontalBarSizeEnabled) {
-      $.s(`#setting-horizontalBarsClipPercentage-value`)
-        .removeClass('is-controlled-by-setting')
-        .attr('title', '')
+      horizontalBarsClipPercentageValue.classList.remove('is-controlled-by-setting')
+      horizontalBarsClipPercentageValue.setAttribute('title', '')
     } else {
-      $.s(`#setting-horizontalBarsClipPercentage-value`)
-        .class('is-controlled-by-setting')
-        .attr('title', 'Controlled by the "Remove black bars" setting.\nManually adjusting this setting will turn off "Remove black bars"')
+      horizontalBarsClipPercentageValue.classList.add('is-controlled-by-setting')
+      horizontalBarsClipPercentageValue.setAttribute('title', 'Controlled by the "Remove black bars" setting.\nManually adjusting this setting will turn off "Remove black bars"')
     }
   }
 
@@ -3059,7 +3087,8 @@ class Ambilight {
     const isOpen = this.settingsMenuElem.classList.contains('is-visible')
     if (isOpen) return
 
-    this.settingsMenuElem.removeClass('fade-out').class('is-visible')
+    this.settingsMenuElem.classList.remove('fade-out')
+    this.settingsMenuElem.classList.add('is-visible')
 
     if(this.settingsMenuOnCloseScrollBottom !== -1) {
       const percentage = (this.settingsMenuElem.scrollHeight) / this.settingsMenuOnCloseScrollHeight
@@ -3069,15 +3098,15 @@ class Ambilight {
       )
     }
 
-    this.settingsMenuBtn.attr('aria-expanded', true)
+    this.settingsMenuBtn.setAttribute('aria-expanded', true)
 
     if(this.videoPlayerElem) {
       this.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
     }
 
-    this.settingsMenuBtn.off('click', this.onSettingsBtnClickedListener)
+    off(this.settingsMenuBtn, 'click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
-      body.on('click', this.onCloseSettings, undefined, (listener) => this.onCloseSettingsListener = listener)
+      on(body, 'click', this.onCloseSettings, undefined, (listener) => this.onCloseSettingsListener = listener)
     }, 100)
   }
 
@@ -3090,24 +3119,24 @@ class Ambilight {
       (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
     this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight)
 
-    this.settingsMenuElem.on('animationend', this.onSettingsFadeOutEnd, undefined, (listener) => this.onSettingsFadeOutEndListener = listener)
-    this.settingsMenuElem.class('fade-out')
+    on(this.settingsMenuElem, 'animationend', this.onSettingsFadeOutEnd, undefined, (listener) => this.onSettingsFadeOutEndListener = listener)
+    this.settingsMenuElem.classList.add('fade-out')
 
-    this.settingsMenuBtn.attr('aria-expanded', false)
+    this.settingsMenuBtn.setAttribute('aria-expanded', false)
 
     if(this.videoPlayerElem) {
       this.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
     }
 
-    body.off('click', this.onCloseSettingsListener)
+    off(body, 'click', this.onCloseSettingsListener)
     setTimeout(() => {
-      this.settingsMenuBtn.on('click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
+      on(this.settingsMenuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
   }
 
   onSettingsFadeOutEnd = () => {
-    this.settingsMenuElem.removeClass('fade-out').removeClass('is-visible')
-    this.settingsMenuElem.off('animationend', this.onSettingsFadeOutEndListener)
+    this.settingsMenuElem.classList.remove('fade-out', 'is-visible')
+    off(this.settingsMenuElem, 'animationend', this.onSettingsFadeOutEndListener)
   }
 
   setSetting(key, value) {
@@ -3187,76 +3216,54 @@ const resetThemeToLightIfSettingIsTrue = () => {
 }
 
 
-const ambilightDetectDetachedVideo = () => {
-  const containerElem = $.s('.html5-video-container')
-  const ytpAppElem = $.s('ytd-app')
+const ambilightDetectDetachedVideo = (ytdAppElem) => {
+  const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
+    if (!ytdAppElem.hasAttribute('is-watch-page')) return
 
-  const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-    if (!ytpAppElem.hasAttribute('is-watch-page')) return
-
-    const videoElem = containerElem.querySelector('video')
-    if (!videoElem) return
-
-    const isDetached = ambilight.videoElem !== videoElem
+    const isDetached = (!ambilight.videoElem || !document.contains(ambilight.videoElem))
     if (!isDetached) return
 
+    const videoElem = ytdAppElem.querySelector('video.html5-main-video')
+    if (!videoElem) {
+      throw new Error('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video')
+    }
     ambilight.initVideoElem(videoElem)
-  }))
+  }, true))
 
-  observer.observe(containerElem, {
-    attributes: true,
+  observer.observe(document, {
+    attributes: false,
     attributeOldValue: false,
     characterData: false,
     characterDataOldValue: false,
-    childList: false,
+    childList: true,
     subtree: true
   })
 }
 
-const tryInitClassicAmbilight = () => {
-  const classicBodyElem = $.s('body[data-spf-name="watch"]')
+const tryInitClassicAmbilight = (ytdAppElem) => {
+  const classicYtdAppElem = $.s('body[data-spf-name="watch"]')
   const classicVideoElem = $.s('video.html5-main-video')
-  if(!classicBodyElem || !classicVideoElem) return false
+  if(!classicYtdAppElem || !classicVideoElem) return false
 
   Ambilight.isClassic = true
-  window.ambilight = new Ambilight(classicVideoElem)
-  return true
-}
-const tryInitAmbilight = () => {
-  if (!$.s('ytd-app[is-watch-page]')) return
-
-  const videoElem = $.s('ytd-watch-flexy video')
-  if (!videoElem) return false
-
-  const settingsBtnContainerElem = $.s('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
-  if(!settingsBtnContainerElem) {
-    if(!window.ambilightSettingsBtnContainerElemUndefinedThrown) {
-      window.ambilightSettingsBtnContainerElemUndefinedThrown = true
-      const ex = new Error('Tried to initialize ambilight without settingsBtnContainerElem')
-      console.warn(ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-    }
-    return false
-  }
-
-  const playerElem = $.s('.html5-video-player')
-  if(!playerElem) {
-    if(!window.ambilightPlayerElemUndefinedThrown) {
-      window.ambilightPlayerElemUndefinedThrown = true
-      const ex = new Error('Tried to initialize ambilight without playerElem')
-      console.warn(ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-    }
-    return false
-  }
-
-
-  window.ambilight = new Ambilight(videoElem)
-  ambilightDetectDetachedVideo()
+  window.ambilight = new Ambilight(classicYtdAppElem, classicVideoElem)
   return true
 }
 
-const ambilightDetectPageTransition = () => {
+const tryInitAmbilight = (ytdAppElem) => {
+  if (ytdAppElem.getAttribute('is-watch-page') !== '') return
+
+  const videoElem = ytdAppElem.querySelector('video.html5-main-video')
+  if (!videoElem) {
+    throw new Error('Tried to initialize ambilight without video')
+  }
+
+  window.ambilight = new Ambilight(ytdAppElem, videoElem)
+  ambilightDetectDetachedVideo(ytdAppElem)
+  return true
+}
+
+const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
     if (!window.ambilight) return
 
@@ -3277,19 +3284,17 @@ const ambilightDetectPageTransition = () => {
       }
     }
   }))
-  var appElem = $.s('ytd-app, body[data-spf-name]')
-  if(!appElem) return
-  observer.observe(appElem, {
+  observer.observe(ytdAppElem, {
     attributes: true,
     attributeFilter: ['is-watch-page', 'data-spf-name']
   })
 }
 
-const ambilightDetectVideoPage = () => {
-  if (tryInitAmbilight()) return
-  if (tryInitClassicAmbilight()) return
+const ambilightDetectVideoPage = (ytdAppElem) => {
+  if (tryInitAmbilight(ytdAppElem)) return
+  if (tryInitClassicAmbilight(ytdAppElem)) return
 
-  if ($.s('ytd-app:not([is-watch-page])')) {
+  if (ytdAppElem.getAttribute('is-watch-page') === null) {
     resetThemeToLightIfSettingIsTrue()
   }
 
@@ -3299,12 +3304,10 @@ const ambilightDetectVideoPage = () => {
       return
     }
 
-    tryInitAmbilight()
-    tryInitClassicAmbilight()
-  }))
-  var appElem = $.s('ytd-app, body[data-spf-name]')
-  if(!appElem) return
-  observer.observe(appElem, {
+    tryInitAmbilight(ytdAppElem)
+    tryInitClassicAmbilight(ytdAppElem)
+  }, true))
+  observer.observe(ytdAppElem, {
     childList: true,
     subtree: true
   })
@@ -3313,8 +3316,12 @@ const ambilightDetectVideoPage = () => {
 const onLoad = () => {
   requestIdleCallback(function onLoad() {
     if(!window.ambilight) {
-      ambilightDetectPageTransition()
-      ambilightDetectVideoPage()
+      const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
+      if(!ytdAppElem) {
+        throw new Error('Cannot find app element: ytd-app, body[data-spf-name]')
+      }
+      ambilightDetectPageTransition(ytdAppElem)
+      ambilightDetectVideoPage(ytdAppElem)
     }
   }, { timeout: 5000 })
 }

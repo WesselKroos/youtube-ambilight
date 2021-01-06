@@ -209,6 +209,8 @@ export default class AmbilightSentry {
           '#movie_player': $.sa('#movie_player'),
           '.html5-video-container': $.sa('.html5-video-container'),
           'video': $.sa('video'),
+          '.html5-main-video': $.sa('.html5-main-video'),
+          '.video-stream': $.sa('.video-stream'),
           'ytd-masthead': $.sa('ytd-masthead'),
           'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
           '#avatar-btn': $.sa('[id="avatar-btn"]'),
