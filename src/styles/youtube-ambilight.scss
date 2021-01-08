@@ -291,7 +291,9 @@ html[data-ambilight-enabled="true"] {
       background: none !important;
     }
     #left-arrow.yt-chip-cloud-renderer, #right-arrow.yt-chip-cloud-renderer {
-      background-color: rgba(20,20,20,.3);
+      &:not(:hover):not(:focus-within) {
+        background-color: rgba(20,20,20,.3);
+      }
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
