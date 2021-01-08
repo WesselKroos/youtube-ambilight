@@ -1074,8 +1074,9 @@ html[data-ambilight-enabled="true"] {
     ytd-video-owner-renderer#{$not-hover} #avatar,
     ytd-comment-simplebox-renderer#{$not-hover} #author-thumbnail, // Form
     ytd-comment-renderer#{$not-hover} #author-thumbnail,
-    .ytd-playlist-panel-renderer#{$not-hover} #thumbnail.ytd-thumbnail,
-    .ytd-item-section-renderer#{$not-hover} #thumbnail.ytd-thumbnail {
+    .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
+    .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
+    .ytd-item-section-renderer#{$not-hover} #thumbnail {
       opacity: var(--ambilight-image-opacity) !important;
     }
   }
