@@ -1067,6 +1067,20 @@ html[data-ambilight-enabled="true"] {
     box-shadow: var(--ambilight-video-shadow-box-shadow, none) !important;
   }
 
+  // Image opacity
+  ytd-watch-flexy {
+    $not-hover: ':not(:hover):not(:focus-within)';
+
+    ytd-video-owner-renderer#{$not-hover} #avatar,
+    ytd-comment-simplebox-renderer#{$not-hover} #author-thumbnail, // Form
+    ytd-comment-renderer#{$not-hover} #author-thumbnail,
+    .ytd-playlist-panel-renderer#{$not-hover} #thumbnail.ytd-thumbnail,
+    .ytd-item-section-renderer#{$not-hover} #thumbnail.ytd-thumbnail {
+      opacity: var(--ambilight-image-opacity) !important;
+    }
+  }
+  
+
   // All shadows
   &:not([dark="true"]) {
     ytd-masthead {

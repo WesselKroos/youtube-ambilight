@@ -657,6 +657,16 @@ class Ambilight {
         step: .1
       },
       {
+        name: 'surroundingContentImagesTransparency',
+        label: 'Images transparency',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: 1,
+        advanced: true
+      },
+      {
         name: 'immersive',
         label: 'Hide when scrolled to top [Z]',
         type: 'checkbox',
@@ -1042,6 +1052,7 @@ class Ambilight {
     this.surroundingContentTextAndBtnOnly = this.getSetting('surroundingContentTextAndBtnOnly')
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
     this.surroundingContentShadowOpacity = this.getSetting('surroundingContentShadowOpacity')
+    this.surroundingContentImagesTransparency = this.getSetting('surroundingContentImagesTransparency')
     this.debandingStrength = this.getSetting('debandingStrength')
 
     this.videoShadowSize = this.getSetting('videoShadowSize')
@@ -1515,28 +1526,20 @@ class Ambilight {
   }
 
   updateStyles() {
+    // Images transparency
+
+    const ImagesTransparency = this.surroundingContentImagesTransparency
+    const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''
+    document.body.style.setProperty('--ambilight-image-opacity', imageOpacity)
+
+
+    // Content shadow
+
     const textAndBtnOnly = this.surroundingContentTextAndBtnOnly
     const shadowSize = this.surroundingContentShadowSize / 5
     const shadowOpacity = this.surroundingContentShadowOpacity / 100
-    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
-    const debandingStrength = parseFloat(this.debandingStrength)
-    const videoShadowSize = parseFloat(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
-    const videoShadowOpacity = this.videoShadowOpacity / 100
-    
-    const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
-    const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
-    
-    
-    document.body.style.setProperty('--ambilight-video-shadow-background', 
-      (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
-    document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
-      (videoShadowSize && videoShadowOpacity)
-        ? `
-          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
-          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
-        `
-        : '')
 
+    // All
     const getFilterShadow = (color) => (shadowSize && shadowOpacity) 
       ? (
         (shadowOpacity > .5) 
@@ -1549,9 +1552,10 @@ class Ambilight {
       : ''
     document.body.style.setProperty(`--ambilight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
     document.body.style.setProperty(`--ambilight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    
+    // Text and buttons only
     document.body.style.setProperty(`--ambilight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
     document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
-    
     const getTextShadow = (color) => (shadowSize && shadowOpacity) 
       ? `
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
@@ -1561,15 +1565,42 @@ class Ambilight {
     document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
     document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
+
+    // Video shadow
+    
+    const videoShadowSize = parseFloat(this.videoShadowSize, 10) / 2 + Math.pow(this.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
+    const videoShadowOpacity = this.videoShadowOpacity / 100
+    
+    document.body.style.setProperty('--ambilight-video-shadow-background', 
+      (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
+    document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
+      (videoShadowSize && videoShadowOpacity)
+        ? `
+          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
+          rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
+        `
+        : '')
+
+
+    // Video scale
+
+    document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
+      (this.videoScale > 100) ?  'visible' : '')
+
+
+    // Debanding
+
+    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
+    const debandingStrength = parseFloat(this.debandingStrength)
+    const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
+    const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
+
     document.body.style.setProperty('--ambilight-debanding-content', 
       debandingStrength ? `''` : '')
     document.body.style.setProperty('--ambilight-debanding-background', 
       debandingStrength ? `url('${baseurl}images/noise-${noiseImageIndex}.png')` : '')
     document.body.style.setProperty('--ambilight-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
-
-    document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
-      (this.videoScale > 100) ?  'visible' : '')
   }
 
   resizeCanvasses() {
@@ -2908,6 +2939,7 @@ class Ambilight {
           if (
             setting.name === 'surroundingContentShadowSize' ||
             setting.name === 'surroundingContentShadowOpacity' ||
+            setting.name === 'surroundingContentImagesTransparency' ||
             setting.name === 'debandingStrength' ||
             setting.name === 'videoShadowSize' ||
             setting.name === 'videoShadowOpacity' ||
