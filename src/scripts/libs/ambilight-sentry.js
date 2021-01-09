@@ -78,6 +78,14 @@ export default class AmbilightSentry {
       }
 
       try {
+        if(ex && ex.details) {
+          setExtra('details', ex.details)
+        }
+      } catch (ex) {
+        setExtra('details.exception', ex)
+      }
+
+      try {
         setExtra('window', {
           width: window.innerWidth,
           height: window.innerHeight,
