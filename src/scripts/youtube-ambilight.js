@@ -106,12 +106,6 @@ class Ambilight {
       }
     }
 
-    const videoPlayerContainerSelector = Ambilight.isClassic ? '#player-api' : '#player-container'
-    this.videoPlayerContainerElem = this.videoElem.closest(videoPlayerContainerSelector)
-    if(!this.videoPlayerContainerElem) {
-      throw new Error(`Cannot find videoPlayerContainerElem: ${videoPlayerContainerSelector}`)
-    }
-
     this.videoPlayerElem = this.videoElem.closest('.html5-video-player')
     if(!this.videoPlayerElem) {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
@@ -1093,7 +1087,7 @@ class Ambilight {
     this.videoFPSElem.classList.add('ambilight__video-fps')
     this.FPSListElem.prepend(this.videoFPSElem)
 
-    this.videoPlayerContainerElem.prepend(this.FPSListElem)
+    this.videoPlayerElem.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
@@ -3286,18 +3280,41 @@ const tryInitClassicAmbilight = (ytdAppElem) => {
   return true
 }
 
+let waitingForVideo = false
+let waitingForVideoInPlayerApi = false
 const tryInitAmbilight = (ytdAppElem) => {
   if (ytdAppElem.getAttribute('is-watch-page') !== '') return
 
   const videoElem = ytdAppElem.querySelector('video.html5-main-video')
   if (!videoElem) {
-    throw new Error('Tried to initialize ambilight without video')
+    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+    const playerApiElem = playerApiVideoElem && playerApiVideoElem.closest('#player-api')
+    if(playerApiElem) {
+      console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api to the player-container')
+      // console.log(playerApiElem.cloneNode(true))
+      waitingForVideoInPlayerApi = true
+      return false
+    }
+    console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
+    waitingForVideo = true
+    return false
   }
 
   window.ambilight = new Ambilight(ytdAppElem, videoElem)
+  waitingForVideoInPlayerApi = false
+  waitingForVideo = false
+
   ambilightDetectDetachedVideo(ytdAppElem)
   return true
 }
+window.addEventListener('beforeunload', (e) => {
+  if(waitingForVideoInPlayerApi) {
+    AmbilightSentry.captureExceptionWithDetails(new Error('Closed the webpage without the video ever transitioning from the player-api to the player-container on the watch page'))
+  }
+  if(waitingForVideo) {
+    AmbilightSentry.captureExceptionWithDetails(new Error('Closed the webpage without the video ever being created in the ytd-app element on the watch page'))
+  }
+})
 
 const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {

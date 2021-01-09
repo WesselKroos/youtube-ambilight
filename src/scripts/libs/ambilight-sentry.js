@@ -1,4 +1,4 @@
-import { $, html, setErrorHandler } from "./generic";
+import { $, html, setErrorHandler, uuidv4 } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
 import {
   captureException,
@@ -54,6 +54,15 @@ export default class AmbilightSentry {
     console.error('YouTube Ambilight | ', ex)
 
     withScope(scope => {
+      try {
+        let id = localStorage.getItem('ambilight-crash-reporter-id')
+        if(!id) {
+          id = uuidv4()
+          localStorage.setItem('ambilight-crash-reporter-id', id)
+        }
+        scope.setUser({ id })
+      } catch { console.warn(ex) }
+
       const setExtra = (name, value) => {
         try {
           scope.setExtra(name, (value === undefined) ? null : value)
@@ -205,6 +214,7 @@ export default class AmbilightSentry {
           '.html5-video-container': $.sa('.html5-video-container'),
           '#player-container': $.sa('[id="player-container"]'),
           '#player-api': $.sa('[id="player-api"]'),
+          '#player': $.sa('[id="player"]'),
           '.html5-video-player': $.sa('.html5-video-player'),
           '#movie_player': $.sa('#movie_player'),
           '.html5-video-container': $.sa('.html5-video-container'),
