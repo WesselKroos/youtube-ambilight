@@ -34,6 +34,7 @@ initAndBind(BrowserClient, {
   }
 })
 
+let sessionId;
 export default class AmbilightSentry {
   static captureExceptionWithDetails(ex) {
 
@@ -55,12 +56,19 @@ export default class AmbilightSentry {
 
     withScope(scope => {
       try {
-        let id = localStorage.getItem('ambilight-crash-reporter-id')
-        if(!id) {
-          id = uuidv4()
-          localStorage.setItem('ambilight-crash-reporter-id', id)
+        let userId = localStorage.getItem('ambilight-crash-reporter-id')
+        if(!userId) {
+          userId = uuidv4()
+          localStorage.setItem('ambilight-crash-reporter-id', userId)
         }
-        scope.setUser({ id })
+        scope.setUser({ id: userId })
+      } catch { console.warn(ex) }
+
+      try {
+        if(!sessionId) {
+          sessionId = uuidv4()
+        }
+        scope.setTag('session', sessionId)
       } catch { console.warn(ex) }
 
       const setExtra = (name, value) => {

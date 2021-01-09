@@ -3282,6 +3282,7 @@ const tryInitClassicAmbilight = (ytdAppElem) => {
 
 let waitingForVideo = false
 let waitingForVideoInPlayerApi = false
+let waitingForAmbilight = false
 const tryInitAmbilight = (ytdAppElem) => {
   if (ytdAppElem.getAttribute('is-watch-page') !== '') return
 
@@ -3300,10 +3301,12 @@ const tryInitAmbilight = (ytdAppElem) => {
     return false
   }
 
-  window.ambilight = new Ambilight(ytdAppElem, videoElem)
   waitingForVideoInPlayerApi = false
   waitingForVideo = false
+  waitingForAmbilight = true
+  window.ambilight = new Ambilight(ytdAppElem, videoElem)
 
+  waitingForAmbilight = false
   ambilightDetectDetachedVideo(ytdAppElem)
   return true
 }
@@ -3313,6 +3316,9 @@ window.addEventListener('beforeunload', (e) => {
   }
   if(waitingForVideo) {
     AmbilightSentry.captureExceptionWithDetails(new Error('Closed the webpage without the video ever being created in the ytd-app element on the watch page'))
+  }
+  if(waitingForAmbilight) {
+    AmbilightSentry.captureExceptionWithDetails(new Error('Closed the webpage without the ambilight ever being created on the watch page'))
   }
 })
 
