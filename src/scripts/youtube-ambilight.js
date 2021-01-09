@@ -2440,34 +2440,38 @@ class Ambilight {
     if(!this.hideVideoOverlayCache) {
       this.hideVideoOverlayCache = {
         prevAmbilightVideoDroppedFrameCount: this.ambilightVideoDroppedFrameCount,
-        frameDrops: [],
+        framesInfo: [],
         isHiddenChangeTimestamp: 0
       }
     }
 
     let {
       prevAmbilightVideoDroppedFrameCount,
-      frameDrops,
+      framesInfo,
       isHiddenChangeTimestamp
     } = this.hideVideoOverlayCache
 
     const newFramesDropped = Math.max(0, this.ambilightVideoDroppedFrameCount - prevAmbilightVideoDroppedFrameCount)
     this.hideVideoOverlayCache.prevAmbilightVideoDroppedFrameCount = this.ambilightVideoDroppedFrameCount
-    if(newFramesDropped) {
-      frameDrops.push({
-        time: performance.now(),
-        count: newFramesDropped
-      })
-    }
+    framesInfo.push({
+      time: performance.now(),
+      framesDropped: newFramesDropped
+    })
     const frameDropTimeLimit = performance.now() - 2000
-    frameDrops = frameDrops.filter(drop => drop.time > frameDropTimeLimit)
-    this.hideVideoOverlayCache.frameDrops = frameDrops
+    framesInfo = framesInfo.filter(info => info.time > frameDropTimeLimit)
+    this.hideVideoOverlayCache.framesInfo = framesInfo
     
     let aboveThreshold = false
     if(this.videoOverlaySyncThreshold !== 100) {
-      const droppedFramesCount = frameDrops.reduce((sum, drop) => sum + drop.count, 0)
-      const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
-      aboveThreshold = droppedFramesCount > droppedFramesThreshold
+      if(
+        framesInfo.length < 5
+      ) {
+        aboveThreshold = true
+      } else {
+        const droppedFramesCount = framesInfo.reduce((sum, info) => sum + info.framesDropped, 0)
+        const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
+        aboveThreshold = droppedFramesCount > droppedFramesThreshold
+      }
     }
 
     const hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
