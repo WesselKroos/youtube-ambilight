@@ -20,6 +20,7 @@ class Ambilight {
   isOnVideoPage = true
   showedCompareWarning = false
 
+  atTop = true
   p = null
   view = -1
   isFullscreen = false
@@ -70,7 +71,6 @@ class Ambilight {
     this.initStyles()
     this.updateStyles()
 
-    this.initScrollPosition()
     this.updateImmersiveMode()
     this.initGetImageDataAllowed()
 
@@ -86,8 +86,8 @@ class Ambilight {
     // Make sure to trigger checkVideoSize to call updateSizes. So that
     // this.view is updated before this.updateImmersiveMode is called
     this.sizesInvalidated = true
-    this.checkVideoSize(checkPosition)
     this.updateImmersiveMode()
+    this.checkVideoSize(checkPosition)
     this.nextFrame()
   }
 
@@ -430,6 +430,23 @@ class Ambilight {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambilight')
     body.prepend(this.elem)
+
+    this.topElem = document.createElement('div')
+    this.topElem.classList.add('ambilight__top')
+    this.elem.prepend(this.topElem)
+    
+    this.topElemObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach(entry => {
+          this.atTop = (entry.intersectionRatio !== 0)
+          this.checkScrollPosition()
+        })
+      },
+      {
+        threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+      }
+    )
+    this.topElemObserver.observe(this.topElem)
 
     this.videoShadowElem = document.createElement('div')
     this.videoShadowElem.classList.add('ambilight__video-shadow')
@@ -1271,17 +1288,7 @@ class Ambilight {
     }
   }
 
-  getScrollTop() {
-    return (this.isFullscreen ? (Ambilight.isClassic ? 0 : this.ytdAppElem.scrollTop) : window.scrollY)
-  }
-
-  updateSizes() {
-    if(this.detectVideoFillScaleEnabled){
-      this.detectVideoFillScale()
-    }
-
-    this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
-
+  updateView() {
     // const prevView = this.view
     if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
@@ -1303,13 +1310,20 @@ class Ambilight {
     //   console.log('VIEW CHANGED: ', this.view)
     //   this.getAllSettings()
     // }
+  }
 
+  updateSizes() {
+    if(this.detectVideoFillScaleEnabled){
+      this.detectVideoFillScale()
+    }
+
+    this.updateView()
+    this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
     this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
-    const scrollTop = this.getScrollTop()
     const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
     this.isFillingFullscreen = (
       this.isFullscreen &&
-      scrollTop === 0 &&
+      this.atTop &&
       Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
       Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
       noClipOrScale
@@ -2695,38 +2709,16 @@ class Ambilight {
     }
   }
 
-  initScrollPosition() {
-    on(window, 'scroll', this.handleScroll)
-    on(this.ytdAppElem, 'scroll', this.handleScroll) // Fullscreen
-    this.checkScrollPosition()
-  }
-
-  handleScroll = () => {
-    if (this.scrollEndTimeout) {
-      clearTimeout(this.scrollEndTimeout)
-    } else {
-      setTimeout(this.checkScrollPosition, 1)
-    }
-
-    this.scrollEndTimeout = setTimeout(this.handleScrollEnd, 200)
-  }
-
-  handleScrollEnd = () => {
-    this.scrollEndTimeout = undefined
-    this.checkScrollPosition()
-  }
-
   checkScrollPosition = () => {
-    const atTop  = this.getScrollTop() === 0
     const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
 
-    if (atTop && immersive) {
-      body.classList.add('at-top')
+    if (this.atTop && immersive) {
+      this.ytdWatchFlexyElem.classList.add('at-top')
     } else {
-      body.classList.remove('at-top')
+      this.ytdWatchFlexyElem.classList.remove('at-top')
     }
 
-    if (atTop) {
+    if (this.atTop) {
       this.mastheadElem.classList.add('at-top')
     } else {
       this.mastheadElem.classList.remove('at-top')
@@ -2734,9 +2726,9 @@ class Ambilight {
   }
 
   updateImmersiveMode() {
+    this.updateView()
     const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
-  
     this.checkScrollPosition()
   }
 
