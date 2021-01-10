@@ -1386,13 +1386,6 @@ class Ambilight {
       !this.videoElem.videoHeight
     ) return false //Not ready
 
-    this.projectorOffset = {
-      left: this.projectorOffset.left,
-      top: this.projectorOffset.top,
-      width: this.projectorOffset.width,
-      height: this.projectorOffset.height
-    }
-
     this.srcVideoOffset = {
       top: this.projectorOffset.top,
       width: this.videoElem.videoWidth,
@@ -3264,6 +3257,9 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
 
 const tryInitClassicAmbilight = (ytdAppElem) => {
   const classicYtdAppElem = $.s('body[data-spf-name="watch"]')
+  if(!Ambilight.isClassic && classicYtdAppElem) {
+    AmbilightSentry.captureExceptionWithDetails(new Error('Detected deprecated YouTube classic layout. Support will be removed in future versions.'))
+  }
   const classicVideoElem = $.s('video.html5-main-video')
   if(!classicYtdAppElem || !classicVideoElem) return false
 

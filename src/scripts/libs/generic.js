@@ -17,14 +17,16 @@ const wrapErrorHandlerHandleError = (stack, ex) => {
 
 export const wrapErrorHandler = (callback, reportOnce = false) => {
   const stack = new Error().stack
-  let reported = false
+  const reported = []
   return (callback.constructor.name === 'AsyncFunction')
     ? async function withAsyncErrorHandler(...args) {
       try {
         return await callback(...args)
       } catch(ex) {
-        if(reportOnce && reported) return
-        reported = true
+        if(reportOnce) {
+          if(reported.includes(ex.message)) return
+          reported.push(ex.message)
+        }
         wrapErrorHandlerHandleError(stack, ex)
       }
     }
@@ -32,8 +34,10 @@ export const wrapErrorHandler = (callback, reportOnce = false) => {
       try {
         return callback(...args)
       } catch(ex) {
-        if(reportOnce && reported) return
-        reported = true
+        if(reportOnce) {
+          if(reported.includes(ex.message)) return
+          reported.push(ex.message)
+        }
         wrapErrorHandlerHandleError(stack, ex)
       }
     }
