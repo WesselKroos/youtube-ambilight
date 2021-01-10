@@ -1377,7 +1377,7 @@ class Ambilight {
       `)
     }
 
-    this.projectorOffset = this.videoElem.getBoundingClientRect()
+    this.projectorOffset = this.getElemRect(this.videoElem)
     if (
       this.projectorOffset.top === undefined ||
       !this.projectorOffset.width ||
@@ -1829,19 +1829,30 @@ class Ambilight {
     }
 
     if(checkPosition) {
-      const projectorsElemRect = this.projectorsElem.getBoundingClientRect()
-      const videoElemRec = this.videoElem.getBoundingClientRect()
-      const expectedProjectsElemRectY = videoElemRec.y + (videoElemRec.height * (this.horizontalBarsClipPercentage/100))
+      const projectorsElemRect = this.getElemRect(this.projectorsElem)
+      const videoElemRect = this.getElemRect(this.videoElem)
+      const expectedProjectsElemRectY = videoElemRect.top + (videoElemRect.height * (this.horizontalBarsClipPercentage/100))
       if (
-        Math.abs(projectorsElemRect.width - videoElemRec.width) > 1 ||
-        Math.abs(projectorsElemRect.x - videoElemRec.x) > 1 ||
-        Math.abs(projectorsElemRect.y - expectedProjectsElemRectY) > 2
+        Math.abs(projectorsElemRect.width - videoElemRect.width) > 1 ||
+        Math.abs(projectorsElemRect.left - videoElemRect.left) > 1 ||
+        Math.abs(projectorsElemRect.top - expectedProjectsElemRectY) > 2
       ) {
         return this.updateSizes()
       }
     }
 
     return true
+  }
+
+  getElemRect(elem) {
+    const scrollableRect = (this.isFullscreen) ? this.ytdAppElem.getBoundingClientRect() : body.getBoundingClientRect()
+    const elemRect = elem.getBoundingClientRect()
+    return {
+      top: elemRect.top - scrollableRect.top,
+      left: elemRect.left - scrollableRect.left,
+      width: elemRect.width,
+      height: elemRect.height
+    }
   }
 
   scheduleNextFrame() {
