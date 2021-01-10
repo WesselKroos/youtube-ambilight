@@ -1845,7 +1845,7 @@ class Ambilight {
   }
 
   getElemRect(elem) {
-    const scrollableRect = (this.isFullscreen) ? this.ytdAppElem.getBoundingClientRect() : body.getBoundingClientRect()
+    const scrollableRect = (this.isFullscreen) ? this.ytdWatchFlexyElem.getBoundingClientRect() : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
     return {
       top: elemRect.top - scrollableRect.top,
