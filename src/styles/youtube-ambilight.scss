@@ -86,11 +86,11 @@ html[data-ambilight-enabled="true"] {
     // Make all card backgrounds transparent
     // --yt-spec-brand-background-solid: none; // Causes transparent add-to-playlist popup on Firefox
     //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
-    --yt-spec-brand-background-secondary: none;
+    // --yt-spec-brand-background-secondary: none;
     // --yt-spec-general-background-a: none; // Causes transparent menu on Firefox
-    --yt-spec-general-background-b: none;
-    --yt-spec-general-background-c: none;
-    --yt-spec-snackbar-background: none;
+    // --yt-spec-general-background-b: none;
+    // --yt-spec-general-background-c: none;
+    // --yt-spec-snackbar-background: none;
     body {
       --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
       --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
@@ -1051,29 +1051,6 @@ html[data-ambilight-enabled="true"] {
   .ytpa-menuitem-description {
     display: none;
   }
-}
-
-/* Settings - Immersive mode button */
-
-body .toggle-auto-hide-btn {
-  position: relative;
-  top: -12px;
-  line-height: 1px;
-  text-align: center;
-  font-size: 17px;
-  color: #eee;
-  cursor: pointer;
-  transition: color .2s;
-  &::before {
-    content: 'IM';
-  }
-  &:hover {
-    color: #fff;
-    text-shadow: #000 0px 0px 2px;
-  }
-}
-html[data-ambilight-immersive-mode="true"] .toggle-auto-hide-btn {
-  font-weight: bold;
 }
 
 
