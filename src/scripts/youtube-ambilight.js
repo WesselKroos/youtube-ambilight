@@ -1388,7 +1388,7 @@ class Ambilight {
 
     this.projectorOffset = {
       left: this.projectorOffset.left,
-      top: this.projectorOffset.top + scrollTop,
+      top: this.projectorOffset.top,
       width: this.projectorOffset.width,
       height: this.projectorOffset.height
     }
