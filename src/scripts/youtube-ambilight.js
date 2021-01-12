@@ -2699,7 +2699,6 @@ class Ambilight {
       html.setAttribute('dark', false)
     }
     if (this.resetThemeToLightOnDisable) {
-      this.resetThemeToLightOnDisable = undefined
       Ambilight.setDarkTheme(false)
     }
   }
@@ -3366,9 +3365,6 @@ const ambilightDetectPageTransition = (ytdAppElem) => {
       window.ambilight.start()
     } else {
       window.ambilight.hide()
-      if (ambilight.resetThemeToLightOnDisable) {
-        Ambilight.setDarkTheme(false)
-      }
     }
   }))
   observer.observe(ytdAppElem, {
