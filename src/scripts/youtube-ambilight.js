@@ -3064,7 +3064,7 @@ class Ambilight {
           }
 
           this.updateSizes()
-          this.optionalFrame()
+          this.nextFrame()
         })
       }
     })
