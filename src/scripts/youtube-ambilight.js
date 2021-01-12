@@ -2687,11 +2687,8 @@ class Ambilight {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
     this.resetVideoContainerStyle()
-
-    setTimeout(() => {
-      this.clear()
-      this.hideStats()
-    }, 500)
+    this.clear()
+    this.hideStats()
 
     html.setAttribute('data-ambilight-enabled', false)
     html.setAttribute('data-ambilight-classic', false)
