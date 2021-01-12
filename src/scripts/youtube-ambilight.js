@@ -55,6 +55,7 @@ class Ambilight {
 
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
     this.detectChromiumBug1142112Workaround()
+    this.initElems(videoElem)
     this.initVideoElem(videoElem)
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1123708Workaround()
@@ -82,6 +83,35 @@ class Ambilight {
     }, 0)
   }
 
+  initElems(videoElem) {
+    if(!Ambilight.isClassic) {
+      this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
+      if(!this.ytdWatchFlexyElem) {
+        throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
+      }
+    } else {
+      this.pageElem = $.s('#page')
+      if(!this.pageElem) {
+        throw new Error('Cannot find pageElem: #page')
+      }
+    }
+
+    this.videoPlayerElem = videoElem.closest('.html5-video-player')
+    if(!this.videoPlayerElem) {
+      throw new Error('Cannot find videoPlayerElem: .html5-video-player')
+    }
+
+    this.videoContainerElem = videoElem.closest('.html5-video-container')
+    if (!this.videoContainerElem) {
+      throw new Error('Cannot find videoContainerElem: .html5-video-container')
+    }
+    
+    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    if(!this.settingsMenuBtnParent) {
+      throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    }
+  }
+
   handleVideoResize = (checkPosition = true) => {
     // Make sure to trigger checkVideoSize to call updateSizes. So that
     // this.view is updated before this.updateImmersiveMode is called
@@ -93,34 +123,6 @@ class Ambilight {
 
   initVideoElem(videoElem) {
     this.videoElem = videoElem
-    
-    if(!Ambilight.isClassic) {
-      this.ytdWatchFlexyElem = this.videoElem.closest('ytd-watch-flexy')
-      if(!this.ytdWatchFlexyElem) {
-        throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
-      }
-    } else {
-      this.pageElem = $.s('#page')
-      if(!this.pageElem) {
-        throw new Error('Cannot find pageElem: #page')
-      }
-    }
-
-    this.videoPlayerElem = this.videoElem.closest('.html5-video-player')
-    if(!this.videoPlayerElem) {
-      throw new Error('Cannot find videoPlayerElem: .html5-video-player')
-    }
-
-    this.videoContainerElem = this.videoElem.closest('.html5-video-container')
-    if (!this.videoContainerElem) {
-      throw new Error('Cannot find videoContainerElem: .html5-video-container')
-    }
-    
-    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
-    if(!this.settingsMenuBtnParent) {
-      throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
-    }
-
     this.applyChromiumBug1142112Workaround()
   }
 
@@ -354,7 +356,7 @@ class Ambilight {
     this.bodyResizeObserver.observe(document.body)
 
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      if (!this.enabled || !this.isOnVideoPage) return
+      if (!this.enabled) return
       this.handleVideoResize(false)
     }))
     this.videoResizeObserver.observe(this.videoElem)
@@ -1293,13 +1295,13 @@ class Ambilight {
     if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
         this.view = this.VIEW_FULLSCREEN
+      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
+        this.view = this.VIEW_POPUP
       else if(
         (this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null) ||
         (this.pageElem && this.pageElem.classList.contains('watch-stage-mode'))
       )
         this.view = this.VIEW_THEATER
-      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
-        this.view = this.VIEW_POPUP
       else
         this.view = this.VIEW_SMALL
     } else {
@@ -3299,18 +3301,23 @@ const addWaitingAttempt = (type) => {
 const tryInitAmbilight = (ytdAppElem) => {
   if (ytdAppElem.getAttribute('is-watch-page') !== '') return
 
-  const videoElem = ytdAppElem.querySelector('video.html5-main-video')
+  const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
-    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
-    const playerApiElem = playerApiVideoElem && playerApiVideoElem.closest('#player-api')
-    if(playerApiElem) {
-      // console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api to the player-container')
+    const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
+    if(ytPlayerManagerVideoElem) {
+      // console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api')
       // console.log(playerApiElem.cloneNode(true))
-      addWaitingAttempt('video in #player-api')
+      addWaitingAttempt('video in yt-player-manager')
+      return false
+    }
+    const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
+    if(ytdMiniplayerVideoElem) {
+      // console.warn('YouTube Ambilight | Waiting for the video to transition from the miniplayer')
+      addWaitingAttempt('video in ytd-miniplayer')
       return false
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
-    addWaitingAttempt('no video in ytd-app')
+    addWaitingAttempt('no video in ytd-app ytd-watch-flexy')
     return false
   }
 
