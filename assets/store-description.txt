@@ -11,54 +11,65 @@ With a score lower than 5000 the extension will still work but it is likely that
 
 Features:
 
-1. Ambilight control
+1. Ambilight
 - Blur
 - Spread
 
-2. Video
-- Auto-detect & remove black bars
-- Scale
-- Shadow size
+2. Black bars
+- Remove black bars
+- Also remove colored bars
+- Fill video to screen width
 
-3. Video page content
-- Shadow size
-- Immersive mode (Show only the video when you are at the top of the page)
+3. Video
+- Size (scale/zoom)
+- Shadow
 
-4. Ambilight quality & performance
-- Synchronization quality (Energy saver, Balanced, High performance)
+4. Video page content
+- Shadow
+- Hide when scrolled to top
+- Hide in theater mode
+- Hide scrollbar
 
-5. General
-- Switch back to the light theme when ambilight is turned off
+5. Quality
+- Synchronization (Energy, Balanced, High, Perfect)
+
+6. General
+- Switch to the light theme when turned off
 - Enabled/Disabled
 
 
 Advanced features:
-1. Ambilight control
+1. Ambilight
 - Edge size
-- Fade out start & curve
-- Directions (top, left, bottom, right)
+- Fade out start
+- Fade out curve
+- Debanding (noise/dithering)
 
-2. Ambilight image adjustment
+2. Directions
+- Top, right, bottom, left
+
+3. Filters
 - Brightness
 - Contrast
 - Saturation
 
-3. Video
-- Shadow opacity
-- Set the black bars size manually
+4. Black bars
+- Black bar detection offset
+- Black bar size (manual control)
+- Reset black bars next video
 
-4. Video page content
-- Shadow opacity
+5. Video page content
+- Shadow only on text and buttons
+- Images transparency
 
-5. Ambilight quality & performance
+6. Quality
 - Show framerate
-- Debanding (dithering)
-- Limit framerate (for energy saving)
-- Sync video exactly 
+- Limit framerate (per second)
+- Sync video with ambilight
 - Smooth motion (frame blending)
 
-6. General
-- Enable in fullscreen (Shows the surround ambilight also in fullscreen mode)
+7. General
+- Enable in fullscreen
 
 
 Contribute

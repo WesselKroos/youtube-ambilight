@@ -29,6 +29,13 @@
   display: none;
 }
 
+.ambilight__top {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 1px;
+}
+
 /* Workaround for issue with OffScreenCanvas */
 .ambilight__buffers {
   position: absolute;
@@ -56,7 +63,7 @@
 
 .ambilight__fps-list {
   position: absolute;
-  z-index: 2;
+  z-index: 11;
   top: 5px;
   left: 5px;
   width: calc(100% - 10px);
@@ -79,11 +86,11 @@ html[data-ambilight-enabled="true"] {
     // Make all card backgrounds transparent
     // --yt-spec-brand-background-solid: none; // Causes transparent add-to-playlist popup on Firefox
     //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
-    --yt-spec-brand-background-secondary: none;
+    // --yt-spec-brand-background-secondary: none;
     // --yt-spec-general-background-a: none; // Causes transparent menu on Firefox
-    --yt-spec-general-background-b: none;
-    --yt-spec-general-background-c: none;
-    --yt-spec-snackbar-background: none;
+    // --yt-spec-general-background-b: none;
+    // --yt-spec-general-background-c: none;
+    // --yt-spec-snackbar-background: none;
     body {
       --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
       --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
@@ -191,6 +198,9 @@ html[data-ambilight-enabled="true"] {
 
   /* Video */
 
+  .html5-video-player.ended-mode .html5-video-container {
+    opacity: 0;
+  }
   .html5-main-video {
     transform: var(--video-transform);
   }
@@ -291,7 +301,9 @@ html[data-ambilight-enabled="true"] {
       background: none !important;
     }
     #left-arrow.yt-chip-cloud-renderer, #right-arrow.yt-chip-cloud-renderer {
-      background-color: rgba(20,20,20,.3);
+      &:not(:hover):not(:focus-within) {
+        background-color: rgba(20,20,20,.3);
+      }
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
@@ -380,36 +392,48 @@ html[data-ambilight-enabled="true"] {
 
   /* Immersive mode */
 
-  ytd-app[is-watch-page] #secondary,
-  ytd-app[is-watch-page] #masthead-container {
-    transition: opacity .15s ease-out;
-    will-change: opacity;
-    transition-delay: 0s;
-  }
-
   &[data-ambilight-immersive-mode="true"] {
-    ytd-app[is-watch-page] #primary-inner > *:not(#player) {
+    @mixin hidable() {
       transition: opacity .15s ease-out;
       will-change: opacity;
     }
+    @mixin hidden() {
+      opacity: 0;
+      transition-delay: .25s;
+    }
 
-    body.at-top ytd-app[is-watch-page]  {
-      #secondary:not(:hover),
-      #masthead-container:not(:hover):not(:focus-within) {
-        opacity: 0;
-        transition-delay: .25s;
+    ytd-app[is-watch-page] #masthead-container.at-top,
+    ytd-watch-flexy.at-top #secondary {
+      @include hidable();
+
+      &:not(:hover):not(:focus-within) {
+        @include hidden();
       }
-    
-      #primary-inner > *:not(#player) {
-        opacity: 0;
-        transition-delay: .25s;
-        &:hover {
-          &,
-          & ~ * {
-            opacity: 1;
-            transition-delay: 0s;
-          }
+    }
+
+    ytd-watch-flexy:not([theater]).at-top {
+      #primary-inner {
+        > *:not(#player) {
+          @include hidable();
+          @include hidden();
         }
+
+        &:hover > *:not(#player) {
+          opacity: 1;
+          transition-delay: 0s;
+        }
+
+        > #player:hover ~ *:not(#player) {
+          @include hidden();
+        }
+      }
+    }
+
+    ytd-watch-flexy[theater].at-top #primary-inner {
+      @include hidable();
+
+      &:not(:hover):not(:focus-within) {
+        @include hidden();
       }
     }
   } 
@@ -1032,29 +1056,6 @@ html[data-ambilight-enabled="true"] {
   }
 }
 
-/* Settings - Immersive mode button */
-
-body .toggle-auto-hide-btn {
-  position: relative;
-  top: -12px;
-  line-height: 1px;
-  text-align: center;
-  font-size: 17px;
-  color: #eee;
-  cursor: pointer;
-  transition: color .2s;
-  &::before {
-    content: 'IM';
-  }
-  &:hover {
-    color: #fff;
-    text-shadow: #000 0px 0px 2px;
-  }
-}
-html[data-ambilight-immersive-mode="true"] .toggle-auto-hide-btn {
-  font-weight: bold;
-}
-
 
 /* youtube-ambilight.js Ambilight.updateStyles variables */
 
@@ -1064,6 +1065,21 @@ html[data-ambilight-enabled="true"] {
     background: var(--ambilight-video-shadow-background, none) !important;
     box-shadow: var(--ambilight-video-shadow-box-shadow, none) !important;
   }
+
+  // Image opacity
+  ytd-watch-flexy {
+    $not-hover: ':not(:hover):not(:focus-within)';
+
+    ytd-video-owner-renderer#{$not-hover} #avatar,
+    ytd-comment-simplebox-renderer#{$not-hover} #author-thumbnail, // Form
+    ytd-comment-renderer#{$not-hover} #author-thumbnail,
+    .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
+    .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
+    .ytd-item-section-renderer#{$not-hover} #thumbnail {
+      opacity: var(--ambilight-image-opacity) !important;
+    }
+  }
+  
 
   // All shadows
   &:not([dark="true"]) {

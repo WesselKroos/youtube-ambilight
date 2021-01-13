@@ -1,4 +1,4 @@
-import { $, html, setErrorHandler } from "./generic";
+import { $, html, setErrorHandler, uuidv4 } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
 import {
   captureException,
@@ -34,6 +34,7 @@ initAndBind(BrowserClient, {
   }
 })
 
+let sessionId;
 export default class AmbilightSentry {
   static captureExceptionWithDetails(ex) {
 
@@ -54,10 +55,34 @@ export default class AmbilightSentry {
     console.error('YouTube Ambilight | ', ex)
 
     withScope(scope => {
+      try {
+        let userId = localStorage.getItem('ambilight-crash-reporter-id')
+        if(!userId) {
+          userId = uuidv4()
+          localStorage.setItem('ambilight-crash-reporter-id', userId)
+        }
+        scope.setUser({ id: userId })
+      } catch { console.warn(ex) }
+
+      try {
+        if(!sessionId) {
+          sessionId = uuidv4()
+        }
+        scope.setTag('session', sessionId)
+      } catch { console.warn(ex) }
+
       const setExtra = (name, value) => {
         try {
           scope.setExtra(name, (value === undefined) ? null : value)
         } catch (ex) { console.warn(ex) }
+      }
+
+      try {
+        if(ex && ex.details) {
+          setExtra('details', ex.details)
+        }
+      } catch (ex) {
+        setExtra('details.exception', ex)
       }
 
       try {
@@ -205,10 +230,13 @@ export default class AmbilightSentry {
           '.html5-video-container': $.sa('.html5-video-container'),
           '#player-container': $.sa('[id="player-container"]'),
           '#player-api': $.sa('[id="player-api"]'),
+          '#player': $.sa('[id="player"]'),
           '.html5-video-player': $.sa('.html5-video-player'),
           '#movie_player': $.sa('#movie_player'),
           '.html5-video-container': $.sa('.html5-video-container'),
           'video': $.sa('video'),
+          '.html5-main-video': $.sa('.html5-main-video'),
+          '.video-stream': $.sa('.video-stream'),
           'ytd-masthead': $.sa('ytd-masthead'),
           'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
           '#avatar-btn': $.sa('[id="avatar-btn"]'),
