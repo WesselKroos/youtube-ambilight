@@ -3399,7 +3399,15 @@ const onLoad = () => {
     if(!window.ambilight) {
       const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
       if(!ytdAppElem) {
-        throw new Error('Cannot find app element: ytd-app, body[data-spf-name]')
+        // This is not the youtube desktop web app
+        
+        const appElems = [...$.sa('body > *')]
+          .filter(elem => elem.tagName.endsWith('-APP'))
+          .map(elem => elem.cloneNode(false).outerHTML)
+        if(appElems.length) {
+          throw new AmbilightInitializationError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+        }
+        return
       }
       ambilightDetectPageTransition(ytdAppElem)
       ambilightDetectVideoPage(ytdAppElem)
