@@ -2961,9 +2961,7 @@ class Ambilight {
       } else if (setting.type === 'checkbox') {
         const inputElem = $.s(`#setting-${setting.name}`)
         on(inputElem, 'click', () => {
-          if (setting.type === 'checkbox') {
-            setting.value = !setting.value
-          }
+          setting.value = !setting.value
 
           if (setting.name === 'enabled') {
             if (setting.value)
