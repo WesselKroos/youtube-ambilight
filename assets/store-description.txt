@@ -58,17 +58,17 @@ Advanced features:
 - Black bar size (manual control)
 - Reset black bars next video
 
-4. Video page content
+5. Video page content
 - Shadow only on text and buttons
 - Images transparency
 
-5. Quality
+6. Quality
 - Show framerate
 - Limit framerate (per second)
 - Sync video with ambilight
 - Smooth motion (frame blending)
 
-6. General
+7. General
 - Enable in fullscreen
 
 

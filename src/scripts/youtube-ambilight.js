@@ -2516,6 +2516,9 @@ class Ambilight {
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', true)
 
+    this.updateView()
+    if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
+
     html.setAttribute('data-ambilight-enabled', true)
 
     if (!initial) {
