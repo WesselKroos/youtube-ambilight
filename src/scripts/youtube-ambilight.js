@@ -3239,27 +3239,43 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
-
+let failedToFindDetachedVideo = false
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!ytdAppElem.hasAttribute('is-watch-page')) return
 
     const isDetached = (!ambilight.videoElem || !document.contains(ambilight.videoElem))
-    if (!isDetached) return
+    if (!isDetached) {
+      if(failedToFindDetachedVideo) {
+        failedToFindDetachedVideo = false
+        AmbilightSentry.captureExceptionWithDetails(new AmbilightError('YouTube re-attached the ambilight video after I previously failed to find the new video'))
+      }
+      return
+    }
 
     const videoElem = ytdAppElem.querySelector('video.html5-main-video')
     if (!videoElem) {
-      const details = {
-        videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
-        'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
-        'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
-        'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
-        documentContainsVideoElem: document.contains(ambilight.videoElem),
-        '#player-containers.andChildNodes': [...document.querySelectorAll('#player-container')].map(elem => elem.cloneNode(true).outerHTML)
+      if(!failedToFindDetachedVideo) {
+        failedToFindDetachedVideo = true
+        const details = {
+          videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
+          'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
+          'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
+          'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
+          documentContainsVideoElem: document.contains(ambilight.videoElem),
+          '#player-containers.andChildNodes': [...document.querySelectorAll('#player-container')].map(elem => elem.cloneNode(true).outerHTML)
+        }
+        AmbilightSentry.captureExceptionWithDetails(new AmbilightError('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video', details))
       }
-      throw new AmbilightError('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video', details)
+      return
     }
+
     ambilight.initVideoElem(videoElem)
+
+    if(failedToFindDetachedVideo) {
+      failedToFindDetachedVideo = false
+      AmbilightSentry.captureExceptionWithDetails(new AmbilightError('Re-initialized ambilight video with the newly created video after I previously failed to find the new video'))
+    }
   }, true))
 
   observer.observe(document, {
