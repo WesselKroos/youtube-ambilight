@@ -3249,7 +3249,15 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
 
     const videoElem = ytdAppElem.querySelector('video.html5-main-video')
     if (!videoElem) {
-      throw new Error('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video')
+      const details = {
+        videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
+        'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
+        'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
+        'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
+        documentContainsVideoElem: document.contains(ambilight.videoElem),
+        '#player-containers.andChildNodes': [...document.querySelectorAll('#player-container')].map(elem => elem.cloneNode(true).outerHTML)
+      }
+      throw new AmbilightError('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video', details)
     }
     ambilight.initVideoElem(videoElem)
   }, true))
@@ -3329,10 +3337,10 @@ const tryInitAmbilight = (ytdAppElem) => {
   return true
 }
 
-class AmbilightInitializationError extends Error {
+class AmbilightError extends Error {
   constructor(message, details) {
     super(message)
-    this.name = 'AmbilightInitializationError'
+    this.name = 'AmbilightError'
     this.details = details
   }
 }
@@ -3342,7 +3350,7 @@ window.addEventListener('beforeunload', (e) => {
     
   addWaitingAttempt('tab closed')
   AmbilightSentry.captureExceptionWithDetails(
-    new AmbilightInitializationError('Closed the webpage without ambilight on the watch page', waitingAttempts)
+    new AmbilightError('Closed the webpage without ambilight on the watch page', waitingAttempts)
   )
 })
 
@@ -3404,7 +3412,7 @@ const onLoad = () => {
           .filter(elem => elem.tagName.endsWith('-APP'))
           .map(elem => elem.cloneNode(false).outerHTML)
         if(appElems.length) {
-          throw new AmbilightInitializationError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+          throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
         }
         return
       }
