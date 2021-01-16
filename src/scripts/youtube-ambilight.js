@@ -1968,7 +1968,7 @@ class Ambilight {
     }
 
     if(this.afterNextFrameIdleCallback) return
-    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1/60 })
+    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
   afterNextFrame = () => {
@@ -2343,7 +2343,7 @@ class Ambilight {
         }
         // console.log(hasNewFrame, this.buffersCleared, alpha)
 
-        if (this.videoOverlayEnabled && this.videoOverlay) {
+        if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
           if(alpha !== 1) {
             if(this.videoOverlay.ctx.globalAlpha !== 1) {
               this.videoOverlay.ctx.globalAlpha = 1
@@ -2378,7 +2378,7 @@ class Ambilight {
     } else {
       if (!hasNewFrame) return
 
-      if (this.videoOverlayEnabled && this.videoOverlay) {
+      if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
         if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
           this.videoOverlay.ctx.clearRect(0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         }
@@ -2474,21 +2474,20 @@ class Ambilight {
     const frameDropTimeLimit = performance.now() - 2000
     framesInfo = framesInfo.filter(info => info.time > frameDropTimeLimit)
     this.hideVideoOverlayCache.framesInfo = framesInfo
-    
-    let aboveThreshold = false
-    if(this.videoOverlaySyncThreshold !== 100) {
+
+    let hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden
+    if(!hide && this.videoOverlaySyncThreshold !== 100) {
       if(
         framesInfo.length < 5
       ) {
-        aboveThreshold = true
+        hide = true
       } else {
         const droppedFramesCount = framesInfo.reduce((sum, info) => sum + info.framesDropped, 0)
         const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
-        aboveThreshold = droppedFramesCount > droppedFramesThreshold
+        hide = droppedFramesCount > droppedFramesThreshold
       }
     }
 
-    const hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
     if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.classList.add('ambilight__video-overlay--hide')
