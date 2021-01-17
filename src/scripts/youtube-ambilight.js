@@ -3266,14 +3266,29 @@ class AmbilightError extends Error {
   }
 }
 
-window.addEventListener('beforeunload', (e) => {
+on(window, 'beforeunload', (e) => {
+  if(!errorEvents.length) return
+  
+  pushErrorEvent('tab beforeunload')
+}, false)
+
+on(window, 'pagehide', (e) => {
+  if(!errorEvents.length) return
+  
+  pushErrorEvent('tab pagehide')
+}, false)
+
+on(document, 'visibilitychange', () => {
+  if(document.visibilityState !== 'hidden') return
   if(!errorEvents.length) return
     
-  pushErrorEvent('tab closed')
+  pushErrorEvent('tab visibilitychange hidden')
+
   AmbilightSentry.captureExceptionWithDetails(
-    new AmbilightError('Closed the webpage with pending ambilight errors events', errorEvents)
+    new AmbilightError('Closed or hid the webpage tab with pending ambilight errors events', errorEvents)
   )
-})
+  errorEvents = []
+}, false)
 
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
