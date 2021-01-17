@@ -1,5 +1,5 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
-import AmbilightSentry from './libs/ambilight-sentry'
+import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
 class Ambilight {
@@ -2849,7 +2849,7 @@ class Ambilight {
       on(label, 'click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
-        const inputElem = document.querySelector(`#setting-${name}-range`)
+        const inputElem = $.s(`#setting-${name}-range`)
         inputElem.value = value
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
@@ -3226,25 +3226,35 @@ class Ambilight {
 }
 
 let errorEvents = []
-const pushErrorEvent = (type, details) => {
-  let event = {
-    type,
-    time: Math.round(performance.now()) / 1000
-  }
-  if(details) {
-    event = {
-      ...details,
-      ...event
-    }
-  }
+const pushErrorEvent = (type, details = {}) => {
+  const time = Math.round(performance.now()) / 1000
+
   if(errorEvents.length) {
     const last = errorEvents.slice(-1)[0]
-    if(last.type === event.type) {
+    const {
+      count: lastCount,
+      time: lastTime,
+      endTime: lastEndTime,
+      type: lastType,
+      ...lastDetails
+    } = last
+
+    if(
+      lastType === type && 
+      JSON.stringify(lastDetails) === JSON.stringify(details)
+    ) {
       last.count = last.count ? last.count + 1 : 2
-      last.lastTime = event.time
+      last.endTime = time
       return
     }
   }
+
+  let event = {
+    type,
+    time,
+    ...details,
+  }
+  event.time = time
   errorEvents.push(event)
 }
 
@@ -3279,6 +3289,19 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
+export const getVideosHTML = () => [...$.sa('video')]
+  .reduce((obj, elem, i) => {
+    obj[`»('video')[${i}]`] = elem.cloneNode(false).outerHTML
+    return obj
+  }, {})
+
+export const getPlayerContainersHTML = () => [...$.sa('#player-container')]
+  .reduce((obj, elem, i) => {
+    obj[`»('#player-container')[${i}]`] = elem.cloneNode(false).outerHTML
+    return obj
+  }, {})
+
+
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!ytdAppElem.hasAttribute('is-watch-page')) return
@@ -3294,17 +3317,13 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     const videoElem = ytdAppElem.querySelector('video.html5-main-video')
     if (!videoElem) {
       const details = {
-        videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
-        'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
-        'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
-        'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
-        documentContainsVideoElem: document.contains(ambilight.videoElem),
-        ...[...document.querySelectorAll('#player-container')]
-          .map(elem => elem.cloneNode(true).outerHTML)
-          .reduce((props, elemHTML, i) => {
-            props[`#player-container[${i}]`] = elemHTML
-            return props
-          }, {})
+        ...getVideosHTML(),
+        ...getPlayerContainersHTML(),
+        'ambilight.videoElem': ambilight.videoElem?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
+        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem)
       }
       pushErrorEvent('detectDetachedVideo | video detached and no new video', details)
       return
@@ -3359,7 +3378,10 @@ const tryInitAmbilight = (ytdAppElem) => {
       return false
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
-    pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy')
+    pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
+      ...getVideosHTML(),
+      ...getPlayerContainersHTML(),
+    })
     return false
   }
 

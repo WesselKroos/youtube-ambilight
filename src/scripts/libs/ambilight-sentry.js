@@ -6,6 +6,29 @@ import {
   initAndBind
 } from "@sentry/core";
 
+
+export const getNodeTree = (elem) => {
+  const nodes = [];
+  nodes.push(elem);
+  while(elem.parentNode) {
+    nodes.unshift(elem.parentNode);
+    elem = elem.parentNode;
+  }
+  return nodes.map(node => node.cloneNode(false).outerHTML).join('\n')
+}
+
+export const getVideosNodeTree = () => [...$.sa('video')]
+  .reduce((obj, elem, i) => {
+    obj[`»('video')[${i}].nodeTree`] = getNodeTree(elem)
+    return obj
+  }, {})
+
+export const getPlayerContainersNodeTree = () => [...$.sa('#player-container')]
+  .reduce((obj, elem, i) => {
+    obj[`»('#player-container')[${i}].nodeTree`] = getNodeTree(elem)
+    return obj
+  }, {})
+
 initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
@@ -173,6 +196,24 @@ export default class AmbilightSentry {
         }
       } catch (ex) { 
         setExtra('videoElem.exception', ex)
+      }
+
+      try {
+        const videosNodeTree = getVideosNodeTree()
+        Object.keys(videosNodeTree).forEach(
+          (key) => setExtra(key, videosNodeTree[key])
+        )
+      } catch (ex) { 
+        setExtra('video[].nodeTree.exception', ex)
+      }
+
+      try {
+        const playerContainersNodeTree = getPlayerContainersNodeTree()
+        Object.keys(playerContainersNodeTree).forEach(
+          (key) => setExtra(key, playerContainersNodeTree[key])
+        )
+      } catch (ex) { 
+        setExtra('#player-container[].nodeTree.exception', ex)
       }
 
       try {
