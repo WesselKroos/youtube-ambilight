@@ -53,7 +53,7 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, clipPercentage) => {
+    const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
       partSize = Math.ceil(canvas.width / 6)
       for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
@@ -71,47 +71,53 @@ const workerCode = function () {
         [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
         [2,2,2]
       const maxColorDeviation = 8
-      const maxPercentage = 0.25
       const ignoreEdge = 2
+      const lineLimit = (imageVLines[0].length / 2)
+      const largeStep = 20
     
       for(const line of imageVLines) {
-        const largeStep = 20
         let step = largeStep
-        let lineLimit = (line.length * maxPercentage) + largeStep
         const iStart = (channels * ignoreEdge)
+        // From the top down
         for (let i = iStart; i < line.length; i += (channels * step)) {
-          if(i < lineLimit) {
-            if(
-              Math.abs(line[i] - color[0]) <= maxColorDeviation && 
-              Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
-              Math.abs(line[i+2] - color[2]) <= maxColorDeviation
-            ) continue;
-            if(i !== 0 && step === largeStep) {
-              i -= (channels * step)
-              step = Math.ceil(1, Math.floor(step / 2))
-              continue
-            }
+          if(
+            // Above the top limit
+            i < lineLimit &&
+            // Within the color deviation
+            Math.abs(line[i] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i+2] - color[2]) <= maxColorDeviation
+          ) continue;
+          // Change the step from large to 1 pixel
+          if(i !== 0 && step === largeStep) {
+            i -= (channels * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
           }
+          // Found the first video pixel, add to sizes
           const size = i ? (i / channels) : 0
           sizes.push(size)
           break;
         }
         step = largeStep
-        lineLimit = (line.length * (1 - maxPercentage)) - largeStep
         const iEnd = (line.length - 1 - (channels * ignoreEdge))
+        // From the bottom up
         for (let i = iEnd; i >= 0; i -= (channels * step)) {
-          if(i > lineLimit) {
-            if(
-              Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
-              Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
-              Math.abs(line[i-1] - color[2]) <= maxColorDeviation
-            ) continue;
-            if(i !== line.length - 1 && step === largeStep) {
-              i += (channels * step)
-              step = Math.ceil(1, Math.floor(step / 2))
-              continue
-            }
+          if(
+            // Below the bottom limit
+            i > lineLimit &&
+            // Within the color deviation
+            Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
+            Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
+            Math.abs(line[i-1] - color[2]) <= maxColorDeviation
+          ) continue;
+          // Change the step from large to 1 pixel
+          if(i !== line.length - 1 && step === largeStep) {
+            i += (channels * step)
+            step = Math.ceil(1, Math.floor(step / 2))
+            continue
           }
+          // Found the first video pixel, add to sizes
           const j = (line.length - 1) - i;
           const size = j ? (j / channels) : 0
           sizes.push(size)
@@ -127,15 +133,18 @@ const workerCode = function () {
     
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
       sizes = sizes.sort(sortSizes).splice(0, 6)
+
       const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
       const allowed = height * 0.01
-      const valid = (maxDeviation <= allowed)
-      
+      const deviationAllowed = (maxDeviation <= allowed)
+      const baseOffsetPercentage = 0.4
+      const maxPercentage = 30
+
       let size = 0;
-      if(!valid) {
+      if(!deviationAllowed) {
         let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
-        if(lowestPercentage >= clipPercentage - 4) {
+        if(lowestPercentage >= currentPercentage - 4) {
           return
         }
     
@@ -143,25 +152,27 @@ const workerCode = function () {
       } else {
         size = Math.max(...sizes)// (sizes.reduce((a, b) => a + b, 0) / sizes.length)
       }
-    
-      
-      if(size < (height * 0.01)) {
+
+      if(size > (height * 0.49)) {
+        return // Filled with a single color
+      } else if(size < (height * 0.01)) {
         size = 0
       } else {
-        size += (height * 0.004) + (height * (offsetPercentage/100))
+        size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
       }
       
       let percentage = Math.round((size / height) * 10000) / 100
-      percentage = Math.min(percentage, 49) === 49 ? 0 : percentage
-    
-      const adjustment = (percentage - clipPercentage)
-      if(
-        (percentage > (maxPercentage * 100)) ||
-        (adjustment > -1 && adjustment <= 0)
-      ) {
+      percentage = Math.min(percentage, maxPercentage)
+
+      const adjustment = (percentage - currentPercentage)
+      if(adjustment > -1 && adjustment <= 0) {
         return
       }
-    
+
+      if(percentage > maxPercentage) {
+        return maxPercentage
+      }
+
       return percentage
     }
     
@@ -170,7 +181,7 @@ const workerCode = function () {
       try {
         const detectColored = e.data.detectColored
         const offsetPercentage = e.data.offsetPercentage
-        const clipPercentage = e.data.clipPercentage
+        const currentPercentage = e.data.currentPercentage
         const canvasInfo = e.data.canvasInfo
       
         if(canvasInfo.bitmap) {
@@ -212,7 +223,7 @@ const workerCode = function () {
         const percentage = await workerDetectHorizontalBarSize(
           detectColored, 
           offsetPercentage, 
-          clipPercentage
+          currentPercentage
         )
         ctx.clearRect(0, 0, canvas.width, canvas.height)
       
@@ -246,7 +257,7 @@ let ctx;
 let catchedDetectHorizontalBarSizeError = false
 let detectHorizontalBarSizeArguments;
 
-const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPercentage, callback) => {
+const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
   if(busy) return
   busy = true
 
@@ -267,7 +278,7 @@ const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, clipPe
     buffer,
     detectColored,
     offsetPercentage,
-    clipPercentage,
+    currentPercentage,
     callback
   }
 
@@ -279,7 +290,7 @@ const detectHorizontalBarSizeCallback = async () => {
     buffer,
     detectColored,
     offsetPercentage,
-    clipPercentage,
+    currentPercentage,
     callback
   } = detectHorizontalBarSizeArguments
 
@@ -332,7 +343,7 @@ const detectHorizontalBarSizeCallback = async () => {
         canvasInfo,
         detectColored,
         offsetPercentage,
-        clipPercentage
+        currentPercentage
       }, 
       canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
     )

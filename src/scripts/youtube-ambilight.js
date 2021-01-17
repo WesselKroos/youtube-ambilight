@@ -1,5 +1,5 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
-import AmbilightSentry from './libs/ambilight-sentry'
+import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
 import detectHorizontalBarSize from './horizontal-bar-detection'
 
 class Ambilight {
@@ -1968,7 +1968,7 @@ class Ambilight {
     }
 
     if(this.afterNextFrameIdleCallback) return
-    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1/60 })
+    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
   afterNextFrame = () => {
@@ -2343,7 +2343,7 @@ class Ambilight {
         }
         // console.log(hasNewFrame, this.buffersCleared, alpha)
 
-        if (this.videoOverlayEnabled && this.videoOverlay) {
+        if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
           if(alpha !== 1) {
             if(this.videoOverlay.ctx.globalAlpha !== 1) {
               this.videoOverlay.ctx.globalAlpha = 1
@@ -2378,7 +2378,7 @@ class Ambilight {
     } else {
       if (!hasNewFrame) return
 
-      if (this.videoOverlayEnabled && this.videoOverlay) {
+      if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
         if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
           this.videoOverlay.ctx.clearRect(0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         }
@@ -2474,21 +2474,20 @@ class Ambilight {
     const frameDropTimeLimit = performance.now() - 2000
     framesInfo = framesInfo.filter(info => info.time > frameDropTimeLimit)
     this.hideVideoOverlayCache.framesInfo = framesInfo
-    
-    let aboveThreshold = false
-    if(this.videoOverlaySyncThreshold !== 100) {
+
+    let hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden
+    if(!hide && this.videoOverlaySyncThreshold !== 100) {
       if(
         framesInfo.length < 5
       ) {
-        aboveThreshold = true
+        hide = true
       } else {
         const droppedFramesCount = framesInfo.reduce((sum, info) => sum + info.framesDropped, 0)
         const droppedFramesThreshold = (this.videoFrameRate * 2) * (this.videoOverlaySyncThreshold / 100)
-        aboveThreshold = droppedFramesCount > droppedFramesThreshold
+        hide = droppedFramesCount > droppedFramesThreshold
       }
     }
 
-    const hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || aboveThreshold
     if (hide) {
       if (!this.videoOverlay.isHidden) {
         this.videoOverlay.elem.classList.add('ambilight__video-overlay--hide')
@@ -2850,7 +2849,7 @@ class Ambilight {
       on(label, 'click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
-        const inputElem = document.querySelector(`#setting-${name}-range`)
+        const inputElem = $.s(`#setting-${name}-range`)
         inputElem.value = value
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
@@ -3226,6 +3225,71 @@ class Ambilight {
   }
 }
 
+let errorEvents = []
+const pushErrorEvent = (type, details = {}) => {
+  const time = Math.round(performance.now()) / 1000
+
+  if(errorEvents.length) {
+    const last = errorEvents.slice(-1)[0]
+    const {
+      count: lastCount,
+      time: lastTime,
+      endTime: lastEndTime,
+      type: lastType,
+      ...lastDetails
+    } = last
+
+    if(
+      lastType === type && 
+      JSON.stringify(lastDetails) === JSON.stringify(details)
+    ) {
+      last.count = last.count ? last.count + 1 : 2
+      last.endTime = time
+      return
+    }
+  }
+
+  let event = {
+    type,
+    time,
+    ...details,
+  }
+  event.time = time
+  errorEvents.push(event)
+}
+
+class AmbilightError extends Error {
+  constructor(message, details) {
+    super(message)
+    this.name = 'AmbilightError'
+    this.details = details
+  }
+}
+
+on(window, 'beforeunload', (e) => {
+  if(!errorEvents.length) return
+  
+  pushErrorEvent('tab beforeunload')
+}, false)
+
+on(window, 'pagehide', (e) => {
+  if(!errorEvents.length) return
+  
+  pushErrorEvent('tab pagehide')
+}, false)
+
+on(document, 'visibilitychange', () => {
+  if(document.visibilityState !== 'hidden') return
+  if(!errorEvents.length) return
+    
+  pushErrorEvent('tab visibilitychange hidden')
+
+  AmbilightSentry.captureExceptionWithDetails(
+    new AmbilightError('Closed or hid the webpage tab with pending ambilight errors events', errorEvents)
+  )
+  errorEvents = []
+}, false)
+
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
   try {
@@ -3240,19 +3304,51 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
+export const getVideosHTML = () => [...$.sa('video')]
+  .reduce((obj, elem, i) => {
+    obj[`»('video')[${i}]`] = elem.cloneNode(false).outerHTML
+    return obj
+  }, {})
+
+export const getPlayerContainersHTML = () => [...$.sa('#player-container')]
+  .reduce((obj, elem, i) => {
+    obj[`»('#player-container')[${i}]`] = elem.cloneNode(false).outerHTML
+    return obj
+  }, {})
+
 
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!ytdAppElem.hasAttribute('is-watch-page')) return
 
     const isDetached = (!ambilight.videoElem || !document.contains(ambilight.videoElem))
-    if (!isDetached) return
+    if (!isDetached) {
+      if(errorEvents.length) {
+        errorEvents = []
+      }
+      return
+    }
 
     const videoElem = ytdAppElem.querySelector('video.html5-main-video')
     if (!videoElem) {
-      throw new Error('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video')
+      const details = {
+        ...getVideosHTML(),
+        ...getPlayerContainersHTML(),
+        'ambilight.videoElem': ambilight.videoElem?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
+        'ambilight.videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
+        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem)
+      }
+      pushErrorEvent('detectDetachedVideo | video detached and no new video', details)
+      return
     }
+
     ambilight.initVideoElem(videoElem)
+
+    if(errorEvents.length) {
+      errorEvents = []
+    }
   }, true))
 
   observer.observe(document, {
@@ -3278,23 +3374,6 @@ const tryInitClassicAmbilight = (ytdAppElem) => {
   return true
 }
 
-let waitingAttempts = []
-const addWaitingAttempt = (type) => {
-  const attempt = {
-    type,
-    time: Math.round(performance.now()) / 1000
-  }
-  if(waitingAttempts.length) {
-    const last = waitingAttempts.slice(-1)[0]
-    if(last.type === attempt.type) {
-      last.count = last.count ? last.count + 1 : 2
-      last.lastTime = attempt.time
-      return
-    }
-  }
-  waitingAttempts.push(attempt)
-}
-
 const tryInitAmbilight = (ytdAppElem) => {
   if (ytdAppElem.getAttribute('is-watch-page') !== '') return
 
@@ -3304,48 +3383,34 @@ const tryInitAmbilight = (ytdAppElem) => {
     if(ytPlayerManagerVideoElem) {
       // console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api')
       // console.log(playerApiElem.cloneNode(true))
-      addWaitingAttempt('video in yt-player-manager')
+      pushErrorEvent('tryInitAmbilight | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
       // console.warn('YouTube Ambilight | Waiting for the video to transition from the miniplayer')
-      addWaitingAttempt('video in ytd-miniplayer')
+      pushErrorEvent('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
-    addWaitingAttempt('no video in ytd-app ytd-watch-flexy')
+    pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
+      ...getVideosHTML(),
+      ...getPlayerContainersHTML(),
+    })
     return false
   }
 
   try {
     window.ambilight = new Ambilight(ytdAppElem, videoElem)
   } catch(ex) {
-    addWaitingAttempt(ex.message)
+    pushErrorEvent(ex.message)
     throw ex
   }
 
-  waitingAttempts = []
+  errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
   return true
 }
-
-class AmbilightInitializationError extends Error {
-  constructor(message, details) {
-    super(message)
-    this.name = 'AmbilightInitializationError'
-    this.details = details
-  }
-}
-
-window.addEventListener('beforeunload', (e) => {
-  if(!waitingAttempts.length) return
-    
-  addWaitingAttempt('tab closed')
-  AmbilightSentry.captureExceptionWithDetails(
-    new AmbilightInitializationError('Closed the webpage without ambilight on the watch page', waitingAttempts)
-  )
-})
 
 const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
@@ -3405,7 +3470,7 @@ const onLoad = () => {
           .filter(elem => elem.tagName.endsWith('-APP'))
           .map(elem => elem.cloneNode(false).outerHTML)
         if(appElems.length) {
-          throw new AmbilightInitializationError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+          throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
         }
         return
       }
