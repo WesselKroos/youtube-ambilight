@@ -3225,6 +3225,46 @@ class Ambilight {
   }
 }
 
+let errorEvents = []
+const pushErrorEvent = (type, details) => {
+  let event = {
+    type,
+    time: Math.round(performance.now()) / 1000
+  }
+  if(details) {
+    event = {
+      ...details,
+      ...event
+    }
+  }
+  if(errorEvents.length) {
+    const last = errorEvents.slice(-1)[0]
+    if(last.type === event.type) {
+      last.count = last.count ? last.count + 1 : 2
+      last.lastTime = event.time
+      return
+    }
+  }
+  errorEvents.push(event)
+}
+
+class AmbilightError extends Error {
+  constructor(message, details) {
+    super(message)
+    this.name = 'AmbilightError'
+    this.details = details
+  }
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if(!errorEvents.length) return
+    
+  pushErrorEvent('tab closed')
+  AmbilightSentry.captureExceptionWithDetails(
+    new AmbilightError('Closed the webpage with pending ambilight errors events', errorEvents)
+  )
+})
+
 const resetThemeToLightIfSettingIsTrue = () => {
   const key = 'resetThemeToLightOnDisable'
   try {
@@ -3239,42 +3279,41 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
-let failedToFindDetachedVideo = false
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!ytdAppElem.hasAttribute('is-watch-page')) return
 
     const isDetached = (!ambilight.videoElem || !document.contains(ambilight.videoElem))
     if (!isDetached) {
-      if(failedToFindDetachedVideo) {
-        failedToFindDetachedVideo = false
-        AmbilightSentry.captureExceptionWithDetails(new AmbilightError('YouTube re-attached the ambilight video after I previously failed to find the new video'))
+      if(errorEvents.length) {
+        errorEvents = []
       }
       return
     }
 
     const videoElem = ytdAppElem.querySelector('video.html5-main-video')
     if (!videoElem) {
-      if(!failedToFindDetachedVideo) {
-        failedToFindDetachedVideo = true
-        const details = {
-          videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
-          'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
-          'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
-          'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
-          documentContainsVideoElem: document.contains(ambilight.videoElem),
-          '#player-containers.andChildNodes': [...document.querySelectorAll('#player-container')].map(elem => elem.cloneNode(true).outerHTML)
-        }
-        AmbilightSentry.captureExceptionWithDetails(new AmbilightError('Tried to re-initialize ambilight video after a video has been detached but cannot find the new video: video.html5-main-video', details))
+      const details = {
+        videoElem: ambilight.videoElem.cloneNode(false).outerHTML,
+        'videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
+        'videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
+        'videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
+        documentContainsVideoElem: document.contains(ambilight.videoElem),
+        ...[...document.querySelectorAll('#player-container')]
+          .map(elem => elem.cloneNode(true).outerHTML)
+          .reduce((props, elemHTML, i) => {
+            props[`#player-container[${i}]`] = elemHTML
+            return props
+          }, {})
       }
+      pushErrorEvent('detectDetachedVideo | video detached and no new video', details)
       return
     }
 
     ambilight.initVideoElem(videoElem)
 
-    if(failedToFindDetachedVideo) {
-      failedToFindDetachedVideo = false
-      AmbilightSentry.captureExceptionWithDetails(new AmbilightError('Re-initialized ambilight video with the newly created video after I previously failed to find the new video'))
+    if(errorEvents.length) {
+      errorEvents = []
     }
   }, true))
 
@@ -3301,23 +3340,6 @@ const tryInitClassicAmbilight = (ytdAppElem) => {
   return true
 }
 
-let waitingAttempts = []
-const addWaitingAttempt = (type) => {
-  const attempt = {
-    type,
-    time: Math.round(performance.now()) / 1000
-  }
-  if(waitingAttempts.length) {
-    const last = waitingAttempts.slice(-1)[0]
-    if(last.type === attempt.type) {
-      last.count = last.count ? last.count + 1 : 2
-      last.lastTime = attempt.time
-      return
-    }
-  }
-  waitingAttempts.push(attempt)
-}
-
 const tryInitAmbilight = (ytdAppElem) => {
   if (ytdAppElem.getAttribute('is-watch-page') !== '') return
 
@@ -3327,48 +3349,31 @@ const tryInitAmbilight = (ytdAppElem) => {
     if(ytPlayerManagerVideoElem) {
       // console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api')
       // console.log(playerApiElem.cloneNode(true))
-      addWaitingAttempt('video in yt-player-manager')
+      pushErrorEvent('tryInitAmbilight | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
       // console.warn('YouTube Ambilight | Waiting for the video to transition from the miniplayer')
-      addWaitingAttempt('video in ytd-miniplayer')
+      pushErrorEvent('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
-    addWaitingAttempt('no video in ytd-app ytd-watch-flexy')
+    pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy')
     return false
   }
 
   try {
     window.ambilight = new Ambilight(ytdAppElem, videoElem)
   } catch(ex) {
-    addWaitingAttempt(ex.message)
+    pushErrorEvent(ex.message)
     throw ex
   }
 
-  waitingAttempts = []
+  errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
   return true
 }
-
-class AmbilightError extends Error {
-  constructor(message, details) {
-    super(message)
-    this.name = 'AmbilightError'
-    this.details = details
-  }
-}
-
-window.addEventListener('beforeunload', (e) => {
-  if(!waitingAttempts.length) return
-    
-  addWaitingAttempt('tab closed')
-  AmbilightSentry.captureExceptionWithDetails(
-    new AmbilightError('Closed the webpage without ambilight on the watch page', waitingAttempts)
-  )
-})
 
 const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
