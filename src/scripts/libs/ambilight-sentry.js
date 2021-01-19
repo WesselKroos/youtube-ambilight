@@ -267,6 +267,7 @@ export default class AmbilightSentry {
           '#player-theater-container': $.sa('[id="player-theater-container"]'),
           'ytd-miniplayer': $.sa('ytd-miniplayer'),
           '#ytd-player': $.sa('#ytd-player'),
+          '#ytd-player #container':$.sa('#ytd-player #container'),
           '#container.ytd-player': $.sa('#container.ytd-player'),
           '.html5-video-container': $.sa('.html5-video-container'),
           '#player-container': $.sa('[id="player-container"]'),
@@ -274,7 +275,6 @@ export default class AmbilightSentry {
           '#player': $.sa('[id="player"]'),
           '.html5-video-player': $.sa('.html5-video-player'),
           '#movie_player': $.sa('#movie_player'),
-          '.html5-video-container': $.sa('.html5-video-container'),
           'video': $.sa('video'),
           '.html5-main-video': $.sa('.html5-main-video'),
           '.video-stream': $.sa('.video-stream'),
@@ -294,12 +294,32 @@ export default class AmbilightSentry {
           selectors['settingsMenuElem'] = [window.ambilight.settingsMenuElem]
           selectors['settingsMenuElemParent'] = [window.ambilight.settingsMenuElemParent]
         }
+        if(
+          !selectors['.html5-video-player'].length && 
+          selectors['#ytd-player'].length
+        ) {
+          // Something else than a html5-video-player is playing media. Did YouTube update to a new version?
+          
+          [...selectors['#ytd-player']].forEach((node, i) => {
+            try {
+              setExtra(`»('#ytd-player')[${i}].subTree`, 
+                node.cloneNode(true).outerHTML
+                  .replaceAll(/>\s*.*?\s*</g, '><') // Removes whitespaces and text
+                  .replaceAll(/<svg .*?>.*?<\/svg>/g, '<svg\/>')
+                  .replaceAll(/ (?!(class))[a-z|-]*?=".*?"/g, '')
+                  .replaceAll('author', 'a?thor') // Prevent author attribute scrubbing (auth)
+                  .replaceAll('cards', 'c?rds') // Prevent cards attribute scrubbing (card)
+                  .replaceAll(/></g, '><') // Removes whitespaces and text
+              )
+            } catch (ex) { console.warn(ex) }
+          })
+        }
         Object.keys(selectors).forEach((selector) => {
           const nodes = selectors[selector]
           if(!nodes) return
           [...nodes].forEach((node, i) => {
             try {
-              let nodeHtml = node ? node.cloneNode(false).outerHTML : ''
+              let nodeHtml = node ? node.cloneNode(false).outerHTML || '' : ''
               let parentNodeHtml = ((node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : '') || ''
               if(navigator.doNotTrack) {
                 nodeHtml = nodeHtml.replace(/video-id="(?!^).*?"/gi, '')

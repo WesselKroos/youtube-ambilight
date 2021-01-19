@@ -3284,6 +3284,13 @@ on(document, 'visibilitychange', () => {
     
   pushErrorEvent('tab visibilitychange hidden')
 
+  const lastEvent = errorEvents[errorEvents.length - 1]
+  const lastTime = lastEvent.lastTime || lastEvent.time
+  const firstTime = errorEvents[0].time
+  if(lastTime - firstTime < 3) {
+    return // Give the site 3 seconds to load the watch page or move the video element
+  }
+
   AmbilightSentry.captureExceptionWithDetails(
     new AmbilightError('Closed or hid the webpage tab with pending ambilight errors events', errorEvents)
   )
@@ -3390,6 +3397,11 @@ const tryInitAmbilight = (ytdAppElem) => {
     if(ytdMiniplayerVideoElem) {
       // console.warn('YouTube Ambilight | Waiting for the video to transition from the miniplayer')
       pushErrorEvent('tryInitAmbilight | video in ytd-miniplayer')
+      return false
+    }
+    const playerApiElem = document.querySelector('#player-api video.html5-main-video')
+    if(playerApiElem) {
+      pushErrorEvent('tryInitAmbilight | video in #player-api')
       return false
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
