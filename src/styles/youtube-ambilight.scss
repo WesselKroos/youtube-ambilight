@@ -257,8 +257,11 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Clarify box info panel */
 
-  ytd-info-panel-content-renderer[has-menu] {
-    background: rgba(0,0,0,.1);
+  ytd-info-panel-content-renderer {
+    background: rgba(0,0,0,.1) !important;
+  }
+  ytd-info-panel-content-renderer .content {
+    background: none !important;
   }
 
   /* Cosmetics - Merch shelf */
