@@ -54,7 +54,7 @@ const workerCode = function () {
 
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
-      partSize = Math.ceil(canvas.width / 6)
+      partSize = 1
       for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
@@ -154,7 +154,7 @@ const workerCode = function () {
       }
 
       if(size > (height * 0.49)) {
-        return // Filled with a single color
+        return 0 // Filled with a single color
       } else if(size < (height * 0.01)) {
         size = 0
       } else {
