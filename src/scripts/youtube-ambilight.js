@@ -77,10 +77,8 @@ class Ambilight {
 
     this.initListeners()
 
-    setTimeout(() => {
-      if (this.enabled)
-        this.enable(true)
-    }, 0)
+    if (this.enabled)
+      this.enable(true)
   }
 
   initElems(videoElem) {
@@ -3421,13 +3419,12 @@ const tryInitAmbilight = (ytdAppElem) => {
 
   errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
+  ambilightDetectPageTransition(ytdAppElem)
   return true
 }
 
 const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-    if (!window.ambilight) return
-
     const ytdAppOrBody = mutationsList[0].target
     const isOnVideoPage = !!(
       ytdAppOrBody.getAttribute('data-spf-name') === 'watch' || // body[data-spf-name="watch"]
@@ -3448,13 +3445,30 @@ const ambilightDetectPageTransition = (ytdAppElem) => {
   })
 }
 
-const ambilightDetectVideoPage = (ytdAppElem) => {
+const loadAmbilight = () => {
+  const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
+  if(!ytdAppElem) {
+    const appElems = [...$.sa('body > *')]
+      .filter(elem => elem.tagName.endsWith('-APP'))
+      .map(elem => elem.cloneNode(false).outerHTML)
+    if(appElems.length) {
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+    }
+    return
+  }
+
+  // Validated YouTube desktop web app
+
   if (tryInitAmbilight(ytdAppElem)) return
   if (tryInitClassicAmbilight(ytdAppElem)) return
+
+  // Not initialized yet
 
   if (ytdAppElem.getAttribute('is-watch-page') === null) {
     resetThemeToLightIfSettingIsTrue()
   }
+
+  // Listen to DOM changes
 
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
     if (window.ambilight) {
@@ -3462,8 +3476,13 @@ const ambilightDetectVideoPage = (ytdAppElem) => {
       return
     }
 
-    tryInitAmbilight(ytdAppElem)
-    tryInitClassicAmbilight(ytdAppElem)
+    if (
+      tryInitAmbilight(ytdAppElem) ||
+      tryInitClassicAmbilight(ytdAppElem)
+    ) {
+      // Initialized
+      observer.disconnect()
+    }
   }, true))
   observer.observe(ytdAppElem, {
     childList: true,
@@ -3473,22 +3492,9 @@ const ambilightDetectVideoPage = (ytdAppElem) => {
 
 const onLoad = () => {
   requestIdleCallback(function onLoad() {
-    if(!window.ambilight) {
-      const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
-      if(!ytdAppElem) {
-        // This is not the youtube desktop web app
-        
-        const appElems = [...$.sa('body > *')]
-          .filter(elem => elem.tagName.endsWith('-APP'))
-          .map(elem => elem.cloneNode(false).outerHTML)
-        if(appElems.length) {
-          throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
-        }
-        return
-      }
-      ambilightDetectPageTransition(ytdAppElem)
-      ambilightDetectVideoPage(ytdAppElem)
-    }
+    if(window.ambilight) return
+      
+    loadAmbilight()
   }, { timeout: 5000 })
 }
 
