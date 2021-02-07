@@ -160,17 +160,10 @@ export default class AmbilightSentry {
 
       try {
         if (!navigator.doNotTrack) {
-          setExtra('videoId', $.s('ytd-watch-flexy').attributes['video-id'].value)
+          setExtra('videoId', $.s('ytd-watch-flexy').attributes['video-id']?.value)
         }
       } catch (ex) {
         setExtra('videoId.exception', ex)
-      }
-      try {
-        if(window.currentVideoInfo) {
-          setExtra('videoMimeType', window.currentVideoInfo.mimeType)
-        }
-      } catch (ex) {
-        setExtra('videoMimeType.exception', ex)
       }
 
       try {
