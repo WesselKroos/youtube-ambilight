@@ -383,7 +383,7 @@ html[data-ambilight-enabled="true"] {
     // Prevent Firefox from stopping the video rendering
     // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
     opacity: 0.9899999;
-    transition: opacity .25s;//, margin-top .2s ease-out;
+    transition: opacity .25s .25s;//, margin-top .2s ease-out;
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
       transition: opacity .001s;//, margin-top .2s ease-out;
