@@ -2191,7 +2191,7 @@ class Ambilight {
     if(!updateVideoSnapshot) {
       if (this.frameSync == 150) { // PERFECT
         if(this.videoIsHidden) {
-          updateVideoSnapshot = this.buffersCleared || (this.videoFrameCount < (newVideoFrameCount + (this.videoElem.webkitDroppedFrameCount || 0)))
+          updateVideoSnapshot = true // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
         } else {
           updateVideoSnapshot = this.buffersCleared || this.videoFrameCallbackReceived
           this.videoFrameCallbackReceived = false
@@ -2217,7 +2217,11 @@ class Ambilight {
 
     let hasNewFrame = this.buffersCleared
     if(this.frameSync == 150) { // PERFECT
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      newVideoFrameCount = this.getVideoFrameCount()
+      hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount) || (
+        this.videoVisibilityChangeTime > drawTime - 3000 &&
+        this.previousFrameTime < (drawTime - (1000 / 25))
+      ) 
     } else if(this.frameSync == 0) { // PERFORMANCE
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
