@@ -222,12 +222,11 @@ html[data-ambilight-enabled="true"] {
 
   ytd-app[is-watch-page] {
     #search-form {
-      transition: background-color .15s;
+      > * {
+        transition: background-color .15s, border-color .15s, color .15s, fill .15s;
+      }
       #search::-webkit-input-placeholder {
         transition: color .15s;
-      }
-      > * {
-        transition: all .15s;
       }
       > button {
         background-color: #393939 !important;
@@ -397,33 +396,39 @@ html[data-ambilight-enabled="true"] {
 
   &[data-ambilight-immersive-mode="true"] {
     @mixin hidable() {
-      transition: opacity .15s ease-out;
       will-change: opacity;
     }
     @mixin hidden() {
+      transition: opacity .15s ease-out;
       opacity: 0;
-      transition-delay: .25s;
     }
 
+    ytd-app[is-watch-page] #masthead-container,
+    ytd-watch-flexy #secondary {
+      @include hidable();
+    }
     ytd-app[is-watch-page] #masthead-container.at-top,
     ytd-watch-flexy.at-top #secondary {
-      @include hidable();
-
       &:not(:hover):not(:focus-within) {
         @include hidden();
       }
     }
 
-    ytd-watch-flexy:not([theater]).at-top {
+    ytd-watch-flexy:not([theater]) {
       #primary-inner {
         > *:not(#player) {
           @include hidable();
+        }
+      }
+    }
+    ytd-watch-flexy:not([theater]).at-top {
+      #primary-inner {
+        > *:not(#player) {
           @include hidden();
         }
 
         &:hover > *:not(#player) {
           opacity: 1;
-          transition-delay: 0s;
         }
 
         > #player:hover ~ *:not(#player) {
@@ -432,9 +437,10 @@ html[data-ambilight-enabled="true"] {
       }
     }
 
-    ytd-watch-flexy[theater].at-top #primary-inner {
+    ytd-watch-flexy[theater] #primary-inner {
       @include hidable();
-
+    }
+    ytd-watch-flexy[theater].at-top #primary-inner {
       &:not(:hover):not(:focus-within) {
         @include hidden();
       }
