@@ -19,6 +19,7 @@ class Ambilight {
   isHidden = true
   isOnVideoPage = true
   showedCompareWarning = false
+  getImageDataAllowed = true
 
   atTop = true
   p = null
@@ -73,7 +74,7 @@ class Ambilight {
     this.updateStyles()
 
     this.updateImmersiveMode()
-    this.initGetImageDataAllowed()
+    this.checkGetImageDataAllowed()
 
     this.initListeners()
 
@@ -410,9 +411,12 @@ class Ambilight {
     }
   }
 
-  initGetImageDataAllowed() {
+  checkGetImageDataAllowed(reportUnexpectedChange = false) {
     const isSameOriginVideo = (this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
-    this.getImageDataAllowed = (!window.chrome || isSameOriginVideo)
+    const getImageDataAllowed = (!window.chrome || isSameOriginVideo)
+    if(this.getImageDataAllowed === getImageDataAllowed) return
+
+    this.getImageDataAllowed = getImageDataAllowed
 
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
@@ -2209,11 +2213,6 @@ class Ambilight {
       this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
         0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
     }
-      
-    // Execute getImageData on a separate buffer for performance:
-    // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
-    // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
-    let getImageDataBuffer = undefined
 
     let hasNewFrame = this.buffersCleared
     if(this.frameSync == 150) { // PERFECT
@@ -2226,42 +2225,47 @@ class Ambilight {
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
       hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount)
-      if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
+      
+      if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
-          //performance.mark('comparing-compare-start')
-
-          if(!getImageDataBuffer) {
-            getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
+          if(
+            (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) ||
+            this.getImageDataAllowed
+          ) {
+            // Execute getImageData on a separate buffer for performance:
+            // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
+            // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
+            const getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
             getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
-          }
 
-          let lines = []
-          let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
-          try {
-            for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
-              lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
+            let lines = []
+            let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
+            try {
+              for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
+                lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
+              }
+            } catch (ex) {
+              if (!this.showedCompareWarning) {
+                this.showedCompareWarning = true
+                throw ex
+              }
             }
-          } catch (ex) {
-            if (!this.showedCompareWarning) {
-              this.showedCompareWarning = true
-              throw ex
-            }
-          }
 
-          if (!hasNewFrame) {
-            const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
-            if (isConfirmedNewFrame) {
-              newVideoFrameCount++
-              hasNewFrame = true
+            if (!hasNewFrame) {
+              const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
+              if (isConfirmedNewFrame) {
+                newVideoFrameCount++
+                hasNewFrame = true
+              }
             }
-          }
-          //performance.mark('comparing-compare-end')
+            //performance.mark('comparing-compare-end')
 
-          if (hasNewFrame) {
-            if(this.oldLines) {
-              this.oldLines.length = 0 // Free memory
+            if (hasNewFrame) {
+              if(this.oldLines) {
+                this.oldLines.length = 0 // Free memory
+              }
+              this.oldLines = lines
             }
-            this.oldLines = lines
           }
         }
       }
@@ -2421,10 +2425,14 @@ class Ambilight {
     // Horizontal bar detection
     if(
       this.detectHorizontalBarSizeEnabled && 
-      this.getImageDataAllowed &&
       hasNewFrame
     ) {
-      return { detectHorizontalBarSize: true }
+      if(
+        (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
+        this.getImageDataAllowed
+      ) {
+        return { detectHorizontalBarSize: true }
+      }
     }
   }
 
@@ -2641,7 +2649,7 @@ class Ambilight {
 
     this.sizesInvalidated = true // Prevent wrong size from being used
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
-    this.initGetImageDataAllowed()
+    this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
 
     // Prevent incorrect stats from showing
