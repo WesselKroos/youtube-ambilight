@@ -132,7 +132,7 @@ const workerCode = function () {
       }
     
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      const closestSizes = sizes.sort(sortSizes).slice(0, sizes.length)
+      const closestSizes = sizes.sort(sortSizes).slice(0, Math.min(6, sizes.length))
 
       const maxDeviation = Math.abs(Math.min(...closestSizes) - Math.max(...closestSizes))
       const allowed = height * 0.01
