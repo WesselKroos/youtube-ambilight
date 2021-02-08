@@ -90,7 +90,7 @@ const workerCode = function () {
           ) continue;
           // Change the step from large to 1 pixel
           if(i !== 0 && step === largeStep) {
-            i -= (channels * step)
+            i = Math.max(-channels, i - (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
@@ -113,7 +113,7 @@ const workerCode = function () {
           ) continue;
           // Change the step from large to 1 pixel
           if(i !== line.length - 1 && step === largeStep) {
-            i += (channels * step)
+            i = Math.min((line.length - 1 + channels) , i + (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
@@ -132,9 +132,9 @@ const workerCode = function () {
       }
     
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      sizes = sizes.sort(sortSizes).splice(0, 6)
+      const closestSizes = sizes.sort(sortSizes).slice(0, sizes.length)
 
-      const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
+      const maxDeviation = Math.abs(Math.min(...closestSizes) - Math.max(...closestSizes))
       const allowed = height * 0.01
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = 0.4
@@ -142,7 +142,7 @@ const workerCode = function () {
 
       let size = 0;
       if(!deviationAllowed) {
-        let lowestSize = Math.min(...sizes)
+        let lowestSize = Math.min(...closestSizes)
         let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
           return
@@ -150,11 +150,19 @@ const workerCode = function () {
     
         size = lowestSize
       } else {
-        size = Math.max(...sizes)// (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+        size = Math.max(...closestSizes)
       }
 
       if(size > (height * 0.49)) {
-        return 0 // Filled with a single color
+        let lowestSize = Math.min(...sizes)
+        if(lowestSize >= (height * 0.01)) {
+          lowestSize += (height * ((baseOffsetPercentage + offsetPercentage)/100))
+        }
+        let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
+        if(lowestPercentage < currentPercentage) {
+          return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
+        }
+        return // Filled with a almost single color
       } else if(size < (height * 0.01)) {
         size = 0
       } else {
