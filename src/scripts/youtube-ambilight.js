@@ -237,7 +237,7 @@ class Ambilight {
   detectChromiumBug1092080Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version >= 82) {
+    if(version && version >= 82 && version < 88) {
       this.enableChromiumBug1092080Workaround = true
     }
   }
