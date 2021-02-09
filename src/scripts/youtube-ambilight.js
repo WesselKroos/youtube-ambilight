@@ -1,6 +1,6 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
-import detectHorizontalBarSize from './horizontal-bar-detection'
+import { HorizontalBarDetection } from './horizontal-bar-detection'
 
 class Ambilight {
   static isClassic = false
@@ -2424,27 +2424,33 @@ class Ambilight {
 
     // Horizontal bar detection
     if(
-      this.detectHorizontalBarSizeEnabled && 
+      this.detectHorizontalBarSizeEnabled &&
       hasNewFrame
     ) {
-      if(
-        (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
-        this.getImageDataAllowed
-      ) {
-        return { detectHorizontalBarSize: true }
-      }
+      return { detectHorizontalBarSize: true }
     }
   }
 
   scheduleHorizontalBarSizeDetection = () => {
     try {
-      detectHorizontalBarSize(
-        this.videoSnapshotBuffer,
-        this.detectColoredHorizontalBarSizeEnabled,
-        this.detectHorizontalBarSizeOffsetPercentage,
-        this.horizontalBarsClipPercentage,
-        wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
-      )
+      if(!this.horizontalBarDetection) {
+        this.horizontalBarDetection = new HorizontalBarDetection()
+      } else if(this.horizontalBarDetection.busy) {
+        return
+      }
+
+      if(
+        (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
+        this.getImageDataAllowed
+      ) {
+        this.horizontalBarDetection.detect(
+          this.videoSnapshotBuffer,
+          this.detectColoredHorizontalBarSizeEnabled,
+          this.detectHorizontalBarSizeOffsetPercentage,
+          this.horizontalBarsClipPercentage,
+          wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
+        )
+      }
     } catch (ex) {
       if (!this.showedDetectHorizontalBarSizeWarning) {
         this.showedDetectHorizontalBarSizeWarning = true
