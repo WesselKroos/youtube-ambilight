@@ -2535,6 +2535,7 @@ class Ambilight {
     if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
 
     html.setAttribute('data-ambilight-enabled', true)
+    this.videoPlayerElem.setSize()
 
     if (!initial) {
       const toLight = !html.getAttribute('dark')
@@ -2554,6 +2555,7 @@ class Ambilight {
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
     html.setAttribute('data-ambilight-enabled', false)
+    this.videoPlayerElem.setSize()
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2748,8 +2750,12 @@ class Ambilight {
   updateImmersiveMode() {
     this.updateView()
     const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
+    if(!changed) return
+
     this.checkScrollPosition()
+    this.videoPlayerElem.setSize()
   }
 
   toggleImmersiveMode() {
@@ -2991,7 +2997,11 @@ class Ambilight {
             this.toggleImmersiveMode()
           }
           if (setting.name === 'hideScrollbar') {
+            const changed = (html.getAttribute('data-ambilight-hide-scrollbar') !== setting.value.toString())
             html.setAttribute('data-ambilight-hide-scrollbar', setting.value)
+            if(changed) {
+              this.videoPlayerElem.setSize()
+            }
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
