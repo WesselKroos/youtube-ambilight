@@ -1,6 +1,6 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
-import detectHorizontalBarSize from './horizontal-bar-detection'
+import { HorizontalBarDetection } from './horizontal-bar-detection'
 
 class Ambilight {
   static isClassic = false
@@ -19,6 +19,7 @@ class Ambilight {
   isHidden = true
   isOnVideoPage = true
   showedCompareWarning = false
+  getImageDataAllowed = true
 
   atTop = true
   p = null
@@ -73,14 +74,12 @@ class Ambilight {
     this.updateStyles()
 
     this.updateImmersiveMode()
-    this.initGetImageDataAllowed()
+    this.checkGetImageDataAllowed()
 
     this.initListeners()
 
-    setTimeout(() => {
-      if (this.enabled)
-        this.enable(true)
-    }, 0)
+    if (this.enabled)
+      this.enable(true)
   }
 
   initElems(videoElem) {
@@ -238,7 +237,7 @@ class Ambilight {
   detectChromiumBug1092080Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version >= 82) {
+    if(version && version >= 82 && version < 88) {
       this.enableChromiumBug1092080Workaround = true
     }
   }
@@ -412,9 +411,12 @@ class Ambilight {
     }
   }
 
-  initGetImageDataAllowed() {
+  checkGetImageDataAllowed(reportUnexpectedChange = false) {
     const isSameOriginVideo = (this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
-    this.getImageDataAllowed = (!window.chrome || isSameOriginVideo)
+    const getImageDataAllowed = (!window.chrome || isSameOriginVideo)
+    if(this.getImageDataAllowed === getImageDataAllowed) return
+
+    this.getImageDataAllowed = getImageDataAllowed
 
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
@@ -2193,7 +2195,7 @@ class Ambilight {
     if(!updateVideoSnapshot) {
       if (this.frameSync == 150) { // PERFECT
         if(this.videoIsHidden) {
-          updateVideoSnapshot = this.buffersCleared || (this.videoFrameCount < (newVideoFrameCount + (this.videoElem.webkitDroppedFrameCount || 0)))
+          updateVideoSnapshot = true // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
         } else {
           updateVideoSnapshot = this.buffersCleared || this.videoFrameCallbackReceived
           this.videoFrameCallbackReceived = false
@@ -2211,55 +2213,59 @@ class Ambilight {
       this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
         0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
     }
-      
-    // Execute getImageData on a separate buffer for performance:
-    // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
-    // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
-    let getImageDataBuffer = undefined
 
     let hasNewFrame = this.buffersCleared
     if(this.frameSync == 150) { // PERFECT
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      newVideoFrameCount = this.getVideoFrameCount()
+      hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount) || (
+        this.videoVisibilityChangeTime > drawTime - 3000 &&
+        this.previousFrameTime < (drawTime - (1000 / 25))
+      ) 
     } else if(this.frameSync == 0) { // PERFORMANCE
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
       hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount)
-      if (this.getImageDataAllowed && this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
+      
+      if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
         if(!hasNewFrame || this.framerateLimit > this.videoFrameRate - 1) {
-          //performance.mark('comparing-compare-start')
-
-          if(!getImageDataBuffer) {
-            getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
+          if(
+            (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) ||
+            this.getImageDataAllowed
+          ) {
+            // Execute getImageData on a separate buffer for performance:
+            // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
+            // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
+            const getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
             getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
-          }
 
-          let lines = []
-          let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
-          try {
-            for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
-              lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
+            let lines = []
+            let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
+            try {
+              for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
+                lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
+              }
+            } catch (ex) {
+              if (!this.showedCompareWarning) {
+                this.showedCompareWarning = true
+                throw ex
+              }
             }
-          } catch (ex) {
-            if (!this.showedCompareWarning) {
-              this.showedCompareWarning = true
-              throw ex
-            }
-          }
 
-          if (!hasNewFrame) {
-            const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
-            if (isConfirmedNewFrame) {
-              newVideoFrameCount++
-              hasNewFrame = true
+            if (!hasNewFrame) {
+              const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
+              if (isConfirmedNewFrame) {
+                newVideoFrameCount++
+                hasNewFrame = true
+              }
             }
-          }
-          //performance.mark('comparing-compare-end')
+            //performance.mark('comparing-compare-end')
 
-          if (hasNewFrame) {
-            if(this.oldLines) {
-              this.oldLines.length = 0 // Free memory
+            if (hasNewFrame) {
+              if(this.oldLines) {
+                this.oldLines.length = 0 // Free memory
+              }
+              this.oldLines = lines
             }
-            this.oldLines = lines
           }
         }
       }
@@ -2418,8 +2424,7 @@ class Ambilight {
 
     // Horizontal bar detection
     if(
-      this.detectHorizontalBarSizeEnabled && 
-      this.getImageDataAllowed &&
+      this.detectHorizontalBarSizeEnabled &&
       hasNewFrame
     ) {
       return { detectHorizontalBarSize: true }
@@ -2428,13 +2433,24 @@ class Ambilight {
 
   scheduleHorizontalBarSizeDetection = () => {
     try {
-      detectHorizontalBarSize(
-        this.videoSnapshotBuffer,
-        this.detectColoredHorizontalBarSizeEnabled,
-        this.detectHorizontalBarSizeOffsetPercentage,
-        this.horizontalBarsClipPercentage,
-        wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
-      )
+      if(!this.horizontalBarDetection) {
+        this.horizontalBarDetection = new HorizontalBarDetection()
+      } else if(this.horizontalBarDetection.busy) {
+        return
+      }
+
+      if(
+        (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
+        this.getImageDataAllowed
+      ) {
+        this.horizontalBarDetection.detect(
+          this.videoSnapshotBuffer,
+          this.detectColoredHorizontalBarSizeEnabled,
+          this.detectHorizontalBarSizeOffsetPercentage,
+          this.horizontalBarsClipPercentage,
+          wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
+        )
+      }
     } catch (ex) {
       if (!this.showedDetectHorizontalBarSizeWarning) {
         this.showedDetectHorizontalBarSizeWarning = true
@@ -2519,6 +2535,7 @@ class Ambilight {
     if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
 
     html.setAttribute('data-ambilight-enabled', true)
+    this.videoPlayerElem.setSize()
 
     if (!initial) {
       const toLight = !html.getAttribute('dark')
@@ -2538,6 +2555,7 @@ class Ambilight {
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
     html.setAttribute('data-ambilight-enabled', false)
+    this.videoPlayerElem.setSize()
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2639,7 +2657,7 @@ class Ambilight {
 
     this.sizesInvalidated = true // Prevent wrong size from being used
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
-    this.initGetImageDataAllowed()
+    this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
 
     // Prevent incorrect stats from showing
@@ -2732,8 +2750,12 @@ class Ambilight {
   updateImmersiveMode() {
     this.updateView()
     const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
+    if(!changed) return
+
     this.checkScrollPosition()
+    this.videoPlayerElem.setSize()
   }
 
   toggleImmersiveMode() {
@@ -2975,7 +2997,11 @@ class Ambilight {
             this.toggleImmersiveMode()
           }
           if (setting.name === 'hideScrollbar') {
+            const changed = (html.getAttribute('data-ambilight-hide-scrollbar') !== setting.value.toString())
             html.setAttribute('data-ambilight-hide-scrollbar', setting.value)
+            if(changed) {
+              this.videoPlayerElem.setSize()
+            }
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
@@ -3421,13 +3447,12 @@ const tryInitAmbilight = (ytdAppElem) => {
 
   errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
+  ambilightDetectPageTransition(ytdAppElem)
   return true
 }
 
 const ambilightDetectPageTransition = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-    if (!window.ambilight) return
-
     const ytdAppOrBody = mutationsList[0].target
     const isOnVideoPage = !!(
       ytdAppOrBody.getAttribute('data-spf-name') === 'watch' || // body[data-spf-name="watch"]
@@ -3448,13 +3473,30 @@ const ambilightDetectPageTransition = (ytdAppElem) => {
   })
 }
 
-const ambilightDetectVideoPage = (ytdAppElem) => {
+const loadAmbilight = () => {
+  const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
+  if(!ytdAppElem) {
+    const appElems = [...$.sa('body > *')]
+      .filter(elem => elem.tagName.endsWith('-APP'))
+      .map(elem => elem.cloneNode(false).outerHTML)
+    if(appElems.length) {
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+    }
+    return
+  }
+
+  // Validated YouTube desktop web app
+
   if (tryInitAmbilight(ytdAppElem)) return
   if (tryInitClassicAmbilight(ytdAppElem)) return
+
+  // Not initialized yet
 
   if (ytdAppElem.getAttribute('is-watch-page') === null) {
     resetThemeToLightIfSettingIsTrue()
   }
+
+  // Listen to DOM changes
 
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
     if (window.ambilight) {
@@ -3462,8 +3504,13 @@ const ambilightDetectVideoPage = (ytdAppElem) => {
       return
     }
 
-    tryInitAmbilight(ytdAppElem)
-    tryInitClassicAmbilight(ytdAppElem)
+    if (
+      tryInitAmbilight(ytdAppElem) ||
+      tryInitClassicAmbilight(ytdAppElem)
+    ) {
+      // Initialized
+      observer.disconnect()
+    }
   }, true))
   observer.observe(ytdAppElem, {
     childList: true,
@@ -3473,22 +3520,9 @@ const ambilightDetectVideoPage = (ytdAppElem) => {
 
 const onLoad = () => {
   requestIdleCallback(function onLoad() {
-    if(!window.ambilight) {
-      const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
-      if(!ytdAppElem) {
-        // This is not the youtube desktop web app
-        
-        const appElems = [...$.sa('body > *')]
-          .filter(elem => elem.tagName.endsWith('-APP'))
-          .map(elem => elem.cloneNode(false).outerHTML)
-        if(appElems.length) {
-          throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
-        }
-        return
-      }
-      ambilightDetectPageTransition(ytdAppElem)
-      ambilightDetectVideoPage(ytdAppElem)
-    }
+    if(window.ambilight) return
+      
+    loadAmbilight()
   }, { timeout: 5000 })
 }
 

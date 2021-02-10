@@ -54,7 +54,7 @@ const workerCode = function () {
 
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
-      partSize = Math.ceil(canvas.width / 6)
+      partSize = 1
       for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
@@ -90,7 +90,7 @@ const workerCode = function () {
           ) continue;
           // Change the step from large to 1 pixel
           if(i !== 0 && step === largeStep) {
-            i -= (channels * step)
+            i = Math.max(-channels, i - (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
@@ -113,7 +113,7 @@ const workerCode = function () {
           ) continue;
           // Change the step from large to 1 pixel
           if(i !== line.length - 1 && step === largeStep) {
-            i += (channels * step)
+            i = Math.min((line.length - 1 + channels) , i + (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
@@ -132,9 +132,9 @@ const workerCode = function () {
       }
     
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      sizes = sizes.sort(sortSizes).splice(0, 6)
+      const closestSizes = sizes.sort(sortSizes).slice(0, Math.min(6, sizes.length))
 
-      const maxDeviation = Math.abs(Math.min(...sizes) - Math.max(...sizes))
+      const maxDeviation = Math.abs(Math.min(...closestSizes) - Math.max(...closestSizes))
       const allowed = height * 0.01
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = 0.4
@@ -142,7 +142,7 @@ const workerCode = function () {
 
       let size = 0;
       if(!deviationAllowed) {
-        let lowestSize = Math.min(...sizes)
+        let lowestSize = Math.min(...closestSizes)
         let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
           return
@@ -150,11 +150,19 @@ const workerCode = function () {
     
         size = lowestSize
       } else {
-        size = Math.max(...sizes)// (sizes.reduce((a, b) => a + b, 0) / sizes.length)
+        size = Math.max(...closestSizes)
       }
 
       if(size > (height * 0.49)) {
-        return // Filled with a single color
+        let lowestSize = Math.min(...sizes)
+        if(lowestSize >= (height * 0.01)) {
+          lowestSize += (height * ((baseOffsetPercentage + offsetPercentage)/100))
+        }
+        let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
+        if(lowestPercentage < currentPercentage) {
+          return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
+        }
+        return // Filled with a almost single color
       } else if(size < (height * 0.01)) {
         size = 0
       } else {
@@ -249,114 +257,115 @@ const workerCode = function () {
   }
 }
 
-let worker
-let workerMessageId = 0
-let busy = false
-let canvas;
-let ctx;
-let catchedDetectHorizontalBarSizeError = false
-let detectHorizontalBarSizeArguments;
+export class HorizontalBarDetection {
+  worker
+  workerMessageId = 0
+  busy = false
+  canvas;
+  ctx;
+  catchedDetectHorizontalBarSizeError = false
 
-const detectHorizontalBarSize = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
-  if(busy) return
-  busy = true
+  detect = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
+    if(this.busy) return
+    this.busy = true
 
-  if(!worker) {
-    worker = workerFromCode(workerCode)
-    worker.onmessage = (e) => {
-      if(e.data.id !== -1) {
-        console.warn('Ignoring worker message:', e.data)
-        return
-      }
-      if(e.data.error) {
-        AmbilightSentry.captureExceptionWithDetails(e.data.error)
-      }
-    }
-  }
-
-  detectHorizontalBarSizeArguments = {
-    buffer,
-    detectColored,
-    offsetPercentage,
-    currentPercentage,
-    callback
-  }
-
-  requestIdleCallback(wrapErrorHandler(detectHorizontalBarSizeCallback), { timeout: 1000 })
-}
-
-const detectHorizontalBarSizeCallback = async () => {
-  const {
-    buffer,
-    detectColored,
-    offsetPercentage,
-    currentPercentage,
-    callback
-  } = detectHorizontalBarSizeArguments
-
-  try {
-    const start = performance.now()
-
-    if(!canvas) {
-      canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-      ctx = canvas.getContext('2d', {
-        alpha: false,
-        desynchronized: true
-      })
-      ctx.imageSmoothingEnabled = false
-    }
-
-    ctx.drawImage(buffer.elem, 0, 0, canvas.width, canvas.height)
-    const canvasInfo = worker.isFallbackWorker ? {
-      canvas,
-      ctx
-    } : {
-      bitmap: canvas.transferToImageBitmap()
-    }
-
-    workerMessageId++;
-    const stack = new Error().stack
-    const onMessagePromise = new Promise((resolve, reject) => {
-      worker.onerror = (err) => reject(err)
-      worker.onmessage = (e) => {
-        try {
-          if(e.data.id !== workerMessageId) {
-            console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
-            return
-          }
-          if(e.data.error) {
-            // Readable name for the worker script
-            e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
-            appendErrorStack(stack, e.data.error)
-            throw e.data.error
-          }
-          callback(e.data.percentage)
-          resolve()
-        } catch(ex) {
-          reject(ex)
+    if(!this.worker) {
+      this.worker = workerFromCode(workerCode)
+      this.worker.onmessage = (e) => {
+        if(e.data.id !== -1) {
+          console.warn('Ignoring worker message:', e.data)
+          return
+        }
+        if(e.data.error) {
+          AmbilightSentry.captureExceptionWithDetails(e.data.error)
         }
       }
-    })
-    worker.postMessage(
-      {
-        id: workerMessageId,
-        canvasInfo,
-        detectColored,
-        offsetPercentage,
-        currentPercentage
-      }, 
-      canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
-    )
-    await onMessagePromise;
+    }
 
-    const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
-    setTimeout(() => {
-      busy = false
-    }, throttle)
-  } catch(ex) {
-    if (!catchedDetectHorizontalBarSizeError) {
-      catchedDetectHorizontalBarSizeError = true
-      throw ex
+    this.idleHandlerArguments = {
+      buffer,
+      detectColored,
+      offsetPercentage,
+      currentPercentage,
+      callback
+    }
+
+    requestIdleCallback(wrapErrorHandler(this.idleHandler), { timeout: 1000 })
+  }
+
+  idleHandler = async () => {
+    const {
+      buffer,
+      detectColored,
+      offsetPercentage,
+      currentPercentage,
+      callback
+    } = this.idleHandlerArguments
+
+    try {
+      const start = performance.now()
+
+      if(!this.canvas) {
+        this.canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        this.ctx = this.canvas.getContext('2d', {
+          alpha: false,
+          desynchronized: true
+        })
+        this.ctx.imageSmoothingEnabled = false
+      }
+
+      this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
+      const canvasInfo = this.worker.isFallbackWorker ? {
+        canvas: this.canvas,
+        ctx: this.ctx
+      } : {
+        bitmap: this.canvas.transferToImageBitmap()
+      }
+
+      this.workerMessageId++;
+      const stack = new Error().stack
+      const onMessagePromise = new Promise((resolve, reject) => {
+        this.worker.onerror = (err) => reject(err)
+        this.worker.onmessage = (e) => {
+          try {
+            if(e.data.id !== this.workerMessageId) {
+              console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
+              return
+            }
+            if(e.data.error) {
+              // Readable name for the worker script
+              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
+              appendErrorStack(stack, e.data.error)
+              throw e.data.error
+            }
+            callback(e.data.percentage)
+            resolve()
+          } catch(ex) {
+            reject(ex)
+          }
+        }
+      })
+      this.worker.postMessage(
+        {
+          id: this.workerMessageId,
+          canvasInfo,
+          detectColored,
+          offsetPercentage,
+          currentPercentage
+        }, 
+        canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
+      )
+      await onMessagePromise;
+
+      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+      setTimeout(() => {
+        this.busy = false
+      }, throttle)
+    } catch(ex) {
+      if (!this.catchedDetectHorizontalBarSizeError) {
+        this.catchedDetectHorizontalBarSizeError = true
+        throw ex
+      }
     }
   }
 }
