@@ -966,16 +966,18 @@ class Ambilight {
       if(this.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
           setting.max = 150
-          // setting.default = 150 // Change this default in a future release
-          // setting.advanced = true // Change this in the future when frameSync setting is set to 150 by default
+          setting.default = 150
+          // setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
         }
 
-        // Change this in the future when frameSync setting is set to 150 by default
-        // if(setting.name === 'frameSync') {
-        //   return undefined
-        // }
+        // Change this in the future when frameSync 150 is released and validated to work
         // if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
         //   setting.advanced = true
+        // }
+
+        // Change this in the future when frameSync 150 is released and validated to work for a long time
+        // if(setting.name === 'frameSync') {
+        //   return undefined
         // }
       }
       return setting
