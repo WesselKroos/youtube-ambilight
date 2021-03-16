@@ -107,9 +107,9 @@ html[data-ambilight-enabled="true"] {
 
     &[data-ambilight-hide-scrollbar="true"],
     &[data-ambilight-immersive-mode="true"] {
-      scrollbar-width: none;
+      scrollbar-width: none !important;
       body::-webkit-scrollbar {
-        width: 0;
+        width: 0 !important;
       }
     }
   }
