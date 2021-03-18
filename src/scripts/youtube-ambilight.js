@@ -3356,7 +3356,7 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!ytdAppElem.hasAttribute('is-watch-page')) return
 
-    const isDetached = (!ambilight.videoElem || !document.contains(ambilight.videoElem))
+    const isDetached = (!ambilight.videoElem || !ambilight.ytdWatchFlexyElem.contains(ambilight.videoElem))
     if (!isDetached) {
       if(errorEvents.length) {
         errorEvents = []
@@ -3364,7 +3364,7 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       return
     }
 
-    const videoElem = ytdAppElem.querySelector('video.html5-main-video')
+    const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
       const details = {
         ...getVideosHTML(),
@@ -3380,6 +3380,7 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     }
 
     ambilight.initVideoElem(videoElem)
+    ambilight.start()
 
     if(errorEvents.length) {
       errorEvents = []
