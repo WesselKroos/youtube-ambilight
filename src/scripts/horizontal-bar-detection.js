@@ -149,24 +149,30 @@ const workerCode = function () {
         }
     
         size = lowestSize
+        if(size < (height * 0.01)) {
+          size = 0
+        } else {
+          size += (height * (offsetPercentage/100))
+        }
       } else {
         size = Math.max(...closestSizes)
+        if(size < (height * 0.01)) {
+          size = 0
+        } else {
+          size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
+        }
       }
 
       if(size > (height * 0.49)) {
         let lowestSize = Math.min(...sizes)
         if(lowestSize >= (height * 0.01)) {
-          lowestSize += (height * ((baseOffsetPercentage + offsetPercentage)/100))
+          lowestSize += (height * (offsetPercentage/100))
         }
         let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
         if(lowestPercentage < currentPercentage) {
           return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
         }
         return // Filled with a almost single color
-      } else if(size < (height * 0.01)) {
-        size = 0
-      } else {
-        size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
       }
       
       let percentage = Math.round((size / height) * 10000) / 100
@@ -180,7 +186,6 @@ const workerCode = function () {
       if(percentage > maxPercentage) {
         return maxPercentage
       }
-
       return percentage
     }
     
