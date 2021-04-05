@@ -299,12 +299,20 @@ html[data-ambilight-enabled="true"] {
       z-index: 2;
     }
     .header.ytd-playlist-panel-renderer,
-    .playlist-items.ytd-playlist-panel-renderer {
+    .playlist-items.ytd-playlist-panel-renderer,
+    yt-chip-cloud-renderer {
       background: none !important;
     }
-    #left-arrow.yt-chip-cloud-renderer, #right-arrow.yt-chip-cloud-renderer {
+    yt-chip-cloud-renderer {
+      #left-arrow,
+      #right-arrow {
+        transition: opacity .25s;
+      }
       &:not(:hover):not(:focus-within) {
-        background-color: rgba(20,20,20,.3);
+        #left-arrow,
+        #right-arrow {
+          opacity: 0;
+        }
       }
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
