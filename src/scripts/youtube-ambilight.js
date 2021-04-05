@@ -3048,7 +3048,7 @@ class Ambilight {
               }
             }
             if(inputElem.dontResetControlledSetting) {
-              delete inputElem.dontResetControlledSetting
+              inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
           }
@@ -3064,7 +3064,7 @@ class Ambilight {
               }
             }
             if(inputElem.dontResetControlledSetting) {
-              delete inputElem.dontResetControlledSetting
+              inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
           }
