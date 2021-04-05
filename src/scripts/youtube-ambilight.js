@@ -2197,13 +2197,21 @@ class Ambilight {
     if(!updateVideoSnapshot) {
       if (this.frameSync == 150) { // PERFECT
         if(this.videoIsHidden) {
-          updateVideoSnapshot = true // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
+          updateVideoSnapshot = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
         } else {
-          updateVideoSnapshot = this.buffersCleared || this.videoFrameCallbackReceived
+          if(this.videoFrameCallbackReceived && this.videoFrameCount == newVideoFrameCount) {
+            newVideoFrameCount++
+          }
+          updateVideoSnapshot = this.videoFrameCallbackReceived
           this.videoFrameCallbackReceived = false
+
+          // Fallback for when requestVideoFrameCallback stopped working
+          if (!updateVideoSnapshot) {
+            updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
+          }
         }
       } else if(this.frameSync == 0) { // PERFORMANCE
-        updateVideoSnapshot = this.buffersCleared || (this.videoFrameCount < newVideoFrameCount)
+        updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
       } else if (this.frameSync == 50) { // BALANCED
         updateVideoSnapshot = true
       } else if (this.frameSync == 100) { // HIGH PRECISION
@@ -2218,11 +2226,7 @@ class Ambilight {
 
     let hasNewFrame = this.buffersCleared
     if(this.frameSync == 150) { // PERFECT
-      newVideoFrameCount = this.getVideoFrameCount()
-      hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount) || (
-        this.videoVisibilityChangeTime > drawTime - 3000 &&
-        this.previousFrameTime < (drawTime - (1000 / 25))
-      ) 
+      hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if(this.frameSync == 0) { // PERFORMANCE
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if (this.frameSync == 50 || this.frameBlending) { // BALANCED
@@ -3044,7 +3048,7 @@ class Ambilight {
               }
             }
             if(inputElem.dontResetControlledSetting) {
-              delete inputElem.dontResetControlledSetting
+              inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
           }
@@ -3060,7 +3064,7 @@ class Ambilight {
               }
             }
             if(inputElem.dontResetControlledSetting) {
-              delete inputElem.dontResetControlledSetting
+              inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
           }
