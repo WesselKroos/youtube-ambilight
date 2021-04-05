@@ -848,8 +848,10 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  .ytp-menuitem-content {
+  // override via extra &.ytp-settings-menu selector
+  &.ytp-settings-menu .ytp-menuitem-content {
     white-space: nowrap;
+    overflow: visible;
 
     &.is-controlled-by-setting {
       &::before {
