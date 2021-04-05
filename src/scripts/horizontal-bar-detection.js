@@ -316,7 +316,7 @@ export class HorizontalBarDetection {
           alpha: false,
           desynchronized: true
         })
-        this.ctx.imageSmoothingEnabled = false
+        this.ctx.imageSmoothingEnabled = true
       }
 
       this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
