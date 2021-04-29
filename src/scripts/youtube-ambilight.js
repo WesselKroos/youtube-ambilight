@@ -2590,7 +2590,7 @@ class Ambilight {
       } else {
         if (!value) return
       }
-      if (value && !$.s('ytd-app').hasAttribute('is-watch-page')) return
+      if (value && !isWatchPageUrl()) return
       Ambilight.setDarkThemeBusy = true
 
       const toggle = (rendererElem) => {
@@ -3358,7 +3358,7 @@ export const getPlayerContainersHTML = () => [...$.sa('#player-container')]
 
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
-    if (!ytdAppElem.hasAttribute('is-watch-page')) return
+    if (!isWatchPageUrl()) return
 
     const isDetached = (!ambilight.videoElem || !ambilight.ytdWatchFlexyElem.contains(ambilight.videoElem))
     if (!isDetached) {
@@ -3415,7 +3415,7 @@ const tryInitClassicAmbilight = (ytdAppElem) => {
 }
 
 const tryInitAmbilight = (ytdAppElem) => {
-  if (ytdAppElem.getAttribute('is-watch-page') !== '') return
+  if (!isWatchPageUrl()) return
 
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
@@ -3454,30 +3454,62 @@ const tryInitAmbilight = (ytdAppElem) => {
 
   errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
-  ambilightDetectPageTransition(ytdAppElem)
+  ambilightDetectPageTransitions(ytdAppElem)
+  if(!window.ambilight.isOnVideoPage) {
+    ambilightDetectWatchPageVideo(ytdAppElem);
+  }
   return true
 }
 
-const ambilightDetectPageTransition = (ytdAppElem) => {
-  const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-    const ytdAppOrBody = mutationsList[0].target
-    const isOnVideoPage = !!(
-      ytdAppOrBody.getAttribute('data-spf-name') === 'watch' || // body[data-spf-name="watch"]
-      ytdAppOrBody.getAttribute('is-watch-page') === '' // ytd-app[is-watch-page]
-    )
-    if(window.ambilight.isOnVideoPage === isOnVideoPage) return
+const isWatchPageUrl = () => (location.pathname === '/watch')
 
-    window.ambilight.isOnVideoPage = isOnVideoPage
-    if (isOnVideoPage) {
-      window.ambilight.start()
-    } else {
-      window.ambilight.hide()
+const getWatchPageViewObserver = (() => {
+  let observer;
+  return (ytdAppElem) => {
+    if(!observer) {
+      observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => 
+        ambilightStartIfWatchPageHasVideo(ytdAppElem)
+      ))
     }
-  }))
-  observer.observe(ytdAppElem, {
-    attributes: true,
-    attributeFilter: ['is-watch-page', 'data-spf-name']
+    return observer;
+  }
+})();
+const ambilightDetectWatchPageVideo = (ytdAppElem) => {
+  getWatchPageViewObserver(ytdAppElem).observe(ytdAppElem, {
+    childList: true,
+    subtree: true
   })
+}
+const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
+  if (!isWatchPageUrl() || window.ambilight.isOnVideoPage) {
+    getWatchPageViewObserver().disconnect()
+    return
+  }
+
+  const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
+  if(!videoElem) return
+
+  getWatchPageViewObserver().disconnect()
+  window.ambilight.isOnVideoPage = true
+  window.ambilight.start()
+}
+
+const ambilightDetectPageTransitions = (ytdAppElem) => {
+  const navigationManager = document.querySelector('yt-navigation-manager')
+  navigationManager.addEventListener('yt-navigate-finish', () => {
+    getWatchPageViewObserver(ytdAppElem).disconnect()
+    if(isWatchPageUrl()) {
+      ambilightStartIfWatchPageHasVideo(ytdAppElem)
+      if(!window.ambilight.isOnVideoPage) {
+        ambilightDetectWatchPageVideo(ytdAppElem)
+      }
+    } else {
+      if(window.ambilight.isOnVideoPage) {
+        window.ambilight.isOnVideoPage = false
+        window.ambilight.hide()
+      }
+    }
+  });
 }
 
 const loadAmbilight = () => {
@@ -3499,7 +3531,7 @@ const loadAmbilight = () => {
 
   // Not initialized yet
 
-  if (ytdAppElem.getAttribute('is-watch-page') === null) {
+  if (!isWatchPageUrl()) {
     resetThemeToLightIfSettingIsTrue()
   }
 

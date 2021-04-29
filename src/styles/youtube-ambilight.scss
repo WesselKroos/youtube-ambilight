@@ -132,7 +132,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Transparent elements */
 
-  body ytd-app[is-watch-page] #masthead-container.at-top {
+  body ytd-app #masthead-container.at-top {
     ytd-masthead {
       background: none !important;
     }
@@ -141,14 +141,15 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  ytd-app[is-watch-page] {
+  ytd-app {
     &,
     ytd-watch,
     ytd-watch-flexy,
     #player-theater-container,
     #columns.ytd-watch-flexy,
     #player-container,
-    .html5-main-video {
+    .html5-main-video,
+    #movie_player {
       background: none !important;
     }
 
@@ -158,10 +159,6 @@ html[data-ambilight-enabled="true"] {
     #masthead-container.ytd-app::after {
       display: none;
     }
-  }
-
-  ytd-app[is-watch-page] #movie_player {
-    background: none !important;
   }
 
   /* Prevent YouTube's flickering scrollbar bug */
@@ -186,7 +183,7 @@ html[data-ambilight-enabled="true"] {
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
-  ytd-app[is-watch-page] #player-theater-container {
+  ytd-app #player-theater-container {
     transition: background-color 0s .01s;
   }
 
@@ -220,7 +217,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Search */
 
-  ytd-app[is-watch-page] {
+  ytd-app {
     #search-form {
       > * {
         transition: background-color .15s, border-color .15s, color .15s, fill .15s;
@@ -294,7 +291,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Text visibility */
 
-  ytd-app[is-watch-page] {
+  ytd-app {
     ytd-watch #top > #player {
       z-index: 2;
     }
@@ -320,7 +317,7 @@ html[data-ambilight-enabled="true"] {
     }
   }
   &[dark="true"] {
-    ytd-app[is-watch-page] {
+    ytd-app {
       #playlist #header-description a,
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
@@ -411,11 +408,11 @@ html[data-ambilight-enabled="true"] {
       opacity: 0;
     }
 
-    ytd-app[is-watch-page] #masthead-container,
+    ytd-app #masthead-container,
     ytd-watch-flexy #secondary {
       @include hidable();
     }
-    ytd-app[is-watch-page] #masthead-container.at-top,
+    ytd-app #masthead-container.at-top,
     ytd-watch-flexy.at-top #secondary {
       &:not(:hover):not(:focus-within) {
         @include hidden();
@@ -1106,9 +1103,9 @@ html[data-ambilight-enabled="true"] {
       filter: var(--ambilight-filter-shadow) !important;
     }
   }
-  ytd-app[is-watch-page] #top > #container > *,
-  ytd-app[is-watch-page] #primary-inner > *:not(#player),
-  ytd-app[is-watch-page] #secondary,
+  ytd-app #top > #container > *,
+  ytd-app #primary-inner > *:not(#player),
+  ytd-app #secondary,
   #watch7-main,
   #player-playlist .watch-playlist {
     filter: var(--ambilight-filter-shadow-inverted) !important;
@@ -1116,9 +1113,9 @@ html[data-ambilight-enabled="true"] {
   }
   &[dark="true"] {
     // All shadows
-    ytd-app[is-watch-page] #top > #container > *,
-    ytd-app[is-watch-page] #primary-inner > *:not(#player),
-    ytd-app[is-watch-page] #secondary,
+    ytd-app #top > #container > *,
+    ytd-app #primary-inner > *:not(#player),
+    ytd-app #secondary,
     #watch7-main,
     #player-playlist .watch-playlist {
       filter: var(--ambilight-filter-shadow) !important;
@@ -1127,8 +1124,8 @@ html[data-ambilight-enabled="true"] {
 
     > body[style*="--ambilight-text-shadow:"] {
       // Buttons & icons shadows
-      ytd-app[is-watch-page] #primary-inner > *:not(#player),
-      ytd-app[is-watch-page] #secondary {
+      ytd-app #primary-inner > *:not(#player),
+      ytd-app #secondary {
         $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
         $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
