@@ -265,20 +265,27 @@ const workerCode = function () {
 export class HorizontalBarDetection {
   worker
   workerMessageId = 0
-  busy = false
+  run = null
   canvas;
   ctx;
   catchedDetectHorizontalBarSizeError = false
 
+  clear = () => {
+    if(!this.run) return
+
+    this.run = null
+  }
+
   detect = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
-    if(this.busy) return
-    this.busy = true
+    if(this.run) return
+
+    const run = this.run = {}
 
     if(!this.worker) {
       this.worker = workerFromCode(workerCode)
       this.worker.onmessage = (e) => {
         if(e.data.id !== -1) {
-          console.warn('Ignoring worker message:', e.data)
+          console.warn('Ignoring old worker message:', e.data)
           return
         }
         if(e.data.error) {
@@ -295,10 +302,12 @@ export class HorizontalBarDetection {
       callback
     }
 
-    requestIdleCallback(wrapErrorHandler(this.idleHandler), { timeout: 1000 })
+    requestIdleCallback(wrapErrorHandler(() => this.idleHandler(run)), { timeout: 1000 })
   }
 
-  idleHandler = async () => {
+  idleHandler = async (run) => {
+    if(this.run !== run) return
+
     const {
       buffer,
       detectColored,
@@ -333,6 +342,7 @@ export class HorizontalBarDetection {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
           try {
+            if(this.run !== run) return
             if(e.data.id !== this.workerMessageId) {
               console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
               return
@@ -361,12 +371,16 @@ export class HorizontalBarDetection {
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
+      if(this.run !== run) return
 
       const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
       setTimeout(() => {
-        this.busy = false
+        if(this.run !== run) return
+
+        this.run = null
       }, throttle)
     } catch(ex) {
+      this.run = null
       if (!this.catchedDetectHorizontalBarSizeError) {
         this.catchedDetectHorizontalBarSizeError = true
         throw ex

@@ -11,6 +11,7 @@ class Ambilight {
   VIEW_POPUP = 'VIEW_POPUP'
 
   horizontalBarsClipPX = 0
+  horizontalBarDetection = new HorizontalBarDetection()
   lastCheckVideoSizeTime = 0
 
   projectorOffset = {}
@@ -1236,6 +1237,8 @@ class Ambilight {
   }
 
   clear() {
+    this.horizontalBarDetection.clear()
+
     // Clear canvasses
     const canvasses = [
       this.videoSnapshotBuffer,
@@ -2439,11 +2442,7 @@ class Ambilight {
 
   scheduleHorizontalBarSizeDetection = () => {
     try {
-      if(!this.horizontalBarDetection) {
-        this.horizontalBarDetection = new HorizontalBarDetection()
-      } else if(this.horizontalBarDetection.busy) {
-        return
-      }
+      if(this.horizontalBarDetection.run) return
 
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
