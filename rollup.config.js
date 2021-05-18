@@ -1,6 +1,7 @@
 import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import cleanup from 'rollup-plugin-cleanup'
+import stripCode from "rollup-plugin-strip-code"
 
 const common = {
   context: 'window',
@@ -8,6 +9,9 @@ const common = {
     resolve(),
     babel({
       exclude: 'node_modules/**'
+    }),
+    stripCode({
+      pattern: /var script = document\.createElement\('script'\);(.*?)appendChild\(script\);/gs // Removes Sentry script injection
     }),
     cleanup({
       comments: 'none',
