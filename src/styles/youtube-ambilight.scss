@@ -890,6 +890,37 @@ html[data-ambilight-enabled="true"] {
     }
   }
   
+  &.ytp-settings-menu .ytpa-menuitem-input {
+    appearance: none;
+    width: 50px;
+    min-width: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+    text-align: right;
+    .ytp-fullscreen & {
+      width: 80px;
+    }
+    &[readonly] {
+      outline: none;
+      cursor: default;
+    }
+    &:not([readonly]) {
+      &:hover,
+      &:focus {
+        outline: 1px solid #ffffff88;
+      }
+    }
+
+    &::placeholder {
+      color: inherit;
+    }
+    &:focus::placeholder {
+      color: #777;
+    }
+  }
+  
   .ytp-menuitem-toggle-checkbox {
     margin: 3px 0;
   }
