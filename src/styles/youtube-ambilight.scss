@@ -525,7 +525,9 @@ html[data-ambilight-enabled="true"] {
 }
 
 .ytp-ambilight-settings-button {
-  position: relative;
+  position: relative !important;
+  overflow: initial !important;
+  font-size: (100% / 1.09) !important;
   &::after {
     content: '';
     position: absolute;
@@ -561,6 +563,24 @@ html[data-ambilight-enabled="true"] {
   }
   &[aria-expanded="true"] svg {
     transform: rotateZ(30deg);
+  }
+}
+
+.ytp-ambilight-settings-button-tooltip {
+  white-space: nowrap;
+  left: 50%;
+  top: -14px;
+  transform: translateX(-50%) translateY(-100%) !important;
+  opacity: 0 !important;
+  transition: none !important;
+  pointer-events: none;
+
+  .ytp-big-mode & {
+    top: 0;
+  }
+
+  .ytp-ambilight-settings-button:not([aria-expanded="true"]):hover & {
+    opacity: 1 !important;
   }
 }
 
