@@ -968,13 +968,12 @@ class Ambilight {
         if(setting.name === 'frameSync') {
           setting.max = 150
           setting.default = 150
-          // setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
+          setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
         }
 
-        // Change this in the future when frameSync 150 is released and validated to work
-        // if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
-        //   setting.advanced = true
-        // }
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+          setting.advanced = true
+        }
 
         // Change this in the future when frameSync 150 is released and validated to work for a long time
         // if(setting.name === 'frameSync') {
