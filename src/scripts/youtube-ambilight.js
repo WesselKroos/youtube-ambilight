@@ -2838,7 +2838,7 @@ class Ambilight {
                 <div id="setting-${setting.name}-value" class="ytp-menuitem-content">
                   ${(setting.manualinput === false)
                     ? this.getSettingListDisplayText(setting)
-                    : `<input id="setting-${setting.name}-manualinput" class="ytpa-menuitem-input" placeholder="${this.getSettingListDisplayText(setting)}" />`
+                    : `<input id="setting-${setting.name}-manualinput" type="number" class="ytpa-menuitem-input" placeholder="${this.getSettingListDisplayText(setting)}" />`
                   }
                 </div>
               </div>
@@ -2932,16 +2932,25 @@ class Ambilight {
         const valueElem = $.s(`#setting-${setting.name}-value`)
         const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
         if(manualInputElem) {
+          on(manualInputElem, 'focus', (e) => {
+            manualInputElem.value = inputElem.value
+          })
           on(manualInputElem, 'keydown keyup keypress', (e) => {
             e.stopPropagation();
           })
-          on(manualInputElem, 'change', (e) => {
+          const onChange = (empty = false) => {
             const manualValue = manualInputElem.value
-            manualInputElem.blur()
-            manualInputElem.value = ''
-            inputElem.value = manualValue
+            inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))
+            if (!empty) return
+            manualInputElem.value = ''
+          }
+          on(manualInputElem, 'change', (e) => onChange())
+          on(manualInputElem, 'keypress', (e) => {
+            if(e.key !== 'Enter') return
+            manualInputElem.blur()
           })
+          on(manualInputElem, 'blur', (e) => onChange(true))
         }
         on(inputElem, 'change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return

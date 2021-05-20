@@ -895,20 +895,35 @@ html[data-ambilight-enabled="true"] {
     width: 50px;
     min-width: 0;
     border: none;
+    padding: 1px 2px;
     background: none;
     color: inherit;
     font-size: inherit;
     text-align: right;
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    &::placeholder {
+      color: inherit;
+    }
+    &:focus::placeholder {
+      color: #777;
+    }
+
     .ytp-fullscreen & {
       width: 80px;
     }
+    
     &[readonly] {
       outline: none;
       cursor: default;
     }
     &:not([readonly]) {
-      &:hover,
       &:focus {
+        padding: 1px 5px;
         outline: 1px solid #ffffff88;
       }
     }
