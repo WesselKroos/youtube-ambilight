@@ -2828,6 +2828,7 @@ class Ambilight {
               <div class="ytp-menuitem-content">
                 <div class="ytp-menuitem-toggle-checkbox"></div>
               </div>
+              <button class="ytpa-menuitem-reset" title="Reset"></button>
             </div>
           `
         } else if (setting.type === 'list') {
@@ -2841,6 +2842,7 @@ class Ambilight {
                     : `<input id="setting-${setting.name}-manualinput" type="number" class="ytpa-menuitem-input" placeholder="${this.getSettingListDisplayText(setting)}" />`
                   }
                 </div>
+                <button class="ytpa-menuitem-reset" title="Reset"></button>
               </div>
               <div 
               class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
@@ -2928,6 +2930,7 @@ class Ambilight {
 
     this.settings.forEach(setting => {
       if (setting.type === 'list') {
+        const settingElem = $.s(`#setting-${setting.name}`)
         const inputElem = $.s(`#setting-${setting.name}-range`)
         const valueElem = $.s(`#setting-${setting.name}-value`)
         const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
@@ -2952,6 +2955,13 @@ class Ambilight {
           })
           on(manualInputElem, 'blur', (e) => onChange(true))
         }
+
+        const resetElem = settingElem.querySelector('.ytpa-menuitem-reset')
+        on(resetElem, 'click mousedown mouseup', (e) => {
+          inputElem.value = setting.default
+          inputElem.dispatchEvent(new Event('change'))
+        })
+
         on(inputElem, 'change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
@@ -3135,6 +3145,13 @@ class Ambilight {
 
           this.updateSizes()
           this.nextFrame()
+        })
+
+        const resetElem = inputElem.querySelector('.ytpa-menuitem-reset')
+        on(resetElem, 'click', (e) => {
+          e.stopPropagation()
+          if(setting.value === setting.default) return
+          inputElem.dispatchEvent(new Event('click'))
         })
       }
     })
