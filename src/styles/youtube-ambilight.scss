@@ -1317,3 +1317,31 @@ html[data-ambilight-enabled="true"] {
     overflow: var(--ambilight-html5-video-player-overflow, hidden);
   }
 }
+
+.yta-bezel {
+  pointer-events: none;
+
+  .ytp-svg-fill {
+    font-size: 30px;
+  }
+
+  &--strike .ytp-bezel-icon::before {
+    content: '';
+    background: #fff;
+    width: 36px;
+    height: 3px;
+    transform: rotate(-45deg);
+    display: block;
+    position: absolute;
+    margin-top: 19px;
+    margin-left: 2px;
+    outline: 3px solid #111;
+
+    .ytp-fullscreen & {
+      margin-top: 27px;
+      margin-left: 3px;
+      height: 4px;
+      width: 48px;
+    }
+  }
+}

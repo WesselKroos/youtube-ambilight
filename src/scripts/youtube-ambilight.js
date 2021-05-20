@@ -2645,6 +2645,8 @@ class Ambilight {
       this.disable()
     else
       this.enable()
+      
+    this.displayBezel('A', !this.enabled)
   }
 
   start() {
@@ -2767,8 +2769,9 @@ class Ambilight {
     const enabled = !this.immersive
     $.s(`#setting-immersive`).setAttribute('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
-
     this.updateImmersiveMode()
+
+    this.displayBezel('Z', !enabled)
   }
 
   initSettingsMenu() {
@@ -2928,6 +2931,21 @@ class Ambilight {
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
 
+    this.settingsBezelElem = document.createElement('div')
+    this.settingsBezelElem.classList.add('yta-bezel', 'ytp-bezel')
+    this.settingsBezelElem.setAttribute('role', 'status')
+    this.settingsBezelElem.innerHTML = `
+      <div class="ytp-bezel-icon">
+        <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+          <text class="ytp-svg-fill" x="50%" y="59%" dominant-baseline="middle" text-anchor="middle"></text>
+        </svg>
+      </div>`
+    on(this.settingsBezelElem, 'animationend', () => {
+      this.settingsBezelElem.style.display = 'none'
+    })
+    this.settingsBezelTextElem = this.settingsBezelElem.querySelector('text')
+    this.settingsMenuElemParent.prepend(this.settingsBezelElem)
+
     this.settings.forEach(setting => {
       if (setting.type === 'list') {
         const settingElem = $.s(`#setting-${setting.name}`)
@@ -3046,10 +3064,7 @@ class Ambilight {
           setting.value = !setting.value
 
           if (setting.name === 'enabled') {
-            if (setting.value)
-              this.enable()
-            else
-              this.disable()
+            this.toggleEnabled()
           }
           if (setting.name === 'immersive') {
             this.toggleImmersiveMode()
@@ -3103,6 +3118,7 @@ class Ambilight {
               inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
+            this.displayBezel('B', !setting.value)
           }
 
           if(setting.name === 'detectVideoFillScaleEnabled') {
@@ -3119,6 +3135,7 @@ class Ambilight {
               inputElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
+            this.displayBezel('W', !setting.value)
           }
 
           if(setting.name === 'advancedSettings') {
@@ -3157,6 +3174,12 @@ class Ambilight {
     })
 
     this.updateControlledSettings()
+  }
+
+  displayBezel(text, strike = false) {
+    this.settingsBezelElem.classList.toggle('yta-bezel--strike', strike)
+    this.settingsBezelElem.style.display = ''
+    this.settingsBezelTextElem.textContent = text
   }
 
   updateControlledSettings() {
