@@ -3177,9 +3177,12 @@ class Ambilight {
   }
 
   displayBezel(text, strike = false) {
-    this.settingsBezelElem.classList.toggle('yta-bezel--strike', strike)
-    this.settingsBezelElem.style.display = ''
-    this.settingsBezelTextElem.textContent = text
+    this.settingsBezelElem.style.display = 'none'
+    setTimeout(() => {
+      this.settingsBezelElem.classList.toggle('yta-bezel--strike', strike)
+      this.settingsBezelElem.style.display = ''
+      this.settingsBezelTextElem.textContent = text
+    }, 0);
   }
 
   updateControlledSettings() {
