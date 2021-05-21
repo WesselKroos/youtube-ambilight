@@ -9,67 +9,71 @@ export const setErrorHandler = (handler) => {
   errorHandler = handler
 }
 
-const wrapErrorHandlerHandleError = (stack, ex) => {
+const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
+  if(reportOnce) {
+    if(reported.includes(ex.message)) return
+    reported.push(ex.message)
+  }
   appendErrorStack(stack, ex)
   if(errorHandler)
     errorHandler(ex)
 }
 
-export const wrapErrorHandler = (callback, reportOnce = false) => {
-  const stack = new Error().stack
-  const reported = []
-  return (callback.constructor.name === 'AsyncFunction')
-    ? async function withAsyncErrorHandler(...args) {
-      try {
-        return await callback(...args)
-      } catch(ex) {
-        if(reportOnce) {
-          if(reported.includes(ex.message)) return
-          reported.push(ex.message)
-        }
-        wrapErrorHandlerHandleError(stack, ex)
-      }
+const withErrorHandler = (callback, reportOnce, stack, reported) =>
+  function errorHandler(...args) {
+    try {
+      return callback(...args)
+    } catch(ex) {
+      wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
     }
-    : function withErrorHandler(...args) {
-      try {
-        return callback(...args)
-      } catch(ex) {
-        if(reportOnce) {
-          if(reported.includes(ex.message)) return
-          reported.push(ex.message)
-        }
-        wrapErrorHandlerHandleError(stack, ex)
-      }
+  }
+
+const withAsyncErrorHandler = (callback, reportOnce, stack, reported) => 
+  async function asyncErrorHandler(...args) {
+    try {
+      return await callback(...args)
+    } catch(ex) {
+      wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
     }
-}
+  }
+
+export const wrapErrorHandler = (callback, reportOnce = false) =>
+  (callback.constructor.name === 'AsyncFunction'
+    ? withAsyncErrorHandler 
+    : withErrorHandler
+  )(callback, reportOnce, new Error().stack, [])
 
 export const setTimeout = (handler, timeout) => {
   return window.setTimeout(wrapErrorHandler(handler), timeout)
 }
 
-export const on = (elem, eventNames, callback, options, getListenerCallback) => {
+export function on(elem, eventNames, callback, options, getListenerCallback) {
   const stack = new Error().stack
-  const eventListenerCallback = (...args) => {
-    try {
-      callback(...args)
-    } catch(ex) {
-      const e = args[0]
-      let elem = {}
-      if(e && e.currentTarget) {
-        if(e.currentTarget.cloneNode) {
-          elem = e.currentTarget.cloneNode(false)
-        } else {
-          elem.nodeName = e.currentTarget.toString()
+  const callbacksName = `on_${eventNames.split(' ').join('_')}`
+  const namedCallbacks = {
+    [callbacksName]: (...args) => {
+      try {
+        callback(...args)
+      } catch(ex) {
+        const e = args[0]
+        let elem = {}
+        if(e && e.currentTarget) {
+          if(e.currentTarget.cloneNode) {
+            elem = e.currentTarget.cloneNode(false)
+          } else {
+            elem.nodeName = e.currentTarget.toString()
+          }
         }
+        const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+        ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName || 'Unknown'}`
+  
+        appendErrorStack(stack, ex)
+        if(errorHandler)
+          errorHandler(ex)
       }
-      const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
-      ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName || 'Unknown'}`
-
-      appendErrorStack(stack, ex)
-      if(errorHandler)
-        errorHandler(ex)
     }
   }
+  const eventListenerCallback = namedCallbacks[callbacksName]
 
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
@@ -80,7 +84,7 @@ export const on = (elem, eventNames, callback, options, getListenerCallback) => 
     getListenerCallback(eventListenerCallback)
 }
 
-export const off = (elem, eventNames, callback) => {
+export function off(elem, eventNames, callback) {
   const list = eventNames.split(' ')
   list.forEach((eventName) => {
     elem.removeEventListener(eventName, callback)
@@ -112,7 +116,7 @@ export const $ = {
   }
 }
 
-export const waitForDomElement = (check, containerSelector, callback) => {
+export function waitForDomElement(check, containerSelector, callback) {
   if (check()) {
     callback()
   } else {
@@ -157,7 +161,7 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export const requestIdleCallback = function requestIdleCallback(callback, options) {
+export function requestIdleCallback(callback, options) {
   return window.requestIdleCallback(wrapErrorHandler(callback), options)
 }
 
