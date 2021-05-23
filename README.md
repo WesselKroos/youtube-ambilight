@@ -1,4 +1,4 @@
-![YouTube Ambilight](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)
+[![YouTube Ambilight](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
 
 Immersive yourself in YouTube videos with ambilight!
 
