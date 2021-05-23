@@ -1195,6 +1195,7 @@ class Ambilight {
       const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
       if(rangeInput) {
         rangeInput.value = percentage
+        rangeInput.setAttribute('data-previous-value', rangeInput.value)
         $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${rangeInput.value}%`
         $.s(`#setting-horizontalBarsClipPercentage-manualinput`).value = rangeInput.value
       }
@@ -1293,9 +1294,11 @@ class Ambilight {
 
     this.setSetting('videoScale', videoScale)
     if($.s('#setting-videoScale')) {
-      $.s('#setting-videoScale-range').value = videoScale
-      $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
-      $.s(`#setting-videoScale-manualinput`).value = videoScale
+      const rangeInput = $.s('#setting-videoScale-range')
+      rangeInput.value = videoScale
+      rangeInput.setAttribute('data-previous-value', rangeInput.value)
+      $.s(`#setting-videoScale-value`).textContent = `${rangeInput.value}%`
+      $.s(`#setting-videoScale-manualinput`).value = rangeInput.value
     }
   }
 
@@ -2954,6 +2957,7 @@ class Ambilight {
         const settingElem = $.s(`#setting-${setting.name}`)
         const inputElem = $.s(`#setting-${setting.name}-range`)
         const valueElem = $.s(`#setting-${setting.name}-value`)
+
         const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
         if(manualInputElem) {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
@@ -2971,17 +2975,16 @@ class Ambilight {
             if(e.key !== 'Enter') return
             manualInputElem.blur()
           })
+
+          on(inputElem, 'change', (e) => {
+            manualInputElem.value = inputElem.value
+          })
         }
 
         const resetElem = settingElem.querySelector('.ytpa-menuitem-reset')
         on(resetElem, 'click mousedown mouseup', (e) => {
           inputElem.value = setting.default
           inputElem.dispatchEvent(new Event('change'))
-        })
-
-        on(inputElem, 'change', (e) => {
-          if(!manualInputElem) return
-          manualInputElem.value = inputElem.value
         })
 
         on(inputElem, 'change mousemove dblclick touchmove', (e) => {
@@ -3044,6 +3047,7 @@ class Ambilight {
             this.detectHorizontalBarSizeEnabled &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
+            this.horizontalBarDetection.clear()
             this.scheduleHorizontalBarSizeDetection()
           }
 
