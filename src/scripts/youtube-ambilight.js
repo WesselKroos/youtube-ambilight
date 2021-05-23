@@ -1195,7 +1195,8 @@ class Ambilight {
       const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
       if(rangeInput) {
         rangeInput.value = percentage
-        $.s(`#setting-horizontalBarsClipPercentage-manualinput`).placeholder = `${percentage}%`
+        $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${rangeInput.value}%`
+        $.s(`#setting-horizontalBarsClipPercentage-manualinput`).value = rangeInput.value
       }
     }, 1)
   }
@@ -1293,7 +1294,8 @@ class Ambilight {
     this.setSetting('videoScale', videoScale)
     if($.s('#setting-videoScale')) {
       $.s('#setting-videoScale-range').value = videoScale
-      $.s(`#setting-videoScale-manualinput`).placeholder = `${videoScale}%`
+      $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
+      $.s(`#setting-videoScale-manualinput`).value = videoScale
     }
   }
 
@@ -2839,10 +2841,11 @@ class Ambilight {
             <div id="setting-${setting.name}" class="ytp-menuitem-range-wrapper">
               <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
                 <div class="ytp-menuitem-label">${setting.label}</div>
-                <div id="setting-${setting.name}-value" class="ytp-menuitem-content">
-                  ${(setting.manualinput === false)
-                    ? this.getSettingListDisplayText(setting)
-                    : `<input id="setting-${setting.name}-manualinput" type="number" class="ytpa-menuitem-input" placeholder="${this.getSettingListDisplayText(setting)}" />`
+                <div class="ytp-menuitem-content">
+                  <div class="ytp-menuitem-value" id="setting-${setting.name}-value">${this.getSettingListDisplayText(setting)}</div>
+                  ${(setting.manualinput !== false)
+                    ? `<input id="setting-${setting.name}-manualinput" type="text" class="ytpa-menuitem-input" value="${setting.value}" />`
+                    : ''
                   }
                 </div>
                 <button class="ytpa-menuitem-reset" title="Reset"></button>
@@ -2953,31 +2956,32 @@ class Ambilight {
         const valueElem = $.s(`#setting-${setting.name}-value`)
         const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
         if(manualInputElem) {
-          on(manualInputElem, 'focus', (e) => {
-            manualInputElem.value = inputElem.value
-          })
           on(manualInputElem, 'keydown keyup keypress', (e) => {
             e.stopPropagation();
           })
           const onChange = (empty = false) => {
             const manualValue = manualInputElem.value
+            if(inputElem.value === manualInputElem.value) return
             inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))
-            if (!empty) return
-            manualInputElem.value = ''
           }
           on(manualInputElem, 'change', (e) => onChange())
+          on(manualInputElem, 'blur', (e) => onChange())
           on(manualInputElem, 'keypress', (e) => {
             if(e.key !== 'Enter') return
             manualInputElem.blur()
           })
-          on(manualInputElem, 'blur', (e) => onChange(true))
         }
 
         const resetElem = settingElem.querySelector('.ytpa-menuitem-reset')
         on(resetElem, 'click mousedown mouseup', (e) => {
           inputElem.value = setting.default
           inputElem.dispatchEvent(new Event('change'))
+        })
+
+        on(inputElem, 'change', (e) => {
+          if(!manualInputElem) return
+          manualInputElem.value = inputElem.value
         })
 
         on(inputElem, 'change mousemove dblclick touchmove', (e) => {
@@ -2992,11 +2996,7 @@ class Ambilight {
           inputElem.value = value
           inputElem.setAttribute('data-previous-value', value)
           this.setSetting(setting.name, value)
-          if(manualInputElem) {
-            manualInputElem.placeholder = this.getSettingListDisplayText({...setting, value})
-          } else {
-            valueElem.textContent = this.getSettingListDisplayText({...setting, value})
-          }
+          valueElem.textContent = this.getSettingListDisplayText({...setting, value})
 
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
@@ -3191,7 +3191,7 @@ class Ambilight {
       videoScaleValue.classList.remove('is-controlled-by-setting')
       videoScaleValue.setAttribute('title', '')
     } else {
-      videoScaleValue.classList.remove('is-controlled-by-setting')
+      videoScaleValue.classList.add('is-controlled-by-setting')
       videoScaleValue.setAttribute('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
     }
 
