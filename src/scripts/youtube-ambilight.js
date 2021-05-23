@@ -3117,6 +3117,9 @@ class Ambilight {
                 horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
                 this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
+            } else {
+              this.horizontalBarDetection.clear()
+              this.scheduleHorizontalBarSizeDetection()
             }
             if(inputElem.dontResetControlledSetting) {
               inputElem.dontResetControlledSetting = false
