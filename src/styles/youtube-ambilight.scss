@@ -878,6 +878,10 @@ html[data-ambilight-enabled="true"] {
     position: relative;
     white-space: nowrap;
     overflow: visible;
+
+    .ytp-big-mode & {
+      padding-right: 22px;
+    }
   }
 
   .ytp-menuitem-value {
@@ -922,8 +926,16 @@ html[data-ambilight-enabled="true"] {
     }
 
     .ytp-fullscreen & {
-      right: 28.5px;
+      right: 35.5px;
       width: 80px;
+    }
+
+    &#setting-framerateLimit-manualinput {
+      margin-right: 11px;
+
+      .ytp-fullscreen & {
+        margin-right: 17.5px;
+      }
     }
   }
 
