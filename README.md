@@ -1,8 +1,10 @@
-# ![YouTube Ambilight](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)
+![YouTube Ambilight](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)
+
 Immersive yourself in YouTube videos with ambilight!
 
 ![Preview](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/readme/screenshot-1.jpg?raw=true)
 
+# YouTube Ambilight
 
 ## Installation
 Go to the extensions site of your browser and add the extension:
