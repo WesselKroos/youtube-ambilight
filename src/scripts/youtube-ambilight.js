@@ -2645,13 +2645,15 @@ class Ambilight {
     }
   }
 
-  toggleEnabled() {
-    if (this.enabled)
-      this.disable()
-    else
+  toggleEnabled(enabled) {
+    enabled = (enabled !== undefined) ? enabled : !this.enabled
+    if (enabled) {
       this.enable()
+    } else {
+      this.disable()
+    }
       
-    this.displayBezel('A', !this.enabled)
+    this.displayBezel('A', !enabled)
   }
 
   start() {
@@ -2770,8 +2772,8 @@ class Ambilight {
     this.videoPlayerElem.setSize()
   }
 
-  toggleImmersiveMode() {
-    const enabled = !this.immersive
+  toggleImmersiveMode(enabled) {
+    enabled = (enabled !== undefined) ? enabled : !this.immersive
     $.s(`#setting-immersive`).setAttribute('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
     this.updateImmersiveMode()
@@ -2831,12 +2833,12 @@ class Ambilight {
             class="${classes}" 
             role="menuitemcheckbox" 
             aria-checked="${setting.value ? 'true' : 'false'}" 
-            tabindex="0">
+            tabindex="0"
+            title="Right click to reset">
               <div class="ytp-menuitem-label">${setting.label}</div>
               <div class="ytp-menuitem-content">
                 <div class="ytp-menuitem-toggle-checkbox"></div>
               </div>
-              <button class="ytpa-menuitem-reset" title="Reset"></button>
             </div>
           `
         } else if (setting.type === 'list') {
@@ -2851,12 +2853,11 @@ class Ambilight {
                     : ''
                   }
                 </div>
-                <button class="ytpa-menuitem-reset" title="Reset"></button>
               </div>
               <div 
               class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
               rowspan="2" 
-              title="Double click to reset">
+              title="Right click to reset">
                 <input 
                   id="setting-${setting.name}-range" 
                   type="range" 
@@ -2924,6 +2925,12 @@ class Ambilight {
         }
       })
     })
+    
+    on(this.settingsMenuElem, 'click dblclick contextmenu', (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+    })
+
     this.settingsMenuElemParent = this.videoPlayerElem
     this.settingsMenuElemParent.prepend(this.settingsMenuElem)
     try {
@@ -2981,17 +2988,14 @@ class Ambilight {
           })
         }
 
-        const resetElem = settingElem.querySelector('.ytpa-menuitem-reset')
-        on(resetElem, 'click mousedown mouseup', (e) => {
-          inputElem.value = setting.default
-          inputElem.dispatchEvent(new Event('change'))
-        })
+        on(inputElem, 'change mousemove dblclick contextmenu touchmove', (e) => {
+          e.stopPropagation()
+          e.preventDefault()
 
-        on(inputElem, 'change mousemove dblclick touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = parseFloat(inputElem.value)
-          if (e.type === 'dblclick') {
+          if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = this.settings.find(s => s.name === setting.name).default
           } else if (inputElem.value === inputElem.getAttribute('data-previous-value')) {
             return
@@ -3064,14 +3068,20 @@ class Ambilight {
         })
       } else if (setting.type === 'checkbox') {
         const inputElem = $.s(`#setting-${setting.name}`)
-        on(inputElem, 'click', () => {
+        on(inputElem, 'dblclick contextmenu click', (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+
           setting.value = !setting.value
+          if (e.type === 'dblclick' || e.type === 'contextmenu') {
+            setting.value = this.settings.find(s => s.name === setting.name).default
+          }
 
           if (setting.name === 'enabled') {
-            this.toggleEnabled()
+            this.toggleEnabled(setting.value)
           }
           if (setting.name === 'immersive') {
-            this.toggleImmersiveMode()
+            this.toggleImmersiveMode(setting.value)
           }
           if (setting.name === 'hideScrollbar') {
             const changed = (html.getAttribute('data-ambilight-hide-scrollbar') !== setting.value.toString())
@@ -3169,13 +3179,6 @@ class Ambilight {
 
           this.updateSizes()
           this.nextFrame()
-        })
-
-        const resetElem = inputElem.querySelector('.ytpa-menuitem-reset')
-        on(resetElem, 'click', (e) => {
-          e.stopPropagation()
-          if(setting.value === setting.default) return
-          inputElem.dispatchEvent(new Event('click'))
         })
       }
     })
