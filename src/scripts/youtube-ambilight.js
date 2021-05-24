@@ -2926,8 +2926,10 @@ class Ambilight {
       })
     })
     
-    on(this.settingsMenuElem, 'click dblclick contextmenu', (e) => {
+    on(this.settingsMenuElem, 'mousemove click dblclick contextmenu touchstart touchmove touchend', (e) => {
       e.stopPropagation()
+    })
+    on(this.settingsMenuElem, 'contextmenu', (e) => {
       e.preventDefault()
     })
 
@@ -2989,9 +2991,6 @@ class Ambilight {
         }
 
         on(inputElem, 'change mousemove dblclick contextmenu touchmove', (e) => {
-          e.stopPropagation()
-          e.preventDefault()
-
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = parseFloat(inputElem.value)
@@ -3069,9 +3068,6 @@ class Ambilight {
       } else if (setting.type === 'checkbox') {
         const inputElem = $.s(`#setting-${setting.name}`)
         on(inputElem, 'dblclick contextmenu click', (e) => {
-          e.stopPropagation()
-          e.preventDefault()
-
           setting.value = !setting.value
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             setting.value = this.settings.find(s => s.name === setting.name).default
