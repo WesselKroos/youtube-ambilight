@@ -1931,7 +1931,7 @@ class Ambilight {
     if(
       !this.enabled ||
       !this.isOnVideoPage ||
-      this.isAmbilightHiddenOnWatchPage ||
+      (!this.sizesInvalidated && this.isAmbilightHiddenOnWatchPage) ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2178,12 +2178,18 @@ class Ambilight {
 
     if (
       this.isVR ||
-      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled && !this.frameBlending && !this.videoOverlayEnabled) ||
       (!this.enableInFullscreen && this.isFullscreen)
     ) {
       this.hide()
       return
     }
+
+    if(
+      this.isFillingFullscreen && 
+      !this.detectHorizontalBarSizeEnabled &&
+      !this.frameBlending &&
+      !this.videoOverlayEnabled
+    ) return
 
     const drawTime = performance.now()
     if (this.isHidden) {
@@ -3063,6 +3069,13 @@ class Ambilight {
             setting.name === 'videoScale'
           ) {
             this.updateStyles()
+          }
+
+          if(
+            setting.name === 'videoScale' ||
+            setting.name === 'horizontalBarsClipPercentage'
+          ) {
+            this.updateSizes()
           }
 
           if (
