@@ -265,13 +265,14 @@ const workerCode = function () {
 export class HorizontalBarDetection {
   worker
   workerMessageId = 0
+  cancellable = true
   run = null
   canvas;
   ctx;
   catchedDetectHorizontalBarSizeError = false
 
   clear = () => {
-    if(!this.run) return
+    if(!this.run || !this.cancellable) return
 
     this.run = null
   }
@@ -307,6 +308,7 @@ export class HorizontalBarDetection {
 
   idleHandler = async (run) => {
     if(this.run !== run) return
+    this.cancellable = false
 
     const {
       buffer,
@@ -342,8 +344,10 @@ export class HorizontalBarDetection {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
           try {
-            if(this.run !== run) return
-            if(e.data.id !== this.workerMessageId) {
+            if(
+              this.run !== run || 
+              e.data.id !== this.workerMessageId
+            ) {
               console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
               return
             }
@@ -372,7 +376,8 @@ export class HorizontalBarDetection {
       )
       await onMessagePromise;
       if(this.run !== run) return
-
+      
+      this.cancellable = true
       const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
       setTimeout(() => {
         if(this.run !== run) return
@@ -380,6 +385,7 @@ export class HorizontalBarDetection {
         this.run = null
       }, throttle)
     } catch(ex) {
+      this.cancellable = true
       this.run = null
       if (!this.catchedDetectHorizontalBarSizeError) {
         this.catchedDetectHorizontalBarSizeError = true
