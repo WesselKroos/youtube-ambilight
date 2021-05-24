@@ -2817,9 +2817,19 @@ class Ambilight {
     this.settingsMenuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
-            <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
-          </a>
+          <div class="ytp-menuitem ytpa-menuitem--header">
+            <div class="ytp-menuitem-label">
+              <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
+                <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
+              </a>
+            </div>
+            <div class="ytp-menuitem-content">
+              <button
+                class="ytpa-reset-settings-btn"
+                title="Reset all settings"
+              ></button>
+            </div>
+          </div>
           ${
       this.settings.map(setting => {
         let classes = 'ytp-menuitem'
@@ -2901,6 +2911,15 @@ class Ambilight {
           }
         </div>
       </div>`
+
+    const resetSettingsBtnElem = this.settingsMenuElem.querySelector('.ytpa-reset-settings-btn')
+    on(resetSettingsBtnElem, 'click', () => {
+      if(!confirm('Are you sure you want to reset ALL the settings?')) return
+      
+      this.settingsMenuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]').forEach(input => {
+        input.dispatchEvent(new Event('contextmenu'))
+      })
+    })
     this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label').forEach(label => {
       on(label, 'click', (e) => {
         const value = e.target.value

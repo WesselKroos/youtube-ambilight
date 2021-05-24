@@ -589,20 +589,12 @@ html[data-ambilight-enabled="true"] {
     display: block;
   }
 
-  .html5-video-player & {
-    .ytpa-feedback-link {
-      display: table-row;
-      
-      .ytp-fullscreen & {
-        height: 40px;
-      }
-    }
-  }
-
   .ytpa-feedback-link__text {
     display: block;
     padding: 10px 15px;
     color: #3ea6ff;
+    font-weight: normal;
+    font-size: 11px;
     &:hover {
       color: #5ebfff;
       text-decoration: underline;
@@ -622,6 +614,66 @@ html[data-ambilight-enabled="true"] {
           color: #5ebfff;
           text-decoration: underline;
         }
+      }
+    }
+  }
+  
+  .ytpa-reset-settings-btn {
+    appearance: none;
+    position: relative;
+    display: block;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    outline: none;
+    border-radius: 50%;
+    border: 1px solid #ffffff55;
+    border-top-color: transparent;
+    background: none;
+    cursor: pointer;
+    transition: transform .5s, border-color .5s;
+    &:hover {
+      transform: rotate(-180deg);
+      border-color: #3ea6ff;
+      border-top-color: transparent;
+    }
+    .ytp-fullscreen & {
+      width: 20px;
+      height: 20px;
+      border-width: 2px;
+    }
+
+    &::before,
+    &::after {
+      position: absolute;
+      content: '';
+      display: block;
+      width: 1px;
+      height: 6px;
+      margin: -6px 0 0 9px;
+      background: #ffffff55;
+      .ytp-fullscreen & {
+        width: 2px;
+        height: 6px;
+        margin: -6px 0 0 12px;
+      }
+    }
+    &:hover {
+      &::before,
+      &::after {
+        background: #3ea6ff;
+      }
+    }
+    &::after {
+      width: 5px;
+      height: 1px;
+      margin: -6px 0px 0px 10px;
+      .ytp-fullscreen & {
+        width: 8px;
+        height: 2px;
+        margin: -8px 0px 0px 12px;
       }
     }
   }
@@ -839,6 +891,13 @@ html[data-ambilight-enabled="true"] {
     height: auto !important;
     margin: 0;
     padding: 6px 0;
+    &.ytpa-menuitem--header {
+      cursor: default;
+      &:hover {
+        background: none;
+      }
+    }
+
     .ytp-fullscreen & {
       padding: 9px 0;
     }
@@ -936,55 +995,6 @@ html[data-ambilight-enabled="true"] {
       .ytp-fullscreen & {
         margin-right: 17.5px;
       }
-    }
-  }
-
-  .ytpa-menuitem-reset {
-    appearance: none;
-    position: absolute;
-    right: 3px;
-    display: block;
-    margin: 2px 0 0;
-    border: 0;
-    padding: 0;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    border: 1px solid #ffffff55;
-    border-top-color: transparent;
-    background: none;
-    cursor: pointer;
-    visibility: hidden;
-    transition: transform .5s, border-color .5s;
-    &::before,
-    &::after {
-      position: absolute;
-      content: '';
-      display: block;
-      width: 1px;
-      height: 3px;
-      margin: -4px 0 0 5px;
-      background: #ffffff55;
-    }
-    &::after {
-      width: 2px;
-      height: 1px;
-      margin: -4px 0 0 6px;
-    }
-    &:hover {
-      transform: rotate(-180deg);
-      border-color: #3ea6ff;
-      border-top-color: transparent;
-      &::before,
-      &::after {
-        background: #3ea6ff;
-      }
-    }
-  }
-  .ytp-menuitem,
-  .ytp-menuitem-range-wrapper {
-    &:hover .ytpa-menuitem-reset {
-      visibility: visible;
     }
   }
   
