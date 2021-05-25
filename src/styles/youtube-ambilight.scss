@@ -31,9 +31,11 @@
 
 .ambilight__top {
   position: absolute;
+  z-index: 2147483647;
   top: 0;
   width: 100%;
   height: 1px;
+  pointer-events: none;
 }
 
 /* Workaround for issue with OffScreenCanvas */

@@ -438,13 +438,21 @@ class Ambilight {
 
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambilight__top')
-    this.elem.prepend(this.topElem)
+    body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
       (entries, observer) => {
         entries.forEach(entry => {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
+          if(
+            !this.isFullscreen ||
+            !this.enableInFullscreen ||
+            this.atTop === this.isFillingFullscreen
+          ) return
+
+          this.updateSizes()
+          this.optionalFrame()
         })
       },
       {
@@ -498,9 +506,9 @@ class Ambilight {
         (entries, observer) => {
           entries.forEach(entry => {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
-            if(!this.isAmbilightHiddenOnWatchPage) {
-              this.optionalFrame()
-            }
+            if(this.isAmbilightHiddenOnWatchPage) return
+            
+            this.optionalFrame()
           })
         },
         {
@@ -1335,13 +1343,6 @@ class Ambilight {
     this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
     this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
     const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
-    this.isFillingFullscreen = (
-      this.isFullscreen &&
-      this.atTop &&
-      Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
-      Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
-      noClipOrScale
-    )
 
     const videoElemParentElem = this.videoElem.parentNode
 
@@ -1364,10 +1365,12 @@ class Ambilight {
     if(this.isFullscreen) {
       if(this.elem.parentElement !== this.ytdAppElem) {
         this.ytdAppElem.prepend(this.elem)
+        this.ytdAppElem.prepend(this.topElem)
       }
     } else {
       if(this.elem.parentElement !== body) {
         body.prepend(this.elem)
+        body.prepend(this.topElem)
       }
     }
 
@@ -1392,6 +1395,13 @@ class Ambilight {
     }
 
     this.projectorOffset = this.getElemRect(this.videoElem)
+    this.isFillingFullscreen = (
+      this.isFullscreen &&
+      Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
+      Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
+      noClipOrScale
+    )
+    
     if (
       this.projectorOffset.top === undefined ||
       !this.projectorOffset.width ||
@@ -1931,7 +1941,6 @@ class Ambilight {
     if(
       !this.enabled ||
       !this.isOnVideoPage ||
-      (!this.sizesInvalidated && this.isAmbilightHiddenOnWatchPage) ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2178,18 +2187,17 @@ class Ambilight {
 
     if (
       this.isVR ||
-      (!this.enableInFullscreen && this.isFullscreen)
+      (!this.enableInFullscreen && this.isFullscreen) ||
+      (
+        this.isFillingFullscreen && 
+        !this.detectHorizontalBarSizeEnabled &&
+        !this.frameBlending &&
+        !this.videoOverlayEnabled
+      )
     ) {
       this.hide()
       return
     }
-
-    if(
-      this.isFillingFullscreen && 
-      !this.detectHorizontalBarSizeEnabled &&
-      !this.frameBlending &&
-      !this.videoOverlayEnabled
-    ) return
 
     const drawTime = performance.now()
     if (this.isHidden) {
@@ -3070,13 +3078,6 @@ class Ambilight {
             this.updateStyles()
           }
 
-          if(
-            setting.name === 'videoScale' ||
-            setting.name === 'horizontalBarsClipPercentage'
-          ) {
-            this.updateSizes()
-          }
-
           if (
             this.detectHorizontalBarSizeEnabled &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
@@ -3152,7 +3153,6 @@ class Ambilight {
                 const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
                 horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
                 horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-                this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
             } else {
               this.horizontalBarDetection.clear()
@@ -3172,7 +3172,6 @@ class Ambilight {
                 const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
                 videoScaleInputElem.value = videoScaleSetting.default
                 videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-                this.setSetting('videoScale', videoScaleSetting.default)
               }
             }
             if(inputElem.dontResetControlledSetting) {
@@ -3205,7 +3204,7 @@ class Ambilight {
           }
 
           this.updateSizes()
-          this.nextFrame()
+          this.optionalFrame()
         })
       }
     })
