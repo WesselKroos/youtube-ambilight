@@ -3009,10 +3009,6 @@ class Ambilight {
             if(e.key !== 'Enter') return
             manualInputElem.blur()
           })
-
-          on(inputElem, 'change', (e) => {
-            manualInputElem.value = inputElem.value
-          })
         }
 
         on(inputElem, 'change mousemove dblclick contextmenu touchmove', (e) => {
@@ -3026,6 +3022,9 @@ class Ambilight {
           }
           inputElem.value = value
           inputElem.setAttribute('data-previous-value', value)
+          if (manualInputElem) {
+            manualInputElem.value = inputElem.value
+          }
           this.setSetting(setting.name, value)
           valueElem.textContent = this.getSettingListDisplayText({...setting, value})
 
