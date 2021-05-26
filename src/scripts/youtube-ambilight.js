@@ -445,14 +445,6 @@ class Ambilight {
         entries.forEach(entry => {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
-          if(
-            !this.isFullscreen ||
-            !this.enableInFullscreen ||
-            this.atTop === this.isFillingFullscreen
-          ) return
-
-          this.updateSizes()
-          this.optionalFrame()
         })
       },
       {
@@ -1934,6 +1926,7 @@ class Ambilight {
     this.videoElem.paused ||
     this.videoElem.seeking ||
     // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
+    this.isVideoHiddenOnWatchPage ||
     this.isAmbilightHiddenOnWatchPage
   ))
 
@@ -2206,7 +2199,7 @@ class Ambilight {
 
     if (
       this.isVideoHiddenOnWatchPage || 
-      this.isAmbilightHiddenOnWatchPage ||
+      // this.isAmbilightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambilight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1    // HAVE_METADATA
@@ -3084,13 +3077,6 @@ class Ambilight {
           ) {
             this.horizontalBarDetection.clear()
             this.scheduleHorizontalBarSizeDetection()
-          }
-
-          if (
-            setting.name === 'spread' || 
-            setting.name === 'edge'
-          ) {
-            this.canvassesInvalidated = true
           }
 
           this.buffersCleared = true
