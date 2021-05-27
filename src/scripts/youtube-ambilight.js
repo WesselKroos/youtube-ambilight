@@ -477,6 +477,12 @@ class Ambilight {
         entries.forEach(entry => {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
+
+          // When the video is filled and paused in fullscreen the ambilight is out of sync with the video
+          if(this.isFillingFullscreen && !this.atTop) {
+            this.buffersCleared = true
+            this.optionalFrame()
+          }
         })
       },
       {
