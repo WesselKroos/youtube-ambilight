@@ -252,28 +252,17 @@ class Ambilight {
     return true
   }
 
-  updatePlayerSize = wrapErrorHandler((internalOnly = false) => {
-    if (!internalOnly) {
-      this.videoPlayerElem.setSize()
-    }
-    this.videoPlayerElem.setInternalSize()
-  }, true)
-
   scheduleHandleVideoResize = () => {
     if (!this.enabled || !this.isOnVideoPage) return
-    if(this.scheduledHandleVideoResize) return
+    if(this.scheduledHandleVideoResize) {
+      // console.log('prevented duplicate calls')
+      return
+    }
 
-    const wasFullscreen = this.isFullscreen
     const wasView = this.view
     this.updateView()
     this.updateImmersiveMode()
-    if(this.isFullscreen && !wasFullscreen && this.horizontalBarsClipPercentage === 0) {
-      // Spare multiple resize handler calls when switching to fullscreen view
-      this.scheduledHandleVideoResize = requestIdleCallback(() => {
-        this.scheduledHandleVideoResize = null
-        this.handleVideoResize()
-      }, { timeout: 500 })
-    } else if(wasView === this.view) {
+    if(wasView === this.view) {
       // Spare multiple resize handler calls when resizing the browser window
       this.scheduledHandleVideoResize = raf(() => {
         this.scheduledHandleVideoResize = null
@@ -287,7 +276,8 @@ class Ambilight {
 
   handleVideoResize = () => {
     if (!this.enabled || !this.isOnVideoPage) return
-    this.sizesInvalidated = true
+
+    // console.log('handleVideoResize')
     this.nextFrame()
   }
 
@@ -380,17 +370,28 @@ class Ambilight {
     })
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      this.updatePlayerSize()
-      this.scheduleHandleVideoResize()
+      // console.log('body resized')
+      this.sizesInvalidated = true
+      this.scheduleHandleVideoResize() // Because the position could be shifted
     }))
     this.bodyResizeObserver.observe(document.body)
 
+    // Makes sure the player size is updated before the first frame is rendered
+    // (youtube does this to late in the next frame)
+    this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
+      // console.log('container resized')
+      this.videoPlayerElem.setSize()
+      this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
+    }))
+    this.videoContainerResizeObserver.observe(this.videoContainerElem)
+
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      this.updatePlayerSize(true)
+      // console.log('video resized')
+      this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
+      this.sizesInvalidated = true
       this.scheduleHandleVideoResize()
     }))
     this.videoResizeObserver.observe(this.videoElem)
-
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', () => {
@@ -1358,6 +1359,7 @@ class Ambilight {
   }
 
   updateSizes() {
+    // console.log('updateSizes')
     if(this.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
     }
@@ -2592,7 +2594,6 @@ class Ambilight {
     if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
 
     html.setAttribute('data-ambilight-enabled', true)
-    this.updatePlayerSize()
 
     if (!initial) {
       const toLight = !html.getAttribute('dark')
@@ -2612,7 +2613,6 @@ class Ambilight {
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
     html.setAttribute('data-ambilight-enabled', false)
-    this.updatePlayerSize()
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
@@ -2815,7 +2815,6 @@ class Ambilight {
     if(!changed) return
 
     this.checkScrollPosition()
-    this.updatePlayerSize()
   }
 
   toggleImmersiveMode(enabled) {
@@ -3144,11 +3143,7 @@ class Ambilight {
             this.toggleImmersiveMode(setting.value)
           }
           if (setting.name === 'hideScrollbar') {
-            const changed = (html.getAttribute('data-ambilight-hide-scrollbar') !== setting.value.toString())
             html.setAttribute('data-ambilight-hide-scrollbar', setting.value)
-            if(changed) {
-              this.updatePlayerSize()
-            }
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
