@@ -371,6 +371,7 @@ class Ambilight {
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       // console.log('body resized')
+      this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize() // Because the position could be shifted
     }))
@@ -380,7 +381,7 @@ class Ambilight {
     // (youtube does this to late in the next frame)
     this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       // console.log('container resized')
-      this.videoPlayerElem.setSize()
+      this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
       this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
     }))
     this.videoContainerResizeObserver.observe(this.videoContainerElem)
