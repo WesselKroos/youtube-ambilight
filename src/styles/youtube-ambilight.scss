@@ -922,6 +922,20 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
+  .ytpa-menuitem-key {
+    display: inline-block;
+    min-width: 12px;
+    text-align: center;
+    cursor: text;
+    &:hover {
+      color: #3ea6ff;
+    }
+    &:focus {
+      background: #000;
+      outline: 1px solid #ffffff88;
+    }
+  }
+
   .ytpa-menuitem-description {
     line-height: 12px;
     font-size: 10px;
@@ -977,6 +991,10 @@ html[data-ambilight-enabled="true"] {
     &::-webkit-inner-spin-button {
       -webkit-appearance: none;
       margin: 0;
+    }
+
+    &:hover + .ytp-menuitem-value {
+      color: #3ea6ff;
     }
 
     &:focus {

@@ -13,6 +13,7 @@ class Ambilight {
   horizontalBarsClipPX = 0
   horizontalBarDetection = new HorizontalBarDetection()
   lastCheckVideoSizeTime = 0
+  saveStorageEntryTimeout = {}
 
   projectorOffset = {}
   srcVideoOffset = {}
@@ -359,14 +360,21 @@ class Ambilight {
           return
         }
       }
-      if (e.keyCode === 90) // z
+
+      const immersiveKey = this.settings.find(setting => setting.name === 'immersive').key
+      const enabledKey = this.settings.find(setting => setting.name === 'enabled').key
+      const detectHorizontalBarSizeEnabledKey = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
+      const detectVideoFillScaleEnabledKey = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+      
+      const key = e.key.toUpperCase()
+      if (key === immersiveKey) // z by default
         this.toggleImmersiveMode()
-      else if (e.keyCode === 65) // a
-        this.toggleEnabled()
-      else if (e.keyCode === 66) // b
+      if (key === detectHorizontalBarSizeEnabledKey) // b by default
         $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-      else if (e.keyCode === 87) // w
+      if (key === detectVideoFillScaleEnabledKey) // w by default
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
+      if (key === enabledKey) // a by default
+        this.toggleEnabled()
     })
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
@@ -627,7 +635,10 @@ class Ambilight {
       },
       {
         name: 'frameSync',
-        label: '<span style="display: inline-block; padding: 5px 0">Synchronization <a title="How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique." href="#" onclick="return false" style="padding: 0 5px;">?</a>',
+        label: 'Synchronization',
+        questionMark: {
+          title: 'How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique.'
+        },
         type: 'list',
         default: 50,
         min: 0,
@@ -649,7 +660,10 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlayEnabled',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video with ambilight <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or dropped frames." href="#" onclick="return false" style="padding: 0 5px;">?</a></span>',
+        label: 'Sync video with ambilight',
+        questionMark: {
+          title: 'Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or dropped frames.'
+        },
         type: 'checkbox',
         default: false,
         advanced: true
@@ -657,7 +671,8 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlaySyncThreshold',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video disable threshold<br/><span class="ytpa-menuitem-description">(Disable when dropping % of frames)</span></span>',
+        label: 'Sync video disable threshold',
+        description: 'Disable when dropping % of frames',
         type: 'list',
         default: 5,
         min: 1,
@@ -668,7 +683,12 @@ class Ambilight {
       {
         experimental: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="Click for more information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
+        label: 'Smooth motion (frame blending)',
+        questionMark: {
+          title: 'Click for more information about Frame blending',
+          href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+        },
+        description: 'More GPU usage. Works with "Sync video"',
         type: 'checkbox',
         default: false,
         advanced: true
@@ -692,7 +712,8 @@ class Ambilight {
       },
       {
         name: 'surroundingContentTextAndBtnOnly',
-        label: 'Shadow only on text and buttons<br/><span class="ytpa-menuitem-description">(Decreases scroll & video stutter)</span>',
+        label: 'Shadow only on text and buttons',
+        description: 'Decreases scroll & video stutter',
         type: 'checkbox',
         advanced: true,
         default: true
@@ -727,7 +748,8 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Hide when scrolled to top [Z]',
+        label: 'Hide when scrolled to top',
+        key: 'Z',
         type: 'checkbox',
         default: false
       },
@@ -784,7 +806,9 @@ class Ambilight {
       },
       {
         name: 'detectHorizontalBarSizeEnabled',
-        label: 'Remove black bars [B]<br/><span class="ytpa-menuitem-description">(More CPU usage)</span>',
+        label: 'Remove black bars',
+        key: 'B',
+        description: 'More CPU usage',
         type: 'checkbox',
         default: false
       },
@@ -824,7 +848,8 @@ class Ambilight {
       },
       {
         name: 'detectVideoFillScaleEnabled',
-        label: 'Fill video to screen width [W]',
+        label: 'Fill video to screen width',
+        key: 'W',
         type: 'checkbox',
         default: false
       },
@@ -905,9 +930,8 @@ class Ambilight {
       },
       {
         name: 'blur',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Blur<br/>
-          <span class="ytpa-menuitem-description">(More GPU memory)</span></span>`,
+        label: 'Blur',
+        description: 'More GPU memory',
         type: 'list',
         default: 30,
         min: 0,
@@ -916,9 +940,8 @@ class Ambilight {
       },
       {
         name: 'spread',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Spread<br/>
-          <span class="ytpa-menuitem-description">(More GPU usage)</span></span>`,
+        label: 'Spread',
+        description: 'More GPU usage',
         type: 'list',
         default: 17,
         min: 0,
@@ -927,9 +950,8 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Edge size<br/>
-          <span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>`,
+        label: 'Edge size',
+        description: 'Less GPU usage. Tip: Turn blur down',
         type: 'list',
         default: 12,
         min: 2,
@@ -949,9 +971,8 @@ class Ambilight {
       },
       {
         name: 'fadeOutEasing',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Fade out curve<br/>
-          <span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>`,
+        label: 'Fade out curve',
+        description: 'Tip: Turn blur all the way down',
         type: 'list',
         default: 35,
         min: 1,
@@ -961,13 +982,11 @@ class Ambilight {
       },
       {
         name: 'debandingStrength',
-        label: `
-          Debanding (noise) 
-          <a 
-            title="Click for more information about Dithering" 
-            href="https://www.lifewire.com/what-is-dithering-4686105" 
-            target="_blank" 
-            style="padding: 0 5px;">?</a>`,
+        label: 'Debanding (noise)',
+        questionMark: {
+          title: 'Click for more information about Dithering',
+          href: 'https://www.lifewire.com/what-is-dithering-4686105'
+        },
         type: 'list',
         default: 0,
         min: 0,
@@ -982,25 +1001,22 @@ class Ambilight {
       },
       {
         name: 'resetThemeToLightOnDisable',
-        label: 'Switch to light theme when turned off',
+        label: 'Restore light theme when turned off',
         type: 'checkbox',
         default: false,
         advanced: false
       },
       {
         name: 'enableInFullscreen',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">
-            Enable in fullscreen<br/>
-            <span class="ytpa-menuitem-description">(When in fullscreen mode)</span>
-          </span>`,
+        label: 'Keep enabled in fullscreen',
         type: 'checkbox',
         default: true,
         advanced: true
       },
       {
         name: 'enabled',
-        label: 'Enabled [A]',
+        label: 'Enabled',
+        key: 'A',
         type: 'checkbox',
         default: true
       },
@@ -1094,7 +1110,7 @@ class Ambilight {
     const previouslyHighQuality = this.getSetting('highQuality')
     if(previouslyHighQuality === 'false') {
       this.setSetting('frameSync', 0)
-      this.removeSetting('highQuality')
+      this.removeStorageEntry('highQuality')
     } else {
       this.frameSync = this.getSetting('frameSync')
     }
@@ -1120,6 +1136,12 @@ class Ambilight {
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
+      if(setting.key !== undefined) {
+        const key = this.getSettingKey(setting.name)
+        if (key !== null) {
+          setting.key = key
+        }
+      }
     })
   }
 
@@ -2710,7 +2732,8 @@ class Ambilight {
       this.disable()
     }
       
-    this.displayBezel('A', !enabled)
+    const key = this.settings.find(setting => setting.name === 'enabled').key
+    this.displayBezel(key, !enabled)
   }
 
   start() {
@@ -2834,7 +2857,8 @@ class Ambilight {
     this.setSetting('immersive', enabled)
     this.updateImmersiveMode()
 
-    this.displayBezel('Z', !enabled)
+    const key = this.settings.find(setting => setting.name === 'immersive').key
+    this.displayBezel(key, !enabled)
   }
 
   initSettingsMenu() {
@@ -2892,7 +2916,21 @@ class Ambilight {
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
-
+        
+        const label = `${setting.label}
+          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
+          ${setting.questionMark 
+            ? `<a
+            title="${setting.questionMark.title}" 
+            ${setting.questionMark.href ? `href="${setting.questionMark.href}" target="_blank"` : 'href="#" onclick="return false"' }
+            style="padding: 0 5px;">
+              ?
+            </a>`
+            : ''
+          }
+          ${setting.description ? `<br/><span class="ytpa-menuitem-description">${setting.description}</span>` : ''}
+        `
+        
         if (setting.type === 'checkbox') {
           return `
             <div id="setting-${setting.name}" 
@@ -2901,7 +2939,7 @@ class Ambilight {
             aria-checked="${setting.value ? 'true' : 'false'}" 
             tabindex="0"
             title="Right click to reset">
-              <div class="ytp-menuitem-label">${setting.label}</div>
+              <div class="ytp-menuitem-label">${label}</div>
               <div class="ytp-menuitem-content">
                 <div class="ytp-menuitem-toggle-checkbox"></div>
               </div>
@@ -2911,13 +2949,13 @@ class Ambilight {
           return `
             <div id="setting-${setting.name}" class="ytp-menuitem-range-wrapper">
               <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
-                <div class="ytp-menuitem-label">${setting.label}</div>
+                <div class="ytp-menuitem-label">${label}</div>
                 <div class="ytp-menuitem-content">
-                  <div class="ytp-menuitem-value" id="setting-${setting.name}-value">${this.getSettingListDisplayText(setting)}</div>
                   ${(setting.manualinput !== false)
                     ? `<input id="setting-${setting.name}-manualinput" type="text" class="ytpa-menuitem-input" value="${setting.value}" />`
                     : ''
                   }
+                  <div class="ytp-menuitem-value" id="setting-${setting.name}-value">${this.getSettingListDisplayText(setting)}</div>
                 </div>
               </div>
               <div 
@@ -2955,7 +2993,7 @@ class Ambilight {
               class="ytpa-section ${setting.value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" 
               data-name="${setting.name}">
               <div class="ytpa-section__cell">
-                <div class="ytpa-section__label">${setting.label}</div>
+                <div class="ytpa-section__label">${label}</div>
               </div>
               <div class="ytpa-section__cell">
                 <div class="ytpa-section__fill">-</div>
@@ -3037,15 +3075,53 @@ class Ambilight {
     this.settingsMenuElemParent.prepend(this.settingsBezelElem)
 
     this.settings.forEach(setting => {
-      if (setting.type === 'list') {
+      const settingElem = $.s(`#setting-${setting.name}`)
+      if (!settingElem) return
+      
+      const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
+      if (keyElem) {
         const settingElem = $.s(`#setting-${setting.name}`)
+        on(keyElem, 'click', (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+        })
+        on(keyElem, 'focus', (e) => {
+          // Select all
+          const range = document.createRange()
+          range.selectNodeContents(keyElem)
+          const sel = window.getSelection()
+          sel.removeAllRanges()
+          sel.addRange(range)
+        })
+        on(keyElem, 'keydown keyup keypress', (e) => {
+          e.stopPropagation()
+        })
+        on(keyElem, 'keypress', (e) => {
+          if(e.key.length === 1) {
+            const key = e.key.toUpperCase()
+            this.setSettingKey(setting.name, key)
+            keyElem.textContent = key
+          } else {
+            keyElem.textContent = setting.key
+          }
+
+          keyElem.blur()
+        })
+        on(keyElem, 'blur', (e) => {
+          // Deselect all
+          const sel = window.getSelection()
+          sel.removeAllRanges()
+        })
+      }
+
+      if (setting.type === 'list') {
         const inputElem = $.s(`#setting-${setting.name}-range`)
         const valueElem = $.s(`#setting-${setting.name}-value`)
 
         const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
         if(manualInputElem) {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
-            e.stopPropagation();
+            e.stopPropagation()
           })
           const onChange = (empty = false) => {
             const manualValue = manualInputElem.value
@@ -3140,8 +3216,7 @@ class Ambilight {
           this.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
-        const inputElem = $.s(`#setting-${setting.name}`)
-        on(inputElem, 'dblclick contextmenu click', (e) => {
+        on(settingElem, 'dblclick contextmenu click', (e) => {
           setting.value = !setting.value
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             setting.value = this.settings.find(s => s.name === setting.name).default
@@ -3186,7 +3261,7 @@ class Ambilight {
 
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
             if(!setting.value) {
-              if(!inputElem.dontResetControlledSetting) {
+              if(!settingElem.dontResetControlledSetting) {
                 const horizontalBarsClipPercentageSetting = this.settings.find(setting => setting.name === 'horizontalBarsClipPercentage')
                 const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
                 horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
@@ -3196,27 +3271,31 @@ class Ambilight {
               this.horizontalBarDetection.clear()
               this.scheduleHorizontalBarSizeDetection()
             }
-            if(inputElem.dontResetControlledSetting) {
-              inputElem.dontResetControlledSetting = false
+            if(settingElem.dontResetControlledSetting) {
+              settingElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
-            this.displayBezel('B', !setting.value)
+
+            const key = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
+            this.displayBezel(key, !setting.value)
           }
 
           if(setting.name === 'detectVideoFillScaleEnabled') {
             if(!setting.value) {
-              if(!inputElem.dontResetControlledSetting) {
+              if(!settingElem.dontResetControlledSetting) {
                 const videoScaleSetting = this.settings.find(setting => setting.name === 'videoScale')
                 const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
                 videoScaleInputElem.value = videoScaleSetting.default
                 videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
               }
             }
-            if(inputElem.dontResetControlledSetting) {
-              inputElem.dontResetControlledSetting = false
+            if(settingElem.dontResetControlledSetting) {
+              settingElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
-            this.displayBezel('W', !setting.value)
+
+            const key = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+            this.displayBezel(key, !setting.value)
           }
 
           if(setting.name === 'advancedSettings') {
@@ -3354,63 +3433,79 @@ class Ambilight {
     off(this.settingsMenuElem, 'animationend', this.onSettingsFadeOutEndListener)
   }
 
-  setSetting(key, value) {
-    this[key] = value
-
-    if (key === 'blur')
-      value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
-    if (key === 'bloom')
-      value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
-
-    const setting = this.settings.find(setting => setting.name === key) || {}
-    setting.value = value
-
-    if (!this.setSettingTimeout)
-      this.setSettingTimeout = {}
-
-    if (this.setSettingTimeout[key])
-      clearTimeout(this.setSettingTimeout[key])
-
-    this.setSettingTimeout[key] = setTimeout(() => {
-      try {
-        localStorage.setItem(`ambilight-${key}`, value)
-      } catch (ex) {
-        console.warn('YouTube Ambilight | setSetting', ex)
-        //AmbilightSentry.captureExceptionWithDetails(ex)
-      }
-      this.setSettingTimeout[key] = null
-    }, 500)
+  setSettingKey(name, key) {
+    const setting = this.settings.find(setting => setting.name === name) || {}
+    setting.key = key
+    this.saveStorageEntry(`${setting.name}-key`, key)
   }
 
-  getSetting(key) {
-    let value = null
-    try {
-      value = localStorage.getItem(`ambilight-${key}`)
-    } catch (ex) {
-      console.warn('YouTube Ambilight | getSetting', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
-    }
-    const setting = this.settings.find(setting => setting.name === key) || {}
+  getSettingKey(name) {
+    return this.getStorageEntry(`${name}-key`)
+  }
+
+  setSetting(name, value) {
+    this[name] = value
+
+    if (name === 'blur')
+      value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
+    if (name === 'bloom')
+      value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
+
+    const setting = this.settings.find(setting => setting.name === name) || {}
+    setting.value = value
+
+    this.saveStorageEntry(name, value)
+  }
+
+  getSetting(name) {
+    let value = this.getStorageEntry(name)
+    const setting = this.settings.find(setting => setting.name === name) || {}
     if (value === null) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (value === 'true')
     } else if (setting.type === 'list') {
       value = parseFloat(value)
-      if (key === 'blur')
+      if (name === 'blur')
         value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
-      if (key === 'bloom')
+      if (name === 'bloom')
         value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
     }
 
     return value
   }
 
-  removeSetting(key) {
+  getStorageEntry(name) {
+    let value = null
     try {
-      localStorage.removeItem(`ambilight-${key}`)
+      value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('YouTube Ambilight | removeSetting', ex)
+      console.warn('YouTube Ambilight | getSetting', ex)
+      //AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+    return value
+  }
+
+  saveStorageEntry(name, value) {
+    if (this.saveStorageEntryTimeout[name])
+      clearTimeout(this.saveStorageEntryTimeout[name])
+
+    this.saveStorageEntryTimeout[name] = setTimeout(() => {
+      try {
+        localStorage.setItem(`ambilight-${name}`, value)
+      } catch (ex) {
+        console.warn('YouTube Ambilight | saveStorageEntry', ex)
+        //AmbilightSentry.captureExceptionWithDetails(ex)
+      }
+      this.saveStorageEntryTimeout[name] = null
+    }, 500)
+  }
+
+  removeStorageEntry(name) {
+    try {
+      localStorage.removeItem(`ambilight-${name}`)
+    } catch (ex) {
+      console.warn('YouTube Ambilight | removeStorageEntry', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
