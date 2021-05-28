@@ -371,7 +371,9 @@ class Ambilight {
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       // console.log('body resized')
-      this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
+      wrapErrorHandler(() => {
+        this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
+      })()
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize() // Because the position could be shifted
     }))
@@ -388,7 +390,9 @@ class Ambilight {
 
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       // console.log('video resized')
-      this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
+      wrapErrorHandler(() => {
+        this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
+      })()
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize()
     }))
