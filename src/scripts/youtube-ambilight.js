@@ -76,8 +76,10 @@ class Ambilight {
 
     this.initListeners()
 
-    if (this.enabled)
-      this.enable(true)
+    wrapErrorHandler(() => {
+      if (this.enabled)
+        this.enable(true)
+    })
   }
 
   initElems(videoElem) {
