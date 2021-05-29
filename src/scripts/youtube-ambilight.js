@@ -2624,8 +2624,6 @@ class Ambilight {
     this.updateView()
     if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
 
-    html.setAttribute('data-ambilight-enabled', true)
-
     if (!initial) {
       const toLight = !html.getAttribute('dark')
       this.resetThemeToLightOnDisable = toLight
@@ -2643,7 +2641,6 @@ class Ambilight {
     this.setSetting('enabled', false)
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
-    html.setAttribute('data-ambilight-enabled', false)
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
