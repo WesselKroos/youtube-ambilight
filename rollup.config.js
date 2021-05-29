@@ -24,8 +24,7 @@ const background = {
    input:  './src/scripts/background.js',
    output:  { 
     file: './dist/scripts/background.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 
@@ -33,8 +32,7 @@ const content = {
    input:  './src/scripts/content.js',
    output:  { 
     file: './dist/scripts/content.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 
@@ -42,8 +40,7 @@ const youtubeAmbilight = {
    input:  './src/scripts/youtube-ambilight.js',
    output:  { 
     file: './dist/scripts/youtube-ambilight.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 

@@ -3585,13 +3585,13 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
-export const getVideosHTML = () => [...$.sa('video')]
+const getVideosHTML = () => [...$.sa('video')]
   .reduce((obj, elem, i) => {
     obj[`»('video')[${i}]`] = elem.cloneNode(false).outerHTML
     return obj
   }, {})
 
-export const getPlayerContainersHTML = () => [...$.sa('#player-container')]
+const getPlayerContainersHTML = () => [...$.sa('#player-container')]
   .reduce((obj, elem, i) => {
     obj[`»('#player-container')[${i}]`] = elem.cloneNode(false).outerHTML
     return obj
