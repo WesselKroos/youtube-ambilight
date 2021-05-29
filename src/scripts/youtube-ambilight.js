@@ -749,9 +749,9 @@ class Ambilight {
       {
         name: 'immersive',
         label: 'Hide when scrolled to top',
-        key: 'Z',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'Z'
       },
       {
         name: 'immersiveTheaterView',
@@ -807,10 +807,10 @@ class Ambilight {
       {
         name: 'detectHorizontalBarSizeEnabled',
         label: 'Remove black bars',
-        key: 'B',
         description: 'More CPU usage',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'B'
       },
       {
         name: 'detectColoredHorizontalBarSizeEnabled',
@@ -849,9 +849,9 @@ class Ambilight {
       {
         name: 'detectVideoFillScaleEnabled',
         label: 'Fill video to screen width',
-        key: 'W',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'W'
       },
       {
         type: 'section',
@@ -1016,9 +1016,9 @@ class Ambilight {
       {
         name: 'enabled',
         label: 'Enabled',
-        key: 'A',
         type: 'checkbox',
-        default: true
+        default: true,
+        defaultKey: 'A'
       },
     ]
 
@@ -1136,11 +1136,9 @@ class Ambilight {
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
-      if(setting.key !== undefined) {
+      if(setting.defaultKey !== undefined) {
         const key = this.getSettingKey(setting.name)
-        if (key !== null) {
-          setting.key = key
-        }
+        setting.key = (key !== null) ? key : setting.defaultKey
       }
     })
   }
@@ -3010,9 +3008,21 @@ class Ambilight {
     on(resetSettingsBtnElem, 'click', () => {
       if(!confirm('Are you sure you want to reset ALL the settings?')) return
       
+      // Reset values
       this.settingsMenuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]').forEach(input => {
         input.dispatchEvent(new Event('contextmenu'))
       })
+
+      // Reset keys
+      this.settings
+        .filter(setting => setting.key)
+        .forEach(setting => {
+          // this.setSettingKey(setting.name, setting.key)
+          const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
+          keyElem.dispatchEvent(new KeyboardEvent('keypress', {
+            key: setting.defaultKey
+          }))
+        })
     })
     this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label').forEach(label => {
       on(label, 'click', (e) => {
@@ -3102,7 +3112,7 @@ class Ambilight {
             this.setSettingKey(setting.name, key)
             keyElem.textContent = key
           } else {
-            keyElem.textContent = setting.key
+            keyElem.textContent = setting.defaultKey
           }
 
           keyElem.blur()
