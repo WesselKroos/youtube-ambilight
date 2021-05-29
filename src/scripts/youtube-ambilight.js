@@ -304,7 +304,7 @@ class Ambilight {
       if (this.initVideoIfSrcChanged()) return
 
       this.buffersCleared = true // Always prevent old frame from being drawn
-      this.nextFrame()
+      this.optionalFrame()
     })
     on(this.videoElem, 'loadeddata', (e) => {
       // Whent the video is playing this is the first event. Else [seeked] is first
@@ -312,7 +312,7 @@ class Ambilight {
     })
     on(this.videoElem, 'playing', () => {
       if (this.videoElem.paused) return // When paused handled by [seeked]
-      this.scheduleNextFrame()
+      this.optionalFrame()
     })
     on(this.videoElem, 'ended', () => {
       this.clear()
