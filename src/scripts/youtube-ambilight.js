@@ -351,6 +351,7 @@ class Ambilight {
           return
         }
       }
+      if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
 
       const immersiveKey = this.settings.find(setting => setting.name === 'immersive').key
       const enabledKey = this.settings.find(setting => setting.name === 'enabled').key
