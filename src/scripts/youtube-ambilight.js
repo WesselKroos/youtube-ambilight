@@ -3,7 +3,6 @@ import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from 
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 
 class Ambilight {
-  static isClassic = false
   VIEW_DETACHED = 'VIEW_DETACHED'
   VIEW_SMALL = 'VIEW_SMALL'
   VIEW_THEATER = 'VIEW_THEATER'
@@ -50,10 +49,9 @@ class Ambilight {
 
   constructor(ytdAppElem, videoElem) {
     this.ytdAppElem = ytdAppElem
-    const mastheadSelector = Ambilight.isClassic ? '#yt-masthead-container' : '#masthead-container'
-    this.mastheadElem = ytdAppElem.querySelector(mastheadSelector)
+    this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
     if(!this.mastheadElem) {
-      throw new Error(`Cannot find mastheadElem: ${mastheadSelector}`)
+      throw new Error(`Cannot find mastheadElem: #masthead-container`)
     }
 
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
@@ -85,16 +83,9 @@ class Ambilight {
   }
 
   initElems(videoElem) {
-    if(!Ambilight.isClassic) {
-      this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
-      if(!this.ytdWatchFlexyElem) {
-        throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
-      }
-    } else {
-      this.pageElem = $.s('#page')
-      if(!this.pageElem) {
-        throw new Error('Cannot find pageElem: #page')
-      }
+    this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
+    if(!this.ytdWatchFlexyElem) {
+      throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
     }
 
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
@@ -1371,10 +1362,7 @@ class Ambilight {
         this.view = this.VIEW_FULLSCREEN
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
         this.view = this.VIEW_POPUP
-      else if(
-        (this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null) ||
-        (this.pageElem && this.pageElem.classList.contains('watch-stage-mode'))
-      )
+      else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
         this.view = this.VIEW_THEATER
       else
         this.view = this.VIEW_SMALL
@@ -1606,6 +1594,7 @@ class Ambilight {
   }
 
   updateStyles() {
+    // console.log('updateStyles')
     // Images transparency
 
     const ImagesTransparency = this.surroundingContentImagesTransparency
@@ -2661,7 +2650,6 @@ class Ambilight {
 
   static setDarkTheme(value) {
     try {
-      if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
       if (html.getAttribute('dark')) {
         if (value) return
@@ -2800,10 +2788,6 @@ class Ambilight {
     this.hideStats()
 
     html.setAttribute('data-ambilight-enabled', false)
-    html.setAttribute('data-ambilight-classic', false)
-    if(Ambilight.isClassic) {
-      html.setAttribute('dark', false)
-    }
     if (this.resetThemeToLightOnDisable) {
       Ambilight.setDarkTheme(false)
     }
@@ -2814,10 +2798,6 @@ class Ambilight {
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
     html.setAttribute('data-ambilight-enabled', true)
-    html.setAttribute('data-ambilight-classic', Ambilight.isClassic)
-    if(Ambilight.isClassic) {
-      html.setAttribute('dark', true)
-    }
   }
 
   checkScrollPosition = () => {
@@ -3662,19 +3642,6 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   })
 }
 
-const tryInitClassicAmbilight = (ytdAppElem) => {
-  const classicYtdAppElem = $.s('body[data-spf-name="watch"]')
-  if(!Ambilight.isClassic && classicYtdAppElem) {
-    AmbilightSentry.captureExceptionWithDetails(new Error('Detected deprecated YouTube classic layout. Support will be removed in future versions.'))
-  }
-  const classicVideoElem = $.s('video.html5-main-video')
-  if(!classicYtdAppElem || !classicVideoElem) return false
-
-  Ambilight.isClassic = true
-  window.ambilight = new Ambilight(classicYtdAppElem, classicVideoElem)
-  return true
-}
-
 const tryInitAmbilight = (ytdAppElem) => {
   if (!isWatchPageUrl()) return
 
@@ -3774,13 +3741,13 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
 }
 
 const loadAmbilight = () => {
-  const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
+  const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
-      .filter(elem => elem.tagName.endsWith('-APP'))
+      .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
       .map(elem => elem.cloneNode(false).outerHTML)
     if(appElems.length) {
-      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', appElems)
     }
     return
   }
@@ -3788,7 +3755,6 @@ const loadAmbilight = () => {
   // Validated YouTube desktop web app
 
   if (tryInitAmbilight(ytdAppElem)) return
-  if (tryInitClassicAmbilight(ytdAppElem)) return
 
   // Not initialized yet
 
@@ -3805,8 +3771,7 @@ const loadAmbilight = () => {
     }
 
     if (
-      tryInitAmbilight(ytdAppElem) ||
-      tryInitClassicAmbilight(ytdAppElem)
+      tryInitAmbilight(ytdAppElem)
     ) {
       // Initialized
       observer.disconnect()

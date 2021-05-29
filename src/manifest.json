@@ -29,10 +29,7 @@
       "matches": ["https://www.youtube.com/*"],
       "exclude_matches": ["https://www.youtube.com/live_chat*"],
       "js": ["scripts/content.js"],
-      "css": [
-        "styles/youtube-ambilight.css",
-        "styles/youtube-ambilight-classic.css"
-      ]
+      "css": ["styles/youtube-ambilight.css"]
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
