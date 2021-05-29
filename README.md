@@ -11,8 +11,6 @@ Go to the extensions site of your browser and add the extension:
 
 [![Google Chrome Web Store](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
 
-[![Firefox Browser Add-ons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Firefox.png?raw=true)](https://addons.mozilla.org/firefox/addon/youtube-ambilight/)
-
 [![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
 [![Microsoft Edge Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Microsoft%20Edge.png?raw=true)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf)
@@ -55,13 +53,13 @@ Feel free to
 
 
 ## Development
-1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
-2. In the terminal/commandline enter `yarn build`. A `/dist` folder will be generated which is the source of the Chrome extension.
+1. Install [Node (LTS)](https://nodejs.org/en/download/)
+2. In the terminal/commandline enter `npm run build`. A `/dist` folder will be generated which is the source of the Chrome extension.
 3. Add the extension to Chrome:
     1. In Chrome go to the url [chrome://extensions/](chrome://extensions/).
     2. Turn on the `Developer mode` toggle.
     3. Click `Load unpacked` and select the `/dist` folder.
     4. `YouTube Ambilight` has been added to the list of extensions.
 4. After you've modified a file in the `/src` folder follow these steps:
-    1. In the terminal/commandline enter `yarn build`
+    1. In the terminal/commandline enter `npm run build`
     2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.

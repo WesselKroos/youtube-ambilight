@@ -528,7 +528,7 @@ html[data-ambilight-enabled="true"] {
 .ytp-ambilight-settings-button {
   position: relative !important;
   overflow: initial !important;
-  font-size: (100% / 1.09) !important;
+  font-size: calc(100% / 1.09) !important;
   &::after {
     content: '';
     position: absolute;
