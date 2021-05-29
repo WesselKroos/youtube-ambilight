@@ -14,7 +14,7 @@ class Ambilight {
   lastCheckVideoSizeTime = 0
   saveStorageEntryTimeout = {}
 
-  projectorOffset = {}
+  videoOffset = {}
   srcVideoOffset = {}
 
   isHidden = true
@@ -40,8 +40,6 @@ class Ambilight {
   ambilightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
-  frameDuration = 1
-  syncInfo = []
 
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
@@ -1437,24 +1435,24 @@ class Ambilight {
       `)
     }
 
-    this.projectorOffset = this.getElemRect(this.videoElem)
+    this.videoOffset = this.getElemRect(this.videoElem)
     this.isFillingFullscreen = (
       this.isFullscreen &&
-      Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
-      Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
+      Math.abs(this.videoOffset.width - window.innerWidth) < 10 &&
+      Math.abs(this.videoOffset.height - window.innerHeight) < 10 &&
       noClipOrScale
     )
     
     if (
-      this.projectorOffset.top === undefined ||
-      !this.projectorOffset.width ||
-      !this.projectorOffset.height ||
+      this.videoOffset.top === undefined ||
+      !this.videoOffset.width ||
+      !this.videoOffset.height ||
       !this.videoElem.videoWidth ||
       !this.videoElem.videoHeight
     ) return false //Not ready
 
     this.srcVideoOffset = {
-      top: this.projectorOffset.top,
+      top: this.videoOffset.top,
       width: this.videoElem.videoWidth,
       height: this.videoElem.videoHeight
     }
@@ -1477,15 +1475,15 @@ class Ambilight {
       }
     }
 
-    const unscaledWidth = Math.round(this.projectorOffset.width / (this.videoScale / 100))
-    const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
+    const unscaledWidth = Math.round(this.videoOffset.width / (this.videoScale / 100))
+    const unscaledHeight = Math.round(this.videoOffset.height / (this.videoScale / 100))
     const unscaledLeft = Math.round(
-      (this.projectorOffset.left + window.scrollX) - 
-      ((unscaledWidth - this.projectorOffset.width) / 2)
+      (this.videoOffset.left + window.scrollX) - 
+      ((unscaledWidth - this.videoOffset.width) / 2)
     )
     const unscaledTop = Math.round(
-      this.projectorOffset.top - 
-      ((unscaledHeight - this.projectorOffset.height) / 2)
+      this.videoOffset.top - 
+      ((unscaledHeight - this.videoOffset.height) / 2)
     )
 
     this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
@@ -1514,7 +1512,7 @@ class Ambilight {
     }
 
     this.filterElem.style.filter = `
-      ${(this.blur != 0) ? `blur(${Math.round(this.projectorOffset.height) * (this.blur * .0025)}px)` : ''}
+      ${(this.blur != 0) ? `blur(${Math.round(this.videoOffset.height) * (this.blur * .0025)}px)` : ''}
       ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
       ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
       ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
@@ -1674,8 +1672,8 @@ class Ambilight {
 
   resizeCanvasses() {
     const projectorSize = {
-      w: this.projectorOffset.width,
-      h: this.projectorOffset.height * this.horizontalBarsClipScaleY
+      w: this.videoOffset.width,
+      h: this.videoOffset.height * this.horizontalBarsClipScaleY
     }
     const ratio = (projectorSize.w > projectorSize.h) ?
       {
@@ -3560,8 +3558,8 @@ on(document, 'visibilitychange', () => {
   const lastEvent = errorEvents[errorEvents.length - 1]
   const lastTime = lastEvent.lastTime || lastEvent.time
   const firstTime = errorEvents[0].time
-  if(lastTime - firstTime < 3) {
-    return // Give the site 3 seconds to load the watch page or move the video element
+  if(lastTime - firstTime < 10) {
+    return // Give the site 10 seconds to load the watch page or move the video element
   }
 
   AmbilightSentry.captureExceptionWithDetails(
