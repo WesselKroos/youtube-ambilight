@@ -1,5 +1,5 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
-import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './libs/ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 
 class Ambilight {
@@ -3585,19 +3585,6 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
-const getVideosHTML = () => [...$.sa('video')]
-  .reduce((obj, elem, i) => {
-    obj[`»('video')[${i}]`] = elem.cloneNode(false).outerHTML
-    return obj
-  }, {})
-
-const getPlayerContainersHTML = () => [...$.sa('#player-container')]
-  .reduce((obj, elem, i) => {
-    obj[`»('#player-container')[${i}]`] = elem.cloneNode(false).outerHTML
-    return obj
-  }, {})
-
-
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
@@ -3613,13 +3600,9 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
       const details = {
-        ...getVideosHTML(),
-        ...getPlayerContainersHTML(),
-        'ambilight.videoElem': ambilight.videoElem?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
-        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem)
+        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem),
+        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        tree: getSelectorTreeString('video,#player-container')
       }
       pushErrorEvent('detectDetachedVideo | video detached and no new video', details)
       return
@@ -3668,8 +3651,7 @@ const tryInitAmbilight = (ytdAppElem) => {
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
     pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
-      ...getVideosHTML(),
-      ...getPlayerContainersHTML(),
+      tree: getSelectorTreeString('video,#player-container')
     })
     return false
   }

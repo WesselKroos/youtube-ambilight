@@ -6,28 +6,85 @@ import {
   initAndBind
 } from "@sentry/core";
 
+const getNodeSelector = (elem) => {
+  if(!elem.tagName) return elem.nodeName // Document
 
-export const getNodeTree = (elem) => {
-  const nodes = [];
-  nodes.push(elem);
-  while(elem.parentNode) {
-    nodes.unshift(elem.parentNode);
-    elem = elem.parentNode;
-  }
-  return nodes.map(node => node.cloneNode(false).outerHTML).join('\n')
+  const idSelector = elem.id ? `#${elem.id}` : ''
+  const classSelector = elem.classList?.length ? `.${[...elem.classList].sort().join('.')}` : ''
+  return `${elem.tagName.toLowerCase()}${idSelector}${classSelector}`
 }
 
-export const getVideosNodeTree = () => [...$.sa('video')]
-  .reduce((obj, elem, i) => {
-    obj[`»('video')[${i}].nodeTree`] = getNodeTree(elem)
-    return obj
-  }, {})
+const getNodeTree = (elem) => {
+  if(!elem) return []
 
-export const getPlayerContainersNodeTree = () => [...$.sa('#player-container')]
-  .reduce((obj, elem, i) => {
-    obj[`»('#player-container')[${i}].nodeTree`] = getNodeTree(elem)
-    return obj
-  }, {})
+  const tree = [];
+  tree.push(elem);
+  while(elem.parentNode && elem.parentNode.tagName) {
+    tree.unshift(elem.parentNode);
+    elem = elem.parentNode;
+  }
+  return tree
+}
+
+export const getNodeTreeString = (elem) => 
+  getNodeTree(elem)
+    .map((node, i) => `${' '.repeat(i)}${getNodeSelector(node)}`)
+    .join('\n')
+
+const createNodeEntry = (node, level) => ({
+  level,
+  node,
+  children: []
+})
+const findEntry = (node, entry) => {
+  if(entry.node === node) return entry
+  for (entry of entry.children) {
+    const foundEntry = findEntry(node, entry)
+    if(foundEntry) return foundEntry
+  }
+}
+const entryToString = (entry) => {
+  let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`]
+  entry.children.forEach(childEntry => {
+    lines.push(entryToString(childEntry))
+  })
+  return lines.join('\n')
+}
+export const getSelectorTreeString = (selector) => {
+  const trees = [...$.sa(selector)]
+    .map(elem => getNodeTree(elem))
+  let documentTree;
+  trees.forEach(nodeTree => {
+    let previousEntry;
+    nodeTree.forEach(node => {
+      if(!documentTree) {
+        documentTree = createNodeEntry(node, 0)
+        previousEntry = documentTree
+        return
+      }
+      if(!previousEntry) {
+        if(documentTree.node === node) {
+          previousEntry = documentTree
+          return
+        } else {
+          throw new Error('Cannot create tree of nodes that are not in the same document.')
+        }
+      }
+
+      const existingEntry = previousEntry.children.find(entry => entry.node === node)
+      if(existingEntry) {
+        previousEntry = existingEntry
+        return
+      }
+      
+      const entry = createNodeEntry(node, previousEntry.level + 1)
+      previousEntry.children.push(entry)
+      previousEntry = entry
+    })
+  })
+
+  return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
+}
 
 initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
@@ -102,10 +159,10 @@ export default class AmbilightSentry {
 
       try {
         if(ex && ex.details) {
-          setExtra('Exception details', ex.details)
+          setExtra('YTA Exception details', ex.details)
         }
       } catch (ex) {
-        setExtra('Exception details (exception)', ex)
+        setExtra('YTA Exception details (exception)', ex)
       }
 
       try {
