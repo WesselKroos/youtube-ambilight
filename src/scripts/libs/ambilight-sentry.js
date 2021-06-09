@@ -194,9 +194,9 @@ export default class AmbilightSentry {
 
       try {
         setExtra('YouTube', {
-          dark: !!(html.attributes.dark || {}).value,
-          lang: (html.attributes.lang || {}).value,
-          loggedIn: !!$.s('#avatar-btn')
+          dark: !!html?.attributes?.dark,
+          lang: html?.attributes?.lang?.value,
+          loggedIn: yt?.config_?.LOGGED_IN
         })
       } catch (ex) {
         setExtra('YouTube (exception)', ex)
