@@ -220,6 +220,8 @@ html[data-ambilight-enabled="true"] {
 
   ytd-app {
     #search-form {
+      transition: background-color .15s;
+      background-color: var(--yt-spec-brand-background-primary);
       > * {
         transition: background-color .15s, border-color .15s, color .15s, fill .15s;
       }
@@ -229,6 +231,7 @@ html[data-ambilight-enabled="true"] {
     }
     #masthead-container.at-top {
       #search-form:not(:hover):not(:focus-within) {
+        background-color: transparent;
         #container.ytd-searchbox {
           box-shadow: none !important;
         }
@@ -246,11 +249,6 @@ html[data-ambilight-enabled="true"] {
     }
   }
   &[dark="true"] ytd-app {
-    #search-form {
-      > button {
-        background-color: #393939 !important;
-      }
-    }
     #masthead-container.at-top {
       #search-form:not(:hover):not(:focus-within) {
         > * {
