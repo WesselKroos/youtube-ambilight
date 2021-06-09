@@ -115,7 +115,7 @@ class Ambilight {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version && version < 74) {
-      this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
+      this.enableMozillaBug1606251Workaround = true
     }
   }
 
