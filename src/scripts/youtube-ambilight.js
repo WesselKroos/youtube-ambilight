@@ -1107,6 +1107,7 @@ class Ambilight {
       this.frameSync = this.getSetting('frameSync')
     }
 
+    this.showFPS = this.getSetting('showFPS')
     this.framerateLimit = this.getSetting('framerateLimit')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
@@ -1115,7 +1116,6 @@ class Ambilight {
     this.hideScrollbar = this.getSetting('hideScrollbar')
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
     this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
-    this.showFPS = this.getSetting('showFPS')
 
     this.surroundingContentTextAndBtnOnly = this.getSetting('surroundingContentTextAndBtnOnly')
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
@@ -3728,9 +3728,9 @@ const loadAmbilight = () => {
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
-      .map(elem => elem.cloneNode(false).outerHTML)
     if(appElems.length) {
-      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', appElems)
+      const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
     }
     return
   }
