@@ -226,6 +226,27 @@ html[data-ambilight-enabled="true"] {
       #search::-webkit-input-placeholder {
         transition: color .15s;
       }
+    }
+    #masthead-container.at-top {
+      #search-form:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox {
+          box-shadow: none !important;
+        }
+        
+        > * {
+          background-color: transparent !important;
+          border-color: rgba(0,0,0,.15) !important;
+          color: rgba(0,0,0,.15) !important;
+          fill: rgba(0,0,0,.15) !important;
+        }
+        #search::-webkit-input-placeholder {
+          color: rgba(0,0,0,.15) !important;
+        }
+      }
+    }
+  }
+  &[dark="true"] ytd-app {
+    #search-form {
       > button {
         background-color: #393939 !important;
       }
