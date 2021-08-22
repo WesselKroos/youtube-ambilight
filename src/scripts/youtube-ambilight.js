@@ -2,12 +2,17 @@ import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, Saf
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './libs/ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 
+const VIEW_DETACHED = 'VIEW_DETACHED'
+const VIEW_SMALL = 'VIEW_SMALL'
+const VIEW_THEATER = 'VIEW_THEATER'
+const VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
+const VIEW_POPUP = 'VIEW_POPUP'
+
+const THEME_LIGHT = -1
+const THEME_DEFAULT = 0
+const THEME_DARK = 1
+
 class Ambilight {
-  VIEW_DETACHED = 'VIEW_DETACHED'
-  VIEW_SMALL = 'VIEW_SMALL'
-  VIEW_THEATER = 'VIEW_THEATER'
-  VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
-  VIEW_POPUP = 'VIEW_POPUP'
 
   horizontalBarsClipPX = 0
   horizontalBarDetection = new HorizontalBarDetection()
@@ -115,7 +120,7 @@ class Ambilight {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version && version < 74) {
-      this.enableMozillaBug1606251Workaround = resetThemeToLightIfSettingIsTrue
+      this.enableMozillaBug1606251Workaround = true
     }
   }
 
@@ -405,6 +410,21 @@ class Ambilight {
       window.scrollTo(window.scrollX, 0)
     }, true)
 
+    // Appearance (theme) changes initiated by the YouTube menu
+    this.originalTheme = html.getAttribute('dark') ? 1 : -1
+    document.addEventListener('yt-action', (e) => {
+      const name = e?.detail?.actionName
+      if (name === 'yt-signal-action-toggle-dark-theme-off') {
+        this.originalTheme = THEME_LIGHT
+        this.updateTheme()
+      } else if(name === 'yt-signal-action-toggle-dark-theme-on') {
+        this.originalTheme = THEME_DARK
+        this.updateTheme()
+      } else if(name === 'yt-signal-action-toggle-dark-theme-device') {
+        this.originalTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? THEME_DARK : THEME_LIGHT
+        this.updateTheme()
+      }
+    })
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
@@ -828,7 +848,11 @@ class Ambilight {
         min: 0,
         max: 40,
         step: 0.1,
-        snapPoints: [8.7, 12.3, 13.5],
+        snapPoints: [
+          { value:  8.7, label:  8 },
+          { value: 12.3, label: 12, flip: true },
+          { value: 13.5, label: 13 }
+        ],
         advanced: true
       },
       {
@@ -992,11 +1016,20 @@ class Ambilight {
         default: false
       },
       {
-        name: 'resetThemeToLightOnDisable',
-        label: 'Restore light theme when turned off',
-        type: 'checkbox',
-        default: false,
-        advanced: false
+        name: 'theme',
+        label: 'Appearance',
+        type: 'list',
+        manualinput: false,
+        default: 1,
+        min: -1,
+        max: 1,
+        step: 1,
+        snapPoints: [
+          { value: -1, label: 'Light'   },
+          { value:  0, label: 'Default' },
+          { value:  1, label: 'Dark'    },
+        ],
+        advanced: true
       },
       {
         name: 'enableInFullscreen',
@@ -1107,6 +1140,7 @@ class Ambilight {
       this.frameSync = this.getSetting('frameSync')
     }
 
+    this.showFPS = this.getSetting('showFPS')
     this.framerateLimit = this.getSetting('framerateLimit')
     this.frameBlending = this.getSetting('frameBlending')
     this.frameBlendingSmoothness = this.getSetting('frameBlendingSmoothness')
@@ -1114,8 +1148,7 @@ class Ambilight {
     this.immersiveTheaterView = this.getSetting('immersiveTheaterView')
     this.hideScrollbar = this.getSetting('hideScrollbar')
     this.enableInFullscreen = this.getSetting('enableInFullscreen')
-    this.resetThemeToLightOnDisable = this.getSetting('resetThemeToLightOnDisable')
-    this.showFPS = this.getSetting('showFPS')
+    this.theme = this.getSetting('theme')
 
     this.surroundingContentTextAndBtnOnly = this.getSetting('surroundingContentTextAndBtnOnly')
     this.surroundingContentShadowSize = this.getSetting('surroundingContentShadowSize')
@@ -1360,17 +1393,17 @@ class Ambilight {
     // const prevView = this.view
     if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
-        this.view = this.VIEW_FULLSCREEN
+        this.view = VIEW_FULLSCREEN
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
-        this.view = this.VIEW_POPUP
+        this.view = VIEW_POPUP
       else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
-        this.view = this.VIEW_THEATER
+        this.view = VIEW_THEATER
       else
-        this.view = this.VIEW_SMALL
+        this.view = VIEW_SMALL
     } else {
-      this.view = this.VIEW_DETACHED
+      this.view = VIEW_DETACHED
     }
-    this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
+    this.isFullscreen = (this.view == VIEW_FULLSCREEN)
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -2612,15 +2645,7 @@ class Ambilight {
     if(enabledInput) enabledInput.setAttribute('aria-checked', true)
 
     this.updateView()
-    if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
-
-    if (!initial) {
-      const toLight = !html.getAttribute('dark')
-      this.resetThemeToLightOnDisable = toLight
-      this.setSetting('resetThemeToLightOnDisable', toLight)
-      const resetInput = $.s(`#setting-resetThemeToLightOnDisable`)
-      if(resetInput) resetInput.setAttribute('aria-checked', toLight)
-    }
+    if (!this.enableInFullscreen && this.view === VIEW_FULLSCREEN) return
 
     this.start()
   }
@@ -2631,11 +2656,6 @@ class Ambilight {
     this.setSetting('enabled', false)
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
-
-    if (this.resetThemeToLightOnDisable) {
-      this.resetThemeToLightOnDisable = undefined
-      Ambilight.setDarkTheme(false)
-    }
 
     const videoElemParentElem = this.videoElem.parentNode
     if (videoElemParentElem) {
@@ -2649,62 +2669,83 @@ class Ambilight {
     this.hide()
   }
 
-  static setDarkTheme(value) {
+  dispatchAction(actionName) {
+    const eventDetail = {
+      actionName,
+      optionalAction: false,
+      args: [ false ],
+      disableBroadcast: false,
+      returnValue: []
+    }
+    const event = new CustomEvent('yt-action', {
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: eventDetail
+    })
+    document.dispatchEvent(event)
+  }
+
+  setDarkTheme(value) {
     try {
-      if (Ambilight.setDarkThemeBusy) return
-      if (html.getAttribute('dark')) {
-        if (value) return
-      } else {
-        if (!value) return
-      }
+      if (this.setDarkThemeBusy) return
+      if (!!html.getAttribute('dark') === value) return
       if (value && !isWatchPageUrl()) return
-      Ambilight.setDarkThemeBusy = true
+      this.setDarkThemeBusy = true
 
-      const toggle = (rendererElem) => {
-        rendererElem = rendererElem || $.s('ytd-toggle-theme-compact-link-renderer')
-        if (value) {
-          rendererElem.handleSignalActionToggleDarkThemeOn()
-        } else {
-          rendererElem.handleSignalActionToggleDarkThemeOff()
-        }
-        Ambilight.setDarkThemeBusy = false
-      }
+      try {
+        this.dispatchAction('yt-dark-mode-toggled-action')
+        this.setDarkThemeBusy = false
+      } catch (ex) {
+        console.warn('YouTube Ambilight | Error while toggling dark mode. Trying alternative method', ex)
+        AmbilightSentry.captureExceptionWithDetails(ex)
 
-      const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-      if (rendererElem) {
-        toggle(rendererElem)
-      } else {
-        const findBtn = () => $.s('#avatar-btn') || // When logged in
-          $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
-
-        $.s('ytd-popup-container').style.opacity = 0
-        waitForDomElement(
-          findBtn,
-          'ytd-masthead',
-          () => {
-            waitForDomElement(
-              () => {
-                const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-                return (rendererElem && rendererElem.handleSignalActionToggleDarkThemeOn)
-              },
-              'ytd-popup-container',
-              () => {
-                findBtn().click()
-                toggle()
-                setTimeout(() => {
-                  $.s('ytd-popup-container').style.opacity = ''
-                  previousActiveElement.focus()
-                }, 1)
-              })
-            let previousActiveElement = document.activeElement
-            findBtn().click()
+        const toggle = (rendererElem) => {
+          rendererElem = rendererElem || $.s('ytd-toggle-theme-compact-link-renderer')
+          if (value) {
+            rendererElem.handleSignalActionToggleDarkThemeOn()
+          } else {
+            rendererElem.handleSignalActionToggleDarkThemeOff()
           }
-        )
+          this.setDarkThemeBusy = false
+        }
+
+        const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
+        if (rendererElem) {
+          toggle(rendererElem)
+        } else {
+          const findBtn = () => $.s('#avatar-btn') || // When logged in
+            $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
+
+          $.s('ytd-popup-container').style.opacity = 0
+          waitForDomElement(
+            findBtn,
+            'ytd-masthead',
+            () => {
+              waitForDomElement(
+                () => {
+                  const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
+                  return (rendererElem && rendererElem.handleSignalActionToggleDarkThemeOn)
+                },
+                'ytd-popup-container',
+                () => {
+                  findBtn().click()
+                  toggle()
+                  setTimeout(() => {
+                    $.s('ytd-popup-container').style.opacity = ''
+                    previousActiveElement.focus()
+                  }, 1)
+                })
+              let previousActiveElement = document.activeElement
+              findBtn().click()
+            }
+          )
+        }
       }
     } catch (ex) {
       console.error('YouTube Ambilight | Error while setting dark mode', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
-      Ambilight.setDarkThemeBusy = false
+      this.setDarkThemeBusy = false
     }
   }
 
@@ -2740,10 +2781,6 @@ class Ambilight {
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
-
-    if (!html.getAttribute('dark')) {
-      Ambilight.setDarkTheme(true)
-    }
 
     this.nextFrame()
   }
@@ -2789,20 +2826,20 @@ class Ambilight {
     this.hideStats()
 
     html.setAttribute('data-ambilight-enabled', false)
-    if (this.resetThemeToLightOnDisable) {
-      Ambilight.setDarkTheme(false)
-    }
+    this.updateTheme()
   }
 
   show() {
+    if (!this.isHidden) return
     this.isHidden = false
+
     this.elem.style.opacity = 1
-    Ambilight.setDarkTheme(true)
     html.setAttribute('data-ambilight-enabled', true)
+    this.updateTheme()
   }
 
   checkScrollPosition = () => {
-    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const immersive = (this.immersive || (this.immersiveTheaterView && this.view === VIEW_THEATER))
 
     if (this.atTop && immersive) {
       this.ytdWatchFlexyElem.classList.add('at-top')
@@ -2816,10 +2853,15 @@ class Ambilight {
       this.mastheadElem.classList.remove('at-top')
     }
   }
+  
+  updateTheme = () => {
+    const toTheme = ((!this.enabled || this.isHidden || this.theme === THEME_DEFAULT) ? this.originalTheme : this.theme)
+    this.setDarkTheme(toTheme === THEME_DARK)
+  }
 
   updateImmersiveMode() {
     this.updateView()
-    const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === this.VIEW_THEATER))
+    const immersiveMode = (this.immersive || (this.immersiveTheaterView && this.view === VIEW_THEATER))
     const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
     if(!changed) return
@@ -2949,16 +2991,18 @@ class Ambilight {
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                  ${setting.snapPoints.map((point, i) => `
-                    <option 
-                      class="setting-range-datalist__label ${(point < setting.snapPoints[i - 1] + 2) ? 'setting-range-datalist__label--flip' : ''}" 
-                      value="${point}" 
-                      label="${Math.floor(point)}" 
-                      title="Snap to ${point}" 
-                      style="margin-left: ${(point + (-setting.min)) * (100 / (setting.max - setting.min))}%">
-                      ${Math.floor(point)}
-                    </option>
-                  `).join('')}
+                  ${setting.snapPoints.map(({ label, value, flip }, i) => {
+                    return `
+                      <option 
+                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
+                        value="${value}" 
+                        label="${label}" 
+                        title="Snap to ${label}" 
+                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                        ${label}
+                      </option>
+                    `;
+                  }).join('')}
                 </datalist>
               `}
             </div>
@@ -3142,6 +3186,11 @@ class Ambilight {
           this.setSetting(setting.name, value)
           valueElem.textContent = this.getSettingListDisplayText({...setting, value})
 
+          if(setting.name === 'theme') {
+            this.updateTheme()
+            return
+          }
+
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
               const edgeSetting = this.settings.find(setting => setting.name === 'edge')
@@ -3225,7 +3274,6 @@ class Ambilight {
             setting.name === 'frameBlending' ||
             setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
-            setting.name === 'resetThemeToLightOnDisable' ||
             setting.name === 'surroundingContentTextAndBtnOnly' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
@@ -3359,6 +3407,9 @@ class Ambilight {
     }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${setting.value} fps`
+    }
+    if(setting.name === 'theme') {
+      return setting.snapPoints.find(point => point.value === setting.value)?.label
     }
     return `${setting.value}%`
   }
@@ -3571,20 +3622,6 @@ on(document, 'visibilitychange', () => {
   errorEvents = []
 }, false)
 
-const resetThemeToLightIfSettingIsTrue = () => {
-  const key = 'resetThemeToLightOnDisable'
-  try {
-    const value = (localStorage.getItem(`ambilight-${key}`) === 'true')
-    if (!value) return
-  } catch (ex) {
-    console.warn('YouTube Ambilight | resetThemeToLightIfSettingIsTrue', ex)
-    //AmbilightSentry.captureExceptionWithDetails(ex)
-    return
-  }
-
-  Ambilight.setDarkTheme(false)
-}
-
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
@@ -3724,29 +3761,22 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
 }
 
 const loadAmbilight = () => {
+  // Validate YouTube desktop web app
   const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
-      .map(elem => elem.cloneNode(false).outerHTML)
     if(appElems.length) {
-      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', appElems)
+      const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
     }
     return
   }
 
-  // Validated YouTube desktop web app
-
   if (tryInitAmbilight(ytdAppElem)) return
-
-  // Not initialized yet
-
-  if (!isWatchPageUrl()) {
-    resetThemeToLightIfSettingIsTrue()
-  }
+  // Not on the watch page yet
 
   // Listen to DOM changes
-
   const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
     if (window.ambilight) {
       observer.disconnect()
