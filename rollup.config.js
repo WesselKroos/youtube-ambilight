@@ -1,6 +1,7 @@
 import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import cleanup from 'rollup-plugin-cleanup'
+import stripCode from "rollup-plugin-strip-code"
 
 const common = {
   context: 'window',
@@ -8,6 +9,9 @@ const common = {
     resolve(),
     babel({
       exclude: 'node_modules/**'
+    }),
+    stripCode({
+      pattern: /var script = document\.createElement\('script'\);(.*?)appendChild\(script\);/gs // Removes Sentry script injection
     }),
     cleanup({
       comments: 'none',
@@ -20,8 +24,7 @@ const background = {
    input:  './src/scripts/background.js',
    output:  { 
     file: './dist/scripts/background.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 
@@ -29,8 +32,7 @@ const content = {
    input:  './src/scripts/content.js',
    output:  { 
     file: './dist/scripts/content.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 
@@ -38,8 +40,7 @@ const youtubeAmbilight = {
    input:  './src/scripts/youtube-ambilight.js',
    output:  { 
     file: './dist/scripts/youtube-ambilight.js',
-    format: 'iife',
-    globals: {},
+    format: 'iife'
   }
 }
 

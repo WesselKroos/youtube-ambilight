@@ -6,28 +6,85 @@ import {
   initAndBind
 } from "@sentry/core";
 
+const getNodeSelector = (elem) => {
+  if(!elem.tagName) return elem.nodeName // Document
 
-export const getNodeTree = (elem) => {
-  const nodes = [];
-  nodes.push(elem);
-  while(elem.parentNode) {
-    nodes.unshift(elem.parentNode);
-    elem = elem.parentNode;
-  }
-  return nodes.map(node => node.cloneNode(false).outerHTML).join('\n')
+  const idSelector = elem.id ? `#${elem.id}` : ''
+  const classSelector = elem.classList?.length ? `.${[...elem.classList].sort().join('.')}` : ''
+  return `${elem.tagName.toLowerCase()}${idSelector}${classSelector}`
 }
 
-export const getVideosNodeTree = () => [...$.sa('video')]
-  .reduce((obj, elem, i) => {
-    obj[`»('video')[${i}].nodeTree`] = getNodeTree(elem)
-    return obj
-  }, {})
+const getNodeTree = (elem) => {
+  if(!elem) return []
 
-export const getPlayerContainersNodeTree = () => [...$.sa('#player-container')]
-  .reduce((obj, elem, i) => {
-    obj[`»('#player-container')[${i}].nodeTree`] = getNodeTree(elem)
-    return obj
-  }, {})
+  const tree = [];
+  tree.push(elem);
+  while(elem.parentNode && elem.parentNode.tagName) {
+    tree.unshift(elem.parentNode);
+    elem = elem.parentNode;
+  }
+  return tree
+}
+
+export const getNodeTreeString = (elem) => 
+  getNodeTree(elem)
+    .map((node, i) => `${' '.repeat(i)}${getNodeSelector(node)}`)
+    .join('\n')
+
+const createNodeEntry = (node, level) => ({
+  level,
+  node,
+  children: []
+})
+const findEntry = (node, entry) => {
+  if(entry.node === node) return entry
+  for (entry of entry.children) {
+    const foundEntry = findEntry(node, entry)
+    if(foundEntry) return foundEntry
+  }
+}
+const entryToString = (entry) => {
+  let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`]
+  entry.children.forEach(childEntry => {
+    lines.push(entryToString(childEntry))
+  })
+  return lines.join('\n')
+}
+export const getSelectorTreeString = (selector) => {
+  const trees = [...$.sa(selector)]
+    .map(elem => getNodeTree(elem))
+  let documentTree;
+  trees.forEach(nodeTree => {
+    let previousEntry;
+    nodeTree.forEach(node => {
+      if(!documentTree) {
+        documentTree = createNodeEntry(node, 0)
+        previousEntry = documentTree
+        return
+      }
+      if(!previousEntry) {
+        if(documentTree.node === node) {
+          previousEntry = documentTree
+          return
+        } else {
+          throw new Error('Cannot create tree of nodes that are not in the same document.')
+        }
+      }
+
+      const existingEntry = previousEntry.children.find(entry => entry.node === node)
+      if(existingEntry) {
+        previousEntry = existingEntry
+        return
+      }
+      
+      const entry = createNodeEntry(node, previousEntry.level + 1)
+      previousEntry.children.push(entry)
+      previousEntry = entry
+    })
+  })
+
+  return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
+}
 
 initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
@@ -102,14 +159,14 @@ export default class AmbilightSentry {
 
       try {
         if(ex && ex.details) {
-          setExtra('details', ex.details)
+          setExtra('YTA Exception details', ex.details)
         }
       } catch (ex) {
-        setExtra('details.exception', ex)
+        setExtra('YTA Exception details (exception)', ex)
       }
 
       try {
-        setExtra('window', {
+        setExtra('Window', {
           width: window.innerWidth,
           height: window.innerHeight,
           scrollY: window.scrollY,
@@ -117,12 +174,12 @@ export default class AmbilightSentry {
           fullscreen: document.fullscreen
         })
       } catch (ex) {
-        setExtra('window.exception', ex)
+        setExtra('Window (exception)', ex)
       }
 
       try {
         if (window.screen) {
-          setExtra('screen', {
+          setExtra('Screen', {
             width: screen.width,
             height: screen.height,
             availWidth: screen.availWidth,
@@ -132,223 +189,133 @@ export default class AmbilightSentry {
           })
         }
       } catch (ex) {
-        setExtra('screen.exception', ex)
+        setExtra('Screen (exception)', ex)
       }
 
       try {
-        setExtra('youtube', {
+        setExtra('YouTube', {
           dark: !!(html.attributes.dark || {}).value,
           lang: (html.attributes.lang || {}).value,
           loggedIn: !!$.s('#avatar-btn')
         })
       } catch (ex) {
-        setExtra('youtube.exception', ex)
+        setExtra('YouTube (exception)', ex)
       }
 
       const pageExtra = {}
       try {
         pageExtra.isVideo = (location.pathname == '/watch')
       } catch (ex) {
-        setExtra('pageExtra.isVideo.exception', ex)
+        setExtra('Page .isVideo (exception)', ex)
       }
       try {
         pageExtra.isYtdApp = !!$.s('ytd-app')
       } catch (ex) { 
-        setExtra('pageExtra.isYtdApp.exception', ex)
+        setExtra('Page .isYtdApp (exception)', ex)
       }
-      setExtra('page', pageExtra)
+      setExtra('Page', pageExtra)
 
       try {
         if (!navigator.doNotTrack) {
-          setExtra('videoId', $.s('ytd-watch-flexy').attributes['video-id']?.value)
+          setExtra('Video ID', $.s('ytd-watch-flexy').attributes['video-id']?.value)
         }
       } catch (ex) {
-        setExtra('videoId.exception', ex)
+        setExtra('Video ID (exception)', ex)
       }
 
       try {
-        const videoElem = $.s('video')
-        if (videoElem) {
-          let keys = []
-          for(let i = 0, obj = videoElem; i <= 1; i++) {
-            obj = Object.getPrototypeOf(obj)
-            keys = keys.concat(Object.getOwnPropertyNames(obj))
-          }
-
-          let videoElemInfo = {}
-          keys.filter(key => 
-              key.indexOf('on') !== 0 && 
-              key.indexOf('__') !== 0 && 
-              key.indexOf('constructor') !== 0 &&
-              typeof videoElem[key] !== 'function')
-            .forEach(key => {
-              videoElemInfo[key] = videoElem[key]
-            })
-          
-          setExtra('videoElem', videoElemInfo)
-        }
+        setExtra('Video elements', $.sa('video').length)
       } catch (ex) { 
-        setExtra('videoElem.exception', ex)
-      }
-
-      try {
-        const videosNodeTree = getVideosNodeTree()
-        Object.keys(videosNodeTree).forEach(
-          (key) => setExtra(key, videosNodeTree[key])
-        )
-      } catch (ex) { 
-        setExtra('video[].nodeTree.exception', ex)
-      }
-
-      try {
-        const playerContainersNodeTree = getPlayerContainersNodeTree()
-        Object.keys(playerContainersNodeTree).forEach(
-          (key) => setExtra(key, playerContainersNodeTree[key])
-        )
-      } catch (ex) { 
-        setExtra('#player-container[].nodeTree.exception', ex)
+        setExtra('Video elements (exception)', ex)
       }
 
       try {
         const videoPlayerElem = $.s('#movie_player')
         if (videoPlayerElem) {
           const stats = videoPlayerElem.getStatsForNerds()
-          Object.keys(stats)
-            .filter(key => (
-              key.includes('_style') ||
-              key === 'video_id_and_cpn'
-            ))
-            .forEach(key => delete stats[key])
-          setExtra('videoPlayerElem.stats', stats)
+          const relevantStats = ['bandwidth_kbps', 'buffer_health_seconds', 'codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
+          Object.keys(stats).forEach(key => {
+            if(!relevantStats.includes(key))
+              delete stats[key]
+          })
+          setExtra('Player', stats)
         }
       } catch (ex) { 
-        setExtra('videoPlayerElem.exception', ex)
+        setExtra('Player (exception)', ex)
       }
 
       let ambilightExtra = {}
       try {
         ambilightExtra.initialized = (typeof ambilight !== 'undefined')
         if (typeof ambilight !== 'undefined') {
-          ambilightExtra = {
-            ...ambilightExtra,
-            ambilightFrameCount: ambilight.ambilightFrameCount,
-            videoFrameCount: ambilight.videoFrameCount,
-            skippedFramesCount: ambilight.skippedFramesCount,
-            videoFrameRate: ambilight.videoFrameRate,
-            displayFrameRate: ambilight.displayFrameRate,
-            view: ambilight.view,
-            settings: {}
-          }
+          ambilightExtra.now = performance.now()
+          const keys = [
+            'ambilightFrameCount',
+            'videoFrameCount',
+            'ambilightVideoDroppedFrameCount',
+            'droppedVideoFramesCorrection',
+            'ambilightFrameRate',
+            'videoFrameRate',
+            'displayFrameRate',
+            'previousDrawTime',
+            'previousFrameTime',
+            'buffersCleared',
+            'sizesInvalidated',
+            'delayedCheckVideoSizeAndPosition',
+            'requestVideoFrameCallbackId',
+            'videoFrameCallbackReceived',
+            'scheduledNextFrame',
+            'scheduledHandleVideoResize',
+            'view',
+            'isOnVideoPage',
+            'atTop',
+            'isFillingFullscreen',
+            'isHidden',
+            'videoIsHidden',
+            'isAmbilightHiddenOnWatchPage',
+            'isVideoHiddenOnWatchPage',
+            'isBuffering',
+            'isVR',
+            'srcVideoOffset.top',
+            'srcVideoOffset.width',
+            'srcVideoOffset.height',
+            'videoOffset.left',
+            'videoOffset.top',
+            'videoOffset.width',
+            'videoOffset.height',
+            'p.w',
+            'p.h',
+            'enableChromiumBug1092080Workaround',
+            'enableChromiumBug1123708Workaround',
+            'enableChromiumBug1142112Workaround',
+            'enableMozillaBug1606251Workaround',
+            'getImageDataAllowed',
+          ]
+          keys.forEach(key => {
+            let value = ambilight
+            key.split('.').forEach(key => value = value[key]) // Find multi depth values
+            ambilightExtra[key] = value
+          })
+        }
+        setExtra('Ambilight', ambilightExtra)
+      } catch (ex) {
+        setExtra('Ambilight (exception)', ex)
+      }
 
+      try {
+        if (typeof ambilight !== 'undefined') {
+          // settings
+          const settingsExtra = {}
           ;(ambilight.settings || []).forEach(setting => {
             if (!setting || !setting.name) return
-            ambilightExtra.settings[setting.name] = setting.value
+            settingsExtra[setting.name] = setting.value
+            if (!setting.key) return
+            settingsExtra[`${setting.name}-key`] = setting.key
           })
+          setExtra('Ambilight settings', settingsExtra)
         }
-        setExtra('ambilight', ambilightExtra)
-      } catch (ex) {
-        setExtra('ambilight.exception', ex)
-      }
-
-      try {
-        const selectors = {
-          'html': $.sa('html'),
-          'body': $.sa('body'),
-          '#page': $.sa('[id="#page"]'),
-          'ytd-app': $.sa('ytd-app'),
-          'ytd-watch-flexy': $.sa('ytd-watch-flexy'),
-          '#player-theater-container': $.sa('[id="player-theater-container"]'),
-          'ytd-miniplayer': $.sa('ytd-miniplayer'),
-          '#ytd-player': $.sa('#ytd-player'),
-          '#ytd-player #container':$.sa('#ytd-player #container'),
-          '#container.ytd-player': $.sa('#container.ytd-player'),
-          '.html5-video-container': $.sa('.html5-video-container'),
-          '#player-container': $.sa('[id="player-container"]'),
-          '#player-api': $.sa('[id="player-api"]'),
-          '#player': $.sa('[id="player"]'),
-          '.html5-video-player': $.sa('.html5-video-player'),
-          '#movie_player': $.sa('#movie_player'),
-          'video': $.sa('video'),
-          '.html5-main-video': $.sa('.html5-main-video'),
-          '.video-stream': $.sa('.video-stream'),
-          'ytd-masthead': $.sa('ytd-masthead'),
-          'ytd-toggle-theme-compact-link-renderer': $.sa('ytd-toggle-theme-compact-link-renderer'),
-          '#avatar-btn': $.sa('[id="avatar-btn"]'),
-          '.ytp-chrome-bottom': $.sa('.ytp-chrome-bottom'),
-          '.ytp-chrome-controls': $.sa('.ytp-chrome-controls'),
-          '.ytp-right-controls': $.sa('.ytp-right-controls'),
-          '.ytp-ambilight-settings-button': $.sa('.ytp-ambilight-settings-button'),
-          '.ytp-settings-button': $.sa('.ytp-settings-button'),
-          '[class*="ambilight"]': $.sa('[class*="ambilight"]')
-        };
-        if(window.ambilight) {
-          selectors['settingsMenuBtn'] = [window.ambilight.settingsMenuBtn]
-          selectors['settingsMenuBtnParent'] = [window.ambilight.settingsMenuBtnParent]
-          selectors['settingsMenuElem'] = [window.ambilight.settingsMenuElem]
-          selectors['settingsMenuElemParent'] = [window.ambilight.settingsMenuElemParent]
-        }
-        if(
-          !selectors['.html5-video-player'].length && 
-          selectors['#ytd-player'].length
-        ) {
-          // Something else than a html5-video-player is playing media. Did YouTube update to a new version?
-          
-          [...selectors['#ytd-player']].forEach((node, i) => {
-            try {
-              setExtra(`»('#ytd-player')[${i}].subTree`, 
-                node.cloneNode(true).outerHTML
-                  .replaceAll(/>\s*.*?\s*</g, '><') // Removes whitespaces and text
-                  .replaceAll(/<svg .*?>.*?<\/svg>/g, '<svg\/>')
-                  .replaceAll(/ (?!(class))[a-z|-]*?=".*?"/g, '')
-                  .replaceAll('author', 'a?thor') // Prevent author attribute scrubbing (auth)
-                  .replaceAll('cards', 'c?rds') // Prevent cards attribute scrubbing (card)
-                  .replaceAll(/></g, '><') // Removes whitespaces and text
-              )
-            } catch (ex) { console.warn(ex) }
-          })
-        }
-        Object.keys(selectors).forEach((selector) => {
-          const nodes = selectors[selector]
-          if(!nodes) return
-          [...nodes].forEach((node, i) => {
-            try {
-              let nodeHtml = node ? node.cloneNode(false).outerHTML || '' : ''
-              let parentNodeHtml = ((node && node.parentNode) ? node.parentNode.cloneNode(false).outerHTML : '') || ''
-              if(navigator.doNotTrack) {
-                nodeHtml = nodeHtml.replace(/video-id="(?!^).*?"/gi, '')
-                parentNodeHtml = parentNodeHtml.replace(/video-id="(?!^).*?"/gi, '')
-              }
-
-              setExtra(`»('${selector}')[${i}]`, {
-                node: nodeHtml,
-                parentNode: parentNodeHtml,
-                childNodes: node ? node.childNodes.length : null
-              })
-            } catch (ex) { console.warn(ex) }
-          })
-        })
-      } catch (ex) {
-        setExtra('$.exception', ex)
-      }
-
-      try {
-        const selectors = {
-          '.ytp-chrome-bottom': $.sa('.ytp-chrome-bottom'),
-          '.ytp-chrome-controls': $.sa('.ytp-chrome-controls'),
-          '.ytp-right-controls': $.sa('.ytp-right-controls'),
-        }
-        Object.keys(selectors).forEach((selector) => {
-          const nodes = selectors[selector]
-          if(!nodes) return
-          [...nodes].forEach((node, i) => {
-            try {
-              const childNodes = !node.children ? null : [...node.children].map(node => node.cloneNode(false).outerHTML.trim()).join('\n')
-              setExtra(`»(${selector})[${i}].childNodes`, childNodes)
-            } catch (ex) { console.warn(ex) }
-          })
-        })
-      } catch (ex) {
-        setExtra('$.childNodes.exception', ex)
+      } catch (ex) { 
+        setExtra('Ambilight settings (exception)', ex)
       }
 
       captureException(ex)

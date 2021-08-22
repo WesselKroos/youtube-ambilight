@@ -1,5 +1,4 @@
 This extension will surround YouTube videos with ambilight inside your browser. No need for extra hardware like lightstrips or smart lights, it's all in your browser!
-And it works on both the classic and new YouTube layout.
 
 
 Requirement:

@@ -53,13 +53,13 @@ Feel free to
 
 
 ## Development
-1. Install [Node (LTS)](https://nodejs.org/en/download/) & [Yarn](https://yarnpkg.com/en/docs/install)
-2. In the terminal/commandline enter `yarn build`. A `/dist` folder will be generated which is the source of the Chrome extension.
+1. Install [Node (LTS)](https://nodejs.org/en/download/)
+2. In the terminal/commandline enter `npm run build`. A `/dist` folder will be generated which is the source of the Chrome extension.
 3. Add the extension to Chrome:
     1. In Chrome go to the url [chrome://extensions/](chrome://extensions/).
     2. Turn on the `Developer mode` toggle.
     3. Click `Load unpacked` and select the `/dist` folder.
     4. `YouTube Ambilight` has been added to the list of extensions.
 4. After you've modified a file in the `/src` folder follow these steps:
-    1. In the terminal/commandline enter `yarn build`
+    1. In the terminal/commandline enter `npm run build`
     2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.

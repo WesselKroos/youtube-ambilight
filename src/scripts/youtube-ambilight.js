@@ -1,9 +1,8 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
-import AmbilightSentry, { getPlayerContainersNodeTree, getVideosNodeTree } from './libs/ambilight-sentry'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './libs/ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 
 class Ambilight {
-  static isClassic = false
   VIEW_DETACHED = 'VIEW_DETACHED'
   VIEW_SMALL = 'VIEW_SMALL'
   VIEW_THEATER = 'VIEW_THEATER'
@@ -11,9 +10,11 @@ class Ambilight {
   VIEW_POPUP = 'VIEW_POPUP'
 
   horizontalBarsClipPX = 0
+  horizontalBarDetection = new HorizontalBarDetection()
   lastCheckVideoSizeTime = 0
+  saveStorageEntryTimeout = {}
 
-  projectorOffset = {}
+  videoOffset = {}
   srcVideoOffset = {}
 
   isHidden = true
@@ -39,8 +40,6 @@ class Ambilight {
   ambilightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
-  frameDuration = 1
-  syncInfo = []
 
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
@@ -48,10 +47,9 @@ class Ambilight {
 
   constructor(ytdAppElem, videoElem) {
     this.ytdAppElem = ytdAppElem
-    const mastheadSelector = Ambilight.isClassic ? '#yt-masthead-container' : '#masthead-container'
-    this.mastheadElem = ytdAppElem.querySelector(mastheadSelector)
+    this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
     if(!this.mastheadElem) {
-      throw new Error(`Cannot find mastheadElem: ${mastheadSelector}`)
+      throw new Error(`Cannot find mastheadElem: #masthead-container`)
     }
 
     this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
@@ -78,21 +76,16 @@ class Ambilight {
 
     this.initListeners()
 
-    if (this.enabled)
-      this.enable(true)
+    wrapErrorHandler(() => {
+      if (this.enabled)
+        this.enable(true)
+    })
   }
 
   initElems(videoElem) {
-    if(!Ambilight.isClassic) {
-      this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
-      if(!this.ytdWatchFlexyElem) {
-        throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
-      }
-    } else {
-      this.pageElem = $.s('#page')
-      if(!this.pageElem) {
-        throw new Error('Cannot find pageElem: #page')
-      }
+    this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
+    if(!this.ytdWatchFlexyElem) {
+      throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
     }
 
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
@@ -109,15 +102,6 @@ class Ambilight {
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
-  }
-
-  handleVideoResize = (checkPosition = true) => {
-    // Make sure to trigger checkVideoSize to call updateSizes. So that
-    // this.view is updated before this.updateImmersiveMode is called
-    this.sizesInvalidated = true
-    this.updateImmersiveMode()
-    this.checkVideoSize(checkPosition)
-    this.nextFrame()
   }
 
   initVideoElem(videoElem) {
@@ -260,6 +244,35 @@ class Ambilight {
     return true
   }
 
+  scheduleHandleVideoResize = () => {
+    if (!this.enabled || !this.isOnVideoPage) return
+    if(this.scheduledHandleVideoResize) {
+      // console.log('prevented duplicate calls')
+      return
+    }
+
+    const wasView = this.view
+    this.updateView()
+    this.updateImmersiveMode()
+    if(wasView === this.view) {
+      // Spare multiple resize handler calls when resizing the browser window
+      this.scheduledHandleVideoResize = raf(() => {
+        this.scheduledHandleVideoResize = null
+        this.handleVideoResize()
+      })
+    } else {
+      // When changing viewmodes draw directly to prevent flickering
+      this.handleVideoResize()
+    }
+  }
+
+  handleVideoResize = () => {
+    if (!this.enabled || !this.isOnVideoPage) return
+
+    // console.log('handleVideoResize')
+    this.nextFrame()
+  }
+
   initListeners() {
     ////// PLAYER FLOW
     //
@@ -291,7 +304,7 @@ class Ambilight {
       if (this.initVideoIfSrcChanged()) return
 
       this.buffersCleared = true // Always prevent old frame from being drawn
-      this.nextFrame()
+      this.optionalFrame()
     })
     on(this.videoElem, 'loadeddata', (e) => {
       // Whent the video is playing this is the first event. Else [seeked] is first
@@ -299,7 +312,7 @@ class Ambilight {
     })
     on(this.videoElem, 'playing', () => {
       if (this.videoElem.paused) return // When paused handled by [seeked]
-      this.scheduleNextFrame()
+      this.optionalFrame()
     })
     on(this.videoElem, 'ended', () => {
       this.clear()
@@ -338,28 +351,52 @@ class Ambilight {
           return
         }
       }
-      if (e.keyCode === 90) // z
+      if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+
+      const immersiveKey = this.settings.find(setting => setting.name === 'immersive').key
+      const enabledKey = this.settings.find(setting => setting.name === 'enabled').key
+      const detectHorizontalBarSizeEnabledKey = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
+      const detectVideoFillScaleEnabledKey = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+      
+      const key = e.key.toUpperCase()
+      if (key === immersiveKey) // z by default
         this.toggleImmersiveMode()
-      else if (e.keyCode === 65) // a
-        this.toggleEnabled()
-      else if (e.keyCode === 66) // b
+      if (key === detectHorizontalBarSizeEnabledKey) // b by default
         $.s(`#setting-detectHorizontalBarSizeEnabled`).click()
-      else if (e.keyCode === 87) // w
+      if (key === detectVideoFillScaleEnabledKey) // w by default
         $.s(`#setting-detectVideoFillScaleEnabled`).click()
+      if (key === enabledKey) // a by default
+        this.toggleEnabled()
     })
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      if (!this.enabled || !this.isOnVideoPage) return
-      this.handleVideoResize()
+      // console.log('body resized')
+      wrapErrorHandler(() => {
+        this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
+      })()
+      this.sizesInvalidated = true
+      this.scheduleHandleVideoResize() // Because the position could be shifted
     }))
     this.bodyResizeObserver.observe(document.body)
 
+    // Makes sure the player size is updated before the first frame is rendered
+    // (youtube does this to late in the next frame)
+    this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
+      // console.log('container resized')
+      this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
+      this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
+    }))
+    this.videoContainerResizeObserver.observe(this.videoContainerElem)
+
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      if (!this.enabled) return
-      this.handleVideoResize(false)
+      // console.log('video resized')
+      wrapErrorHandler(() => {
+        this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
+      })()
+      this.sizesInvalidated = true
+      this.scheduleHandleVideoResize()
     }))
     this.videoResizeObserver.observe(this.videoElem)
-
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', () => {
@@ -437,13 +474,19 @@ class Ambilight {
 
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambilight__top')
-    this.elem.prepend(this.topElem)
+    body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
       (entries, observer) => {
         entries.forEach(entry => {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
+
+          // When the video is filled and paused in fullscreen the ambilight is out of sync with the video
+          if(this.isFillingFullscreen && !this.atTop) {
+            this.buffersCleared = true
+            this.optionalFrame()
+          }
         })
       },
       {
@@ -497,9 +540,9 @@ class Ambilight {
         (entries, observer) => {
           entries.forEach(entry => {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
-            if(!this.isAmbilightHiddenOnWatchPage) {
-              this.optionalFrame()
-            }
+            if(this.isAmbilightHiddenOnWatchPage) return
+            
+            this.optionalFrame()
           })
         },
         {
@@ -584,12 +627,16 @@ class Ambilight {
       },
       {
         name: 'frameSync',
-        label: '<span style="display: inline-block; padding: 5px 0">Synchronization <a title="How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique." href="#" onclick="return false" style="padding: 0 5px;">?</a>',
+        label: 'Synchronization',
+        questionMark: {
+          title: 'How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique.'
+        },
         type: 'list',
         default: 50,
         min: 0,
         max: 100,
         step: 50,
+        manualinput: false,
         advanced: false
       },
       {
@@ -605,7 +652,10 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlayEnabled',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video with ambilight <a title="Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or dropped frames." href="#" onclick="return false" style="padding: 0 5px;">?</a></span>',
+        label: 'Sync video with ambilight',
+        questionMark: {
+          title: 'Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or dropped frames.'
+        },
         type: 'checkbox',
         default: false,
         advanced: true
@@ -613,7 +663,8 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlaySyncThreshold',
-        label: '<span style="display: inline-block; padding: 5px 0">Sync video disable threshold<br/><span class="ytpa-menuitem-description">(Disable when dropping % of frames)</span></span>',
+        label: 'Sync video disable threshold',
+        description: 'Disable when dropping % of frames',
         type: 'list',
         default: 5,
         min: 1,
@@ -624,7 +675,12 @@ class Ambilight {
       {
         experimental: true,
         name: 'frameBlending',
-        label: '<span style="display: inline-block; padding: 5px 0">Smooth motion (frame blending) <a title="Click for more information about Frame blending" href="https://nl.linkedin.com/learning/premiere-pro-guru-speed-changes/frame-sampling-vs-frame-blending" target="_blank" style="padding: 0 5px;">?</a><br/><span class="ytpa-menuitem-description">(More GPU usage. Works with "Sync video")</span></span>',
+        label: 'Smooth motion (frame blending)',
+        questionMark: {
+          title: 'Click for more information about Frame blending',
+          href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+        },
+        description: 'More GPU usage. Works with "Sync video"',
         type: 'checkbox',
         default: false,
         advanced: true
@@ -648,7 +704,8 @@ class Ambilight {
       },
       {
         name: 'surroundingContentTextAndBtnOnly',
-        label: 'Shadow only on text and buttons<br/><span class="ytpa-menuitem-description">(Decreases scroll & video stutter)</span>',
+        label: 'Shadow only on text and buttons',
+        description: 'Decreases scroll & video stutter',
         type: 'checkbox',
         advanced: true,
         default: true
@@ -683,9 +740,10 @@ class Ambilight {
       },
       {
         name: 'immersive',
-        label: 'Hide when scrolled to top [Z]',
+        label: 'Hide when scrolled to top',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'Z'
       },
       {
         name: 'immersiveTheaterView',
@@ -740,9 +798,11 @@ class Ambilight {
       },
       {
         name: 'detectHorizontalBarSizeEnabled',
-        label: 'Remove black bars [B]<br/><span class="ytpa-menuitem-description">(More CPU usage)</span>',
+        label: 'Remove black bars',
+        description: 'More CPU usage',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'B'
       },
       {
         name: 'detectColoredHorizontalBarSizeEnabled',
@@ -780,9 +840,10 @@ class Ambilight {
       },
       {
         name: 'detectVideoFillScaleEnabled',
-        label: 'Fill video to screen width [W]',
+        label: 'Fill video to screen width',
         type: 'checkbox',
-        default: false
+        default: false,
+        defaultKey: 'W'
       },
       {
         type: 'section',
@@ -861,9 +922,8 @@ class Ambilight {
       },
       {
         name: 'blur',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Blur<br/>
-          <span class="ytpa-menuitem-description">(More GPU memory)</span></span>`,
+        label: 'Blur',
+        description: 'More GPU memory',
         type: 'list',
         default: 30,
         min: 0,
@@ -872,9 +932,8 @@ class Ambilight {
       },
       {
         name: 'spread',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Spread<br/>
-          <span class="ytpa-menuitem-description">(More GPU usage)</span></span>`,
+        label: 'Spread',
+        description: 'More GPU usage',
         type: 'list',
         default: 17,
         min: 0,
@@ -883,9 +942,8 @@ class Ambilight {
       },
       {
         name: 'edge',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Edge size<br/>
-          <span class="ytpa-menuitem-description">(Less GPU usage. Tip: Turn blur down)</span></span>`,
+        label: 'Edge size',
+        description: 'Less GPU usage. Tip: Turn blur down',
         type: 'list',
         default: 12,
         min: 2,
@@ -905,9 +963,8 @@ class Ambilight {
       },
       {
         name: 'fadeOutEasing',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">Fade out curve<br/>
-          <span class="ytpa-menuitem-description">(Tip: Turn blur all the way down)</span></span>`,
+        label: 'Fade out curve',
+        description: 'Tip: Turn blur all the way down',
         type: 'list',
         default: 35,
         min: 1,
@@ -917,13 +974,11 @@ class Ambilight {
       },
       {
         name: 'debandingStrength',
-        label: `
-          Debanding (noise) 
-          <a 
-            title="Click for more information about Dithering" 
-            href="https://www.lifewire.com/what-is-dithering-4686105" 
-            target="_blank" 
-            style="padding: 0 5px;">?</a>`,
+        label: 'Debanding (noise)',
+        questionMark: {
+          title: 'Click for more information about Dithering',
+          href: 'https://www.lifewire.com/what-is-dithering-4686105'
+        },
         type: 'list',
         default: 0,
         min: 0,
@@ -938,27 +993,24 @@ class Ambilight {
       },
       {
         name: 'resetThemeToLightOnDisable',
-        label: 'Switch to light theme when turned off',
+        label: 'Restore light theme when turned off',
         type: 'checkbox',
         default: false,
         advanced: false
       },
       {
         name: 'enableInFullscreen',
-        label: `
-          <span style="display: inline-block; padding: 5px 0">
-            Enable in fullscreen<br/>
-            <span class="ytpa-menuitem-description">(When in fullscreen mode)</span>
-          </span>`,
+        label: 'Keep enabled in fullscreen',
         type: 'checkbox',
         default: true,
         advanced: true
       },
       {
         name: 'enabled',
-        label: 'Enabled [A]',
+        label: 'Enabled',
         type: 'checkbox',
-        default: true
+        default: true,
+        defaultKey: 'A'
       },
     ]
 
@@ -967,13 +1019,12 @@ class Ambilight {
         if(setting.name === 'frameSync') {
           setting.max = 150
           setting.default = 150
-          // setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
+          setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
         }
 
-        // Change this in the future when frameSync 150 is released and validated to work
-        // if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
-        //   setting.advanced = true
-        // }
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+          setting.advanced = true
+        }
 
         // Change this in the future when frameSync 150 is released and validated to work for a long time
         // if(setting.name === 'frameSync') {
@@ -1051,7 +1102,7 @@ class Ambilight {
     const previouslyHighQuality = this.getSetting('highQuality')
     if(previouslyHighQuality === 'false') {
       this.setSetting('frameSync', 0)
-      this.removeSetting('highQuality')
+      this.removeStorageEntry('highQuality')
     } else {
       this.frameSync = this.getSetting('frameSync')
     }
@@ -1077,6 +1128,10 @@ class Ambilight {
 
     this.settings.forEach(setting => {
       setting.value = this[setting.name]
+      if(setting.defaultKey !== undefined) {
+        const key = this.getSettingKey(setting.name)
+        setting.key = (key !== null) ? key : setting.defaultKey
+      }
     })
   }
 
@@ -1194,7 +1249,9 @@ class Ambilight {
       const rangeInput = $.s('#setting-horizontalBarsClipPercentage-range')
       if(rangeInput) {
         rangeInput.value = percentage
-        $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${percentage}%`
+        rangeInput.setAttribute('data-previous-value', rangeInput.value)
+        $.s(`#setting-horizontalBarsClipPercentage-value`).textContent = `${rangeInput.value}%`
+        $.s(`#setting-horizontalBarsClipPercentage-manualinput`).value = rangeInput.value
       }
     }, 1)
   }
@@ -1236,6 +1293,8 @@ class Ambilight {
   }
 
   clear() {
+    this.horizontalBarDetection.clear()
+
     // Clear canvasses
     const canvasses = [
       this.videoSnapshotBuffer,
@@ -1289,8 +1348,11 @@ class Ambilight {
 
     this.setSetting('videoScale', videoScale)
     if($.s('#setting-videoScale')) {
-      $.s('#setting-videoScale-range').value = videoScale
-      $.s(`#setting-videoScale-value`).textContent = `${videoScale}%`
+      const rangeInput = $.s('#setting-videoScale-range')
+      rangeInput.value = videoScale
+      rangeInput.setAttribute('data-previous-value', rangeInput.value)
+      $.s(`#setting-videoScale-value`).textContent = `${rangeInput.value}%`
+      $.s(`#setting-videoScale-manualinput`).value = rangeInput.value
     }
   }
 
@@ -1301,16 +1363,14 @@ class Ambilight {
         this.view = this.VIEW_FULLSCREEN
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
         this.view = this.VIEW_POPUP
-      else if(
-        (this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null) ||
-        (this.pageElem && this.pageElem.classList.contains('watch-stage-mode'))
-      )
+      else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
         this.view = this.VIEW_THEATER
       else
         this.view = this.VIEW_SMALL
     } else {
       this.view = this.VIEW_DETACHED
     }
+    this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -1319,21 +1379,14 @@ class Ambilight {
   }
 
   updateSizes() {
+    // console.log('updateSizes')
     if(this.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
     }
 
     this.updateView()
     this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
-    this.isFullscreen = (this.view == this.VIEW_FULLSCREEN)
     const noClipOrScale = (this.horizontalBarsClipPercentage == 0 && this.videoScale == 100)
-    this.isFillingFullscreen = (
-      this.isFullscreen &&
-      this.atTop &&
-      Math.abs(this.projectorOffset.width - window.innerWidth) < 10 &&
-      Math.abs(this.projectorOffset.height - window.innerHeight) < 10 &&
-      noClipOrScale
-    )
 
     const videoElemParentElem = this.videoElem.parentNode
 
@@ -1356,10 +1409,12 @@ class Ambilight {
     if(this.isFullscreen) {
       if(this.elem.parentElement !== this.ytdAppElem) {
         this.ytdAppElem.prepend(this.elem)
+        this.ytdAppElem.prepend(this.topElem)
       }
     } else {
       if(this.elem.parentElement !== body) {
         body.prepend(this.elem)
+        body.prepend(this.topElem)
       }
     }
 
@@ -1367,7 +1422,7 @@ class Ambilight {
     const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale
     if (shouldStyleVideoContainer) {
       const top = Math.max(0, parseInt(this.videoElem.style.top))
-      videoElemParentElem.style.height = `${this.videoElem.offsetHeight}px`
+      videoElemParentElem.style.height = '100%'
       videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
       videoElemParentElem.style.overflow = 'hidden'
 
@@ -1383,17 +1438,24 @@ class Ambilight {
       `)
     }
 
-    this.projectorOffset = this.getElemRect(this.videoElem)
+    this.videoOffset = this.getElemRect(this.videoElem)
+    this.isFillingFullscreen = (
+      this.isFullscreen &&
+      Math.abs(this.videoOffset.width - window.innerWidth) < 10 &&
+      Math.abs(this.videoOffset.height - window.innerHeight) < 10 &&
+      noClipOrScale
+    )
+    
     if (
-      this.projectorOffset.top === undefined ||
-      !this.projectorOffset.width ||
-      !this.projectorOffset.height ||
+      this.videoOffset.top === undefined ||
+      !this.videoOffset.width ||
+      !this.videoOffset.height ||
       !this.videoElem.videoWidth ||
       !this.videoElem.videoHeight
     ) return false //Not ready
 
     this.srcVideoOffset = {
-      top: this.projectorOffset.top,
+      top: this.videoOffset.top,
       width: this.videoElem.videoWidth,
       height: this.videoElem.videoHeight
     }
@@ -1416,15 +1478,15 @@ class Ambilight {
       }
     }
 
-    const unscaledWidth = Math.round(this.projectorOffset.width / (this.videoScale / 100))
-    const unscaledHeight = Math.round(this.projectorOffset.height / (this.videoScale / 100))
+    const unscaledWidth = Math.round(this.videoOffset.width / (this.videoScale / 100))
+    const unscaledHeight = Math.round(this.videoOffset.height / (this.videoScale / 100))
     const unscaledLeft = Math.round(
-      (this.projectorOffset.left + window.scrollX) - 
-      ((unscaledWidth - this.projectorOffset.width) / 2)
+      (this.videoOffset.left + window.scrollX) - 
+      ((unscaledWidth - this.videoOffset.width) / 2)
     )
     const unscaledTop = Math.round(
-      this.projectorOffset.top - 
-      ((unscaledHeight - this.projectorOffset.height) / 2)
+      this.videoOffset.top - 
+      ((unscaledHeight - this.videoOffset.height) / 2)
     )
 
     this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
@@ -1453,7 +1515,7 @@ class Ambilight {
     }
 
     this.filterElem.style.filter = `
-      ${(this.blur != 0) ? `blur(${Math.round(this.projectorOffset.height) * (this.blur * .0025)}px)` : ''}
+      ${(this.blur != 0) ? `blur(${Math.round(this.videoOffset.height) * (this.blur * .0025)}px)` : ''}
       ${(this.contrast != 100) ? `contrast(${this.contrast}%)` : ''}
       ${(this.brightness != 100) ? `brightness(${this.brightness}%)` : ''}
       ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
@@ -1533,6 +1595,7 @@ class Ambilight {
   }
 
   updateStyles() {
+    // console.log('updateStyles')
     // Images transparency
 
     const ImagesTransparency = this.surroundingContentImagesTransparency
@@ -1612,8 +1675,8 @@ class Ambilight {
 
   resizeCanvasses() {
     const projectorSize = {
-      w: this.projectorOffset.width,
-      h: this.projectorOffset.height * this.horizontalBarsClipScaleY
+      w: this.videoOffset.width,
+      h: this.videoOffset.height * this.horizontalBarsClipScaleY
     }
     const ratio = (projectorSize.w > projectorSize.h) ?
       {
@@ -1916,6 +1979,7 @@ class Ambilight {
     this.videoElem.paused ||
     this.videoElem.seeking ||
     // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
+    this.isVideoHiddenOnWatchPage ||
     this.isAmbilightHiddenOnWatchPage
   ))
 
@@ -1923,7 +1987,6 @@ class Ambilight {
     if(
       !this.enabled ||
       !this.isOnVideoPage ||
-      this.isAmbilightHiddenOnWatchPage ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2170,7 +2233,6 @@ class Ambilight {
 
     if (
       this.isVR ||
-      (this.isFillingFullscreen && !this.detectHorizontalBarSizeEnabled && !this.frameBlending && !this.videoOverlayEnabled) ||
       (!this.enableInFullscreen && this.isFullscreen)
     ) {
       this.hide()
@@ -2183,8 +2245,15 @@ class Ambilight {
     }
 
     if (
+      (
+        this.atTop &&
+        this.isFillingFullscreen && 
+        !this.detectHorizontalBarSizeEnabled &&
+        !this.frameBlending &&
+        !this.videoOverlayEnabled
+      ) ||
       this.isVideoHiddenOnWatchPage || 
-      this.isAmbilightHiddenOnWatchPage ||
+      // this.isAmbilightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambilight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1    // HAVE_METADATA
@@ -2287,6 +2356,11 @@ class Ambilight {
       this.videoFrameCount = newVideoFrameCount
     }
 
+    const dontDrawAmbilight = (
+      this.atTop &&
+      this.isFillingFullscreen
+    )
+
     if (this.frameBlending && this.frameBlendingSmoothness) {
       if (!this.previousProjectorBuffer) {
         this.initFrameBlending()
@@ -2369,22 +2443,24 @@ class Ambilight {
           this.videoOverlay.ctx.globalAlpha = 1
         }
 
-        //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
-        //this.previousProjectorBuffer can also contain an old frame
-        
-        if(alpha !== 1) {
-          if(this.blendedProjectorBuffer.ctx.globalAlpha !== 1)
-            this.blendedProjectorBuffer.ctx.globalAlpha = 1
-          this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
-        }
-        if(alpha > 0.005) {
-          this.blendedProjectorBuffer.ctx.globalAlpha = alpha
-          this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-        }
-        this.blendedProjectorBuffer.ctx.globalAlpha = 1
+        if (!dontDrawAmbilight) {
+          //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
+          //this.previousProjectorBuffer can also contain an old frame
+          
+          if(alpha !== 1) {
+            if(this.blendedProjectorBuffer.ctx.globalAlpha !== 1)
+              this.blendedProjectorBuffer.ctx.globalAlpha = 1
+            this.blendedProjectorBuffer.ctx.drawImage(this.previousProjectorBuffer.elem, 0, 0)
+          }
+          if(alpha > 0.005) {
+            this.blendedProjectorBuffer.ctx.globalAlpha = alpha
+            this.blendedProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+          }
+          this.blendedProjectorBuffer.ctx.globalAlpha = 1
 
-        for(const projector of this.projectors) {
-          projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
+          for(const projector of this.projectors) {
+            projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
+          }
         }
       }
     } else {
@@ -2398,22 +2474,24 @@ class Ambilight {
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
       }
 
-      // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
-      this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-      this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
-        0,
-        this.videoSnapshotBufferBarsClipPx,
-        this.videoSnapshotBuffer.elem.width,
-        this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
-        0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+      if (!dontDrawAmbilight) {
+        // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
+        this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+        this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
+          0,
+          this.videoSnapshotBufferBarsClipPx,
+          this.videoSnapshotBuffer.elem.width,
+          this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
+          0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-      // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
-      //   for(const projector of this.projectors) {
-      //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
-      //   }
-      // }
-      for(const projector of this.projectors) {
-        projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+        // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
+        //   for(const projector of this.projectors) {
+        //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
+        //   }
+        // }
+        for(const projector of this.projectors) {
+          projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+        }
       }
     }
 
@@ -2439,11 +2517,7 @@ class Ambilight {
 
   scheduleHorizontalBarSizeDetection = () => {
     try {
-      if(!this.horizontalBarDetection) {
-        this.horizontalBarDetection = new HorizontalBarDetection()
-      } else if(this.horizontalBarDetection.busy) {
-        return
-      }
+      if(this.horizontalBarDetection.run) return
 
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
@@ -2540,9 +2614,6 @@ class Ambilight {
     this.updateView()
     if (!this.enableInFullscreen && this.view === this.VIEW_FULLSCREEN) return
 
-    html.setAttribute('data-ambilight-enabled', true)
-    this.videoPlayerElem.setSize()
-
     if (!initial) {
       const toLight = !html.getAttribute('dark')
       this.resetThemeToLightOnDisable = toLight
@@ -2560,19 +2631,16 @@ class Ambilight {
     this.setSetting('enabled', false)
     const enabledInput = $.s(`#setting-enabled`)
     if(enabledInput) enabledInput.setAttribute('aria-checked', false)
-    html.setAttribute('data-ambilight-enabled', false)
-    this.videoPlayerElem.setSize()
 
     if (this.resetThemeToLightOnDisable) {
       this.resetThemeToLightOnDisable = undefined
       Ambilight.setDarkTheme(false)
     }
 
-    this.videoElem.style.marginTop = ''
     const videoElemParentElem = this.videoElem.parentNode
     if (videoElemParentElem) {
       videoElemParentElem.style.overflow = ''
-      videoElemParentElem.style.marginTop = ''
+      videoElemParentElem.style.transform = ''
       videoElemParentElem.style.height = ''
       videoElemParentElem.style.marginBottom = ''
     }
@@ -2583,7 +2651,6 @@ class Ambilight {
 
   static setDarkTheme(value) {
     try {
-      if (Ambilight.isClassic) return
       if (Ambilight.setDarkThemeBusy) return
       if (html.getAttribute('dark')) {
         if (value) return
@@ -2641,11 +2708,16 @@ class Ambilight {
     }
   }
 
-  toggleEnabled() {
-    if (this.enabled)
-      this.disable()
-    else
+  toggleEnabled(enabled) {
+    enabled = (enabled !== undefined) ? enabled : !this.enabled
+    if (enabled) {
       this.enable()
+    } else {
+      this.disable()
+    }
+      
+    const key = this.settings.find(setting => setting.name === 'enabled').key
+    this.displayBezel(key, !enabled)
   }
 
   start() {
@@ -2717,10 +2789,6 @@ class Ambilight {
     this.hideStats()
 
     html.setAttribute('data-ambilight-enabled', false)
-    html.setAttribute('data-ambilight-classic', false)
-    if(Ambilight.isClassic) {
-      html.setAttribute('dark', false)
-    }
     if (this.resetThemeToLightOnDisable) {
       Ambilight.setDarkTheme(false)
     }
@@ -2731,10 +2799,6 @@ class Ambilight {
     this.elem.style.opacity = 1
     Ambilight.setDarkTheme(true)
     html.setAttribute('data-ambilight-enabled', true)
-    html.setAttribute('data-ambilight-classic', Ambilight.isClassic)
-    if(Ambilight.isClassic) {
-      html.setAttribute('dark', true)
-    }
   }
 
   checkScrollPosition = () => {
@@ -2761,26 +2825,39 @@ class Ambilight {
     if(!changed) return
 
     this.checkScrollPosition()
-    this.videoPlayerElem.setSize()
   }
 
-  toggleImmersiveMode() {
-    const enabled = !this.immersive
+  toggleImmersiveMode(enabled) {
+    enabled = (enabled !== undefined) ? enabled : !this.immersive
     $.s(`#setting-immersive`).setAttribute('aria-checked', enabled ? 'true' : 'false')
     this.setSetting('immersive', enabled)
-
     this.updateImmersiveMode()
+
+    const key = this.settings.find(setting => setting.name === 'immersive').key
+    this.displayBezel(key, !enabled)
   }
 
   initSettingsMenu() {
     this.settingsMenuBtn = document.createElement('button')
     this.settingsMenuBtn.classList.add('ytp-button', 'ytp-ambilight-settings-button')
-    this.settingsMenuBtn.setAttribute('title', 'Ambilight settings')
     this.settingsMenuBtn.setAttribute('aria-owns', 'ytp-id-190')
     on(this.settingsMenuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     this.settingsMenuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
       <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
     </svg>`
+
+    const settingsMenuBtnTooltip = document.createElement('div')
+    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambilight-settings-button-tooltip')
+    settingsMenuBtnTooltip.setAttribute('aria-live', 'polite')
+    const settingsMenuBtnTooltipTextWrapper = document.createElement('div')
+    settingsMenuBtnTooltipTextWrapper.classList.add('ytp-tooltip-text-wrapper')
+    settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper)
+    const settingsMenuBtnTooltipText = document.createElement('span')
+    settingsMenuBtnTooltipText.classList.add('ytp-tooltip-text', 'ytp-tooltip-text-no-title')
+    settingsMenuBtnTooltipText.textContent = 'Ambilight settings'
+    settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
+
+    this.settingsMenuBtn.prepend(settingsMenuBtnTooltip)
     this.settingsMenuBtnParent.prepend(this.settingsMenuBtn)
 
     this.settingsMenuElem = document.createElement('div')
@@ -2796,24 +2873,49 @@ class Ambilight {
     this.settingsMenuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
-            <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
-          </a>
+          <div class="ytp-menuitem ytpa-menuitem--header">
+            <div class="ytp-menuitem-label">
+              <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
+                <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
+              </a>
+            </div>
+            <div class="ytp-menuitem-content">
+              <button
+                class="ytpa-reset-settings-btn"
+                title="Reset all settings"
+              ></button>
+            </div>
+          </div>
           ${
       this.settings.map(setting => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
-
+        
+        const label = `${setting.label}
+          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
+          ${setting.questionMark 
+            ? `<a
+            title="${setting.questionMark.title}" 
+            ${setting.questionMark.href ? `href="${setting.questionMark.href}" target="_blank"` : 'href="#" onclick="return false"' }
+            style="padding: 0 5px;">
+              ?
+            </a>`
+            : ''
+          }
+          ${setting.description ? `<br/><span class="ytpa-menuitem-description">${setting.description}</span>` : ''}
+        `
+        
         if (setting.type === 'checkbox') {
           return `
             <div id="setting-${setting.name}" 
             class="${classes}" 
             role="menuitemcheckbox" 
             aria-checked="${setting.value ? 'true' : 'false'}" 
-            tabindex="0">
-              <div class="ytp-menuitem-label">${setting.label}</div>
+            tabindex="0"
+            title="Right click to reset">
+              <div class="ytp-menuitem-label">${label}</div>
               <div class="ytp-menuitem-content">
                 <div class="ytp-menuitem-toggle-checkbox"></div>
               </div>
@@ -2823,13 +2925,19 @@ class Ambilight {
           return `
             <div id="setting-${setting.name}" class="ytp-menuitem-range-wrapper">
               <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
-                <div class="ytp-menuitem-label">${setting.label}</div>
-                <div id="setting-${setting.name}-value" class="ytp-menuitem-content">${this.getSettingListDisplayText(setting)}</div>
+                <div class="ytp-menuitem-label">${label}</div>
+                <div class="ytp-menuitem-content">
+                  ${(setting.manualinput !== false)
+                    ? `<input id="setting-${setting.name}-manualinput" type="text" class="ytpa-menuitem-input" value="${setting.value}" />`
+                    : ''
+                  }
+                  <div class="ytp-menuitem-value" id="setting-${setting.name}-value">${this.getSettingListDisplayText(setting)}</div>
+                </div>
               </div>
               <div 
               class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
               rowspan="2" 
-              title="Double click to reset">
+              title="Right click to reset">
                 <input 
                   id="setting-${setting.name}-range" 
                   type="range" 
@@ -2861,7 +2969,7 @@ class Ambilight {
               class="ytpa-section ${setting.value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" 
               data-name="${setting.name}">
               <div class="ytpa-section__cell">
-                <div class="ytpa-section__label">${setting.label}</div>
+                <div class="ytpa-section__label">${label}</div>
               </div>
               <div class="ytpa-section__cell">
                 <div class="ytpa-section__fill">-</div>
@@ -2873,6 +2981,27 @@ class Ambilight {
           }
         </div>
       </div>`
+
+    const resetSettingsBtnElem = this.settingsMenuElem.querySelector('.ytpa-reset-settings-btn')
+    on(resetSettingsBtnElem, 'click', () => {
+      if(!confirm('Are you sure you want to reset ALL the settings?')) return
+      
+      // Reset values
+      this.settingsMenuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]').forEach(input => {
+        input.dispatchEvent(new Event('contextmenu'))
+      })
+
+      // Reset keys
+      this.settings
+        .filter(setting => setting.key)
+        .forEach(setting => {
+          // this.setSettingKey(setting.name, setting.key)
+          const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
+          keyElem.dispatchEvent(new KeyboardEvent('keypress', {
+            key: setting.defaultKey
+          }))
+        })
+    })
     this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label').forEach(label => {
       on(label, 'click', (e) => {
         const value = e.target.value
@@ -2897,6 +3026,14 @@ class Ambilight {
         }
       })
     })
+    
+    on(this.settingsMenuElem, 'mousemove click dblclick contextmenu touchstart touchmove touchend', (e) => {
+      e.stopPropagation()
+    })
+    on(this.settingsMenuElem, 'contextmenu', (e) => {
+      e.preventDefault()
+    })
+
     this.settingsMenuElemParent = this.videoPlayerElem
     this.settingsMenuElemParent.prepend(this.settingsMenuElem)
     try {
@@ -2910,23 +3047,100 @@ class Ambilight {
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
 
+    this.settingsBezelElem = document.createElement('div')
+    this.settingsBezelElem.classList.add('yta-bezel', 'ytp-bezel')
+    this.settingsBezelElem.setAttribute('role', 'status')
+    this.settingsBezelElem.innerHTML = `
+      <div class="ytp-bezel-icon">
+        <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+          <text class="ytp-svg-fill" x="50%" y="59%" dominant-baseline="middle" text-anchor="middle"></text>
+        </svg>
+      </div>`
+    on(this.settingsBezelElem, 'animationend', () => {
+      this.settingsBezelElem.style.display = 'none'
+    })
+    this.settingsBezelTextElem = this.settingsBezelElem.querySelector('text')
+    this.settingsMenuElemParent.prepend(this.settingsBezelElem)
+
     this.settings.forEach(setting => {
+      const settingElem = $.s(`#setting-${setting.name}`)
+      if (!settingElem) return
+      
+      const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
+      if (keyElem) {
+        const settingElem = $.s(`#setting-${setting.name}`)
+        on(keyElem, 'click', (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+        })
+        on(keyElem, 'focus', (e) => {
+          // Select all
+          const range = document.createRange()
+          range.selectNodeContents(keyElem)
+          const sel = window.getSelection()
+          sel.removeAllRanges()
+          sel.addRange(range)
+        })
+        on(keyElem, 'keydown keyup keypress', (e) => {
+          e.stopPropagation()
+        })
+        on(keyElem, 'keypress', (e) => {
+          if(e.key.length === 1) {
+            const key = e.key.toUpperCase()
+            this.setSettingKey(setting.name, key)
+            keyElem.textContent = key
+          } else {
+            keyElem.textContent = setting.defaultKey
+          }
+
+          keyElem.blur()
+        })
+        on(keyElem, 'blur', (e) => {
+          // Deselect all
+          const sel = window.getSelection()
+          sel.removeAllRanges()
+        })
+      }
+
       if (setting.type === 'list') {
         const inputElem = $.s(`#setting-${setting.name}-range`)
-        const displayedValue = $.s(`#setting-${setting.name}-value`)
-        on(inputElem, 'change mousemove dblclick touchmove', (e) => {
+        const valueElem = $.s(`#setting-${setting.name}-value`)
+
+        const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
+        if(manualInputElem) {
+          on(manualInputElem, 'keydown keyup keypress', (e) => {
+            e.stopPropagation()
+          })
+          const onChange = (empty = false) => {
+            const manualValue = manualInputElem.value
+            if(inputElem.value === manualInputElem.value) return
+            inputElem.value = manualInputElem.value
+            inputElem.dispatchEvent(new Event('change'))
+          }
+          on(manualInputElem, 'change', (e) => onChange())
+          on(manualInputElem, 'blur', (e) => onChange())
+          on(manualInputElem, 'keypress', (e) => {
+            if(e.key !== 'Enter') return
+            manualInputElem.blur()
+          })
+        }
+
+        on(inputElem, 'change mousemove dblclick contextmenu touchmove', (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = parseFloat(inputElem.value)
-          if (e.type === 'dblclick') {
+          if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = this.settings.find(s => s.name === setting.name).default
           } else if (inputElem.value === inputElem.getAttribute('data-previous-value')) {
             return
           }
           inputElem.value = value
           inputElem.setAttribute('data-previous-value', value)
+          if (manualInputElem) {
+            manualInputElem.value = inputElem.value
+          }
           this.setSetting(setting.name, value)
-          displayedValue.textContent = this.getSettingListDisplayText({...setting, value})
+          valueElem.textContent = this.getSettingListDisplayText({...setting, value})
 
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
@@ -2974,6 +3188,7 @@ class Ambilight {
             this.detectHorizontalBarSizeEnabled &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
+            this.horizontalBarDetection.clear()
             this.scheduleHorizontalBarSizeDetection()
           }
 
@@ -2989,25 +3204,20 @@ class Ambilight {
           this.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
-        const inputElem = $.s(`#setting-${setting.name}`)
-        on(inputElem, 'click', () => {
+        on(settingElem, 'dblclick contextmenu click', (e) => {
           setting.value = !setting.value
+          if (e.type === 'dblclick' || e.type === 'contextmenu') {
+            setting.value = this.settings.find(s => s.name === setting.name).default
+          }
 
           if (setting.name === 'enabled') {
-            if (setting.value)
-              this.enable()
-            else
-              this.disable()
+            this.toggleEnabled(setting.value)
           }
           if (setting.name === 'immersive') {
-            this.toggleImmersiveMode()
+            this.toggleImmersiveMode(setting.value)
           }
           if (setting.name === 'hideScrollbar') {
-            const changed = (html.getAttribute('data-ambilight-hide-scrollbar') !== setting.value.toString())
             html.setAttribute('data-ambilight-hide-scrollbar', setting.value)
-            if(changed) {
-              this.videoPlayerElem.setSize()
-            }
           }
           if (
             setting.name === 'videoOverlayEnabled' ||
@@ -3039,34 +3249,41 @@ class Ambilight {
 
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
             if(!setting.value) {
-              if(!inputElem.dontResetControlledSetting) {
+              if(!settingElem.dontResetControlledSetting) {
                 const horizontalBarsClipPercentageSetting = this.settings.find(setting => setting.name === 'horizontalBarsClipPercentage')
                 const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
                 horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
                 horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-                this.setSetting('horizontalBarsClipPercentage', horizontalBarsClipPercentageSetting.default)
               }
+            } else {
+              this.horizontalBarDetection.clear()
+              this.scheduleHorizontalBarSizeDetection()
             }
-            if(inputElem.dontResetControlledSetting) {
-              inputElem.dontResetControlledSetting = false
+            if(settingElem.dontResetControlledSetting) {
+              settingElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
+
+            const key = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
+            this.displayBezel(key, !setting.value)
           }
 
           if(setting.name === 'detectVideoFillScaleEnabled') {
             if(!setting.value) {
-              if(!inputElem.dontResetControlledSetting) {
+              if(!settingElem.dontResetControlledSetting) {
                 const videoScaleSetting = this.settings.find(setting => setting.name === 'videoScale')
                 const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
                 videoScaleInputElem.value = videoScaleSetting.default
                 videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-                this.setSetting('videoScale', videoScaleSetting.default)
               }
             }
-            if(inputElem.dontResetControlledSetting) {
-              inputElem.dontResetControlledSetting = false
+            if(settingElem.dontResetControlledSetting) {
+              settingElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
+
+            const key = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+            this.displayBezel(key, !setting.value)
           }
 
           if(setting.name === 'advancedSettings') {
@@ -3092,12 +3309,21 @@ class Ambilight {
           }
 
           this.updateSizes()
-          this.nextFrame()
+          this.optionalFrame()
         })
       }
     })
 
     this.updateControlledSettings()
+  }
+
+  displayBezel(text, strike = false) {
+    this.settingsBezelElem.style.display = 'none'
+    setTimeout(() => {
+      this.settingsBezelElem.classList.toggle('yta-bezel--strike', strike)
+      this.settingsBezelElem.style.display = ''
+      this.settingsBezelTextElem.textContent = text
+    }, 0);
   }
 
   updateControlledSettings() {
@@ -3106,7 +3332,7 @@ class Ambilight {
       videoScaleValue.classList.remove('is-controlled-by-setting')
       videoScaleValue.setAttribute('title', '')
     } else {
-      videoScaleValue.classList.remove('is-controlled-by-setting')
+      videoScaleValue.classList.add('is-controlled-by-setting')
       videoScaleValue.setAttribute('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
     }
 
@@ -3195,63 +3421,79 @@ class Ambilight {
     off(this.settingsMenuElem, 'animationend', this.onSettingsFadeOutEndListener)
   }
 
-  setSetting(key, value) {
-    this[key] = value
-
-    if (key === 'blur')
-      value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
-    if (key === 'bloom')
-      value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
-
-    const setting = this.settings.find(setting => setting.name === key) || {}
-    setting.value = value
-
-    if (!this.setSettingTimeout)
-      this.setSettingTimeout = {}
-
-    if (this.setSettingTimeout[key])
-      clearTimeout(this.setSettingTimeout[key])
-
-    this.setSettingTimeout[key] = setTimeout(() => {
-      try {
-        localStorage.setItem(`ambilight-${key}`, value)
-      } catch (ex) {
-        console.warn('YouTube Ambilight | setSetting', ex)
-        //AmbilightSentry.captureExceptionWithDetails(ex)
-      }
-      this.setSettingTimeout[key] = null
-    }, 500)
+  setSettingKey(name, key) {
+    const setting = this.settings.find(setting => setting.name === name) || {}
+    setting.key = key
+    this.saveStorageEntry(`${setting.name}-key`, key)
   }
 
-  getSetting(key) {
-    let value = null
-    try {
-      value = localStorage.getItem(`ambilight-${key}`)
-    } catch (ex) {
-      console.warn('YouTube Ambilight | getSetting', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
-    }
-    const setting = this.settings.find(setting => setting.name === key) || {}
+  getSettingKey(name) {
+    return this.getStorageEntry(`${name}-key`)
+  }
+
+  setSetting(name, value) {
+    this[name] = value
+
+    if (name === 'blur')
+      value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
+    if (name === 'bloom')
+      value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
+
+    const setting = this.settings.find(setting => setting.name === name) || {}
+    setting.value = value
+
+    this.saveStorageEntry(name, value)
+  }
+
+  getSetting(name) {
+    let value = this.getStorageEntry(name)
+    const setting = this.settings.find(setting => setting.name === name) || {}
     if (value === null) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (value === 'true')
     } else if (setting.type === 'list') {
       value = parseFloat(value)
-      if (key === 'blur')
+      if (name === 'blur')
         value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
-      if (key === 'bloom')
+      if (name === 'bloom')
         value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
     }
 
     return value
   }
 
-  removeSetting(key) {
+  getStorageEntry(name) {
+    let value = null
     try {
-      localStorage.removeItem(`ambilight-${key}`)
+      value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('YouTube Ambilight | removeSetting', ex)
+      console.warn('YouTube Ambilight | getSetting', ex)
+      //AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+    return value
+  }
+
+  saveStorageEntry(name, value) {
+    if (this.saveStorageEntryTimeout[name])
+      clearTimeout(this.saveStorageEntryTimeout[name])
+
+    this.saveStorageEntryTimeout[name] = setTimeout(() => {
+      try {
+        localStorage.setItem(`ambilight-${name}`, value)
+      } catch (ex) {
+        console.warn('YouTube Ambilight | saveStorageEntry', ex)
+        //AmbilightSentry.captureExceptionWithDetails(ex)
+      }
+      this.saveStorageEntryTimeout[name] = null
+    }, 500)
+  }
+
+  removeStorageEntry(name) {
+    try {
+      localStorage.removeItem(`ambilight-${name}`)
+    } catch (ex) {
+      console.warn('YouTube Ambilight | removeStorageEntry', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -3319,8 +3561,8 @@ on(document, 'visibilitychange', () => {
   const lastEvent = errorEvents[errorEvents.length - 1]
   const lastTime = lastEvent.lastTime || lastEvent.time
   const firstTime = errorEvents[0].time
-  if(lastTime - firstTime < 3) {
-    return // Give the site 3 seconds to load the watch page or move the video element
+  if(lastTime - firstTime < 10) {
+    return // Give the site 10 seconds to load the watch page or move the video element
   }
 
   AmbilightSentry.captureExceptionWithDetails(
@@ -3343,19 +3585,6 @@ const resetThemeToLightIfSettingIsTrue = () => {
   Ambilight.setDarkTheme(false)
 }
 
-export const getVideosHTML = () => [...$.sa('video')]
-  .reduce((obj, elem, i) => {
-    obj[`»('video')[${i}]`] = elem.cloneNode(false).outerHTML
-    return obj
-  }, {})
-
-export const getPlayerContainersHTML = () => [...$.sa('#player-container')]
-  .reduce((obj, elem, i) => {
-    obj[`»('#player-container')[${i}]`] = elem.cloneNode(false).outerHTML
-    return obj
-  }, {})
-
-
 const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
@@ -3371,13 +3600,9 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
       const details = {
-        ...getVideosHTML(),
-        ...getPlayerContainersHTML(),
-        'ambilight.videoElem': ambilight.videoElem?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.parentElement': ambilight.videoElem.parentElement?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.closest("#ytd-player")': ambilight.videoElem.closest("#ytd-player")?.cloneNode(false)?.outerHTML,
-        'ambilight.videoElem.closest("#ytd-player").parentElement': ambilight.videoElem.closest("#ytd-player")?.parentElement?.cloneNode(false)?.outerHTML,
-        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem)
+        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem),
+        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        tree: getSelectorTreeString('video,#player-container')
       }
       pushErrorEvent('detectDetachedVideo | video detached and no new video', details)
       return
@@ -3399,19 +3624,6 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     childList: true,
     subtree: true
   })
-}
-
-const tryInitClassicAmbilight = (ytdAppElem) => {
-  const classicYtdAppElem = $.s('body[data-spf-name="watch"]')
-  if(!Ambilight.isClassic && classicYtdAppElem) {
-    AmbilightSentry.captureExceptionWithDetails(new Error('Detected deprecated YouTube classic layout. Support will be removed in future versions.'))
-  }
-  const classicVideoElem = $.s('video.html5-main-video')
-  if(!classicYtdAppElem || !classicVideoElem) return false
-
-  Ambilight.isClassic = true
-  window.ambilight = new Ambilight(classicYtdAppElem, classicVideoElem)
-  return true
 }
 
 const tryInitAmbilight = (ytdAppElem) => {
@@ -3439,8 +3651,7 @@ const tryInitAmbilight = (ytdAppElem) => {
     }
     // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
     pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
-      ...getVideosHTML(),
-      ...getPlayerContainersHTML(),
+      tree: getSelectorTreeString('video,#player-container')
     })
     return false
   }
@@ -3513,13 +3724,13 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
 }
 
 const loadAmbilight = () => {
-  const ytdAppElem = $.s('ytd-app, body[data-spf-name]')
+  const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
-      .filter(elem => elem.tagName.endsWith('-APP'))
+      .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
       .map(elem => elem.cloneNode(false).outerHTML)
     if(appElems.length) {
-      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app, body[data-spf-name]', appElems)
+      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', appElems)
     }
     return
   }
@@ -3527,7 +3738,6 @@ const loadAmbilight = () => {
   // Validated YouTube desktop web app
 
   if (tryInitAmbilight(ytdAppElem)) return
-  if (tryInitClassicAmbilight(ytdAppElem)) return
 
   // Not initialized yet
 
@@ -3544,8 +3754,7 @@ const loadAmbilight = () => {
     }
 
     if (
-      tryInitAmbilight(ytdAppElem) ||
-      tryInitClassicAmbilight(ytdAppElem)
+      tryInitAmbilight(ytdAppElem)
     ) {
       // Initialized
       observer.disconnect()

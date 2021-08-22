@@ -23,6 +23,7 @@
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-cleanup": "^3.1.1",
     "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-strip-code": "^0.2.7",
     "sass": "^1.22.6"
   },
   "scripts": {
@@ -30,10 +31,9 @@
     "build:html": "copyfiles -u 1 src/options.html dist",
     "build:images": "copyfiles -u 2 src/images/* dist/images",
     "build:css:ambilight": "sass --no-source-map src/styles/youtube-ambilight.scss dist/styles/youtube-ambilight.css",
-    "build:css:ambilight-classic": "sass --no-source-map src/styles/youtube-ambilight-classic.scss dist/styles/youtube-ambilight-classic.css",
     "build:css:ambilight-iframes": "sass --no-source-map src/styles/youtube-ambilight-iframe-live-chat.scss dist/styles/youtube-ambilight-iframe-live-chat.css",
     "build:css:options": "copyfiles -u 2 src/styles/options.css dist/styles",
-    "build:css": "run-p build:css:ambilight build:css:ambilight-classic build:css:ambilight-iframes build:css:options",
+    "build:css": "run-p build:css:ambilight build:css:ambilight-iframes build:css:options",
     "build:scripts": "rollup -c",
     "build": "run-p build:manifest build:html build:images build:css build:scripts"
   }

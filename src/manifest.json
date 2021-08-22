@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "YouTube Ambilight",
   "description": "Immersive yourself in YouTube videos with ambilight!",
-  "version": "2.36.15",
+  "version": "2.36.16",
   "author": "Wessel Kroos",
   "icons": {
     "16": "images/icon-16.png",
@@ -29,10 +29,7 @@
       "matches": ["https://www.youtube.com/*"],
       "exclude_matches": ["https://www.youtube.com/live_chat*"],
       "js": ["scripts/content.js"],
-      "css": [
-        "styles/youtube-ambilight.css",
-        "styles/youtube-ambilight-classic.css"
-      ]
+      "css": ["styles/youtube-ambilight.css"]
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
