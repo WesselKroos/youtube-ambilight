@@ -555,7 +555,7 @@ html[data-ambilight-enabled="true"] {
     right: 5px;
     height: 9px;
     width: 13px;
-    background: #3ea6ff;
+    background: #007cc3;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 13 9'%3E%3Cg transform='translate(1.5, 0.5)'%3E%3Cpath d='M2.5 1.5v1h2v-1h-2m4 0v5h3v-1h-2v-4h-1m-5 1v4h1v-1h2v1h1v-4h-1v2h-2v-2h-1' fill='%23fff' /%3E%3Cpath d='M2.5 3v.5h2v-1h-2V3m0 2.5v1h2v-1h-2m-1 1v1h1v-1h-1m3 .5v.5h1v-1h-1V7m2-.5v1h3v-1h-3' fill-opacity='0.6471' fill='%23000' /%3E%3C/g%3E%3C/svg%3E");
     border-radius: 1px;
     line-height: normal;
@@ -612,7 +612,7 @@ html[data-ambilight-enabled="true"] {
   .ytpa-feedback-link__text {
     display: block;
     padding: 10px 15px;
-    color: #3ea6ff;
+    color: #007cc3;
     font-weight: normal;
     font-size: 11px;
     &:hover {
@@ -629,7 +629,7 @@ html[data-ambilight-enabled="true"] {
   .html5-video-player {
     & {
       a {
-        color: #3ea6ff;
+        color: #007cc3;
         &:hover {
           color: #5ebfff;
           text-decoration: underline;
@@ -656,7 +656,7 @@ html[data-ambilight-enabled="true"] {
     transition: transform .5s, border-color .5s;
     &:hover {
       transform: rotate(-180deg);
-      border-color: #3ea6ff;
+      border-color: #007cc3;
       border-top-color: transparent;
     }
     .ytp-fullscreen & {
@@ -683,7 +683,7 @@ html[data-ambilight-enabled="true"] {
     &:hover {
       &::before,
       &::after {
-        background: #3ea6ff;
+        background: #007cc3;
       }
     }
     &::after {
@@ -937,7 +937,7 @@ html[data-ambilight-enabled="true"] {
     }
 
     a:hover:not([href="#"]) {
-      color: #3ea6ff;
+      color: #007cc3;
     }
   }
 
@@ -947,7 +947,7 @@ html[data-ambilight-enabled="true"] {
     text-align: center;
     cursor: text;
     &:hover {
-      color: #3ea6ff;
+      color: #007cc3;
     }
     &:focus {
       background: #000;
@@ -980,7 +980,7 @@ html[data-ambilight-enabled="true"] {
   .ytp-menuitem-value {
     &.is-controlled-by-setting {
       &::before {
-        content: url('data:image/svg+xml;charset=UTF-8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 612 612" style="enable-background:new 0 0 612 612;" xml:space="preserve" fill="%233ea6ff"> <g> <path d="M286.363,607.148l195.851-325.636c7.954-13.225-1.571-30.069-17.003-30.069H334.436L479.335,30.732 C487.998,17.537,478.532,0,462.748,0H237.426c-8.806,0-16.558,5.804-19.039,14.253l-90.655,308.81 c-3.73,12.706,5.796,25.431,19.039,25.431h176.915l-55.512,251.4C265.75,610.872,280.57,616.781,286.363,607.148z"/> </g> </svg>');
+        content: url('data:image/svg+xml;charset=UTF-8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 612 612" style="enable-background:new 0 0 612 612;" xml:space="preserve" fill="%23007cc3"> <g> <path d="M286.363,607.148l195.851-325.636c7.954-13.225-1.571-30.069-17.003-30.069H334.436L479.335,30.732 C487.998,17.537,478.532,0,462.748,0H237.426c-8.806,0-16.558,5.804-19.039,14.253l-90.655,308.81 c-3.73,12.706,5.796,25.431,19.039,25.431h176.915l-55.512,251.4C265.75,610.872,280.57,616.781,286.363,607.148z"/> </g> </svg>');
         position: absolute;
         display: inline-block;
         width: 12px;
@@ -1013,7 +1013,7 @@ html[data-ambilight-enabled="true"] {
     }
 
     &:hover + .ytp-menuitem-value {
-      color: #3ea6ff;
+      color: #007cc3;
     }
 
     &:focus {
@@ -1040,7 +1040,7 @@ html[data-ambilight-enabled="true"] {
     margin: 3px 0;
   }
   .ytp-menuitem[aria-checked="true"] .ytp-menuitem-toggle-checkbox {
-    background-color: #3ea6ff;
+    background-color: #007cc3;
   }
 
 
@@ -1137,14 +1137,14 @@ html[data-ambilight-enabled="true"] {
 
           $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
           @for $i from 1 through 150 {
-            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #3ea6ff;
+            $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -5px #007cc3;
           }
           box-shadow: $shadow;
   
           .ytp-fullscreen & {
             $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
             @for $i from 1 through 220 {
-              $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #3ea6ff;
+              $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #007cc3;
             }
             box-shadow: $shadow;
           }

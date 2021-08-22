@@ -20,7 +20,7 @@ main {
 h1 {
   margin: 0 0 15px;
   font-size: 16px;
-  color: rgb(62, 166, 255);
+  color: #007cc3;
 }
 
 h2 {
@@ -30,7 +30,7 @@ h2 {
 }
 
 a {
-  color: rgb(62, 166, 255);
+  color: #007cc3;
   font-weight: bold;
 }
 
