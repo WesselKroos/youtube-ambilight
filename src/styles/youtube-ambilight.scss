@@ -137,8 +137,12 @@ html[data-ambilight-enabled="true"] {
     ytd-masthead {
       background: none !important;
     }
-    #voice-search-button:not(:hover):not(:focus-within) {
-      opacity: .25;
+    #voice-search-button {
+      background: none;
+      transition: opacity .15s;
+      &:not(:hover):not(:focus-within) {
+        opacity: .4;
+      }
     }
   }
 
@@ -219,46 +223,94 @@ html[data-ambilight-enabled="true"] {
   /* Cosmetics - Search */
 
   ytd-app {
-    #search-form {
-      transition: background-color .15s;
-      background-color: var(--yt-spec-brand-background-primary);
-      > * {
-        transition: background-color .15s, border-color .15s, color .15s, fill .15s;
+    #guide-icon.ytd-masthead,
+    yt-icon.ytd-topbar-logo-renderer {
+      transition: color .15s;
+    }
+    ytd-searchbox {
+      #search-form {
+        transition: background-color .15s;
+        background-color: var(--yt-spec-brand-background-primary);
+        #container.ytd-searchbox {
+          border-right: none !important; // Fixes short flicker from white on input focus
+        }
+        > * {
+          transition: background-color .15s, border-color .15s, color .15s, fill .15s;
+        }
+        #search::-webkit-input-placeholder {
+          transition: color .15s;
+        }
       }
-      #search::-webkit-input-placeholder {
-        transition: color .15s;
+      #search-icon-legacy {
+        transition: background-color .15s, border-color .15s;
+        background-color: var(--yt-spec-brand-background-primary) !important;
+        yt-icon {
+          transition: color .15s;
+        }
       }
     }
     #masthead-container.at-top {
-      #search-form:not(:hover):not(:focus-within) {
-        background-color: transparent;
-        #container.ytd-searchbox {
-          box-shadow: none !important;
+      --yt-button-color: #000;
+      $color: rgba(0,0,0,.4);
+      $line-color: rgba(0,0,0,.2);
+      #guide-icon.ytd-masthead,
+      yt-icon.ytd-topbar-logo-renderer {
+        color: #000;
+      }
+      ytd-searchbox:not(:hover):not(:focus-within) {
+        #search-form {
+          background-color: transparent;
+          #container.ytd-searchbox {
+            box-shadow: none !important;
+          }
+          
+          > * {
+            background-color: transparent !important;
+            border-color: $line-color !important;
+            color: $color !important;
+            fill: $color !important;
+          }
+          #search::-webkit-input-placeholder {
+            color: $color !important;
+          }
         }
-        
-        > * {
+        #search-icon-legacy {
           background-color: transparent !important;
-          border-color: rgba(0,0,0,.15) !important;
-          color: rgba(0,0,0,.15) !important;
-          fill: rgba(0,0,0,.15) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(0,0,0,.15) !important;
+          border-color: $line-color !important;
+          yt-icon {
+            color: $color !important;
+          }
         }
       }
     }
   }
   &[dark="true"] ytd-app {
     #masthead-container.at-top {
-      #search-form:not(:hover):not(:focus-within) {
-        > * {
-          background-color: transparent !important;
-          border-color: rgba(255,255,255,.15) !important;
-          color: rgba(255,255,255,.15) !important;
-          fill: rgba(255,255,255,.15) !important;
+      --yt-button-color: #fff;
+      $color: rgba(255,255,255,.4);
+      $line-color: rgba(255,255,255,.2);
+      #guide-icon.ytd-masthead,
+      yt-icon.ytd-topbar-logo-renderer {
+        color: #fff;
+      }
+      ytd-searchbox:not(:hover):not(:focus-within) {
+        #search-form {
+          > * {
+            background-color: transparent !important;
+            border-color: $line-color !important;
+            color: $color !important;
+            fill: $color !important;
+          }
+          #search::-webkit-input-placeholder {
+            color: $color !important;
+          }
         }
-        #search::-webkit-input-placeholder {
-          color: rgba(255,255,255,.15) !important;
+        #search-icon-legacy {
+          background-color: transparent !important;
+          border-color: $line-color !important;
+          yt-icon {
+            color: $color !important;
+          }
         }
       }
     }
