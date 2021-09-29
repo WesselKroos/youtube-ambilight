@@ -363,7 +363,7 @@ class Ambilight {
       const detectHorizontalBarSizeEnabledKey = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
       const detectVideoFillScaleEnabledKey = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
       
-      const key = e.key.toUpperCase()
+      const key = e.key?.toUpperCase()
       if (key === immersiveKey) // z by default
         this.toggleImmersiveMode()
       if (key === detectHorizontalBarSizeEnabledKey) // b by default
@@ -412,7 +412,7 @@ class Ambilight {
 
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = html.getAttribute('dark') ? 1 : -1
-    document.addEventListener('yt-action', (e) => {
+    on(document, 'yt-action', (e) => {
       const name = e?.detail?.actionName
       if (name === 'yt-signal-action-toggle-dark-theme-off') {
         this.originalTheme = THEME_LIGHT
@@ -2237,9 +2237,9 @@ class Ambilight {
 
     // Video synced
     if (this.videoOverlayEnabled) {
-      this.videoSyncedElem.textContent = `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}`
-      this.videoSyncedElem.style.color = this.videoOverlay.isHidden ? '#f55' : '#7f7'
-      this.detectVideoSyncedWasHidden = this.videoOverlay.isHidden
+      this.videoSyncedElem.textContent = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
+      this.videoSyncedElem.style.color = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
+      this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
     } else {
       this.videoSyncedElem.textContent = ''
     }
@@ -3130,7 +3130,7 @@ class Ambilight {
         })
         on(keyElem, 'keypress', (e) => {
           if(e.key.length === 1) {
-            const key = e.key.toUpperCase()
+            const key = e.key?.toUpperCase()
             this.setSettingKey(setting.name, key)
             keyElem.textContent = key
           } else {
@@ -3744,7 +3744,7 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
 
 const ambilightDetectPageTransitions = (ytdAppElem) => {
   const navigationManager = document.querySelector('yt-navigation-manager')
-  navigationManager.addEventListener('yt-navigate-finish', () => {
+  on(navigationManager, 'yt-navigate-finish', () => {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       ambilightStartIfWatchPageHasVideo(ytdAppElem)
@@ -3796,13 +3796,11 @@ const loadAmbilight = () => {
   })
 }
 
-const onLoad = () => {
-  requestIdleCallback(function onLoad() {
-    if(window.ambilight) return
-      
-    loadAmbilight()
-  }, { timeout: 5000 })
-}
+const onLoad = () => requestIdleCallback(function onLoad() {
+  if(window.ambilight) return
+    
+  loadAmbilight()
+}, { timeout: 5000 })
 
 try {
   if(document.readyState === 'complete') {
