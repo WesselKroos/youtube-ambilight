@@ -2686,69 +2686,6 @@ class Ambilight {
     document.dispatchEvent(event)
   }
 
-  setDarkTheme(value) {
-    try {
-      if (this.setDarkThemeBusy) return
-      if (!!html.getAttribute('dark') === value) return
-      if (value && !isWatchPageUrl()) return
-      this.setDarkThemeBusy = true
-
-      try {
-        this.dispatchAction('yt-dark-mode-toggled-action')
-        this.setDarkThemeBusy = false
-      } catch (ex) {
-        console.warn('YouTube Ambilight | Error while toggling dark mode. Trying alternative method', ex)
-        AmbilightSentry.captureExceptionWithDetails(ex)
-
-        const toggle = (rendererElem) => {
-          rendererElem = rendererElem || $.s('ytd-toggle-theme-compact-link-renderer')
-          if (value) {
-            rendererElem.handleSignalActionToggleDarkThemeOn()
-          } else {
-            rendererElem.handleSignalActionToggleDarkThemeOff()
-          }
-          this.setDarkThemeBusy = false
-        }
-
-        const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-        if (rendererElem) {
-          toggle(rendererElem)
-        } else {
-          const findBtn = () => $.s('#avatar-btn') || // When logged in
-            $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
-
-          $.s('ytd-popup-container').style.opacity = 0
-          waitForDomElement(
-            findBtn,
-            'ytd-masthead',
-            () => {
-              waitForDomElement(
-                () => {
-                  const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-                  return (rendererElem && rendererElem.handleSignalActionToggleDarkThemeOn)
-                },
-                'ytd-popup-container',
-                () => {
-                  findBtn().click()
-                  toggle()
-                  setTimeout(() => {
-                    $.s('ytd-popup-container').style.opacity = ''
-                    previousActiveElement.focus()
-                  }, 1)
-                })
-              let previousActiveElement = document.activeElement
-              findBtn().click()
-            }
-          )
-        }
-      }
-    } catch (ex) {
-      console.error('YouTube Ambilight | Error while setting dark mode', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-      this.setDarkThemeBusy = false
-    }
-  }
-
   toggleEnabled(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.enabled
     if (enabled) {
@@ -2856,7 +2793,19 @@ class Ambilight {
   
   updateTheme = () => {
     const toTheme = ((!this.enabled || this.isHidden || this.theme === THEME_DEFAULT) ? this.originalTheme : this.theme)
-    this.setDarkTheme(toTheme === THEME_DARK)
+    const toDark = (toTheme === THEME_DARK)
+
+    try {
+      if (
+        !!html.getAttribute('dark') === toDark ||
+        (toDark && !isWatchPageUrl())
+      ) return
+
+      this.dispatchAction('yt-dark-mode-toggled-action')
+    } catch (ex) {
+      console.warn(`YouTube Ambilight | Failed to toggle to ${toDark ? 'dark' : 'light'} mode`)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
   }
 
   updateImmersiveMode() {
