@@ -243,7 +243,6 @@ html[data-ambilight-enabled="true"] {
       }
       #search-icon-legacy {
         transition: background-color .15s, border-color .15s;
-        background-color: var(--yt-spec-brand-background-primary) !important;
         yt-icon {
           transition: color .15s;
         }
