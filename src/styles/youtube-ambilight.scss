@@ -230,7 +230,6 @@ html[data-ambilight-enabled="true"] {
     ytd-searchbox {
       #search-form {
         transition: background-color .15s;
-        background-color: var(--yt-spec-brand-background-primary);
         #container.ytd-searchbox {
           border-right: none !important; // Fixes short flicker from white on input focus
         }
@@ -255,6 +254,9 @@ html[data-ambilight-enabled="true"] {
       #guide-icon.ytd-masthead,
       yt-icon.ytd-topbar-logo-renderer {
         color: #000;
+      }
+      #search-icon-legacy {
+        background-color: rgb(44,44,44) !important;
       }
       ytd-searchbox:not(:hover):not(:focus-within) {
         #search-form {
