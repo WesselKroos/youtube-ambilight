@@ -2668,26 +2668,6 @@ class Ambilight {
     this.hide()
   }
 
-  toggleDarkTheme() {
-    const detail = {
-      actionName: 'yt-dark-mode-toggled-action',
-      optionalAction: false,
-      args: [ false ],
-      disableBroadcast: false,
-      returnValue: []
-    }
-    const event = new CustomEvent('yt-action', {
-      currentTarget: document.querySelector('ytd-app'),
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail,
-      returnValue: true
-    })
-    const topbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer');
-    (topbarMenuBtn || document).dispatchEvent(event)
-  }
-
   toggleEnabled(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.enabled
     if (enabled) {
@@ -2793,7 +2773,10 @@ class Ambilight {
     }
   }
   
+  updateThemeScheduled = false
   updateTheme = () => {
+    if(this.updateThemeScheduled) return
+
     const toTheme = ((!this.enabled || this.isHidden || this.theme === THEME_DEFAULT) ? this.originalTheme : this.theme)
     const toDark = (toTheme === THEME_DARK)
 
@@ -2808,6 +2791,42 @@ class Ambilight {
       console.warn(`YouTube Ambilight | Failed to toggle to ${toDark ? 'dark' : 'light'} mode`)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
+  }
+
+  toggleDarkTheme() {
+    const detail = {
+      actionName: 'yt-dark-mode-toggled-action',
+      optionalAction: false,
+      args: [ false ],
+      disableBroadcast: false,
+      returnValue: []
+    }
+    const event = new CustomEvent('yt-action', {
+      currentTarget: document.querySelector('ytd-app'),
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail,
+      returnValue: true
+    })
+    const aTopbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer')
+    const wasDark = !!html.getAttribute('dark')
+    ;(aTopbarMenuBtn || document).dispatchEvent(event)
+    const isDark = !!html.getAttribute('dark')
+
+    if(wasDark !== isDark) return
+    
+    if(!aTopbarMenuBtn) {
+      console.warn('YouTube Ambilight | Failed to toggle dark mode. Retrying when a ytd-topbar-menu-button-renderer has been rendered')
+      this.updateThemeScheduled = true
+      waitForDomElement(() => document.querySelector('ytd-topbar-menu-button-renderer'), 'ytd-app', () => {
+        this.updateThemeScheduled = false
+        this.updateTheme()
+      })
+      return
+    }
+
+    throw new Error('Failed to toggle to dark mode while ytd-topbar-menu-button-renderer does exist')
   }
 
   updateImmersiveMode() {
