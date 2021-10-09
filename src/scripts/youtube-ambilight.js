@@ -1017,7 +1017,7 @@ class Ambilight {
       },
       {
         name: 'theme',
-        label: 'Appearance',
+        label: 'Appearance (theme)',
         type: 'list',
         manualinput: false,
         default: 1,
@@ -1028,8 +1028,7 @@ class Ambilight {
           { value: -1, label: 'Light'   },
           { value:  0, label: 'Default' },
           { value:  1, label: 'Dark'    },
-        ],
-        advanced: true
+        ]
       },
       {
         name: 'enableInFullscreen',
