@@ -2669,21 +2669,24 @@ class Ambilight {
     this.hide()
   }
 
-  dispatchAction(actionName) {
-    const eventDetail = {
-      actionName,
+  toggleDarkTheme() {
+    const detail = {
+      actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
       args: [ false ],
       disableBroadcast: false,
       returnValue: []
     }
     const event = new CustomEvent('yt-action', {
+      currentTarget: document.querySelector('ytd-app'),
       bubbles: true,
       cancelable: false,
       composed: true,
-      detail: eventDetail
+      detail,
+      returnValue: true
     })
-    document.dispatchEvent(event)
+    const topbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer');
+    (topbarMenuBtn || document).dispatchEvent(event)
   }
 
   toggleEnabled(enabled) {
@@ -2801,7 +2804,7 @@ class Ambilight {
         (toDark && !isWatchPageUrl())
       ) return
 
-      this.dispatchAction('yt-dark-mode-toggled-action')
+      this.toggleDarkTheme()
     } catch (ex) {
       console.warn(`YouTube Ambilight | Failed to toggle to ${toDark ? 'dark' : 'light'} mode`)
       AmbilightSentry.captureExceptionWithDetails(ex)
