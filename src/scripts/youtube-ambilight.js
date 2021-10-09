@@ -2809,15 +2809,21 @@ class Ambilight {
       detail,
       returnValue: true
     })
-    const aTopbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer')
     const wasDark = !!html.getAttribute('dark')
-    ;(aTopbarMenuBtn || document).dispatchEvent(event)
-    const isDark = !!html.getAttribute('dark')
-
-    if(wasDark !== isDark) return
+    const aTopbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer')
+    if (aTopbarMenuBtn) {
+      aTopbarMenuBtn.dispatchEvent(event)
+      const isDark = !!html.getAttribute('dark')
+      if(wasDark !== isDark) return
+    }
     
+    // Maybe the event listeners moved back to the document
+    document.dispatchEvent(event)
+    const isDark = !!html.getAttribute('dark')
+    if(wasDark !== isDark) return
+  
     if(!aTopbarMenuBtn) {
-      console.warn('YouTube Ambilight | Failed to toggle dark mode. Retrying when a ytd-topbar-menu-button-renderer has been rendered')
+      console.warn('YouTube Ambilight | Failed to toggle dark mode. Retrying once the ytd-topbar-menu-button-renderer has been rendered')
       this.updateThemeScheduled = true
       waitForDomElement(() => document.querySelector('ytd-topbar-menu-button-renderer'), 'ytd-app', () => {
         this.updateThemeScheduled = false
