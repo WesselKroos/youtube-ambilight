@@ -412,9 +412,22 @@ class Ambilight {
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', () => {
       if (!this.enabled || !this.isOnVideoPage) return
-      if(this.videoElem.getBoundingClientRect().top !== 0) return
-      
-      window.scrollTo(window.scrollX, 0)
+
+      const startTop = {
+        window: window.scrollY,
+        video: this.videoContainerElem?.getBoundingClientRect()?.top
+      };
+      raf(() => {
+        const endTop = {
+          window: window.scrollY,
+          video: this.videoContainerElem?.getBoundingClientRect()?.top
+        };
+        if(
+          startTop.window === endTop.window || 
+          endTop.video !== 0
+        ) return
+        window.scrollTo(window.scrollX, startTop.window)
+      })
     }, true)
 
     // Appearance (theme) changes initiated by the YouTube menu
