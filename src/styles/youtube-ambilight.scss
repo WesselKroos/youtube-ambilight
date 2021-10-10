@@ -345,7 +345,9 @@ html[data-ambilight-enabled="true"] {
   /* Cosmetics - Movie offer */ 
 
   #header.ytd-movie-offer-module-renderer,
-  #wide-clickable-area.ytd-movie-offer-module-renderer {
+  #wide-clickable-area.ytd-movie-offer-module-renderer,
+  ytd-tvfilm-offer-module-renderer,
+  #header.ytd-tvfilm-offer-module-renderer {
     background: rgba(0,0,0,.1);
   }
 
