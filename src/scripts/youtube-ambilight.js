@@ -414,19 +414,21 @@ class Ambilight {
       if (!this.enabled || !this.isOnVideoPage) return
 
       const startTop = {
-        window: window.scrollY,
+        window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
         video: this.videoContainerElem?.getBoundingClientRect()?.top
       };
       raf(() => {
         const endTop = {
-          window: window.scrollY,
+          window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
           video: this.videoContainerElem?.getBoundingClientRect()?.top
-        };
-        if(
-          startTop.window === endTop.window || 
-          endTop.video !== 0
-        ) return
-        window.scrollTo(window.scrollX, startTop.window)
+        }
+        if(startTop.window === endTop.window) return
+        
+        if(this.view === VIEW_FULLSCREEN) {
+          this.ytdAppElem.scrollTop = startTop.window
+        } else {
+          window.scrollTo(window.scrollX, startTop.window)
+        }
       })
     }, true)
 
