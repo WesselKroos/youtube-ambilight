@@ -423,6 +423,8 @@ class Ambilight {
       } else if(name === 'yt-signal-action-toggle-dark-theme-device') {
         this.originalTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? THEME_DARK : THEME_LIGHT
         this.updateTheme()
+      } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
+        this.updateLiveChatTheme()
       }
     })
 
@@ -2773,12 +2775,13 @@ class Ambilight {
     }
   }
   
-  updateThemeScheduled = false
-  updateTheme = () => {
-    if(this.updateThemeScheduled) return
-
+  shouldbeDarkTheme = () => {
     const toTheme = ((!this.enabled || this.isHidden || this.theme === THEME_DEFAULT) ? this.originalTheme : this.theme)
-    const toDark = (toTheme === THEME_DARK)
+    return (toTheme === THEME_DARK)
+  }
+
+  updateTheme = () => {
+    const toDark = this.shouldbeDarkTheme()
 
     try {
       if (
@@ -2794,10 +2797,12 @@ class Ambilight {
   }
 
   toggleDarkTheme() {
+    const wasDark = !!html.getAttribute('dark')
+
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
-      args: [ false ],
+      args: [ !wasDark ], // boolean for iframe live chat
       disableBroadcast: false,
       returnValue: []
     }
@@ -2810,12 +2815,22 @@ class Ambilight {
       returnValue: true
     })
 
-    const wasDark = !!html.getAttribute('dark')
     this.ytdAppElem.dispatchEvent(event)
     const isDark = !!html.getAttribute('dark')
-    if(wasDark !== isDark) return
+    if (wasDark === isDark) {
+      throw new Error('Failed to toggle dark mode')
+      return
+    }
+  }
 
-    throw new Error('Failed to toggle to dark mode while ytd-topbar-menu-button-renderer does exist')
+  updateLiveChatTheme() {
+    const liveChat = document.querySelector('ytd-live-chat-frame')
+    if (!liveChat) return
+
+    const toDark = this.shouldbeDarkTheme()
+    liveChat.postToContentWindow({
+      "yt-live-chat-set-dark-theme": toDark
+    })
   }
 
   updateImmersiveMode() {
