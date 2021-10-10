@@ -305,6 +305,7 @@ class Ambilight {
     //////
 
     on(this.videoElem, 'seeked', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       // When the video is paused this is the first event. Else [loadeddata] is first
       if (this.initVideoIfSrcChanged()) return
 
@@ -312,23 +313,28 @@ class Ambilight {
       this.optionalFrame()
     })
     on(this.videoElem, 'loadeddata', (e) => {
+      if (!this.enabled || !this.isOnVideoPage) return
       // Whent the video is playing this is the first event. Else [seeked] is first
       this.initVideoIfSrcChanged()
     })
     on(this.videoElem, 'playing', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       if (this.videoElem.paused) return // When paused handled by [seeked]
       this.optionalFrame()
     })
     on(this.videoElem, 'ended', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.clear()
       this.scheduledNextFrame = false
       this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
     })
     on(this.videoElem, 'emptied', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.clear()
       this.scheduledNextFrame = false
     })
     on(this.videoElem, 'error', (ex) => {
+      if (!this.enabled || !this.isOnVideoPage) return
       console.error('Video error:', ex)
     })
 
@@ -405,6 +411,7 @@ class Ambilight {
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       if(this.videoElem.getBoundingClientRect().top !== 0) return
       
       window.scrollTo(window.scrollX, 0)
@@ -413,6 +420,7 @@ class Ambilight {
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = html.getAttribute('dark') ? 1 : -1
     on(document, 'yt-action', (e) => {
+      if (!this.enabled) return
       const name = e?.detail?.actionName
       if (name === 'yt-signal-action-toggle-dark-theme-off') {
         this.originalTheme = THEME_LIGHT
@@ -424,6 +432,7 @@ class Ambilight {
         this.originalTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? THEME_DARK : THEME_LIGHT
         this.updateTheme()
       } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
+        if (!this.isOnVideoPage) return
         this.updateLiveChatTheme()
       }
     })
@@ -432,6 +441,7 @@ class Ambilight {
     // Because when seeking to the end the ended event is not fired from the videoElem
     if (this.videoPlayerElem) {
       on(this.videoPlayerElem, 'onStateChange', (state) => {
+        if (!this.enabled || !this.isOnVideoPage) return
         this.isBuffering = (state === 3)
 
         if(!this.isBuffering)
