@@ -2809,28 +2809,11 @@ class Ambilight {
       detail,
       returnValue: true
     })
+
     const wasDark = !!html.getAttribute('dark')
-    const aTopbarMenuBtn = document.querySelector('ytd-topbar-menu-button-renderer')
-    if (aTopbarMenuBtn) {
-      aTopbarMenuBtn.dispatchEvent(event)
-      const isDark = !!html.getAttribute('dark')
-      if(wasDark !== isDark) return
-    }
-    
-    // Maybe the event listeners moved back to the document
-    document.dispatchEvent(event)
+    this.ytdAppElem.dispatchEvent(event)
     const isDark = !!html.getAttribute('dark')
     if(wasDark !== isDark) return
-  
-    if(!aTopbarMenuBtn) {
-      console.warn('YouTube Ambilight | Failed to toggle dark mode. Retrying once the ytd-topbar-menu-button-renderer has been rendered')
-      this.updateThemeScheduled = true
-      waitForDomElement(() => document.querySelector('ytd-topbar-menu-button-renderer'), 'ytd-app', () => {
-        this.updateThemeScheduled = false
-        this.updateTheme()
-      })
-      return
-    }
 
     throw new Error('Failed to toggle to dark mode while ytd-topbar-menu-button-renderer does exist')
   }
