@@ -305,6 +305,7 @@ class Ambilight {
     //////
 
     on(this.videoElem, 'seeked', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       // When the video is paused this is the first event. Else [loadeddata] is first
       if (this.initVideoIfSrcChanged()) return
 
@@ -312,23 +313,28 @@ class Ambilight {
       this.optionalFrame()
     })
     on(this.videoElem, 'loadeddata', (e) => {
+      if (!this.enabled || !this.isOnVideoPage) return
       // Whent the video is playing this is the first event. Else [seeked] is first
       this.initVideoIfSrcChanged()
     })
     on(this.videoElem, 'playing', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       if (this.videoElem.paused) return // When paused handled by [seeked]
       this.optionalFrame()
     })
     on(this.videoElem, 'ended', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.clear()
       this.scheduledNextFrame = false
       this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
     })
     on(this.videoElem, 'emptied', () => {
+      if (!this.enabled || !this.isOnVideoPage) return
       this.clear()
       this.scheduledNextFrame = false
     })
     on(this.videoElem, 'error', (ex) => {
+      if (!this.enabled || !this.isOnVideoPage) return
       console.error('Video error:', ex)
     })
 
@@ -363,7 +369,7 @@ class Ambilight {
       const detectHorizontalBarSizeEnabledKey = this.settings.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
       const detectVideoFillScaleEnabledKey = this.settings.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
       
-      const key = e.key.toUpperCase()
+      const key = e.key?.toUpperCase()
       if (key === immersiveKey) // z by default
         this.toggleImmersiveMode()
       if (key === detectHorizontalBarSizeEnabledKey) // b by default
@@ -405,14 +411,31 @@ class Ambilight {
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', () => {
-      if(this.videoElem.getBoundingClientRect().top !== 0) return
-      
-      window.scrollTo(window.scrollX, 0)
+      if (!this.enabled || !this.isOnVideoPage) return
+
+      const startTop = {
+        window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+        video: this.videoContainerElem?.getBoundingClientRect()?.top
+      };
+      raf(() => {
+        const endTop = {
+          window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+          video: this.videoContainerElem?.getBoundingClientRect()?.top
+        }
+        if(startTop.window === endTop.window) return
+        
+        if(this.view === VIEW_FULLSCREEN) {
+          this.ytdAppElem.scrollTop = startTop.window
+        } else {
+          window.scrollTo(window.scrollX, startTop.window)
+        }
+      })
     }, true)
 
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = html.getAttribute('dark') ? 1 : -1
-    document.addEventListener('yt-action', (e) => {
+    on(document, 'yt-action', (e) => {
+      if (!this.enabled) return
       const name = e?.detail?.actionName
       if (name === 'yt-signal-action-toggle-dark-theme-off') {
         this.originalTheme = THEME_LIGHT
@@ -423,13 +446,17 @@ class Ambilight {
       } else if(name === 'yt-signal-action-toggle-dark-theme-device') {
         this.originalTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? THEME_DARK : THEME_LIGHT
         this.updateTheme()
+      } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
+        if (!this.isOnVideoPage) return
+        this.updateLiveChatTheme()
       }
-    })
+    }, undefined, undefined, true)
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
     if (this.videoPlayerElem) {
       on(this.videoPlayerElem, 'onStateChange', (state) => {
+        if (!this.enabled || !this.isOnVideoPage) return
         this.isBuffering = (state === 3)
 
         if(!this.isBuffering)
@@ -1017,7 +1044,7 @@ class Ambilight {
       },
       {
         name: 'theme',
-        label: 'Appearance',
+        label: 'Appearance (theme)',
         type: 'list',
         manualinput: false,
         default: 1,
@@ -1028,8 +1055,7 @@ class Ambilight {
           { value: -1, label: 'Light'   },
           { value:  0, label: 'Default' },
           { value:  1, label: 'Dark'    },
-        ],
-        advanced: true
+        ]
       },
       {
         name: 'enableInFullscreen',
@@ -2237,9 +2263,9 @@ class Ambilight {
 
     // Video synced
     if (this.videoOverlayEnabled) {
-      this.videoSyncedElem.textContent = `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}`
-      this.videoSyncedElem.style.color = this.videoOverlay.isHidden ? '#f55' : '#7f7'
-      this.detectVideoSyncedWasHidden = this.videoOverlay.isHidden
+      this.videoSyncedElem.textContent = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
+      this.videoSyncedElem.style.color = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
+      this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
     } else {
       this.videoSyncedElem.textContent = ''
     }
@@ -2669,86 +2695,6 @@ class Ambilight {
     this.hide()
   }
 
-  dispatchAction(actionName) {
-    const eventDetail = {
-      actionName,
-      optionalAction: false,
-      args: [ false ],
-      disableBroadcast: false,
-      returnValue: []
-    }
-    const event = new CustomEvent('yt-action', {
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail: eventDetail
-    })
-    document.dispatchEvent(event)
-  }
-
-  setDarkTheme(value) {
-    try {
-      if (this.setDarkThemeBusy) return
-      if (!!html.getAttribute('dark') === value) return
-      if (value && !isWatchPageUrl()) return
-      this.setDarkThemeBusy = true
-
-      try {
-        this.dispatchAction('yt-dark-mode-toggled-action')
-        this.setDarkThemeBusy = false
-      } catch (ex) {
-        console.warn('YouTube Ambilight | Error while toggling dark mode. Trying alternative method', ex)
-        AmbilightSentry.captureExceptionWithDetails(ex)
-
-        const toggle = (rendererElem) => {
-          rendererElem = rendererElem || $.s('ytd-toggle-theme-compact-link-renderer')
-          if (value) {
-            rendererElem.handleSignalActionToggleDarkThemeOn()
-          } else {
-            rendererElem.handleSignalActionToggleDarkThemeOff()
-          }
-          this.setDarkThemeBusy = false
-        }
-
-        const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-        if (rendererElem) {
-          toggle(rendererElem)
-        } else {
-          const findBtn = () => $.s('#avatar-btn') || // When logged in
-            $.s('.ytd-masthead#buttons ytd-topbar-menu-button-renderer:last-of-type') // When not logged in
-
-          $.s('ytd-popup-container').style.opacity = 0
-          waitForDomElement(
-            findBtn,
-            'ytd-masthead',
-            () => {
-              waitForDomElement(
-                () => {
-                  const rendererElem = $.s('ytd-toggle-theme-compact-link-renderer')
-                  return (rendererElem && rendererElem.handleSignalActionToggleDarkThemeOn)
-                },
-                'ytd-popup-container',
-                () => {
-                  findBtn().click()
-                  toggle()
-                  setTimeout(() => {
-                    $.s('ytd-popup-container').style.opacity = ''
-                    previousActiveElement.focus()
-                  }, 1)
-                })
-              let previousActiveElement = document.activeElement
-              findBtn().click()
-            }
-          )
-        }
-      }
-    } catch (ex) {
-      console.error('YouTube Ambilight | Error while setting dark mode', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-      this.setDarkThemeBusy = false
-    }
-  }
-
   toggleEnabled(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.enabled
     if (enabled) {
@@ -2854,9 +2800,61 @@ class Ambilight {
     }
   }
   
-  updateTheme = () => {
+  shouldbeDarkTheme = () => {
     const toTheme = ((!this.enabled || this.isHidden || this.theme === THEME_DEFAULT) ? this.originalTheme : this.theme)
-    this.setDarkTheme(toTheme === THEME_DARK)
+    return (toTheme === THEME_DARK)
+  }
+
+  updateTheme = wrapErrorHandler(function updateTheme() {
+    const toDark = this.shouldbeDarkTheme()
+    try {
+      if (
+        !!html.getAttribute('dark') === toDark ||
+        (toDark && !isWatchPageUrl())
+      ) return
+
+      this.toggleDarkTheme()
+    } catch (ex) {
+      console.warn(`YouTube Ambilight | Failed to toggle to ${toDark ? 'dark' : 'light'} mode`)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }.bind(this), true)
+
+  toggleDarkTheme() {
+    const wasDark = !!html.getAttribute('dark')
+
+    const detail = {
+      actionName: 'yt-dark-mode-toggled-action',
+      optionalAction: false,
+      args: [ !wasDark ], // boolean for iframe live chat
+      disableBroadcast: false,
+      returnValue: []
+    }
+    const event = new CustomEvent('yt-action', {
+      currentTarget: document.querySelector('ytd-app'),
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail,
+      returnValue: true
+    })
+
+    this.ytdAppElem.dispatchEvent(event)
+    const isDark = !!html.getAttribute('dark')
+    if (wasDark === isDark) {
+      throw new Error('Failed to toggle dark mode')
+      return
+    }
+  }
+
+  updateLiveChatTheme() {
+    const liveChat = document.querySelector('ytd-live-chat-frame')
+    if (!liveChat) return
+
+    const toDark = this.shouldbeDarkTheme()
+    liveChat.postToContentWindow({
+      "yt-live-chat-set-dark-theme": toDark
+    })
   }
 
   updateImmersiveMode() {
@@ -3130,7 +3128,7 @@ class Ambilight {
         })
         on(keyElem, 'keypress', (e) => {
           if(e.key.length === 1) {
-            const key = e.key.toUpperCase()
+            const key = e.key?.toUpperCase()
             this.setSettingKey(setting.name, key)
             keyElem.textContent = key
           } else {
@@ -3744,7 +3742,7 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
 
 const ambilightDetectPageTransitions = (ytdAppElem) => {
   const navigationManager = document.querySelector('yt-navigation-manager')
-  navigationManager.addEventListener('yt-navigate-finish', () => {
+  on(navigationManager, 'yt-navigate-finish', () => {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       ambilightStartIfWatchPageHasVideo(ytdAppElem)
@@ -3757,7 +3755,7 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
         window.ambilight.hide()
       }
     }
-  });
+  }, undefined, undefined, true);
 }
 
 const loadAmbilight = () => {
@@ -3796,13 +3794,11 @@ const loadAmbilight = () => {
   })
 }
 
-const onLoad = () => {
-  requestIdleCallback(function onLoad() {
-    if(window.ambilight) return
-      
-    loadAmbilight()
-  }, { timeout: 5000 })
-}
+const onLoad = () => requestIdleCallback(function onLoad() {
+  if(window.ambilight) return
+    
+  loadAmbilight()
+}, { timeout: 5000 })
 
 try {
   if(document.readyState === 'complete') {

@@ -137,8 +137,12 @@ html[data-ambilight-enabled="true"] {
     ytd-masthead {
       background: none !important;
     }
-    #voice-search-button:not(:hover):not(:focus-within) {
-      opacity: .25;
+    #voice-search-button {
+      background: none;
+      transition: opacity .15s;
+      &:not(:hover):not(:focus-within) {
+        opacity: .4;
+      }
     }
   }
 
@@ -218,48 +222,100 @@ html[data-ambilight-enabled="true"] {
 
   /* Cosmetics - Search */
 
-  ytd-app {
-    #search-form {
-      transition: background-color .15s;
-      background-color: var(--yt-spec-brand-background-primary);
-      > * {
-        transition: background-color .15s, border-color .15s, color .15s, fill .15s;
+  ytd-app #masthead-container {
+    #guide-icon.ytd-masthead,
+    yt-icon.ytd-topbar-logo-renderer,
+    #country-code.ytd-topbar-logo-renderer {
+      transition: color .15s;
+    }
+  }
+
+  ytd-searchbox {
+    #container.ytd-searchbox,
+    #search-icon-legacy {
+      transition: background-color .15s, border-color .15s, color .15s, fill .15s;
+    }
+    #container.ytd-searchbox {
+      // Fix short flicker from white on input focus
+      border-right: none !important;
+      box-shadow: none !important;
+    }
+    #search,
+    #search::-webkit-input-placeholder,
+    #search-clear-button yt-icon,
+    #search-icon-legacy yt-icon {
+      transition: color .15s;
+    }
+    .gsst_e {
+      transition: opacity .15s, filter .15s;
+    }
+  }
+
+  #masthead-container.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
+    opacity: .3;
+  }
+
+  // Body light & search light & at top
+  &:not([dark="true"]) #masthead-container.at-top {
+    --yt-button-color: #000;
+    #guide-icon.ytd-masthead,
+    yt-icon.ytd-topbar-logo-renderer {
+      color: #000;
+    }
+    #country-code.ytd-topbar-logo-renderer {
+      color: rgba(20, 20, 20, 0.75);
+    }
+
+    ytd-searchbox:not(:hover):not(:focus-within) {
+      #container.ytd-searchbox,
+      #search-icon-legacy {
+        background-color: transparent !important;
+        border-color: rgba(0,0,0,.2) !important;
       }
-      #search::-webkit-input-placeholder {
-        transition: color .15s;
+      #search,
+      #search::-webkit-input-placeholder,
+      #search-clear-button yt-icon,
+      #search-icon-legacy yt-icon {
+        color: rgba(0,0,0,.4) !important;
       }
     }
-    #masthead-container.at-top {
-      #search-form:not(:hover):not(:focus-within) {
-        background-color: transparent;
-        #container.ytd-searchbox {
-          box-shadow: none !important;
+
+    ytd-masthead[dark] ytd-searchbox {
+      &:not(:hover):not(:focus-within) .gsst_e {
+        filter: none;
+      }
+      
+      &:hover,
+      &:focus-within {
+        #search-icon-legacy {
+          background-color: rgb(44,44,44) !important;
         }
-        
-        > * {
-          background-color: transparent !important;
-          border-color: rgba(0,0,0,.15) !important;
-          color: rgba(0,0,0,.15) !important;
-          fill: rgba(0,0,0,.15) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(0,0,0,.15) !important;
+        #search-clear-button yt-icon {
+          color: rgba(255,255,255) !important;
         }
       }
     }
   }
-  &[dark="true"] ytd-app {
-    #masthead-container.at-top {
-      #search-form:not(:hover):not(:focus-within) {
-        > * {
-          background-color: transparent !important;
-          border-color: rgba(255,255,255,.15) !important;
-          color: rgba(255,255,255,.15) !important;
-          fill: rgba(255,255,255,.15) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(255,255,255,.15) !important;
-        }
+
+  &[dark="true"] #masthead-container.at-top ytd-searchbox {
+    &:not(:hover):not(:focus-within) {
+      #container.ytd-searchbox,
+      #search-icon-legacy {
+        background-color: transparent !important;
+        border-color: rgba(255,255,255,.2) !important;
+      }
+      #search,
+      #search::-webkit-input-placeholder,
+      #search-clear-button yt-icon,
+      #search-icon-legacy yt-icon {
+        color: rgba(255,255,255,.4) !important;
+      }
+    }
+    
+    &:hover,
+    &:focus-within {
+      #search-icon-legacy {
+        background-color: rgb(44,44,44) !important;
       }
     }
   }
@@ -289,7 +345,9 @@ html[data-ambilight-enabled="true"] {
   /* Cosmetics - Movie offer */ 
 
   #header.ytd-movie-offer-module-renderer,
-  #wide-clickable-area.ytd-movie-offer-module-renderer {
+  #wide-clickable-area.ytd-movie-offer-module-renderer,
+  ytd-tvfilm-offer-module-renderer,
+  #header.ytd-tvfilm-offer-module-renderer {
     background: rgba(0,0,0,.1);
   }
 
@@ -1383,23 +1441,26 @@ html[data-ambilight-enabled="true"] {
     font-size: 30px;
   }
 
+  .ytp-bezel-icon {
+    position: relative;
+  }
+
   &--strike .ytp-bezel-icon::before {
     content: '';
-    background: #fff;
-    width: 36px;
-    height: 3px;
-    transform: rotate(-45deg);
     display: block;
     position: absolute;
-    margin-top: 19px;
-    margin-left: 2px;
+    width: 80%;
+    height: 3px;
+    margin: 0;
+    top: calc(50% - 1.5px);
+    left: 10%;
     outline: 3px solid #111;
+    transform: rotate(-45deg);
+    background: #fff;
 
     .ytp-fullscreen & {
-      margin-top: 27px;
-      margin-left: 3px;
       height: 4px;
-      width: 48px;
+      top: calc(50% - 2px);
     }
   }
 }
