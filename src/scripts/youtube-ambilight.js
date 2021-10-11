@@ -2805,9 +2805,8 @@ class Ambilight {
     return (toTheme === THEME_DARK)
   }
 
-  updateTheme = () => {
+  updateTheme = wrapErrorHandler(function updateTheme() {
     const toDark = this.shouldbeDarkTheme()
-
     try {
       if (
         !!html.getAttribute('dark') === toDark ||
@@ -2819,7 +2818,7 @@ class Ambilight {
       console.warn(`YouTube Ambilight | Failed to toggle to ${toDark ? 'dark' : 'light'} mode`)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
-  }
+  }.bind(this), true)
 
   toggleDarkTheme() {
     const wasDark = !!html.getAttribute('dark')
