@@ -450,7 +450,7 @@ class Ambilight {
         if (!this.isOnVideoPage) return
         this.updateLiveChatTheme()
       }
-    })
+    }, undefined, undefined, true)
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
@@ -3756,7 +3756,7 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
         window.ambilight.hide()
       }
     }
-  });
+  }, undefined, undefined, true);
 }
 
 const loadAmbilight = () => {

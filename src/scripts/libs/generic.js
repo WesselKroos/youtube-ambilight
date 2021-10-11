@@ -47,14 +47,19 @@ export const setTimeout = (handler, timeout) => {
   return window.setTimeout(wrapErrorHandler(handler), timeout)
 }
 
-export function on(elem, eventNames, callback, options, getListenerCallback) {
+export function on(elem, eventNames, callback, options, getListenerCallback, reportOnce = false) {
   const stack = new Error().stack
   const callbacksName = `on_${eventNames.split(' ').join('_')}`
+  let reported = [];
   const namedCallbacks = {
     [callbacksName]: (...args) => {
       try {
         callback(...args)
       } catch(ex) {
+        if(reportOnce) {
+          if(reported.includes(ex.message)) return
+          reported.push(ex.message)
+        }
         const e = args[0]
         let elem = {}
         if(e && e.currentTarget) {
