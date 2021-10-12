@@ -292,9 +292,11 @@ export default class AmbilightSentry {
             'getImageDataAllowed',
           ]
           keys.forEach(key => {
-            let value = ambilight
-            key.split('.').forEach(key => value = value[key]) // Find multi depth values
-            ambilightExtra[key] = value
+            try {
+              let value = ambilight
+              key.split('.').forEach(key => value = value[key]) // Find multi depth values
+              ambilightExtra[key] = value
+            } catch() {}
           })
         }
         setExtra('Ambilight', ambilightExtra)
