@@ -296,7 +296,7 @@ export default class AmbilightSentry {
               let value = ambilight
               key.split('.').forEach(key => value = value[key]) // Find multi depth values
               ambilightExtra[key] = value
-            } catch() {}
+            } catch (ex) {}
           })
         }
         setExtra('Ambilight', ambilightExtra)
