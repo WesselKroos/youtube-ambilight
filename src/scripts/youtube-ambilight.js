@@ -153,11 +153,11 @@ class Ambilight {
               return
             }
 
-            entries.forEach(entry => {
+            for (const entry of entries) {
               this.videoIsHidden = (entry.intersectionRatio === 0)
               this.videoVisibilityChangeTime = performance.now()
               this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-            })
+            }
           },
           {
             threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
@@ -515,9 +515,13 @@ class Ambilight {
       $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
     ].filter(setting => setting)
     if(this.getImageDataAllowed) {
-      settings.forEach(setting => setting.style.display = '')
+      for (const setting of settings) {
+        setting.style.display = ''
+      }
     } else {
-      settings.forEach(setting => setting.style.display = 'none')
+      for (const setting of settings) {
+        setting.style.display = 'none'
+      }
     }
   }
 
@@ -532,7 +536,7 @@ class Ambilight {
     
     this.topElemObserver = new IntersectionObserver(
       (entries, observer) => {
-        entries.forEach(entry => {
+        for (const entry of entries) {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
 
@@ -541,7 +545,7 @@ class Ambilight {
             this.buffersCleared = true
             this.optionalFrame()
           }
-        })
+        }
       },
       {
         threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
@@ -592,12 +596,12 @@ class Ambilight {
     if(!this.shadowObserver) {
       this.shadowObserver = new IntersectionObserver(
         (entries, observer) => {
-          entries.forEach(entry => {
+          for (const entry of entries) {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
             if(this.isAmbilightHiddenOnWatchPage) return
             
             this.optionalFrame()
-          })
+          }
         },
         {
           threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
@@ -1192,13 +1196,13 @@ class Ambilight {
     this.videoShadowSize = this.getSetting('videoShadowSize')
     this.videoShadowOpacity = this.getSetting('videoShadowOpacity')
 
-    this.settings.forEach(setting => {
+    for (const setting of this.settings) {
       setting.value = this[setting.name]
       if(setting.defaultKey !== undefined) {
         const key = this.getSettingKey(setting.name)
         setting.key = (key !== null) ? key : setting.defaultKey
       }
-    })
+    }
   }
 
   initFPSListElem() {
@@ -1209,27 +1213,27 @@ class Ambilight {
 
     this.displayFPSElem = document.createElement('div')
     this.displayFPSElem.classList.add('ambilight__display-fps')
-    this.FPSListElem.prepend(this.displayFPSElem)
-
-    this.ambilightDroppedFramesElem = document.createElement('div')
-    this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
-    this.FPSListElem.prepend(this.ambilightDroppedFramesElem)
-
-    this.ambilightFPSElem = document.createElement('div')
-    this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
-    this.FPSListElem.prepend(this.ambilightFPSElem)
-
-    this.videoSyncedElem = document.createElement('div')
-    this.videoSyncedElem.classList.add('ambilight__video-synced')
-    this.FPSListElem.prepend(this.videoSyncedElem)
-
-    this.videoDroppedFramesElem = document.createElement('div')
-    this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
-    this.FPSListElem.prepend(this.videoDroppedFramesElem)
+    this.FPSListElem.append(this.displayFPSElem)
 
     this.videoFPSElem = document.createElement('div')
     this.videoFPSElem.classList.add('ambilight__video-fps')
-    this.FPSListElem.prepend(this.videoFPSElem)
+    this.FPSListElem.append(this.videoFPSElem)
+
+    this.videoDroppedFramesElem = document.createElement('div')
+    this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
+    this.FPSListElem.append(this.videoDroppedFramesElem)
+
+    this.videoSyncedElem = document.createElement('div')
+    this.videoSyncedElem.classList.add('ambilight__video-synced')
+    this.FPSListElem.append(this.videoSyncedElem)
+
+    this.ambilightFPSElem = document.createElement('div')
+    this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
+    this.FPSListElem.append(this.ambilightFPSElem)
+
+    this.ambilightDroppedFramesElem = document.createElement('div')
+    this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
+    this.FPSListElem.append(this.ambilightDroppedFramesElem)
 
     this.videoPlayerElem.prepend(this.FPSListElem)
   }
@@ -1378,10 +1382,10 @@ class Ambilight {
         canvasses.push(this.previousVideoOverlayBuffer)
       }
     }
-    canvasses.forEach(({ ctx, elem }) => {
-      // ctx.clearRect(0, 0, elem.width, elem.height)
-      elem.width = 1;
-    })
+    for (const canvas of canvasses) {
+      // canvas.ctx.clearRect(0, 0, canvas.elem.width, canvas.elem.height)
+      canvas.elem.width = 1;
+    }
 
     this.buffersCleared = true
     this.sizesInvalidated = true
@@ -1587,12 +1591,12 @@ class Ambilight {
       ${(this.saturation != 100) ? `saturate(${this.saturation}%)` : ''}
     `.trim()
 
-    this.projectors.forEach((projector) => {
+    for (const projector of this.projectors) {
       if (projector.elem.width !== this.p.w)
         projector.elem.width = this.p.w
       if (projector.elem.height !== this.p.h)
         projector.elem.height = this.p.h
-    })
+    }
 
     this.projectorBuffer.elem.width = this.p.w
     this.projectorBuffer.elem.height = this.p.h
@@ -1765,7 +1769,8 @@ class Ambilight {
 
     const scaleStep = this.edge / 100
 
-    this.projectors.forEach((projector, i) => {
+    for (const i in this.projectors) {
+      const projector = this.projectors[i]
       const pos = i - this.innerStrength
       let scaleX = 1
       let scaleY = 1
@@ -1785,7 +1790,7 @@ class Ambilight {
       lastScale.y = scaleY
       
       projector.elem.style.transform = `scale(${Math.max(minScale.x, scaleX)}, ${Math.max(minScale.y, scaleY)})`
-    })
+    }
 
     this.shadow.elem.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
     this.shadow.ctx.clearRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
@@ -1815,18 +1820,23 @@ class Ambilight {
 
       let gradientStops = []
       gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
-      keyframes.forEach((e, i) => {
+      for (const i in keyframes) {
+        const e = keyframes[i]
         gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`])
-      })
+      }
       gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
       gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
-      keyframes.reverse().forEach((e, i) => {
+      keyframes.reverse()
+      for (const i in keyframes) {
+        const e = keyframes[i]
         gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`])
-      })
+      }
       gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
       gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
-      gradientStops.forEach(args => gradient.addColorStop(...args))
+      for (const gs of gradientStops) {
+        gradient.addColorStop(...gs)
+      }
       this.shadow.ctx.fillStyle = gradient
       this.shadow.ctx.fillRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
     }
@@ -2260,38 +2270,51 @@ class Ambilight {
   updateStats() {
     if (!this.showFPS || this.isHidden) return;
 
+    // Display FPS
+    const displayFPSText = `DISPLAY: ${this.displayFrameRate.toFixed(2)} ${this.displayFrameRate ? `(${(1000/this.displayFrameRate).toFixed(2)}ms)` : ''}`
+    const displayFPSColor = (this.displayFrameRate < this.videoFrameRate - 1)
+      ? '#f55'
+      : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+
     // Video FPS
-    this.videoFPSElem.textContent = `VIDEO: ${this.videoFrameRate.toFixed(2)}`
+    const videoFPSText = `VIDEO: ${this.videoFrameRate.toFixed(2)} ${this.videoFrameRate ? `(${(1000/this.videoFrameRate).toFixed(2)}ms)` : ''}`
 
     // Video dropped frames
     const videoDroppedFrameCount = this.getVideoDroppedFrameCount()
-    this.videoDroppedFramesElem.textContent = `VIDEO DROPPED: ${videoDroppedFrameCount}`
-    this.videoDroppedFramesElem.style.color = (videoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+    const videoDroppedFramesText = `VIDEO DROPPED: ${videoDroppedFrameCount}`
+    const videoDroppedFramesColor = (videoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Video synced
+    let videoSyncedText = '';
+    let videoSyncedColor = '#f55';
     if (this.videoOverlayEnabled) {
-      this.videoSyncedElem.textContent = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
-      this.videoSyncedElem.style.color = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
+      videoSyncedText = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
+      videoSyncedColor = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
       this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
-    } else {
-      this.videoSyncedElem.textContent = ''
     }
 
     // Ambilight FPS
-    this.ambilightFPSElem.textContent = `AMBILIGHT: ${this.ambilightFrameRate.toFixed(2)}`
-    this.ambilightFPSElem.style.color = (this.ambilightFrameRate < this.videoFrameRate * .9)
+    const ambilightFPSText = `AMBILIGHT: ${this.ambilightFrameRate.toFixed(2)} ${this.ambilightFrameRate ? `(${(1000/this.ambilightFrameRate).toFixed(2)}ms)` : ''}`
+    const ambilightFPSColor = (this.ambilightFrameRate < this.videoFrameRate * .9)
       ? '#f55'
       : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
 
     // Ambilight dropped frames
-    this.ambilightDroppedFramesElem.textContent = `AMBILIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
-    this.ambilightDroppedFramesElem.style.color = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
-    
-    // Display FPS
-    this.displayFPSElem.textContent = `DISPLAY: ${this.displayFrameRate.toFixed(2)}`
-    this.displayFPSElem.style.color = (this.displayFrameRate < this.videoFrameRate - 1)
-      ? '#f55'
-      : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+    const ambilightDroppedFramesText = `AMBILIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
+    const ambilightDroppedFramesColor = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+
+    // Render all stats
+    this.displayFPSElem.style.color = displayFPSColor
+    this.displayFPSElem.textContent = displayFPSText
+    this.videoFPSElem.textContent = videoFPSText
+    this.videoDroppedFramesElem.textContent = videoDroppedFramesText
+    this.videoDroppedFramesElem.style.color = videoDroppedFramesColor
+    this.videoSyncedElem.textContent = videoSyncedText
+    this.videoSyncedElem.style.color = videoSyncedColor
+    this.ambilightFPSElem.textContent = ambilightFPSText
+    this.ambilightFPSElem.style.color = ambilightFPSColor
+    this.ambilightDroppedFramesElem.textContent = ambilightDroppedFramesText
+    this.ambilightDroppedFramesElem.style.color = ambilightDroppedFramesColor
   }
 
   drawAmbilight() {
@@ -2551,7 +2574,7 @@ class Ambilight {
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
-        //   for(const projector of this.projectors) {
+        //   for (const projector of this.projectors) {
         //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
         //   }
         // }
@@ -3031,22 +3054,20 @@ class Ambilight {
       if(!confirm('Are you sure you want to reset ALL the settings?')) return
       
       // Reset values
-      this.settingsMenuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]').forEach(input => {
+      for (const input of this.settingsMenuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]')) {
         input.dispatchEvent(new Event('contextmenu'))
-      })
+      }
 
       // Reset keys
-      this.settings
-        .filter(setting => setting.key)
-        .forEach(setting => {
+      for (const setting of this.settings.filter(setting => setting.key)) {
           // this.setSettingKey(setting.name, setting.key)
           const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
           }))
-        })
+        }
     })
-    this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label').forEach(label => {
+    for (const label of this.settingsMenuElem.querySelectorAll('.setting-range-datalist__label')) {
       on(label, 'click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
@@ -3054,8 +3075,8 @@ class Ambilight {
         inputElem.value = value
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
-    })
-    this.settingsMenuElem.querySelectorAll('.ytpa-section').forEach(section => {
+    }
+    for (const section of this.settingsMenuElem.querySelectorAll('.ytpa-section')) {
       on(section, 'click', (e) => {
         const name = section.getAttribute('data-name')
         const settingSection = this.settings.find(setting => setting.type == 'section' && setting.name == name)
@@ -3069,7 +3090,7 @@ class Ambilight {
           section.classList.remove('is-collapsed')
         }
       })
-    })
+    }
     
     on(this.settingsMenuElem, 'mousemove click dblclick contextmenu touchstart touchmove touchend', (e) => {
       e.stopPropagation()
@@ -3106,9 +3127,9 @@ class Ambilight {
     this.settingsBezelTextElem = this.settingsBezelElem.querySelector('text')
     this.settingsMenuElemParent.prepend(this.settingsBezelElem)
 
-    this.settings.forEach(setting => {
+    for (const setting of this.settings) {
       const settingElem = $.s(`#setting-${setting.name}`)
-      if (!settingElem) return
+      if (!settingElem) continue
       
       const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
       if (keyElem) {
@@ -3360,7 +3381,7 @@ class Ambilight {
           this.optionalFrame()
         })
       }
-    })
+    }
 
     this.updateControlledSettings()
   }
