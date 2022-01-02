@@ -338,6 +338,13 @@ class Ambilight {
       console.error('Video error:', ex)
     })
 
+    on(this.videoElem, 'click', (e) => {
+      if(!this.onCloseSettingsListener) return;
+
+      e.stopPropagation()
+      this.onCloseSettings(e)
+    })
+
     on(document, 'visibilitychange', () => {
       if (!this.enabled || !this.isOnVideoPage) return
       if(document.visibilityState !== 'hidden') return
@@ -3455,6 +3462,7 @@ class Ambilight {
     }
 
     off(body, 'click', this.onCloseSettingsListener)
+    this.onCloseSettingsListener = undefined
     setTimeout(() => {
       on(this.settingsMenuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
