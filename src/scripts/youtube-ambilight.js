@@ -146,7 +146,7 @@ class Ambilight {
       this.videoIsHidden = false
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
-          (entries, observer) => {
+          wrapErrorHandler((entries, observer) => {
             // Disconnect when ambilight crashed on initialization to avoid invalid error reports
             if(!window.ambilight) {
               observer.disconnect()
@@ -158,7 +158,7 @@ class Ambilight {
               this.videoVisibilityChangeTime = performance.now()
               this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
             }
-          },
+          }, true),
           {
             threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
           }
@@ -535,7 +535,7 @@ class Ambilight {
     body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
-      (entries, observer) => {
+      wrapErrorHandler((entries, observer) => {
         for (const entry of entries) {
           this.atTop = (entry.intersectionRatio !== 0)
           this.checkScrollPosition()
@@ -546,7 +546,7 @@ class Ambilight {
             this.optionalFrame()
           }
         }
-      },
+      }, true),
       {
         threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
       }
@@ -595,14 +595,14 @@ class Ambilight {
     }
     if(!this.shadowObserver) {
       this.shadowObserver = new IntersectionObserver(
-        (entries, observer) => {
+        wrapErrorHandler((entries, observer) => {
           for (const entry of entries) {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
-            if(this.isAmbilightHiddenOnWatchPage) return
+            if(this.isAmbilightHiddenOnWatchPage) continue
             
             this.optionalFrame()
           }
-        },
+        }, true),
         {
           threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
         }
