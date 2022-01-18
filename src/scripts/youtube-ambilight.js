@@ -205,7 +205,7 @@ class Ambilight {
         }
       }
     } catch(ex) {
-      console.warn('YouTube Ambilight | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
+      console.warn('Ambilight for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -498,7 +498,7 @@ class Ambilight {
         attributeFilter: ['class']
       })
     } else {
-      console.warn('YouTube Ambilight | html5-video-player not found')
+      console.warn('Ambilight for YouTube™ | html5-video-player not found')
     }
   }
 
@@ -1159,7 +1159,7 @@ class Ambilight {
       previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
       previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
     } catch (ex) {
-      console.warn('YouTube Ambilight | getSetting', ex)
+      console.warn('Ambilight for YouTube™ | getSetting', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
     if(previouslyAdvancedSettings === null) {
@@ -2941,7 +2941,7 @@ class Ambilight {
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
               <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
-                <span class="ytpa-feedback-link__text">Give feedback or rate YouTube Ambilight</span>
+                <span class="ytpa-feedback-link__text">Give feedback or rate Ambilight for YouTube™</span>
               </a>
             </div>
             <div class="ytp-menuitem-content">
@@ -3108,7 +3108,7 @@ class Ambilight {
         : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
       this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight)
     } catch(ex) {
-      console.error('YouTube Ambilight | initSettingsMenuScrollInformation', ex)
+      console.error('Ambilight for YouTube™ | initSettingsMenuScrollInformation', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
 
@@ -3541,7 +3541,7 @@ class Ambilight {
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('YouTube Ambilight | getSetting', ex)
+      console.warn('Ambilight for YouTube™ | getSetting', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
     return value
@@ -3555,7 +3555,7 @@ class Ambilight {
       try {
         localStorage.setItem(`ambilight-${name}`, value)
       } catch (ex) {
-        console.warn('YouTube Ambilight | saveStorageEntry', ex)
+        console.warn('Ambilight for YouTube™ | saveStorageEntry', ex)
         //AmbilightSentry.captureExceptionWithDetails(ex)
       }
       this.saveStorageEntryTimeout[name] = null
@@ -3566,7 +3566,7 @@ class Ambilight {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('YouTube Ambilight | removeStorageEntry', ex)
+      console.warn('Ambilight for YouTube™ | removeStorageEntry', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -3692,14 +3692,14 @@ const tryInitAmbilight = (ytdAppElem) => {
   if (!videoElem) {
     const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
-      // console.warn('YouTube Ambilight | Waiting for the video to transition from the player-api')
+      // console.warn('Ambilight for YouTube™ | Waiting for the video to transition from the player-api')
       // console.log(playerApiElem.cloneNode(true))
       pushErrorEvent('tryInitAmbilight | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      // console.warn('YouTube Ambilight | Waiting for the video to transition from the miniplayer')
+      // console.warn('Ambilight for YouTube™ | Waiting for the video to transition from the miniplayer')
       pushErrorEvent('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
@@ -3708,7 +3708,7 @@ const tryInitAmbilight = (ytdAppElem) => {
       pushErrorEvent('tryInitAmbilight | video in #player-api')
       return false
     }
-    // console.warn('YouTube Ambilight | Waiting for the video to be created in ytd-app')
+    // console.warn('Ambilight for YouTube™ | Waiting for the video to be created in ytd-app')
     pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
       tree: getSelectorTreeString('video,#player-container')
     })
@@ -3719,7 +3719,7 @@ const tryInitAmbilight = (ytdAppElem) => {
     window.ambilight = new Ambilight(ytdAppElem, videoElem)
   } catch(ex) {
     pushErrorEvent(ex.message)
-    throw ex
+    return false
   }
 
   errorEvents = []

@@ -132,7 +132,7 @@ export default class AmbilightSentry {
       }
     } catch (ex) { console.warn(ex) }
 
-    console.error('YouTube Ambilight | ', ex)
+    console.error('Ambilight for YouTube™ | ', ex)
 
     withScope(scope => {
       try {
