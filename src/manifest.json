@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Ambient light for YouTube™",
   "description": "Immersive yourself in YouTube™ videos with ambient light!",
   "version": "2.36.19",
@@ -9,13 +9,13 @@
     "32": "images/icon-32.png",
     "128": "images/icon-128.png"
   },
-  "minimum_chrome_version": "69",
+  "minimum_chrome_version": "88",
   "browser_specific_settings": {
     "gecko": {
       "strict_min_version": "69.0"
     }
   },
-  "browser_action": {
+  "action": {
     "default_icon": {
       "16": "images/icon-16.png",
       "24": "images/icon-24.png",
@@ -24,8 +24,7 @@
     "default_popup": "options.html"
   },
   "background" : {
-    "scripts" : ["scripts/background.js"],
-    "persistent": false
+    "service_worker" : "scripts/background.js"
   },
   "content_scripts": [
     {
@@ -42,18 +41,21 @@
       "all_frames": true
     }
   ],
-  "web_accessible_resources": [
-    "styles/options.css",
-    "scripts/youtube-ambilight.js",
-    "images/noise-1.png",
-    "images/noise-2.png",
-    "images/noise-3.png"
-  ],
+  "web_accessible_resources": [{
+    "resources": [
+      "styles/options.css",
+      "scripts/youtube-ambilight.js",
+      "images/noise-1.png",
+      "images/noise-2.png",
+      "images/noise-3.png"
+    ],
+    "matches": ["https://www.youtube.com/*"]
+  }],
   "options_ui": {
     "page": "options.html",
-    "chrome_style": false
+    "open_in_tab": false
   },
-  "permissions": [
-    "https://www.youtube.com/*"
+  "host_permissions": [
+    "https://www.youtube.com/"
   ]
 }
