@@ -1,4 +1,4 @@
-This extension will surround YouTube videos with ambilight inside your browser. No need for extra hardware like lightstrips or smart lights, it's all in your browser!
+This extension will surround YouTube videos with ambient light inside your browser. No need for extra hardware like lightstrips or smart lights, it's all in your browser!
 
 
 Requirement:
@@ -10,7 +10,7 @@ With a score lower than 5000 the extension will still work but it is likely that
 
 Features:
 
-1. Ambilight
+1. Ambient light
 - Blur
 - Spread
 
@@ -38,7 +38,7 @@ Features:
 
 
 Advanced features:
-1. Ambilight
+1. Ambient light
 - Edge size
 - Fade out start
 - Fade out curve
@@ -64,7 +64,7 @@ Advanced features:
 6. Quality
 - Show framerate
 - Limit framerate (per second)
-- Sync video with ambilight
+- Sync video with ambient light
 - Smooth motion (frame blending)
 
 7. General
@@ -78,7 +78,7 @@ You view the source code and can contribute to this open source project at https
 
 Privacy & Security
 
-This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
+This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambient light effect on YouTube's /watch page
 
 The only requests being sent are crash reports to Sentri.io. No other requests are sent to any webserver, website or api. 
 While doing so we take into account your Do Not Track preference. For more information about Do Not Track visit https://allaboutdnt.com

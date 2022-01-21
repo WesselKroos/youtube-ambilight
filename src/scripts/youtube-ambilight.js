@@ -205,7 +205,7 @@ class Ambilight {
         }
       }
     } catch(ex) {
-      console.warn('Ambilight for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
+      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -498,7 +498,7 @@ class Ambilight {
         attributeFilter: ['class']
       })
     } else {
-      console.warn('Ambilight for YouTube™ | html5-video-player not found')
+      console.warn('Ambient light for YouTube™ | html5-video-player not found')
     }
   }
 
@@ -710,9 +710,9 @@ class Ambilight {
       {
         experimental: true,
         name: 'videoOverlayEnabled',
-        label: 'Sync video with ambilight',
+        label: 'Sync video with ambient light',
         questionMark: {
-          title: 'Delays the video frames according to the ambilight frametimes. This makes sure that that the ambilight is never out of sync with the video, but it can introduce stuttering and/or dropped frames.'
+          title: 'Delays the video frames according to the ambient light frametimes. This makes sure that that the ambient light is never out of sync with the video, but it can introduce stuttering and/or dropped frames.'
         },
         type: 'checkbox',
         default: false,
@@ -978,7 +978,7 @@ class Ambilight {
       },
       {
         type: 'section',
-        label: 'Ambilight',
+        label: 'Ambient light',
         name: 'sectionAmbilightCollapsed',
         default: false
       },
@@ -1159,7 +1159,7 @@ class Ambilight {
       previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
       previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
     } catch (ex) {
-      console.warn('Ambilight for YouTube™ | getSetting', ex)
+      console.warn('Ambient light for YouTube™ | getSetting', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
     if(previouslyAdvancedSettings === null) {
@@ -2294,13 +2294,13 @@ class Ambilight {
     }
 
     // Ambilight FPS
-    const ambilightFPSText = `AMBILIGHT: ${this.ambilightFrameRate.toFixed(2)} ${this.ambilightFrameRate ? `(${(1000/this.ambilightFrameRate).toFixed(2)}ms)` : ''}`
+    const ambilightFPSText = `AMBIENT LIGHT: ${this.ambilightFrameRate.toFixed(2)} ${this.ambilightFrameRate ? `(${(1000/this.ambilightFrameRate).toFixed(2)}ms)` : ''}`
     const ambilightFPSColor = (this.ambilightFrameRate < this.videoFrameRate * .9)
       ? '#f55'
       : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
 
     // Ambilight dropped frames
-    const ambilightDroppedFramesText = `AMBILIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
+    const ambilightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
     const ambilightDroppedFramesColor = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Render all stats
@@ -2919,7 +2919,7 @@ class Ambilight {
     settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper)
     const settingsMenuBtnTooltipText = document.createElement('span')
     settingsMenuBtnTooltipText.classList.add('ytp-tooltip-text', 'ytp-tooltip-text-no-title')
-    settingsMenuBtnTooltipText.textContent = 'Ambilight settings'
+    settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
     settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
 
     this.settingsMenuBtn.prepend(settingsMenuBtnTooltip)
@@ -2941,7 +2941,7 @@ class Ambilight {
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
               <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
-                <span class="ytpa-feedback-link__text">Give feedback or rate Ambilight for YouTube™</span>
+                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
               </a>
             </div>
             <div class="ytp-menuitem-content">
@@ -3108,7 +3108,7 @@ class Ambilight {
         : (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight) - this.settingsMenuElem.scrollTop
       this.settingsMenuOnCloseScrollHeight = (this.settingsMenuElem.scrollHeight - this.settingsMenuElem.offsetHeight)
     } catch(ex) {
-      console.error('Ambilight for YouTube™ | initSettingsMenuScrollInformation', ex)
+      console.error('Ambient light for YouTube™ | initSettingsMenuScrollInformation', ex)
       AmbilightSentry.captureExceptionWithDetails(ex)
     }
 
@@ -3541,7 +3541,7 @@ class Ambilight {
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambilight for YouTube™ | getSetting', ex)
+      console.warn('Ambient light for YouTube™ | getSetting', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
     return value
@@ -3555,7 +3555,7 @@ class Ambilight {
       try {
         localStorage.setItem(`ambilight-${name}`, value)
       } catch (ex) {
-        console.warn('Ambilight for YouTube™ | saveStorageEntry', ex)
+        console.warn('Ambient light for YouTube™ | saveStorageEntry', ex)
         //AmbilightSentry.captureExceptionWithDetails(ex)
       }
       this.saveStorageEntryTimeout[name] = null
@@ -3566,7 +3566,7 @@ class Ambilight {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambilight for YouTube™ | removeStorageEntry', ex)
+      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
@@ -3639,7 +3639,7 @@ on(document, 'visibilitychange', () => {
   }
 
   AmbilightSentry.captureExceptionWithDetails(
-    new AmbilightError('Closed or hid the webpage tab with pending ambilight errors events', errorEvents)
+    new AmbilightError('Closed or hid the webpage tab with pending errors events', errorEvents)
   )
   errorEvents = []
 }, false)
@@ -3692,14 +3692,14 @@ const tryInitAmbilight = (ytdAppElem) => {
   if (!videoElem) {
     const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
-      // console.warn('Ambilight for YouTube™ | Waiting for the video to transition from the player-api')
+      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the player-api')
       // console.log(playerApiElem.cloneNode(true))
-      pushErrorEvent('tryInitAmbilight | video in yt-player-manager')
+      pushErrorEvent('tryInit | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      // console.warn('Ambilight for YouTube™ | Waiting for the video to transition from the miniplayer')
+      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the miniplayer')
       pushErrorEvent('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
@@ -3708,7 +3708,7 @@ const tryInitAmbilight = (ytdAppElem) => {
       pushErrorEvent('tryInitAmbilight | video in #player-api')
       return false
     }
-    // console.warn('Ambilight for YouTube™ | Waiting for the video to be created in ytd-app')
+    // console.warn('Ambient light for YouTube™ | Waiting for the video to be created in ytd-app')
     pushErrorEvent('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
       tree: getSelectorTreeString('video,#player-container')
     })
