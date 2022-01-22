@@ -1,4 +1,4 @@
-import { getOS, getVersion, getBrowser } from './libs/utils'
+import { getOS, getVersion, getBrowser, insertScript } from './libs/utils'
 import { html } from './libs/generic'
 
 const scripts = [
@@ -26,6 +26,8 @@ const setExtensionInfo = () => {
   html.setAttribute('data-ambilight-os', os);
   html.setAttribute('data-ambilight-browser', browser);
   html.setAttribute('data-ambilight-baseurl', chrome.extension.getURL(''));
+  html.setAttribute('data-ambilight-gpu-script-src', chrome.extension.getURL('scripts/gpu-browser.js'))
+  html.setAttribute('data-ambilight-glfx-script-src', chrome.extension.getURL('scripts/glfx.js'))
 }
 
 setExtensionInfo()

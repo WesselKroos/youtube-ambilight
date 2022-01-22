@@ -1,6 +1,9 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './libs/ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
+import sharpen from './libs/sharpen'
+import filter from './libs/filter'
+import { insertScript } from './libs/utils'
 
 const VIEW_DETACHED = 'VIEW_DETACHED'
 const VIEW_SMALL = 'VIEW_SMALL'
@@ -756,6 +759,97 @@ class Ambilight {
       },
       {
         type: 'section',
+        label: 'Video filters',
+        name: 'sectionVideoFiltersCollapsed',
+        default: true
+      },
+      {
+        experimental: true,
+        name: 'videoTriangleBlur',
+        label: 'TriangleBlur',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoLensBlur',
+        label: 'LensBlur',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoFilterDenoise',
+        label: 'Denoise',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoUnsharpMaskRadius',
+        label: 'Unsharp mask - Radius',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoUnsharpMaskStrength',
+        label: 'Unsharp mask - Strength',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoFilterNoise',
+        label: 'Noise',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoSharpen',
+        label: 'Sharpen',
+        type: 'list',
+        default: 0,
+        min: 0,
+        max: 100,
+        step: .5,
+        advanced: true
+      },
+      {
+        experimental: true,
+        name: 'videoMatchScreenResolution',
+        label: 'Match screen resolution',
+        type: 'checkbox',
+        default: false,
+        advanced: true
+      },
+      {
+        type: 'section',
         label: 'Page content',
         name: 'sectionOtherPageContentCollapsed',
         default: false
@@ -1124,6 +1218,7 @@ class Ambilight {
     this.sectionOtherPageContentCollapsed = this.getSetting('sectionOtherPageContentCollapsed')
     this.sectionAmbilightQualityPerformanceCollapsed = this.getSetting('sectionAmbilightQualityPerformanceCollapsed')
     this.sectionGeneralCollapsed = this.getSetting('sectionGeneralCollapsed')
+    this.sectionVideoFiltersCollapsed = this.getSetting('sectionVideoFiltersCollapsed')
 
     this.spread = this.getSetting('spread')
     this.blur = this.getSetting('blur')
@@ -1133,6 +1228,15 @@ class Ambilight {
     this.innerStrength = 2
     this.videoOverlayEnabled = this.getSetting('videoOverlayEnabled')
     this.videoOverlaySyncThreshold = this.getSetting('videoOverlaySyncThreshold')
+
+    this.videoTriangleBlur = this.getSetting('videoTriangleBlur')
+    this.videoLensBlur = this.getSetting('videoLensBlur')
+    this.videoFilterDenoise = this.getSetting('videoFilterDenoise')
+    this.videoUnsharpMaskRadius = this.getSetting('videoUnsharpMaskRadius')
+    this.videoUnsharpMaskStrength = this.getSetting('videoUnsharpMaskStrength')
+    this.videoFilterNoise = this.getSetting('videoFilterNoise')
+    this.videoSharpen = this.getSetting('videoSharpen')
+    this.videoMatchScreenResolution = this.getSetting('videoMatchScreenResolution')
 
     this.contrast = this.getSetting('contrast')
     this.brightness = this.getSetting('brightness')
@@ -1226,6 +1330,10 @@ class Ambilight {
     this.videoSyncedElem = document.createElement('div')
     this.videoSyncedElem.classList.add('ambilight__video-synced')
     this.FPSListElem.append(this.videoSyncedElem)
+    
+    this.videoSyncedScaleElem = document.createElement("div")
+    this.videoSyncedScaleElem.classList.add('ambilight__video-synced')
+    this.FPSListElem.append(this.videoSyncedScaleElem)
 
     this.ambilightFPSElem = document.createElement('div')
     this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
@@ -1619,19 +1727,39 @@ class Ambilight {
     if (this.videoOverlayEnabled)
       this.checkIfNeedToHideVideoOverlay()
 
+      if (this.frameBlending) {
+        this.previousProjectorBuffer.elem.width = this.p.w
+        this.previousProjectorBuffer.elem.height = this.p.h
+        
+        this.blendedProjectorBuffer.elem.width = this.p.w
+        this.blendedProjectorBuffer.elem.height = this.p.h
+      }
     if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.elem.parentNode) {
       this.videoContainerElem.appendChild(this.videoOverlay.elem)
     } else if (!this.videoOverlayEnabled && this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
     if (this.videoOverlayEnabled && this.videoOverlay) {
+      if (this.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.elem.parentNode) {
+        this.videoOverlay.elem.appendTo($.s('.html5-video-container'))
+      } else if (!this.videoOverlayEnabled && this.videoOverlay && this.videoOverlay.elem.parentNode) {
+        this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
+      }
+
       this.videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
-      this.videoOverlay.elem.width = this.srcVideoOffset.width
-      this.videoOverlay.elem.height = this.srcVideoOffset.height
+      if(this.videoMatchScreenResolution) {
+        this.videoOverlayScale = Math.round(this.videoOverlay.elem.offsetWidth) / this.srcVideoOffset.width
+        this.videoOverlayScale = Math.max(0.5, Math.min(2, Math.floor(this.videoOverlayScale * 4) / 4))
+        this.videoOverlay.elem.width = Math.round(this.srcVideoOffset.width * this.videoOverlayScale)
+        this.videoOverlay.elem.height = Math.round(this.srcVideoOffset.height * this.videoOverlayScale)
+      } else {
+        this.videoOverlay.elem.width = this.srcVideoOffset.width
+        this.videoOverlay.elem.height = this.srcVideoOffset.height
+      }
 
       if (this.frameBlending) {
-        this.videoOverlayBuffer.elem.width = this.srcVideoOffset.width
-        this.videoOverlayBuffer.elem.height = this.srcVideoOffset.height
+        this.videoOverlayBuffer.elem.width = this.videoOverlay.elem.width
+        this.videoOverlayBuffer.elem.height = this.videoOverlay.elem.height
 
         this.previousVideoOverlayBuffer.elem.width = this.srcVideoOffset.width
         this.previousVideoOverlayBuffer.elem.height = this.srcVideoOffset.height
@@ -2161,6 +2289,27 @@ class Ambilight {
     return false
   }
 
+  detectVideoSynced() {
+    if (!this.showFPS || !this.videoOverlay) return
+
+    this.videoSyncedScaleElem.textContent = this.videoOverlayEnabled ? `VIDEO SYNCED SCALE: ${this.videoOverlayScale || ''}` : ''
+    this.videoSyncedScaleElem.style.color = this.videoOverlay.isHidden ? '#f33' : '#7f7'
+
+    if (this.videoSyncedElem.textContent) {
+      if (!this.videoOverlayEnabled) {
+        this.videoSyncedElem.textContent = ''
+        return
+      }
+      if (this.videoOverlay.isHidden !== undefined && this.videoOverlay.isHidden === this.detectVideoSyncedWasHidden)
+        return
+    }
+    if (!this.videoOverlayEnabled) return
+
+    this.videoSyncedElem.textContent = this.videoOverlayEnabled ? `VIDEO SYNCED: ${this.videoOverlay.isHidden ? 'NO' : 'YES'}` : ''
+    this.videoSyncedElem.style.color = this.videoOverlay.isHidden ? '#f33' : '#7f7'
+    this.detectVideoSyncedWasHidden = this.videoOverlay.isHidden
+  }
+
   detectVideoFrameRate() {
     if (this.videoFrameRateStartTime === undefined) {
       this.videoFrameRateStartTime = 0
@@ -2262,6 +2411,7 @@ class Ambilight {
     this.videoFPSElem.textContent = ''
     this.videoDroppedFramesElem.textContent = ''
     this.videoSyncedElem.textContent = ''
+    this.videoSyncedScaleElem.textContent = ''
     this.ambilightFPSElem.textContent = ''
     this.ambilightDroppedFramesElem.textContent = ''
     this.displayFPSElem.textContent = ''
@@ -2466,6 +2616,8 @@ class Ambilight {
             this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
             this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
               0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
+            this.filter(this.videoOverlayBuffer.elem, this.videoOverlayBuffer.ctx)
+            this.sharpen(this.videoOverlayBuffer.elem, this.videoOverlayBuffer.ctx)
             if(this.buffersCleared) {
               this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
             }
@@ -2561,6 +2713,8 @@ class Ambilight {
         }
         this.videoOverlay.ctx.drawImage(this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
+        this.filter(this.videoOverlay.elem, this.videoOverlay.ctx)
+        this.sharpen(this.videoOverlay.elem, this.videoOverlay.ctx)
       }
 
       if (!dontDrawAmbilight) {
@@ -2601,6 +2755,58 @@ class Ambilight {
       hasNewFrame
     ) {
       return { detectHorizontalBarSize: true }
+    }
+  }
+
+  sharpen(elem, ctx) {
+    if(this.videoSharpen) {
+      if(!this.gpuScriptInserted) {
+        this.gpuScriptInserted = true
+        const gpuScriptSrc = html.getAttribute('data-ambilight-gpu-script-src')
+        if(gpuScriptSrc) {
+          insertScript(gpuScriptSrc)
+        }
+      }
+      try {
+        sharpen(elem, ctx, this.videoSharpen / 100)
+      } catch(err) {
+        console.error(err);
+      }
+    }
+  }
+
+  filter(elem, ctx) {
+    const filters = [];
+    if(parseFloat(this.videoFilterDenoise)) {
+      filters.push(['denoise', [(101 - this.videoFilterDenoise) * 5]])
+    }
+    if(parseFloat(this.videoLensBlur)) {
+      filters.push(['lensBlur', [this.videoLensBlur / 10, 0, 0]])
+    }
+    if(parseFloat(this.videoTriangleBlur)) {
+      filters.push(['triangleBlur', [this.videoTriangleBlur / 10]])
+    }
+    if(parseFloat(this.videoUnsharpMaskRadius) && parseFloat(this.videoUnsharpMaskStrength)) {
+      filters.push(['unsharpMask', [this.videoUnsharpMaskRadius / 10, this.videoUnsharpMaskStrength / 10]])
+    }
+    if(parseFloat(this.videoFilterNoise)) {
+      filters.push(['noise', [this.videoFilterNoise / 1000]])
+    }
+    // console.log(this.videoFilterDenoise, this.videoUnsharpMaskRadius, this.videoUnsharpMaskStrength, this.videoFilterNoise, filters)
+
+    if(filters.length) {
+      if(!this.glfxScriptInserted) {
+        this.glfxScriptInserted = true
+        const glfxScriptSrc = html.getAttribute('data-ambilight-glfx-script-src')
+        if(glfxScriptSrc) {
+          insertScript(glfxScriptSrc)
+        }
+      }
+      try {
+        filter(elem, ctx, filters)
+      } catch(err) {
+        console.error(err);
+      }
     }
   }
 
@@ -3306,7 +3512,8 @@ class Ambilight {
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings' ||
             setting.name === 'hideScrollbar' ||
-            setting.name === 'immersiveTheaterView'
+            setting.name === 'immersiveTheaterView' ||
+            setting.name === 'videoMatchScreenResolution'
           ) {
             this.setSetting(setting.name, setting.value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', setting.value)
@@ -3314,6 +3521,12 @@ class Ambilight {
 
           if(setting.name === 'immersiveTheaterView') {
             this.updateImmersiveMode()
+          }
+
+          if(setting.name === 'videoMatchScreenResolution') {
+            if(this.videoElem.paused) {
+              this.start()
+            }
           }
 
           if(setting.name === 'detectHorizontalBarSizeEnabled') {
@@ -3714,7 +3927,7 @@ const tryInitAmbilight = (ytdAppElem) => {
     })
     return false
   }
-  
+
   window.ambilight = new Ambilight(ytdAppElem, videoElem)
 
   errorEvents = []
