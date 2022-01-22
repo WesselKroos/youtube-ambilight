@@ -3714,13 +3714,8 @@ const tryInitAmbilight = (ytdAppElem) => {
     })
     return false
   }
-
-  try {
-    window.ambilight = new Ambilight(ytdAppElem, videoElem)
-  } catch(ex) {
-    pushErrorEvent(ex.message)
-    return false
-  }
+  
+  window.ambilight = new Ambilight(ytdAppElem, videoElem)
 
   errorEvents = []
   ambilightDetectDetachedVideo(ytdAppElem)
@@ -3805,10 +3800,13 @@ const loadAmbilight = () => {
       return
     }
 
-    if (
-      tryInitAmbilight(ytdAppElem)
-    ) {
-      // Initialized
+    try {
+      if (tryInitAmbilight(ytdAppElem)) {
+        // Initialized
+        observer.disconnect()
+      }
+    } catch (ex) {
+      // Disconnect to prevent infinite loops
       observer.disconnect()
     }
   }, true))
