@@ -3808,6 +3808,7 @@ const loadAmbilight = () => {
     } catch (ex) {
       // Disconnect to prevent infinite loops
       observer.disconnect()
+      throw ex
     }
   }, true))
   observer.observe(ytdAppElem, {
