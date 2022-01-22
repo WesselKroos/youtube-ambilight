@@ -1,4 +1,4 @@
-This extension will surround YouTube videos with ambient light inside your browser. No need for extra hardware like lightstrips or smart lights, it's all in your browser!
+This extension will surround YouTube videos with ambient light inside your browser. No need for extra hardware like lightstrips or smart lights like ambilight, it's all in your browser!
 
 
 Requirement:
