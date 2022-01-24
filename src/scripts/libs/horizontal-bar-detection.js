@@ -160,35 +160,13 @@ const createKernelFromCanvas = (canvas) => {
     gpu.destroy()
     gpu = undefined
   }
+  
   gpu = new GPU(
     // { mode: 'cpu' } // debug
   )
-
   gpuKernel = gpu
     .createKernel(function (src, width, height) {
-      // const pixel = src[this.thread.y, this.thread.x];
-      // return [this.thread.x, this.thread.y, pixel.r, pixel.g]
-      const start = ((this.thread.x * width) + this.thread.y);
-      // const r = src[start];
-      // const g = src[start + 1];
-      // const b = src[start + 2];
-      return src[start];
-
-      // return [this.thread.x, pixel.r, pixel.g, pixel.b];
-      // this.color(pixel.r, pixel.g, pixel.b)
-      // return [
-      //   pixel.r,
-      //   pixel.g,
-      //   pixel.b
-      // ];
-
-      // const x = this.thread.x;
-      // const pixels = [];
-      // for(let y = 0; y < height; y++) {
-      //   const pixel = src[x][y];
-      //   pixels[y] = [pixel.r, pixel.g, pixel.b];
-      // }
-      // return pixels;
+      return src[(this.thread.x * width) + this.thread.y];
     }, {
       output: [height, width],
       // tactic: 'speed',
@@ -197,9 +175,6 @@ const createKernelFromCanvas = (canvas) => {
       // optimizeFloatMemory: true
       // immutable: true
     })
-    // .setOutput([5])
-    // .setTactic('speed')
-    // .setPrecision('unsigned')
 }
 
 export const detectViaGPU = async (
@@ -211,17 +186,17 @@ export const detectViaGPU = async (
   },
   callback
 ) => {
-  if(!window.GPU) return
-
-  if(
-    !gpuKernel || 
-    width !== canvas.width || 
-    height !== canvas.height
-  ) {
-    createKernelFromCanvas(canvas)
-  }
-
   try {
+    if(!window.GPU) return
+
+    if(
+      !gpuKernel || 
+      width !== canvas.width || 
+      height !== canvas.height
+    ) {
+      createKernelFromCanvas(canvas)
+    }
+
     // console.log('size', canvas.width, canvas.height)
     const a = performance.now()
     const output = gpuKernel(canvas, canvas.width, canvas.height)
