@@ -30,10 +30,10 @@ const workerCode = function () {
     const start = performance.now()
     try {
       imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      // throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
       getLineImageDataResolve()
     } catch(ex) {
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      // throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
       appendErrorStack(getLineImageDataStack, ex)
       getLineImageDataReject(ex)
     }
@@ -42,7 +42,7 @@ const workerCode = function () {
   function getLineImageDataPromise(resolve, reject) {
     getLineImageDataResolve = resolve
     getLineImageDataReject = reject
-    setTimeout(getLineImageData, throttle)
+    getLineImageData()
   }
 
   let averageSize = 0;
@@ -52,8 +52,11 @@ const workerCode = function () {
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
+  let b;
+
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
+      
       partSize = 1
       for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
@@ -63,7 +66,9 @@ const workerCode = function () {
       }
       getLineImageDataResolve = undefined
       getLineImageDataReject = undefined
-    
+
+      b = performance.now()
+
       const channels = 4
       let sizes = []
       const colorIndex = (channels * 4)
@@ -190,6 +195,7 @@ const workerCode = function () {
     }
     
     this.onmessage = async (e) => {
+      const a = performance.now()
       id = e.data.id
       try {
         const detectColored = e.data.detectColored
@@ -239,6 +245,8 @@ const workerCode = function () {
           currentPercentage
         )
         ctx.clearRect(0, 0, canvas.width, canvas.height)
+        const c = performance.now()
+        // console.log(b - a, c - b)
       
         this.postMessage({ 
           id,
@@ -303,6 +311,7 @@ export class HorizontalBarDetection {
       callback
     }
 
+    // this.idleHandler(run)
     requestIdleCallback(wrapErrorHandler(() => this.idleHandler(run)), { timeout: 1000 })
   }
 
@@ -378,12 +387,13 @@ export class HorizontalBarDetection {
       if(this.run !== run) return
       
       this.cancellable = true
-      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
-      setTimeout(() => {
-        if(this.run !== run) return
+      // const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+      // setTimeout(() => {
+      //   if(this.run !== run) return
 
-        this.run = null
-      }, throttle)
+      //   this.run = null
+      // }, throttle)
+      this.run = null
     } catch(ex) {
       this.cancellable = true
       this.run = null

@@ -1,6 +1,6 @@
 import { $, html, body, waitForDomElement, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './libs/generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './libs/ambilight-sentry'
-import { HorizontalBarDetection } from './horizontal-bar-detection'
+import { HorizontalBarDetection } from './gpu-horizontal-bar-detection'
 import sharpen from './libs/sharpen'
 import filter from './libs/filter'
 import { insertScript } from './libs/utils'
@@ -2758,15 +2758,19 @@ class Ambilight {
     }
   }
 
+  insertGPUscript() {
+    if(!this.gpuScriptInserted) {
+      this.gpuScriptInserted = true
+      const gpuScriptSrc = html.getAttribute('data-ambilight-gpu-script-src')
+      if(gpuScriptSrc) {
+        insertScript(gpuScriptSrc)
+      }
+    }
+  }
+
   sharpen(elem, ctx) {
     if(this.videoSharpen) {
-      if(!this.gpuScriptInserted) {
-        this.gpuScriptInserted = true
-        const gpuScriptSrc = html.getAttribute('data-ambilight-gpu-script-src')
-        if(gpuScriptSrc) {
-          insertScript(gpuScriptSrc)
-        }
-      }
+      this.insertGPUscript()
       try {
         sharpen(elem, ctx, this.videoSharpen / 100)
       } catch(err) {
@@ -2818,6 +2822,8 @@ class Ambilight {
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
         this.getImageDataAllowed
       ) {
+        this.insertGPUscript()
+        // this.startHBD = performance.now()
         this.horizontalBarDetection.detect(
           this.videoSnapshotBuffer,
           this.detectColoredHorizontalBarSizeEnabled,
@@ -2835,6 +2841,8 @@ class Ambilight {
   }
 
   scheduleHorizontalBarSizeDetectionCallback = (percentage) => {
+    // const duration = Math.round((performance.now() - this.startHBD) * 10) / 10
+    // console.log('HBD duration:', duration.toString().padEnd(3, '.0').padStart(6, ' '))
     if(percentage !== undefined)
       this.setHorizontalBars(percentage)
   }
