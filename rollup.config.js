@@ -1,7 +1,7 @@
 import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import cleanup from 'rollup-plugin-cleanup'
-import stripCode from "rollup-plugin-strip-code"
+import stripCode from 'rollup-plugin-strip-code'
 
 const common = {
   context: 'window',
@@ -49,8 +49,9 @@ const gpuJs = {
   output:  { 
    file: './dist/scripts/gpu-browser.js',
    format: 'iife',
-   globals: {},
- }
+   strict: false
+  },
+  plugins: []
 }
 
 const glfx = {

@@ -2758,19 +2758,25 @@ class Ambilight {
     }
   }
 
-  insertGPUscript() {
+  async insertGPUscript() {
+    if(this.gpuScriptInserting) {
+      await this.gpuScriptInserting
+    }
+
     if(!this.gpuScriptInserted) {
       this.gpuScriptInserted = true
       const gpuScriptSrc = html.getAttribute('data-ambilight-gpu-script-src')
       if(gpuScriptSrc) {
-        insertScript(gpuScriptSrc)
+        this.gpuScriptInserting = insertScript(gpuScriptSrc)
+        await this.gpuScriptInserting
+        this.gpuScriptInserting = undefined
       }
     }
   }
 
-  sharpen(elem, ctx) {
+  async sharpen(elem, ctx) {
     if(this.videoSharpen) {
-      this.insertGPUscript()
+      await this.insertGPUscript()
       try {
         sharpen(elem, ctx, this.videoSharpen / 100)
       } catch(err) {
@@ -2814,15 +2820,15 @@ class Ambilight {
     }
   }
 
-  scheduleHorizontalBarSizeDetection = () => {
+  scheduleHorizontalBarSizeDetection = async () => {
     try {
-      if(this.horizontalBarDetection.run) return
+      if(this.gpuScriptInserting || this.horizontalBarDetection.run) return
 
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
         this.getImageDataAllowed
       ) {
-        this.insertGPUscript()
+        await this.insertGPUscript()
         // this.startHBD = performance.now()
         this.horizontalBarDetection.detect(
           this.videoSnapshotBuffer,

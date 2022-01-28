@@ -41,14 +41,16 @@ export const getVersion = () => {
   }
 }
 
-export const insertScript = (path) => {
+export const insertScript = (path) => new Promise((resolve, reject) => {
   const s = document.createElement('script')
   s.src = path
   s.onload = () => {
     s.parentNode.removeChild(s)
+    resolve()
   }
   s.onerror = (e) => {
     console.error('Adding script failed:', e.target.src, e);
+    reject()
   }
   document.head.appendChild(s)
-}
+})
