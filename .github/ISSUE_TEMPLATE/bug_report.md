@@ -25,8 +25,12 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Browser: [e.g. chrome, safari]
+ - Browser version: [e.g. 22]
+ - Extension version: [e.g. 0.36.19]
+
+**Other extensions:**
+Does the bug still persist when you disable all other extensions? Of not, which other extension conflicts with the Ambient light for YouTube extension?
 
 **Additional context**
 Add any other context about the problem here.
