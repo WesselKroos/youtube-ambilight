@@ -1,10 +1,10 @@
-[![Ambilight for YouTube™](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
+[![Ambient light for YouTube™](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
 
-Immersive yourself in YouTube videos with ambilight!
+Immersive yourself in YouTube videos with ambient light!
 
 ![Preview](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/readme/screenshot-1.jpg?raw=true)
 
-# Ambilight for YouTube™
+# Ambient light for YouTube™
 
 ## Installation
 Go to the extensions site of your browser and add the extension:
@@ -34,7 +34,7 @@ With a score lower than 5000 the extension will still work but it is likely that
 
 
 ## Privacy & Security
-- This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambilight effect on YouTube's /watch page
+- This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambient light effect on YouTube's /watch page
 
 The following projectfiles are inserted into that specific webpage:
 - \src\scripts\youtube-ambilight.js
@@ -59,7 +59,7 @@ Feel free to
     1. In Chrome go to the url [chrome://extensions/](chrome://extensions/).
     2. Turn on the `Developer mode` toggle.
     3. Click `Load unpacked` and select the `/dist` folder.
-    4. `Ambilight for YouTube™` has been added to the list of extensions.
+    4. `Ambient light for YouTube™` has been added to the list of extensions.
 4. After you've modified a file in the `/src` folder follow these steps:
     1. In the terminal/commandline enter `npm run build`
     2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.

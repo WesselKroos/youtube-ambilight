@@ -1,7 +1,7 @@
 {
   "name": "youtube-ambilight",
   "version": "1.0.0",
-  "description": "This browser extension adds ambilight to the videos you view on YouTube",
+  "description": "This browser extension adds ambient light to the videos you view on YouTube",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/WesselKroos/youtube-ambilight.git"

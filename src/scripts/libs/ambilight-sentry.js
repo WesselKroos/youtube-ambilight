@@ -132,7 +132,7 @@ export default class AmbilightSentry {
       }
     } catch (ex) { console.warn(ex) }
 
-    console.error('Ambilight for YouTube™ | ', ex)
+    console.error('Ambient light for YouTube™ | ', ex)
 
     withScope(scope => {
       try {
@@ -314,10 +314,10 @@ export default class AmbilightSentry {
             if (!setting.key) return
             settingsExtra[`${setting.name}-key`] = setting.key
           })
-          setExtra('Ambilight settings', settingsExtra)
+          setExtra('Settings', settingsExtra)
         }
       } catch (ex) { 
-        setExtra('Ambilight settings (exception)', ex)
+        setExtra('Settings (exception)', ex)
       }
 
       captureException(ex)
