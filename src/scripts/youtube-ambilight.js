@@ -463,10 +463,9 @@ class Ambilight {
     // Because when seeking to the end the ended event is not fired from the videoElem
     if (this.videoPlayerElem) {
       on(this.videoPlayerElem, 'onStateChange', (state) => {
-        if (!this.enabled || !this.isOnVideoPage) return
         this.isBuffering = (state === 3)
 
-        if(!this.isBuffering)
+        if(!this.isBuffering && this.enabled && this.isOnVideoPage)
           this.scheduleNextFrame()
       })
       this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
