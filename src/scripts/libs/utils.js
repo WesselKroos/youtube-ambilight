@@ -40,3 +40,5 @@ export const getVersion = () => {
     return null
   }
 }
+
+export const isWatchPageUrl = () => (location.pathname === '/watch')

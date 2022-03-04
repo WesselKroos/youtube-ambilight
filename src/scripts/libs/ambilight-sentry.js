@@ -86,6 +86,14 @@ export const getSelectorTreeString = (selector) => {
   return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
 }
 
+export class AmbilightError extends Error {
+  constructor(message, details) {
+    super(message)
+    this.name = 'AmbilightError'
+    this.details = details
+  }
+}
+
 initAndBind(BrowserClient, {
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
