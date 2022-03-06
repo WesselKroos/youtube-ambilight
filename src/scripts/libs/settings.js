@@ -991,8 +991,8 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', true)
 
-    if(this.videoPlayerElem) {
-      this.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
+    if(this.ambilight.videoPlayerElem) {
+      this.ambilight.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
     }
 
     off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
@@ -1018,8 +1018,8 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', false)
 
-    if(this.videoPlayerElem) {
-      this.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
+    if(this.ambilight.videoPlayerElem) {
+      this.ambilight.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
     }
 
     off(body, 'click', this.onCloseMenuListener)
