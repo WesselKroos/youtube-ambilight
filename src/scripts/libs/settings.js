@@ -35,7 +35,7 @@ export default class Settings {
       name: 'frameSync',
       label: 'Synchronization',
       questionMark: {
-        title: 'How much energy will be spent on sychronising the ambilight effect with the video.\n\nPower Saver: Lowest CPU & GPU usage.\nMight result in ambilight with dropped and delayed frames.\n\nBalanced: Medium CPU & GPU usage.\nMight still result in ambilight with delayed frames on higher than 1080p videos.\n\nHigh Performance: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nPerfect (Experimental): Lowest CPU & GPU usage.\nIt is perfect, but in an experimental fase because it\'s based on a new browser technique.'
+        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDetect pixel changes: Medium CPU & GPU usage.\nMight still result in delayed frames on higher than 1080p videos.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
       },
       type: 'list',
       default: 50,
@@ -448,11 +448,6 @@ export default class Settings {
         if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
           setting.advanced = true
         }
-
-        // Change this in the future when frameSync 150 is released and validated to work for a long time
-        // if(setting.name === 'frameSync') {
-        //   return undefined
-        // }
       }
       return setting
     }).filter(setting => setting)
@@ -470,29 +465,6 @@ export default class Settings {
       }
     }
 
-    //// Migrations from version 2.32
-    // Enable advancedSettings for existing users
-    let previouslyEnabled = false
-    let previouslyAdvancedSettings = false
-    try {
-      previouslyEnabled = localStorage.getItem(`ambilight-enabled`)
-      previouslyAdvancedSettings = localStorage.getItem(`ambilight-advancedSettings`)
-    } catch (ex) {
-      console.warn('Ambient light for YouTube™ | getSetting', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
-    }
-    if(previouslyAdvancedSettings === null) {
-      this.set('advancedSettings', (previouslyEnabled !== null))
-    }
-
-    // Migrate highQuality to frameSync
-    const previouslyHighQuality = this.get('highQuality')
-    if(previouslyHighQuality === 'false') {
-      this.set('frameSync', 0)
-      this.removeStorageEntry('highQuality')
-    }
-
-    html.setAttribute('data-ambilight-enabled', this.enabled)
     html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
   }
   
@@ -517,7 +489,12 @@ export default class Settings {
     settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
 
     this.menuBtn.prepend(settingsMenuBtnTooltip)
-    this.menuBtnParent.prepend(this.menuBtn)
+    const ytSettingsBtn = this.menuBtnParent.querySelector('[data-tooltip-target-id="ytp-autonav-toggle-button"]')
+    if (ytSettingsBtn) {
+      this.menuBtnParent.insertBefore(this.menuBtn, ytSettingsBtn)
+    } else {
+      this.menuBtnParent.prepend(this.menuBtn)
+    }
 
     this.menuElem = document.createElement('div')
     this.menuElem.classList.add(
@@ -978,13 +955,13 @@ export default class Settings {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
       if (value == 0)
-        return 'Power Saver'
+        return 'Decoded framerate'
       if (value == 50)
-        return 'Balanced'
+        return 'Detect pixel changes'
       if (value == 100)
-        return 'High Performance'
+        return 'Display framerate'
       if (value == 150)
-        return 'Perfect (Experimental)'
+        return 'Video framerate'
     }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
