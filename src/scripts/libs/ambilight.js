@@ -3,6 +3,9 @@ import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './amb
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 import { isWatchPageUrl } from './utils'
 import Settings from './settings'
+import Projector2d from './projector-2d'
+import ProjectorWebGL from './projector-webgl'
+import { WebGLCanvas } from './canvas-webgl'
 
 const VIEW_DETACHED = 'VIEW_DETACHED'
 const VIEW_SMALL = 'VIEW_SMALL'
@@ -572,9 +575,8 @@ export default class Ambilight {
     this.projectorsElem.classList.add('ambilight__projectors')
     this.clipElem.prepend(this.projectorsElem)
 
-    this.projectorListElem = document.createElement('div')
-    this.projectorListElem.classList.add('ambilight__projector-list')
-    this.projectorsElem.prepend(this.projectorListElem)
+    //this.projector = new Projector2d(this.projectorsElem)
+    this.projector = new ProjectorWebGL(this.projectorsElem) 
 
     const shadowElem = new Canvas(1920, 1080, true)
     shadowElem.classList.add('ambilight__shadow')
@@ -619,7 +621,7 @@ export default class Ambilight {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
-    const videoSnapshotBufferElem = new Canvas(1, 1, true)
+    const videoSnapshotBufferElem = new WebGLCanvas(1, 1, true)
     if (videoSnapshotBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
     }
@@ -640,7 +642,7 @@ export default class Ambilight {
       })
     }
 
-    const projectorsBufferElem = new Canvas(1, 1, true)
+    const projectorsBufferElem = new WebGLCanvas(1, 1, true)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
@@ -778,32 +780,8 @@ export default class Ambilight {
   }
 
   recreateProjectors() {
-    const spreadLevels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
-
-    if (!this.projectors) {
-      this.projectors = []
-    }
-
-    this.projectors = this.projectors.filter((projector, i) => {
-      if (i >= spreadLevels) {
-        projector.elem.remove()
-        return false
-      }
-      return true
-    })
-
-    for (let i = this.projectors.length; i < spreadLevels; i++) {
-      const projectorElem = new Canvas(1, 1)
-      projectorElem.classList.add('ambilight__projector')
-
-      const projectorCtx = projectorElem.getContext('2d', ctxOptions)
-      this.projectorListElem.prepend(projectorElem)
-
-      this.projectors.push({
-        elem: projectorElem,
-        ctx: projectorCtx
-      })
-    }
+    const levels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
+    this.projector.recreate(levels)
   }
 
   clear() {
@@ -813,7 +791,7 @@ export default class Ambilight {
     const canvasses = [
       this.videoSnapshotBuffer,
       this.videoSnapshotGetImageDataBuffer,
-      ...this.projectors
+      ...this.projector.projectors
     ]
     if(this.previousProjectorBuffer) {
       canvasses.push(this.previousProjectorBuffer)
@@ -1033,12 +1011,7 @@ export default class Ambilight {
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
 
-    for (const projector of this.projectors) {
-      if (projector.elem.width !== this.p.w)
-        projector.elem.width = this.p.w
-      if (projector.elem.height !== this.p.h)
-        projector.elem.height = this.p.h
-    }
+    this.projector.resize(this.p.w, this.p.h)
 
     this.projectorBuffer.elem.width = this.p.w
     this.projectorBuffer.elem.height = this.p.h
@@ -1213,9 +1186,8 @@ export default class Ambilight {
     }
 
     const scaleStep = this.settings.edge / 100
-
-    for (const i in this.projectors) {
-      const projector = this.projectors[i]
+    const scales = []
+    for (let i = 0; i < this.projector.levels; i++) {
       const pos = i - this.innerStrength
       let scaleX = 1
       let scaleY = 1
@@ -1234,8 +1206,13 @@ export default class Ambilight {
       lastScale.x = scaleX
       lastScale.y = scaleY
       
-      projector.elem.style.transform = `scale(${Math.max(minScale.x, scaleX)}, ${Math.max(minScale.y, scaleY)})`
+      scales.push({
+        x: Math.max(minScale.x, scaleX),
+        y: Math.max(minScale.y, scaleY)
+      })
     }
+
+    this.projector.rescale(scales)
 
     this.shadow.elem.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
     this.shadow.ctx.clearRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
@@ -2012,9 +1989,7 @@ export default class Ambilight {
           }
           this.blendedProjectorBuffer.ctx.globalAlpha = 1
 
-          for(const projector of this.projectors) {
-            projector.ctx.drawImage(this.blendedProjectorBuffer.elem, 0, 0)
-          }
+          this.projector.draw(this.blendedProjectorBuffer.elem)
         }
       }
     } else {
@@ -2043,9 +2018,7 @@ export default class Ambilight {
         //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
         //   }
         // }
-        for(const projector of this.projectors) {
-          projector.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-        }
+        this.projector.draw(this.projectorBuffer.elem)
       }
     }
 
