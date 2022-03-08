@@ -8,16 +8,16 @@ export default class ProjectorWebGL {
     this.containerElem = containerElem
 
     this.canvas = document.createElement('canvas')
-    this.canvas.classList.add('ambilight__projector-list')
+    this.canvas.classList.add('ambilight__projector')
     this.containerElem.prepend(this.canvas)
 
     this.ctx = this.canvas.getContext('webgl2', {
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
       alpha: false
     });
 
     this.projectors = [{
-      canvas: this.canvas,
+      elem: this.canvas,
       ctx: this.ctx
     }]
 
@@ -32,6 +32,7 @@ export default class ProjectorWebGL {
     this.levels = levels
   }
 
+  // TODO: Cut off left, top and right canvas outside the browser + blur size
   resize(width, height) {
     this.width = width
     this.height = height
@@ -41,7 +42,7 @@ export default class ProjectorWebGL {
     this.scale = scales[scales.length - 1]
     this.canvas.style.transform = `scale(${this.scale.x}, ${this.scale.y})`
 
-    // TODO: Set canvas width x height x scale
+    // Todo: Cut in half when above a certain size
     const width = Math.floor(this.width * this.scale.x)
     const height = Math.floor(this.height * this.scale.y)
     if (this.canvas.width !== width)
@@ -99,18 +100,20 @@ export default class ProjectorWebGL {
       this.ctx.detachShader(this.program, this.fragmentShader);
     }
 
+    // Todo: Replace for loop with a direct [x,y] to scale conversion (GPU 65% -> 45%)
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
       uniform sampler2D sampler;
       uniform vec2 fScales[${this.scales.length}];
+      uniform vec2 fScalesMinus[${this.scales.length}];
       uniform vec4 fBorderColor;
     
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         for (int i = 0; i < ${this.scales.length}; i++) {
           vec2 scaledUV = vec2(
-            uv[0] * fScales[i][0] - ((fScales[i][0] - 1.) / 2.),
-            uv[1] * fScales[i][1] - ((fScales[i][1] - 1.) / 2.)
+            uv[0] * fScales[i][0] - fScalesMinus[i][0],
+            uv[1] * fScales[i][1] - fScalesMinus[i][1]
           );
           if (
             scaledUV[0] > 0. && scaledUV[0] < 1. &&
@@ -123,7 +126,6 @@ export default class ProjectorWebGL {
       }
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV);
         gl_FragColor = multiTexture(sampler, fUV);
       }
     `;
@@ -175,12 +177,16 @@ export default class ProjectorWebGL {
     this.ctx.enableVertexAttribArray(vPositionLoc);
       
     const fBorderColorLoc = this.ctx.getUniformLocation(this.program, 'fBorderColor');
-    const borderColor = new Float32Array([1, 0, 0, 0]);
+    const borderColor = new Float32Array([0, 0, 0, 0]);
     this.ctx.uniform4fv(fBorderColorLoc, borderColor);
     
     const fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
     const fScales = new Float32Array(this.scales.map(({ x, y }) => [x, y]).flat());
     this.ctx.uniform2fv(fScalesLoc, fScales);
+
+    const fScalesMinusLoc = this.ctx.getUniformLocation(this.program, 'fScalesMinus');
+    const fScalesMinus = new Float32Array(this.scales.map(({ x, y }) => [((x - 1) / 2), ((y - 1) / 2)]).flat());
+    this.ctx.uniform2fv(fScalesMinusLoc, fScalesMinus);
 
     // Texture
     const texture = this.ctx.createTexture();

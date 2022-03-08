@@ -574,9 +574,13 @@ export default class Ambilight {
     this.projectorsElem = document.createElement('div')
     this.projectorsElem.classList.add('ambilight__projectors')
     this.clipElem.prepend(this.projectorsElem)
+    
+    this.projectorListElem = document.createElement('div')
+    this.projectorListElem.classList.add('ambilight__projector-list')
+    this.projectorsElem.prepend(this.projectorListElem)
 
     //this.projector = new Projector2d(this.projectorsElem)
-    this.projector = new ProjectorWebGL(this.projectorsElem) 
+    this.projector = new ProjectorWebGL(this.projectorListElem) 
 
     const shadowElem = new Canvas(1920, 1080, true)
     shadowElem.classList.add('ambilight__shadow')
@@ -2019,6 +2023,8 @@ export default class Ambilight {
         //   }
         // }
         this.projector.draw(this.projectorBuffer.elem)
+
+        // Todo: copy videoSnapshotBuffer instead with clipping
       }
     }
 
