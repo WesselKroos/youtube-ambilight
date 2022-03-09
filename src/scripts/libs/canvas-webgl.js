@@ -17,9 +17,14 @@ export class WebGLCanvas {
 
 export class WebGLOffscreenCanvas {
   constructor(width, height) {
-    this.canvas = new OffscreenCanvas(width, height);
-    this.canvas.width = width;
-    this.canvas.height = height;
+    if(typeof OffscreenCanvas !== 'undefined') {
+      this.canvas = new OffscreenCanvas(width, height);
+    } else {
+      this.canvas = document.createElement('canvas')
+      this.canvas.width = width;
+      this.canvas.height = height;
+    }
+    
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
