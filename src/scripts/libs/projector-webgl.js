@@ -57,9 +57,9 @@ export default class ProjectorWebGL {
       this.scale = scales[scales.length - 1]
       const width = Math.floor(this.width * this.scale.x)
       const height = Math.floor(this.height * this.scale.y)
-      blurPx = Math.round(blurPx * .75 * (this.height / 512))
+      blurPx = Math.round((this.height / 512) * .45 * blurPx)
       this.blurBound = blurPx * 2.64;
-      this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / width)}, ${this.scale.y + ((this.blurBound * 2) / height)})`
+      this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / this.width)}, ${this.scale.y + ((this.blurBound * 2) / this.height)})`
 
       // Todo: Cut in half when above a certain size
       this.canvas.width = width
