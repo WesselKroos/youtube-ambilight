@@ -5,7 +5,7 @@ export default class Projector2d {
   constructor(containerElem) {
     this.containerElem = containerElem
 
-    this.shadow = new ProjectorShadow()
+    this.shadow = new ProjectorShadow(false)
     this.shadow.elem.classList.add('ambilight__shadow')
     this.containerElem.appendChild(this.shadow.elem)
     

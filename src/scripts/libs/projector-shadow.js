@@ -1,13 +1,18 @@
-import { ctxOptions, SafeOffscreenCanvas } from "./generic"
+import { Canvas, ctxOptions, SafeOffscreenCanvas } from './generic'
 
 export default class ProjectorShadow {
-  constructor() {
-    this.elem = new SafeOffscreenCanvas(1920, 1080, true)
+  constructor(offscreen = true) {
+    this.elem = offscreen
+      ? new SafeOffscreenCanvas(1920, 1080, true)
+      : new Canvas(1920, 1080)
     this.ctx = this.elem.getContext('2d', { ...ctxOptions, alpha: true })
   }
 
   rescale(scale, projectorSize, settings) {
-    this.elem.style.transform = `scale(${scale.x + 0.01}, ${scale.y + 0.01})`
+    if (this.elem.style) {
+      this.elem.style.transform = `scale(${scale.x + 0.01}, ${scale.y + 0.01})`
+    }
+    
     this.ctx.clearRect(0, 0, this.elem.width, this.elem.height)
 
     //Shadow gradient 
