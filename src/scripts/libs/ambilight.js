@@ -5,7 +5,7 @@ import { isWatchPageUrl } from './utils'
 import Settings from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
-import { WebGLCanvas } from './canvas-webgl'
+import { WebGLOffscreenCanvas } from './canvas-webgl'
 
 const VIEW_DETACHED = 'VIEW_DETACHED'
 const VIEW_SMALL = 'VIEW_SMALL'
@@ -218,7 +218,7 @@ export default class Ambilight {
   detectChromiumBug1123708Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version >= 85) {
+    if(version && version >= 85 && false) {
       this.enableChromiumBug1123708Workaround = true
     }
   }
@@ -579,17 +579,8 @@ export default class Ambilight {
     this.projectorListElem.classList.add('ambilight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    //this.projector = new Projector2d(this.projectorsElem)
-    this.projector = new ProjectorWebGL(this.projectorListElem) 
-
-    const shadowElem = new Canvas(1920, 1080, true)
-    shadowElem.classList.add('ambilight__shadow')
-    this.projectorsElem.appendChild(shadowElem)
-    const shadowCtx = shadowElem.getContext('2d', { ...ctxOptions, alpha: true })
-    this.shadow = {
-      elem: shadowElem,
-      ctx: shadowCtx
-    }
+    // this.projector = new Projector2d(this.projectorListElem)
+    this.projector = new ProjectorWebGL(this.projectorListElem)
 
     // Dont draw ambilight when its not in viewport
     this.isAmbilightHiddenOnWatchPage = false
@@ -611,7 +602,7 @@ export default class Ambilight {
         }
       )
     }
-    this.ambilightObserver.observe(shadowElem)
+    this.ambilightObserver.observe(this.projector.boundaryElem)
 
     // Warning: Using Canvas elements in this div instead of OffScreenCanvas
     // while waiting for a fix for this issue:
@@ -625,13 +616,16 @@ export default class Ambilight {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
-    const videoSnapshotBufferElem = new WebGLCanvas(1, 1, true)
+    const videoSnapshotBufferElem = new WebGLOffscreenCanvas(1, 1, true)
     if (videoSnapshotBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
     }
     this.videoSnapshotBuffer = {
       elem: videoSnapshotBufferElem,
-      ctx: videoSnapshotBufferElem.getContext('2d', ctxOptions)
+      ctx: videoSnapshotBufferElem.getContext('2d', {
+        ...ctxOptions,
+        desynchronized: true
+      })
     }
 
     const videoSnapshotGetImageDataBufferElem = new SafeOffscreenCanvas(1, 1)
@@ -646,7 +640,7 @@ export default class Ambilight {
       })
     }
 
-    const projectorsBufferElem = new WebGLCanvas(1, 1, true)
+    const projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, true)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
@@ -950,7 +944,7 @@ export default class Ambilight {
       height: this.videoElem.videoHeight
     }
 
-    const minSize = 512
+    const minSize = this.settings.resolution
     const scaleX = this.srcVideoOffset.width / minSize
     const scaleY = this.srcVideoOffset.height / minSize
     const scale = Math.min(scaleX, scaleY)
@@ -1008,8 +1002,9 @@ export default class Ambilight {
     const contrast = this.settings.contrast
     const brightness = this.settings.brightness
     const saturation = this.settings.saturation
+    this.blurPx = Math.round(this.videoOffset.height * (blur * .0025))
     this.filterElem.style.filter = `
-      ${(blur != 0) ? `blur(${Math.round(this.videoOffset.height) * (blur * .0025)}px)` : ''}
+      /*${(blur != 0) ? `blur(${this.blurPx}px)` : ''}*/
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
@@ -1216,144 +1211,7 @@ export default class Ambilight {
       })
     }
 
-    this.projector.rescale(scales)
-
-    this.shadow.elem.style.transform = `scale(${lastScale.x + 0.01}, ${lastScale.y + 0.01})`
-    this.shadow.ctx.clearRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
-
-    //Shadow gradient 
-    const drawGradient = (size, edge, keyframes, fadeOutFrom, darkest, horizontal) => {
-      const points = [
-        0,
-        ...keyframes.map(e => Math.max(
-          0, edge - (edge * e.p) - (edge * fadeOutFrom * (1 - e.p))
-        )),
-        edge - (edge * fadeOutFrom),
-        edge + size + (edge * fadeOutFrom),
-        ...keyframes.reverse().map(e => Math.min(
-          edge + size + edge, edge + size + (edge * e.p) + (edge * fadeOutFrom * (1 - e.p))
-        )),
-        edge + size + edge
-      ]
-
-      const pointMax = (points[points.length - 1])
-      const gradient = this.shadow.ctx.createLinearGradient(
-        0,
-        0,
-        horizontal ? this.shadow.elem.width : 0,
-        !horizontal ? this.shadow.elem.height : 0
-      )
-
-      let gradientStops = []
-      gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
-      for (const i in keyframes) {
-        const e = keyframes[i]
-        gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`])
-      }
-      gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
-      gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
-      keyframes.reverse()
-      for (const i in keyframes) {
-        const e = keyframes[i]
-        gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`])
-      }
-      gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
-
-      gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
-      for (const gs of gradientStops) {
-        gradient.addColorStop(...gs)
-      }
-      this.shadow.ctx.fillStyle = gradient
-      this.shadow.ctx.fillRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
-    }
-
-    const edge = {
-      w: ((projectorSize.w * lastScale.x) - projectorSize.w) / 2 / lastScale.x,
-      h: ((projectorSize.h * lastScale.y) - projectorSize.h) / 2 / lastScale.y
-    }
-    const video = {
-      w: (projectorSize.w / lastScale.x),
-      h: (projectorSize.h / lastScale.y)
-    }
-
-    const plotKeyframes = (length, powerOf, darkest) => {
-      const keyframes = []
-      for (let i = 1; i < length; i++) {
-        keyframes.push({
-          p: (i / length),
-          o: Math.pow(i / length, powerOf) * darkest
-        })
-      }
-      return keyframes.map(({p, o}) => ({
-        p: (Math.round(p * 10000) / 10000),
-        o: (Math.round(o * 10000) / 10000)
-      }))
-    }
-    const darkest = 1
-    const easing = (16 / (this.settings.fadeOutEasing * .64))
-    const keyframes = plotKeyframes(256, easing, darkest)
-
-    let fadeOutFrom = this.settings.bloom / 100
-    const fadeOutMinH = -(video.h / 2 / edge.h)
-    const fadeOutMinW = -(video.w / 2 / edge.w)
-    fadeOutFrom = Math.max(fadeOutFrom, fadeOutMinH, fadeOutMinW)
-
-    drawGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest, false)
-    drawGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest, true)
-
-    // Directions
-    const scaleW = this.shadow.elem.width / (video.w + edge.w + edge.w)
-    const scaleH = this.shadow.elem.height / (video.h + edge.h + edge.h)
-    this.shadow.ctx.fillStyle = '#000000'
-
-
-    if(!this.settings.directionTopEnabled) {
-      this.shadow.ctx.beginPath()
-
-      this.shadow.ctx.moveTo(0, 0)
-      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  0)
-      
-      this.shadow.ctx.fill()
-    }
-
-    if(!this.settings.directionRightEnabled) {
-      this.shadow.ctx.beginPath()
-
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  0)
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h + video.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  scaleH * (edge.h + video.h + edge.h))
-      
-      this.shadow.ctx.fill()
-    }
-
-    if(!this.settings.directionBottomEnabled) {
-      this.shadow.ctx.beginPath()
-
-      this.shadow.ctx.moveTo(0,                                     scaleH * (edge.h + video.h + edge.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h + video.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w),           scaleH * (edge.h + video.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + video.w + edge.w),  scaleH * (edge.h + video.h + edge.h))
-      
-      this.shadow.ctx.fill()
-    }
-
-    if(!this.settings.directionLeftEnabled) {
-      this.shadow.ctx.beginPath()
-
-      this.shadow.ctx.moveTo(0,                                     0)
-      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h))
-      this.shadow.ctx.lineTo(scaleW * (edge.w + (video.w / 2)),     scaleH * (edge.h + (video.h / 2)))
-      this.shadow.ctx.lineTo(scaleW * (edge.w),                     scaleH * (edge.h + video.h))
-      this.shadow.ctx.lineTo(0,                                     scaleH * (edge.h + video.h + edge.h))
-      
-      this.shadow.ctx.fill()
-    }
+    this.projector.rescale(scales, lastScale, projectorSize, this.settings, this.blurPx)
   }
 
   checkVideoSize(checkPosition = true) {

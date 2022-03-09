@@ -1,12 +1,15 @@
 import { Canvas, ctxOptions } from './generic'
+import ProjectorShadow from './projector-shadow'
 
 export default class Projector2d {
   constructor(containerElem) {
     this.containerElem = containerElem
 
-    this.projectorListElem = document.createElement('div')
-    this.projectorListElem.classList.add('ambilight__projector-list')
-    this.containerElem.prepend(this.projectorListElem)
+    this.shadow = new ProjectorShadow()
+    this.shadow.elem.classList.add('ambilight__shadow')
+    this.containerElem.appendChild(this.shadow.elem)
+    
+    this.boundaryElem = this.shadow.elem
   }
 
   remove() {
@@ -32,7 +35,7 @@ export default class Projector2d {
       projectorElem.classList.add('ambilight__projector')
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
-      this.projectorListElem.prepend(projectorElem)
+      this.containerElem.prepend(projectorElem)
 
       this.projectors.push({
         elem: projectorElem,
@@ -50,10 +53,12 @@ export default class Projector2d {
     }
   }
 
-  rescale(scales) {
+  rescale(scales, lastScale, projectorSize, settings) {
     for(const i in scales) {
       this.projectors[i].elem.style.transform = `scale(${scales[i].x}, ${scales[i].y})`
     }
+
+    this.shadow.rescale(lastScale, projectorSize, settings)
   }
 
   draw(src, srcRect) {

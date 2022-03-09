@@ -35,7 +35,7 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   constructor(canvas, type, options) {
     this.canvas = canvas;
-    this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: true, alpha: false, ...options });
+    this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: false, alpha: false, desynchronized: true, ...options });
 
     // Shaders
     var vertexShaderSrc = `

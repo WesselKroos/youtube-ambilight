@@ -1,4 +1,4 @@
-import { Canvas, ctxOptions } from './generic'
+import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
   levels = 1
@@ -9,11 +9,21 @@ export default class ProjectorWebGL {
 
     this.canvas = document.createElement('canvas')
     this.canvas.classList.add('ambilight__projector')
-    this.containerElem.prepend(this.canvas)
+
+    this.blurCanvas = document.createElement('canvas')
+    this.blurCanvas.classList.add('ambilight__projector')
+    this.containerElem.prepend(this.blurCanvas)
+    this.boundaryElem = this.blurCanvas
+    this.blurCtx = this.blurCanvas.getContext('2d', {
+      alpha: true,
+      desynchronized: true
+    });
 
     this.ctx = this.canvas.getContext('webgl2', {
       preserveDrawingBuffer: false,
-      alpha: false
+      premultipliedAlpha: false,
+      alpha: true,
+      desynchronized: true
     });
 
     this.projectors = [{
@@ -21,6 +31,8 @@ export default class ProjectorWebGL {
       ctx: this.ctx
     }]
 
+    this.shadow = new ProjectorShadow()
+    
     this.initCtx()
   }
 
@@ -38,24 +50,34 @@ export default class ProjectorWebGL {
     this.height = height
   }
 
-  rescale(scales) {
-    this.scale = scales[scales.length - 1]
-    this.canvas.style.transform = `scale(${this.scale.x}, ${this.scale.y})`
+  rescale(scales, lastScale, projectorSize, settings, blurPx) {
+    try {
+      this.shadow.rescale(lastScale, projectorSize, settings)
 
-    // Todo: Cut in half when above a certain size
-    const width = Math.floor(this.width * this.scale.x)
-    const height = Math.floor(this.height * this.scale.y)
-    if (this.canvas.width !== width)
+      this.scale = scales[scales.length - 1]
+      const width = Math.floor(this.width * this.scale.x)
+      const height = Math.floor(this.height * this.scale.y)
+      blurPx = Math.round(blurPx * .75 * (this.height / 512))
+      this.blurBound = blurPx * 2.64;
+      this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / width)}, ${this.scale.y + ((this.blurBound * 2) / height)})`
+
+      // Todo: Cut in half when above a certain size
       this.canvas.width = width
-    if (this.canvas.height !== height)
+      this.blurCanvas.width = width + this.blurBound * 2
       this.canvas.height = height
+      this.blurCanvas.height = height + this.blurBound * 2
 
-    this.scales = scales.map(({x, y}) => ({
-      x: this.scale.x / x,
-      y: this.scale.y / y
-    }))
+      this.scales = scales.map(({x, y}) => ({
+        x: this.scale.x / x,
+        y: this.scale.y / y
+      }))
 
-    this.updateCtx()
+      this.updateCtx()
+
+      this.blurCtx.filter = `blur(${blurPx}px)`
+    } catch(ex) {
+      console.warn(ex)
+    }
   }
 
   draw(src) {
@@ -65,6 +87,10 @@ export default class ProjectorWebGL {
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    this.ctx.flush();
+
+    this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
+    this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
   }
 
   initCtx() {
@@ -104,7 +130,8 @@ export default class ProjectorWebGL {
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
-      uniform sampler2D sampler;
+      uniform sampler2D ambilightSampler;
+      uniform sampler2D shadowSampler;
       uniform vec2 fScales[${this.scales.length}];
       uniform vec2 fScalesMinus[${this.scales.length}];
       uniform vec4 fBorderColor;
@@ -126,7 +153,10 @@ export default class ProjectorWebGL {
       }
       
       void main(void) {
-        gl_FragColor = multiTexture(sampler, fUV);
+        vec4 ambilight = multiTexture(ambilightSampler, fUV);
+        float shadowAlpha = texture2D(shadowSampler, fUV).a;
+        ambilight[3] = 1. - shadowAlpha;
+        gl_FragColor = ambilight;
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
@@ -188,9 +218,27 @@ export default class ProjectorWebGL {
     const fScalesMinus = new Float32Array(this.scales.map(({ x, y }) => [((x - 1) / 2), ((y - 1) / 2)]).flat());
     this.ctx.uniform2fv(fScalesMinusLoc, fScalesMinus);
 
-    // Texture
-    const texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
+    const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, "shadowSampler");
+    this.ctx.uniform1i(shadowSamplerLoc, 0);
+
+    const ambilightSamplerLoc = this.ctx.getUniformLocation(this.program, "ambilightSampler");
+    this.ctx.uniform1i(ambilightSamplerLoc, 1);
+
+    // Textures
+    this.shadowTexture = this.ctx.createTexture();
+    this.ctx.activeTexture(this.ctx.TEXTURE0);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.shadowTexture);
+    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
+    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, this.shadow.elem);
+
+    this.projectorsTexture = this.ctx.createTexture();
+    this.ctx.activeTexture(this.ctx.TEXTURE1);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);

@@ -46,6 +46,18 @@ export default class Settings {
       advanced: false
     },
     {
+      name: 'resolution',
+      label: 'Resolution',
+      type: 'list',
+      default: 384,
+      min: 64,
+      max: 1024,
+      step: 64,
+      unit: 'px',
+      manualinput: false,
+      advanced: true
+    },
+    {
       name: 'framerateLimit',
       label: 'Limit framerate (per second)',
       type: 'list',
@@ -971,7 +983,7 @@ export default class Settings {
     if(setting.name === 'theme') {
       return setting.snapPoints.find(point => point.value === value)?.label
     }
-    return `${value}%`
+    return `${value}${setting.unit || '%'}`
   }
 
   settingsMenuOnCloseScrollBottom = 0
