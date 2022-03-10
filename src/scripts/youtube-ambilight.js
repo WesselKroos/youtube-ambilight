@@ -120,8 +120,7 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
 }
 
 const ambilightDetectPageTransitions = (ytdAppElem) => {
-  const navigationManager = document.querySelector('yt-navigation-manager')
-  on(navigationManager, 'yt-navigate-finish', () => {
+  on(document, 'yt-navigate-finish', () => {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       ambilightStartIfWatchPageHasVideo(ytdAppElem)
