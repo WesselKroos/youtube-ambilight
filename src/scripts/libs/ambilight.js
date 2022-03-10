@@ -587,11 +587,11 @@ export default class Ambilight {
 
     // Dont draw ambilight when its not in viewport
     this.isAmbilightHiddenOnWatchPage = false
-    if(this.shadowObserver) {
-      this.shadowObserver.disconnect()
+    if(this.ambilightObserver) {
+      this.ambilightObserver.disconnect()
     }
-    if(!this.shadowObserver) {
-      this.shadowObserver = new IntersectionObserver(
+    if(!this.ambilightObserver) {
+      this.ambilightObserver = new IntersectionObserver(
         wrapErrorHandler((entries, observer) => {
           for (const entry of entries) {
             this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
@@ -605,7 +605,7 @@ export default class Ambilight {
         }
       )
     }
-    this.shadowObserver.observe(shadowElem)
+    this.ambilightObserver.observe(shadowElem)
 
     // Warning: Using Canvas elements in this div instead of OffScreenCanvas
     // while waiting for a fix for this issue:
@@ -1459,6 +1459,18 @@ export default class Ambilight {
   onNextFrame = () => {
     if (!this.scheduledNextFrame) return
 
+    if(
+      this.requestVideoFrameCallbackId &&
+      this.settings.frameSync == 150 &&
+      !this.videoIsHidden &&
+      !this.frameBlending
+    ) {
+      if (this.settings.showFPS)
+        this.detectDisplayFrameRate()
+      raf(this.onNextFrame)
+      return
+    }
+
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
 
@@ -1555,7 +1567,18 @@ export default class Ambilight {
       this.scheduleHorizontalBarSizeDetection()
     }
 
-    if(this.afterNextFrameIdleCallback) return
+    if(
+      this.afterNextFrameIdleCallback ||
+      (
+        !this.settings.videoOverlayEnabled &&
+        !(
+          this.delayedCheckVideoSizeAndPosition &&
+          (performance.now() - this.lastCheckVideoSizeTime) > 2000
+        ) &&
+        !((performance.now() - this.lastUpdateStatsTime) > 2000)
+      )
+    ) return
+    
     this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
