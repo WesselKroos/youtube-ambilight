@@ -2074,7 +2074,7 @@ export default class Ambilight {
   }
 
   scheduleHorizontalBarSizeDetectionCallback = (percentage) => {
-    if(percentage !== undefined)
+    if(this.settings.detectHorizontalBarSizeEnabled && percentage !== undefined)
       this.setHorizontalBars(percentage)
   }
 
