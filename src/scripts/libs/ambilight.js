@@ -84,7 +84,7 @@ export default class Ambilight {
     wrapErrorHandler(() => {
       if (this.settings.enabled)
         this.enable(true)
-    })
+    })()
   }
 
   initElems(videoElem) {
