@@ -560,6 +560,7 @@ html[data-ambilight-enabled="true"] {
   bottom: 49px;
   z-index: 1001 !important; // above ad
   opacity: 0;
+  cursor: default;
   transition: none;
   will-change: width,height;
   .ytp-fullscreen & {

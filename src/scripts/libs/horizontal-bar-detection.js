@@ -1,6 +1,6 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './libs/generic'
-import AmbilightSentry from './libs/ambilight-sentry'
-import { workerFromCode } from './libs/worker'
+import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './generic'
+import AmbilightSentry from './ambilight-sentry'
+import { workerFromCode } from './worker'
 
 const workerCode = function () {
   // Cannot access appendErrorStack in import from a worker
