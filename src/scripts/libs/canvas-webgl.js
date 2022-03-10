@@ -133,7 +133,7 @@ export class WebGLContext {
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if (!this.viewport || this.viewport.x !== 0 || this.viewport.y !== 0 || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
+    if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
       this.viewport = { x: 0, y: 0, width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
       this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
     }
@@ -153,12 +153,17 @@ export class WebGLContext {
 
     const scaleX = (destWidth / srcWidth)
     const scaleY = (destHeight / srcHeight)
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
-      -scaleX, scaleY, 
-      -scaleX, -scaleY, 
-      scaleX, -scaleY, 
-      scaleX, scaleY
-    ]), this.ctx.STATIC_DRAW);
+    if (scaleX !== this.scaleX || scaleY !== this.scaleY) {
+      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+        -scaleX, scaleY, 
+        -scaleX, -scaleY, 
+        scaleX, -scaleY, 
+        scaleX, scaleY
+      ]), this.ctx.STATIC_DRAW);
+
+      this.scaleX = scaleX
+      this.scaleY = scaleY
+    }
 
     // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, width, height, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     // this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, srcX, srcY, srcWidth, srcHeight, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);

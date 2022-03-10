@@ -318,7 +318,8 @@ export class HorizontalBarDetection {
     try {
       const start = performance.now()
 
-      if(!this.canvas) {
+      if(!this.canvas) { 
+        // Cannot use WebGL because in combination with transferToImageBitmap this creates a GPU memory leak
         this.canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
         this.ctx = this.canvas.getContext('2d', {
           alpha: false,

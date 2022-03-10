@@ -16,7 +16,7 @@ export default class ProjectorWebGL {
     this.boundaryElem = this.blurCanvas
     this.blurCtx = this.blurCanvas.getContext('2d', {
       alpha: true,
-      desynchronized: true
+      desynchronized: false
     });
 
     this.ctx = this.canvas.getContext('webgl2', {
