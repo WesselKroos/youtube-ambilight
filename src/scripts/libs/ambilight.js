@@ -1463,7 +1463,7 @@ export default class Ambilight {
       this.requestVideoFrameCallbackId &&
       this.settings.frameSync == 150 &&
       !this.videoIsHidden &&
-      !this.frameBlending
+      !this.settings.frameBlending
     ) {
       if (this.settings.showFPS)
         this.detectDisplayFrameRate()
@@ -1806,7 +1806,7 @@ export default class Ambilight {
         this.atTop &&
         this.isFillingFullscreen && 
         !this.settings.detectHorizontalBarSizeEnabled &&
-        !this.frameBlending &&
+        !this.settings.frameBlending &&
         !this.settings.videoOverlayEnabled
       ) ||
       this.isVideoHiddenOnWatchPage || 
@@ -1855,7 +1855,7 @@ export default class Ambilight {
       hasNewFrame = hasNewFrame || updateVideoSnapshot
     } else if(this.settings.frameSync == 0) { // PERFORMANCE
       hasNewFrame = hasNewFrame || updateVideoSnapshot
-    } else if (this.settings.frameSync == 50 || this.frameBlending) { // BALANCED
+    } else if (this.settings.frameSync == 50 || this.settings.frameBlending) { // BALANCED
       hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount)
       
       if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
@@ -1918,7 +1918,7 @@ export default class Ambilight {
       this.isFillingFullscreen
     )
 
-    if (this.frameBlending && this.settings.frameBlendingSmoothness) {
+    if (this.settings.frameBlending && this.settings.frameBlendingSmoothness) {
       if (!this.previousProjectorBuffer) {
         this.initFrameBlending()
       }
