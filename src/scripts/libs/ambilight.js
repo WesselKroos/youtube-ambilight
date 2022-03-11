@@ -998,13 +998,11 @@ export default class Ambilight {
       this.videoShadowElem.style.display = ''
     }
 
-    const blur = this.settings.blur
     const contrast = this.settings.contrast
     const brightness = this.settings.brightness
     const saturation = this.settings.saturation
-    this.blurPx = Math.round(this.videoOffset.height * (blur * .0025))
     this.filterElem.style.filter = `
-      /*${(blur != 0) ? `blur(${this.blurPx}px)` : ''}*/
+      /*${(blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}*/
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
@@ -1211,7 +1209,7 @@ export default class Ambilight {
       })
     }
 
-    this.projector.rescale(scales, lastScale, projectorSize, this.settings, this.blurPx)
+    this.projector.rescale(scales, lastScale, projectorSize, this.settings)
   }
 
   checkVideoSize(checkPosition = true) {

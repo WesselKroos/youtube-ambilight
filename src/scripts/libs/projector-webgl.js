@@ -50,14 +50,14 @@ export default class ProjectorWebGL {
     this.height = height
   }
 
-  rescale(scales, lastScale, projectorSize, settings, blurPx) {
+  rescale(scales, lastScale, projectorSize, settings) {
     try {
       this.shadow.rescale(lastScale, projectorSize, settings)
 
       this.scale = scales[scales.length - 1]
       const width = Math.floor(this.width * this.scale.x)
       const height = Math.floor(this.height * this.scale.y)
-      blurPx = Math.round((this.height / 512) * .45 * blurPx)
+      const blurPx = Math.round(settings.blur * (this.height / 512) * 1.275)
       this.blurBound = blurPx * 2.64;
       this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / this.width)}, ${this.scale.y + ((this.blurBound * 2) / this.height)})`
 
@@ -240,8 +240,8 @@ export default class ProjectorWebGL {
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
 
