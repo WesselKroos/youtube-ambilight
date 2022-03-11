@@ -52,8 +52,5 @@
   "options_ui": {
     "page": "options.html",
     "chrome_style": false
-  },
-  "permissions": [
-    "https://www.youtube.com/*"
-  ]
+  }
 }
