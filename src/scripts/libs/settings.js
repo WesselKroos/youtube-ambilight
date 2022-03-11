@@ -900,6 +900,8 @@ export default class Settings {
 
             const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
             this.displayBezel(key, !value)
+            this.ambilight.optionalFrame()
+            return
           }
 
           if(setting.name === 'detectVideoFillScaleEnabled') {
