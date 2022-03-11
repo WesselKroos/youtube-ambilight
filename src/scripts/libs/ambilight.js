@@ -1453,10 +1453,10 @@ export default class Ambilight {
 
     this.scheduleRequestVideoFrame()
     this.scheduledNextFrame = true
-    raf(this.onNextFrame)
+    requestAnimationFrame(this.onNextFrame)
   }
 
-  onNextFrame = () => {
+  onNextFrame = wrapErrorHandler(() => {
     if (!this.scheduledNextFrame) return
 
     if(
@@ -1467,7 +1467,8 @@ export default class Ambilight {
     ) {
       if (this.settings.showFPS)
         this.detectDisplayFrameRate()
-      raf(this.onNextFrame)
+
+      requestAnimationFrame(this.onNextFrame)
       return
     }
 
@@ -1485,7 +1486,7 @@ export default class Ambilight {
     this.detectAmbilightFrameRate()
     this.detectVideoFrameRate()
     // this.detectVideoIsDroppingFrames()
-  }
+  })
 
   onNextLimitedFrame = () => {
     const time = performance.now()
@@ -1540,9 +1541,9 @@ export default class Ambilight {
       this.delayedCheckVideoSizeAndPosition = true
     }
     
-    let tasks = {}
+    let results = {}
     try {
-      tasks = this.drawAmbilight() || {}
+      results = this.drawAmbilight() || {}
     } catch (ex) {
       if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
         if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -1563,7 +1564,7 @@ export default class Ambilight {
       this.scheduleNextFrame()
     }
 
-    if (tasks.detectHorizontalBarSize) {
+    if (results.detectHorizontalBarSize) {
       this.scheduleHorizontalBarSizeDetection()
     }
 
@@ -1600,8 +1601,6 @@ export default class Ambilight {
         this.updateStats()
         this.lastUpdateStatsTime = performance.now()
       }
-
-      this.afterDrawAmbilightTasks = {}
     } catch (ex) {
       // Prevent recursive error reporting
       if(this.scheduledNextFrame) {
@@ -1946,8 +1945,8 @@ export default class Ambilight {
           this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
             0,
             this.videoSnapshotBufferBarsClipPx,
-            this.videoSnapshotBuffer.elem.width,
-            this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2),
+            this.p.w,
+            this.p.h - (this.videoSnapshotBufferBarsClipPx * 2),
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
           if(this.buffersCleared) {
             this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
@@ -2037,8 +2036,8 @@ export default class Ambilight {
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
           0,
           this.videoSnapshotBufferBarsClipPx,
-          this.videoSnapshotBuffer.elem.width,
-          this.videoSnapshotBuffer.elem.height - (this.videoSnapshotBufferBarsClipPx * 2), 
+          this.p.w,
+          this.p.h - (this.videoSnapshotBufferBarsClipPx * 2), 
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {

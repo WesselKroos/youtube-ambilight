@@ -21,19 +21,15 @@ const workerCode = function () {
   let imageVLines = []
   let imageVLinesIndex = 0
   let partSize = 1
-  let throttle = 0
   let getLineImageDataStack;
   let getLineImageDataResolve;
   let getLineImageDataReject;
 
   function getLineImageData() {
-    const start = performance.now()
     try {
       imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
       getLineImageDataResolve()
     } catch(ex) {
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
       appendErrorStack(getLineImageDataStack, ex)
       getLineImageDataReject(ex)
     }
@@ -42,7 +38,7 @@ const workerCode = function () {
   function getLineImageDataPromise(resolve, reject) {
     getLineImageDataResolve = resolve
     getLineImageDataReject = reject
-    setTimeout(getLineImageData, throttle)
+    setTimeout(getLineImageData, 0)
   }
 
   let averageSize = 0;
@@ -54,8 +50,8 @@ const workerCode = function () {
 
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
-      partSize = 1
-      for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
+      partSize = (canvas.width / 5)
+      for (imageVLinesIndex = Math.ceil(partSize / 2) - 1; imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
         }
@@ -303,7 +299,7 @@ export class HorizontalBarDetection {
       callback
     }
 
-    requestIdleCallback(wrapErrorHandler(() => this.idleHandler(run)), { timeout: 1000 })
+    requestIdleCallback(wrapErrorHandler(async () => await this.idleHandler(run)), { timeout: 1000 })
   }
 
   idleHandler = async (run) => {
