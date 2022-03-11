@@ -1447,30 +1447,28 @@ export default class Ambilight {
 
   scheduleNextFrame() {
     if (
-      !this.canScheduleNextFrame() ||
-      this.scheduledNextFrame
+      this.scheduledNextFrame ||
+      !this.canScheduleNextFrame()
     ) return
 
     this.scheduleRequestVideoFrame()
+    if(
+      this.settings.frameSync == 150 &&
+      this.requestVideoFrameCallbackId &&
+      !this.videoIsHidden &&
+      !this.settings.frameBlending &&
+      !this.settings.showFPS
+    ) return
+
     this.scheduledNextFrame = true
-    requestAnimationFrame(this.onNextFrame)
+    if(!this.videoIsHidden)
+      requestAnimationFrame(this.onNextFrame)
+    else
+      setTimeout(() => requestAnimationFrame(this.onNextFrame), this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
   onNextFrame = wrapErrorHandler(() => {
     if (!this.scheduledNextFrame) return
-
-    if(
-      this.requestVideoFrameCallbackId &&
-      this.settings.frameSync == 150 &&
-      !this.videoIsHidden &&
-      !this.settings.frameBlending
-    ) {
-      if (this.settings.showFPS)
-        this.detectDisplayFrameRate()
-
-      requestAnimationFrame(this.onNextFrame)
-      return
-    }
 
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
@@ -2226,15 +2224,10 @@ export default class Ambilight {
   receiveVideoFrame = () => {
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
-
-    // Chromium issue: <todo>
-    //
-    // Call requestVideoFrameCallback immediately because the next callback sometimes 
-    // misses the next video frame when the video framerate matches the display framerate
-    // and requestVideoFrameCallback is called after drawing the ambilight canvas.
-    // Calling requestVideoFrameCallback immediately makes sure we always get the next 
-    // video frame as long as drawAmbilight is finished before the next video frame is presented.
-    this.videoElem.requestVideoFrameCallback(() => {})
+    
+    if(this.scheduledNextFrame) return
+    this.scheduledNextFrame = true
+    this.onNextFrame()
   }
 
   hide() {
