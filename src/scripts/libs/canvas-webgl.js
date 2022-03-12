@@ -38,9 +38,24 @@ export class WebGLOffscreenCanvas {
 }
 
 export class WebGLContext {
-  constructor(canvas, type, options) {
+  constructor(canvas, type, options = {}) {
     this.canvas = canvas;
-    this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: false, alpha: false, desynchronized: true, ...options });
+    this.canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      this.viewport = undefined
+      this.scaleX = undefined
+      this.scaleY = undefined
+    }, false);
+    this.canvas.addEventListener("webglcontextrestored", () => {
+      this.initCtx()
+    }, false);
+
+    this.options = options;
+    this.initCtx(options);
+  }
+
+  initCtx = () => {
+    this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: false, alpha: false, desynchronized: true, ...this.options });
 
     // Shaders
     var vertexShaderSrc = `
@@ -129,12 +144,15 @@ export class WebGLContext {
   }
 
   clearRect = (x, y, width, height) => {
+    if(this.ctx.isContextLost()) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
+    if(this.ctx.isContextLost()) return
+
     if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
-      this.viewport = { x: 0, y: 0, width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
+      this.viewport = { width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
       this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
     }
 
@@ -174,6 +192,8 @@ export class WebGLContext {
   getImageDataBuffers = []
   getImageDataBuffersIndex = 0
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
+    if(this.ctx.isContextLost()) return
+
     if(this.getImageDataBuffersIndex > 4) {
       this.getImageDataBuffersIndex = 0;
     } else {

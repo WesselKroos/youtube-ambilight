@@ -1,15 +1,24 @@
+import { SafeOffscreenCanvas } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
-  scales = []
+  scales = [{ x: 1, y: 1 }]
   levels = 1
   maxScalesLength = 103
 
   constructor(containerElem) {
     this.containerElem = containerElem
 
-    this.canvas = document.createElement('canvas')
-    this.canvas.classList.add('ambilight__projector')
+    this.canvas = new SafeOffscreenCanvas(1, 1);
+    this.canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      this.viewport = undefined
+      this.fScalesLength = undefined
+      this.fScales = undefined
+    }, false);
+    this.canvas.addEventListener("webglcontextrestored", () => {
+      this.initCtx()
+    }, false);
 
     this.blurCanvas = document.createElement('canvas')
     this.blurCanvas.classList.add('ambilight__projector')
@@ -19,18 +28,6 @@ export default class ProjectorWebGL {
       alpha: true,
       desynchronized: false
     });
-
-    this.ctx = this.canvas.getContext('webgl2', {
-      preserveDrawingBuffer: false,
-      premultipliedAlpha: false,
-      alpha: true,
-      desynchronized: true
-    });
-
-    this.projectors = [{
-      elem: this.canvas,
-      ctx: this.ctx
-    }]
 
     this.shadow = new ProjectorShadow()
     
@@ -71,6 +68,7 @@ export default class ProjectorWebGL {
 
     this.blurCanvas.width = width + this.blurBound * 2
     this.blurCanvas.height = height + this.blurBound * 2
+    // Todo: Keep width and height scaling equal so that the blur is spread evenly
     this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / this.width)}, ${this.scale.y + ((this.blurBound * 2) / this.height)})`
     
     this.updateCtx()
@@ -79,10 +77,14 @@ export default class ProjectorWebGL {
   }
 
   draw(src) {
+    if(this.ctx.isContextLost()) return
+    
     this.drawImage(src)
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
+    if(this.ctx.isContextLost()) return
+
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
 
@@ -91,6 +93,18 @@ export default class ProjectorWebGL {
   }
 
   initCtx() {
+    this.ctx = this.canvas.getContext('webgl2', {
+      preserveDrawingBuffer: false,
+      premultipliedAlpha: false,
+      alpha: true,
+      desynchronized: true
+    });
+
+    this.projectors = [{
+      elem: this.canvas,
+      ctx: this.ctx
+    }]
+
     // Program
     this.program = this.ctx.createProgram();
 
@@ -227,9 +241,13 @@ export default class ProjectorWebGL {
     this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
     this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
     this.fScalesMinusLoc = this.ctx.getUniformLocation(this.program, 'fScalesMinus');
+
+    this.updateCtx()
   }
 
   updateCtx() {
+    if(this.ctx.isContextLost()) return
+
     const fScalesLength = this.scales.length;
     const fScalesLengthChanged = this.fScalesLength !== fScalesLength;
     if(fScalesLengthChanged) {
@@ -256,6 +274,7 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
+    if(this.ctx.isContextLost()) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 }
