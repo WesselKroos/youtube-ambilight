@@ -265,7 +265,8 @@ export class HorizontalBarDetection {
   run = null
   canvas;
   ctx;
-  catchedDetectHorizontalBarSizeError = false
+  catchedDetectHorizontalBarSizeError = false;
+  lastChange;
 
   clear = () => {
     if(!this.run || !this.cancellable) return
@@ -336,6 +337,7 @@ export class HorizontalBarDetection {
 
       this.workerMessageId++;
       const stack = new Error().stack
+      let newPercentage;
       const onMessagePromise = new Promise((resolve, reject) => {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
@@ -354,6 +356,10 @@ export class HorizontalBarDetection {
               throw e.data.error
             }
             callback(e.data.percentage)
+            newPercentage = e.data.percentage
+            if(newPercentage !== undefined) {
+              this.lastChange = performance.now()
+            }
             resolve()
           } catch(ex) {
             reject(ex)
@@ -374,7 +380,12 @@ export class HorizontalBarDetection {
       if(this.run !== run) return
       
       this.cancellable = true
-      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+      const throttle = (
+        newPercentage !== undefined ||
+        (currentPercentage !== 0 && this.lastChange + 3000 > performance.now())
+      )
+        ? 100 
+        : Math.max(1000, Math.min(5000, Math.pow(performance.now() - start, 1.2) - 30))
       setTimeout(() => {
         if(this.run !== run) return
 
