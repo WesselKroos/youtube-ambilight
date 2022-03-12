@@ -1864,8 +1864,6 @@ export default class Ambilight {
       }
 
       if (!dontDrawAmbilight) {
-        // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
-        this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
           0,
           this.videoSnapshotBufferBarsClipPx,
