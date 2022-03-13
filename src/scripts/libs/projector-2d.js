@@ -63,7 +63,7 @@ export default class Projector2d {
 
   draw(src, srcRect) {
     for(const projector of this.projectors) {
-      projector.ctx.drawImage(src, 0, 0)
+      projector.ctx.drawImage(src, 0, 0, projector.elem.width, projector.elem.height)
     }
   }
 }

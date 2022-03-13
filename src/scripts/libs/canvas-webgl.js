@@ -169,8 +169,8 @@ export class WebGLContext {
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
 
-    const scaleX = (destWidth / srcWidth)
-    const scaleY = (destHeight / srcHeight)
+    const scaleX = 1 + (srcX / srcWidth) * 2
+    const scaleY = 1 + (srcY / srcHeight) * 2
     if (scaleX !== this.scaleX || scaleY !== this.scaleY) {
       this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
         -scaleX, scaleY, 

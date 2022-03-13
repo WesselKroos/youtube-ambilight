@@ -1008,10 +1008,11 @@ export default class Ambilight {
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
 
-    this.projector.resize(this.p.w, this.p.h)
-
+    this.videoSnapshotBufferBarsClipPx = Math.round(this.p.h * horizontalBarsClip)
     this.projectorBuffer.elem.width = this.p.w
-    this.projectorBuffer.elem.height = this.p.h
+    this.projectorBuffer.elem.height = this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)
+
+    this.projector.resize(this.p.w, this.p.h)
 
     const frameBlending = this.settings.frameBlending
     if (frameBlending) {
@@ -1057,8 +1058,6 @@ export default class Ambilight {
     this.videoSnapshotBuffer.elem.height = this.p.h
     this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
     this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
-    this.videoSnapshotBufferBarsClipPx = Math.round(this.videoSnapshotBuffer.elem.height * horizontalBarsClip)
-
 
     this.resizeCanvasses()
     this.initFPSListElem()
@@ -1160,8 +1159,8 @@ export default class Ambilight {
 
   resizeCanvasses() {
     const projectorSize = {
-      w: this.videoOffset.width,
-      h: this.videoOffset.height * this.horizontalBarsClipScaleY
+      w: this.p.w,
+      h: Math.round(this.p.h * this.horizontalBarsClipScaleY)
     }
     const ratio = (projectorSize.w > projectorSize.h) ?
       {

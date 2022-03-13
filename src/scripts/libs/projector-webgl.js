@@ -49,27 +49,26 @@ export default class ProjectorWebGL {
   }
 
   rescale(scales, lastScale, projectorSize, settings) {
-    this.scale = scales[scales.length - 1]
+    this.shadow.rescale(lastScale, projectorSize, settings)
+
+    this.scale = lastScale
     this.scales = scales.map(({x, y}) => ({
       x: this.scale.x / x,
       y: this.scale.y / y
     }))
 
     // Todo: For performance calculate the height as if horizontalBarsClipScaleY does not exist
-    const width = Math.floor(this.width * this.scale.x)
-    const height = Math.floor(this.height * this.scale.y)
-    const blurPx = Math.round(settings.blur * (this.height / 512) * 1.275)
-    this.blurBound = blurPx * 2.64;
-    
-    this.shadow.rescale(lastScale, projectorSize, settings)
-
+    const width = Math.floor(projectorSize.w * this.scale.x)
+    const height = Math.floor(projectorSize.h * this.scale.y)
     this.canvas.width = width
     this.canvas.height = height
 
+    const blurPx = Math.round(settings.blur * (this.height / 512) * 1.275)
+    this.blurBound = blurPx * 2.64;
     this.blurCanvas.width = width + this.blurBound * 2
     this.blurCanvas.height = height + this.blurBound * 2
     // Todo: Keep width and height scaling equal so that the blur is spread evenly
-    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / this.width)}, ${this.scale.y + ((this.blurBound * 2) / this.height)})`
+    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
     
     this.updateCtx()
 
