@@ -65,11 +65,11 @@ export default class Ambilight {
     this.initElems(videoElem)
     this.initVideoElem(videoElem)
     this.detectMozillaBug1606251Workaround()
-    this.detectChromiumBug1123708Workaround()
     this.detectChromiumBug1092080Workaround()
 
     this.initFeedbackLink()
     this.initSettings()
+    this.detectChromiumBug1123708Workaround()
 
     this.initAmbilightElems()
     this.initBuffers()
@@ -216,9 +216,11 @@ export default class Ambilight {
   // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1123708
   detectChromiumBug1123708Workaround() {
+    if(this.settings.webGL) return
+
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version >= 85 && false) {
+    if(version && version >= 85) {
       this.enableChromiumBug1123708Workaround = true
     }
   }
