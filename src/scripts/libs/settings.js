@@ -59,7 +59,7 @@ export default class Settings {
       name: 'resolution',
       label: 'Resolution',
       type: 'list',
-      default: 384,
+      default: 64,
       min: 64,
       max: 1024,
       step: 64,
@@ -68,11 +68,19 @@ export default class Settings {
       advanced: true
     },
     {
+      name: 'antialiasing',
+      label: 'Antialiasing',
+      type: 'checkbox',
+      default: true,
+      advanced: true,
+      experimental: true
+    },
+    {
       name: 'webGL',
       label: 'Use WebGL',
-      description: 'Refreshes the webpage',
+      description: 'Better performance (Requires page refresh)',
       type: 'checkbox',
-      default: false,
+      default: true,
       advanced: true,
       experimental: true
     },
@@ -807,6 +815,9 @@ export default class Settings {
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+
+              // Todo: Resolution > 64 when blur < 10?
+              // Todo: Antialiasing off when > 512?
             }
           }
 
@@ -893,7 +904,8 @@ export default class Settings {
             setting.name === 'advancedSettings' ||
             setting.name === 'hideScrollbar' ||
             setting.name === 'immersiveTheaterView' ||
-            setting.name === 'webGL'
+            setting.name === 'webGL' ||
+            setting.name === 'antialiasing'
           ) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)

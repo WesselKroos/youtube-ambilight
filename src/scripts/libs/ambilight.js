@@ -1016,13 +1016,15 @@ export default class Ambilight {
     `.trim()
 
     this.videoSnapshotBufferBarsClipPx = Math.round(this.p.h * horizontalBarsClip)
-    this.videoSnapshotBufferScale = (this.p.h * 2 < this.srcVideoOffset.height)
-    ? (this.p.h * 4 < this.srcVideoOffset.height
-      ? 4
-      : 2
-    )
-    : 1
-    this.projectorBufferScale = (this.videoSnapshotBufferScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1
+    this.videoSnapshotBufferScale = this.settings.antialiasing && this.p.h * 2 < this.srcVideoOffset.height
+      ? (this.p.h * 4 < this.srcVideoOffset.height
+        ? 4
+        : 2
+      )
+      : 1
+    this.projectorBufferScale = this.settings.antialiasing 
+      ? ((this.videoSnapshotBufferScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1)
+      : 1
     this.projectorBuffer.elem.width = Math.round(this.p.w * this.projectorBufferScale)
     this.projectorBuffer.elem.height = Math.round((this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.projectorBufferScale)
 
