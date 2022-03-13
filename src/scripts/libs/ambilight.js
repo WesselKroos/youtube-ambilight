@@ -1016,8 +1016,15 @@ export default class Ambilight {
     `.trim()
 
     this.videoSnapshotBufferBarsClipPx = Math.round(this.p.h * horizontalBarsClip)
-    this.projectorBuffer.elem.width = this.p.w
-    this.projectorBuffer.elem.height = this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)
+    this.videoSnapshotBufferScale = (this.p.h * 2 < this.srcVideoOffset.height)
+    ? (this.p.h * 4 < this.srcVideoOffset.height
+      ? 4
+      : 2
+    )
+    : 1
+    this.projectorBufferScale = (this.videoSnapshotBufferScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1
+    this.projectorBuffer.elem.width = Math.round(this.p.w * this.projectorBufferScale)
+    this.projectorBuffer.elem.height = Math.round((this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.projectorBufferScale)
 
     this.projector.resize(this.p.w, this.p.h)
 
@@ -1061,8 +1068,8 @@ export default class Ambilight {
       }
     }
 
-    this.videoSnapshotBuffer.elem.width = this.p.w
-    this.videoSnapshotBuffer.elem.height = this.p.h
+    this.videoSnapshotBuffer.elem.width = this.p.w * this.videoSnapshotBufferScale
+    this.videoSnapshotBuffer.elem.height = this.p.h * this.videoSnapshotBufferScale
     this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
     this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
 
@@ -1872,9 +1879,9 @@ export default class Ambilight {
       if (!dontDrawAmbilight) {
         this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
           0,
-          this.videoSnapshotBufferBarsClipPx,
-          this.p.w,
-          this.p.h - (this.videoSnapshotBufferBarsClipPx * 2), 
+          this.videoSnapshotBufferBarsClipPx * this.videoSnapshotBufferScale,
+          this.p.w * this.videoSnapshotBufferScale,
+          (this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.videoSnapshotBufferScale, 
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
