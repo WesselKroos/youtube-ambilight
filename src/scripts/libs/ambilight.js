@@ -579,8 +579,9 @@ export default class Ambilight {
     this.projectorListElem.classList.add('ambilight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    // this.projector = new Projector2d(this.projectorListElem)
-    this.projector = new ProjectorWebGL(this.projectorListElem)
+    this.projector = this.settings.webGL
+      ? new ProjectorWebGL(this.projectorListElem)
+      : new Projector2d(this.projectorListElem)
 
     // Dont draw ambilight when its not in viewport
     this.isAmbilightHiddenOnWatchPage = false
@@ -616,7 +617,9 @@ export default class Ambilight {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
-    const videoSnapshotBufferElem = new WebGLOffscreenCanvas(1, 1, true)
+    const videoSnapshotBufferElem = this.settings.webGL
+      ? new WebGLOffscreenCanvas(1, 1)
+      : new SafeOffscreenCanvas(1, 1, true)
     if (videoSnapshotBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
     }
@@ -640,7 +643,9 @@ export default class Ambilight {
       })
     }
 
-    const projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, true)
+    const projectorsBufferElem =  this.settings.webGL
+      ? new WebGLOffscreenCanvas(1, 1)
+      : new SafeOffscreenCanvas(1, 1, true)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
@@ -1002,7 +1007,7 @@ export default class Ambilight {
     const brightness = this.settings.brightness
     const saturation = this.settings.saturation
     this.filterElem.style.filter = `
-      /*${(blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}*/
+      ${(!this.settings.webGL && blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}

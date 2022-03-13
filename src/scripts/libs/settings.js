@@ -46,6 +46,16 @@ export default class Settings {
       advanced: false
     },
     {
+      name: 'framerateLimit',
+      label: 'Limit framerate (per second)',
+      type: 'list',
+      default: 0,
+      min: 0,
+      max: 60,
+      step: 1,
+      advanced: true
+    },
+    {
       name: 'resolution',
       label: 'Resolution',
       type: 'list',
@@ -58,14 +68,13 @@ export default class Settings {
       advanced: true
     },
     {
-      name: 'framerateLimit',
-      label: 'Limit framerate (per second)',
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 60,
-      step: 1,
-      advanced: true
+      name: 'webGL',
+      label: 'Use WebGL',
+      description: 'Refreshes the webpage',
+      type: 'checkbox',
+      default: false,
+      advanced: true,
+      experimental: true
     },
     {
       experimental: true,
@@ -883,7 +892,8 @@ export default class Settings {
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings' ||
             setting.name === 'hideScrollbar' ||
-            setting.name === 'immersiveTheaterView'
+            setting.name === 'immersiveTheaterView' ||
+            setting.name === 'webGL'
           ) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
@@ -953,6 +963,17 @@ export default class Settings {
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
             this.ambilight.updateStyles()
+            return
+          }
+
+          if(setting.name === 'webGL') {
+            this.flushPendingStorageEntries()
+
+            const search = new URLSearchParams(location.search)
+            const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
+            time ? search.set('t', time) : search.delete('t')
+            history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
+            location.reload()
             return
           }
 
@@ -1155,7 +1176,7 @@ export default class Settings {
         console.warn('Ambient light for YouTube™ | saveStorageEntry', ex)
         //AmbilightSentry.captureExceptionWithDetails(ex)
       }
-      this.saveStorageEntryTimeout[name] = null
+      delete this.saveStorageEntryTimeout[name]
     }, 500)
   }
 
@@ -1165,6 +1186,16 @@ export default class Settings {
     } catch (ex) {
       console.warn('Ambient light for YouTube™ | removeStorageEntry', ex)
       //AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }
+
+  flushPendingStorageEntries() {
+    const pendingNames = Object.keys(this.saveStorageEntryTimeout)
+    for(const name of pendingNames) {
+      localStorage.setItem(`ambilight-${name}`, this[name])
+
+      clearTimeout(this.saveStorageEntryTimeout[name])
+      delete this.saveStorageEntryTimeout[name]
     }
   }
 
