@@ -65,7 +65,8 @@ export default class Settings {
       step: 64,
       unit: 'px',
       manualinput: false,
-      advanced: true
+      advanced: true,
+      experimental: true
     },
     {
       name: 'antialiasing',

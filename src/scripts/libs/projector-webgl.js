@@ -63,8 +63,8 @@ export default class ProjectorWebGL {
     this.canvas.width = width
     this.canvas.height = height
 
-    const blurPx = Math.round(settings.blur * (this.height / 512) * 1.275)
-    this.blurBound = blurPx * 2.64;
+    const blurPx = settings.blur * (this.height / 512) * 1.275
+    this.blurBound = Math.ceil(blurPx * 2.64)
     this.blurCanvas.width = width + this.blurBound * 2
     this.blurCanvas.height = height + this.blurBound * 2
     // Todo: Keep width and height scaling equal so that the blur is spread evenly
