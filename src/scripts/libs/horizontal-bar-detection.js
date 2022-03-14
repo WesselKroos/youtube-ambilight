@@ -28,7 +28,7 @@ const workerCode = function () {
 
   function getLineImageData() {
     try {
-      imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
+      const imageData = imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
       getLineImageDataResolve()
     } catch(ex) {
       appendErrorStack(getLineImageDataStack, ex)
@@ -52,6 +52,7 @@ const workerCode = function () {
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
       partSize = (canvas.width / 5)
+      imageVLines = []
       for (imageVLinesIndex = Math.ceil(partSize / 2) - 1; imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack

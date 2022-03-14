@@ -200,17 +200,20 @@ export class WebGLContext {
       this.getImageDataBuffersIndex++;
     }
 
-    const buffer = this.getImageDataBuffers[this.getImageDataBuffersIndex];
-    // if (!buffer || buffer.width !== width || buffer.height !== height) {
-    //   buffer = new ImageData(width, height);
-    // }
+    let buffer = this.getImageDataBuffers[this.getImageDataBuffersIndex];
     const bufferLength = width * height * 4;
-    if (buffer.length !== bufferLength) {
-      buffer = new Uint8Array(bufferLength);
+    if (!buffer) {
+      this.getImageDataBuffers[this.getImageDataBuffersIndex] = buffer = {
+        data: new Uint8Array(bufferLength)
+      };
+    } else if(buffer.data.length !== bufferLength) {
+      buffer.data = new Uint8Array(bufferLength)
     }
-    this.getImageDataBuffers[this.getImageDataBuffersIndex] = buffer
 
-    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer);
+    buffer.width = width - x;
+    buffer.height = height - y;
+    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
+
     return buffer;
   }
 }
