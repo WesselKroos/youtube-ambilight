@@ -1930,6 +1930,7 @@ export default class Ambilight {
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.horizontalBarsClipPercentage,
+          this.settings.webGL,
           wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
         )
       }

@@ -1,6 +1,7 @@
 import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 import { workerFromCode } from './worker'
+import { WebGLOffscreenCanvas } from './canvas-webgl'
 
 const workerCode = function () {
   // Cannot access appendErrorStack in import from a worker
@@ -221,6 +222,7 @@ const workerCode = function () {
             // ctx2 = canvas2.getContext("bitmaprenderer")
           }
           ctx.drawImage(bitmap, 0, 0)
+          bitmap.close()
         } else {
           canvas = canvasInfo.canvas
           ctx = canvasInfo.ctx
@@ -274,7 +276,7 @@ export class HorizontalBarDetection {
     this.run = null
   }
 
-  detect = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
+  detect = (buffer, detectColored, offsetPercentage, currentPercentage, webGL, callback) => {
     if(this.run) return
 
     const run = this.run = {}
@@ -297,6 +299,7 @@ export class HorizontalBarDetection {
       detectColored,
       offsetPercentage,
       currentPercentage,
+      webGL,
       callback
     }
 
@@ -312,15 +315,15 @@ export class HorizontalBarDetection {
       detectColored,
       offsetPercentage,
       currentPercentage,
+      webGL,
       callback
     } = this.idleHandlerArguments
 
     try {
       const start = performance.now()
 
-      if(!this.canvas) { 
-        // Cannot use WebGL because in combination with transferToImageBitmap this creates a GPU memory leak
-        this.canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+      if(!this.canvas) {
+        this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
         this.ctx = this.canvas.getContext('2d', {
           alpha: false,
           desynchronized: true
@@ -378,6 +381,9 @@ export class HorizontalBarDetection {
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
+      if(canvasInfo.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       if(this.run !== run) return
       
       this.cancellable = true
