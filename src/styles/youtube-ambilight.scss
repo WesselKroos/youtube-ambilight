@@ -1039,13 +1039,12 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ytp-menuitem-value {
-    width: 59px;
-    direction: rtl;
     &.is-controlled-by-setting {
       &::before {
         content: url('data:image/svg+xml;charset=UTF-8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 612 612" style="enable-background:new 0 0 612 612;" xml:space="preserve" fill="%23007cc3"> <g> <path d="M286.363,607.148l195.851-325.636c7.954-13.225-1.571-30.069-17.003-30.069H334.436L479.335,30.732 C487.998,17.537,478.532,0,462.748,0H237.426c-8.806,0-16.558,5.804-19.039,14.253l-90.655,308.81 c-3.73,12.706,5.796,25.431,19.039,25.431h176.915l-55.512,251.4C265.75,610.872,280.57,616.781,286.363,607.148z"/> </g> </svg>');
         position: absolute;
         z-index: 2;
+        right: -11px;
         display: inline-block;
         width: 12px;
         transform: translate(-14px, 1px);
