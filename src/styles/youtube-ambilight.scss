@@ -67,13 +67,15 @@
   z-index: 11;
   top: 5px;
   left: 5px;
-  width: calc(100% - 10px);
-  height: 110px;
+  width: 320px;
+  height: 120px;
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
   color: #fff;
   font-size: 18px;
   pointer-events: none;
   user-select: none;
+  overflow: hidden;
+  contain: strict;
 }
 
 html[data-ambilight-enabled="true"] {

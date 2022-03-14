@@ -671,26 +671,38 @@ export default class Ambilight {
 
     this.displayFPSElem = document.createElement('div')
     this.displayFPSElem.classList.add('ambilight__display-fps')
+    const displayFPSElemNode = document.createTextNode('')
+    this.displayFPSElem.appendChild(displayFPSElemNode)
     this.FPSListElem.append(this.displayFPSElem)
 
     this.videoFPSElem = document.createElement('div')
     this.videoFPSElem.classList.add('ambilight__video-fps')
+    const videoFPSElemNode = document.createTextNode('')
+    this.videoFPSElem.appendChild(videoFPSElemNode)
     this.FPSListElem.append(this.videoFPSElem)
 
     this.videoDroppedFramesElem = document.createElement('div')
     this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
+    const videoDroppedFramesElemNode = document.createTextNode('')
+    this.videoDroppedFramesElem.appendChild(videoDroppedFramesElemNode)
     this.FPSListElem.append(this.videoDroppedFramesElem)
 
     this.videoSyncedElem = document.createElement('div')
     this.videoSyncedElem.classList.add('ambilight__video-synced')
+    const videoSyncedElemNode = document.createTextNode('')
+    this.videoSyncedElem.appendChild(videoSyncedElemNode)
     this.FPSListElem.append(this.videoSyncedElem)
 
     this.ambilightFPSElem = document.createElement('div')
     this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
+    const ambilightFPSElemNode = document.createTextNode('')
+    this.ambilightFPSElem.appendChild(ambilightFPSElemNode)
     this.FPSListElem.append(this.ambilightFPSElem)
 
     this.ambilightDroppedFramesElem = document.createElement('div')
     this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
+    const ambilightDroppedFramesElemNode = document.createTextNode('')
+    this.ambilightDroppedFramesElem.appendChild(ambilightDroppedFramesElemNode)
     this.FPSListElem.append(this.ambilightDroppedFramesElem)
 
     this.videoPlayerElem.prepend(this.FPSListElem)
@@ -1576,12 +1588,12 @@ export default class Ambilight {
   }
 
   hideStats() {
-    this.videoFPSElem.textContent = ''
-    this.videoDroppedFramesElem.textContent = ''
-    this.videoSyncedElem.textContent = ''
-    this.ambilightFPSElem.textContent = ''
-    this.ambilightDroppedFramesElem.textContent = ''
-    this.displayFPSElem.textContent = ''
+    this.videoFPSElem.childNodes[0].nodeValue = ''
+    this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
+    this.videoSyncedElem.childNodes[0].nodeValue = ''
+    this.ambilightFPSElem.childNodes[0].nodeValue = ''
+    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ''
+    this.displayFPSElem.childNodes[0].nodeValue = ''
   }
 
   updateStats() {
@@ -1621,16 +1633,23 @@ export default class Ambilight {
     const ambilightDroppedFramesColor = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Render all stats
+    this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
     this.displayFPSElem.style.color = displayFPSColor
-    this.displayFPSElem.textContent = displayFPSText
-    this.videoFPSElem.textContent = videoFPSText
-    this.videoDroppedFramesElem.textContent = videoDroppedFramesText
+
+    this.videoFPSElem.childNodes[0].nodeValue = videoFPSText
+
+    this.videoDroppedFramesElem.childNodes[0].nodeValue = videoDroppedFramesText
     this.videoDroppedFramesElem.style.color = videoDroppedFramesColor
-    this.videoSyncedElem.textContent = videoSyncedText
-    this.videoSyncedElem.style.color = videoSyncedColor
-    this.ambilightFPSElem.textContent = ambilightFPSText
+
+    if (this.settings.videoOverlayEnabled) {
+      this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
+      this.videoSyncedElem.style.color = videoSyncedColor
+    }
+
+    this.ambilightFPSElem.childNodes[0].nodeValue = ambilightFPSText
     this.ambilightFPSElem.style.color = ambilightFPSColor
-    this.ambilightDroppedFramesElem.textContent = ambilightDroppedFramesText
+
+    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ambilightDroppedFramesText
     this.ambilightDroppedFramesElem.style.color = ambilightDroppedFramesColor
   }
 
