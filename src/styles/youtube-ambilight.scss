@@ -436,6 +436,7 @@ html[data-ambilight-enabled="true"] {
       top: 0;
       left: 0;
       opacity: 0;
+      contain: strict;
       //transition: opacity .15s;
   }
 
