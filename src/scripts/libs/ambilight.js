@@ -1713,10 +1713,10 @@ export default class Ambilight {
       }
     }
 
-    if(updateVideoSnapshot) {
-      this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
-        0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
-    }
+    // if(updateVideoSnapshot) {
+    //   this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
+    //     0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
+    // }
 
     let hasNewFrame = this.buffersCleared
     if(this.settings.frameSync == 150) { // PERFECT
@@ -1898,11 +1898,15 @@ export default class Ambilight {
       }
 
       if (!dontDrawAmbilight) {
-        this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
+        if(this.settings.webGL)
+          this.projectorBuffer.ctx.options.antialiasing = this.settings.antialiasing
+
+        const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
+        this.projectorBuffer.ctx.drawImage(this.videoElem,
           0,
-          this.videoSnapshotBufferBarsClipPx * this.videoSnapshotBufferScale,
-          this.p.w * this.videoSnapshotBufferScale,
-          (this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.videoSnapshotBufferScale, 
+          videoHeightBarsClipPx, // this.videoSnapshotBufferBarsClipPx * this.videoSnapshotBufferScale,
+          this.videoElem.videoWidth, // this.p.w * this.videoSnapshotBufferScale,
+          this.videoElem.videoHeight - (videoHeightBarsClipPx * 2), // (this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.videoSnapshotBufferScale, 
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {

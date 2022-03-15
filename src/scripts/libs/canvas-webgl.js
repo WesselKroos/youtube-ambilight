@@ -133,14 +133,39 @@ export class WebGLContext {
     var vPositionLoc = this.ctx.getAttribLocation(program, 'vPosition'); 
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
-    
+
     // Texture
-    var texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
+    this.texture = this.ctx.createTexture();
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    
+
+    // Framebuffer Texture
+    this.framebuffer1Texture = this.ctx.createTexture();
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
+    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
+    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    
+    // Create and bind the framebuffer
+    this.framebuffer1 = this.ctx.createFramebuffer();
+    // this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer1);
+
+    // Framebuffer Texture
+    this.framebuffer2Texture = this.ctx.createTexture();
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
+    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    
+    // Create and bind the framebuffer
+    this.framebuffer2 = this.ctx.createFramebuffer();
+    // this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer2);
   }
 
   clearRect = (x, y, width, height) => {
@@ -150,11 +175,6 @@ export class WebGLContext {
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctx.isContextLost()) return
-
-    if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
-      this.viewport = { width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
-      this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
-    }
 
     // const ext = (
     //   this.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
@@ -182,10 +202,59 @@ export class WebGLContext {
       this.scaleX = scaleX
       this.scaleY = scaleY
     }
-
-    // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, width, height, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
-    // this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, srcX, srcY, srcWidth, srcHeight, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
+    
+    // Fill texture
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
+
+    if(this.options.antialiasing) {
+      // Resize framebuffer1
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 4, destHeight * 4, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
+      
+      // Set render buffer to framebuffer1Texture with framebuffer1
+      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer1);
+      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.framebuffer1Texture, 0);
+      
+      // Render texture to framebuffer1
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
+      this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
+      this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+
+
+      // Reset texture scaling
+      if (1 !== this.scaleX || 1 !== this.scaleY) {
+        this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+          -1, 1, 
+          -1, -1, 
+          1, -1, 
+          1, 1
+        ]), this.ctx.STATIC_DRAW);
+
+        this.scaleX = 1
+        this.scaleY = 1
+      }
+
+      
+      // Resize framebuffer2
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 2, destHeight * 2, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
+      
+      // Set render buffer to framebuffer2Texture with framebuffer2
+      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer2);
+      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.framebuffer2Texture, 0);
+      
+      // Render framebuffer1Texture to framebuffer2
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
+      this.ctx.viewport(0, 0, destWidth * 2, destHeight * 2);
+      this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+    }
+
+    // Render to canvas
+    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
+    this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
   }
 
