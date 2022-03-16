@@ -205,14 +205,8 @@ html[data-ambilight-enabled="true"] {
   .html5-video-player.ended-mode .html5-video-container {
     opacity: 0;
   }
-  .html5-video-container[style*="--video-transform"] {
-    height: fit-content !important;
-  }
   .html5-main-video {
     transform: var(--video-transform);
-  }
-  .html5-video-container[style*="--video-transform"] .html5-main-video {
-    position: relative !important;
   }
   .ambilight__video-overlay {
     transform: var(--video-transform);
