@@ -323,22 +323,24 @@ export class HorizontalBarDetection {
     try {
       const start = performance.now()
 
-      if(!this.canvas) {
-        this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-        this.ctx = this.canvas.getContext('2d', {
-          alpha: false,
-          desynchronized: true
-        })
-        this.ctx.imageSmoothingEnabled = true
-      }
+      // if(!this.canvas) {
+      //   this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+      //   this.ctx = this.canvas.getContext('2d', {
+      //     alpha: false,
+      //     desynchronized: true
+      //   })
+      //   this.ctx.imageSmoothingEnabled = true
+      // }
 
-      this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
+      // this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
+      buffer.ctx.loadBlackBarDetectionImage()
       const canvasInfo = this.worker.isFallbackWorker ? {
         canvas: this.canvas,
         ctx: this.ctx
       } : {
-        bitmap: this.canvas.transferToImageBitmap()
+        bitmap: buffer.elem.transferToImageBitmap()
       }
+      buffer.ctx.unloadBlackBarDetectionImage()
 
       this.workerMessageId++;
       const stack = new Error().stack

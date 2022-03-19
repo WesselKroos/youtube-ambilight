@@ -259,6 +259,22 @@ export class WebGLContext {
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
   }
 
+  loadBlackBarDetectionImage() {
+    this.unloadBlackBarDetectionImageWidth = this.canvas.width
+    this.unloadBlackBarDetectionImageHeight = this.canvas.height
+    this.canvas.width = 5
+    this.canvas.height = 512
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture); // Use downsized 512h or 256h texture instead for less errors?
+    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
+    this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
+    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+  }
+
+  unloadBlackBarDetectionImage() {
+    this.canvas.width = this.unloadBlackBarDetectionImageWidth
+    this.canvas.height = this.unloadBlackBarDetectionImageHeight
+  }
+
   getImageDataBuffers = []
   getImageDataBuffersIndex = 0
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {

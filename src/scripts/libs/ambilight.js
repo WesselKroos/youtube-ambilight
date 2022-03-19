@@ -1949,7 +1949,7 @@ export default class Ambilight {
         this.getImageDataAllowed
       ) {
         this.horizontalBarDetection.detect(
-          this.videoSnapshotBuffer,
+          this.projectorBuffer,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.horizontalBarsClipPercentage,
