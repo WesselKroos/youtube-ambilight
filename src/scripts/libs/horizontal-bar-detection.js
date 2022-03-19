@@ -392,7 +392,7 @@ export class HorizontalBarDetection {
         newPercentage !== undefined ||
         (currentPercentage !== 0 && this.lastChange + 3000 > performance.now())
       )
-        ? 100 
+        ? 330
         : Math.max(1000, Math.min(5000, Math.pow(performance.now() - start, 1.2) - 30))
       setTimeout(() => {
         if(this.run !== run) return

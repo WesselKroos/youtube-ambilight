@@ -188,7 +188,12 @@ export class WebGLContext {
     srcHeight = srcHeight || src.videoHeight || src.height
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
+    
+    // Fill texture
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
 
+    // Crop black bars
     const scaleX = 1 + (srcX / srcWidth) * 2
     const scaleY = 1 + (srcY / srcHeight) * 2
     if (scaleX !== this.scaleX || scaleY !== this.scaleY) {
@@ -202,10 +207,6 @@ export class WebGLContext {
       this.scaleX = scaleX
       this.scaleY = scaleY
     }
-    
-    // Fill texture
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
 
     if(this.options.antialiasing) {
       // Resize framebuffer1
@@ -220,7 +221,7 @@ export class WebGLContext {
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
       this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-
+      
 
       // Reset texture scaling
       if (1 !== this.scaleX || 1 !== this.scaleY) {
@@ -235,7 +236,7 @@ export class WebGLContext {
         this.scaleY = 1
       }
 
-      
+
       // Resize framebuffer2
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 2, destHeight * 2, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
