@@ -1423,8 +1423,11 @@ export default class Ambilight {
         this.delayedCheckVideoSizeAndPosition &&
         (performance.now() - this.lastCheckVideoSizeTime) > 2000
       ) {
-        this.checkVideoSize(true)
+        const videoSizeChanged = this.checkVideoSize(true)
         this.lastCheckVideoSizeTime = performance.now()
+        if(videoSizeChanged) {
+          this.optionalFrame()
+        }
       } else if((performance.now() - this.lastUpdateStatsTime) > 2000) {
         this.updateStats()
         this.lastUpdateStatsTime = performance.now()
@@ -1977,7 +1980,6 @@ export default class Ambilight {
     this.showedCompareWarning = false
     this.showedDetectHorizontalBarSizeWarning = false
 
-    this.requestVideoFrameCallbackId = undefined
     this.nextFrameTime = undefined
 
     this.sizesInvalidated = true // Prevent wrong size from being used
@@ -2002,7 +2004,13 @@ export default class Ambilight {
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(this.receiveVideoFrame)
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(() => {
+      if (this.requestVideoFrameCallbackId !== id) {
+        console.warn('Old rvfc fired. Ignoring a possible duplicate.',  this.requestVideoFrameCallbackId, id)
+        return
+      }
+      this.receiveVideoFrame()
+    })
   }
 
   receiveVideoFrame = () => {
