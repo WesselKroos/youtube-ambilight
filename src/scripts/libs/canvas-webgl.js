@@ -238,4 +238,33 @@ export class WebGLContext {
     this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
   }
+
+  getImageDataBuffers = []
+  getImageDataBuffersIndex = 0
+  getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
+    if(this.ctx.isContextLost()) return
+
+    // Enough for 5 ImageData objects for the blackbar detection
+    if(this.getImageDataBuffersIndex > 4) {
+      this.getImageDataBuffersIndex = 0;
+    } else {
+      this.getImageDataBuffersIndex++;
+    }
+
+    let buffer = this.getImageDataBuffers[this.getImageDataBuffersIndex];
+    const bufferLength = width * height * 4;
+    if (!buffer) {
+      this.getImageDataBuffers[this.getImageDataBuffersIndex] = buffer = {
+        data: new Uint8Array(bufferLength)
+      };
+    } else if(buffer.data.length !== bufferLength) {
+      buffer.data = new Uint8Array(bufferLength)
+    }
+
+    buffer.width = width - x;
+    buffer.height = height - y;
+    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
+
+    return buffer;
+  }
 }
