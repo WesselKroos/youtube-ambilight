@@ -39,7 +39,7 @@ const workerCode = function () {
   function getLineImageDataPromise(resolve, reject) {
     getLineImageDataResolve = resolve
     getLineImageDataReject = reject
-    setTimeout(getLineImageData, 0)
+    getLineImageData()
   }
 
   let averageSize = 0;
@@ -390,12 +390,15 @@ export class HorizontalBarDetection {
       if(this.run !== run) return
       
       this.cancellable = true
-      const throttle = (
-        newPercentage !== undefined ||
-        (currentPercentage !== 0 && this.lastChange + 3000 > performance.now())
-      )
-        ? 330
-        : Math.max(1000, Math.min(5000, Math.pow(performance.now() - start, 1.2) - 30))
+      const now = performance.now()
+      const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
+        ? 1000
+        : ((this.lastChange + 3000 < now)
+          ? 500
+          : 25
+        )
+      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
+
       setTimeout(() => {
         if(this.run !== run) return
 
