@@ -134,38 +134,26 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    // Texture
-    this.texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
-    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    
+    // Video
+    this.videoTexture = this.createTexture()
 
-    // Framebuffer Texture
-    this.framebuffer1Texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
-    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    
-    // Create and bind the framebuffer
-    this.framebuffer1 = this.ctx.createFramebuffer();
-    // this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer1);
+    // Frame 1
+    this.frame1Texture = this.createTexture()
+    this.frame1Buffer = this.ctx.createFramebuffer();
 
-    // Framebuffer Texture
-    this.framebuffer2Texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+    // Frame 2
+    this.frame2Texture = this.createTexture()
+    this.frame2Buffer = this.ctx.createFramebuffer();
+  }
+
+  createTexture() {
+    const texture = this.ctx.createTexture();
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    
-    // Create and bind the framebuffer
-    this.framebuffer2 = this.ctx.createFramebuffer();
-    // this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer2);
+    return texture;
   }
 
   clearRect = (x, y, width, height) => {
@@ -176,21 +164,13 @@ export class WebGLContext {
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctx.isContextLost()) return
 
-    // const ext = (
-    //   this.ctx.getExtension('WEBGL_compressed_texture_s3tc') ||
-    //   this.ctx.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
-    //   this.ctx.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc')
-    // );
-    // console.log(ext);
-    // this.ctx.compressedTexImage2D(this.ctx.TEXTURE_2D, 0, ext.COMPRESSED_RGBA_S3TC_DXT5_EXT, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight, 0, src);
-
     srcWidth = srcWidth || src.videoWidth || src.width
     srcHeight = srcHeight || src.videoHeight || src.height
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.videoTexture);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
 
     // Crop black bars
@@ -210,15 +190,15 @@ export class WebGLContext {
 
     if(this.options.antialiasing) {
       // Resize framebuffer1
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 4, destHeight * 4, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
       
       // Set render buffer to framebuffer1Texture with framebuffer1
-      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer1);
-      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.framebuffer1Texture, 0);
+      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame1Buffer);
+      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame1Texture, 0);
       
       // Render texture to framebuffer1
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.videoTexture);
       this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
       
@@ -238,68 +218,24 @@ export class WebGLContext {
 
 
       // Resize framebuffer2
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 2, destHeight * 2, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
       
       // Set render buffer to framebuffer2Texture with framebuffer2
-      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.framebuffer2);
-      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.framebuffer2Texture, 0);
+      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame2Buffer);
+      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame2Texture, 0);
       
       // Render framebuffer1Texture to framebuffer2
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer1Texture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
       this.ctx.viewport(0, 0, destWidth * 2, destHeight * 2);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
 
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.framebuffer2Texture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
     }
 
     // Render to canvas
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
     this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-  }
-
-  loadBlackBarDetectionImage() {
-    this.unloadBlackBarDetectionImageWidth = this.canvas.width
-    this.unloadBlackBarDetectionImageHeight = this.canvas.height
-    this.canvas.width = 5
-    this.canvas.height = 512
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture); // Use downsized 512h or 256h texture instead for less errors?
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-    this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
-    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-  }
-
-  unloadBlackBarDetectionImage() {
-    this.canvas.width = this.unloadBlackBarDetectionImageWidth
-    this.canvas.height = this.unloadBlackBarDetectionImageHeight
-  }
-
-  getImageDataBuffers = []
-  getImageDataBuffersIndex = 0
-  getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
-    if(this.ctx.isContextLost()) return
-
-    if(this.getImageDataBuffersIndex > 4) {
-      this.getImageDataBuffersIndex = 0;
-    } else {
-      this.getImageDataBuffersIndex++;
-    }
-
-    let buffer = this.getImageDataBuffers[this.getImageDataBuffersIndex];
-    const bufferLength = width * height * 4;
-    if (!buffer) {
-      this.getImageDataBuffers[this.getImageDataBuffersIndex] = buffer = {
-        data: new Uint8Array(bufferLength)
-      };
-    } else if(buffer.data.length !== bufferLength) {
-      buffer.data = new Uint8Array(bufferLength)
-    }
-
-    buffer.width = width - x;
-    buffer.height = height - y;
-    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
-
-    return buffer;
   }
 }
