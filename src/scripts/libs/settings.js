@@ -1,6 +1,10 @@
 import { $, html, body, on, off, setTimeout } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 
+export const FRAMESYNC_DECODEDFRAMES = 0
+export const FRAMESYNC_DISPLAYFRAMES = 1
+export const FRAMESYNC_VIDEOFRAMES = 2
+
 export default class Settings {
   saveStorageEntryTimeout = {}
 
@@ -35,13 +39,13 @@ export default class Settings {
       name: 'frameSync',
       label: 'Synchronization',
       questionMark: {
-        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDetect pixel changes: Medium CPU & GPU usage.\nMight still result in delayed frames on higher than 1080p videos.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
+        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
       },
       type: 'list',
-      default: 50,
+      default: 0,
       min: 0,
-      max: 100,
-      step: 50,
+      max: 1,
+      step: 1,
       manualinput: false,
       advanced: false
     },
@@ -470,9 +474,9 @@ export default class Settings {
     this.config = this.config.map(setting => {
       if(this.ambilight.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
-          setting.max = 150
-          setting.default = 150
-          setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
+          setting.max = 2
+          setting.default = 2
+          setting.advanced = true
         }
 
         if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
@@ -1002,14 +1006,11 @@ export default class Settings {
   getSettingListDisplayText(setting) {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
-      if (value == 0)
-        return 'Decoded framerate'
-      if (value == 50)
-        return 'Detect pixel changes'
-      if (value == 100)
-        return 'Display framerate'
-      if (value == 150)
-        return 'Video framerate'
+      return {
+        [FRAMESYNC_DECODEDFRAMES]: 'Decoded framerate',
+        [FRAMESYNC_DISPLAYFRAMES]: 'Display framerate',
+        [FRAMESYNC_VIDEOFRAMES]: 'Video framerate'
+      }[value]
     }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
@@ -1162,6 +1163,13 @@ export default class Settings {
         value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
       if (name === 'bloom')
         value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
+      if(name === 'frameSync' && value >= 50) {
+        value = {
+          50: FRAMESYNC_DECODEDFRAMES,
+          100: FRAMESYNC_DISPLAYFRAMES,
+          150: FRAMESYNC_VIDEOFRAMES
+        }[value]
+      }
     }
 
     return value

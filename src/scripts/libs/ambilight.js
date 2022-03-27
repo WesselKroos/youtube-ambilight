@@ -2,7 +2,7 @@ import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, r
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 import { isWatchPageUrl } from './utils'
-import Settings from './settings'
+import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
@@ -619,32 +619,6 @@ export default class Ambilight {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
-    const videoSnapshotBufferElem = this.settings.webGL
-      ? new WebGLOffscreenCanvas(1, 1)
-      : new SafeOffscreenCanvas(1, 1, true)
-    if (videoSnapshotBufferElem.tagName === 'CANVAS') {
-      this.buffersWrapperElem.appendChild(videoSnapshotBufferElem)
-    }
-    this.videoSnapshotBuffer = {
-      elem: videoSnapshotBufferElem,
-      ctx: videoSnapshotBufferElem.getContext('2d', {
-        ...ctxOptions,
-        desynchronized: true
-      })
-    }
-
-    const videoSnapshotGetImageDataBufferElem = new SafeOffscreenCanvas(1, 1)
-    if (videoSnapshotGetImageDataBufferElem.tagName === 'CANVAS') {
-      this.buffersWrapperElem.appendChild(videoSnapshotGetImageDataBufferElem)
-    }
-    this.videoSnapshotGetImageDataBuffer = {
-      elem: videoSnapshotGetImageDataBufferElem,
-      ctx: videoSnapshotGetImageDataBufferElem.getContext('2d', {
-        ...ctxOptions,
-        desynchronized: true
-      })
-    }
-
     const projectorsBufferElem =  this.settings.webGL
       ? new WebGLOffscreenCanvas(1, 1)
       : new SafeOffscreenCanvas(1, 1, true)
@@ -722,7 +696,6 @@ export default class Ambilight {
   }
 
   initFrameBlending() {
-    //this.previousProjectorBuffer
     const previousProjectorsBufferElem = new Canvas(1, 1, true) 
     if (previousProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
@@ -806,8 +779,6 @@ export default class Ambilight {
 
     // Clear canvasses
     const canvasses = [
-      this.videoSnapshotBuffer,
-      this.videoSnapshotGetImageDataBuffer,
       ...this.projector.projectors
     ]
     if(this.previousProjectorBuffer) {
@@ -1027,18 +998,18 @@ export default class Ambilight {
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
 
-    this.videoSnapshotBufferBarsClipPx = Math.round(this.p.h * horizontalBarsClip)
-    this.videoSnapshotBufferScale = this.settings.antialiasing && this.p.h * 2 < this.srcVideoOffset.height
+    this.barsClipPx = Math.round(this.p.h * horizontalBarsClip)
+    this.videoScale = this.settings.antialiasing && this.p.h * 2 < this.srcVideoOffset.height
       ? (this.p.h * 4 < this.srcVideoOffset.height
         ? 4
         : 2
       )
       : 1
     this.projectorBufferScale = this.settings.antialiasing 
-      ? ((this.videoSnapshotBufferScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1)
+      ? ((this.videoScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1)
       : 1
     this.projectorBuffer.elem.width = Math.round(this.p.w * this.projectorBufferScale)
-    this.projectorBuffer.elem.height = Math.round((this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.projectorBufferScale)
+    this.projectorBuffer.elem.height = Math.round((this.p.h - (this.barsClipPx * 2)) * this.projectorBufferScale)
 
     this.projector.resize(this.p.w, this.p.h)
 
@@ -1047,10 +1018,10 @@ export default class Ambilight {
       if(!this.previousProjectorBuffer || !this.blendedProjectorBuffer) {
         this.initFrameBlending()
       }
-      this.previousProjectorBuffer.elem.width = this.p.w
-      this.previousProjectorBuffer.elem.height = this.p.h
-      this.blendedProjectorBuffer.elem.width = this.p.w
-      this.blendedProjectorBuffer.elem.height = this.p.h
+      this.previousProjectorBuffer.elem.width = this.projectorBuffer.elem.width
+      this.previousProjectorBuffer.elem.height = this.projectorBuffer.elem.height
+      this.blendedProjectorBuffer.elem.width = this.projectorBuffer.elem.width
+      this.blendedProjectorBuffer.elem.height = this.projectorBuffer.elem.height
     }
     const videoOverlayEnabled = this.settings.videoOverlayEnabled
     const videoOverlay = this.videoOverlay
@@ -1081,11 +1052,6 @@ export default class Ambilight {
         this.previousVideoOverlayBuffer.elem.height = this.srcVideoOffset.height
       }
     }
-
-    this.videoSnapshotBuffer.elem.width = this.p.w * this.videoSnapshotBufferScale
-    this.videoSnapshotBuffer.elem.height = this.p.h * this.videoSnapshotBufferScale
-    this.videoSnapshotGetImageDataBuffer.elem.width = this.p.w
-    this.videoSnapshotGetImageDataBuffer.elem.height = this.p.h
 
     this.resizeCanvasses()
     this.initFPSListElem()
@@ -1317,7 +1283,7 @@ export default class Ambilight {
 
     this.scheduleRequestVideoFrame()
     if(
-      this.settings.frameSync == 150 &&
+      this.settings.frameSync == FRAMESYNC_VIDEOFRAMES &&
       this.requestVideoFrameCallbackId &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
@@ -1641,10 +1607,8 @@ export default class Ambilight {
     this.videoDroppedFramesElem.childNodes[0].nodeValue = videoDroppedFramesText
     this.videoDroppedFramesElem.style.color = videoDroppedFramesColor
 
-    if (this.settings.videoOverlayEnabled) {
-      this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
-      this.videoSyncedElem.style.color = videoSyncedColor
-    }
+    this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
+    this.videoSyncedElem.style.color = videoSyncedColor
 
     this.ambilightFPSElem.childNodes[0].nodeValue = ambilightFPSText
     this.ambilightFPSElem.style.color = ambilightFPSColor
@@ -1689,7 +1653,7 @@ export default class Ambilight {
 
     let updateVideoSnapshot = this.buffersCleared
     if(!updateVideoSnapshot) {
-      if (this.settings.frameSync == 150) { // PERFECT
+      if (this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) { // PERFECT
         if(this.videoIsHidden) {
           updateVideoSnapshot = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
         } else {
@@ -1704,72 +1668,19 @@ export default class Ambilight {
             updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
           }
         }
-      } else if(this.settings.frameSync == 0) { // PERFORMANCE
+      } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) { // PERFORMANCE
         updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-      } else if (this.settings.frameSync == 50) { // BALANCED
-        updateVideoSnapshot = true
-      } else if (this.settings.frameSync == 100) { // HIGH PRECISION
+      } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) { // HIGH PRECISION
         updateVideoSnapshot = true
       }
     }
 
-    // if(updateVideoSnapshot) {
-    //   this.videoSnapshotBuffer.ctx.drawImage(this.videoElem, 
-    //     0, 0, this.videoSnapshotBuffer.elem.width, this.videoSnapshotBuffer.elem.height)
-    // }
-
     let hasNewFrame = this.buffersCleared
-    if(this.settings.frameSync == 150) { // PERFECT
+    if(this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) {
       hasNewFrame = hasNewFrame || updateVideoSnapshot
-    } else if(this.settings.frameSync == 0) { // PERFORMANCE
+    } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) {
       hasNewFrame = hasNewFrame || updateVideoSnapshot
-    } else if (this.settings.frameSync == 50 || this.settings.frameBlending) { // BALANCED
-      hasNewFrame = hasNewFrame || (this.videoFrameCount < newVideoFrameCount)
-      
-      if (this.videoFrameRate && this.displayFrameRate && this.displayFrameRate > this.videoFrameRate) {
-        if(!hasNewFrame || this.settings.framerateLimit > this.videoFrameRate - 1) {
-          if(
-            (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) ||
-            this.getImageDataAllowed
-          ) {
-            // Execute getImageData on a separate buffer for performance:
-            // 1. We don't interrupt the video to ambilight canvas flow (144hz instead of 85hz)
-            // 2. We don't keep getting penalized after horizontal bar detection is disabled  (144hz instead of 45hz)
-            const getImageDataBuffer = this.videoSnapshotGetImageDataBuffer
-            getImageDataBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem, 0, 0)
-
-            let lines = []
-            let partSize = Math.ceil(getImageDataBuffer.elem.height / 3)
-            try {
-              for (let i = partSize; i < getImageDataBuffer.elem.height; i += partSize) {
-                lines.push(getImageDataBuffer.ctx.getImageData(0, i, getImageDataBuffer.elem.width, 1).data)
-              }
-            } catch (ex) {
-              if (!this.showedCompareWarning) {
-                this.showedCompareWarning = true
-                throw ex
-              }
-            }
-
-            if (!hasNewFrame) {
-              const isConfirmedNewFrame = this.isNewFrame(this.oldLines, lines)
-              if (isConfirmedNewFrame) {
-                newVideoFrameCount++
-                hasNewFrame = true
-              }
-            }
-            //performance.mark('comparing-compare-end')
-
-            if (hasNewFrame) {
-              if(this.oldLines) {
-                this.oldLines.length = 0 // Free memory
-              }
-              this.oldLines = lines
-            }
-          }
-        }
-      }
-    } else if (this.settings.frameSync == 100) { // HIGH PRECISION
+    } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) { // HIGH PRECISION
       hasNewFrame = true
     }
     
@@ -1796,7 +1707,6 @@ export default class Ambilight {
 
       // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambilightFrameRate
       if(hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
-
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
             this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
@@ -1809,13 +1719,17 @@ export default class Ambilight {
           if(!this.buffersCleared) {
             this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
           }
-          // Prevent adjusted videoSnapshotBufferBarsClipPx from leaking previous frame into the frame
+          // Prevent adjusted barsClipPx from leaking previous frame into the frame
           this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-          this.projectorBuffer.ctx.drawImage(this.videoSnapshotBuffer.elem,
+          
+          if(this.settings.webGL)
+            this.projectorBuffer.ctx.options.antialiasing = this.settings.antialiasing
+          const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
+          this.projectorBuffer.ctx.drawImage(this.videoElem,
             0,
-            this.videoSnapshotBufferBarsClipPx,
-            this.p.w,
-            this.p.h - (this.videoSnapshotBufferBarsClipPx * 2),
+            videoHeightBarsClipPx,
+            this.videoElem.videoWidth,
+            this.videoElem.videoHeight - (videoHeightBarsClipPx * 2),
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
           if(this.buffersCleared) {
             this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
@@ -1904,9 +1818,9 @@ export default class Ambilight {
         const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0,
-          videoHeightBarsClipPx, // this.videoSnapshotBufferBarsClipPx * this.videoSnapshotBufferScale,
-          this.videoElem.videoWidth, // this.p.w * this.videoSnapshotBufferScale,
-          this.videoElem.videoHeight - (videoHeightBarsClipPx * 2), // (this.p.h - (this.videoSnapshotBufferBarsClipPx * 2)) * this.videoSnapshotBufferScale, 
+          videoHeightBarsClipPx,
+          this.videoElem.videoWidth,
+          this.videoElem.videoHeight - (videoHeightBarsClipPx * 2),
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
         // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
@@ -1915,8 +1829,6 @@ export default class Ambilight {
         //   }
         // }
         this.projector.draw(this.projectorBuffer.elem)
-
-        // Todo: copy videoSnapshotBuffer instead with clipping
       }
     }
 
@@ -2085,7 +1997,7 @@ export default class Ambilight {
       
       // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
       this.requestVideoFrameCallbackId ||
-      this.settings.frameSync != 150 ||
+      this.settings.frameSync != FRAMESYNC_VIDEOFRAMES ||
 
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
