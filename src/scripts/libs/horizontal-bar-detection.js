@@ -1,4 +1,4 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './generic'
+import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 import { workerFromCode } from './worker'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
@@ -221,7 +221,7 @@ const workerCode = function () {
             // canvas2.width = bitmap.width
             // canvas2.height = bitmap.height
             // ctx2 = canvas2.getContext("bitmaprenderer")
-          }
+          } 
           ctx.drawImage(bitmap, 0, 0)
           bitmap.close()
         } else {
@@ -304,10 +304,10 @@ export class HorizontalBarDetection {
       callback
     }
 
-    requestIdleCallback(wrapErrorHandler(async () => await this.idleHandler(run)), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
   }
 
-  idleHandler = async (run) => {
+  idleHandler = wrapErrorHandler(async (run) => {
     if(this.run !== run) return
     this.cancellable = false
 
@@ -319,28 +319,26 @@ export class HorizontalBarDetection {
       webGL,
       callback
     } = this.idleHandlerArguments
-
+    let canvasInfo;
     try {
       const start = performance.now()
 
-      // if(!this.canvas) {
-      //   this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-      //   this.ctx = this.canvas.getContext('2d', {
-      //     alpha: false,
-      //     desynchronized: true
-      //   })
-      //   this.ctx.imageSmoothingEnabled = true
-      // }
+      if(!this.canvas) {
+        this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        this.ctx = this.canvas.getContext('2d', {
+          alpha: false,
+          desynchronized: true
+        })
+        this.ctx.imageSmoothingEnabled = true
+      }
 
-      // this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
-      buffer.ctx.loadBlackBarDetectionImage()
-      const canvasInfo = this.worker.isFallbackWorker ? {
+      this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
+      canvasInfo = this.worker.isFallbackWorker ? {
         canvas: this.canvas,
         ctx: this.ctx
       } : {
-        bitmap: buffer.elem.transferToImageBitmap()
+        bitmap: this.canvas.transferToImageBitmap()
       }
-      buffer.ctx.unloadBlackBarDetectionImage()
 
       this.workerMessageId++;
       const stack = new Error().stack
@@ -395,7 +393,7 @@ export class HorizontalBarDetection {
         ? 1000
         : ((this.lastChange + 3000 < now)
           ? 500
-          : 25
+          : 0
         )
       const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
 
@@ -405,6 +403,9 @@ export class HorizontalBarDetection {
         this.run = null
       }, throttle)
     } catch(ex) {
+      if(canvasInfo?.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       this.cancellable = true
       this.run = null
       if (!this.catchedDetectHorizontalBarSizeError) {
@@ -412,7 +413,7 @@ export class HorizontalBarDetection {
         throw ex
       }
     }
-  }
+  }, true)
 }
 
 export default detectHorizontalBarSize
