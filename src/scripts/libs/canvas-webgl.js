@@ -161,6 +161,34 @@ export class WebGLContext {
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
+  defaultScale = new Float32Array([
+    -1, 1, 
+    -1, -1, 
+    1, -1, 
+    1, 1
+  ])
+  _cachedScale = new Float32Array([
+    -1, 1, 
+    -1, -1, 
+    1, -1, 
+    1, 1
+  ])
+  _cachedScaleX = 1
+  _cachedScaleY = 1
+  getCachedScale(x, y) {
+    if(this._cachedScaleX !== x || this._cachedScaleY !== y) {
+      this._cachedScale = new Float32Array([
+        -x, y, 
+        -x, -y, 
+        x, -y, 
+        x, y
+      ])
+      this._cachedScaleX = x
+      this._cachedScaleY = y
+    }
+    return this._cachedScale
+  }
+
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctx.isContextLost()) return
 
@@ -177,12 +205,7 @@ export class WebGLContext {
     const scaleX = 1 + (srcX / srcWidth) * 2
     const scaleY = 1 + (srcY / srcHeight) * 2
     if (scaleX !== this.scaleX || scaleY !== this.scaleY) {
-      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
-        -scaleX, scaleY, 
-        -scaleX, -scaleY, 
-        scaleX, -scaleY, 
-        scaleX, scaleY
-      ]), this.ctx.STATIC_DRAW);
+      this.ctx.bufferData(this.ctx.ARRAY_BUFFER, this.getCachedScale(scaleX, scaleY), this.ctx.STATIC_DRAW);
 
       this.scaleX = scaleX
       this.scaleY = scaleY
@@ -205,12 +228,7 @@ export class WebGLContext {
 
       // Reset texture scaling
       if (1 !== this.scaleX || 1 !== this.scaleY) {
-        this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
-          -1, 1, 
-          -1, -1, 
-          1, -1, 
-          1, 1
-        ]), this.ctx.STATIC_DRAW);
+        this.ctx.bufferData(this.ctx.ARRAY_BUFFER, this.defaultScale, this.ctx.STATIC_DRAW);
 
         this.scaleX = 1
         this.scaleY = 1
