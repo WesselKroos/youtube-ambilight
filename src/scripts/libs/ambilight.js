@@ -629,6 +629,8 @@ export default class Ambilight {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
     }
+    if(this.settings.webGL)
+      this.projectorBuffer.ctx.options.antialiasing = true
 
     this.elem.appendChild(this.buffersWrapperElem)
   }
@@ -934,7 +936,7 @@ export default class Ambilight {
       height: this.videoElem.videoHeight
     }
 
-    const minSize = this.settings.resolution
+    const minSize = this.settings.webGL ? this.settings.resolution : 512
     const scaleX = this.srcVideoOffset.width / minSize
     const scaleY = this.srcVideoOffset.height / minSize
     const scale = Math.min(scaleX, scaleY)
@@ -999,13 +1001,13 @@ export default class Ambilight {
     `.trim()
 
     this.barsClipPx = Math.round(this.p.h * horizontalBarsClip)
-    this.videoScale = this.settings.antialiasing && this.p.h * 2 < this.srcVideoOffset.height
+    this.videoScale = this.settings.webGL && this.p.h * 2 < this.srcVideoOffset.height
       ? (this.p.h * 4 < this.srcVideoOffset.height
         ? 4
         : 2
       )
       : 1
-    this.projectorBufferScale = this.settings.antialiasing 
+    this.projectorBufferScale = this.settings.webGL
       ? ((this.videoScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1)
       : 1
     this.projectorBuffer.elem.width = Math.round(this.p.w * this.projectorBufferScale)
@@ -1725,8 +1727,6 @@ export default class Ambilight {
           // Prevent adjusted barsClipPx from leaking previous frame into the frame
           this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
           
-          if(this.settings.webGL)
-            this.projectorBuffer.ctx.options.antialiasing = this.settings.antialiasing
           const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
           this.projectorBuffer.ctx.drawImage(this.videoElem,
             0,
@@ -1815,9 +1815,6 @@ export default class Ambilight {
       }
 
       if (!dontDrawAmbilight) {
-        if(this.settings.webGL)
-          this.projectorBuffer.ctx.options.antialiasing = this.settings.antialiasing
-
         const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0,

@@ -60,6 +60,15 @@ export default class Settings {
       advanced: true
     },
     {
+      name: 'webGL',
+      label: 'Use WebGL',
+      description: 'Better performance (Requires page refresh)',
+      type: 'checkbox',
+      default: true,
+      advanced: true,
+      experimental: true
+    },
+    {
       name: 'resolution',
       label: 'Resolution',
       type: 'list',
@@ -74,23 +83,6 @@ export default class Settings {
         return points;
       })(),
       manualinput: false,
-      advanced: true,
-      experimental: true
-    },
-    {
-      name: 'antialiasing',
-      label: 'Antialiasing',
-      type: 'checkbox',
-      default: true,
-      advanced: true,
-      experimental: true
-    },
-    {
-      name: 'webGL',
-      label: 'Use WebGL',
-      description: 'Better performance (Requires page refresh)',
-      type: 'checkbox',
-      default: true,
       advanced: true,
       experimental: true
     },
@@ -493,9 +485,20 @@ export default class Settings {
         }
       }
       return setting
-    }).filter(setting => setting)
+    })
 
     this.getAll()
+
+    this.config = this.config.map(setting => {
+      if(
+        !this.webGL && 
+        setting.name === 'resolution'
+      ) {
+        return undefined
+      }
+      return setting
+    }).filter(setting => setting)
+
     this.initMenu()
   }
   
@@ -833,17 +836,34 @@ export default class Settings {
 
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
-              const edgeSetting = this.config.find(setting => setting.name === 'edge')
-              const edgeValue = (value <= 5 ) ? 2 : ((value >= 42.5) ? 17 : (
-                value/2.5
-              ))
+              const edgeValue = (value <= 5 ) 
+                ? 2 
+                : ((value >= 42.5) 
+                  ? 17 
+                  : (value / 2.5)
+                )
 
+              const edgeSetting = this.config.find(setting => setting.name === 'edge')
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
 
-              // Todo: Resolution > 64 when blur < 10?
-              // Todo: Antialiasing off when > 512?
+              if(this.webGL) {
+                const resValue = (value >= 30)
+                  ? 64
+                  : ((value >= 20)
+                    ? 128
+                    : ((value >= 10)
+                      ? 256
+                      : 512
+                    )
+                  )
+  
+                const resSetting = this.config.find(setting => setting.name === 'resolution')
+                const resInputElem = $.s(`#setting-${resSetting.name}-range`)
+                resInputElem.value = resSetting.valuePoints.indexOf(resValue)
+                resInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+              }
             }
           }
 
@@ -930,8 +950,7 @@ export default class Settings {
             setting.name === 'advancedSettings' ||
             setting.name === 'hideScrollbar' ||
             setting.name === 'immersiveTheaterView' ||
-            setting.name === 'webGL' ||
-            setting.name === 'antialiasing'
+            setting.name === 'webGL'
           ) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)

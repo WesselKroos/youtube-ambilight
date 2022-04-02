@@ -134,9 +134,6 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    // Video
-    this.videoTexture = this.createTexture()
-
     // Frame 1
     this.frame1Texture = this.createTexture()
     this.frame1Buffer = this.ctx.createFramebuffer();
@@ -198,7 +195,7 @@ export class WebGLContext {
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.videoTexture);
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
 
     // Crop black bars
@@ -221,7 +218,7 @@ export class WebGLContext {
       this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame1Texture, 0);
       
       // Render texture to framebuffer1
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.videoTexture);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
       this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
       
