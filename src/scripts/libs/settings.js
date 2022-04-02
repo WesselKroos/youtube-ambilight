@@ -64,10 +64,15 @@ export default class Settings {
       label: 'Resolution',
       type: 'list',
       default: 64,
-      min: 64,
-      max: 1024,
-      step: 64,
       unit: 'px',
+      valuePoints: (() => {
+        const points = [8];
+        while(points[points.length - 1] < 512) {
+          points.push(points[points.length - 1] * 1.5);
+          points.push(points[points.length - 2] * 2);
+        }
+        return points;
+      })(),
       manualinput: false,
       advanced: true,
       experimental: true
@@ -303,6 +308,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -312,6 +318,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -321,6 +328,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -427,6 +435,7 @@ export default class Settings {
       default: 0,
       min: 0,
       max: 100,
+      step: 1,
       advanced: true
     },
     {
@@ -612,22 +621,27 @@ export default class Settings {
                 <input 
                   id="setting-${setting.name}-range" 
                   type="range" 
-                  min="${setting.min}" 
-                  max="${setting.max}" 
                   colspan="2" 
-                  value="${value}" 
-                  step="${setting.step || 1}" />
+                  value="${setting.valuePoints ? setting.valuePoints.indexOf(value) : value}" 
+                  ${setting.min ? `min="${setting.min}"` : ''} 
+                  ${setting.max ? `max="${setting.max}"` : ''} 
+                  ${setting.valuePoints 
+                    ? `min="0" max="${setting.valuePoints.length - 1}"` 
+                    : ''}
+                  ${(setting.step || setting.valuePoints) ? `step="${setting.step || 1}"` : ''}
+              />
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
                   ${setting.snapPoints.map(({ label, value, flip }, i) => {
                     return `
                       <option 
-                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
                         value="${value}" 
-                        label="${label}" 
-                        title="Snap to ${label}" 
-                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
+                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%"
+                        label="${label}"
+                        title="Snap to ${label}"
+                      >
                         ${label}
                       </option>
                     `;
@@ -794,6 +808,9 @@ export default class Settings {
           let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = this.config.find(s => s.name === setting.name).default
+            if(setting.valuePoints) {
+              value = setting.valuePoints.indexOf(value)
+            }
           } else if (inputElem.value === inputElem.getAttribute('data-previous-value')) {
             return
           }
@@ -801,6 +818,10 @@ export default class Settings {
           inputElem.setAttribute('data-previous-value', value)
           if (manualInputElem) {
             manualInputElem.value = inputElem.value
+          }
+
+          if(setting.valuePoints) {
+            value = setting.valuePoints[value]
           }
           this.set(setting.name, value)
           valueElem.textContent = this.getSettingListDisplayText({...setting, value})
