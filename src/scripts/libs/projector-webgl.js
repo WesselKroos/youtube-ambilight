@@ -155,7 +155,6 @@ export default class ProjectorWebGL {
       uniform int fScalesLength;
       uniform vec2 fScales[${this.maxScalesLength}];
       uniform vec2 fScalesMinus[${this.maxScalesLength}];
-      uniform vec4 fBorderColor;
     
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         for (int i = 0; i < ${this.maxScalesLength}; i++) {
@@ -171,7 +170,7 @@ export default class ProjectorWebGL {
             return texture2D(sampler, scaledUV);
           }
         }
-        return fBorderColor;
+        return vec4(0, 0, 0, 0);
       }
       
       void main(void) {
@@ -224,10 +223,6 @@ export default class ProjectorWebGL {
     const vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
-      
-    const fBorderColorLoc = this.ctx.getUniformLocation(this.program, 'fBorderColor');
-    const borderColor = new Float32Array([0, 0, 0, 0]);
-    this.ctx.uniform4fv(fBorderColorLoc, borderColor);
 
     const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, "shadowSampler");
     this.ctx.uniform1i(shadowSamplerLoc, 0);
