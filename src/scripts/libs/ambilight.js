@@ -519,9 +519,19 @@ export default class Ambilight {
   }
 
   checkGetImageDataAllowed(reportUnexpectedChange = false) {
-    const isSameOriginVideo = (this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
+    const isSameOriginVideo = (!!this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
     const getImageDataAllowed = (!window.chrome || isSameOriginVideo)
     if(this.getImageDataAllowed === getImageDataAllowed) return
+
+    // Apply workaround
+    if(this.videoElem.src && !getImageDataAllowed && !this.videoElem.crossOrigin) {
+      console.warn('Ambient light for YouTube™ | Detected cross origin video. Applying workaround...')
+      this.videoElem.crossOrigin = 'anonymous'
+      const currentTime = this.videoElem.currentTime
+      this.videoElem.src = this.videoElem.src
+      this.videoElem.currentTime = currentTime
+      this.videoElem.play()
+    }
 
     this.getImageDataAllowed = getImageDataAllowed
     this.settings.setGetImageDataAllowedVisibility(getImageDataAllowed)
@@ -1373,7 +1383,9 @@ export default class Ambilight {
     
     let results = {}
     try {
-      results = this.drawAmbilight() || {}
+      if(!this.settings.webGL || this.getImageDataAllowed) {
+        results = this.drawAmbilight() || {}
+      }
     } catch (ex) {
       if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
         if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -2003,7 +2015,7 @@ export default class Ambilight {
 
     const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(() => {
       if (this.requestVideoFrameCallbackId !== id) {
-        console.warn('Old rvfc fired. Ignoring a possible duplicate.',  this.requestVideoFrameCallbackId, id)
+        console.warn('Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate.',  this.requestVideoFrameCallbackId, id)
         return
       }
       this.receiveVideoFrame()
