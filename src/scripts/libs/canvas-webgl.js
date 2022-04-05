@@ -56,6 +56,7 @@ export class WebGLContext {
 
   initCtx = () => {
     this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: false, alpha: false, desynchronized: true, ...this.options });
+    if(this.ctxIsInvalid) return
 
     // Shaders
     var vertexShaderSrc = `
@@ -154,7 +155,7 @@ export class WebGLContext {
   }
 
   clearRect = (x, y, width, height) => {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
@@ -187,7 +188,7 @@ export class WebGLContext {
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
 
     srcWidth = srcWidth || src.videoWidth || src.width
     srcHeight = srcHeight || src.videoHeight || src.height
@@ -209,15 +210,15 @@ export class WebGLContext {
     }
 
     if(this.options.antialiasing) {
-      // Resize framebuffer1
+      // Resize frame1Buffer
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 4, destHeight * 4, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
       
-      // Set render buffer to framebuffer1Texture with framebuffer1
+      // Set render buffer to frame1Texture with frame1Buffer
       this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame1Buffer);
       this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame1Texture, 0);
       
-      // Render texture to framebuffer1
+      // Render frame2Texture to frame1Texture
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
       this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
@@ -232,18 +233,20 @@ export class WebGLContext {
       }
 
 
-      // Resize framebuffer2
+      // Resize frame2Buffer
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 2, destHeight * 2, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
       
-      // Set render buffer to framebuffer2Texture with framebuffer2
+      // Set render buffer to frame2Texture with frame2Buffer
       this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame2Buffer);
       this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame2Texture, 0);
       
-      // Render framebuffer1Texture to framebuffer2
+      // Render frame1Texture to frame2Texture
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
       this.ctx.viewport(0, 0, destWidth * 2, destHeight * 2);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear frame1Texture
 
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
     }
@@ -252,12 +255,14 @@ export class WebGLContext {
     this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
     this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear frame2Texture
   }
 
   getImageDataBuffers = []
   getImageDataBuffersIndex = 0
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
 
     // Enough for 5 ImageData objects for the blackbar detection
     if(this.getImageDataBuffersIndex > 4) {
@@ -281,5 +286,13 @@ export class WebGLContext {
     this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
 
     return buffer;
+  }
+
+  get ctxIsInvalid() {
+    const invalid = !this.ctx || this.ctx.isContextLost();
+    if (invalid) {
+      console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
+    }
+    return invalid;
   }
 }

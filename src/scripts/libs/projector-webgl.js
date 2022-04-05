@@ -74,16 +74,18 @@ export default class ProjectorWebGL {
   }
 
   draw(src) {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
     
     this.drawImage(src)
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear projectorsTexture
 
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
@@ -96,6 +98,7 @@ export default class ProjectorWebGL {
       alpha: true,
       desynchronized: true
     });
+    if(this.ctxIsInvalid) return
 
     this.projectors = [{
       elem: this.canvas,
@@ -155,7 +158,7 @@ export default class ProjectorWebGL {
       uniform int fScalesLength;
       uniform vec2 fScales[${this.maxScalesLength}];
       uniform vec2 fScalesMinus[${this.maxScalesLength}];
-    
+
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         for (int i = 0; i < ${this.maxScalesLength}; i++) {
           if (i == fScalesLength) break;
@@ -238,7 +241,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
 
     const fScalesLength = this.scales.length;
     const fScalesLengthChanged = this.fScalesLength !== fScalesLength;
@@ -266,7 +269,15 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
-    if(this.ctx.isContextLost()) return
+    if(this.ctxIsInvalid) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+  }
+
+  get ctxIsInvalid() {
+    const invalid = !this.ctx || this.ctx.isContextLost();
+    if (invalid) {
+      console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
+    }
+    return invalid;
   }
 }
