@@ -147,14 +147,14 @@ const workerCode = function () {
         }
     
         size = lowestSize
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * (offsetPercentage/100))
         }
       } else {
         size = Math.max(...closestSizes)
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
