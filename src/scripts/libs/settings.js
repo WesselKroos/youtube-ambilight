@@ -555,9 +555,14 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
+          <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
+            <div class="ytp-menuitem-label" rowspan="2">
+              <span class="ytpa-warning"></span>
+            </div>
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
+              <a class="ytpa-feedback-link" href="${this.feedbackFormLink}" target="_blank">
                 <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
               </a>
             </div>
@@ -671,6 +676,9 @@ export default class Settings {
           }
         </div>
       </div>`
+
+    this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
+    this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
 
     const resetSettingsBtnElem = this.menuElem.querySelector('.ytpa-reset-settings-btn')
     on(resetSettingsBtnElem, 'click', () => {
@@ -1297,5 +1305,10 @@ export default class Settings {
         setting.style.display = 'none'
       }
     }
+  }
+
+  setWarning(message) {
+    this.warningItemElem.style.display = message ? '' : 'none'
+    this.warningElem.textContent = message
   }
 }

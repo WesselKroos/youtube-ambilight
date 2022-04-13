@@ -673,7 +673,7 @@ html[data-ambilight-enabled="true"] {
   .ytpa-feedback-link__text {
     display: block;
     padding: 10px 15px;
-    color: #007cc3;
+    color: #008cff;
     font-weight: normal;
     font-size: 11px;
     &:hover {
@@ -690,7 +690,7 @@ html[data-ambilight-enabled="true"] {
   .html5-video-player {
     & {
       a {
-        color: #007cc3;
+        color: #008cff;
         &:hover {
           color: #5ebfff;
           text-decoration: underline;
@@ -966,6 +966,18 @@ html[data-ambilight-enabled="true"] {
       }
     }
   }
+
+  .ytpa-menuitem--warning {
+    cursor: default !important;
+    &:hover {
+      background: none !important;
+    }
+  }
+  .ytpa-warning {
+    color: #f40;
+    white-space: pre-line;
+  }
+
   .ytp-menuitem {
     display: flex;
     width: 100%;

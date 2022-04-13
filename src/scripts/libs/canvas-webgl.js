@@ -6,10 +6,11 @@ export class WebGLCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
-        return new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = new WebGLContext(this.canvas, type, options);
       } else {
-        return this.canvas._getContext(type, options);
+        this.canvas.ctx = this.canvas._getContext(type, options);
       }
+      return this.canvas.ctx;
     }
     return this.canvas;
   }
@@ -28,16 +29,19 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
-        return new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = new WebGLContext(this.canvas, type, options);
       } else {
-        return this.canvas._getContext(type, options);
+        this.canvas.ctx = this.canvas._getContext(type, options);
       }
+      return this.canvas.ctx;
     }
     return this.canvas;
   }
 }
 
 export class WebGLContext {
+  lostCount = 0
+
   constructor(canvas, type, options = {}) {
     this.canvas = canvas;
     this.canvas.addEventListener("webglcontextlost", (event) => {
@@ -45,9 +49,16 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
+      this.lost = true
+      this.lostCount++
     }, false);
     this.canvas.addEventListener("webglcontextrestored", () => {
+      if(this.lostCount >= 3) {
+        console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
+        return
+      }
       this.initCtx()
+      this.lost = false
     }, false);
 
     this.options = options;
@@ -308,7 +319,8 @@ export class WebGLContext {
 
   get ctxIsInvalid() {
     const invalid = !this.ctx || this.ctx.isContextLost();
-    if (invalid) {
+    if (invalid && !this.ctxIsInvalidWarned) {
+      this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
     }
     return invalid;

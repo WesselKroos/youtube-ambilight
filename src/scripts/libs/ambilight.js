@@ -1223,6 +1223,12 @@ export default class Ambilight {
       this.recreateProjectors()
     }
 
+    if(this.settings.webGL) {
+      if(this.projector.lost || this.projectorBuffer.ctx?.lost) {
+        this.settings.setWarning('WebGL crashed multiple times!\nRefresh the webpage or disable the WebGL setting if it keeps on crashing.')
+      }
+    }
+
     if (this.sizesInvalidated) {
       this.sizesInvalidated = false
       return this.updateSizes()
@@ -2015,7 +2021,7 @@ export default class Ambilight {
 
     const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(() => {
       if (this.requestVideoFrameCallbackId !== id) {
-        console.warn('Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate.',  this.requestVideoFrameCallbackId, id)
+        console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
       this.receiveVideoFrame()

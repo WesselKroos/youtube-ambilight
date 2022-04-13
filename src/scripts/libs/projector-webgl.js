@@ -2,6 +2,7 @@ import { SafeOffscreenCanvas } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
+  lostCount = 0
   scales = [{ x: 1, y: 1 }]
   levels = 1
   maxScalesLength = 103
@@ -15,9 +16,16 @@ export default class ProjectorWebGL {
       this.viewport = undefined
       this.fScalesLength = undefined
       this.fScales = undefined
+      this.lost = true
+      this.lostCount++
     }, false);
     this.canvas.addEventListener("webglcontextrestored", () => {
+      if(this.lostCount >= 3) {
+        console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
+        return
+      }
       this.initCtx()
+      this.lost = false
     }, false);
 
     this.blurCanvas = document.createElement('canvas')
@@ -80,7 +88,7 @@ export default class ProjectorWebGL {
   }
 
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
@@ -290,7 +298,8 @@ export default class ProjectorWebGL {
 
   get ctxIsInvalid() {
     const invalid = !this.ctx || this.ctx.isContextLost();
-    if (invalid) {
+    if (invalid && !this.ctxIsInvalidWarned) {
+      this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
     }
     return invalid;
