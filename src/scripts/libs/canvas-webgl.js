@@ -55,7 +55,21 @@ export class WebGLContext {
   }
 
   initCtx = () => {
-    this.ctx = this.canvas._getContext('webgl2', { preserveDrawingBuffer: false, alpha: false, desynchronized: true, ...this.options });
+    const ctxOptions = {
+      preserveDrawingBuffer: false,
+      alpha: false,
+      desynchronized: true,
+      ...this.options
+    }
+    this.ctx = this.canvas.getContext('webgl2', ctxOptions);
+    if(this.ctx) {
+      this.webGLVersion = 2
+    } else {
+      this.ctx = this.canvas.getContext('webgl', ctxOptions);
+      if(this.ctx) {
+        this.webGLVersion = 1
+      }
+    }
     if(this.ctxIsInvalid) return
 
     // Shaders
@@ -151,6 +165,10 @@ export class WebGLContext {
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    if (this.webGLVersion == 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+    }
     return texture;
   }
 

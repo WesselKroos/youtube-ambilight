@@ -26,7 +26,7 @@ export default class ProjectorWebGL {
     this.boundaryElem = this.blurCanvas
     this.blurCtx = this.blurCanvas.getContext('2d', {
       alpha: true,
-      desynchronized: false
+      desynchronized: true
     });
 
     this.shadow = new ProjectorShadow()
@@ -92,12 +92,22 @@ export default class ProjectorWebGL {
   }
 
   initCtx() {
-    this.ctx = this.canvas.getContext('webgl2', {
+    const ctxOptions = {
       preserveDrawingBuffer: false,
       premultipliedAlpha: false,
       alpha: true,
       desynchronized: true
-    });
+    }
+    this.ctx = this.canvas.getContext('webgl2', ctxOptions);
+    if(this.ctx) {
+      this.webGLVersion = 2
+    } else {
+      this.maxScalesLength = 98 // Limit of WebGL1
+      this.ctx = this.canvas.getContext('webgl', ctxOptions);
+      if(this.ctx) {
+        this.webGLVersion = 1
+      }
+    }
     if(this.ctxIsInvalid) return
 
     this.projectors = [{
@@ -126,8 +136,13 @@ export default class ProjectorWebGL {
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    if (this.webGLVersion == 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+    } else {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    }
 
     // Shaders
     const vertexShaderSrc = `
