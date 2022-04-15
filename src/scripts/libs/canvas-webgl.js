@@ -46,19 +46,26 @@ export class WebGLContext {
     this.canvas = canvas;
     this.canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
+      this.lost = true
+      this.lostCount++
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
-      this.lost = true
-      this.lostCount++
+      console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
     }, false);
     this.canvas.addEventListener("webglcontextrestored", () => {
+      console.error(`Ambient light for YouTube™ | Canvas ctx restoring (${this.lostCount})`)
       if(this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
         return
       }
       this.initCtx()
-      this.lost = false
+      if(this.ctx && !this.ctx.isContextLost()) {
+        this.lost = false
+        console.error(`Ambient light for YouTube™ | Canvas ctx restored (${this.lostCount})`)
+      } else {
+        console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
+      }
     }, false);
 
     this.options = options;
@@ -67,8 +74,11 @@ export class WebGLContext {
 
   initCtx = () => {
     const ctxOptions = {
+      failIfMajorPerformanceCaveat: true,
       preserveDrawingBuffer: false,
       alpha: false,
+      depth: false,
+      antialias: false,
       desynchronized: true,
       ...this.options
     }
@@ -321,8 +331,19 @@ export class WebGLContext {
     const invalid = !this.ctx || this.ctx.isContextLost();
     if (invalid && !this.ctxIsInvalidWarned) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
+      console.warn(`Ambient light for YouTube™ | Invalid Canvas ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
+    // if(this.ctx && this.ctx.isContextLost() && this.lostCount < 3) {
+    //   console.warn(`Ambient light for YouTube™ | Restoring context try ${this.lostCount}`)
+    //   this.initCtx()
+    //   if(this.ctx || this.ctx.isContextLost()) {
+    //     this.lostCount++
+    //   } else {
+    //     console.warn(`Ambient light for YouTube™ | Restored in ${this.lostCount} tries`)
+    //     this.lost = false
+    //     return false
+    //   }
+    // }
     return invalid;
   }
 }

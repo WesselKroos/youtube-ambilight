@@ -283,7 +283,7 @@ export default class Ambilight {
     this.nextFrame()
   }
 
-  initListeners() {
+  initVideoListeners() {
     ////// PLAYER FLOW
     //
     // LEGEND
@@ -308,42 +308,61 @@ export default class Ambilight {
     // End video:  [ pause -> ended ]
     //
     //////
+  
+    this.videoListeners = this.videoListeners || {
+      seeked: () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+        // When the video is paused this is the first event. Else [loadeddata] is first
+        if (this.initVideoIfSrcChanged()) return
+  
+        this.buffersCleared = true // Always prevent old frame from being drawn
+        this.optionalFrame()
+      },
+      loadeddata: () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+        // Whent the video is playing this is the first event. Else [seeked] is first
+        this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
+        this.initVideoIfSrcChanged()
+      },
+      playing: () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+        if (this.videoElem.paused) return // When paused handled by [seeked]
+        this.optionalFrame()
+      },
+      ended: () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+        this.clear()
+        this.scheduledNextFrame = false
+        this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
+      },
+      emptied: () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+        this.clear()
+        this.scheduledNextFrame = false
+      },
+      error: (ex) => {
+        console.warn('Ambient light for YouTube™ | Video error:', ex)
+        this.clear()
+        this.requestVideoFrameCallbackId = undefined
+        setTimeout(() => {
+          this.initVideoListeners()
+          if(!this.videoElem.paused) {
+            this.videoListeners.playing()
+          }
+        }, 1000)
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+      },
+      click: this.settings.onCloseMenu
+    }
 
-    on(this.videoElem, 'seeked', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      // When the video is paused this is the first event. Else [loadeddata] is first
-      if (this.initVideoIfSrcChanged()) return
+    for (const name in this.videoListeners) {
+      off(this.videoElem, name, this.videoListeners[name])
+      on(this.videoElem, name, this.videoListeners[name])
+    }
+  }
 
-      this.buffersCleared = true // Always prevent old frame from being drawn
-      this.optionalFrame()
-    })
-    on(this.videoElem, 'loadeddata', (e) => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      // Whent the video is playing this is the first event. Else [seeked] is first
-      this.initVideoIfSrcChanged()
-    })
-    on(this.videoElem, 'playing', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      if (this.videoElem.paused) return // When paused handled by [seeked]
-      this.optionalFrame()
-    })
-    on(this.videoElem, 'ended', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      this.clear()
-      this.scheduledNextFrame = false
-      this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
-    })
-    on(this.videoElem, 'emptied', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      this.clear()
-      this.scheduledNextFrame = false
-    })
-    on(this.videoElem, 'error', (ex) => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      console.error('Video error:', ex)
-    })
-
-    on(this.videoElem, 'click', this.settings.onCloseMenu)
+  initListeners() {
+    this.initVideoListeners()
 
     on(document, 'visibilitychange', () => {
       if (!this.settings.enabled || !this.isOnVideoPage) return
@@ -520,19 +539,26 @@ export default class Ambilight {
 
   checkGetImageDataAllowed(reportUnexpectedChange = false) {
     const isSameOriginVideo = (!!this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
-    const getImageDataAllowed = (!window.chrome || isSameOriginVideo)
-    if(this.getImageDataAllowed === getImageDataAllowed) return
+    const getImageDataAllowed = (!window.chrome || isSameOriginVideo || (!isSameOriginVideo && this.videoElem.crossOrigin))
 
-    // Apply workaround
-    if(this.videoElem.src && !getImageDataAllowed && !this.videoElem.crossOrigin) {
-      console.warn('Ambient light for YouTube™ | Detected cross origin video. Applying workaround...')
-      this.videoElem.crossOrigin = 'anonymous'
-      const currentTime = this.videoElem.currentTime
-      this.videoElem.src = this.videoElem.src
-      this.videoElem.currentTime = currentTime
-      this.videoElem.play()
+    // Try to apply the workaround once
+    if(this.videoElem.src && !getImageDataAllowed && !this.crossOriginApplied) {
+      console.warn(`Ambient light for YouTube™ | Detected cross origin video. Applying workaround... ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
+      this.crossOriginApplied = true
+      
+      try {
+        const currentTime = this.videoElem.currentTime
+        const player = document.querySelector('#movie_player')
+        
+        this.videoElem.crossOrigin = 'use-credentials'
+        player.loadVideoById(player.getVideoData().video_id) // Refreshes auto quality setting range above 480p
+        this.videoElem.currentTime = currentTime
+      } catch(ex) {
+        console.warn(`Ambient light for YouTube™ | Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
+      }
     }
 
+    if(this.getImageDataAllowed === getImageDataAllowed) return
     this.getImageDataAllowed = getImageDataAllowed
     this.settings.setGetImageDataAllowedVisibility(getImageDataAllowed)
   }
@@ -592,9 +618,13 @@ export default class Ambilight {
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem)
-      : new Projector2d(this.projectorListElem)
+      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners)
+      : new Projector2d(this.projectorListElem, this.initProjectorListeners)
 
+    this.initProjectorListeners()
+  }
+
+  initProjectorListeners = () => {
     // Dont draw ambilight when its not in viewport
     this.isAmbilightHiddenOnWatchPage = false
     if(this.ambilightObserver) {
@@ -616,13 +646,6 @@ export default class Ambilight {
       )
     }
     this.ambilightObserver.observe(this.projector.boundaryElem)
-
-    // Warning: Using Canvas elements in this div instead of OffScreenCanvas
-    // while waiting for a fix for this issue:
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=1015729
-    //this.buffersElem = document.createElement('div')
-    //this.buffersElem.classList.add('ambilight__buffers')
-    //this.elem.prepend(this.buffersElem)
   }
 
   initBuffers() {
@@ -1226,6 +1249,10 @@ export default class Ambilight {
     if(this.settings.webGL) {
       if(this.projector.lost || this.projectorBuffer.ctx?.lost) {
         this.settings.setWarning('WebGL crashed multiple times!\nRefresh the webpage or disable the WebGL setting if it keeps on crashing.')
+        this.displayedSettingsWarning = true
+      } else if(this.displayedSettingsWarning) {
+        this.settings.setWarning('')
+        this.displayedSettingsWarning = false
       }
     }
 

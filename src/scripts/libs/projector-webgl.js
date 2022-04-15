@@ -7,12 +7,18 @@ export default class ProjectorWebGL {
   levels = 1
   maxScalesLength = 103
 
-  constructor(containerElem) {
+  constructor(containerElem, initProjectorListeners) {
     this.containerElem = containerElem
+    this.initProjectorListeners = initProjectorListeners
 
+    this.initBlurCtx()
+
+    this.shadow = new ProjectorShadow()
+    
     this.canvas = new SafeOffscreenCanvas(1, 1);
     this.canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
+      console.error('Ambient light for YouTube™ | Project ctx lost')
       this.viewport = undefined
       this.fScalesLength = undefined
       this.fScales = undefined
@@ -21,24 +27,20 @@ export default class ProjectorWebGL {
     }, false);
     this.canvas.addEventListener("webglcontextrestored", () => {
       if(this.lostCount >= 3) {
-        console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
+        console.error('Ambient light for YouTube™ | Projector ctx crashed 3 times. Stopped restoring WebGL.')
         return
       }
+      console.error(`Ambient light for YouTube™ | Projector ctx restoring (${this.lostCount})`)
       this.initCtx()
-      this.lost = false
+      this.initBlurCtx()
+      if(this.ctx && !this.ctx.isContextLost() && this.blurCtx && !this.blurCtx.isContextLost()) {
+        this.initProjectorListeners()
+        this.lost = false
+        console.error(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
+      } else {
+        console.error(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
+      }
     }, false);
-
-    this.blurCanvas = document.createElement('canvas')
-    this.blurCanvas.classList.add('ambilight__projector')
-    this.containerElem.prepend(this.blurCanvas)
-    this.boundaryElem = this.blurCanvas
-    this.blurCtx = this.blurCanvas.getContext('2d', {
-      alpha: true,
-      desynchronized: true
-    });
-
-    this.shadow = new ProjectorShadow()
-    
     this.initCtx()
   }
 
@@ -99,11 +101,61 @@ export default class ProjectorWebGL {
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
   }
 
+  onBlurCtxLost(event) {
+    event.preventDefault();
+    this.lost = true
+    this.lostCount++
+    this.viewport = undefined
+    this.fScalesLength = undefined
+    this.fScales = undefined
+    console.error(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
+  }
+
+  onBlurCtxRestored() {
+    console.error(`Ambient light for YouTube™ | Projector blurCtx restoring (${this.lostCount})`)
+    if(this.lostCount >= 3) {
+      console.error('Ambient light for YouTube™ | Projector blurCtx crashed 3 times. Stopped restoring WebGL.')
+      return
+    }
+    this.initBlurCtx()
+    if(this.blurCtx && !this.blurCtx.isContextLost()) {
+      this.initProjectorListeners()
+      this.lost = false
+      console.error(`Ambient light for YouTube™ | Projector blurCtx restored (${this.lostCount})`)
+    } else {
+      console.error(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
+    }
+  }
+
+  initBlurCtx() {
+    if(this.blurCanvas) {
+      this.containerElem.removeChild(this.blurCanvas)
+      if(this.blurCtx) {
+        this.blurCanvas.removeEventListener("contextlost", this.onBlurCtxLost)
+        this.blurCanvas.removeEventListener("contextrestored", this.onBlurCtxRestored)
+      }
+    }
+
+    this.blurCanvas = document.createElement('canvas')
+    this.blurCanvas.classList.add('ambilight__projector')
+    this.containerElem.prepend(this.blurCanvas)
+    this.boundaryElem = this.blurCanvas
+    this.blurCtx = this.blurCanvas.getContext('2d', {
+      alpha: true,
+      desynchronized: true
+    })
+    this.blurCanvas.addEventListener("contextlost", this.onBlurCtxLost)
+    this.blurCanvas.addEventListener("contextrestored", this.onBlurCtxRestored)
+  }
+
   initCtx() {
     const ctxOptions = {
+      failIfMajorPerformanceCaveat: true,
       preserveDrawingBuffer: false,
       premultipliedAlpha: false,
       alpha: true,
+      depth: false,
+      antialias: false,
       desynchronized: true
     }
     this.ctx = this.canvas.getContext('webgl2', ctxOptions);
@@ -297,11 +349,37 @@ export default class ProjectorWebGL {
   }
 
   get ctxIsInvalid() {
-    const invalid = !this.ctx || this.ctx.isContextLost();
+    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.blurCtx || this.blurCtx.isContextLost())
     if (invalid && !this.ctxIsInvalidWarned) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | ${this.ctx ? 'ContextLost' : 'Context is null'}`)
+      console.warn(`Ambient light for YouTube™ | Invalid Projector ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
+    // if(invalid && this.lostCount < 3) {
+    //   let invalidCtx = !this.ctx || this.ctx.isContextLost()
+    //   if(invalidCtx) {
+    //     console.warn(`Ambient light for YouTube™ | Restoring context try ${this.lostCount}`)
+    //     this.initCtx()
+    //     if(this.ctx && !this.ctx.isContextLost()) {
+    //       invalidCtx = false
+    //     }
+    //   }
+    //   let invalidBlurCtx = !this.blurCtx || this.blurCtx.isContextLost()
+    //   if(invalidBlurCtx) {
+    //     console.warn(`Ambient light for YouTube™ | Restoring blurContext try ${this.lostCount}`)
+    //     this.initBlurCtx()
+    //     if(this.blurCtx && !this.blurCtx.isContextLost()) {
+    //       invalidBlurCtx = false
+    //     }
+    //   }
+
+    //   if(!invalidCtx && !invalidBlurCtx) {
+    //     console.warn(`Ambient light for YouTube™ | Restored after ${this.lostCount} tries`)
+    //     this.lost = false
+    //   } else {
+    //     console.warn(`Ambient light for YouTube™ | Restore failed ${this.lostCount}`)
+    //     this.lostCount++
+    //   }
+    // }
     return invalid;
   }
 }
