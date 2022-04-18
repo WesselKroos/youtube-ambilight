@@ -53,7 +53,8 @@ export default class Projector2d {
     }
   }
 
-  rescale(scales, lastScale, projectorSize, settings) {
+  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
+    this.heightCrop = heightCrop
     for(const i in scales) {
       this.projectors[i].elem.style.transform = `scale(${scales[i].x}, ${scales[i].y})`
     }
@@ -61,9 +62,11 @@ export default class Projector2d {
     this.shadow.rescale(lastScale, projectorSize, settings)
   }
 
-  draw(src, srcRect) {
+  draw(src) {
+    const srcY = src.height * this.heightCrop
+    const srcHeight = src.height * (1 - this.heightCrop * 2)
     for(const projector of this.projectors) {
-      projector.ctx.drawImage(src, 0, 0, projector.elem.width, projector.elem.height)
+      projector.ctx.drawImage(src, 0, srcY, src.width, srcHeight, 0, 0, projector.elem.width, projector.elem.height)
     }
   }
 }

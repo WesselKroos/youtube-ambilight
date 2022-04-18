@@ -983,7 +983,7 @@ export default class Ambilight {
     } else {
       this.p = {
         w: Math.round(this.srcVideoOffset.width / scale),
-        h: Math.round((this.srcVideoOffset.height) / scale) // * (1 - (horizontalBarsClip * 2))
+        h: Math.round((this.srcVideoOffset.height) / scale)
       }
     }
 
@@ -1033,19 +1033,16 @@ export default class Ambilight {
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
 
-    this.barsClipPx = Math.round(this.p.h * horizontalBarsClip)
-    this.videoScale = this.settings.webGL && this.p.h * 2 < this.srcVideoOffset.height
-      ? (this.p.h * 4 < this.srcVideoOffset.height
-        ? 4
-        : 2
-      )
-      : 1
-    this.projectorBufferScale = this.settings.webGL
-      ? ((this.videoScale === 4 && this.p.h * 2 < this.srcVideoOffset.height) ? 2 : 1)
-      : 1
-    this.projectorBuffer.elem.width = Math.round(this.p.w * this.projectorBufferScale)
-    this.projectorBuffer.elem.height = Math.round((this.p.h - (this.barsClipPx * 2)) * this.projectorBufferScale)
-
+    let projectorBufferScale = 1
+    while(this.settings.webGL && (
+      (this.p.h * projectorBufferScale) <= (this.srcVideoOffset.height / 1.5) && 
+      (this.p.h * projectorBufferScale) <= 256
+    )) {
+      projectorBufferScale = projectorBufferScale * 2
+    }
+    this.projectorBuffer.elem.width = Math.round(this.p.w * projectorBufferScale)
+    this.projectorBuffer.elem.height = Math.round(this.p.h * projectorBufferScale)
+    
     this.projector.resize(this.p.w, this.p.h)
 
     const frameBlending = this.settings.frameBlending
@@ -1236,8 +1233,8 @@ export default class Ambilight {
         y: Math.max(minScale.y, scaleY)
       })
     }
-
-    this.projector.rescale(scales, lastScale, projectorSize, this.settings)
+    
+    this.projector.rescale(scales, lastScale, projectorSize, (this.settings.horizontalBarsClipPercentage / 100), this.settings)
   }
 
   checkVideoSize(checkPosition = true) {
@@ -1772,12 +1769,7 @@ export default class Ambilight {
           // Prevent adjusted barsClipPx from leaking previous frame into the frame
           this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
           
-          const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
           this.projectorBuffer.ctx.drawImage(this.videoElem,
-            0,
-            videoHeightBarsClipPx,
-            this.videoElem.videoWidth,
-            this.videoElem.videoHeight - (videoHeightBarsClipPx * 2),
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
           if(this.buffersCleared) {
             this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
@@ -1860,19 +1852,9 @@ export default class Ambilight {
       }
 
       if (!dontDrawAmbilight) {
-        const videoHeightBarsClipPx = (this.settings.horizontalBarsClipPercentage / 100) * this.videoElem.videoHeight
         this.projectorBuffer.ctx.drawImage(this.videoElem,
-          0,
-          videoHeightBarsClipPx,
-          this.videoElem.videoWidth,
-          this.videoElem.videoHeight - (videoHeightBarsClipPx * 2),
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-        // if(this.enableChromiumBug1092080Workaround) { // && this.displayFrameRate >= this.ambilightFrameRate) {
-        //   for (const projector of this.projectors) {
-        //     projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
-        //   }
-        // }
         this.projector.draw(this.projectorBuffer.elem)
       }
     }
@@ -1906,7 +1888,7 @@ export default class Ambilight {
         this.getImageDataAllowed
       ) {
         this.horizontalBarDetection.detect(
-          this.videoElem,
+          this.projectorBuffer.elem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.horizontalBarsClipPercentage,

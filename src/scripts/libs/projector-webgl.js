@@ -22,6 +22,7 @@ export default class ProjectorWebGL {
       this.viewport = undefined
       this.fScalesLength = undefined
       this.fScales = undefined
+      this.heightCrop = undefined
       this.lost = true
       this.lostCount++
     }, false);
@@ -58,7 +59,7 @@ export default class ProjectorWebGL {
     this.height = height
   }
 
-  rescale(scales, lastScale, projectorSize, settings) {
+  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
     this.shadow.rescale(lastScale, projectorSize, settings)
 
     this.scale = lastScale
@@ -66,6 +67,8 @@ export default class ProjectorWebGL {
       x: this.scale.x / x,
       y: this.scale.y / y
     }))
+
+    this.heightCrop = heightCrop
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
@@ -89,7 +92,7 @@ export default class ProjectorWebGL {
     this.drawImage(src)
   }
 
-  drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
+  drawImage = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
@@ -108,6 +111,7 @@ export default class ProjectorWebGL {
     this.viewport = undefined
     this.fScalesLength = undefined
     this.fScales = undefined
+    this.heightCrop = undefined
     console.error(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
   }
 
@@ -162,7 +166,7 @@ export default class ProjectorWebGL {
     if(this.ctx) {
       this.webGLVersion = 2
     } else {
-      this.maxScalesLength = 98 // Limit of WebGL1
+      this.maxScalesLength = 97 // Limit of WebGL1 (Update this value when attributes have been added to the shaders)
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
@@ -228,6 +232,8 @@ export default class ProjectorWebGL {
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
+      uniform vec2 fCropOffsetUV;
+      uniform vec2 fCropScaleUV;
       uniform sampler2D ambilightSampler;
       uniform sampler2D shadowSampler;
       uniform int fScalesLength;
@@ -245,7 +251,8 @@ export default class ProjectorWebGL {
             scaledUV[0] > 0. && scaledUV[0] < 1. &&
             scaledUV[1] > 0. && scaledUV[1] < 1.
           ) {
-            return texture2D(sampler, scaledUV);
+            vec2 croppedUV = (scaledUV / fCropScaleUV) + fCropOffsetUV;
+            return texture2D(sampler, croppedUV);
           }
         }
         return vec4(0, 0, 0, 0);
@@ -311,6 +318,8 @@ export default class ProjectorWebGL {
     this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
     this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
     this.fScalesMinusLoc = this.ctx.getUniformLocation(this.program, 'fScalesMinus');
+    this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
+    this.fCropScaleUVLoc = this.ctx.getUniformLocation(this.program, 'fCropScaleUV');
 
     this.updateCtx()
   }
@@ -333,10 +342,23 @@ export default class ProjectorWebGL {
       this.ctx.uniform2fv(this.fScalesMinusLoc, new Float32Array(fScalesMinus));
     }
 
+    const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
+    if(fHeightCropChanged) {
+      this.fHeightCrop = this.heightCrop
+      const fCropOffsetUV = new Float32Array([
+        0, this.fHeightCrop
+      ])
+      const fCropScaleUV = new Float32Array([
+        1, 1 / (1 - this.fHeightCrop * 2)
+      ])
+      this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
+      this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
+    }
+
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, this.shadow.elem);
     this.ctx.activeTexture(this.ctx.TEXTURE1);
-
+    
     if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
       this.viewport = { width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
       this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
