@@ -23,6 +23,7 @@ export default class ProjectorWebGL {
       this.fScalesLength = undefined
       this.fScales = undefined
       this.heightCrop = undefined
+      this.textureMipmapLevel = undefined
       this.lost = true
       this.lostCount++
     }, false);
@@ -95,7 +96,18 @@ export default class ProjectorWebGL {
   drawImage = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
+    const textureMipmapLevel = this.webGLVersion === 1 ? 0 : Math.log(src.height / this.height) / Math.log(2)
+    if(textureMipmapLevel !== this.textureMipmapLevel) {
+      // console.log(src.height, this.height, mipmapLevel)
+      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
+      this.textureMipmapLevel = textureMipmapLevel
+    }
+
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, src);
+    if(textureMipmapLevel !== 0) {
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+    }
+    
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear projectorsTexture
@@ -112,6 +124,7 @@ export default class ProjectorWebGL {
     this.fScalesLength = undefined
     this.fScales = undefined
     this.heightCrop = undefined
+    this.textureMipmapLevel = undefined
     console.error(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
   }
 
@@ -198,12 +211,13 @@ export default class ProjectorWebGL {
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     if (this.webGLVersion == 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     }
@@ -232,9 +246,10 @@ export default class ProjectorWebGL {
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
+      uniform float fTextureMipmapLevel;
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
-      uniform sampler2D ambilightSampler;
+      uniform sampler2D textureSampler;
       uniform sampler2D shadowSampler;
       uniform int fScalesLength;
       uniform vec2 fScales[${this.maxScalesLength}];
@@ -252,14 +267,14 @@ export default class ProjectorWebGL {
             scaledUV[1] > 0. && scaledUV[1] < 1.
           ) {
             vec2 croppedUV = (scaledUV / fCropScaleUV) + fCropOffsetUV;
-            return texture2D(sampler, croppedUV);
+            return texture2D(sampler, croppedUV, fTextureMipmapLevel);
           }
         }
         return vec4(0, 0, 0, 0);
       }
       
       void main(void) {
-        vec4 ambilight = multiTexture(ambilightSampler, fUV);
+        vec4 ambilight = multiTexture(textureSampler, fUV);
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
         ambilight[3] = 1. - shadowAlpha;
         gl_FragColor = ambilight;
@@ -312,9 +327,10 @@ export default class ProjectorWebGL {
     const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, "shadowSampler");
     this.ctx.uniform1i(shadowSamplerLoc, 0);
 
-    const ambilightSamplerLoc = this.ctx.getUniformLocation(this.program, "ambilightSampler");
-    this.ctx.uniform1i(ambilightSamplerLoc, 1);
+    const textureSamplerLoc = this.ctx.getUniformLocation(this.program, "textureSampler");
+    this.ctx.uniform1i(textureSamplerLoc, 1);
     
+    this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
     this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
     this.fScalesMinusLoc = this.ctx.getUniformLocation(this.program, 'fScalesMinus');

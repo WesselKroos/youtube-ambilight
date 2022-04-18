@@ -170,18 +170,8 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    // Frame 1
-    this.frame1Texture = this.createTexture()
-    this.frame1Buffer = this.ctx.createFramebuffer();
-
-    // Frame 2
-    this.frame2Texture = this.createTexture()
-    this.frame2Buffer = this.ctx.createFramebuffer();
-  }
-
-  createTexture() {
-    const texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
+    this.texture = this.ctx.createTexture();
+    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
@@ -190,7 +180,6 @@ export class WebGLContext {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     }
-    return texture;
   }
 
   clearRect = (x, y, width, height) => {
@@ -235,67 +224,24 @@ export class WebGLContext {
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, src);
 
-    // Crop black bars
+    // Crop src
     const scaleX = 1 + (srcX / srcWidth) * 2
     const scaleY = 1 + (srcY / srcHeight) * 2
     if (scaleX !== this.scaleX || scaleY !== this.scaleY) {
       this.ctx.bufferData(this.ctx.ARRAY_BUFFER, this.getCachedScale(scaleX, scaleY), this.ctx.STATIC_DRAW);
-
       this.scaleX = scaleX
       this.scaleY = scaleY
     }
 
-    if(this.options.antialiasing) {
-      // Resize frame1Buffer
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, destWidth * 4, destHeight * 4, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null);
-      
-      // Set render buffer to frame1Texture with frame1Buffer
-      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame1Buffer);
-      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame1Texture, 0);
-      
-      // Render frame2Texture to frame1Texture
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
-      this.ctx.viewport(0, 0, destWidth * 4, destHeight * 4);
-      this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-      
-
-      // Reset texture scaling
-      if (1 !== this.scaleX || 1 !== this.scaleY) {
-        this.ctx.bufferData(this.ctx.ARRAY_BUFFER, this.defaultScale, this.ctx.STATIC_DRAW);
-
-        this.scaleX = 1
-        this.scaleY = 1
-      }
-
-
-      // Resize frame2Buffer
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, destWidth * 2, destHeight * 2, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null);
-      
-      // Set render buffer to frame2Texture with frame2Buffer
-      this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame2Buffer);
-      this.ctx.framebufferTexture2D(this.ctx.FRAMEBUFFER, this.ctx.COLOR_ATTACHMENT0, this.ctx.TEXTURE_2D, this.frame2Texture, 0);
-      
-      // Render frame1Texture to frame2Texture
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
-      this.ctx.viewport(0, 0, destWidth * 2, destHeight * 2);
-      this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear frame1Texture
-
-      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
+    if (!this.viewport || this.viewport.width !== destWidth || this.viewport.height !== destHeight) {
+      this.ctx.viewport(0, 0, destWidth, destHeight);
+      this.viewport = { width: destWidth, height: destHeight };
     }
 
-    // Render to canvas
-    this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, null);
-    this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear frame2Texture
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null);
   }
 
   getImageDataBuffers = []

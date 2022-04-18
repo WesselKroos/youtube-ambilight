@@ -969,7 +969,9 @@ export default class Ambilight {
       height: this.videoElem.videoHeight
     }
 
-    const minSize = this.settings.webGL ? this.settings.resolution : 512
+    const minSize = (this.settings.webGL && this.projector.webGLVersion !== 1)
+      ? this.settings.resolution 
+      : 512
     const scaleX = this.srcVideoOffset.width / minSize
     const scaleY = this.srcVideoOffset.height / minSize
     const scale = Math.min(scaleX, scaleY)
@@ -982,8 +984,8 @@ export default class Ambilight {
       }
     } else {
       this.p = {
-        w: Math.round(this.srcVideoOffset.width / scale),
-        h: Math.round((this.srcVideoOffset.height) / scale)
+        w: Math.round(this.srcVideoOffset.width / scale / 2) * 2, // Make sure that mipmaps are always a power of 2 for mipmap generation
+        h: Math.round((this.srcVideoOffset.height) / scale / 2) * 2
       }
     }
 
@@ -1036,12 +1038,16 @@ export default class Ambilight {
     let projectorBufferScale = 1
     while(this.settings.webGL && (
       (this.p.h * projectorBufferScale) <= (this.srcVideoOffset.height / 1.5) && 
-      (this.p.h * projectorBufferScale) <= 256
+      (this.p.h * projectorBufferScale) <= 256 &&
+      (this.p.w * projectorBufferScale) <= (this.srcVideoOffset.width / 1.5) && 
+      (this.p.w * projectorBufferScale) <= 256
     )) {
       projectorBufferScale = projectorBufferScale * 2
     }
-    this.projectorBuffer.elem.width = Math.round(this.p.w * projectorBufferScale)
-    this.projectorBuffer.elem.height = Math.round(this.p.h * projectorBufferScale)
+     
+    this.projectorBuffer.elem.width = this.p.w * projectorBufferScale
+    this.projectorBuffer.elem.height = this.p.h * projectorBufferScale
+    // console.log('mipmapscale', this.srcVideoOffset.height, this.projectorBuffer.elem.height, this.p.h)
     
     this.projector.resize(this.p.w, this.p.h)
 
