@@ -95,10 +95,10 @@ export default class ProjectorWebGL {
   drawImage = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, src);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear projectorsTexture
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear projectorsTexture
 
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
@@ -356,7 +356,7 @@ export default class ProjectorWebGL {
     }
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, this.shadow.elem);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.ALPHA, this.ctx.ALPHA, this.ctx.UNSIGNED_BYTE, this.shadow.elem);
     this.ctx.activeTexture(this.ctx.TEXTURE1);
     
     if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {

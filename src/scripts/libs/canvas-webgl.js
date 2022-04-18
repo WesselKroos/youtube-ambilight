@@ -236,7 +236,7 @@ export class WebGLContext {
     
     // Fill texture
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, src);
 
     // Crop black bars
     const scaleX = 1 + (srcX / srcWidth) * 2
@@ -251,7 +251,7 @@ export class WebGLContext {
     if(this.options.antialiasing) {
       // Resize frame1Buffer
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame1Texture);
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 4, destHeight * 4, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, destWidth * 4, destHeight * 4, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null);
       
       // Set render buffer to frame1Texture with frame1Buffer
       this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame1Buffer);
@@ -274,7 +274,7 @@ export class WebGLContext {
 
       // Resize frame2Buffer
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, destWidth * 2, destHeight * 2, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, destWidth * 2, destHeight * 2, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null);
       
       // Set render buffer to frame2Texture with frame2Buffer
       this.ctx.bindFramebuffer(this.ctx.FRAMEBUFFER, this.frame2Buffer);
@@ -285,7 +285,7 @@ export class WebGLContext {
       this.ctx.viewport(0, 0, destWidth * 2, destHeight * 2);
       this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
 
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear frame1Texture
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear frame1Texture
 
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.frame2Texture);
     }
@@ -295,7 +295,7 @@ export class WebGLContext {
     this.ctx.viewport(0, 0, destWidth, destHeight);
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
 
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear frame2Texture
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear frame2Texture
   }
 
   getImageDataBuffers = []
@@ -322,7 +322,7 @@ export class WebGLContext {
 
     buffer.width = width - x;
     buffer.height = height - y;
-    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
+    this.ctx.readPixels(x, y, width, height, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, buffer.data);
 
     return buffer;
   }
