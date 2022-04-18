@@ -103,14 +103,14 @@ export default class ProjectorWebGL {
       this.textureMipmapLevel = textureMipmapLevel
     }
 
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, src);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     if(textureMipmapLevel !== 0) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_SHORT_5_6_5, null); // clear projectorsTexture
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear projectorsTexture
 
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
