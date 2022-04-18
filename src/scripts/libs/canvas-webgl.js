@@ -224,7 +224,7 @@ export class WebGLContext {
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, this.ctx.RGB, this.ctx.UNSIGNED_BYTE, src);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
 
     // Crop src
     const scaleX = 1 + (srcX / srcWidth) * 2
@@ -241,7 +241,7 @@ export class WebGLContext {
     }
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGB, 1, 1, 0, this.ctx.RGB, this.ctx.UNSIGNED_BYTE, null);
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
   }
 
   getImageDataBuffers = []
@@ -268,7 +268,7 @@ export class WebGLContext {
 
     buffer.width = width - x;
     buffer.height = height - y;
-    this.ctx.readPixels(x, y, width, height, this.ctx.RGB, this.ctx.UNSIGNED_BYTE, buffer.data);
+    this.ctx.readPixels(x, y, width, height, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, buffer.data);
 
     return buffer;
   }
