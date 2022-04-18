@@ -1,10 +1,6 @@
 import { $, html, setErrorHandler, uuidv4 } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
-import {
-  captureException,
-  withScope,
-  initAndBind
-} from "@sentry/core";
+import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -94,7 +90,8 @@ export class AmbilightError extends Error {
   }
 }
 
-initAndBind(BrowserClient, {
+const client = new BrowserClient({
+  enabled: true,
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
   release: html.getAttribute('data-ambilight-version') || '?',
@@ -121,28 +118,29 @@ initAndBind(BrowserClient, {
     return event
   }
 })
+const hub = new Hub(client)
 
 let sessionId;
 export default class AmbilightSentry {
   static captureExceptionWithDetails(ex) {
-
     try {
-      // Include stack trace in report (ex.name = 'SecurityError')
-      if (ex.stack && (
-        Object.prototype.toString.call(ex) === '[object DOMException]' ||
-        Object.prototype.toString.call(ex) === '[object DOMError]'
-      )) {
-        const exWithStack = new Error(ex.message)
-        exWithStack.code = ex.code
-        exWithStack.stack = ex.stack
-        exWithStack.name = ex.name
-        ex = exWithStack
-      }
-    } catch (ex) { console.warn(ex) }
+      try {
+        // Include stack trace in report (ex.name = 'SecurityError')
+        if (ex.stack && (
+          Object.prototype.toString.call(ex) === '[object DOMException]' ||
+          Object.prototype.toString.call(ex) === '[object DOMError]'
+        )) {
+          const exWithStack = new Error(ex.message)
+          exWithStack.code = ex.code
+          exWithStack.stack = ex.stack
+          exWithStack.name = ex.name
+          ex = exWithStack
+        }
+      } catch (ex) { console.warn(ex) }
 
-    console.error('Ambient light for YouTube™ | ', ex)
+      console.error('Ambient light for YouTube™ | ', ex)
 
-    withScope(scope => {
+      const scope = new Scope()
       try {
         let userId = localStorage.getItem('ambilight-crash-reporter-id')
         if(!userId) {
@@ -328,9 +326,14 @@ export default class AmbilightSentry {
         setExtra('Settings (exception)', ex)
       }
 
-      captureException(ex)
+      const previousHub = getCurrentHub()
+      makeMain(hub)
+      const response = client.captureException(ex, {}, scope)
+      makeMain(previousHub)
       scope.clear()
-    })
+    } catch (ex) { 
+      console.error('Ambient light for YouTube™ | ', ex)
+    }
   }
 }
 
