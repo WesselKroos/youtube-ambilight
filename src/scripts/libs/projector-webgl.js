@@ -96,17 +96,14 @@ export default class ProjectorWebGL {
   drawImage = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    const textureMipmapLevel = this.webGLVersion === 1 ? 0 : Math.log(src.height / this.height) / Math.log(2)
+    const textureMipmapLevel = Math.log(src.height / this.height) / Math.log(2)
     if(textureMipmapLevel !== this.textureMipmapLevel) {
-      // console.log(src.height, this.height, mipmapLevel)
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
       this.textureMipmapLevel = textureMipmapLevel
     }
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
-    if(textureMipmapLevel !== 0) {
-      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
-    }
+    this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
@@ -212,15 +209,9 @@ export default class ProjectorWebGL {
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    if (this.webGLVersion == 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-    } else {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
-    }
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
 
     // Shaders
     const vertexShaderSrc = `

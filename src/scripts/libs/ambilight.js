@@ -969,7 +969,7 @@ export default class Ambilight {
       height: this.videoElem.videoHeight
     }
 
-    const minSize = (this.settings.webGL && this.projector.webGLVersion !== 1)
+    const minSize = (this.settings.webGL)
       ? this.settings.resolution 
       : 512
     const scaleX = this.srcVideoOffset.width / minSize
@@ -1045,8 +1045,8 @@ export default class Ambilight {
       projectorBufferScale = projectorBufferScale * 2
     }
      
-    this.projectorBuffer.elem.width = this.p.w * projectorBufferScale
-    this.projectorBuffer.elem.height = this.p.h * projectorBufferScale
+    this.projectorBuffer.elem.width = (this.settings.webGL && this.projector.webGLVersion === 1) ? 512 : this.p.w * projectorBufferScale
+    this.projectorBuffer.elem.height = (this.settings.webGL && this.projector.webGLVersion === 1) ? 512 : this.p.h * projectorBufferScale
     // console.log('mipmapscale', this.srcVideoOffset.height, this.projectorBuffer.elem.height, this.p.h)
     
     this.projector.resize(this.p.w, this.p.h)
