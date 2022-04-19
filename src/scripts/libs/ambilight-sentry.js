@@ -122,8 +122,17 @@ const hub = new Hub(client)
 
 let sessionId;
 export default class AmbilightSentry {
+  static overflowProtection = 0
   static captureExceptionWithDetails(ex) {
     try {
+      this.overflowProtection++
+      if(this.overflowProtection > 3) {
+        if(this.overflowProtection === 4) {
+          console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
+        }
+        return
+      }
+
       try {
         // Include stack trace in report (ex.name = 'SecurityError')
         if (ex.stack && (
