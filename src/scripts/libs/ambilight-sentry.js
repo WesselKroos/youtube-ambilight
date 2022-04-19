@@ -300,7 +300,7 @@ export default class AmbilightSentry {
           keys.forEach(key => {
             try {
               let value = ambilight
-              key.split('.').forEach(key => value = value[key]) // Find multi depth values
+              key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
               ambilightExtra[key] = value
             } catch (ex) {}
           })
@@ -314,7 +314,7 @@ export default class AmbilightSentry {
         if (typeof ambilight !== 'undefined') {
           // settings
           const settingsExtra = {}
-          ;(ambilight.settings || []).forEach(setting => {
+          ;(ambilight.settings?.config || []).forEach(setting => {
             if (!setting || !setting.name) return
             settingsExtra[setting.name] = setting.value
             if (!setting.key) return

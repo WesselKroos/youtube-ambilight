@@ -394,10 +394,12 @@ export default class Ambilight {
     })
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      // console.log('body resized')
-      wrapErrorHandler(() => {
+      try {
         this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
-      })()
+      } catch (ex) {
+        // Ignore errors in interal youtube script
+        console.warn('Ambient light for YouTube™ | YouTube script | setInternalSize error:', ex)
+      }
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize() // Because the position could be shifted
     }))
@@ -405,18 +407,24 @@ export default class Ambilight {
 
     // Makes sure the player size is updated before the first frame is rendered
     // (youtube does this to late in the next frame)
-    this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      // console.log('container resized')
-      this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
-      this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
-    }))
+    this.videoContainerResizeObserver = new ResizeObserver(entries => {
+      try {
+        this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
+        this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
+      } catch {
+        // Ignore errors in interal youtube script
+        console.warn('Ambient light for YouTube™ | YouTube script | setSize or setInternalSize error:', ex)
+      }
+    })
     this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      // console.log('video resized')
-      wrapErrorHandler(() => {
+      try {
         this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
-      })()
+      } catch (ex) {
+        // Ignore errors in interal youtube script
+        console.warn('Ambient light for YouTube™ | YouTube script | setInternalSize error:', ex)
+      }
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize()
     }))
