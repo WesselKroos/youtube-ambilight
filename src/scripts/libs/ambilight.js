@@ -1034,19 +1034,31 @@ export default class Ambilight {
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
-
-    let projectorBufferScale = 1
-    while(this.settings.webGL && (
-      (this.p.h * projectorBufferScale) <= (this.srcVideoOffset.height / 1.5) && 
-      (this.p.h * projectorBufferScale) <= 256 &&
-      (this.p.w * projectorBufferScale) <= (this.srcVideoOffset.width / 1.5) && 
-      (this.p.w * projectorBufferScale) <= 256
-    )) {
-      projectorBufferScale = projectorBufferScale * 2
-    }
      
-    this.projectorBuffer.elem.width = (this.settings.webGL && this.projector.webGLVersion === 1) ? 512 : this.p.w * projectorBufferScale
-    this.projectorBuffer.elem.height = (this.settings.webGL && this.projector.webGLVersion === 1) ? 512 : this.p.h * projectorBufferScale
+    if(this.settings.webGL && this.projector.webGLVersion === 1) {
+      let projectorBufferSize = 128
+      while(this.settings.webGL && (
+        projectorBufferSize <= (this.srcVideoOffset.height / 1.5) && 
+        projectorBufferSize <= (this.srcVideoOffset.width / 1.5) &&
+        projectorBufferSize < 512
+      )) {
+        projectorBufferSize = projectorBufferSize * 2
+      }
+      this.projectorBuffer.elem.width = projectorBufferSize
+      this.projectorBuffer.elem.height = projectorBufferSize
+    } else {
+      let projectorBufferScale = 1
+      while(this.settings.webGL && (
+        (this.p.h * projectorBufferScale) <= (this.srcVideoOffset.height / 1.5) && 
+        (this.p.h * projectorBufferScale) < 512 &&
+        (this.p.w * projectorBufferScale) <= (this.srcVideoOffset.width / 1.5) && 
+        (this.p.w * projectorBufferScale) < 512
+      )) {
+        projectorBufferScale = projectorBufferScale * 2
+      }
+      this.projectorBuffer.elem.width = this.p.w * projectorBufferScale
+      this.projectorBuffer.elem.height = this.p.h * projectorBufferScale
+    }
     // console.log('mipmapscale', this.srcVideoOffset.height, this.projectorBuffer.elem.height, this.p.h)
     
     this.projector.resize(this.p.w, this.p.h)
@@ -1194,12 +1206,12 @@ export default class Ambilight {
       w: this.p.w,
       h: Math.round(this.p.h * this.horizontalBarsClipScaleY)
     }
-    const ratio = (projectorSize.w > projectorSize.h) ?
+    const ratio = (this.videoOffset.width > this.videoOffset.height) ?
       {
         x: 1,
-        y: (projectorSize.w / projectorSize.h)
+        y: (this.videoOffset.width / this.videoOffset.height)
       } : {
-        x: (projectorSize.h / projectorSize.w),
+        x: (this.videoOffset.height / this.videoOffset.width),
         y: 1
       }
     const lastScale = {
@@ -1239,7 +1251,7 @@ export default class Ambilight {
         y: Math.max(minScale.y, scaleY)
       })
     }
-    
+
     this.projector.rescale(scales, lastScale, projectorSize, (this.settings.horizontalBarsClipPercentage / 100), this.settings)
   }
 
