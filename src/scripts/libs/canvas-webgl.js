@@ -1,3 +1,5 @@
+import { wrapErrorHandler } from "./generic";
+
 export class WebGLCanvas {
   constructor(width, height) {
     this.canvas = document.createElement('canvas');
@@ -44,7 +46,7 @@ export class WebGLContext {
 
   constructor(canvas, type, options = {}) {
     this.canvas = canvas;
-    this.canvas.addEventListener("webglcontextlost", (event) => {
+    this.canvas.addEventListener("webglcontextlost", wrapErrorHandler((event) => {
       event.preventDefault();
       this.lost = true
       this.lostCount++
@@ -52,8 +54,8 @@ export class WebGLContext {
       this.scaleX = undefined
       this.scaleY = undefined
       console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", () => {
+    }), false);
+    this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
       console.error(`Ambient light for YouTube™ | Canvas ctx restoring (${this.lostCount})`)
       if(this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
@@ -66,7 +68,7 @@ export class WebGLContext {
       } else {
         console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
       }
-    }, false);
+    }), false);
 
     this.options = options;
     this.initCtx(options);

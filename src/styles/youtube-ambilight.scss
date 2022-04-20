@@ -416,9 +416,9 @@ html[data-ambilight-enabled="true"] {
   .ambilight__shadow,
   .ambilight__clip,
   .ambilight__projectors {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+    position: absolute;
+    width: 100%;
+    height: 100%;
   }
 
   &:not([dark="true"]) {
@@ -428,16 +428,16 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight {
-      display: block;
-      height: 300%;
-      overflow: hidden;
-      pointer-events: none;
-      user-select: none;
-      top: 0;
-      left: 0;
-      opacity: 0;
-      contain: strict;
-      //transition: opacity .15s;
+    display: block;
+    height: 300%;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    contain: strict;
+    //transition: opacity .15s;
   }
 
   .ambilight__clip {
@@ -448,16 +448,17 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ambilight__projector {
-      background: none; //Prevent black canvas edge lines on Firefox
-      /* image-rendering: pixelated; */
+    contain: strict;
+    background: none; //Prevent black canvas edge lines on Firefox
+    /* image-rendering: pixelated; */
   }
 
   // Has -20% performance impact
   .ambilight__chromium-bug-1123708-workaround {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      transform: scale(2) rotate(30deg);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform: scale(2) rotate(30deg);
   }
 
   .ambilight__video-overlay {

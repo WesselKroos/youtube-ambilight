@@ -364,8 +364,27 @@ export default class Ambilight {
   initListeners() {
     this.initVideoListeners()
 
+    if(this.settings.webGL) {
+      this.projector.handleRestored = (isControlledLose) => {
+        this.buffersCleared = true
+        this.sizesInvalidated = true
+        if(!isControlledLose) {
+          this.requestVideoFrameCallbackId = undefined
+          this.videoElem.currentTime = this.videoElem.currentTime // Trigger video draw call
+        }
+        this.optionalFrame()
+      }
+    }
+
     on(document, 'visibilitychange', () => {
       if (!this.settings.enabled || !this.isOnVideoPage) return
+      const isPageHidden = document.visibilityState === 'hidden'
+      if(this.isPageHidden === isPageHidden) return
+
+      this.isPageHidden = isPageHidden
+      if(this.settings.webGL) {
+        this.projector.handlePageVisibility(isPageHidden)
+      }
       if(document.visibilityState !== 'hidden') return
 
       this.buffersCleared = true

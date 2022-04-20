@@ -1,4 +1,4 @@
-import { SafeOffscreenCanvas } from './generic'
+import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
@@ -11,39 +11,67 @@ export default class ProjectorWebGL {
     this.containerElem = containerElem
     this.initProjectorListeners = initProjectorListeners
 
+    this.initShadow()
     this.initBlurCtx()
-
-    this.shadow = new ProjectorShadow()
-    
     this.canvas = new SafeOffscreenCanvas(1, 1);
-    this.canvas.addEventListener("webglcontextlost", (event) => {
+    this.canvas.addEventListener("webglcontextlost", wrapErrorHandler((event) => {
       event.preventDefault();
-      console.error('Ambient light for YouTube™ | Project ctx lost')
+      if(!this.isControlledLose) {
+        console.error('Ambient light for YouTube™ | Project ctx lost')
+      }
       this.viewport = undefined
       this.fScalesLength = undefined
       this.fScales = undefined
       this.heightCrop = undefined
       this.textureMipmapLevel = undefined
       this.lost = true
-      this.lostCount++
-    }, false);
-    this.canvas.addEventListener("webglcontextrestored", () => {
-      if(this.lostCount >= 3) {
+      if(!this.isControlledLose) {
+        this.lostCount++
+      }
+    }), false);
+    this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
+      if(!this.isControlledLose && this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | Projector ctx crashed 3 times. Stopped restoring WebGL.')
         return
       }
-      console.error(`Ambient light for YouTube™ | Projector ctx restoring (${this.lostCount})`)
+      if(!this.isControlledLose) {
+        console.error(`Ambient light for YouTube™ | Projector ctx restoring (${this.lostCount})`)
+      }
       this.initCtx()
-      this.initBlurCtx()
+      if(!this.isControlledLose) {
+        this.initShadow()
+        this.initBlurCtx()
+      }
       if(this.ctx && !this.ctx.isContextLost() && this.blurCtx && !this.blurCtx.isContextLost()) {
         this.initProjectorListeners()
         this.lost = false
-        console.error(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
+        if(!this.isControlledLose) {
+          console.error(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
+        }
       } else {
-        console.error(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
+        if(!this.isControlledLose) {
+          console.error(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
+        }
       }
-    }, false);
+      if(this.handleRestored) {
+        this.handleRestored(this.isControlledLose)
+      }
+      this.isControlledLose = false
+    }), false);
     this.initCtx()
+  }
+
+  handlePageVisibility(isPageHidden) {
+    if(!this.ctxLose) {
+      this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
+    }
+
+    if(isPageHidden && !this.lost) {
+      this.isControlledLose = true
+      this.ctxLose.loseContext()
+    } else if(!isPageHidden && this.lost) {
+      this.ctxLose.restoreContext()
+    }
   }
 
   remove() {
@@ -58,6 +86,10 @@ export default class ProjectorWebGL {
   resize(width, height) {
     this.width = width
     this.height = height
+  }
+
+  initShadow() {
+    this.shadow = new ProjectorShadow()
   }
 
   rescale(scales, lastScale, projectorSize, heightCrop, settings) {
@@ -113,7 +145,7 @@ export default class ProjectorWebGL {
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
   }
 
-  onBlurCtxLost(event) {
+  onBlurCtxLost = wrapErrorHandler((event) => {
     event.preventDefault();
     this.lost = true
     this.lostCount++
@@ -123,9 +155,9 @@ export default class ProjectorWebGL {
     this.heightCrop = undefined
     this.textureMipmapLevel = undefined
     console.error(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
-  }
+  })
 
-  onBlurCtxRestored() {
+  onBlurCtxRestored = wrapErrorHandler(() => {
     console.error(`Ambient light for YouTube™ | Projector blurCtx restoring (${this.lostCount})`)
     if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | Projector blurCtx crashed 3 times. Stopped restoring WebGL.')
@@ -139,7 +171,7 @@ export default class ProjectorWebGL {
     } else {
       console.error(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
     }
-  }
+  })
 
   initBlurCtx() {
     if(this.blurCanvas) {
