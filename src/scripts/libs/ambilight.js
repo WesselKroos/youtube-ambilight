@@ -990,32 +990,6 @@ export default class Ambilight {
       !this.videoElem.videoHeight
     ) return false //Not ready
 
-    this.srcVideoOffset = {
-      top: this.videoOffset.top,
-      width: this.videoElem.videoWidth,
-      height: this.videoElem.videoHeight
-    }
-
-    const minSize = (this.settings.webGL)
-      ? this.settings.resolution 
-      : 512
-    const scaleX = this.srcVideoOffset.width / minSize
-    const scaleY = this.srcVideoOffset.height / minSize
-    const scale = Math.min(scaleX, scaleY)
-    // A size of > 256 is required to enable keep GPU acceleration enabled in Chrome
-    // A side with a size of <= 512 is required to enable GPU acceleration in Chrome
-    if (scale < 1) {
-      this.p = {
-        w: minSize,
-        h: minSize
-      }
-    } else {
-      this.p = {
-        w: Math.round(this.srcVideoOffset.width / scale / 2) * 2, // Make sure that mipmaps are always a power of 2 for mipmap generation
-        h: Math.round((this.srcVideoOffset.height) / scale / 2) * 2
-      }
-    }
-
     const unscaledWidth = Math.round(this.videoOffset.width / (videoScale / 100))
     const unscaledHeight = Math.round(this.videoOffset.height / (videoScale / 100))
     const unscaledLeft = Math.round(
@@ -1061,34 +1035,45 @@ export default class Ambilight {
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
     `.trim()
-     
-    if(this.settings.webGL && this.projector.webGLVersion === 1) {
-      let projectorBufferSize = 128
-      while(this.settings.webGL && (
-        projectorBufferSize <= (this.srcVideoOffset.height / 1.5) && 
-        projectorBufferSize <= (this.srcVideoOffset.width / 1.5) &&
-        projectorBufferSize < 512
-      )) {
-        projectorBufferSize = projectorBufferSize * 2
-      }
-      this.projectorBuffer.elem.width = projectorBufferSize
-      this.projectorBuffer.elem.height = projectorBufferSize
-    } else {
-      let projectorBufferScale = 1
-      while(this.settings.webGL && (
-        (this.p.h * projectorBufferScale) <= (this.srcVideoOffset.height / 1.5) && 
-        (this.p.h * projectorBufferScale) < 512 &&
-        (this.p.w * projectorBufferScale) <= (this.srcVideoOffset.width / 1.5) && 
-        (this.p.w * projectorBufferScale) < 512
-      )) {
-        projectorBufferScale = projectorBufferScale * 2
-      }
-      this.projectorBuffer.elem.width = this.p.w * projectorBufferScale
-      this.projectorBuffer.elem.height = this.p.h * projectorBufferScale
+
+    this.srcVideoOffset = {
+      top: this.videoOffset.top,
+      width: this.videoElem.videoWidth,
+      height: this.videoElem.videoHeight
     }
-    // console.log('mipmapscale', this.srcVideoOffset.height, this.projectorBuffer.elem.height, this.p.h)
-    
+
+    let pScale;
+    if(this.settings.webGL) {
+      const pMinSize = this.settings.resolution
+      pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
+    } else {
+      // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps
+      // A CanvasContext2D size of > 256 is required to enable GPU acceleration in Chrome
+      const pMinSize = Math.max(257, Math.min(512, this.srcVideoOffset.width, this.srcVideoOffset.height))
+      pScale = Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height)
+    }
+    this.p = {
+      w: Math.ceil(this.srcVideoOffset.width * pScale),
+      h: Math.ceil(this.srcVideoOffset.height * pScale)
+    }
     this.projector.resize(this.p.w, this.p.h)
+
+    if(this.settings.webGL) {
+      if(this.projector.webGLVersion === 1) {
+        const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+        const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
+        this.projectorBuffer.elem.width = pbSizePowerOf2
+        this.projectorBuffer.elem.height = pbSizePowerOf2
+      } else {
+        const pbMinSize = 512
+        const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
+        this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
+        this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
+      }
+    } else {
+      this.projectorBuffer.elem.width = this.p.w
+      this.projectorBuffer.elem.height = this.p.h
+    }
 
     const frameBlending = this.settings.frameBlending
     if (frameBlending) {
