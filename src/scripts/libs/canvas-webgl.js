@@ -223,13 +223,35 @@ export class WebGLContext {
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctxIsInvalid) return
 
+    if(destX === undefined) {
+      destX = srcX
+      destY = srcY
+      destWidth = srcWidth
+      destHeight = srcHeight
+      srcX = 0
+      srcY = 0
+      srcWidth = undefined
+      srcHeight = undefined
+    }
+
     srcWidth = srcWidth || src.videoWidth || src.width
     srcHeight = srcHeight || src.videoHeight || src.height
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
+    const downscale = (srcWidth > destWidth || srcHeight > destHeight)
+    // if(downscale) {
+    //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
+    //     resizeWidth: destWidth,
+    //     resizeHeight: destHeight,
+    //     resizeQuality: 'pixelated'
+    //   })
+    // }
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    // if(downscale) {
+    //   src.close()
+    // }
 
     // Crop src
     const scaleX = 1 + (srcX / srcWidth) * 2
