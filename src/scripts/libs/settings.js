@@ -1,4 +1,4 @@
-import { $, html, body, on, off, setTimeout } from './generic'
+import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
@@ -490,10 +490,11 @@ export default class Settings {
     this.getAll()
 
     this.config = this.config.map(setting => {
-      if(
-        !this.webGL && 
-        setting.name === 'resolution'
-      ) {
+      if(setting.name === 'webGL' && !supportsWebGL()) {
+        this.webGL = undefined
+        return undefined
+      }
+      if(setting.name === 'resolution' && !this.webGL) {
         return undefined
       }
       return setting

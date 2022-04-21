@@ -124,13 +124,7 @@ export default class ProjectorWebGL {
     this.blurCtx.filter = `blur(${blurPx}px)`
   }
 
-  draw(src) {
-    if(this.ctxIsInvalid) return
-    
-    this.drawImage(src)
-  }
-
-  drawImage = (src) => {
+  draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
     const textureMipmapLevel = Math.log(src.height / this.height) / Math.log(2)
