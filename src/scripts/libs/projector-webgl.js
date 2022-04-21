@@ -59,9 +59,14 @@ export default class ProjectorWebGL {
       this.isControlledLose = false
     }), false);
     this.initCtx()
+    this.handlePageVisibility()
   }
 
   handlePageVisibility(isPageHidden) {
+    if(isPageHidden === undefined) {
+      isPageHidden = document.visibilityState === 'hidden'
+    }
+
     if(!this.ctxLose) {
       this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
     }
