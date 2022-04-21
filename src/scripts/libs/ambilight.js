@@ -1044,7 +1044,15 @@ export default class Ambilight {
 
     let pScale;
     if(this.settings.webGL) {
-      const pMinSize = this.settings.resolution
+      const pMinSize = (this.settings.blur >= 30)
+        ? 64
+        : ((this.settings.blur >= 20)
+          ? 128
+          : ((this.settings.blur >= 10)
+            ? 256
+            : 512
+          )
+        )
       pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
     } else {
       // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps

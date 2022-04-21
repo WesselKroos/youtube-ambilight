@@ -69,24 +69,6 @@ export default class Settings {
       experimental: true
     },
     {
-      name: 'resolution',
-      label: 'Resolution',
-      type: 'list',
-      default: 64,
-      unit: 'px',
-      valuePoints: (() => {
-        const points = [8];
-        while(points[points.length - 1] < 512) {
-          points.push(points[points.length - 1] * 1.5);
-          points.push(points[points.length - 2] * 2);
-        }
-        return points;
-      })(),
-      manualinput: false,
-      advanced: true,
-      experimental: true
-    },
-    {
       experimental: true,
       name: 'videoOverlayEnabled',
       label: 'Sync video with ambient light',
@@ -494,9 +476,6 @@ export default class Settings {
         this.webGL = undefined
         return undefined
       }
-      if(setting.name === 'resolution' && !this.webGL) {
-        return undefined
-      }
       return setting
     }).filter(setting => setting)
 
@@ -856,23 +835,6 @@ export default class Settings {
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-
-              if(this.webGL) {
-                const resValue = (value >= 30)
-                  ? 64
-                  : ((value >= 20)
-                    ? 128
-                    : ((value >= 10)
-                      ? 256
-                      : 512
-                    )
-                  )
-  
-                const resSetting = this.config.find(setting => setting.name === 'resolution')
-                const resInputElem = $.s(`#setting-${resSetting.name}-range`)
-                resInputElem.value = resSetting.valuePoints.indexOf(resValue)
-                resInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-              }
             }
           }
 
