@@ -805,15 +805,14 @@ export default class Settings {
           if (manualInputElem) {
             manualInputElem.value = inputElem.value
           }
-
           if(setting.valuePoints) {
             value = setting.valuePoints[value]
           }
 
           if(this[setting.name] === value) return
 
-          valueElem.textContent = this.getSettingListDisplayText({...setting, value})
           this.set(setting.name, value)
+          valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
             this.ambilight.updateTheme()
