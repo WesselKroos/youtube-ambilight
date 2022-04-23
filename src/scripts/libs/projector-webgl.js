@@ -278,20 +278,13 @@ export default class ProjectorWebGL {
       uniform sampler2D shadowSampler;
       uniform int fScalesLength;
       uniform vec2 fScales[${this.maxScalesLength}];
-      uniform vec2 fScalesMinus[${this.maxScalesLength}];
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         for (int i = 0; i < ${this.maxScalesLength}; i++) {
           if (i == fScalesLength) break;
-          vec2 scaledUV = vec2(
-            uv[0] * fScales[i][0] - fScalesMinus[i][0],
-            uv[1] * fScales[i][1] - fScalesMinus[i][1]
-          );
-          if (
-            scaledUV[0] > 0. && scaledUV[0] < 1. &&
-            scaledUV[1] > 0. && scaledUV[1] < 1.
-          ) {
-            vec2 croppedUV = (scaledUV / fCropScaleUV) + fCropOffsetUV;
+          vec2 scaledUV = (uv * fScales[i]) - (fScales[i] * .5);
+          if (all(lessThan(abs(scaledUV), vec2(.5)))) {
+            vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
             return texture2D(sampler, croppedUV, fTextureMipmapLevel);
           }
         }
@@ -358,7 +351,6 @@ export default class ProjectorWebGL {
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
     this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
-    this.fScalesMinusLoc = this.ctx.getUniformLocation(this.program, 'fScalesMinus');
     this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
     this.fCropScaleUVLoc = this.ctx.getUniformLocation(this.program, 'fCropScaleUV');
 
@@ -381,18 +373,16 @@ export default class ProjectorWebGL {
     if(fScalesLengthChanged || fScales.some((fScale, i) => fScale !== this.fScales[i])) {
       this.fScales = fScales;
       this.ctx.uniform2fv(this.fScalesLoc, new Float32Array(fScales));
-      const fScalesMinus = fScales.map(i => (i - 1) / 2);
-      this.ctx.uniform2fv(this.fScalesMinusLoc, new Float32Array(fScalesMinus));
     }
 
     const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
     if(fHeightCropChanged) {
       this.fHeightCrop = this.heightCrop
-      const fCropOffsetUV = new Float32Array([
-        0, this.fHeightCrop
-      ])
       const fCropScaleUV = new Float32Array([
         1, 1 / (1 - this.fHeightCrop * 2)
+      ])
+      const fCropOffsetUV = new Float32Array([
+        .5, this.fHeightCrop + (1 / (fCropScaleUV[1] * 2))
       ])
       this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
       this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
