@@ -44,6 +44,8 @@ export default class Projector2d {
     }
   }
 
+  handlePageVisibility = () => {}
+
   resize(width, height) {
     for (const projector of this.projectors) {
       if (projector.elem.width !== width)
