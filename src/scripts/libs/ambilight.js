@@ -535,8 +535,9 @@ export default class Ambilight {
   }
 
   onKeyPressed = (key) => {
+    if(key === ' ') return
+
     const keys = this.settings.getKeys()
-    
     if (key === keys.detectHorizontalBarSizeEnabled) // b by default
       this.settings.clickUI('detectHorizontalBarSizeEnabled')
     if (key === keys.detectVideoFillScaleEnabled) // w by default

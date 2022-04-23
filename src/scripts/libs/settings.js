@@ -670,7 +670,6 @@ export default class Settings {
 
       // Reset keys
       for (const setting of this.config.filter(setting => setting.key)) {
-          // this.setKey(setting.name, setting.key)
           const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
@@ -750,17 +749,14 @@ export default class Settings {
         })
         on(keyElem, 'keydown keyup keypress', (e) => {
           e.stopPropagation()
-        })
-        on(keyElem, 'keypress', (e) => {
-          if(e.key.length === 1) {
-            const key = e.key?.toUpperCase()
-            this.setKey(setting.name, key)
-            keyElem.textContent = key
-          } else {
-            keyElem.textContent = setting.defaultKey
-          }
-
+          e.preventDefault()
           keyElem.blur()
+
+          const key = (e.key.length === 1) ? e.key?.toUpperCase() : ' '
+          if(keyElem.textContent === key) return
+
+          keyElem.textContent = key
+          this.setKey(setting.name, key)
         })
         on(keyElem, 'blur', (e) => {
           // Deselect all
@@ -813,8 +809,11 @@ export default class Settings {
           if(setting.valuePoints) {
             value = setting.valuePoints[value]
           }
-          this.set(setting.name, value)
+
+          if(this[setting.name] === value) return
+
           valueElem.textContent = this.getSettingListDisplayText({...setting, value})
+          this.set(setting.name, value)
 
           if(setting.name === 'theme') {
             this.ambilight.updateTheme()
@@ -995,13 +994,16 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
-            this.flushPendingStorageEntries()
-
-            const search = new URLSearchParams(location.search)
-            const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
-            time ? search.set('t', time) : search.delete('t')
-            history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
-            location.reload()
+            // setTimeout to allow processing of all settings in case the reset button was clicked
+            setTimeout(() => {
+              this.flushPendingStorageEntries()
+  
+              const search = new URLSearchParams(location.search)
+              const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
+              time ? search.set('t', time) : search.delete('t')
+              history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
+              location.reload()
+            }, 1)
             return
           }
 
@@ -1197,18 +1199,15 @@ export default class Settings {
     return value
   }
 
+  pendingStorageEntries = {}
   saveStorageEntry(name, value) {
-    if (this.saveStorageEntryTimeout[name])
-      clearTimeout(this.saveStorageEntryTimeout[name])
+    this.pendingStorageEntries[name] = value
+    if (this.saveStorageEntryTimeout)
+      clearTimeout(this.saveStorageEntryTimeout)
 
-    this.saveStorageEntryTimeout[name] = setTimeout(() => {
-      try {
-        localStorage.setItem(`ambilight-${name}`, value)
-      } catch (ex) {
-        console.warn('Ambient light for YouTube™ | saveStorageEntry', ex)
-        //AmbilightSentry.captureExceptionWithDetails(ex)
-      }
-      delete this.saveStorageEntryTimeout[name]
+    this.saveStorageEntryTimeout = setTimeout(() => {
+      delete this.saveStorageEntryTimeout
+      this.flushPendingStorageEntries()
     }, 500)
   }
 
@@ -1217,17 +1216,21 @@ export default class Settings {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
       console.warn('Ambient light for YouTube™ | removeStorageEntry', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
     }
   }
 
   flushPendingStorageEntries() {
-    const pendingNames = Object.keys(this.saveStorageEntryTimeout)
-    for(const name of pendingNames) {
-      localStorage.setItem(`ambilight-${name}`, this[name])
-
-      clearTimeout(this.saveStorageEntryTimeout[name])
-      delete this.saveStorageEntryTimeout[name]
+    try {
+      if (this.saveStorageEntryTimeout)
+        clearTimeout(this.saveStorageEntryTimeout)
+      
+      const names = Object.keys(this.pendingStorageEntries)
+      for(const name of names) {
+        localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
+        delete this.pendingStorageEntries[name]
+      }
+    } catch (ex) {
+      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex)
     }
   }
 
