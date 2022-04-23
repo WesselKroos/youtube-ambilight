@@ -61,12 +61,12 @@ export default class Settings {
     },
     {
       name: 'webGL',
-      label: 'Use WebGL',
-      description: 'Better performance (Requires page refresh)',
+      label: 'WebGL renderer (uses less power)',
+      description: 'Has the most impact on laptops',
       type: 'checkbox',
-      default: true,
-      advanced: true,
-      experimental: true
+      default: false,
+      experimental: true,
+      advanced: false
     },
     {
       experimental: true,
@@ -461,8 +461,7 @@ export default class Settings {
           setting.default = 2
           setting.advanced = true
         }
-
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
           setting.advanced = true
         }
       }
