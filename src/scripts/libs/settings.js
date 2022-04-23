@@ -887,11 +887,12 @@ export default class Settings {
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', (e) => {
-          this[setting.name] = !this[setting.name]
+          let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            this[setting.name] = this.config.find(s => s.name === setting.name).default
+            value = this.config.find(s => s.name === setting.name).default
+            if(value === this[setting.name]) return
           }
-          const value = this[setting.name];
+          this[setting.name] = value
 
           if (setting.name === 'enabled') {
             this.ambilight.toggleEnabled(value)
