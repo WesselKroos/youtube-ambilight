@@ -210,7 +210,7 @@ export default class ProjectorWebGL {
     if(this.ctx) {
       this.webGLVersion = 2
     } else {
-      this.maxScalesLength = 97 // Limit of WebGL1 (Update this value when attributes have been added to the shaders)
+      this.maxScalesLength = 89 // Limit of WebGL1 (Update this value when attributes have been added to the shaders)
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
