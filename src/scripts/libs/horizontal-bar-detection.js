@@ -1,6 +1,7 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './generic'
+import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 import { workerFromCode } from './worker'
+import { WebGLOffscreenCanvas } from './canvas-webgl'
 
 const workerCode = function () {
   // Cannot access appendErrorStack in import from a worker
@@ -27,7 +28,7 @@ const workerCode = function () {
 
   function getLineImageData() {
     try {
-      imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
+      const imageData = imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
       getLineImageDataResolve()
     } catch(ex) {
       appendErrorStack(getLineImageDataStack, ex)
@@ -38,7 +39,7 @@ const workerCode = function () {
   function getLineImageDataPromise(resolve, reject) {
     getLineImageDataResolve = resolve
     getLineImageDataReject = reject
-    setTimeout(getLineImageData, 0)
+    getLineImageData()
   }
 
   let averageSize = 0;
@@ -51,6 +52,7 @@ const workerCode = function () {
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
       partSize = (canvas.width / 5)
+      imageVLines = []
       for (imageVLinesIndex = Math.ceil(partSize / 2) - 1; imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
@@ -145,14 +147,14 @@ const workerCode = function () {
         }
     
         size = lowestSize
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * (offsetPercentage/100))
         }
       } else {
         size = Math.max(...closestSizes)
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
@@ -219,8 +221,9 @@ const workerCode = function () {
             // canvas2.width = bitmap.width
             // canvas2.height = bitmap.height
             // ctx2 = canvas2.getContext("bitmaprenderer")
-          }
+          } 
           ctx.drawImage(bitmap, 0, 0)
+          bitmap.close()
         } else {
           canvas = canvasInfo.canvas
           ctx = canvasInfo.ctx
@@ -274,7 +277,7 @@ export class HorizontalBarDetection {
     this.run = null
   }
 
-  detect = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
+  detect = (buffer, detectColored, offsetPercentage, currentPercentage, webGL, callback) => {
     if(this.run) return
 
     const run = this.run = {}
@@ -297,13 +300,14 @@ export class HorizontalBarDetection {
       detectColored,
       offsetPercentage,
       currentPercentage,
+      webGL,
       callback
     }
 
-    requestIdleCallback(wrapErrorHandler(async () => await this.idleHandler(run)), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
   }
 
-  idleHandler = async (run) => {
+  idleHandler = wrapErrorHandler(async (run) => {
     if(this.run !== run) return
     this.cancellable = false
 
@@ -312,14 +316,15 @@ export class HorizontalBarDetection {
       detectColored,
       offsetPercentage,
       currentPercentage,
+      webGL,
       callback
     } = this.idleHandlerArguments
-
+    let canvasInfo;
     try {
       const start = performance.now()
 
       if(!this.canvas) {
-        this.canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        this.canvas = webGL ? new WebGLOffscreenCanvas(5, 512) : new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
         this.ctx = this.canvas.getContext('2d', {
           alpha: false,
           desynchronized: true
@@ -327,8 +332,8 @@ export class HorizontalBarDetection {
         this.ctx.imageSmoothingEnabled = true
       }
 
-      this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
-      const canvasInfo = this.worker.isFallbackWorker ? {
+      this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
+      canvasInfo = this.worker.isFallbackWorker ? {
         canvas: this.canvas,
         ctx: this.ctx
       } : {
@@ -377,21 +382,30 @@ export class HorizontalBarDetection {
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
+      if(canvasInfo.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       if(this.run !== run) return
       
       this.cancellable = true
-      const throttle = (
-        newPercentage !== undefined ||
-        (currentPercentage !== 0 && this.lastChange + 3000 > performance.now())
-      )
-        ? 100 
-        : Math.max(1000, Math.min(5000, Math.pow(performance.now() - start, 1.2) - 30))
+      const now = performance.now()
+      const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
+        ? 1000
+        : ((this.lastChange + 3000 < now)
+          ? 500
+          : 0
+        )
+      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
+
       setTimeout(() => {
         if(this.run !== run) return
 
         this.run = null
       }, throttle)
     } catch(ex) {
+      if(canvasInfo?.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       this.cancellable = true
       this.run = null
       if (!this.catchedDetectHorizontalBarSizeError) {
@@ -399,7 +413,7 @@ export class HorizontalBarDetection {
         throw ex
       }
     }
-  }
+  }, true)
 }
 
 export default detectHorizontalBarSize

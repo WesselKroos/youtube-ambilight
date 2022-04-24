@@ -180,3 +180,18 @@ export const appendErrorStack = (stack, ex) => {
     ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
   } catch(ex) { console.warn(ex) }
 }
+
+let _supportsWebGL;
+export const supportsWebGL = () => {
+  if(_supportsWebGL === undefined) {
+    try {
+      _supportsWebGL = (
+        !!window.WebGLRenderingContext &&
+        !!document.createElement('canvas')?.getContext('webgl')
+      )
+    } catch {
+      _supportsWebGL = false
+    }
+  }
+  return _supportsWebGL
+}
