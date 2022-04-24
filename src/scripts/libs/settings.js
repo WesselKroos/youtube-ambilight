@@ -82,7 +82,7 @@ export default class Settings {
         return points;
       })(),
       manualinput: false,
-      advanced: true,
+      advanced: false,
       experimental: true
     },
     {
