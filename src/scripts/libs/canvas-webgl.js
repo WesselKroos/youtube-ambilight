@@ -53,6 +53,7 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
+      this.fTextureMipmapLevel = undefined
       console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
     }), false);
     this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
@@ -110,10 +111,11 @@ export class WebGLContext {
     var fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
+      uniform float fTextureMipmapLevel;
       uniform sampler2D sampler;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV);
+        gl_FragColor = texture2D(sampler, fUV, fTextureMipmapLevel);
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -172,16 +174,18 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
+    this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(program, 'fTextureMipmapLevel');
+
     this.texture = this.ctx.createTexture();
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     if (this.webGLVersion == 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
+      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     }
@@ -238,20 +242,6 @@ export class WebGLContext {
     srcHeight = srcHeight || src.videoHeight || src.height
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
-    
-    // Fill texture
-    // const downscale = (srcWidth > destWidth || srcHeight > destHeight)
-    // if(downscale) {
-    //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
-    //     resizeWidth: destWidth,
-    //     resizeHeight: destHeight,
-    //     resizeQuality: 'pixelated'
-    //   })
-    // }
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-    // if(downscale) {
-    //   src.close()
-    // }
 
     // Crop src
     const scaleX = 1 + (srcX / srcWidth) * 2
@@ -266,6 +256,30 @@ export class WebGLContext {
       this.ctx.viewport(0, 0, destWidth, destHeight);
       this.viewport = { width: destWidth, height: destHeight };
     }
+    
+    // Fill texture
+    // const downscale = (srcWidth > destWidth || srcHeight > destHeight)
+    // if(downscale) {
+    //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
+    //     resizeWidth: destWidth,
+    //     resizeHeight: destHeight,
+    //     resizeQuality: 'pixelated'
+    //   })
+    // }
+
+    const textureMipmapLevel = (this.webGLVersion !== 1) ? Math.max(0, 1 + Math.log(srcHeight / this.ctx.drawingBufferHeight) / Math.log(2)) : 0
+    if(textureMipmapLevel !== this.fTextureMipmapLevel) {
+      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
+      this.fTextureMipmapLevel = textureMipmapLevel
+    }
+    
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    if(textureMipmapLevel) {
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+    }
+    // if(downscale) {
+    //   src.close()
+    // }
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
