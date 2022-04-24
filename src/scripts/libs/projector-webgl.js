@@ -231,7 +231,6 @@ export default class ProjectorWebGL {
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.shadowTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
@@ -241,7 +240,6 @@ export default class ProjectorWebGL {
     this.ctx.activeTexture(this.ctx.TEXTURE1);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
@@ -409,32 +407,6 @@ export default class ProjectorWebGL {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | Invalid Projector ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
-    // if(invalid && this.lostCount < 3) {
-    //   let invalidCtx = !this.ctx || this.ctx.isContextLost()
-    //   if(invalidCtx) {
-    //     console.warn(`Ambient light for YouTube™ | Restoring context try ${this.lostCount}`)
-    //     this.initCtx()
-    //     if(this.ctx && !this.ctx.isContextLost()) {
-    //       invalidCtx = false
-    //     }
-    //   }
-    //   let invalidBlurCtx = !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost())
-    //   if(invalidBlurCtx) {
-    //     console.warn(`Ambient light for YouTube™ | Restoring blurContext try ${this.lostCount}`)
-    //     this.initBlurCtx()
-    //     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
-    //       invalidBlurCtx = false
-    //     }
-    //   }
-
-    //   if(!invalidCtx && !invalidBlurCtx) {
-    //     console.warn(`Ambient light for YouTube™ | Restored after ${this.lostCount} tries`)
-    //     this.lost = false
-    //   } else {
-    //     console.warn(`Ambient light for YouTube™ | Restore failed ${this.lostCount}`)
-    //     this.lostCount++
-    //   }
-    // }
     return invalid;
   }
 }
