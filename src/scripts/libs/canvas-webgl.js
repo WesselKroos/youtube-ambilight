@@ -240,7 +240,7 @@ export class WebGLContext {
     destHeight = destHeight || this.ctx.drawingBufferHeight
     
     // Fill texture
-    const downscale = (srcWidth > destWidth || srcHeight > destHeight)
+    // const downscale = (srcWidth > destWidth || srcHeight > destHeight)
     // if(downscale) {
     //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
     //     resizeWidth: destWidth,
