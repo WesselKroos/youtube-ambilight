@@ -69,6 +69,23 @@ export default class Settings {
       advanced: false
     },
     {
+      name: 'resolution',
+      label: 'WebGL resolution',
+      type: 'list',
+      default: 100,
+      unit: '%',
+      valuePoints: (() => {
+        const points = [25];
+        while(points[points.length - 1] < 400) {
+          points.push(points[points.length - 1] * 2);
+        }
+        return points;
+      })(),
+      manualinput: false,
+      advanced: true,
+      experimental: true
+    },
+    {
       experimental: true,
       name: 'videoOverlayEnabled',
       label: 'Sync video with ambient light',
@@ -471,8 +488,14 @@ export default class Settings {
     this.getAll()
 
     this.config = this.config.map(setting => {
-      if(setting.name === 'webGL' && !supportsWebGL()) {
-        this.webGL = undefined
+      if(!supportsWebGL()) {
+        if(setting.name === 'webGL') {
+          this.webGL = undefined
+          return undefined
+        }
+      }
+      if(setting.name === 'resolution' && !this.webGL) {
+        this.resolution = undefined
         return undefined
       }
       return setting

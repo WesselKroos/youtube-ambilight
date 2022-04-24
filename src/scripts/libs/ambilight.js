@@ -1045,12 +1045,12 @@ export default class Ambilight {
 
     let pScale;
     if(this.settings.webGL) {
-      const pMinSize = (this.settings.blur >= 20)
+      const pMinSize = (this.settings.resolution / 100) * ((this.settings.blur >= 20)
         ? 64
         : ((this.settings.blur >= 10)
           ? 128
           : 256
-        )
+        ))
       pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
     } else {
       // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps
@@ -1066,12 +1066,12 @@ export default class Ambilight {
 
     if(this.settings.webGL) {
       if(this.projector.webGLVersion === 1) {
-        const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+        const pbSize = Math.min((this.settings.resolution / 100) * 512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
         const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const pbMinSize = 512
+        const pbMinSize = (this.settings.resolution / 100) * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
         this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
