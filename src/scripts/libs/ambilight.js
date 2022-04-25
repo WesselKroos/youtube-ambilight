@@ -1058,13 +1058,14 @@ export default class Ambilight {
     this.projector.resize(this.p.w, this.p.h)
 
     if(this.settings.webGL) {
+      const resolution = this.settings.detectHorizontalBarSizeEnabled ? 1 : (this.settings.resolution / 100)
       if(this.projector.webGLVersion === 1) {
-        const pbSize = Math.min((this.settings.resolution / 100) * 512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+        const pbSize = Math.min(resolution * 512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
         const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const pbMinSize = (this.settings.resolution / 100) * 512
+        const pbMinSize = resolution * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
         this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
