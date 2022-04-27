@@ -97,25 +97,26 @@ export class WebGLContext {
     if(this.ctxIsInvalid) return
 
     // Shaders
-    var vertexShaderSrc = `
+    var vertexShaderSrc = `#version 300 es
       precision lowp float;
-      attribute vec2 vPosition;
-      attribute vec2 vUV;
-      varying vec2 fUV;
+      in vec2 vPosition;
+      in vec2 vUV;
+      out vec2 fUV;
       
       void main(void) {
         fUV = vUV;
         gl_Position = vec4(vPosition, 0, 1);
       }
     `;
-    var fragmentShaderSrc = `
+    var fragmentShaderSrc = `#version 300 es
       precision lowp float;
-      varying vec2 fUV;
+      out vec4 FragColor;
+      in vec2 fUV;
       uniform float fTextureMipmapLevel;
       uniform sampler2D sampler;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV, fTextureMipmapLevel);
+        FragColor = textureLod(sampler, fUV, fTextureMipmapLevel);
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -185,7 +186,7 @@ export class WebGLContext {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
       this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_NEAREST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     }
@@ -267,14 +268,15 @@ export class WebGLContext {
     //   })
     // }
 
-    const textureMipmapLevel = (this.webGLVersion !== 1) ? Math.max(0, 1 + Math.log(srcHeight / this.ctx.drawingBufferHeight) / Math.log(2)) : 0
+    const textureMipmapLevel = (this.webGLVersion !== 1) ? Math.max(0, Math.min(4, Math.round(Math.log(srcHeight / this.ctx.drawingBufferHeight) / Math.log(2)) + 1)) : 0
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
       this.fTextureMipmapLevel = textureMipmapLevel
+      // console.log(`buffer mipmap ${srcHeight} -> ${this.ctx.drawingBufferHeight} = ${textureMipmapLevel}x`)
     }
     
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-    if(textureMipmapLevel) {
+    if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     // if(downscale) {

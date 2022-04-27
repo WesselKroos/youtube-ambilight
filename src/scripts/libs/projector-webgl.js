@@ -134,14 +134,17 @@ export default class ProjectorWebGL {
   draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
+    const textureMipmapLevel = Math.max(0, Math.min(4, Math.round(Math.log(src.height / this.height) / Math.log(2)) - 1))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
       this.fTextureMipmapLevel = textureMipmapLevel
+      // console.log(`projector mipmap ${src.height} -> ${this.height} = ${textureMipmapLevel}x`)
     }
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
-    this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+    if(this.webGLVersion !== 1) {
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+    }
     
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
@@ -247,11 +250,11 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
 
     // Shaders
-    const vertexShaderSrc = `
-      precision lowp float;
-      attribute vec2 vPosition;
-      attribute vec2 vUV;
-      varying vec2 fUV;
+    const vertexShaderSrc = `#version 300 es
+      precision highp float;
+      in vec2 vPosition;
+      in vec2 vUV;
+      out vec2 fUV;
       
       void main(void) {
         fUV = vUV;
@@ -267,9 +270,10 @@ export default class ProjectorWebGL {
     this.ctx.attachShader(this.program, vertexShader);
     
     // Todo: Replace for loop with a direct [x,y] to scale conversion (GPU 65% -> 45%)
-    const fragmentShaderSrc = `
-      precision lowp float;
-      varying vec2 fUV;
+    const fragmentShaderSrc = `#version 300 es
+      precision highp float;
+      out vec4 FragColor;
+      in vec2 fUV;
       uniform float fTextureMipmapLevel;
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
@@ -284,7 +288,7 @@ export default class ProjectorWebGL {
           vec2 scaledUV = (uv * fScales[i]) - (fScales[i] * .5);
           if (all(lessThan(abs(scaledUV), vec2(.5)))) {
             vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
-            return texture2D(sampler, croppedUV, fTextureMipmapLevel);
+            return textureLod(sampler, croppedUV, fTextureMipmapLevel);
           }
         }
         return vec4(0, 0, 0, 0);
@@ -292,9 +296,9 @@ export default class ProjectorWebGL {
       
       void main(void) {
         vec4 ambilight = multiTexture(textureSampler, fUV);
-        float shadowAlpha = texture2D(shadowSampler, fUV).a;
+        float shadowAlpha = texture(shadowSampler, fUV).a;
         ambilight[3] = 1. - shadowAlpha;
-        gl_FragColor = ambilight;
+        FragColor = ambilight;
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
