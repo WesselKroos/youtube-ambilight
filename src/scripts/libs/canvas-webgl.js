@@ -113,7 +113,7 @@ export class WebGLContext {
       uniform sampler2D sampler;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV, 1.);
+        gl_FragColor = texture2D(sampler, fUV);
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
