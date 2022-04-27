@@ -134,6 +134,7 @@ export default class ProjectorWebGL {
   draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
+    // Mipmap level bias correction: because the croppedUV does not fill the drawBufferHeight 100%
     const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
@@ -240,8 +241,10 @@ export default class ProjectorWebGL {
     this.ctx.activeTexture(this.ctx.TEXTURE1);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_NEAREST);
+    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);    if(this.webGLVersion !== 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
+    }
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);

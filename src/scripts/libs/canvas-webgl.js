@@ -53,7 +53,6 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
-      this.fTextureMipmapLevel = undefined
       console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
     }), false);
     this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
@@ -111,11 +110,10 @@ export class WebGLContext {
     var fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
-      uniform float fTextureMipmapLevel;
       uniform sampler2D sampler;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV, fTextureMipmapLevel);
+        gl_FragColor = texture2D(sampler, fUV, 1.);
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -174,17 +172,17 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(program, 'fTextureMipmapLevel');
-
     this.texture = this.ctx.createTexture();
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     if (this.webGLVersion == 1) {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
       this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
@@ -257,29 +255,10 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    // Fill texture
-    // const downscale = (srcWidth > destWidth || srcHeight > destHeight)
-    // if(downscale) {
-    //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
-    //     resizeWidth: destWidth,
-    //     resizeHeight: destHeight,
-    //     resizeQuality: 'pixelated'
-    //   })
-    // }
-
-    const textureMipmapLevel = (this.webGLVersion !== 1) ? Math.max(0, 1 + Math.log(srcHeight / this.ctx.drawingBufferHeight) / Math.log(2)) : 0
-    if(textureMipmapLevel !== this.fTextureMipmapLevel) {
-      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
-      this.fTextureMipmapLevel = textureMipmapLevel
-    }
-    
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-    if(textureMipmapLevel) {
+    if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-    // if(downscale) {
-    //   src.close()
-    // }
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
@@ -320,17 +299,6 @@ export class WebGLContext {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | Invalid Canvas ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
-    // if(this.ctx && this.ctx.isContextLost() && this.lostCount < 3) {
-    //   console.warn(`Ambient light for YouTube™ | Restoring context try ${this.lostCount}`)
-    //   this.initCtx()
-    //   if(this.ctx || this.ctx.isContextLost()) {
-    //     this.lostCount++
-    //   } else {
-    //     console.warn(`Ambient light for YouTube™ | Restored in ${this.lostCount} tries`)
-    //     this.lost = false
-    //     return false
-    //   }
-    // }
     return invalid;
   }
 }

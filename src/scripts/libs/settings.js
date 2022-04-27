@@ -971,6 +971,10 @@ export default class Settings {
 
             const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
             this.displayBezel(key, !value)
+
+            if(this.webGL) {
+              this.ambilight.updateSizes()
+            }
             this.ambilight.optionalFrame()
             return
           }
