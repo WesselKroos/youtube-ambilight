@@ -2,6 +2,7 @@ import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
+  type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
   levels = 1

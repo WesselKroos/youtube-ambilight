@@ -2,6 +2,7 @@ import { Canvas, ctxOptions } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class Projector2d {
+  type = 'Projector2d'
   constructor(containerElem) {
     this.containerElem = containerElem
 
