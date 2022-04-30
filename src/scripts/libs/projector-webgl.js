@@ -24,6 +24,9 @@ export default class ProjectorWebGL {
       if(!this.isControlledLose) {
         this.lostCount++
       }
+      if(!this.isPageHidden && this.isControlledLose) {
+        setTimeout(this.handlePageVisibility, 1)
+      }
     }), false);
     this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
       if(!this.isControlledLose && this.lostCount >= 3) {
@@ -69,19 +72,21 @@ export default class ProjectorWebGL {
     this.fTextureMipmapLevel = undefined
   }
 
-  handlePageVisibility(isPageHidden) {
+  handlePageVisibility = (isPageHidden) => {
     if(isPageHidden === undefined) {
       isPageHidden = document.visibilityState === 'hidden'
     }
+    this.isPageHidden = isPageHidden
 
     if(!this.ctxLose) {
       this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
     }
 
-    if(isPageHidden && !this.lost) {
+    const ctxLost = this.ctx.isContextLost()
+    if(this.isPageHidden && !ctxLost) {
       this.isControlledLose = true
       this.ctxLose.loseContext()
-    } else if(!isPageHidden && this.lost) {
+    } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
       this.ctxLose.restoreContext()
     }
   }
