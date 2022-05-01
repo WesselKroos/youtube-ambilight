@@ -6,7 +6,6 @@ export default class ProjectorWebGL {
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
   levels = 1
-  maxScalesLength = 103
 
   constructor(containerElem, initProjectorListeners) {
     this.containerElem = containerElem
@@ -67,8 +66,8 @@ export default class ProjectorWebGL {
 
   invalidateShaderCache() {
     this.viewport = undefined
-    this.fScalesLength = undefined
-    this.fScales = undefined
+    this.fScale = undefined
+    this.fScaleStep = undefined
     this.fHeightCrop = undefined
     this.fTextureMipmapLevel = undefined
   }
@@ -112,6 +111,11 @@ export default class ProjectorWebGL {
 
   rescale(scales, lastScale, projectorSize, heightCrop, settings) {
     this.shadow.rescale(lastScale, projectorSize, settings)
+
+    this.scaleStep = {
+      x: scales[2]?.x - scales[1]?.x,
+      y: scales[2]?.y - scales[1]?.y,
+    }
 
     this.scale = lastScale
     this.scales = scales.map(({x, y}) => ({
@@ -217,7 +221,6 @@ export default class ProjectorWebGL {
     if(this.ctx) {
       this.webGLVersion = 2
     } else {
-      this.maxScalesLength = 89 // Limit of WebGL1 (Update this value when attributes have been added to the shaders)
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
@@ -284,13 +287,15 @@ export default class ProjectorWebGL {
       uniform vec2 fCropScaleUV;
       uniform sampler2D textureSampler;
       uniform sampler2D shadowSampler;
-      uniform int fScalesLength;
-      uniform vec2 fScales[${this.maxScalesLength}];
+      uniform int fScaleStart;
+      uniform vec2 fScale;
+      uniform vec2 fScaleStep;
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
-        for (int i = 0; i < ${this.maxScalesLength}; i++) {
-          if (i == fScalesLength) break;
-          vec2 scaledUV = (uv * fScales[i]) - (fScales[i] * .5);
+        for (int i = 0; i > -1000; i--) {
+          int iOffset = fScaleStart + i;
+          vec2 scale = fScale / (fScale - (fScaleStep * vec2(iOffset)));
+          vec2 scaledUV = (uv * scale) - (scale * .5);
           if (all(lessThan(abs(scaledUV), vec2(.5)))) {
             vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
             return texture2D(sampler, croppedUV, fTextureMipmapLevel);
@@ -357,8 +362,9 @@ export default class ProjectorWebGL {
     this.ctx.uniform1i(textureSamplerLoc, 1);
     
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
-    this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
-    this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
+    this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
+    this.fScaleStepLoc = this.ctx.getUniformLocation(this.program, 'fScaleStep');
+    this.fScaleStartLoc = this.ctx.getUniformLocation(this.program, 'fScaleStart');
     this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
     this.fCropScaleUVLoc = this.ctx.getUniformLocation(this.program, 'fCropScaleUV');
 
@@ -370,28 +376,35 @@ export default class ProjectorWebGL {
   updateCtx() {
     if(this.ctxIsInvalid) return
 
-    const fScalesLength = this.scales.length;
-    const fScalesLengthChanged = this.fScalesLength !== fScalesLength;
-    if(fScalesLengthChanged) {
-      this.fScalesLength = fScalesLength;
-      this.ctx.uniform1i(this.fScalesLengthLoc, fScalesLength);
+    const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
+    if(fScaleChanged) {
+      this.fScale = this.scale
+      this.ctx.uniform2fv(this.fScaleLoc, new Float32Array([this.fScale?.x, this.fScale?.y]));
     }
 
-    const fScales = this.scales.map(({ x, y }) => [x, y]).flat();
-    if(fScalesLengthChanged || fScales.some((fScale, i) => fScale !== this.fScales[i])) {
-      this.fScales = fScales;
-      this.ctx.uniform2fv(this.fScalesLoc, new Float32Array(fScales));
+    const fScaleStepChanged = this.fScaleStep?.x !== this.scaleStep?.x || this.fScaleStep?.y !== this.scaleStep?.y
+    if(fScaleStepChanged) {
+      this.fScaleStep = this.scaleStep
+      this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([this.fScaleStep?.x, this.fScaleStep?.y]));
+    }
+
+    if(fScaleChanged || fScaleStepChanged) {
+      const fScaleStart = Math.min(
+        Math.floor(this.fScale?.x / this.fScaleStep?.x),
+        Math.floor(this.fScale?.y / this.fScaleStep?.y)
+      );
+      this.ctx.uniform1i(this.fScaleStartLoc, fScaleStart);
     }
 
     const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
     if(fHeightCropChanged) {
       this.fHeightCrop = this.heightCrop
-      const fCropScaleUV = new Float32Array([
+      const fCropScaleUV = [
         1, 1 / (1 - this.fHeightCrop * 2)
-      ])
-      const fCropOffsetUV = new Float32Array([
+      ]
+      const fCropOffsetUV = [
         .5, this.fHeightCrop + (1 / (fCropScaleUV[1] * 2))
-      ])
+      ]
       this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
       this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
     }
