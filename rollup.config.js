@@ -13,6 +13,9 @@ const common = {
     stripCode({
       pattern: /var script = document\.createElement\('script'\);(.*?)appendChild\(script\);/gs // Removes Sentry script injection
     }),
+    stripCode({
+      pattern: /var sandbox = doc\.createElement\('iframe'\);(.*?)removeChild\(sandbox\);/gs // Removes Sentry iframe injection
+    }),
     cleanup({
       comments: 'none',
       sourcemap: false

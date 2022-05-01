@@ -84,10 +84,11 @@ export default class Ambilight {
 
     this.initListeners()
 
-    wrapErrorHandler(() => {
-      if (this.settings.enabled)
-        this.enable(true)
-    })()
+    setTimeout(() => {
+      if (!this.settings.enabled) return
+
+      this.enable(true)
+    }, 0)
   }
 
   initElems(videoElem) {
