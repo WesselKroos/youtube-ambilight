@@ -829,8 +829,10 @@ export default class Ambilight {
   }
 
   recreateProjectors() {
-    const levels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
-    this.projector.recreate(levels)
+    this.levels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
+    if(this.projector.recreate) {
+      this.projector.recreate(this.levels)
+    }
   }
 
   clear() {
@@ -1234,7 +1236,7 @@ export default class Ambilight {
 
     const scaleStep = this.settings.edge / 100
     const scales = []
-    for (let i = 0; i < this.projector.levels; i++) {
+    for (let i = 0; i < this.levels; i++) {
       const pos = i - this.innerStrength
       let scaleX = 1
       let scaleY = 1

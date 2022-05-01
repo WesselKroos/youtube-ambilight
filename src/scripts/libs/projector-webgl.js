@@ -5,7 +5,6 @@ export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
-  levels = 1
 
   constructor(containerElem, initProjectorListeners) {
     this.containerElem = containerElem
@@ -94,10 +93,6 @@ export default class ProjectorWebGL {
 
   remove() {
     this.containerElem.remove(this.canvas)
-  }
-
-  recreate(levels) {
-    this.levels = levels
   }
 
   // TODO: Cut off left, top and right canvas outside the browser + blur size
