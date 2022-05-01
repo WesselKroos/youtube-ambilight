@@ -262,9 +262,8 @@ export default class ProjectorWebGL {
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         for (int i = 0; i > -1000; i--) {
-          int iOffset = fScaleStart + i;
-          vec2 scale = fScale / (fScale - (fScaleStep * vec2(iOffset)));
-          vec2 scaledUV = (uv * scale) - (scale * .5);
+          vec2 scale = fScale / (fScale - (fScaleStep * vec2(fScaleStart + i)));
+          vec2 scaledUV = scale * (uv - .5);
           if (all(lessThan(abs(scaledUV), vec2(.5)))) {
             vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
             return texture2D(sampler, croppedUV, fTextureMipmapLevel);
