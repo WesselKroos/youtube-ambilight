@@ -68,6 +68,7 @@ export default class ProjectorWebGL {
     this.viewport = undefined
     this.fScale = undefined
     this.fScaleStep = undefined
+    this.fScalesLength = undefined
     this.fHeightCrop = undefined
     this.fTextureMipmapLevel = undefined
   }
@@ -107,38 +108,6 @@ export default class ProjectorWebGL {
 
   initShadow() {
     this.shadow = new ProjectorShadow()
-  }
-
-  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
-    this.shadow.rescale(lastScale, projectorSize, settings)
-
-    this.scaleStep = {
-      x: scales[2]?.x - scales[1]?.x,
-      y: scales[2]?.y - scales[1]?.y,
-    }
-
-    this.scale = lastScale
-    this.scales = scales.map(({x, y}) => ({
-      x: this.scale.x / x,
-      y: this.scale.y / y
-    }))
-
-    this.heightCrop = heightCrop
-
-    const width = Math.floor(projectorSize.w * this.scale.x)
-    const height = Math.floor(projectorSize.h * this.scale.y)
-    this.canvas.width = width
-    this.canvas.height = height
-
-    const blurPx = settings.blur * (this.height / 512) * 1.275
-    this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
-    this.blurCanvas.width = width + this.blurBound * 2
-    this.blurCanvas.height = height + this.blurBound * 2
-    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
-    
-    this.blurCtx.filter = `blur(${blurPx}px)`
-    
-    this.updateCtx()
   }
 
   draw = (src) => {
@@ -373,6 +342,35 @@ export default class ProjectorWebGL {
     this.updateCtx()
   }
 
+  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
+    this.shadow.rescale(lastScale, projectorSize, settings)
+
+    this.scaleStep = {
+      x: scales[2]?.x - scales[1]?.x,
+      y: scales[2]?.y - scales[1]?.y,
+    }
+
+    this.scale = lastScale
+    this.scalesLength = scales.length
+
+    this.heightCrop = heightCrop
+
+    const width = Math.floor(projectorSize.w * this.scale.x)
+    const height = Math.floor(projectorSize.h * this.scale.y)
+    this.canvas.width = width
+    this.canvas.height = height
+
+    const blurPx = settings.blur * (this.height / 512) * 1.275
+    this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
+    this.blurCanvas.width = width + this.blurBound * 2
+    this.blurCanvas.height = height + this.blurBound * 2
+    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
+    
+    this.blurCtx.filter = `blur(${blurPx}px)`
+    
+    this.updateCtx()
+  }
+
   updateCtx() {
     if(this.ctxIsInvalid) return
 
@@ -388,8 +386,13 @@ export default class ProjectorWebGL {
       this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([this.fScaleStep?.x, this.fScaleStep?.y]));
     }
 
-    if(fScaleChanged || fScaleStepChanged) {
+    const fScalesLengthChanged = this.fScalesLength !== this.scalesLength
+    if(fScalesLengthChanged || fScaleStepChanged || fScaleChanged) {
+      if(fScalesLengthChanged) {
+        this.fScalesLength = this.scalesLength
+      }
       const fScaleStart = Math.min(
+        this.fScalesLength,
         Math.floor(this.fScale?.x / this.fScaleStep?.x),
         Math.floor(this.fScale?.y / this.fScaleStep?.y)
       );
