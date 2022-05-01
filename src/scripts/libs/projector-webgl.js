@@ -261,7 +261,7 @@ export default class ProjectorWebGL {
       uniform vec2 fScaleStep;
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
-        for (int i = 0; i > -1000; i--) {
+        for (int i = 0; i > -110; i--) {
           vec2 scale = fScale / (fScale - (fScaleStep * vec2(fScaleStart + i)));
           vec2 scaledUV = scale * (uv - .5);
           if (all(lessThan(abs(scaledUV), vec2(.5)))) {
