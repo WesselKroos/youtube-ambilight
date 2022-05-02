@@ -1,5 +1,9 @@
-import { $, html, body, on, off, setTimeout } from './generic'
+import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
+
+export const FRAMESYNC_DECODEDFRAMES = 0
+export const FRAMESYNC_DISPLAYFRAMES = 1
+export const FRAMESYNC_VIDEOFRAMES = 2
 
 export default class Settings {
   saveStorageEntryTimeout = {}
@@ -35,13 +39,13 @@ export default class Settings {
       name: 'frameSync',
       label: 'Synchronization',
       questionMark: {
-        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDetect pixel changes: Medium CPU & GPU usage.\nMight still result in delayed frames on higher than 1080p videos.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
+        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
       },
       type: 'list',
-      default: 50,
+      default: 0,
       min: 0,
-      max: 100,
-      step: 50,
+      max: 1,
+      step: 1,
       manualinput: false,
       advanced: false
     },
@@ -54,6 +58,32 @@ export default class Settings {
       max: 60,
       step: 1,
       advanced: true
+    },
+    {
+      name: 'webGL',
+      label: 'WebGL renderer (uses less power)',
+      description: 'Has the most impact on laptops',
+      type: 'checkbox',
+      default: false,
+      experimental: true,
+      advanced: false
+    },
+    {
+      name: 'resolution',
+      label: 'WebGL resolution',
+      type: 'list',
+      default: 100,
+      unit: '%',
+      valuePoints: (() => {
+        const points = [25];
+        while(points[points.length - 1] < 400) {
+          points.push(points[points.length - 1] * 2);
+        }
+        return points;
+      })(),
+      manualinput: false,
+      advanced: false,
+      experimental: true
     },
     {
       experimental: true,
@@ -269,6 +299,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -278,6 +309,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -287,6 +319,7 @@ export default class Settings {
       default: 100,
       min: 0,
       max: 200,
+      step: 1,
       advanced: true
     },
     {
@@ -393,6 +426,7 @@ export default class Settings {
       default: 0,
       min: 0,
       max: 100,
+      step: 1,
       advanced: true
     },
     {
@@ -440,19 +474,33 @@ export default class Settings {
     this.config = this.config.map(setting => {
       if(this.ambilight.videoHasRequestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
-          setting.max = 150
-          setting.default = 150
-          setting.advanced = true // Change this in the future when frameSync 150 is released and validated to work
+          setting.max = 2
+          setting.default = 2
+          setting.advanced = true
         }
-
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed') {
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
           setting.advanced = true
         }
       }
       return setting
-    }).filter(setting => setting)
+    })
 
     this.getAll()
+
+    this.config = this.config.map(setting => {
+      if(!supportsWebGL()) {
+        if(setting.name === 'webGL') {
+          this.webGL = undefined
+          return undefined
+        }
+      }
+      if(setting.name === 'resolution' && !this.webGL) {
+        this.resolution = undefined
+        return undefined
+      }
+      return setting
+    }).filter(setting => setting)
+
     this.initMenu()
   }
   
@@ -509,9 +557,14 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
+          <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
+            <div class="ytp-menuitem-label" rowspan="2">
+              <span class="ytpa-warning"></span>
+            </div>
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" rowspan="2" href="${this.feedbackFormLink}" target="_blank">
+              <a class="ytpa-feedback-link" href="${this.feedbackFormLink}" target="_blank">
                 <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
               </a>
             </div>
@@ -578,22 +631,27 @@ export default class Settings {
                 <input 
                   id="setting-${setting.name}-range" 
                   type="range" 
-                  min="${setting.min}" 
-                  max="${setting.max}" 
                   colspan="2" 
-                  value="${value}" 
-                  step="${setting.step || 1}" />
+                  value="${setting.valuePoints ? setting.valuePoints.indexOf(value) : value}" 
+                  ${setting.min ? `min="${setting.min}"` : ''} 
+                  ${setting.max ? `max="${setting.max}"` : ''} 
+                  ${setting.valuePoints 
+                    ? `min="0" max="${setting.valuePoints.length - 1}"` 
+                    : ''}
+                  ${(setting.step || setting.valuePoints) ? `step="${setting.step || 1}"` : ''}
+              />
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
                   ${setting.snapPoints.map(({ label, value, flip }, i) => {
                     return `
                       <option 
-                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
                         value="${value}" 
-                        label="${label}" 
-                        title="Snap to ${label}" 
-                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%">
+                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
+                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%"
+                        label="${label}"
+                        title="Snap to ${label}"
+                      >
                         ${label}
                       </option>
                     `;
@@ -621,6 +679,9 @@ export default class Settings {
         </div>
       </div>`
 
+    this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
+    this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
+
     const resetSettingsBtnElem = this.menuElem.querySelector('.ytpa-reset-settings-btn')
     on(resetSettingsBtnElem, 'click', () => {
       if(!confirm('Are you sure you want to reset ALL the settings?')) return
@@ -632,7 +693,6 @@ export default class Settings {
 
       // Reset keys
       for (const setting of this.config.filter(setting => setting.key)) {
-          // this.setKey(setting.name, setting.key)
           const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
@@ -712,17 +772,14 @@ export default class Settings {
         })
         on(keyElem, 'keydown keyup keypress', (e) => {
           e.stopPropagation()
-        })
-        on(keyElem, 'keypress', (e) => {
-          if(e.key.length === 1) {
-            const key = e.key?.toUpperCase()
-            this.setKey(setting.name, key)
-            keyElem.textContent = key
-          } else {
-            keyElem.textContent = setting.defaultKey
-          }
-
+          e.preventDefault()
           keyElem.blur()
+
+          const key = (e.key.length === 1) ? e.key?.toUpperCase() : ' '
+          if(keyElem.textContent === key) return
+
+          keyElem.textContent = key
+          this.setKey(setting.name, key)
         })
         on(keyElem, 'blur', (e) => {
           // Deselect all
@@ -760,6 +817,9 @@ export default class Settings {
           let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = this.config.find(s => s.name === setting.name).default
+            if(setting.valuePoints) {
+              value = setting.valuePoints.indexOf(value)
+            }
           } else if (inputElem.value === inputElem.getAttribute('data-previous-value')) {
             return
           }
@@ -768,8 +828,14 @@ export default class Settings {
           if (manualInputElem) {
             manualInputElem.value = inputElem.value
           }
+          if(setting.valuePoints) {
+            value = setting.valuePoints[value]
+          }
+
+          if(this[setting.name] === value) return
+
           this.set(setting.name, value)
-          valueElem.textContent = this.getSettingListDisplayText({...setting, value})
+          valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
             this.ambilight.updateTheme()
@@ -778,11 +844,14 @@ export default class Settings {
 
           if(!this.advancedSettings) {
             if(setting.name === 'blur') {
-              const edgeSetting = this.config.find(setting => setting.name === 'edge')
-              const edgeValue = (value <= 5 ) ? 2 : ((value >= 42.5) ? 17 : (
-                value/2.5
-              ))
+              const edgeValue = (value <= 5 ) 
+                ? 2 
+                : ((value >= 42.5) 
+                  ? 17 
+                  : (value / 2.5)
+                )
 
+              const edgeSetting = this.config.find(setting => setting.name === 'edge')
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
@@ -839,11 +908,12 @@ export default class Settings {
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', (e) => {
-          this[setting.name] = !this[setting.name]
+          let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            this[setting.name] = this.config.find(s => s.name === setting.name).default
+            value = this.config.find(s => s.name === setting.name).default
+            if(value === this[setting.name]) return
           }
-          const value = this[setting.name];
+          this[setting.name] = value
 
           if (setting.name === 'enabled') {
             this.ambilight.toggleEnabled(value)
@@ -871,7 +941,8 @@ export default class Settings {
             setting.name === 'directionLeftEnabled' ||
             setting.name === 'advancedSettings' ||
             setting.name === 'hideScrollbar' ||
-            setting.name === 'immersiveTheaterView'
+            setting.name === 'immersiveTheaterView' ||
+            setting.name === 'webGL'
           ) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
@@ -900,6 +971,12 @@ export default class Settings {
 
             const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
             this.displayBezel(key, !value)
+
+            if(this.webGL) {
+              this.ambilight.updateSizes()
+            }
+            this.ambilight.optionalFrame()
+            return
           }
 
           if(setting.name === 'detectVideoFillScaleEnabled') {
@@ -942,6 +1019,20 @@ export default class Settings {
             return
           }
 
+          if(setting.name === 'webGL') {
+            // setTimeout to allow processing of all settings in case the reset button was clicked
+            setTimeout(() => {
+              this.flushPendingStorageEntries()
+  
+              const search = new URLSearchParams(location.search)
+              const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
+              time ? search.set('t', time) : search.delete('t')
+              history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
+              location.reload()
+            }, 1)
+            return
+          }
+
           this.ambilight.updateSizes()
           this.ambilight.optionalFrame()
         })
@@ -954,14 +1045,11 @@ export default class Settings {
   getSettingListDisplayText(setting) {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
-      if (value == 0)
-        return 'Decoded framerate'
-      if (value == 50)
-        return 'Detect pixel changes'
-      if (value == 100)
-        return 'Display framerate'
-      if (value == 150)
-        return 'Video framerate'
+      return {
+        [FRAMESYNC_DECODEDFRAMES]: 'Decoded framerate',
+        [FRAMESYNC_DISPLAYFRAMES]: 'Display framerate',
+        [FRAMESYNC_VIDEOFRAMES]: 'Video framerate'
+      }[value]
     }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
@@ -969,7 +1057,7 @@ export default class Settings {
     if(setting.name === 'theme') {
       return setting.snapPoints.find(point => point.value === value)?.label
     }
-    return `${value}%`
+    return `${value}${setting.unit || '%'}`
   }
 
   settingsMenuOnCloseScrollBottom = 0
@@ -1114,6 +1202,13 @@ export default class Settings {
         value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
       if (name === 'bloom')
         value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
+      if(name === 'frameSync' && value >= 50) {
+        value = {
+          50: FRAMESYNC_DECODEDFRAMES,
+          100: FRAMESYNC_DISPLAYFRAMES,
+          150: FRAMESYNC_VIDEOFRAMES
+        }[value]
+      }
     }
 
     return value
@@ -1124,24 +1219,20 @@ export default class Settings {
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | getSetting', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('Ambient light for YouTube™ | getSetting', ex.message)
     }
     return value
   }
 
+  pendingStorageEntries = {}
   saveStorageEntry(name, value) {
-    if (this.saveStorageEntryTimeout[name])
-      clearTimeout(this.saveStorageEntryTimeout[name])
+    this.pendingStorageEntries[name] = value
+    if (this.saveStorageEntryTimeout)
+      clearTimeout(this.saveStorageEntryTimeout)
 
-    this.saveStorageEntryTimeout[name] = setTimeout(() => {
-      try {
-        localStorage.setItem(`ambilight-${name}`, value)
-      } catch (ex) {
-        console.warn('Ambient light for YouTube™ | saveStorageEntry', ex)
-        //AmbilightSentry.captureExceptionWithDetails(ex)
-      }
-      this.saveStorageEntryTimeout[name] = null
+    this.saveStorageEntryTimeout = setTimeout(() => {
+      delete this.saveStorageEntryTimeout
+      this.flushPendingStorageEntries()
     }, 500)
   }
 
@@ -1149,8 +1240,22 @@ export default class Settings {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex.message)
+    }
+  }
+
+  flushPendingStorageEntries() {
+    try {
+      if (this.saveStorageEntryTimeout)
+        clearTimeout(this.saveStorageEntryTimeout)
+      
+      const names = Object.keys(this.pendingStorageEntries)
+      for(const name of names) {
+        localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
+        delete this.pendingStorageEntries[name]
+      }
+    } catch (ex) {
+      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex.message)
     }
   }
 
@@ -1191,5 +1296,10 @@ export default class Settings {
         setting.style.display = 'none'
       }
     }
+  }
+
+  setWarning(message) {
+    this.warningItemElem.style.display = message ? '' : 'none'
+    this.warningElem.textContent = message
   }
 }

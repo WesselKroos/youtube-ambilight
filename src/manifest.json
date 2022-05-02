@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Ambient light for YouTube™",
   "description": "Immersive yourself in YouTube™ videos with ambient light!",
-  "version": "2.36.20",
+  "version": "2.36.21",
   "author": "Wessel Kroos",
   "icons": {
     "16": "images/icon-16.png",
@@ -52,8 +52,5 @@
   "options_ui": {
     "page": "options.html",
     "chrome_style": false
-  },
-  "permissions": [
-    "https://www.youtube.com/*"
-  ]
+  }
 }

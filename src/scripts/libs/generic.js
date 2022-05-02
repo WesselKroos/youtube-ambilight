@@ -99,7 +99,7 @@ export function off(elem, eventNames, callback) {
 export const html = document.querySelector('html')
 export const body = document.body
 
-export const raf = (callback) => (requestAnimationFrame || webkitRequestAnimationFrame)(wrapErrorHandler(callback))
+export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
 export const ctxOptions = {
   alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
@@ -179,4 +179,19 @@ export const appendErrorStack = (stack, ex) => {
 
     ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
   } catch(ex) { console.warn(ex) }
+}
+
+let _supportsWebGL;
+export const supportsWebGL = () => {
+  if(_supportsWebGL === undefined) {
+    try {
+      _supportsWebGL = (
+        !!window.WebGLRenderingContext &&
+        !!document.createElement('canvas')?.getContext('webgl')
+      )
+    } catch {
+      _supportsWebGL = false
+    }
+  }
+  return _supportsWebGL
 }

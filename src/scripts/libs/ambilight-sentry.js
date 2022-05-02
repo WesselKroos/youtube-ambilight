@@ -1,10 +1,6 @@
 import { $, html, setErrorHandler, uuidv4 } from "./generic";
 import { BrowserClient } from '@sentry/browser/esm/client';
-import {
-  captureException,
-  withScope,
-  initAndBind
-} from "@sentry/core";
+import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -94,7 +90,8 @@ export class AmbilightError extends Error {
   }
 }
 
-initAndBind(BrowserClient, {
+const client = new BrowserClient({
+  enabled: true,
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
   release: html.getAttribute('data-ambilight-version') || '?',
@@ -121,28 +118,59 @@ initAndBind(BrowserClient, {
     return event
   }
 })
+const hub = new Hub(client)
 
 let sessionId;
 export default class AmbilightSentry {
+  static overflowProtection = 0
   static captureExceptionWithDetails(ex) {
-
     try {
-      // Include stack trace in report (ex.name = 'SecurityError')
-      if (ex.stack && (
-        Object.prototype.toString.call(ex) === '[object DOMException]' ||
-        Object.prototype.toString.call(ex) === '[object DOMError]'
-      )) {
-        const exWithStack = new Error(ex.message)
-        exWithStack.code = ex.code
-        exWithStack.stack = ex.stack
-        exWithStack.name = ex.name
-        ex = exWithStack
+      this.overflowProtection++
+      if(this.overflowProtection > 3) {
+        return
       }
-    } catch (ex) { console.warn(ex) }
 
-    console.error('Ambient light for YouTube™ | ', ex)
+      try {
+        // Include stack trace in report (ex.name = 'SecurityError')
+        if (ex.stack && (
+          Object.prototype.toString.call(ex) === '[object DOMException]' ||
+          Object.prototype.toString.call(ex) === '[object DOMError]'
+        )) {
+          const exWithStack = new Error(ex.message)
+          exWithStack.code = ex.code
+          exWithStack.stack = ex.stack
+          exWithStack.name = ex.name
+          ex = exWithStack
+        }
+      } catch (ex) { console.warn(ex) }
 
-    withScope(scope => {
+      console.error('Ambient light for YouTube™ | ', ex)
+      if(this.overflowProtection === 3) {
+        console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
+      }
+
+      try {
+        const reports = JSON.parse(localStorage.getItem('ambilight-reports') || '[]')
+        const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const reportsToday = reports.filter(report => report.time > dayAgo)
+        const reportsThisWeek = reports.filter(report => report.time > weekAgo)
+        if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
+          reportsThisWeek.push({
+            time: Date.now(),
+            error: ex.message
+          })
+        } else {
+          console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
+          return
+        }
+        localStorage.setItem('ambilight-reports', JSON.stringify(reportsThisWeek))
+      } catch (ex) { 
+        console.warn(ex)
+        return
+      }
+
+      const scope = new Scope()
       try {
         let userId = localStorage.getItem('ambilight-crash-reporter-id')
         if(!userId) {
@@ -279,6 +307,7 @@ export default class AmbilightSentry {
             'atTop',
             'isFillingFullscreen',
             'isHidden',
+            'isPageHidden',
             'videoIsHidden',
             'isAmbilightHiddenOnWatchPage',
             'isVideoHiddenOnWatchPage',
@@ -298,11 +327,22 @@ export default class AmbilightSentry {
             'enableChromiumBug1142112Workaround',
             'enableMozillaBug1606251Workaround',
             'getImageDataAllowed',
+            'projector.type',
+            'projector.webGLVersion',
+            'projector.width',
+            'projector.height',
+            'projector.heightCrop',
+            'projector.blurBound',
+            'projector.levels',
+            'projector.projectors.length',
+            'projector.scale.x',
+            'projector.scale.y',
+            'projector.lostCount',
           ]
           keys.forEach(key => {
             try {
               let value = ambilight
-              key.split('.').forEach(key => value = value[key]) // Find multi depth values
+              key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
               ambilightExtra[key] = value
             } catch (ex) {}
           })
@@ -316,9 +356,9 @@ export default class AmbilightSentry {
         if (typeof ambilight !== 'undefined') {
           // settings
           const settingsExtra = {}
-          ;(ambilight.settings || []).forEach(setting => {
+          ;(ambilight.settings?.config || []).forEach(setting => {
             if (!setting || !setting.name) return
-            settingsExtra[setting.name] = setting.value
+            settingsExtra[setting.name] = ambilight.settings[setting.name]
             if (!setting.key) return
             settingsExtra[`${setting.name}-key`] = setting.key
           })
@@ -328,9 +368,14 @@ export default class AmbilightSentry {
         setExtra('Settings (exception)', ex)
       }
 
-      captureException(ex)
+      const previousHub = getCurrentHub()
+      makeMain(hub)
+      const response = client.captureException(ex, {}, scope)
+      makeMain(previousHub)
       scope.clear()
-    })
+    } catch (ex) {
+      console.error('Ambient light for YouTube™ | ', ex)
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { appendErrorStack, SafeOffscreenCanvas, requestIdleCallback, wrapErrorHandler } from './generic'
+import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 import { workerFromCode } from './worker'
 
@@ -21,19 +21,15 @@ const workerCode = function () {
   let imageVLines = []
   let imageVLinesIndex = 0
   let partSize = 1
-  let throttle = 0
   let getLineImageDataStack;
   let getLineImageDataResolve;
   let getLineImageDataReject;
 
   function getLineImageData() {
-    const start = performance.now()
     try {
-      imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
+      const imageData = imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
       getLineImageDataResolve()
     } catch(ex) {
-      throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 10)
       appendErrorStack(getLineImageDataStack, ex)
       getLineImageDataReject(ex)
     }
@@ -42,7 +38,7 @@ const workerCode = function () {
   function getLineImageDataPromise(resolve, reject) {
     getLineImageDataResolve = resolve
     getLineImageDataReject = reject
-    setTimeout(getLineImageData, throttle)
+    getLineImageData()
   }
 
   let averageSize = 0;
@@ -54,8 +50,9 @@ const workerCode = function () {
 
   try {
     const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
-      partSize = 1
-      for (imageVLinesIndex = (partSize - 1); imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
+      partSize = (canvas.width / 5)
+      imageVLines = []
+      for (imageVLinesIndex = Math.ceil(partSize / 2) - 1; imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
         }
@@ -130,7 +127,7 @@ const workerCode = function () {
       if(!sizes.length) {
         return
       }
-    
+
       averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
       const closestSizes = sizes.sort(sortSizes).slice(0, Math.min(6, sizes.length))
 
@@ -149,14 +146,14 @@ const workerCode = function () {
         }
     
         size = lowestSize
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * (offsetPercentage/100))
         }
       } else {
         size = Math.max(...closestSizes)
-        if(size < (height * 0.01)) {
+        if(size < (height * 0.012)) {
           size = 0
         } else {
           size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
@@ -223,8 +220,9 @@ const workerCode = function () {
             // canvas2.width = bitmap.width
             // canvas2.height = bitmap.height
             // ctx2 = canvas2.getContext("bitmaprenderer")
-          }
+          } 
           ctx.drawImage(bitmap, 0, 0)
+          bitmap.close()
         } else {
           canvas = canvasInfo.canvas
           ctx = canvasInfo.ctx
@@ -269,7 +267,8 @@ export class HorizontalBarDetection {
   run = null
   canvas;
   ctx;
-  catchedDetectHorizontalBarSizeError = false
+  catchedDetectHorizontalBarSizeError = false;
+  lastChange;
 
   clear = () => {
     if(!this.run || !this.cancellable) return
@@ -303,10 +302,10 @@ export class HorizontalBarDetection {
       callback
     }
 
-    requestIdleCallback(wrapErrorHandler(() => this.idleHandler(run)), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
   }
 
-  idleHandler = async (run) => {
+  idleHandler = wrapErrorHandler(async (run) => {
     if(this.run !== run) return
     this.cancellable = false
 
@@ -317,7 +316,7 @@ export class HorizontalBarDetection {
       currentPercentage,
       callback
     } = this.idleHandlerArguments
-
+    let canvasInfo;
     try {
       const start = performance.now()
 
@@ -330,8 +329,8 @@ export class HorizontalBarDetection {
         this.ctx.imageSmoothingEnabled = true
       }
 
-      this.ctx.drawImage(buffer.elem, 0, 0, this.canvas.width, this.canvas.height)
-      const canvasInfo = this.worker.isFallbackWorker ? {
+      this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
+      canvasInfo = this.worker.isFallbackWorker ? {
         canvas: this.canvas,
         ctx: this.ctx
       } : {
@@ -340,6 +339,7 @@ export class HorizontalBarDetection {
 
       this.workerMessageId++;
       const stack = new Error().stack
+      let newPercentage;
       const onMessagePromise = new Promise((resolve, reject) => {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
@@ -358,6 +358,10 @@ export class HorizontalBarDetection {
               throw e.data.error
             }
             callback(e.data.percentage)
+            newPercentage = e.data.percentage
+            if(newPercentage !== undefined) {
+              this.lastChange = performance.now()
+            }
             resolve()
           } catch(ex) {
             reject(ex)
@@ -375,16 +379,30 @@ export class HorizontalBarDetection {
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
+      if(canvasInfo.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       if(this.run !== run) return
       
       this.cancellable = true
-      const throttle = Math.max(0, Math.pow(performance.now() - start, 1.2) - 30)
+      const now = performance.now()
+      const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
+        ? 1000
+        : ((this.lastChange + 3000 < now)
+          ? 500
+          : 0
+        )
+      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
+
       setTimeout(() => {
         if(this.run !== run) return
 
         this.run = null
       }, throttle)
     } catch(ex) {
+      if(canvasInfo?.bitmap) {
+        canvasInfo.bitmap.close()
+      }
       this.cancellable = true
       this.run = null
       if (!this.catchedDetectHorizontalBarSizeError) {
@@ -392,7 +410,7 @@ export class HorizontalBarDetection {
         throw ex
       }
     }
-  }
+  }, true)
 }
 
 export default detectHorizontalBarSize
