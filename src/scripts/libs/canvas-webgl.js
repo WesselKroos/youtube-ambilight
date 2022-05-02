@@ -175,13 +175,15 @@ export class WebGLContext {
     this.texture = this.ctx.createTexture();
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    //this.ctx.pixelStorei(this.ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     if (this.webGLVersion == 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
+      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     }
@@ -238,20 +240,6 @@ export class WebGLContext {
     srcHeight = srcHeight || src.videoHeight || src.height
     destWidth = destWidth || this.ctx.drawingBufferWidth
     destHeight = destHeight || this.ctx.drawingBufferHeight
-    
-    // Fill texture
-    // const downscale = (srcWidth > destWidth || srcHeight > destHeight)
-    // if(downscale) {
-    //   src = await createImageBitmap(src, 0, 0, srcWidth, srcHeight, {
-    //     resizeWidth: destWidth,
-    //     resizeHeight: destHeight,
-    //     resizeQuality: 'pixelated'
-    //   })
-    // }
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-    // if(downscale) {
-    //   src.close()
-    // }
 
     // Crop src
     const scaleX = 1 + (srcX / srcWidth) * 2
@@ -265,6 +253,11 @@ export class WebGLContext {
     if (!this.viewport || this.viewport.width !== destWidth || this.viewport.height !== destHeight) {
       this.ctx.viewport(0, 0, destWidth, destHeight);
       this.viewport = { width: destWidth, height: destHeight };
+    }
+    
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    if(this.webGLVersion !== 1) {
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
@@ -306,17 +299,6 @@ export class WebGLContext {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | Invalid Canvas ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
-    // if(this.ctx && this.ctx.isContextLost() && this.lostCount < 3) {
-    //   console.warn(`Ambient light for YouTube™ | Restoring context try ${this.lostCount}`)
-    //   this.initCtx()
-    //   if(this.ctx || this.ctx.isContextLost()) {
-    //     this.lostCount++
-    //   } else {
-    //     console.warn(`Ambient light for YouTube™ | Restored in ${this.lostCount} tries`)
-    //     this.lost = false
-    //     return false
-    //   }
-    // }
     return invalid;
   }
 }

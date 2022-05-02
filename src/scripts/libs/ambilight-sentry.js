@@ -127,9 +127,6 @@ export default class AmbilightSentry {
     try {
       this.overflowProtection++
       if(this.overflowProtection > 3) {
-        if(this.overflowProtection === 4) {
-          console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
-        }
         return
       }
 
@@ -148,6 +145,30 @@ export default class AmbilightSentry {
       } catch (ex) { console.warn(ex) }
 
       console.error('Ambient light for YouTube™ | ', ex)
+      if(this.overflowProtection === 3) {
+        console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
+      }
+
+      try {
+        const reports = JSON.parse(localStorage.getItem('ambilight-reports') || '[]')
+        const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const reportsToday = reports.filter(report => report.time > dayAgo)
+        const reportsThisWeek = reports.filter(report => report.time > weekAgo)
+        if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
+          reportsThisWeek.push({
+            time: Date.now(),
+            error: ex.message
+          })
+        } else {
+          console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
+          return
+        }
+        localStorage.setItem('ambilight-reports', JSON.stringify(reportsThisWeek))
+      } catch (ex) { 
+        console.warn(ex)
+        return
+      }
 
       const scope = new Scope()
       try {
@@ -286,6 +307,7 @@ export default class AmbilightSentry {
             'atTop',
             'isFillingFullscreen',
             'isHidden',
+            'isPageHidden',
             'videoIsHidden',
             'isAmbilightHiddenOnWatchPage',
             'isVideoHiddenOnWatchPage',
@@ -305,6 +327,17 @@ export default class AmbilightSentry {
             'enableChromiumBug1142112Workaround',
             'enableMozillaBug1606251Workaround',
             'getImageDataAllowed',
+            'projector.type',
+            'projector.webGLVersion',
+            'projector.width',
+            'projector.height',
+            'projector.heightCrop',
+            'projector.blurBound',
+            'projector.levels',
+            'projector.projectors.length',
+            'projector.scale.x',
+            'projector.scale.y',
+            'projector.lostCount',
           ]
           keys.forEach(key => {
             try {
@@ -325,7 +358,7 @@ export default class AmbilightSentry {
           const settingsExtra = {}
           ;(ambilight.settings?.config || []).forEach(setting => {
             if (!setting || !setting.name) return
-            settingsExtra[setting.name] = setting.value
+            settingsExtra[setting.name] = ambilight.settings[setting.name]
             if (!setting.key) return
             settingsExtra[`${setting.name}-key`] = setting.key
           })
@@ -340,7 +373,7 @@ export default class AmbilightSentry {
       const response = client.captureException(ex, {}, scope)
       makeMain(previousHub)
       scope.clear()
-    } catch (ex) { 
+    } catch (ex) {
       console.error('Ambient light for YouTube™ | ', ex)
     }
   }

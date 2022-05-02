@@ -971,6 +971,10 @@ export default class Settings {
 
             const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
             this.displayBezel(key, !value)
+
+            if(this.webGL) {
+              this.ambilight.updateSizes()
+            }
             this.ambilight.optionalFrame()
             return
           }
@@ -1215,8 +1219,7 @@ export default class Settings {
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | getSetting', ex)
-      //AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('Ambient light for YouTube™ | getSetting', ex.message)
     }
     return value
   }
@@ -1237,7 +1240,7 @@ export default class Settings {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex)
+      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex.message)
     }
   }
 
@@ -1252,7 +1255,7 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex)
+      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex.message)
     }
   }
 

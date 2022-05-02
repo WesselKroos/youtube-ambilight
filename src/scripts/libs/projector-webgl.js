@@ -2,6 +2,7 @@ import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
+  type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
   levels = 1
@@ -17,12 +18,15 @@ export default class ProjectorWebGL {
     this.canvas.addEventListener("webglcontextlost", wrapErrorHandler((event) => {
       event.preventDefault();
       if(!this.isControlledLose) {
-        console.error('Ambient light for YouTube™ | Project ctx lost')
+        console.warn('Ambient light for YouTube™ | Project ctx lost')
       }
       this.invalidateShaderCache()
       this.lost = true
       if(!this.isControlledLose) {
         this.lostCount++
+      }
+      if(!this.isPageHidden && this.isControlledLose) {
+        setTimeout(this.handlePageVisibility, 1)
       }
     }), false);
     this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
@@ -31,7 +35,7 @@ export default class ProjectorWebGL {
         return
       }
       if(!this.isControlledLose) {
-        console.error(`Ambient light for YouTube™ | Projector ctx restoring (${this.lostCount})`)
+        console.log(`Ambient light for YouTube™ | Projector ctx restoring (${this.lostCount})`)
       }
       this.initCtx()
       if(!this.isControlledLose) {
@@ -45,11 +49,11 @@ export default class ProjectorWebGL {
         this.initProjectorListeners()
         this.lost = false
         if(!this.isControlledLose) {
-          console.error(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
+          console.log(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
         }
       } else {
         if(!this.isControlledLose) {
-          console.error(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
+          console.warn(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
         }
       }
       if(this.handleRestored) {
@@ -69,19 +73,21 @@ export default class ProjectorWebGL {
     this.fTextureMipmapLevel = undefined
   }
 
-  handlePageVisibility(isPageHidden) {
+  handlePageVisibility = (isPageHidden) => {
     if(isPageHidden === undefined) {
       isPageHidden = document.visibilityState === 'hidden'
     }
+    this.isPageHidden = isPageHidden
 
     if(!this.ctxLose) {
       this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
     }
 
-    if(isPageHidden && !this.lost) {
+    const ctxLost = this.ctx.isContextLost()
+    if(this.isPageHidden && !ctxLost) {
       this.isControlledLose = true
       this.ctxLose.loseContext()
-    } else if(!isPageHidden && this.lost) {
+    } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
       this.ctxLose.restoreContext()
     }
   }
@@ -134,7 +140,8 @@ export default class ProjectorWebGL {
   draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    const textureMipmapLevel = Math.log(src.height / this.height) / Math.log(2)
+    // Mipmap level bias correction: because the croppedUV does not fill the drawBufferHeight 100%
+    const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
       this.fTextureMipmapLevel = textureMipmapLevel
@@ -156,11 +163,11 @@ export default class ProjectorWebGL {
     this.lost = true
     this.lostCount++
     this.invalidateShaderCache()
-    console.error(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
+    console.warn(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
   })
 
   onBlurCtxRestored = wrapErrorHandler(() => {
-    console.error(`Ambient light for YouTube™ | Projector blurCtx restoring (${this.lostCount})`)
+    console.log(`Ambient light for YouTube™ | Projector blurCtx restoring (${this.lostCount})`)
     if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | Projector blurCtx crashed 3 times. Stopped restoring WebGL.')
       return
@@ -169,9 +176,9 @@ export default class ProjectorWebGL {
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
       this.initProjectorListeners()
       this.lost = false
-      console.error(`Ambient light for YouTube™ | Projector blurCtx restored (${this.lostCount})`)
+      console.log(`Ambient light for YouTube™ | Projector blurCtx restored (${this.lostCount})`)
     } else {
-      console.error(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
+      console.warn(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
     }
   })
 
@@ -240,8 +247,11 @@ export default class ProjectorWebGL {
     this.ctx.activeTexture(this.ctx.TEXTURE1);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);    if(this.webGLVersion !== 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
+    }
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
 

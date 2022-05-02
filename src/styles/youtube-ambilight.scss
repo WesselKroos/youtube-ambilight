@@ -1453,6 +1453,7 @@ html[data-ambilight-enabled="true"] {
     content: var(--ambilight-debanding-content, none);
     background: var(--ambilight-debanding-background, none);
     opacity: var(--ambilight-debanding-opacity, 0);
+    box-shadow: #000 0px -500px 300px -350px inset;
   }
 
  .html5-video-player {
