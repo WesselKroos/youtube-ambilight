@@ -1042,9 +1042,9 @@ export default class Ambilight {
     let pScale;
     if(this.settings.webGL) {
       const pMinSize = (this.settings.resolution / 100) * ((this.settings.blur >= 20)
-        ? 64
+        ? 128
         : ((this.settings.blur >= 10)
-          ? 128
+          ? 192
           : 256
         ))
       pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
