@@ -108,13 +108,10 @@ export default class ProjectorWebGL {
   draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    if(this.webGLVersion !== 1) {
-      // Mipmap level bias correction: because the croppedUV does not fill the drawBufferHeight 100%
-      const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)));
-      if(this.fTextureMipmapLevel !==  textureMipmapLevel) {
-        this.fTextureMipmapLevel = textureMipmapLevel
-        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, textureMipmapLevel);
-      }
+    const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
+    if(textureMipmapLevel !== this.fTextureMipmapLevel) {
+      this.fTextureMipmapLevel = textureMipmapLevel
+      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
@@ -219,10 +216,10 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     if(this.webGLVersion !== 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 0);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
     }
     const tfaExt = (
       this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
@@ -230,8 +227,8 @@ export default class ProjectorWebGL {
       this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
     );
     if(tfaExt) {
-      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, max));
+      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 0;
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
 
     // Shaders
@@ -257,6 +254,7 @@ export default class ProjectorWebGL {
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
+      uniform float fTextureMipmapLevel;
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
       uniform sampler2D textureSampler;
@@ -266,13 +264,17 @@ export default class ProjectorWebGL {
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
         vec2 direction = ceil(uv * 2.) - 1.;
-        vec2 vi = ((direction - uv) * fScale) / ((direction - .5) * fScaleStep);
-        float i = floor(min(vi[0], vi[1]));
-        vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * i));
-        vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
-        return texture2D(sampler, croppedUV, ${this.webGLVersion !== 1 ? 10 : 1}.);
+        vec2 iUV = ((direction - uv) * fScale) / ((direction - .5) * fScaleStep);
+        int impreciseI = int(min(iUV[0], iUV[1]));
+        for (int preciseI = 0; preciseI < 200; preciseI++) {
+          if (preciseI < impreciseI) continue;
+          int i = ${(this.webGLVersion === 1) ? `impreciseI` : `preciseI`};
+          vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
+          vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
+          return texture2D(sampler, croppedUV, fTextureMipmapLevel);
+        }
       }
-      
+
       void main(void) {
         vec4 ambilight = multiTexture(textureSampler, fUV);
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
@@ -330,6 +332,7 @@ export default class ProjectorWebGL {
     const textureSamplerLoc = this.ctx.getUniformLocation(this.program, "textureSampler");
     this.ctx.uniform1i(textureSamplerLoc, 1);
     
+    this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
     this.fScaleStepLoc = this.ctx.getUniformLocation(this.program, 'fScaleStep');
     this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
