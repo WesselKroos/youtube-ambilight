@@ -270,7 +270,7 @@ export default class ProjectorWebGL {
         float i = floor(min(vi[0], vi[1]));
         vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * i));
         vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
-        return texture2D(sampler, croppedUV, 10.);
+        return texture2D(sampler, croppedUV, ${this.webGLVersion !== 1 ? 10 : 1}.);
       }
       
       void main(void) {
