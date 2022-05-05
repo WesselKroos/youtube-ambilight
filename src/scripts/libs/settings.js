@@ -75,7 +75,7 @@ export default class Settings {
       default: 100,
       unit: '%',
       valuePoints: (() => {
-        const points = [25];
+        const points = [6.25];
         while(points[points.length - 1] < 400) {
           points.push(points[points.length - 1] * 2);
         }
