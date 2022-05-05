@@ -13,7 +13,7 @@ export default class ProjectorWebGL {
     this.initShadow()
     this.initBlurCtx()
     this.canvas = new SafeOffscreenCanvas(1, 1);
-    this.canvas.addEventListener("webglcontextlost", wrapErrorHandler((event) => {
+    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler((event) => {
       event.preventDefault();
       if(!this.isControlledLose) {
         console.warn('Ambient light for YouTube™ | Project ctx lost')
@@ -27,7 +27,7 @@ export default class ProjectorWebGL {
         setTimeout(this.handlePageVisibility, 1)
       }
     }), false);
-    this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
+    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
       if(!this.isControlledLose && this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | Projector ctx crashed 3 times. Stopped restoring WebGL.')
         return
@@ -153,8 +153,8 @@ export default class ProjectorWebGL {
     if(this.blurCanvas) {
       this.containerElem.removeChild(this.blurCanvas)
       if(this.blurCtx) {
-        this.blurCanvas.removeEventListener("contextlost", this.onBlurCtxLost)
-        this.blurCanvas.removeEventListener("contextrestored", this.onBlurCtxRestored)
+        this.blurCanvas.removeEventListener('contextlost', this.onBlurCtxLost)
+        this.blurCanvas.removeEventListener('contextrestored', this.onBlurCtxRestored)
       }
     }
 
@@ -162,12 +162,12 @@ export default class ProjectorWebGL {
     this.blurCanvas.classList.add('ambilight__projector')
     this.containerElem.prepend(this.blurCanvas)
     this.boundaryElem = this.blurCanvas
+    this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost)
+    this.blurCanvas.addEventListener('contextrestored', this.onBlurCtxRestored)
     this.blurCtx = this.blurCanvas.getContext('2d', {
       alpha: true,
       desynchronized: true
     })
-    this.blurCanvas.addEventListener("contextlost", this.onBlurCtxLost)
-    this.blurCanvas.addEventListener("contextrestored", this.onBlurCtxRestored)
   }
 
   initCtx() {
@@ -268,7 +268,7 @@ export default class ProjectorWebGL {
         int impreciseI = int(min(iUV[0], iUV[1]));
         for (int preciseI = 0; preciseI < 200; preciseI++) {
           if (preciseI < impreciseI) continue;
-          int i = ${(this.webGLVersion === 1) ? `impreciseI` : `preciseI`};
+          int i = ${(this.webGLVersion === 1) ? 'impreciseI' : 'preciseI'};
           vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
           vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
           return texture2D(sampler, croppedUV, fTextureMipmapLevel);
@@ -326,10 +326,10 @@ export default class ProjectorWebGL {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, "shadowSampler");
+    const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, 'shadowSampler');
     this.ctx.uniform1i(shadowSamplerLoc, 0);
 
-    const textureSamplerLoc = this.ctx.getUniformLocation(this.program, "textureSampler");
+    const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
     this.ctx.uniform1i(textureSamplerLoc, 1);
     
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');

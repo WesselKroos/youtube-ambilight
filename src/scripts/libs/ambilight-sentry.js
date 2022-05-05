@@ -1,4 +1,4 @@
-import { $, html, setErrorHandler, uuidv4 } from "./generic";
+import { $, html, setErrorHandler, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 
@@ -101,7 +101,7 @@ const client = new BrowserClient({
       event.request = {
         url: (!navigator.doNotTrack) ? location.href : '?', // Respect DoNotTrack
         headers: {
-          "User-Agent": navigator.userAgent // Add UserAgent
+          'User-Agent': navigator.userAgent // Add UserAgent
         }
       };
       // Normalize stacktrace domain of all browsers

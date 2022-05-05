@@ -2157,7 +2157,7 @@ export default class Ambilight {
 
     const toDark = this.shouldbeDarkTheme()
     liveChat.postToContentWindow({
-      "yt-live-chat-set-dark-theme": toDark
+      'yt-live-chat-set-dark-theme': toDark
     })
   }
 
