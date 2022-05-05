@@ -5,8 +5,6 @@ export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
-  levels = 1
-  maxScalesLength = 103
 
   constructor(containerElem, initProjectorListeners) {
     this.containerElem = containerElem
@@ -67,8 +65,9 @@ export default class ProjectorWebGL {
 
   invalidateShaderCache() {
     this.viewport = undefined
+    this.fScale = undefined
+    this.fScaleStep = undefined
     this.fScalesLength = undefined
-    this.fScales = undefined
     this.fHeightCrop = undefined
     this.fTextureMipmapLevel = undefined
   }
@@ -96,10 +95,6 @@ export default class ProjectorWebGL {
     this.containerElem.remove(this.canvas)
   }
 
-  recreate(levels) {
-    this.levels = levels
-  }
-
   // TODO: Cut off left, top and right canvas outside the browser + blur size
   resize(width, height) {
     this.width = width
@@ -110,41 +105,13 @@ export default class ProjectorWebGL {
     this.shadow = new ProjectorShadow()
   }
 
-  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
-    this.shadow.rescale(lastScale, projectorSize, settings)
-
-    this.scale = lastScale
-    this.scales = scales.map(({x, y}) => ({
-      x: this.scale.x / x,
-      y: this.scale.y / y
-    }))
-
-    this.heightCrop = heightCrop
-
-    const width = Math.floor(projectorSize.w * this.scale.x)
-    const height = Math.floor(projectorSize.h * this.scale.y)
-    this.canvas.width = width
-    this.canvas.height = height
-
-    const blurPx = settings.blur * (this.height / 512) * 1.275
-    this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
-    this.blurCanvas.width = width + this.blurBound * 2
-    this.blurCanvas.height = height + this.blurBound * 2
-    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
-    
-    this.blurCtx.filter = `blur(${blurPx}px)`
-    
-    this.updateCtx()
-  }
-
   draw = (src) => {
     if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
-    // Mipmap level bias correction: because the croppedUV does not fill the drawBufferHeight 100%
     const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
-      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
       this.fTextureMipmapLevel = textureMipmapLevel
+      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
 
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
@@ -217,7 +184,6 @@ export default class ProjectorWebGL {
     if(this.ctx) {
       this.webGLVersion = 2
     } else {
-      this.maxScalesLength = 89 // Limit of WebGL1 (Update this value when attributes have been added to the shaders)
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
@@ -247,13 +213,23 @@ export default class ProjectorWebGL {
     this.ctx.activeTexture(this.ctx.TEXTURE1);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
     this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);    if(this.webGLVersion !== 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
-    }
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+    if(this.webGLVersion !== 1) {
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
+    }
+    const tfaExt = (
+      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+    );
+    if(tfaExt) {
+      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 0;
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+    }
 
     // Shaders
     const vertexShaderSrc = `
@@ -275,7 +251,6 @@ export default class ProjectorWebGL {
     }
     this.ctx.attachShader(this.program, vertexShader);
     
-    // Todo: Replace for loop with a direct [x,y] to scale conversion (GPU 65% -> 45%)
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
@@ -284,21 +259,22 @@ export default class ProjectorWebGL {
       uniform vec2 fCropScaleUV;
       uniform sampler2D textureSampler;
       uniform sampler2D shadowSampler;
-      uniform int fScalesLength;
-      uniform vec2 fScales[${this.maxScalesLength}];
+      uniform vec2 fScale;
+      uniform vec2 fScaleStep;
 
       vec4 multiTexture(sampler2D sampler, vec2 uv) {
-        for (int i = 0; i < ${this.maxScalesLength}; i++) {
-          if (i == fScalesLength) break;
-          vec2 scaledUV = (uv * fScales[i]) - (fScales[i] * .5);
-          if (all(lessThan(abs(scaledUV), vec2(.5)))) {
-            vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
-            return texture2D(sampler, croppedUV, fTextureMipmapLevel);
-          }
+        vec2 direction = ceil(uv * 2.) - 1.;
+        vec2 iUV = ((direction - uv) * fScale) / ((direction - .5) * fScaleStep);
+        int impreciseI = int(min(iUV[0], iUV[1]));
+        for (int preciseI = 0; preciseI < 200; preciseI++) {
+          if (preciseI < impreciseI) continue;
+          int i = ${(this.webGLVersion === 1) ? `impreciseI` : `preciseI`};
+          vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
+          vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
+          return texture2D(sampler, croppedUV, fTextureMipmapLevel);
         }
-        return vec4(0, 0, 0, 0);
       }
-      
+
       void main(void) {
         vec4 ambilight = multiTexture(textureSampler, fUV);
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
@@ -357,8 +333,8 @@ export default class ProjectorWebGL {
     this.ctx.uniform1i(textureSamplerLoc, 1);
     
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
-    this.fScalesLengthLoc = this.ctx.getUniformLocation(this.program, 'fScalesLength');
-    this.fScalesLoc = this.ctx.getUniformLocation(this.program, 'fScales');
+    this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
+    this.fScaleStepLoc = this.ctx.getUniformLocation(this.program, 'fScaleStep');
     this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
     this.fCropScaleUVLoc = this.ctx.getUniformLocation(this.program, 'fCropScaleUV');
 
@@ -367,31 +343,59 @@ export default class ProjectorWebGL {
     this.updateCtx()
   }
 
+  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
+    this.shadow.rescale(lastScale, projectorSize, settings)
+
+    this.scaleStep = {
+      x: scales[2]?.x - scales[1]?.x,
+      y: scales[2]?.y - scales[1]?.y,
+    }
+
+    this.scale = lastScale
+    this.scalesLength = scales.length
+
+    this.heightCrop = heightCrop
+
+    const width = Math.floor(projectorSize.w * this.scale.x)
+    const height = Math.floor(projectorSize.h * this.scale.y)
+    this.canvas.width = width
+    this.canvas.height = height
+
+    const blurPx = settings.blur * (this.height / 512) * 1.275
+    this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
+    this.blurCanvas.width = width + this.blurBound * 2
+    this.blurCanvas.height = height + this.blurBound * 2
+    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
+    
+    this.blurCtx.filter = `blur(${blurPx}px)`
+    
+    this.updateCtx()
+  }
+
   updateCtx() {
     if(this.ctxIsInvalid) return
 
-    const fScalesLength = this.scales.length;
-    const fScalesLengthChanged = this.fScalesLength !== fScalesLength;
-    if(fScalesLengthChanged) {
-      this.fScalesLength = fScalesLength;
-      this.ctx.uniform1i(this.fScalesLengthLoc, fScalesLength);
+    const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
+    if(fScaleChanged) {
+      this.fScale = this.scale
+      this.ctx.uniform2fv(this.fScaleLoc, new Float32Array([this.fScale?.x, this.fScale?.y]));
     }
 
-    const fScales = this.scales.map(({ x, y }) => [x, y]).flat();
-    if(fScalesLengthChanged || fScales.some((fScale, i) => fScale !== this.fScales[i])) {
-      this.fScales = fScales;
-      this.ctx.uniform2fv(this.fScalesLoc, new Float32Array(fScales));
+    const fScaleStepChanged = this.fScaleStep?.x !== this.scaleStep?.x || this.fScaleStep?.y !== this.scaleStep?.y
+    if(fScaleStepChanged) {
+      this.fScaleStep = this.scaleStep
+      this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([this.fScaleStep?.x, this.fScaleStep?.y]));
     }
 
     const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
     if(fHeightCropChanged) {
       this.fHeightCrop = this.heightCrop
-      const fCropScaleUV = new Float32Array([
+      const fCropScaleUV = [
         1, 1 / (1 - this.fHeightCrop * 2)
-      ])
-      const fCropOffsetUV = new Float32Array([
+      ]
+      const fCropOffsetUV = [
         .5, this.fHeightCrop + (1 / (fCropScaleUV[1] * 2))
-      ])
+      ]
       this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
       this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
     }
