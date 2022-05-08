@@ -999,13 +999,17 @@ html[data-ambilight-enabled="true"] {
   }
 
   .ytpa-menuitem--warning {
+    margin-bottom: 5px;
     cursor: default !important;
+    &,
     &:hover {
-      background: none !important;
+      background: #f52 !important;
     }
   }
   .ytpa-warning {
-    color: #f40;
+    color: #000;
+    text-shadow: none;
+    font-weight: bold;
     white-space: pre-line;
   }
 

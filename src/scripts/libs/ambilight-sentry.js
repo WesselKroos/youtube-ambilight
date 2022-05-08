@@ -338,6 +338,7 @@ export default class AmbilightSentry {
             'projector.scale.x',
             'projector.scale.y',
             'projector.lostCount',
+            'projector.majorPerformanceCaveatDetected'
           ]
           keys.forEach(key => {
             try {

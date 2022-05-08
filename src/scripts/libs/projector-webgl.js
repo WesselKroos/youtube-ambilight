@@ -50,9 +50,9 @@ export default class ProjectorWebGL {
       ) {
         this.initProjectorListeners()
         this.lost = false
-        this.setWarning('')
         if(!this.isControlledLose) {
           console.log(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
+          this.setWarning('')
         }
       } else {
         if(!this.isControlledLose) {
@@ -186,6 +186,7 @@ export default class ProjectorWebGL {
   }
 
   majorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveatDetected = true
     const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
     if(detected) return
     
@@ -197,6 +198,7 @@ export default class ProjectorWebGL {
   }
 
   noMajorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveatDetected = false
     const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
     if(!detected) return
 
