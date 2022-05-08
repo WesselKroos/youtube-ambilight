@@ -69,6 +69,9 @@ export class WebGLContext {
         console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
       }
     }), false);
+    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler((e) => {
+      throw new Error(`WebGLCanvas webglcontextcreationerror: ${e.statusMessage || 'Unknown'}`);
+    }), false);
 
     this.options = options;
     this.initCtx(options);
@@ -91,6 +94,8 @@ export class WebGLContext {
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
+      } else {
+        console.error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
       }
     }
     if(this.ctxIsInvalid) return

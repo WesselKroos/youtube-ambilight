@@ -1298,8 +1298,12 @@ export default class Settings {
     }
   }
 
-  setWarning(message) {
+  setWarning = (message, optional = false) => {
+    if(optional && this.warningElem.textContent.length) return
+
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
+    
+    this.menuBtn.classList.toggle('has-warning', !!message)
   }
 }

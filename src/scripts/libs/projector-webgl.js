@@ -6,9 +6,10 @@ export default class ProjectorWebGL {
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
 
-  constructor(containerElem, initProjectorListeners) {
+  constructor(containerElem, initProjectorListeners, setWarning) {
     this.containerElem = containerElem
     this.initProjectorListeners = initProjectorListeners
+    this.setWarning = setWarning
 
     this.initShadow()
     this.initBlurCtx()
@@ -17,6 +18,7 @@ export default class ProjectorWebGL {
       event.preventDefault();
       if(!this.isControlledLose) {
         console.warn('Ambient light for YouTube™ | Project ctx lost')
+        this.setWarning('Browser forcefully destroyed the WebGL ambient light.\n(A possible workaround could be to turn off the "WebGL renderer" setting)')
       }
       this.invalidateShaderCache()
       this.lost = true
@@ -30,6 +32,7 @@ export default class ProjectorWebGL {
     this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
       if(!this.isControlledLose && this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | Projector ctx crashed 3 times. Stopped restoring WebGL.')
+        this.setWarning('Browser forcefully destroyed WebGL ambient light 3 times in a row. Reload the page to reload Ambient light. \n(Another possible workaround could be to turn off the "WebGL renderer" setting)')
         return
       }
       if(!this.isControlledLose) {
@@ -46,18 +49,26 @@ export default class ProjectorWebGL {
       ) {
         this.initProjectorListeners()
         this.lost = false
+        this.setWarning('')
         if(!this.isControlledLose) {
           console.log(`Ambient light for YouTube™ | Projector ctx restored (${this.lostCount})`)
         }
       } else {
         if(!this.isControlledLose) {
           console.warn(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
+          this.setWarning('Failed to restore WebGL ambient light.\n(A possible workaround could be to turn off the "WebGL renderer" setting)')
         }
       }
       if(this.handleRestored) {
         this.handleRestored(this.isControlledLose)
       }
       this.isControlledLose = false
+    }), false);
+    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler((e) => {
+      this.setWarning(`Failed to create the WebGL ambient light: ${e.statusMessage || 'Reason unknown'}.\n(A possible workaround could be to turn off the "WebGL renderer" setting)`)
+      if(e.statusMessage.indexOf('WebGL is currently disabled') !== -1) return
+
+      throw new Error(`ProjectorWebGL webglcontextcreationerror: ${e.statusMessage || 'Reason unknown'}`);
     }), false);
     this.initCtx()
     this.handlePageVisibility()
@@ -168,6 +179,9 @@ export default class ProjectorWebGL {
       alpha: true,
       desynchronized: true
     })
+    if(!this.blurCtx) {
+      console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector blur canvas')
+    }
   }
 
   initCtx() {
@@ -187,6 +201,9 @@ export default class ProjectorWebGL {
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
+      } else {
+        console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
+        this.setWarning('Failed to create the WebGL ambient light\n(A possible workaround could be to turn off the "WebGL renderer" setting)', true)
       }
     }
     if(this.ctxIsInvalid) return

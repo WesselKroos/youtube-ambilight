@@ -645,7 +645,7 @@ export default class Ambilight {
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners)
+      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings.setWarning)
       : new Projector2d(this.projectorListElem, this.initProjectorListeners)
 
     this.initProjectorListeners()
@@ -1268,16 +1268,6 @@ export default class Ambilight {
     if (this.canvassesInvalidated) {
       this.canvassesInvalidated = false
       this.recreateProjectors()
-    }
-
-    if(this.settings.webGL) {
-      if(this.projector.lost || this.projectorBuffer.ctx?.lost) {
-        this.settings.setWarning('WebGL crashed multiple times!\nRefresh the webpage or disable the WebGL setting if it keeps on crashing.')
-        this.displayedSettingsWarning = true
-      } else if(this.displayedSettingsWarning) {
-        this.settings.setWarning('')
-        this.displayedSettingsWarning = false
-      }
     }
 
     if (this.sizesInvalidated) {

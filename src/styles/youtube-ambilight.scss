@@ -627,16 +627,33 @@ html[data-ambilight-enabled="true"] {
       content: 'AL';
       top: 15px;
       right: 6px;
+      height: auto;
+      width: auto;
+      background-image: none;
       padding: 2px 3px;
+      border-radius: 1.5px;
       font-family: Verdana,sans-serif;
       font-size: 10px;
       font-weight: bold;
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,0.6);
-      background-image: none;
-      border-radius: 1.5px;
-      height: auto;
-      width: auto;
+      pointer-events: none;
+    }
+  }
+
+  &.has-warning {
+    &:before {
+      pointer-events: none;
+      content: '';
+      position: absolute;
+      z-index: 1;
+      top: 9px;
+      left: 9px;
+      display: block;
+      width: 12px;
+      height: 12px;
+      background-size: contain;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='100' width='100'%3E%3Cpolygon points='50,0 0,90 100,90' class='triangle' fill='%23000000cc' /%3E%3Cpolygon points='48.5,3 3,85 94,85' class='triangle' fill='%23fc0' /%3E%3C/svg%3E");
     }
   }
   
