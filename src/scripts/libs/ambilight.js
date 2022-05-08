@@ -645,7 +645,7 @@ export default class Ambilight {
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings.setWarning)
+      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
       : new Projector2d(this.projectorListElem, this.initProjectorListeners)
 
     this.initProjectorListeners()

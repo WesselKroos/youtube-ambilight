@@ -79,7 +79,7 @@ export class WebGLContext {
 
   initCtx = () => {
     const ctxOptions = {
-      failIfMajorPerformanceCaveat: true,
+      failIfMajorPerformanceCaveat: false,
       preserveDrawingBuffer: false,
       alpha: false,
       depth: false,

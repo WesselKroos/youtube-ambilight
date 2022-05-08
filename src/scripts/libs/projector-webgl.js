@@ -6,10 +6,11 @@ export default class ProjectorWebGL {
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
 
-  constructor(containerElem, initProjectorListeners, setWarning) {
+  constructor(containerElem, initProjectorListeners, settings) {
     this.containerElem = containerElem
     this.initProjectorListeners = initProjectorListeners
-    this.setWarning = setWarning
+    this.settings = settings
+    this.setWarning = settings.setWarning
 
     this.initShadow()
     this.initBlurCtx()
@@ -184,6 +185,24 @@ export default class ProjectorWebGL {
     }
   }
 
+  majorPerformanceCaveatDetected() {
+    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
+    if(detected) return
+    
+    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25%)';
+    console.warn(`Ambient light for YouTube™ | ${message}`)
+    this.setWarning(message, true)
+    this.settings.set('resolution', 25, true)
+    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', true)
+  }
+
+  noMajorPerformanceCaveatDetected() {
+    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
+    if(!detected) return
+
+    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', false)
+  }
+
   initCtx() {
     const ctxOptions = {
       failIfMajorPerformanceCaveat: true,
@@ -197,13 +216,28 @@ export default class ProjectorWebGL {
     this.ctx = this.canvas.getContext('webgl2', ctxOptions);
     if(this.ctx) {
       this.webGLVersion = 2
+      this.noMajorPerformanceCaveatDetected()
     } else {
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
+        this.noMajorPerformanceCaveatDetected()
       } else {
-        console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
-        this.setWarning('Failed to create the WebGL ambient light\n(A possible workaround could be to turn off the "WebGL renderer" setting)', true)
+        ctxOptions.failIfMajorPerformanceCaveat = false
+        this.ctx = this.canvas.getContext('webgl2', ctxOptions);
+        if(this.ctx) {
+          this.webGLVersion = 2
+          this.majorPerformanceCaveatDetected()
+        } else {
+          this.ctx = this.canvas.getContext('webgl', ctxOptions);
+          if(this.ctx) {
+            this.webGLVersion = 1
+            this.majorPerformanceCaveatDetected()
+          } else {
+            console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
+            this.setWarning('Failed to create the WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+          }
+        }
       }
     }
     if(this.ctxIsInvalid) return
