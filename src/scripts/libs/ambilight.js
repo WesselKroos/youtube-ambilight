@@ -508,7 +508,7 @@ export default class Ambilight {
         
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
-          // classList.contains('unstarted-mode')  || // Unstarted is not hidden? Causes initial render without ambilight
+          classList.contains('unstarted-mode')  || // Autoplay disabled - Initial render without ambilight
           classList.contains('ytp-player-minimized')
         )
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
