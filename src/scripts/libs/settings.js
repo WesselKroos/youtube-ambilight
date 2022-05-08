@@ -1177,10 +1177,13 @@ export default class Settings {
     } else if (setting.type === 'list') {
       const rangeInput = $.s(`#setting-${name}-range`)
       if (rangeInput) {
-        rangeInput.value = this[name]
+        rangeInput.value = setting.valuePoints ? setting.valuePoints.indexOf(this[name]) : this[name]
         rangeInput.setAttribute('data-previous-value', rangeInput.value)
-        $.s(`#setting-${name}-value`).textContent = `${rangeInput.value}%`
-        $.s(`#setting-${name}-manualinput`).value = rangeInput.value
+        $.s(`#setting-${name}-value`).textContent = this.getSettingListDisplayText(setting)
+        const manualInput = $.s(`#setting-${name}-manualinput`)
+        if(manualInput) {
+          manualInput.value = rangeInput.value
+        }
       }
     }
   }
