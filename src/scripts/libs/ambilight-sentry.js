@@ -338,7 +338,8 @@ export default class AmbilightSentry {
             'projector.scale.x',
             'projector.scale.y',
             'projector.lostCount',
-            'projector.majorPerformanceCaveatDetected'
+            'projector.majorPerformanceCaveatDetected',
+            'settings.webGLExperiment'
           ]
           keys.forEach(key => {
             try {

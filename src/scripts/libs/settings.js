@@ -486,9 +486,10 @@ export default class Settings {
     })
 
     this.getAll()
+    this.initWebGLExperiment()
 
     this.config = this.config.map(setting => {
-        if(setting.name === 'webGL') {
+      if(setting.name === 'webGL') {
         if(!supportsWebGL()) {
           this.webGL = undefined
           return undefined
@@ -502,6 +503,24 @@ export default class Settings {
     }).filter(setting => setting)
 
     this.initMenu()
+  }
+
+  initWebGLExperiment() {
+    this.webGLExperiment = this.getStorageEntry('webGL-experiment')
+    if(this.webGLExperiment !== null) return
+
+    let newUser = false
+    try {
+      newUser = !Object.entries(localStorage).some(entry => entry[0].indexOf('ambilight-') === 0)
+    } catch {
+      newUser = true
+    }
+
+    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .8)
+    this.saveStorageEntry('webGL-experiment', this.webGLExperiment)
+    if(!this.webGLExperiment || this.webGL) return
+
+    this.set('webGL', true)
   }
   
   getAll() {
