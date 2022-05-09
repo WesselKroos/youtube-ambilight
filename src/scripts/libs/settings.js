@@ -1217,12 +1217,19 @@ export default class Settings {
     return value
   }
 
+  logLocalStorageWarningOnce(...args) {
+    if(this.loggedLocalStorageWarning) return
+
+    console.warn(...args)
+    this.loggedLocalStorageWarning = true
+  }
+
   getStorageEntry(name) {
     let value = null
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | getSetting', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
     return value
   }
@@ -1243,7 +1250,7 @@ export default class Settings {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
   }
 
@@ -1258,7 +1265,7 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
   }
 
