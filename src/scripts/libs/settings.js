@@ -488,8 +488,8 @@ export default class Settings {
     this.getAll()
 
     this.config = this.config.map(setting => {
-      if(!supportsWebGL()) {
         if(setting.name === 'webGL') {
+        if(!supportsWebGL()) {
           this.webGL = undefined
           return undefined
         }

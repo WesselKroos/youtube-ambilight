@@ -1041,7 +1041,7 @@ export default class Ambilight {
 
     let pScale;
     if(this.settings.webGL) {
-      const pMinSize = (this.settings.resolution / 100) * ((this.settings.blur >= 20)
+      const pMinSize = ((this.settings.resolution || 25) / 100) * ((this.settings.blur >= 20)
         ? 128
         : ((this.settings.blur >= 10)
           ? 192
@@ -1067,7 +1067,7 @@ export default class Ambilight {
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : (this.settings.resolution / 100)
+        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : ((this.settings.resolution || 25) / 100)
         const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
