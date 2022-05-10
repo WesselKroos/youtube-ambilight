@@ -2106,17 +2106,20 @@ export default class Ambilight {
 
   updateTheme = wrapErrorHandler(function updateTheme() {
     const toDark = this.shouldbeDarkTheme()
-      if (
-        !!html.getAttribute('dark') === toDark ||
-        (toDark && !isWatchPageUrl())
-      ) return
+    if (
+      !!html.getAttribute('dark') === toDark ||
+      (toDark && !isWatchPageUrl())
+    ) return
 
-      this.toggleDarkTheme()
+    this.toggleDarkTheme()
   }.bind(this), true)
 
   toggleDarkTheme() {
-    const wasDark = !!html.getAttribute('dark')
+    if(this.darkThemeValidationTimeout) {
+      clearTimeout(this.darkThemeValidationTimeout)
+    }
 
+    const wasDark = !!html.getAttribute('dark')
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
@@ -2132,13 +2135,15 @@ export default class Ambilight {
       detail,
       returnValue: true
     })
-
     this.ytdAppElem.dispatchEvent(event)
-    const isDark = !!html.getAttribute('dark')
-    if (wasDark === isDark) {
-      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark to light' : 'light to dark'} mode`)
-      return
-    }
+
+    this.darkThemeValidationTimeout = setTimeout(() => {
+      this.darkThemeValidationTimeout = undefined
+      const isDark = !!html.getAttribute('dark')
+      if (wasDark !== isDark) return
+      
+      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
+    }, 0)
   }
 
   updateLiveChatTheme() {
