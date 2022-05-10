@@ -508,7 +508,7 @@ export default class Ambilight {
         
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
-          // classList.contains('unstarted-mode')  || // Unstarted is not hidden? Causes initial render without ambilight
+          classList.contains('unstarted-mode')  || // Autoplay disabled - Initial render without ambilight
           classList.contains('ytp-player-minimized')
         )
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
@@ -645,7 +645,7 @@ export default class Ambilight {
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners)
+      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
       : new Projector2d(this.projectorListElem, this.initProjectorListeners)
 
     this.initProjectorListeners()
@@ -829,8 +829,10 @@ export default class Ambilight {
   }
 
   recreateProjectors() {
-    const levels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
-    this.projector.recreate(levels)
+    this.levels = Math.max(2, Math.round((this.settings.spread / this.settings.edge)) + this.innerStrength + 1)
+    if(this.projector.recreate) {
+      this.projector.recreate(this.levels)
+    }
   }
 
   clear() {
@@ -1039,10 +1041,10 @@ export default class Ambilight {
 
     let pScale;
     if(this.settings.webGL) {
-      const pMinSize = (this.settings.resolution / 100) * ((this.settings.blur >= 20)
-        ? 64
+      const pMinSize = ((this.settings.resolution || 25) / 100) * ((this.settings.blur >= 20)
+        ? 128
         : ((this.settings.blur >= 10)
-          ? 128
+          ? 192
           : 256
         ))
       pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
@@ -1065,7 +1067,7 @@ export default class Ambilight {
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : (this.settings.resolution / 100)
+        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : ((this.settings.resolution || 25) / 100)
         const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
@@ -1234,7 +1236,7 @@ export default class Ambilight {
 
     const scaleStep = this.settings.edge / 100
     const scales = []
-    for (let i = 0; i < this.projector.levels; i++) {
+    for (let i = 0; i < this.levels; i++) {
       const pos = i - this.innerStrength
       let scaleX = 1
       let scaleY = 1
@@ -1266,16 +1268,6 @@ export default class Ambilight {
     if (this.canvassesInvalidated) {
       this.canvassesInvalidated = false
       this.recreateProjectors()
-    }
-
-    if(this.settings.webGL) {
-      if(this.projector.lost || this.projectorBuffer.ctx?.lost) {
-        this.settings.setWarning('WebGL crashed multiple times!\nRefresh the webpage or disable the WebGL setting if it keeps on crashing.')
-        this.displayedSettingsWarning = true
-      } else if(this.displayedSettingsWarning) {
-        this.settings.setWarning('')
-        this.displayedSettingsWarning = false
-      }
     }
 
     if (this.sizesInvalidated) {
@@ -2114,17 +2106,20 @@ export default class Ambilight {
 
   updateTheme = wrapErrorHandler(function updateTheme() {
     const toDark = this.shouldbeDarkTheme()
-      if (
-        !!html.getAttribute('dark') === toDark ||
-        (toDark && !isWatchPageUrl())
-      ) return
+    if (
+      !!html.getAttribute('dark') === toDark ||
+      (toDark && !isWatchPageUrl())
+    ) return
 
-      this.toggleDarkTheme()
+    this.toggleDarkTheme()
   }.bind(this), true)
 
   toggleDarkTheme() {
-    const wasDark = !!html.getAttribute('dark')
+    if(this.darkThemeValidationTimeout) {
+      clearTimeout(this.darkThemeValidationTimeout)
+    }
 
+    const wasDark = !!html.getAttribute('dark')
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
@@ -2140,13 +2135,15 @@ export default class Ambilight {
       detail,
       returnValue: true
     })
-
     this.ytdAppElem.dispatchEvent(event)
-    const isDark = !!html.getAttribute('dark')
-    if (wasDark === isDark) {
-      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark to light' : 'light to dark'} mode`)
-      return
-    }
+
+    this.darkThemeValidationTimeout = setTimeout(() => {
+      this.darkThemeValidationTimeout = undefined
+      const isDark = !!html.getAttribute('dark')
+      if (wasDark !== isDark) return
+      
+      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
+    }, 0)
   }
 
   updateLiveChatTheme() {
@@ -2155,7 +2152,7 @@ export default class Ambilight {
 
     const toDark = this.shouldbeDarkTheme()
     liveChat.postToContentWindow({
-      "yt-live-chat-set-dark-theme": toDark
+      'yt-live-chat-set-dark-theme': toDark
     })
   }
 

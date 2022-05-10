@@ -75,7 +75,7 @@ export default class Settings {
       default: 100,
       unit: '%',
       valuePoints: (() => {
-        const points = [25];
+        const points = [6.25];
         while(points[points.length - 1] < 400) {
           points.push(points[points.length - 1] * 2);
         }
@@ -486,10 +486,11 @@ export default class Settings {
     })
 
     this.getAll()
+    this.initWebGLExperiment()
 
     this.config = this.config.map(setting => {
-      if(!supportsWebGL()) {
-        if(setting.name === 'webGL') {
+      if(setting.name === 'webGL') {
+        if(!supportsWebGL()) {
           this.webGL = undefined
           return undefined
         }
@@ -502,6 +503,24 @@ export default class Settings {
     }).filter(setting => setting)
 
     this.initMenu()
+  }
+
+  initWebGLExperiment() {
+    this.webGLExperiment = this.getStorageEntry('webGL-experiment')
+    if(this.webGLExperiment !== null) return
+
+    let newUser = false
+    try {
+      newUser = !Object.entries(localStorage).some(entry => entry[0].indexOf('ambilight-') === 0)
+    } catch {
+      newUser = true
+    }
+
+    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .9)
+    this.saveStorageEntry('webGL-experiment', this.webGLExperiment)
+    if(!this.webGLExperiment || this.webGL) return
+
+    this.set('webGL', true)
   }
   
   getAll() {
@@ -1177,10 +1196,13 @@ export default class Settings {
     } else if (setting.type === 'list') {
       const rangeInput = $.s(`#setting-${name}-range`)
       if (rangeInput) {
-        rangeInput.value = this[name]
+        rangeInput.value = setting.valuePoints ? setting.valuePoints.indexOf(this[name]) : this[name]
         rangeInput.setAttribute('data-previous-value', rangeInput.value)
-        $.s(`#setting-${name}-value`).textContent = `${rangeInput.value}%`
-        $.s(`#setting-${name}-manualinput`).value = rangeInput.value
+        $.s(`#setting-${name}-value`).textContent = this.getSettingListDisplayText(setting)
+        const manualInput = $.s(`#setting-${name}-manualinput`)
+        if(manualInput) {
+          manualInput.value = rangeInput.value
+        }
       }
     }
   }
@@ -1214,12 +1236,19 @@ export default class Settings {
     return value
   }
 
+  logLocalStorageWarningOnce(...args) {
+    if(this.loggedLocalStorageWarning) return
+
+    console.warn(...args)
+    this.loggedLocalStorageWarning = true
+  }
+
   getStorageEntry(name) {
     let value = null
     try {
       value = localStorage.getItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | getSetting', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
     return value
   }
@@ -1240,7 +1269,7 @@ export default class Settings {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | removeStorageEntry', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
   }
 
@@ -1255,7 +1284,7 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      console.warn('Ambient light for YouTube™ | flushPendingStorageEntries', ex.message)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
   }
 
@@ -1298,8 +1327,12 @@ export default class Settings {
     }
   }
 
-  setWarning(message) {
+  setWarning = (message, optional = false) => {
+    if(optional && this.warningElem.textContent.length) return
+
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
+    
+    this.menuBtn.classList.toggle('has-warning', !!message)
   }
 }

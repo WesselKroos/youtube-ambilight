@@ -1,4 +1,4 @@
-import { wrapErrorHandler } from "./generic";
+import { wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
   constructor(width, height) {
@@ -46,7 +46,7 @@ export class WebGLContext {
 
   constructor(canvas, type, options = {}) {
     this.canvas = canvas;
-    this.canvas.addEventListener("webglcontextlost", wrapErrorHandler((event) => {
+    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler((event) => {
       event.preventDefault();
       this.lost = true
       this.lostCount++
@@ -55,7 +55,7 @@ export class WebGLContext {
       this.scaleY = undefined
       console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
     }), false);
-    this.canvas.addEventListener("webglcontextrestored", wrapErrorHandler(() => {
+    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
       console.error(`Ambient light for YouTube™ | Canvas ctx restoring (${this.lostCount})`)
       if(this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
@@ -69,6 +69,9 @@ export class WebGLContext {
         console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
       }
     }), false);
+    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler((e) => {
+      throw new Error(`WebGLCanvas webglcontextcreationerror: ${e.statusMessage || 'Unknown'}`);
+    }), false);
 
     this.options = options;
     this.initCtx(options);
@@ -76,7 +79,7 @@ export class WebGLContext {
 
   initCtx = () => {
     const ctxOptions = {
-      failIfMajorPerformanceCaveat: true,
+      failIfMajorPerformanceCaveat: false,
       preserveDrawingBuffer: false,
       alpha: false,
       depth: false,
@@ -91,6 +94,8 @@ export class WebGLContext {
       this.ctx = this.canvas.getContext('webgl', ctxOptions);
       if(this.ctx) {
         this.webGLVersion = 1
+      } else {
+        console.error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
       }
     }
     if(this.ctxIsInvalid) return
@@ -181,11 +186,20 @@ export class WebGLContext {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 32);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    }
+    const tfaExt = (
+      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+    );
+    if(tfaExt) {
+      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
   }
 
