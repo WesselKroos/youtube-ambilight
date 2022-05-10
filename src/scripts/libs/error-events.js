@@ -29,8 +29,8 @@ export default class ErrorEvents {
 
   send = () => {
     const lastEvent = this.list[this.list.length - 1]
-    const lastTime = lastEvent.lastTime || lastEvent.time
-    const firstTime = this.list[0].time
+    const lastTime = lastEvent.time
+    const firstTime =  this.list[0].firstTime || this.list[0].time
     if(lastTime - firstTime < 10) {
       return // Give the site 10 seconds to load the watch page or move the video element
     }
@@ -49,7 +49,7 @@ export default class ErrorEvents {
       const {
         count: lastCount,
         time: lastTime,
-        endTime: lastEndTime,
+        firstTime,
         type: lastType,
         ...lastDetails
       } = last
@@ -59,7 +59,8 @@ export default class ErrorEvents {
         JSON.stringify(lastDetails) === JSON.stringify(details)
       ) {
         last.count = last.count ? last.count + 1 : 2
-        last.endTime = time
+        last.time = time
+        last.firstTime = firstTime || lastTime
         return
       }
     }
