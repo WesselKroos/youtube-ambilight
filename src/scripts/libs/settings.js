@@ -516,7 +516,7 @@ export default class Settings {
       newUser = true
     }
 
-    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .8)
+    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .9)
     this.saveStorageEntry('webGL-experiment', this.webGLExperiment)
     if(!this.webGLExperiment || this.webGL) return
 
