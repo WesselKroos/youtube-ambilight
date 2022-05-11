@@ -96,6 +96,8 @@ const client = new BrowserClient({
   defaultIntegrations: false,
   release: html.getAttribute('data-ambilight-version') || '?',
   attachStacktrace: true,
+  maxValueLength: 500,
+  normalizeDepth: 4,
   beforeSend: (event) => {
     try {
       event.request = {

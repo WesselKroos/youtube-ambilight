@@ -53,10 +53,9 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
-      console.error(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
+      console.warn(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
     }), false);
     this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
-      console.error(`Ambient light for YouTube™ | Canvas ctx restoring (${this.lostCount})`)
       if(this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
         return
@@ -64,7 +63,7 @@ export class WebGLContext {
       this.initCtx()
       if(this.ctx && !this.ctx.isContextLost()) {
         this.lost = false
-        console.error(`Ambient light for YouTube™ | Canvas ctx restored (${this.lostCount})`)
+        this.lostCount = 0
       } else {
         console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
       }
@@ -78,26 +77,29 @@ export class WebGLContext {
   }
 
   initCtx = () => {
-    const ctxOptions = {
-      failIfMajorPerformanceCaveat: false,
-      preserveDrawingBuffer: false,
-      alpha: false,
-      depth: false,
-      antialias: false,
-      desynchronized: true,
-      ...this.options
-    }
-    this.ctx = this.canvas.getContext('webgl2', ctxOptions);
-    if(this.ctx) {
-      this.webGLVersion = 2
-    } else {
-      this.ctx = this.canvas.getContext('webgl', ctxOptions);
+    if(!this.ctx) {
+      const ctxOptions = {
+        failIfMajorPerformanceCaveat: false,
+        preserveDrawingBuffer: false,
+        alpha: false,
+        depth: false,
+        antialias: false,
+        desynchronized: true,
+        ...this.options
+      }
+      this.ctx = this.canvas.getContext('webgl2', ctxOptions);
       if(this.ctx) {
-        this.webGLVersion = 1
+        this.webGLVersion = 2
       } else {
-        console.error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
+        this.ctx = this.canvas.getContext('webgl', ctxOptions);
+        if(this.ctx) {
+          this.webGLVersion = 1
+        } else {
+          console.error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
+        }
       }
     }
+    
     if(this.ctxIsInvalid) return
 
     // Shaders
