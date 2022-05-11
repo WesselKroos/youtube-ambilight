@@ -195,3 +195,5 @@ export const supportsWebGL = () => {
   }
   return _supportsWebGL
 }
+
+export const isWatchPageUrl = () => (location.pathname === '/watch')

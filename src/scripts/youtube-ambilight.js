@@ -1,6 +1,5 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler } from './libs/generic'
+import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl } from './libs/generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError } from './libs/ambilight-sentry'
-import { isWatchPageUrl } from './libs/utils'
 import ErrorEvents from './libs/error-events'
 import Ambilight from './libs/ambilight'
 

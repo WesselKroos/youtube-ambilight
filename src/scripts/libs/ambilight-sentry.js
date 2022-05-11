@@ -90,11 +90,13 @@ export class AmbilightError extends Error {
   }
 }
 
+const version = document.currentScript.getAttribute('data-version') || ''
+
 const client = new BrowserClient({
   enabled: true,
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
   defaultIntegrations: false,
-  release: html.getAttribute('data-ambilight-version') || '?',
+  release: version,
   attachStacktrace: true,
   maxValueLength: 500,
   normalizeDepth: 4,
