@@ -680,7 +680,7 @@ export default class Ambilight {
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
     const projectorsBufferElem =  this.settings.webGL
-      ? new WebGLOffscreenCanvas(1, 1)
+      ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
       : new SafeOffscreenCanvas(1, 1, true)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)

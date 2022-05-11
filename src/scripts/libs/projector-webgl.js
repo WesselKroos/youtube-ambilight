@@ -1,3 +1,4 @@
+import AmbilightSentry from './ambilight-sentry'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import ProjectorShadow from './projector-shadow'
 
@@ -14,7 +15,14 @@ export default class ProjectorWebGL {
 
     this.initShadow()
     this.initBlurCtx()
-    this.initCtx()
+    try {
+      this.initCtx()
+    } catch(ex) {
+      this.setWarning('Failed to create a WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      this.ctx = undefined
+      return
+    }
     this.handlePageVisibility()
   }
 
@@ -33,10 +41,11 @@ export default class ProjectorWebGL {
     }
     this.isPageHidden = isPageHidden
 
+    if(!this.ctx) return
+
     if(!this.ctxLose) {
       this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
     }
-    if(!this.ctx) return
 
     const ctxLost = this.ctx.isContextLost()
     if(this.isPageHidden && !ctxLost) {
@@ -90,7 +99,6 @@ export default class ProjectorWebGL {
   })
 
   onBlurCtxRestored = wrapErrorHandler(() => {
-    console.log(`Ambient light for YouTube™ | Projector blurCtx restoring (${this.lostCount})`)
     if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | Projector blurCtx crashed 3 times. Stopped restoring WebGL.')
       return
@@ -99,7 +107,6 @@ export default class ProjectorWebGL {
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
       this.initProjectorListeners()
       this.lost = false
-      console.log(`Ambient light for YouTube™ | Projector blurCtx restored (${this.lostCount})`)
     } else {
       console.warn(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
     }
@@ -125,7 +132,7 @@ export default class ProjectorWebGL {
       desynchronized: true
     })
     if(!this.blurCtx) {
-      console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector blur canvas')
+      throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the projector blur canvas')
     }
   }
 
@@ -253,8 +260,8 @@ export default class ProjectorWebGL {
               this.webGLVersion = 1
               this.majorPerformanceCaveatDetected()
             } else {
-              console.error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
               this.setWarning('Failed to create the WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+              throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
             }
           }
         }
@@ -319,7 +326,7 @@ export default class ProjectorWebGL {
     this.ctx.shaderSource(vertexShader, vertexShaderSrc);
     this.ctx.compileShader(vertexShader);
     if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`vertexShader: ${this.ctx.getShaderInfoLog(vertexShader)}`);
+      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`);
     }
     this.ctx.attachShader(this.program, vertexShader);
     
@@ -358,18 +365,18 @@ export default class ProjectorWebGL {
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
     if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`fragmentShader: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
     }
     this.ctx.attachShader(this.program, fragmentShader);
     
     // Program
     this.ctx.linkProgram(this.program);
     if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-      throw new Error(`program: ${this.ctx.getProgramInfoLog(this.program)}`);
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
     }
     this.ctx.validateProgram(this.program);
     if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`program: ${this.ctx.getProgramInfoLog(this.program)}`);
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
     }
     this.ctx.useProgram(this.program);
 

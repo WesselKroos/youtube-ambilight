@@ -186,9 +186,10 @@ export const supportsWebGL = () => {
   if(_supportsWebGL === undefined) {
     try {
       _supportsWebGL = (
-        !!window.WebGLRenderingContext &&
-        !!document.createElement('canvas')?.getContext('webgl')
-      )
+        !!window.WebGLRenderingContext && (
+          !!document.createElement('canvas')?.getContext('webgl') ||
+          !!document.createElement('canvas')?.getContext('webgl2')
+      ))
     } catch {
       _supportsWebGL = false
     }
