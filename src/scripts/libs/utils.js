@@ -11,34 +11,37 @@ export const getOS = () => {
     ]
     var ua = window.navigator.userAgent
     var os = list.find(os => (ua.toLowerCase().indexOf(os.match) >= 0))
-    return (os) ? os.name : ua
+    return (os) ? os.name : ''
   } catch (ex) {
     return null
   }
 }
+
+const browsersUAList = [
+  { ua: 'Firefox', name: 'Firefox' },
+  { ua: 'OPR', name: 'Opera' },
+  { ua: 'Edg', name: 'Edge' },
+  { ua: 'Chrome', name: 'Chrome' }
+]
 
 export const getBrowser = () => {
   try {
-    const list = [
-      { match: 'Firefox', name: 'Firefox' },
-      { match: 'OPR', name: 'Opera' },
-      { match: 'Edg', name: 'Edge' },
-      { match: 'Chrome', name: 'Chrome' }
-    ]
     var ua = window.navigator.userAgent
-    var browser = list.find(browser => (ua.indexOf(browser.match) >= 0))
-    return (browser) ? browser.name : ua
+    var browser = browsersUAList.find(browser => (ua.indexOf(browser.ua) >= 0))
+    return (browser) ? browser.name : ''
   } catch (ex) {
     return null
   }
 }
 
-export const getVersion = () => {
+export const getBrowserVersion = () => {
   try {
-    return (chrome.runtime.getManifest() || {}).version
+    var browserName = getBrowser()
+    var browserUA = browsersUAList.find(browser => browserName === browser.name).ua
+    var ua = window.navigator.userAgent
+    var matches = ua.match(`${browserUA}\/([0-9.]+)`)
+    return (matches.length === 2) ? matches[1] : ua
   } catch (ex) {
     return null
   }
 }
-
-export const isWatchPageUrl = () => (location.pathname === '/watch')

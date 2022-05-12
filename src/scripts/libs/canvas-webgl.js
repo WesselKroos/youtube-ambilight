@@ -1,3 +1,4 @@
+import AmbilightSentry from './ambilight-sentry';
 import { wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
@@ -19,7 +20,8 @@ export class WebGLCanvas {
 }
 
 export class WebGLOffscreenCanvas {
-  constructor(width, height) {
+  constructor(width, height, setWarning) {
+    this.setWarning = setWarning
     if(typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -29,9 +31,9 @@ export class WebGLOffscreenCanvas {
     }
     
     this.canvas._getContext = this.canvas.getContext;
-    this.canvas.getContext = (type, options) => {
+    this.canvas.getContext = (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = new WebGLContext(this.canvas, type, options, this.setWarning);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -44,7 +46,8 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   lostCount = 0
 
-  constructor(canvas, type, options = {}) {
+  constructor(canvas, type, options, setWarning) {
+    this.setWarning = setWarning;
     this.canvas = canvas;
     this.canvas.addEventListener('webglcontextlost', wrapErrorHandler((event) => {
       event.preventDefault();
@@ -73,7 +76,13 @@ export class WebGLContext {
     }), false);
 
     this.options = options;
-    this.initCtx(options);
+    try {
+      this.initCtx(options);
+    } catch(ex) {
+      this.setWarning('Failed to create the WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      this.ctx = undefined
+    }
   }
 
   initCtx = () => {
@@ -95,7 +104,7 @@ export class WebGLContext {
         if(this.ctx) {
           this.webGLVersion = 1
         } else {
-          console.error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
+          throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
         }
       }
     }
@@ -130,12 +139,10 @@ export class WebGLContext {
     this.ctx.compileShader(vertexShader);
     this.ctx.compileShader(fragmentShader);
     if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      console.error('vertexShader', this.ctx.getShaderInfoLog(vertexShader));
-      return;
+      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
     }
     if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      console.error('fragmentShader', this.ctx.getShaderInfoLog(fragmentShader));
-      return;
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
     }
 
     // Program
@@ -144,13 +151,11 @@ export class WebGLContext {
     this.ctx.attachShader(program, fragmentShader);
     this.ctx.linkProgram(program);
     if (!this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)) {
-      console.error('program', this.ctx.getProgramInfoLog(program));
-      return;
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
     }
     this.ctx.validateProgram(program);
-    if( !this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)) {
-      console.error('program', this.ctx.getProgramInfoLog(program));
-      return;
+    if(!this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
     }
     this.ctx.useProgram(program);
 

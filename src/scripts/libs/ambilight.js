@@ -1,7 +1,6 @@
-import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler } from './generic'
+import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
-import { isWatchPageUrl } from './utils'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
@@ -16,6 +15,8 @@ const VIEW_POPUP = 'VIEW_POPUP'
 const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
 const THEME_DARK = 1
+
+const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 
 export default class Ambilight {
   horizontalBarDetection = new HorizontalBarDetection()
@@ -67,7 +68,6 @@ export default class Ambilight {
     this.detectMozillaBug1606251Workaround()
     this.detectChromiumBug1092080Workaround()
 
-    this.initFeedbackLink()
     this.initSettings()
     this.detectChromiumBug1123708Workaround()
 
@@ -680,7 +680,7 @@ export default class Ambilight {
     this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
 
     const projectorsBufferElem =  this.settings.webGL
-      ? new WebGLOffscreenCanvas(1, 1)
+      ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
       : new SafeOffscreenCanvas(1, 1, true)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
@@ -819,13 +819,6 @@ export default class Ambilight {
     setTimeout(() => {
       this.settings.set('horizontalBarsClipPercentage', percentage, true)
     }, 1)
-  }
-
-  initFeedbackLink() {
-    const version = html.getAttribute('data-ambilight-version') || ''
-    const os = html.getAttribute('data-ambilight-os') || ''
-    const browser = html.getAttribute('data-ambilight-browser') || ''
-    this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}`
   }
 
   recreateProjectors() {
@@ -1197,7 +1190,6 @@ export default class Ambilight {
 
 
     // Debanding
-    const baseurl = html.getAttribute('data-ambilight-baseurl') || ''
     const debandingStrength = parseFloat(this.settings.debandingStrength)
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
@@ -1205,7 +1197,7 @@ export default class Ambilight {
     document.body.style.setProperty('--ambilight-debanding-content', 
       debandingStrength ? `''` : '')
     document.body.style.setProperty('--ambilight-debanding-background', 
-      debandingStrength ? `url('${baseurl}images/noise-${noiseImageIndex}.png')` : '')
+      debandingStrength ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')` : '')
     document.body.style.setProperty('--ambilight-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
   }
