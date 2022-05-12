@@ -256,14 +256,6 @@ export default class AmbilightSentry {
       setExtra('Page', pageExtra)
 
       try {
-        if (!navigator.doNotTrack) {
-          setExtra('Video ID', $.s('ytd-watch-flexy').attributes['video-id']?.value)
-        }
-      } catch (ex) {
-        setExtra('Video ID (exception)', ex)
-      }
-
-      try {
         setExtra('Video elements', $.sa('video').length)
       } catch (ex) { 
         setExtra('Video elements (exception)', ex)
