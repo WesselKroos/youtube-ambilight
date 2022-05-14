@@ -285,7 +285,7 @@ export class HorizontalBarDetection {
       this.worker = workerFromCode(workerCode)
       this.worker.onmessage = (e) => {
         if(e.data.id !== -1) {
-          console.warn('Ignoring old worker message:', e.data)
+          console.warn('Ambient light for YouTube™ | Ignoring old worker message:', e.data)
           return
         }
         if(e.data.error) {
@@ -348,7 +348,7 @@ export class HorizontalBarDetection {
               this.run !== run || 
               e.data.id !== this.workerMessageId
             ) {
-              console.warn('Ignoring old percentage:', e.data.id, e.data.percentage)
+              console.warn('Ambient light for YouTube™ | Ignoring old percentage:', e.data.id, e.data.percentage)
               return
             }
             if(e.data.error) {

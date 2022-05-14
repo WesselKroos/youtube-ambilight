@@ -1,5 +1,5 @@
 import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString } from './ambilight-sentry'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
 import { HorizontalBarDetection } from './horizontal-bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
@@ -697,6 +697,7 @@ export default class Ambilight {
 
   initSettings() {
     this.settings = new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
+    parseSettingsToSentry(this.settings)
   }
 
   initFPSListElem() {
@@ -832,9 +833,10 @@ export default class Ambilight {
     this.horizontalBarDetection.clear()
 
     // Clear canvasses
-    const canvasses = [
-      ...this.projector.projectors
-    ]
+    const canvasses = []
+    if(this.projector?.projectors?.length) {
+      canvasses.push(...this.projector.projectors)
+    }
     if(this.previousProjectorBuffer) {
       canvasses.push(this.previousProjectorBuffer)
       canvasses.push(this.blendedProjectorBuffer)

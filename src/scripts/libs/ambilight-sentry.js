@@ -82,6 +82,11 @@ export const getSelectorTreeString = (selector) => {
   return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
 }
 
+let settings;
+export const parseSettingsToSentry = (newSettings) => {
+  settings = newSettings
+}
+
 export class AmbilightError extends Error {
   constructor(message, details) {
     super(message)
@@ -199,10 +204,10 @@ export default class AmbilightSentry {
 
       try {
         if(ex && ex.details) {
-          setExtra('YTA Exception details', ex.details)
+          setExtra('Details', ex.details)
         }
       } catch (ex) {
-        setExtra('YTA Exception details (exception)', ex)
+        setExtra('Details (exception)', ex)
       }
 
       try {
@@ -334,8 +339,7 @@ export default class AmbilightSentry {
             'projector.scale.x',
             'projector.scale.y',
             'projector.lostCount',
-            'projector.majorPerformanceCaveatDetected',
-            'settings.webGLExperiment'
+            'projector.majorPerformanceCaveatDetected'
           ]
           keys.forEach(key => {
             try {
@@ -351,15 +355,15 @@ export default class AmbilightSentry {
       }
 
       try {
-        if (typeof ambilight !== 'undefined') {
-          // settings
+        if (settings) {
           const settingsExtra = {}
-          ;(ambilight.settings?.config || []).forEach(setting => {
+          ;(settings?.config || []).forEach(setting => {
             if (!setting || !setting.name) return
-            settingsExtra[setting.name] = ambilight.settings[setting.name]
+            settingsExtra[setting.name] = settings[setting.name]
             if (!setting.key) return
             settingsExtra[`${setting.name}-key`] = setting.key
           })
+          settingsExtra.webGLExperiment = settings.webGLExperiment
           setExtra('Settings', settingsExtra)
         }
       } catch (ex) { 

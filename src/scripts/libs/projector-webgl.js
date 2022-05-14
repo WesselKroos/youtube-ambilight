@@ -1,4 +1,4 @@
-import AmbilightSentry from './ambilight-sentry'
+import AmbilightSentry, { AmbilightError } from './ambilight-sentry'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import ProjectorShadow from './projector-shadow'
 
@@ -18,7 +18,7 @@ export default class ProjectorWebGL {
     try {
       this.initCtx()
     } catch(ex) {
-      this.setWarning('Failed to create a WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+      this.setWebGLWarning('create', false)
       AmbilightSentry.captureExceptionWithDetails(ex)
       this.ctx = undefined
       return
@@ -90,25 +90,33 @@ export default class ProjectorWebGL {
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
   }
 
+  setWebGLWarning(action = 'restore', reloadTip = true) {
+    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
+  }
+
   onBlurCtxLost = wrapErrorHandler((event) => {
     event.preventDefault();
     this.lost = true
     this.lostCount++
     this.invalidateShaderCache()
-    console.warn(`Ambient light for YouTube™ | Projector blurCtx lost (${this.lostCount})`)
+    console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
+    this.setWebGLWarning('restore')
   })
 
   onBlurCtxRestored = wrapErrorHandler(() => {
     if(this.lostCount >= 3) {
-      console.error('Ambient light for YouTube™ | Projector blurCtx crashed 3 times. Stopped restoring WebGL.')
+      console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
+      this.setWebGLWarning('3 times restore')
       return
     }
     this.initBlurCtx()
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
       this.initProjectorListeners()
       this.lost = false
+      this.setWarning('')
     } else {
-      console.warn(`Ambient light for YouTube™ | Projector blurCtx restore failed (${this.lostCount})`)
+      console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
+      this.setWebGLWarning('restore')
     }
   })
 
@@ -132,7 +140,7 @@ export default class ProjectorWebGL {
       desynchronized: true
     })
     if(!this.blurCtx) {
-      throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the projector blur canvas')
+      throw new Error('ProjectorWebGL blur context creation failed')
     }
   }
 
@@ -141,8 +149,8 @@ export default class ProjectorWebGL {
     const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
     if(detected) return
     
-    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25%)';
-    console.warn(`Ambient light for YouTube™ | ${message}`)
+    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
+    console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
     this.settings.saveStorageEntry('majorPerformanceCaveatDetected', true)
@@ -159,8 +167,8 @@ export default class ProjectorWebGL {
   onCtxLost = wrapErrorHandler(function onCtxLost(event) {
     event.preventDefault();
     if(!this.isControlledLose) {
-      console.warn('Ambient light for YouTube™ | Projector ctx lost')
-      this.setWarning('Browser forcefully destroyed the WebGL ambient light.\n(A possible workaround could be to turn off the "WebGL renderer" setting)')
+      console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
+      this.setWebGLWarning('restore')
     }
     this.invalidateShaderCache()
     this.lost = true
@@ -174,8 +182,8 @@ export default class ProjectorWebGL {
 
   onCtxRestored = wrapErrorHandler(function onCtxRestored() {
     if(!this.isControlledLose && this.lostCount >= 3) {
-      console.error('Ambient light for YouTube™ | Projector ctx crashed 3 times. Stopped restoring WebGL.')
-      this.setWarning('Browser forcefully destroyed WebGL ambient light 3 times in a row. Reload the page to reload Ambient light. \n(Another possible workaround could be to turn off the "WebGL renderer" setting)')
+      console.error('Ambient light for YouTube™ | ProjectorWebGL context restore failed 3 times')
+      this.setWebGLWarning('3 times restore')
       return
     }
     this.initCtx()
@@ -195,8 +203,9 @@ export default class ProjectorWebGL {
       }
     } else {
       if(!this.isControlledLose) {
-        console.warn(`Ambient light for YouTube™ | Projector ctx restore failed (${this.lostCount})`)
-        this.setWarning('Failed to restore WebGL ambient light.\n(A possible workaround could be to turn off the "WebGL renderer" setting)')
+        console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restore failed (${this.lostCount})`)
+        this.setWebGLWarning('restore')
+        return
       }
     }
     if(this.handleRestored) {
@@ -205,11 +214,14 @@ export default class ProjectorWebGL {
     this.isControlledLose = false
   }.bind(this))
 
+  webglcontextcreationerrors = []
   onCtxCreationError = wrapErrorHandler(function onCtxCreationError(e) {
-    this.setWarning(`Failed to create the WebGL ambient light: ${e.statusMessage || 'Reason unknown'}.\n(A possible workaround could be to turn off the "WebGL renderer" setting)`)
-    if(e.statusMessage.indexOf('WebGL is currently disabled') !== -1) return
-
-    throw new Error(`ProjectorWebGL webglcontextcreationerror: ${e.statusMessage || 'Reason unknown'}`);
+    this.webglcontextcreationerrors.push({
+      failIfMajorPerformanceCaveat: this.ctxOptions.failIfMajorPerformanceCaveat,
+      message: e.statusMessage || '?',
+      time: performance.now(),
+      webGLVersion: this.webGLVersion
+    })
   }.bind(this))
 
   initCtx() {
@@ -222,14 +234,16 @@ export default class ProjectorWebGL {
     }
 
     if(!this.canvas) {
-      this.canvas = new SafeOffscreenCanvas(1, 1);
-      this.canvas.addEventListener('webglcontextlost', this.onCtxLost, false);
-      this.canvas.addEventListener('webglcontextrestored', this.onCtxRestored, false);
-      this.canvas.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false);
+      this.canvas = new SafeOffscreenCanvas(1, 1)
+      this.canvas.addEventListener('webglcontextlost', this.onCtxLost, false)
+      this.canvas.addEventListener('webglcontextrestored', this.onCtxRestored, false)
+      this.canvas.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false)
     }
 
     if(!this.ctx) {
-      const ctxOptions = {
+      this.webglcontextcreationerrors = []
+
+      this.ctxOptions = {
         failIfMajorPerformanceCaveat: true,
         preserveDrawingBuffer: false,
         premultipliedAlpha: false,
@@ -238,30 +252,38 @@ export default class ProjectorWebGL {
         antialias: false,
         desynchronized: true
       }
-
-      this.ctx = this.canvas.getContext('webgl2', ctxOptions);
+      this.webGLVersion = 2
+      this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
       if(this.ctx) {
-        this.webGLVersion = 2
         this.noMajorPerformanceCaveatDetected()
       } else {
-        this.ctx = this.canvas.getContext('webgl', ctxOptions);
+        this.webGLVersion = 1
+        this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
         if(this.ctx) {
-          this.webGLVersion = 1
           this.noMajorPerformanceCaveatDetected()
         } else {
-          ctxOptions.failIfMajorPerformanceCaveat = false
-          this.ctx = this.canvas.getContext('webgl2', ctxOptions);
+          this.ctxOptions.failIfMajorPerformanceCaveat = false
+          this.webGLVersion = 2
+          this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
           if(this.ctx) {
-            this.webGLVersion = 2
             this.majorPerformanceCaveatDetected()
           } else {
-            this.ctx = this.canvas.getContext('webgl', ctxOptions);
+            this.webGLVersion = 1
+            this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
             if(this.ctx) {
-              this.webGLVersion = 1
               this.majorPerformanceCaveatDetected()
             } else {
-              this.setWarning('Failed to create the WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
-              throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the projector canvas')
+              this.webGLVersion = undefined
+
+              const errors = this.webglcontextcreationerrors
+              let lastErrorMessage;
+              for(const i in errors) {
+                const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
+                lastErrorMessage = errors[i].message
+                if(duplicate) errors[i].message = '"'
+              }
+
+              throw new AmbilightError('ProjectorWebGL context creation failed', errors)
             }
           }
         }
@@ -498,7 +520,7 @@ export default class ProjectorWebGL {
     const invalid = (!this.ctx || this.ctx.isContextLost() || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
     if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | Invalid Projector ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid;
   }

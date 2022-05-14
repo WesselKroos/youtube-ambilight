@@ -1,4 +1,4 @@
-import AmbilightSentry from './ambilight-sentry';
+import AmbilightSentry, { AmbilightError } from './ambilight-sentry';
 import { wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
@@ -56,37 +56,52 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
-      console.warn(`Ambient light for YouTube™ | Canvas ctx lost (${this.lostCount})`)
+      console.warn(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
+      this.setWebGLWarning('restore')
     }), false);
     this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
       if(this.lostCount >= 3) {
-        console.error('Ambient light for YouTube™ | WebGL crashed 3 times. Stopped re-initializing WebGL.')
+        console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
+        this.setWebGLWarning('3 times restore')
         return
       }
       this.initCtx()
       if(this.ctx && !this.ctx.isContextLost()) {
         this.lost = false
         this.lostCount = 0
+        this.setWarning('')
       } else {
-        console.error(`Ambient light for YouTube™ | Canvas ctx restore failed (${this.lostCount})`)
+        console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+        this.setWebGLWarning('restore')
       }
     }), false);
     this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler((e) => {
-      throw new Error(`WebGLCanvas webglcontextcreationerror: ${e.statusMessage || 'Unknown'}`);
+      this.webglcontextcreationerrors.push({
+        message: e.statusMessage || '?',
+        time: performance.now(),
+        webGLVersion: this.webGLVersion
+      })
     }), false);
 
     this.options = options;
     try {
       this.initCtx(options);
     } catch(ex) {
-      this.setWarning('Failed to create the WebGL ambient light.\nA possible workaround could be to turn off the "WebGL renderer" setting', true)
+      this.setWebGLWarning('create', false)
       AmbilightSentry.captureExceptionWithDetails(ex)
       this.ctx = undefined
     }
   }
 
+  setWebGLWarning(action = 'restore', reloadTip = true) {
+    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
+  }
+
+  webglcontextcreationerrors = []
   initCtx = () => {
     if(!this.ctx) {
+      this.webglcontextcreationerrors = []
+
       const ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
@@ -96,15 +111,23 @@ export class WebGLContext {
         desynchronized: true,
         ...this.options
       }
-      this.ctx = this.canvas.getContext('webgl2', ctxOptions);
-      if(this.ctx) {
-        this.webGLVersion = 2
-      } else {
-        this.ctx = this.canvas.getContext('webgl', ctxOptions);
-        if(this.ctx) {
-          this.webGLVersion = 1
-        } else {
-          throw new Error('Ambient light for YouTube™ | Unable to create a webgl context for the webgl canvas')
+      this.webGLVersion = 2
+      this.ctx = this.canvas.getContext('webgl2', ctxOptions)
+      if(!this.ctx) {
+        this.webGLVersion = 1
+        this.ctx = this.canvas.getContext('webgl', ctxOptions)
+        if(!this.ctx) {
+          this.webGLVersion = undefined
+
+          const errors = this.webglcontextcreationerrors
+          let lastErrorMessage;
+          for(const i in errors) {
+            const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
+            lastErrorMessage = errors[i].message
+            if(duplicate) errors[i].message = '"'
+          }
+
+          throw new AmbilightError('WebGLContext creation failed', errors)
         }
       }
     }
@@ -318,7 +341,7 @@ export class WebGLContext {
     const invalid = !this.ctx || this.ctx.isContextLost();
     if (invalid && !this.ctxIsInvalidWarned) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | Invalid Canvas ctx: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.warn(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid;
   }
