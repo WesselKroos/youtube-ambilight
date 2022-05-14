@@ -518,7 +518,10 @@ export default class Settings {
 
   initWebGLExperiment() {
     this.webGLExperiment = this.getStorageEntry('webGL-experiment')
-    if(this.webGLExperiment !== null) return
+    if(this.webGLExperiment !== null) {
+      this.webGLExperiment = this.webGLExperiment === 'true'
+      return
+    }
 
     let newUser = false
     try {
