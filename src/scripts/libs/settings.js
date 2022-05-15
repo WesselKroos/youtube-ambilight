@@ -512,7 +512,7 @@ export default class Settings {
   }
 
   async initWebGLExperiment() {
-    this.webGLExperiment = await this.getStorageEntry('webGL-experiment')
+    this.webGLExperiment = localStorage.getItem('ambilight-webGL-experiment')
     if(this.webGLExperiment !== null) {
       this.webGLExperiment = this.webGLExperiment === 'true'
       return
@@ -526,18 +526,51 @@ export default class Settings {
     }
 
     this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .9)
-    this.saveStorageEntry('webGL-experiment', this.webGLExperiment)
+    localStorage.setItem('ambilight-webGL-experiment', this.webGLExperiment)
     if(!this.webGLExperiment || this.webGL) return
 
     this.set('webGL', true)
   }
   
   async getAll() {
+    const names = []
     for (const setting of this.config) {
-      this[setting.name] = await this.get(setting.name)
+      names.push(setting.name)
 
       if(setting.defaultKey !== undefined) {
-        const key = await this.getKey(setting.name)
+        names.push(`${setting.name}-key`)
+      }
+    }
+
+    const storedSettings = await new Promise((resolve, reject) => {
+      try {
+        let listener;
+        const removeListener = () => fromContentScript.removeMessageListener(listener)
+        listener = fromContentScript.addMessageListener('settings', ({ settings, error }) => {
+          removeListener()
+          if(error) {
+            reject(error)
+            return
+          }
+          resolve(settings)
+        })
+        injectedScriptToContentScript.postMessage('getSettings', names)
+      } catch (ex) {
+        alert('storage error')
+        console.error('Ambient light for YouTube™ | ', ex)
+      }
+    }) || {}
+    console.log('storedSettings', storedSettings)
+    
+    for (const setting of this.config) {
+      let value = storedSettings[setting.name]
+      value = (value !== null) ? value : await this.tryGetAndMigrateLocalStorageEntry(setting.name)
+      this[setting.name] = this.processStorageEntry(setting.name, value)
+
+      if(setting.defaultKey !== undefined) {
+        const keyName = `${setting.name}-key`
+        let key = storedSettings[keyName]
+        key = (key !== null) ? key : await this.tryGetAndMigrateLocalStorageEntry(keyName)
         setting.key = (key !== null) ? key : setting.defaultKey
       }
     }
@@ -1177,10 +1210,6 @@ export default class Settings {
     this.saveStorageEntry(`${setting.name}-key`, key)
   }
 
-  async getKey(name) {
-    return await this.getStorageEntry(`${name}-key`)
-  }
-
   set(name, value, updateUI) {
     this[name] = value
 
@@ -1221,8 +1250,7 @@ export default class Settings {
     $.s(`#setting-${name}`).click()
   }
 
-  async get(name) {
-    let value = await this.getStorageEntry(name)
+  processStorageEntry(name, value) {
     const setting = this.config.find(setting => setting.name === name) || {}
     if (value === null) {
       value = setting.default
@@ -1256,39 +1284,17 @@ export default class Settings {
     this.loggedLocalStorageWarning = true
   }
 
-  async getStorageEntry(name) {
+  async tryGetAndMigrateLocalStorageEntry(name) {
     let value = null
     try {
       value = localStorage.getItem(`ambilight-${name}`)
       if(value !== null) {
+        console.log('Migrating setting', name, value)
         this.removeLocalStorageEntry(name)
         injectedScriptToContentScript.postMessage('setSetting', { name, value })
-      } else {
-        value = await new Promise((resolve, reject) => {
-          try {
-            let listener;
-            const removeListener = () => fromContentScript.removeMessageListener(listener)
-            listener = fromContentScript.addMessageListener('setting', (setting) => {
-              if(setting.name !== name) return
-
-              removeListener()
-              if(setting.error) {
-                reject(setting.error)
-                return
-              }
-
-              resolve(setting.value)
-            })
-            injectedScriptToContentScript.postMessage('getSetting', name)
-          } catch (ex) {
-            alert('storage error')
-            console.log('exception', ex)
-          }
-        })
       }
     } catch (ex) {
       alert('storage error')
-      console.log('exception', ex)
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
     return value
