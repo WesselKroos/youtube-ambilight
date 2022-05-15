@@ -19,12 +19,12 @@ Go to the extensions site of your browser and add the extension:
 ## Minimum requirements
 
 ### Performance
-A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
+A video card with a score of at least 1000 points in the PassMark Video Card Benchmark is recommended.
 Check your video card's score here:
 
 https://www.videocardbenchmark.net/gpu_list.php
 
-With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+With a score lower than 1000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
 
 ### Browser versions
 | Browser  | Version | Reason |
