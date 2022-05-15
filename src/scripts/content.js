@@ -10,6 +10,20 @@ storage.addListener((changes) => {
   contentScriptToInjectedScript.postMessage('crashOptions', crashOptions)
 })
 
+fromInjectedScript.addMessageListener('getSetting', async (name) => {
+  try {
+    let value = await storage.get(name)
+    value = (value === undefined) ? null : value // Backward compatibility with localStorage
+    contentScriptToInjectedScript.postMessage('setting', { name, value })
+  } catch(error) {
+    contentScriptToInjectedScript.postMessage('setting', { name, error })
+  }
+})
+
+fromInjectedScript.addMessageListener('setSetting', async ({ name, value }) => {
+  await storage.set(name, value)
+})
+
 ;(async () => {
     const s = document.createElement('script')
     s.defer = true

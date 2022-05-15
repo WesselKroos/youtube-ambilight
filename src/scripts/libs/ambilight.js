@@ -55,40 +55,44 @@ export default class Ambilight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    this.ytdAppElem = ytdAppElem
-    this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
-    if(!this.mastheadElem) {
-      throw new Error(`Cannot find mastheadElem: #masthead-container`)
-    }
+    return (async () => {
+      this.ytdAppElem = ytdAppElem
+      this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
+      if(!this.mastheadElem) {
+        throw new Error(`Cannot find mastheadElem: #masthead-container`)
+      }
 
-    this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
-    this.detectChromiumBug1142112Workaround()
-    this.initElems(videoElem)
-    this.initVideoElem(videoElem)
-    this.detectMozillaBug1606251Workaround()
-    this.detectChromiumBug1092080Workaround()
+      this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
+      this.detectChromiumBug1142112Workaround()
+      this.initElems(videoElem)
+      this.initVideoElem(videoElem)
+      this.detectMozillaBug1606251Workaround()
+      this.detectChromiumBug1092080Workaround()
 
-    this.initSettings()
-    this.detectChromiumBug1123708Workaround()
+      await this.initSettings()
+      this.detectChromiumBug1123708Workaround()
 
-    this.initAmbilightElems()
-    this.initBuffers()
-    this.recreateProjectors()
-    this.initFPSListElem()
+      this.initAmbilightElems()
+      this.initBuffers()
+      this.recreateProjectors()
+      this.initFPSListElem()
 
-    this.initStyles()
-    this.updateStyles()
+      this.initStyles()
+      this.updateStyles()
 
-    this.updateImmersiveMode()
-    this.checkGetImageDataAllowed()
+      this.updateImmersiveMode()
+      this.checkGetImageDataAllowed()
 
-    this.initListeners()
+      this.initListeners()
 
-    setTimeout(() => {
-      if (!this.settings.enabled) return
+      setTimeout(() => {
+        if (!this.settings.enabled) return
 
-      this.enable(true)
-    }, 0)
+        this.enable(true)
+      }, 0)
+      
+      return this
+    })()
   }
 
   initElems(videoElem) {
@@ -695,8 +699,8 @@ export default class Ambilight {
     this.elem.appendChild(this.buffersWrapperElem)
   }
 
-  initSettings() {
-    this.settings = new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
+  async initSettings() {
+    this.settings = await new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
     parseSettingsToSentry(this.settings)
   }
 

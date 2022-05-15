@@ -1,5 +1,6 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
+import { fromContentScript, injectedScriptToContentScript } from './messaging'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -469,46 +470,49 @@ export default class Settings {
   ]
 
   constructor(ambilight, menuBtnParent, menuElemParent) {
-    this.ambilight = ambilight
-    this.menuBtnParent = menuBtnParent
-    this.menuElemParent = menuElemParent
+    return (async () => {
+      this.ambilight = ambilight
+      this.menuBtnParent = menuBtnParent
+      this.menuElemParent = menuElemParent
 
-    this.config = this.config.map(setting => {
-      if(this.ambilight.videoHasRequestVideoFrameCallback) {
-        if(setting.name === 'frameSync') {
-          setting.max = 2
-          setting.default = 2
-          setting.advanced = true
+      this.config = this.config.map(setting => {
+        if(this.ambilight.videoHasRequestVideoFrameCallback) {
+          if(setting.name === 'frameSync') {
+            setting.max = 2
+            setting.default = 2
+            setting.advanced = true
+          }
+          if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
+            setting.advanced = true
+          }
         }
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
-          setting.advanced = true
+        return setting
+      })
+
+      await this.getAll()
+      await this.initWebGLExperiment()
+
+      this.config = this.config.map(setting => {
+        if(setting.name === 'webGL') {
+          if(!supportsWebGL()) {
+            this.webGL = undefined
+            return undefined
+          }
         }
-      }
-      return setting
-    })
-
-    this.getAll()
-    this.initWebGLExperiment()
-
-    this.config = this.config.map(setting => {
-      if(setting.name === 'webGL') {
-        if(!supportsWebGL()) {
-          this.webGL = undefined
+        if(setting.name === 'resolution' && !this.webGL) {
+          this.resolution = undefined
           return undefined
         }
-      }
-      if(setting.name === 'resolution' && !this.webGL) {
-        this.resolution = undefined
-        return undefined
-      }
-      return setting
-    }).filter(setting => setting)
+        return setting
+      }).filter(setting => setting)
 
-    this.initMenu()
+      this.initMenu()
+      return this
+    })()
   }
 
-  initWebGLExperiment() {
-    this.webGLExperiment = this.getStorageEntry('webGL-experiment')
+  async initWebGLExperiment() {
+    this.webGLExperiment = await this.getStorageEntry('webGL-experiment')
     if(this.webGLExperiment !== null) {
       this.webGLExperiment = this.webGLExperiment === 'true'
       return
@@ -528,11 +532,12 @@ export default class Settings {
     this.set('webGL', true)
   }
   
-  getAll() {
+  async getAll() {
     for (const setting of this.config) {
-      this[setting.name] = this.get(setting.name)
+      this[setting.name] = await this.get(setting.name)
+
       if(setting.defaultKey !== undefined) {
-        const key = this.getKey(setting.name)
+        const key = await this.getKey(setting.name)
         setting.key = (key !== null) ? key : setting.defaultKey
       }
     }
@@ -1172,8 +1177,8 @@ export default class Settings {
     this.saveStorageEntry(`${setting.name}-key`, key)
   }
 
-  getKey(name) {
-    return this.getStorageEntry(`${name}-key`)
+  async getKey(name) {
+    return await this.getStorageEntry(`${name}-key`)
   }
 
   set(name, value, updateUI) {
@@ -1216,13 +1221,16 @@ export default class Settings {
     $.s(`#setting-${name}`).click()
   }
 
-  get(name) {
-    let value = this.getStorageEntry(name)
+  async get(name) {
+    let value = await this.getStorageEntry(name)
     const setting = this.config.find(setting => setting.name === name) || {}
     if (value === null) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
-      value = (value === 'true')
+      value = (
+        value === 'true' || // localStorage
+        value === true // storage.local
+      )
     } else if (setting.type === 'list') {
       value = parseFloat(value)
       if (name === 'blur')
@@ -1248,11 +1256,39 @@ export default class Settings {
     this.loggedLocalStorageWarning = true
   }
 
-  getStorageEntry(name) {
+  async getStorageEntry(name) {
     let value = null
     try {
       value = localStorage.getItem(`ambilight-${name}`)
+      if(value !== null) {
+        this.removeLocalStorageEntry(name)
+        injectedScriptToContentScript.postMessage('setSetting', { name, value })
+      } else {
+        value = await new Promise((resolve, reject) => {
+          try {
+            let listener;
+            const removeListener = () => fromContentScript.removeMessageListener(listener)
+            listener = fromContentScript.addMessageListener('setting', (setting) => {
+              if(setting.name !== name) return
+
+              removeListener()
+              if(setting.error) {
+                reject(setting.error)
+                return
+              }
+
+              resolve(setting.value)
+            })
+            injectedScriptToContentScript.postMessage('getSetting', name)
+          } catch (ex) {
+            alert('storage error')
+            console.log('exception', ex)
+          }
+        })
+      }
     } catch (ex) {
+      alert('storage error')
+      console.log('exception', ex)
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
     return value
@@ -1270,7 +1306,7 @@ export default class Settings {
     }, 500)
   }
 
-  removeStorageEntry(name) {
+  removeLocalStorageEntry(name) {
     try {
       localStorage.removeItem(`ambilight-${name}`)
     } catch (ex) {
@@ -1285,7 +1321,8 @@ export default class Settings {
       
       const names = Object.keys(this.pendingStorageEntries)
       for(const name of names) {
-        localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
+        injectedScriptToContentScript.postMessage('setSetting', { name, value: this.pendingStorageEntries[name] })
+        // localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {

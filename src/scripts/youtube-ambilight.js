@@ -46,7 +46,8 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   })
 }
 
-const tryInitAmbilight = (ytdAppElem) => {
+let initializingAmbilight = false
+const tryInitAmbilight = async (ytdAppElem) => {
   if (!isWatchPageUrl()) return
 
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
@@ -76,7 +77,7 @@ const tryInitAmbilight = (ytdAppElem) => {
     return false
   }
   
-  window.ambilight = new Ambilight(ytdAppElem, videoElem)
+  window.ambilight = await new Ambilight(ytdAppElem, videoElem)
 
   errorEvents.list = []
   ambilightDetectDetachedVideo(ytdAppElem)
@@ -135,7 +136,7 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
   }, undefined, undefined, true);
 }
 
-const loadAmbilight = () => {
+const loadAmbilight = async () => {
   // Validate YouTube desktop web app
   const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
@@ -148,20 +149,38 @@ const loadAmbilight = () => {
     return
   }
 
-  if (tryInitAmbilight(ytdAppElem)) return
+  if (await tryInitAmbilight(ytdAppElem)) return
   // Not on the watch page yet
 
   // Listen to DOM changes
-  const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
+  let initializing = false
+  let tryAgain = true
+  const observer = new MutationObserver(wrapErrorHandler(async (mutationsList, observer) => {
+    if (initializing) {
+      tryAgain = true
+      return
+    }
+
     if (window.ambilight) {
       observer.disconnect()
       return
     }
 
+    initializing = true
     try {
-      if (tryInitAmbilight(ytdAppElem)) {
+      if (await tryInitAmbilight(ytdAppElem)) {
         // Initialized
         observer.disconnect()
+      } else {
+        while(tryAgain) {
+          tryAgain = false
+          if(await tryInitAmbilight(ytdAppElem)) {
+            // Initialized
+            observer.disconnect()
+            tryAgain = false
+          }
+        }
+        initializing = false
       }
     } catch (ex) {
       // Disconnect to prevent infinite loops
@@ -175,10 +194,10 @@ const loadAmbilight = () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(function onLoad() {
+const onLoad = () => requestIdleCallback(async function onLoad() {
   if(window.ambilight) return
     
-  loadAmbilight()
+  await loadAmbilight()
 }, { timeout: 5000 })
 
 try {

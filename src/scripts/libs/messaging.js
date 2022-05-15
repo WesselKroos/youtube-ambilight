@@ -8,27 +8,37 @@ const isSameWindowMessage = (event) => (
 
 export const fromContentScript = {
   addMessageListener: (type, handler) => {
-    window.addEventListener('message', event => {
+    const listener = (event) => {
       if (
         !isSameWindowMessage ||
         event.data?.contentScript !== extensionId ||
         event.data?.type !== type
       ) return
       handler(event.data?.message)
-    }, true)
+    }
+    window.addEventListener('message', listener, true)
+    return listener
+  },
+  removeMessageListener: (listener) => {
+    window.removeEventListener('message', listener)
   }
 }
 
 export const fromInjectedScript = {
   addMessageListener: (type, handler) => {
-    window.addEventListener('message', event => {
+    const listener = (event) => {
       if (
         !isSameWindowMessage ||
         event.data?.injectedScript !== extensionId ||
         event.data?.type !== type
       ) return
       handler(event.data?.message)
-    }, true)
+    }
+    window.addEventListener('message', listener, true)
+    return listener
+  },
+  removeMessageListener: (listener) => {
+    window.removeEventListener('message', listener)
   }
 }
 
