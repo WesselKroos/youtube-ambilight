@@ -23,32 +23,12 @@ const common = {
   ]
 }
 
-const background = {
-   input:  './src/scripts/background.js',
-   output:  { 
-    file: './dist/scripts/background.js',
-    format: 'iife'
-  }
-}
+const scripts = ['background', 'options', 'content', 'youtube-ambilight']
 
-const content = {
-   input:  './src/scripts/content.js',
-   output:  { 
-    file: './dist/scripts/content.js',
-    format: 'iife'
-  }
-}
-
-const youtubeAmbilight = {
-   input:  './src/scripts/youtube-ambilight.js',
-   output:  { 
-    file: './dist/scripts/youtube-ambilight.js',
-    format: 'iife'
-  }
-}
-
-export default [
-  Object.assign({}, background, common),
-  Object.assign({}, content, common),
-  Object.assign({}, youtubeAmbilight, common)
-]
+export default scripts.map(script => Object.assign({}, {
+  input:  `./src/scripts/${script}.js`,
+  output:  { 
+   file: `./dist/scripts/${script}.js`,
+   format: 'iife'
+ }
+}, common))

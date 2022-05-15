@@ -7,6 +7,7 @@ html {
   background: #1f1f1f;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 16px;
+  overflow-y: scroll;
 }
 body { 
   width: 400px;
@@ -18,22 +19,72 @@ main {
 }
 
 h1 {
-  margin: 0 0 15px;
+  margin: 0 0 5px;
   font-size: 16px;
-  color: #007cc3;
+  color: #008ce3;
 }
 
 h2 {
-  margin: 25px 0 10px;
+  margin: 25px 0 5px;
   font-size: 16px;
-  color: #fff;
+  color: #008ce3;
 }
 
 a {
-  color: #007cc3;
+  color: #008ce3;
   font-weight: bold;
+  text-decoration: underline;
 }
 
-.important {
-  color: #f22;
+ul {
+  list-style: none;
+  margin: 3px 0;
+  padding: 0;
+}
+
+li {
+  margin: 0;
+  padding: 0;
+}
+
+input[type="checkbox"] {
+  margin: 0 10px 0 0;
+  transform: translateY(2px);
+}
+input[type="checkbox"][disabled],
+input[type="checkbox"][disabled] + * {
+  opacity: .5;
+}
+label {
+  display: inline-block;
+  margin: 4px 0;
+  user-select: none;
+}
+
+.info-toggle {
+  appearance: none;
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0 5px 4px;
+  font-family: inherit;
+  font-weight: bold;
+  color: #008ce3;
+  cursor: help;
+  transition: transform .25s;
+}
+.info-toggle.toggled {
+  transform: translateX(-1px) scaleX(-1);
+}
+
+.info {
+  display: none;
+  list-style: disc;
+  margin: 5px 0 10px 26px;
+}
+.info-toggle.toggled + .info {
+  display: block;
+}
+.info li {
+  margin: 0;
 }

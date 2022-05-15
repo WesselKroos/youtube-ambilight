@@ -1,6 +1,7 @@
 import { $, html, setErrorHandler, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
+import { fromContentScript } from './messaging';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -97,6 +98,11 @@ export class AmbilightError extends Error {
 
 const version = document.currentScript.getAttribute('data-version') || ''
 
+let crashOptions = JSON.parse(document.currentScript.getAttribute('data-crash-options'))
+fromContentScript.addMessageListener('crashOptions', data => {
+  crashOptions = data
+}, true)
+
 const client = new BrowserClient({
   enabled: true,
   dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
@@ -108,11 +114,13 @@ const client = new BrowserClient({
   beforeSend: (event) => {
     try {
       event.request = {
-        url: (!navigator.doNotTrack) ? location.href : '?', // Respect DoNotTrack
-        headers: {
+        url: !crashOptions?.video ? '?' : location.href
+      }
+      if(crashOptions?.technical) {
+        event.request.headers = {
           'User-Agent': navigator.userAgent // Add UserAgent
         }
-      };
+      }
       // Normalize stacktrace domain of all browsers
       for(const value of event.exception.values) {
         if(value.stacktrace && value.stacktrace.frames) {
@@ -154,8 +162,14 @@ export default class AmbilightSentry {
       } catch (ex) { console.warn(ex) }
 
       console.error('Ambient light for YouTube™ | ', ex)
+
       if(this.overflowProtection === 3) {
         console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
+      }
+
+      if(!crashOptions?.crash) {
+        console.warn('Ambient light for YouTube™ | Crash reporting is disabled. If you want this error to be fixed, open the extension options to enable crash reporting. Then refresh the page and reproduce the error again to send a crash report.')
+        return
       }
 
       try {
@@ -201,88 +215,15 @@ export default class AmbilightSentry {
           scope.setExtra(name, (value === undefined) ? null : value)
         } catch (ex) { console.warn(ex) }
       }
-
+      
       try {
-        if(ex && ex.details) {
-          setExtra('Details', ex.details)
-        }
+        setExtra('CrashOptions', crashOptions)
       } catch (ex) {
-        setExtra('Details (exception)', ex)
+        setExtra('CrashOptions (exception)', ex)
       }
 
       try {
-        setExtra('Window', {
-          width: window.innerWidth,
-          height: window.innerHeight,
-          scrollY: window.scrollY,
-          devicePixelRatio: window.devicePixelRatio,
-          fullscreen: document.fullscreen
-        })
-      } catch (ex) {
-        setExtra('Window (exception)', ex)
-      }
-
-      try {
-        if (window.screen) {
-          setExtra('Screen', {
-            width: screen.width,
-            height: screen.height,
-            availWidth: screen.availWidth,
-            availHeight: screen.availHeight,
-            colorDepth: screen.colorDepth,
-            pixelDepth: screen.pixelDepth
-          })
-        }
-      } catch (ex) {
-        setExtra('Screen (exception)', ex)
-      }
-
-      try {
-        setExtra('YouTube', {
-          dark: !!html?.attributes?.dark,
-          lang: html?.attributes?.lang?.value,
-          loggedIn: yt?.config_?.LOGGED_IN
-        })
-      } catch (ex) {
-        setExtra('YouTube (exception)', ex)
-      }
-
-      const pageExtra = {}
-      try {
-        pageExtra.isVideo = (location.pathname == '/watch')
-      } catch (ex) {
-        setExtra('Page .isVideo (exception)', ex)
-      }
-      try {
-        pageExtra.isYtdApp = !!$.s('ytd-app')
-      } catch (ex) { 
-        setExtra('Page .isYtdApp (exception)', ex)
-      }
-      setExtra('Page', pageExtra)
-
-      try {
-        setExtra('Video elements', $.sa('video').length)
-      } catch (ex) { 
-        setExtra('Video elements (exception)', ex)
-      }
-
-      try {
-        const videoPlayerElem = $.s('#movie_player')
-        if (videoPlayerElem) {
-          const stats = videoPlayerElem.getStatsForNerds()
-          const relevantStats = ['bandwidth_kbps', 'buffer_health_seconds', 'codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
-          Object.keys(stats).forEach(key => {
-            if(!relevantStats.includes(key))
-              delete stats[key]
-          })
-          setExtra('Player', stats)
-        }
-      } catch (ex) { 
-        setExtra('Player (exception)', ex)
-      }
-
-      let ambilightExtra = {}
-      try {
+        let ambilightExtra = {}
         ambilightExtra.initialized = (typeof ambilight !== 'undefined')
         if (typeof ambilight !== 'undefined') {
           ambilightExtra.now = performance.now()
@@ -368,6 +309,98 @@ export default class AmbilightSentry {
         }
       } catch (ex) { 
         setExtra('Settings (exception)', ex)
+      }
+
+      if(crashOptions?.technical) {
+        try {
+          if(ex && ex.details) {
+            setExtra('Details', ex.details)
+          }
+        } catch (ex) {
+          setExtra('Details (exception)', ex)
+        }
+
+        try {
+          setExtra('YouTube', {
+            dark: !!html?.attributes?.dark,
+            loggedIn: yt?.config_?.LOGGED_IN
+          })
+        } catch (ex) {
+          setExtra('YouTube (exception)', ex)
+        }
+
+        const pageExtra = {}
+        try {
+          pageExtra.isVideo = (location.pathname == '/watch')
+        } catch (ex) {
+          setExtra('Page .isVideo (exception)', ex)
+        }
+        try {
+          pageExtra.isYtdApp = !!$.s('ytd-app')
+        } catch (ex) { 
+          setExtra('Page .isYtdApp (exception)', ex)
+        }
+        setExtra('Page', pageExtra)
+
+        try {
+          setExtra('Video elements', $.sa('video').length)
+        } catch (ex) { 
+          setExtra('Video elements (exception)', ex)
+        }
+
+        try {
+          setExtra('Window', {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollY: window.scrollY,
+            devicePixelRatio: window.devicePixelRatio,
+            fullscreen: document.fullscreen
+          })
+        } catch (ex) {
+          setExtra('Window (exception)', ex)
+        }
+
+        try {
+          if (window.screen) {
+            setExtra('Screen', {
+              width: screen.width,
+              height: screen.height,
+              availWidth: screen.availWidth,
+              availHeight: screen.availHeight,
+              colorDepth: screen.colorDepth,
+              pixelDepth: screen.pixelDepth
+            })
+          }
+        } catch (ex) {
+          setExtra('Screen (exception)', ex)
+        }
+
+        try {
+          const videoPlayerElem = $.s('#movie_player')
+          if (videoPlayerElem) {
+            const stats = videoPlayerElem.getStatsForNerds()
+            const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
+            Object.keys(stats).forEach(key => {
+              if(!relevantStats.includes(key))
+                delete stats[key]
+            })
+            setExtra('Player', stats)
+          }
+        } catch (ex) { 
+          setExtra('Player (exception)', ex)
+        }
+      }
+
+      if(crashOptions?.video) {
+        try {
+          const ytdWatchFlexyElem = $.s('ytd-watch-flexy')
+          if (ytdWatchFlexyElem) {
+            const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
+            setExtra('ytd-watch-flexy[video-id]', videoId)
+          }
+        } catch (ex) { 
+          setExtra('ytd-watch-flexy[video-id] (exception)', ex)
+        }
       }
 
       const previousHub = getCurrentHub()

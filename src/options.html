@@ -11,18 +11,47 @@
     The settings are accessible from the YouTube video player.<br/><br/>
     <img src="images/settings-moved-to.png" />
 
-    <h2 class="important">I see no settings button after installation!</h2>
-    Please click on the refresh button in the browser or press the F5 shortkey.
-    <br/><br/>
+    <h2>If you see no settings button after installation</h2>
+    Please refresh the webpage in the browser.<br/>
     If after the refresh the Ambient light settings button is still not shown you can create an issue on the 
     <a href="https://github.com/WesselKroos/youtube-ambilight/issues" target="_blank">issues list</a>
-    and I'll respond within 24 hours on workdays.
     Alternatively if you have no GitHub account leave your feedback via the
-    <a href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank">Feedback form</a>
+    <a id="feedbackFormLink" href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank">Feedback form</a>
 
-    <h2>Why do I see no Ambient light settings button after installation?</h2>
-    The extension is not loaded on YouTube webpages that were already open before the installation. 
-    So please click on the refresh button in the browser or press the F5 shortkey to load the extension.
+    <h2>Crash reports & Privacy</h2>
+    A crash report contains only anonymous data and will be deleted after 30 days.
+    However, we understand that anonymous data is still your data. So here you can control what it contains:
+    <ul>
+      <li>
+        <input type="checkbox" name="video" id="video"/>
+        <label for="video">The url and video ID being watched at the time of the crash</label>
+      </li>
+      <li>
+        <input type="checkbox" name="technical" id="technical"/>
+        <label for="technical">Anonymous technical data</label>
+        <button class="info-toggle" title="Display the list of technical info">&gt;</button>
+        <ul class="info">
+          <li>Browser version</li>
+          <li>Operating system version</li>
+          <li>Display capabilities</li>
+          <li>Videoplayer state <i>(Does not contain the video id or title)</i></li>
+          <li>YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
+        </ul>
+      </li>
+      <li>
+        <input type="checkbox" name="crash" id="crash"/>
+        <label for="crash">Ambient light and crash data</label>
+        <button class="info-toggle" title="Display the list of crash info">&gt;</button>
+        <ul class="info">
+          <li>Ambient light state</li>
+          <li>The error message</li>
+          <li>Where it crashed</li>
+        </ul>
+      </li>
+    </ul>
+    No crash reports will be sent when crash data is turned off.<br/>
+    <a id="privacyPolicyLink" href="#" target="_blank">Our privacy policy</a>
   </main>
+  <script src="scripts/options.js"></script>
 </body>
 </html>

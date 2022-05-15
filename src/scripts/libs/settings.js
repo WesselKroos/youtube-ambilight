@@ -1,12 +1,11 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
-import { getBrowser, getBrowserVersion, getOS } from './utils'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
 export const FRAMESYNC_VIDEOFRAMES = 2
 
-const version = document.currentScript.getAttribute('data-version') || ''
+const feedbackFormLink = document.currentScript.getAttribute('data-feedback-form-link') || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 
 export default class Settings {
   saveStorageEntryTimeout = {}
@@ -505,15 +504,7 @@ export default class Settings {
       return setting
     }).filter(setting => setting)
 
-    this.initFeedbackLink()
     this.initMenu()
-  }
-
-  initFeedbackLink() {
-    const os = getOS() || ''
-    const browser = getBrowser() || ''
-    const browserVersion = getBrowserVersion() || ''
-    this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}&entry.908541589=${browserVersion}`
   }
 
   initWebGLExperiment() {
@@ -597,7 +588,7 @@ export default class Settings {
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="${this.feedbackFormLink}" target="_blank">
+              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank">
                 <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
               </a>
             </div>
