@@ -6,7 +6,7 @@ const isSameWindowMessage = (event) => (
   event.origin === origin
 )
 
-export const fromContentScript = {
+export const contentScript = {
   addMessageListener: (type, handler) => {
     const listener = (event) => {
       if (
@@ -21,10 +21,17 @@ export const fromContentScript = {
   },
   removeMessageListener: (listener) => {
     window.removeEventListener('message', listener)
+  },
+  postMessage: (type, message) => {
+    window.postMessage({
+      message,
+      type,
+      injectedScript: extensionId
+    }, origin)
   }
 }
 
-export const fromInjectedScript = {
+export const injectedScript = {
   addMessageListener: (type, handler) => {
     const listener = (event) => {
       if (
@@ -39,20 +46,7 @@ export const fromInjectedScript = {
   },
   removeMessageListener: (listener) => {
     window.removeEventListener('message', listener)
-  }
-}
-
-export const injectedScriptToContentScript = {
-  postMessage: (type, message) => {
-    window.postMessage({
-      message,
-      type,
-      injectedScript: extensionId
-    }, origin)
-  }
-}
-
-export const contentScriptToInjectedScript = {
+  },
   postMessage: (type, message) => {
     window.postMessage({
       message,

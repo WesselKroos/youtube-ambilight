@@ -1,16 +1,16 @@
 import { getFeedbackFormLink, getVersion } from './libs/utils'
 import { html } from './libs/generic'
-import { contentScriptToInjectedScript, fromInjectedScript } from './libs/messaging'
+import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 
 storage.addListener((changes) => {
   if (!changes.crashOptions?.newValue) return
 
   const crashOptions = changes.crashOptions.newValue
-  contentScriptToInjectedScript.postMessage('crashOptions', crashOptions)
+  injectedScript.postMessage('crashOptions', crashOptions)
 })
 
-fromInjectedScript.addMessageListener('getSettings', async (names) => {
+injectedScript.addMessageListener('getSettings', async (names) => {
   try {
     const data = await storage.get(names.map(name => `setting-${name}`))
     const settings = {}
@@ -18,13 +18,13 @@ fromInjectedScript.addMessageListener('getSettings', async (names) => {
       const value = data[`setting-${name}`]
       settings[name] = (value === undefined) ? null : value // Backward compatibility with localStorage
     }
-    contentScriptToInjectedScript.postMessage('settings', { settings })
+    injectedScript.postMessage('settings', { settings })
   } catch(error) {
-    contentScriptToInjectedScript.postMessage('settings', { names, error })
+    injectedScript.postMessage('settings', { names, error })
   }
 })
 
-fromInjectedScript.addMessageListener('setSetting', async ({ name, value }) => {
+injectedScript.addMessageListener('setSetting', async ({ name, value }) => {
   await storage.set(`setting-${name}`, value)
 })
 

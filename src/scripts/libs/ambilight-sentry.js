@@ -1,7 +1,7 @@
 import { $, html, setErrorHandler, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
-import { fromContentScript } from './messaging';
+import { contentScript } from './messaging';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -99,7 +99,7 @@ export class AmbilightError extends Error {
 const version = document.currentScript.getAttribute('data-version') || ''
 
 let crashOptions = JSON.parse(document.currentScript.getAttribute('data-crash-options'))
-fromContentScript.addMessageListener('crashOptions', data => {
+contentScript.addMessageListener('crashOptions', data => {
   crashOptions = data
 }, true)
 

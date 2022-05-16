@@ -1,6 +1,6 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
-import { fromContentScript, injectedScriptToContentScript } from './messaging'
+import { contentScript } from './messaging'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -545,8 +545,8 @@ export default class Settings {
     const storedSettings = await new Promise((resolve, reject) => {
       try {
         let listener;
-        const removeListener = () => fromContentScript.removeMessageListener(listener)
-        listener = fromContentScript.addMessageListener('settings', ({ settings, error }) => {
+        const removeListener = () => contentScript.removeMessageListener(listener)
+        listener = contentScript.addMessageListener('settings', ({ settings, error }) => {
           removeListener()
           if(error) {
             reject(error)
@@ -554,7 +554,7 @@ export default class Settings {
           }
           resolve(settings)
         })
-        injectedScriptToContentScript.postMessage('getSettings', names)
+        contentScript.postMessage('getSettings', names)
       } catch (ex) {
         alert('storage error')
         console.error('Ambient light for YouTube™ | ', ex)
@@ -1291,7 +1291,7 @@ export default class Settings {
       if(value !== null) {
         console.log('Migrating setting', name, value)
         this.removeLocalStorageEntry(name)
-        injectedScriptToContentScript.postMessage('setSetting', { name, value })
+        contentScript.postMessage('setSetting', { name, value })
       }
     } catch (ex) {
       alert('storage error')
@@ -1327,7 +1327,7 @@ export default class Settings {
       
       const names = Object.keys(this.pendingStorageEntries)
       for(const name of names) {
-        injectedScriptToContentScript.postMessage('setSetting', { name, value: this.pendingStorageEntries[name] })
+        contentScript.postMessage('setSetting', { name, value: this.pendingStorageEntries[name] })
         // localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
         delete this.pendingStorageEntries[name]
       }
