@@ -1,4 +1,4 @@
-import { $, html, setErrorHandler, uuidv4 } from './generic';
+import { $, html, on, setErrorHandler, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
@@ -437,3 +437,83 @@ export default class AmbilightSentry {
 }
 
 setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+
+export class ErrorEvents {
+  list = []
+  
+  constructor() {
+    on(window, 'beforeunload', (e) => {
+      if(!this.list.length) return
+      
+      this.add('tab beforeunload')
+      this.send()
+    }, false)
+    
+    on(window, 'pagehide', (e) => {
+      if(!this.list.length) return
+      
+      this.add('tab pagehide')
+    }, false)
+    
+    on(document, 'visibilitychange', () => {
+      if(document.visibilityState !== 'hidden') return
+      if(!this.list.length) return
+      
+      this.add('tab visibilitychange hidden')
+      this.send()
+    }, false)
+  }
+
+  send = () => {
+    const lastEvent = this.list[this.list.length - 1]
+    const lastTime = lastEvent.time
+    const firstTime =  this.list[0].firstTime || this.list[0].time
+    if(lastTime - firstTime < 10) {
+      return // Give the site 10 seconds to load the watch page or move the video element
+    }
+
+    AmbilightSentry.captureExceptionWithDetails(
+      new AmbilightError('Closed or hid the webpage tab with pending errors events', this.list)
+    )
+    this.list = []
+  }
+
+  add = (type, details = {}) => {
+    if(!crashOptions?.technical) {
+      details = {
+        ...details,
+        tree: undefined
+      }
+    }
+    const time = Math.round(performance.now()) / 1000
+  
+    if(this.list.length) {
+      const last = this.list.slice(-1)[0]
+      const {
+        count: lastCount,
+        time: lastTime,
+        firstTime,
+        type: lastType,
+        ...lastDetails
+      } = last
+  
+      if(
+        lastType === type && 
+        JSON.stringify(lastDetails) === JSON.stringify(details)
+      ) {
+        last.count = last.count ? last.count + 1 : 2
+        last.time = time
+        last.firstTime = firstTime || lastTime
+        return
+      }
+    }
+  
+    let event = {
+      type,
+      time,
+      ...details,
+    }
+    event.time = time
+    this.list.push(event)
+  }
+}

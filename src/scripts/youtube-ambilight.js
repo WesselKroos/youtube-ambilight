@@ -1,6 +1,5 @@
 import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl } from './libs/generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError } from './libs/ambilight-sentry'
-import ErrorEvents from './libs/error-events'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError, ErrorEvents } from './libs/ambilight-sentry'
 import Ambilight from './libs/ambilight'
 
 const errorEvents = new ErrorEvents()
@@ -47,21 +46,19 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
 }
 
 let initializingAmbilight = false
-const tryInitAmbilight = async (ytdAppElem) => {
+const tryInitAmbilight = async () => {
   if (!isWatchPageUrl()) return
 
+  const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
     const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
-      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the player-api')
-      // console.log(playerApiElem.cloneNode(true))
       errorEvents.add('tryInit | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the miniplayer')
       errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
@@ -70,7 +67,6 @@ const tryInitAmbilight = async (ytdAppElem) => {
       errorEvents.add('tryInitAmbilight | video in #player-api')
       return false
     }
-    // console.warn('Ambient light for YouTube™ | Waiting for the video to be created in ytd-app')
     errorEvents.add('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
       tree: getSelectorTreeString('video,#player-container')
     })
@@ -149,7 +145,7 @@ const loadAmbilight = async () => {
     return
   }
 
-  if (await tryInitAmbilight(ytdAppElem)) return
+  if (await tryInitAmbilight()) return
   // Not on the watch page yet
 
   // Listen to DOM changes
@@ -168,13 +164,13 @@ const loadAmbilight = async () => {
 
     initializing = true
     try {
-      if (await tryInitAmbilight(ytdAppElem)) {
+      if (await tryInitAmbilight()) {
         // Initialized
         observer.disconnect()
       } else {
         while(tryAgain) {
           tryAgain = false
-          if(await tryInitAmbilight(ytdAppElem)) {
+          if(await tryInitAmbilight()) {
             // Initialized
             observer.disconnect()
             tryAgain = false
