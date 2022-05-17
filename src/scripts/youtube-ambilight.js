@@ -18,12 +18,19 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
 
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
+      const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
+      const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
+      const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+      if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem) {
+        return
+      }
+
       const details = {
         documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem),
         'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
-      errorEvents.add('detectDetachedVideo | video detached and no new video', details)
+      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', details)
       return
     }
 
@@ -54,20 +61,20 @@ const tryInitAmbilight = async () => {
   if (!videoElem) {
     const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
-      errorEvents.add('tryInit | video in yt-player-manager')
+      // errorEvents.add('tryInit | video in yt-player-manager')
       return false
     }
     const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
+      // errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
-    const playerApiElem = document.querySelector('#player-api video.html5-main-video')
-    if(playerApiElem) {
-      errorEvents.add('tryInitAmbilight | video in #player-api')
+    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+    if(playerApiVideoElem) {
+      // errorEvents.add('tryInitAmbilight | video in #player-api')
       return false
     }
-    errorEvents.add('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
+    errorEvents.add('tryInitAmbilight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', {
       tree: getSelectorTreeString('video,#player-container')
     })
     return false
