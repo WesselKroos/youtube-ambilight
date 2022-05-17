@@ -3,29 +3,38 @@ import { html } from './libs/generic'
 import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 
-storage.addListener((changes) => {
+storage.addListener(function storageListener(changes) {
   if (!changes.crashOptions?.newValue) return
 
   const crashOptions = changes.crashOptions.newValue
   injectedScript.postMessage('crashOptions', crashOptions)
 })
 
-injectedScript.addMessageListener('getSettings', async (names) => {
+injectedScript.addMessageListener('get-storage-entries', async function getStorageEntry({ id, nameOrNames }) {
   try {
-    const data = await storage.get(names.map(name => `setting-${name}`))
-    const settings = {}
-    for(const name of names) {
-      const value = data[`setting-${name}`]
-      settings[name] = (value === undefined) ? null : value // Backward compatibility with localStorage
+    if(!chrome.runtime.id) throw new Error('uninstalled')
+    let valueOrValues = await storage.get(nameOrNames)
+    if(Array.isArray(nameOrNames)) {
+      for(const name of nameOrNames) {
+        valueOrValues[name] = (valueOrValues[name] === undefined) ? null : valueOrValues[name] // Backward compatibility with localStorage
+      }
+    } else {
+      valueOrValues = (valueOrValues === undefined) ? null : valueOrValues // Backward compatibility with localStorage
     }
-    injectedScript.postMessage('settings', { settings })
+    injectedScript.postMessage('get-storage-entries', { id, valueOrValues })
   } catch(error) {
-    injectedScript.postMessage('settings', { names, error })
+    injectedScript.postMessage('get-storage-entries', { id, error })
   }
 })
 
-injectedScript.addMessageListener('setSetting', async ({ name, value }) => {
-  await storage.set(`setting-${name}`, value)
+injectedScript.addMessageListener('set-storage-entry', async function setStorageEntry({ id, name, value }) {
+  try {
+    if(!chrome.runtime.id) throw new Error('uninstalled')
+    await storage.set(name, value)
+    injectedScript.postMessage('set-storage-entry', { id })
+  } catch(error) {
+    injectedScript.postMessage('set-storage-entry', { id, error })
+  }
 })
 
 ;(async () => {
@@ -50,6 +59,5 @@ injectedScript.addMessageListener('setSetting', async ({ name, value }) => {
       if (chrome.runtime.lastError) {
         return console.error(chrome.runtime.lastError)
       }
-      console.log('storage entries', result)
     })
 })()

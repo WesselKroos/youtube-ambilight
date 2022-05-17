@@ -137,10 +137,36 @@ const client = new BrowserClient({
 })
 const hub = new Hub(client)
 
+let userId;
+let reports;
+const initializeStorageEntries = (async () => {
+  const entries = await contentScript.getStorageEntryOrEntries(['reports', 'crash-reporter-id']) || {}
+  userId = entries['crash-reporter-id']
+  reports = JSON.parse(entries.reports || '[]')
+
+  try {
+    localStorage.removeItem('ambilight-reports')
+  } catch {}
+
+  if(!userId) {
+    try {
+      userId = localStorage.getItem('ambilight-crash-reporter-id')
+    } catch {}
+    if(userId) {
+      // Migrate from localStorage to storage.local
+      await contentScript.setStorageEntry('crash-reporter-id', userId)
+      localStorage.removeItem('ambilight-crash-reporter-id')
+    } else {
+      userId = uuidv4()
+      contentScript.setStorageEntry('crash-reporter-id', userId)
+    }
+  }
+})()
+
 let sessionId;
 export default class AmbilightSentry {
   static overflowProtection = 0
-  static captureExceptionWithDetails(ex) {
+  static async captureExceptionWithDetails(ex) {
     try {
       this.overflowProtection++
       if(this.overflowProtection > 3) {
@@ -172,8 +198,9 @@ export default class AmbilightSentry {
         return
       }
 
+      await initializeStorageEntries;
+
       try {
-        const reports = JSON.parse(localStorage.getItem('ambilight-reports') || '[]')
         const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
         const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const reportsToday = reports.filter(report => report.time > dayAgo)
@@ -187,7 +214,7 @@ export default class AmbilightSentry {
           console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
           return
         }
-        localStorage.setItem('ambilight-reports', JSON.stringify(reportsThisWeek))
+        contentScript.setStorageEntry('reports', JSON.stringify(reportsThisWeek))
       } catch (ex) { 
         console.warn(ex)
         return
@@ -195,11 +222,6 @@ export default class AmbilightSentry {
 
       const scope = new Scope()
       try {
-        let userId = localStorage.getItem('ambilight-crash-reporter-id')
-        if(!userId) {
-          userId = uuidv4()
-          localStorage.setItem('ambilight-crash-reporter-id', userId)
-        }
         scope.setUser({ id: userId })
       } catch { console.warn(ex) }
 
@@ -280,7 +302,7 @@ export default class AmbilightSentry {
             'projector.scale.x',
             'projector.scale.y',
             'projector.lostCount',
-            'projector.majorPerformanceCaveatDetected'
+            'projector.majorPerformanceCaveat'
           ]
           keys.forEach(key => {
             try {

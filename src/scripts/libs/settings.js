@@ -507,16 +507,21 @@ export default class Settings {
       }).filter(setting => setting)
 
       this.initMenu()
+
+      if(this.pendingWarning) {
+        this.pendingWarning()
+        this.pendingWarning = undefined
+      }
+
       return this
     })()
   }
 
   async initWebGLExperiment() {
-    this.webGLExperiment = localStorage.getItem('ambilight-webGL-experiment')
-    if(this.webGLExperiment !== null) {
-      this.webGLExperiment = this.webGLExperiment === 'true'
-      return
-    }
+    if(this.webGL || !supportsWebGL()) return
+
+    this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
+    if(this.webGLExperiment !== null) return
 
     let newUser = false
     try {
@@ -524,10 +529,9 @@ export default class Settings {
     } catch {
       newUser = true
     }
-
-    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .9)
-    localStorage.setItem('ambilight-webGL-experiment', this.webGLExperiment)
-    if(!this.webGLExperiment || this.webGL) return
+    this.webGLExperiment = (newUser || Math.random() > .9)
+    contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
+    if(!this.webGLExperiment) return
 
     this.set('webGL', true)
   }
@@ -535,45 +539,32 @@ export default class Settings {
   async getAll() {
     const names = []
     for (const setting of this.config) {
-      names.push(setting.name)
+      names.push(`setting-${setting.name}`)
 
       if(setting.defaultKey !== undefined) {
-        names.push(`${setting.name}-key`)
+        names.push(`setting-${setting.name}-key`)
       }
     }
 
-    const storedSettings = await new Promise((resolve, reject) => {
-      try {
-        let listener;
-        const removeListener = () => contentScript.removeMessageListener(listener)
-        listener = contentScript.addMessageListener('settings', ({ settings, error }) => {
-          removeListener()
-          if(error) {
-            reject(error)
-            return
-          }
-          resolve(settings)
-        })
-        contentScript.postMessage('getSettings', names)
-      } catch (ex) {
-        alert('storage error')
-        console.error('Ambient light for YouTube™ | ', ex)
-      }
-    }) || {}
-    console.log('storedSettings', storedSettings)
-    
+    let storedSettings = {}
+    try {
+      storedSettings = await contentScript.getStorageEntryOrEntries(names, true) || {}
+    } catch {
+      this.setWarning('The settings cannot be retrieved because the extension has been updated.\nRefresh the page to retry again.')
+    }
+      
     for (const setting of this.config) {
-      let value = storedSettings[setting.name]
-      value = (value !== null) ? value : await this.tryGetAndMigrateLocalStorageEntry(setting.name)
+      let value = storedSettings[`setting-${setting.name}`]
+      value = (value === null || value === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(setting.name) : value
       this[setting.name] = this.processStorageEntry(setting.name, value)
 
       if(setting.defaultKey !== undefined) {
-        const keyName = `${setting.name}-key`
-        let key = storedSettings[keyName]
-        key = (key !== null) ? key : await this.tryGetAndMigrateLocalStorageEntry(keyName)
+        let key = storedSettings[`setting-${setting.name}-key`]
+        key = (key === null || key === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(`${setting.name}-key`) : value
         setting.key = (key !== null) ? key : setting.defaultKey
       }
     }
+    await this.flushPendingStorageEntries() // Complete migrations
 
     html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
   }
@@ -975,17 +966,7 @@ export default class Settings {
             value = this.config.find(s => s.name === setting.name).default
             if(value === this[setting.name]) return
           }
-          this[setting.name] = value
 
-          if (setting.name === 'enabled') {
-            this.ambilight.toggleEnabled(value)
-          }
-          if (setting.name === 'immersive') {
-            this.ambilight.toggleImmersiveMode(value)
-          }
-          if (setting.name === 'hideScrollbar') {
-            html.setAttribute('data-ambilight-hide-scrollbar', value)
-          }
           if (
             setting.name === 'videoOverlayEnabled' ||
             setting.name === 'frameSync' ||
@@ -1010,6 +991,15 @@ export default class Settings {
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
+          if (setting.name === 'enabled') {
+            this.ambilight.toggleEnabled(value)
+          }
+          if (setting.name === 'immersive') {
+            this.ambilight.toggleImmersiveMode(value)
+          }
+          if (setting.name === 'hideScrollbar') {
+            html.setAttribute('data-ambilight-hide-scrollbar', value)
+          }
           if(setting.name === 'immersiveTheaterView') {
             this.ambilight.updateImmersiveMode()
           }
@@ -1083,8 +1073,8 @@ export default class Settings {
 
           if(setting.name === 'webGL') {
             // setTimeout to allow processing of all settings in case the reset button was clicked
-            setTimeout(() => {
-              this.flushPendingStorageEntries()
+            setTimeout(async () => {
+              await this.flushPendingStorageEntries()
   
               const search = new URLSearchParams(location.search)
               const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
@@ -1211,6 +1201,7 @@ export default class Settings {
   }
 
   set(name, value, updateUI) {
+    const changed = this[name] !== value
     this[name] = value
 
     if (name === 'blur')
@@ -1218,7 +1209,9 @@ export default class Settings {
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
-    this.saveStorageEntry(name, value)
+    if(changed) {
+      this.saveStorageEntry(name, value)
+    }
 
     if (updateUI) {
       this.updateUI(name)
@@ -1252,7 +1245,7 @@ export default class Settings {
 
   processStorageEntry(name, value) {
     const setting = this.config.find(setting => setting.name === name) || {}
-    if (value === null) {
+    if (value === null || value === undefined) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (
@@ -1289,12 +1282,10 @@ export default class Settings {
     try {
       value = localStorage.getItem(`ambilight-${name}`)
       if(value !== null) {
-        console.log('Migrating setting', name, value)
-        this.removeLocalStorageEntry(name)
-        contentScript.postMessage('setSetting', { name, value })
+        localStorage.removeItem(`ambilight-${name}`)
+        this.saveStorageEntry(name, JSON.parse(value))
       }
     } catch (ex) {
-      alert('storage error')
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
     return value
@@ -1306,33 +1297,29 @@ export default class Settings {
     if (this.saveStorageEntryTimeout)
       clearTimeout(this.saveStorageEntryTimeout)
 
-    this.saveStorageEntryTimeout = setTimeout(() => {
+    this.saveStorageEntryTimeout = setTimeout(function saveStorageEntryTimeout() {
       delete this.saveStorageEntryTimeout
       this.flushPendingStorageEntries()
-    }, 500)
+    }.bind(this), 500)
   }
 
-  removeLocalStorageEntry(name) {
-    try {
-      localStorage.removeItem(`ambilight-${name}`)
-    } catch (ex) {
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
-    }
-  }
-
-  flushPendingStorageEntries() {
+  async flushPendingStorageEntries() {
     try {
       if (this.saveStorageEntryTimeout)
         clearTimeout(this.saveStorageEntryTimeout)
       
       const names = Object.keys(this.pendingStorageEntries)
       for(const name of names) {
-        contentScript.postMessage('setSetting', { name, value: this.pendingStorageEntries[name] })
-        // localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
+        await contentScript.setStorageEntry(`setting-${name}`, this.pendingStorageEntries[name], true)
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
+      if(ex?.message === 'uninstalled') {
+        this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
+        return
+      }
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
 
@@ -1376,11 +1363,22 @@ export default class Settings {
   }
 
   setWarning = (message, optional = false) => {
+    if(!this.menuElem) {
+      this.pendingWarning = () => this.setWarning(message, optional)
+      return
+    }
+
     if(optional && this.warningElem.textContent.length) return
 
+    const messageChanged = this.warningElem.textContent !== message
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
     
     this.menuBtn.classList.toggle('has-warning', !!message)
+    if(message && messageChanged)
+      this.menuElem.scrollTo({
+        behavior: 'smooth',
+        top: 0
+      })
   }
 }

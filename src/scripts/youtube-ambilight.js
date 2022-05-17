@@ -194,9 +194,9 @@ const loadAmbilight = async () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(async function onLoad() {
+const onLoad = () => requestIdleCallback(async function onLoadIdleCallback() {
   if(window.ambilight) return
-    
+
   await loadAmbilight()
 }, { timeout: 5000 })
 

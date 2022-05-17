@@ -1,5 +1,6 @@
 import AmbilightSentry, { AmbilightError } from './ambilight-sentry'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
@@ -144,24 +145,24 @@ export default class ProjectorWebGL {
     }
   }
 
-  majorPerformanceCaveatDetected() {
-    this.majorPerformanceCaveatDetected = true
-    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
+  async majorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveat = true
+    const detected = await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
     if(detected) return
     
     const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
-    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', true)
+    await contentScript.setStorageEntry('majorPerformanceCaveatDetected', true)
   }
 
-  noMajorPerformanceCaveatDetected() {
-    this.majorPerformanceCaveatDetected = false
-    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
+  async noMajorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveat = false
+    const detected = await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
     if(!detected) return
 
-    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', false)
+    await contentScript.setStorageEntry('majorPerformanceCaveatDetected', false)
   }
 
   onCtxLost = wrapErrorHandler(function onCtxLost(event) {
