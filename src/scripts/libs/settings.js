@@ -1,6 +1,7 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
 import { contentScript } from './messaging'
+import { getBrowser } from './utils'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -476,15 +477,19 @@ export default class Settings {
       this.menuElemParent = menuElemParent
 
       this.config = this.config.map(setting => {
-        if(this.ambilight.videoHasRequestVideoFrameCallback) {
-          if(setting.name === 'frameSync') {
-            setting.max = 2
-            setting.default = 2
-            setting.advanced = true
-          }
-          if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
-            setting.advanced = true
-          }
+        if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
+          setting.default = true
+        }
+        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
+          setting.default = 25
+        }
+        if(setting.name === 'frameSync' && this.ambilight.videoHasRequestVideoFrameCallback) {
+          setting.max = 2
+          setting.default = 2
+          setting.advanced = true
+        }
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && this.ambilight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
+          setting.advanced = true
         }
         return setting
       })
@@ -493,11 +498,9 @@ export default class Settings {
       await this.initWebGLExperiment()
 
       this.config = this.config.map(setting => {
-        if(setting.name === 'webGL') {
-          if(!supportsWebGL()) {
-            this.webGL = undefined
-            return undefined
-          }
+        if(setting.name === 'webGL' && !supportsWebGL()) {
+          this.webGL = undefined
+          return undefined
         }
         if(setting.name === 'resolution' && !this.webGL) {
           this.resolution = undefined
@@ -518,7 +521,7 @@ export default class Settings {
   }
 
   async initWebGLExperiment() {
-    if(this.webGL || !supportsWebGL()) return
+    if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
 
     this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
     if(this.webGLExperiment !== null) return
