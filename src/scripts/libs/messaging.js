@@ -115,7 +115,7 @@ class InjectedScript {
   }
 
   postMessage(type, message) {
-    window.postMessage({
+    return window.postMessage({
       message,
       type,
       contentScript: extensionId

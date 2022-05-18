@@ -4,7 +4,9 @@ export const uuidv4 = () => {
   );
 }
 
-let errorHandler;
+let errorHandler = (ex) => {
+  console.error(`Ambient light for YouTube™ |`, ex)
+}
 export const setErrorHandler = (handler) => {
   errorHandler = handler
 }
