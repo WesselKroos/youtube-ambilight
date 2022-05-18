@@ -34,7 +34,10 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       return
     }
 
-    ambilight.initVideoElem(videoElem)
+    if(ambilight.videoElem !== videoElem) {
+      ambilight.initVideoElem(videoElem)
+      ambilight.initVideoListeners()
+    }
     ambilight.start()
 
     if(errorEvents.list.length) {

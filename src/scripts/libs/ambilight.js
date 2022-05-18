@@ -65,7 +65,6 @@ export default class Ambilight {
       this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
       this.detectChromiumBug1142112Workaround()
       this.initElems(videoElem)
-      this.initVideoElem(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectChromiumBug1092080Workaround()
 
@@ -115,11 +114,15 @@ export default class Ambilight {
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
+
+    this.initVideoElem(videoElem, false)
   }
 
-  initVideoElem(videoElem) {
+  initVideoElem(videoElem, initListeners = true) {
     this.videoElem = videoElem
+    this.requestVideoFrameCallbackId = undefined
     this.applyChromiumBug1142112Workaround()
+    if(initListeners) this.initVideoListeners()
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -155,13 +158,17 @@ export default class Ambilight {
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
           wrapErrorHandler((entries, observer) => {
-            // Disconnect when ambilight crashed on initialization to avoid invalid error reports
-            if(!window.ambilight) {
-              observer.disconnect()
+            if(!window.ambilight) return
+            if(window.ambilight !== this) {
+              observer.disconnect() // Disconnect, because ambilight crashed on initialization and created a new instance
               return
             }
 
             for (const entry of entries) {
+              if(this.videoElem !== entry.target) {
+                this.videoObserver.unobserve(event.target) // video is detached and a new one was created
+                continue
+              }
               this.videoIsHidden = (entry.intersectionRatio === 0)
               this.videoVisibilityChangeTime = performance.now()
               this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
@@ -202,7 +209,7 @@ export default class Ambilight {
         ambilight.previousDroppedVideoFrames = droppedVideoFrames
         droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
         // if(ambilight.droppedVideoFramesCorrection) {
-        //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected:', droppedVideoFrames)
+        //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected to:', droppedVideoFrames)
         // }
         previousGetVideoPlaybackQualityTime = performance.now()
         return {
