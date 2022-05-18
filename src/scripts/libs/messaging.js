@@ -66,7 +66,7 @@ class ContentScript {
     }.bind(this))
 
     this.postMessage('get-storage-entries', { id: this.getStorageEntriesId, nameOrNames })
-    await getStorageEntriesPromise
+    return await getStorageEntriesPromise
   }
 
   setStorageEntryId = 0
@@ -101,7 +101,7 @@ class ContentScript {
     }.bind(this))
 
     this.postMessage('set-storage-entry', { id: this.setStorageEntryId, name, value })
-    await setStorageEntryPromise
+    return await setStorageEntryPromise
   }
 }
 export const contentScript = new ContentScript()
