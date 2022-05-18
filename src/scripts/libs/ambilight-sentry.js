@@ -1,4 +1,4 @@
-import { $, html, on, setErrorHandler, uuidv4 } from './generic';
+import { $, html, on, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
@@ -96,71 +96,80 @@ export class AmbilightError extends Error {
   }
 }
 
-const version = document.currentScript.getAttribute('data-version') || ''
+let version = ''
+export const setVersion = (newVersion) => {
+  version = newVersion
+}
 
-let crashOptions = JSON.parse(document.currentScript.getAttribute('data-crash-options'))
-contentScript.addMessageListener('crashOptions', data => {
-  crashOptions = data
-}, true)
+let crashOptions = null
+export const setCrashOptions = (newCrashOptions) => {
+  crashOptions = newCrashOptions
+}
 
-const client = new BrowserClient({
-  enabled: true,
-  dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
-  defaultIntegrations: false,
-  release: version,
-  attachStacktrace: true,
-  maxValueLength: 500,
-  normalizeDepth: 4,
-  beforeSend: (event) => {
-    try {
-      event.request = {
-        url: !crashOptions?.video ? '?' : location.href
-      }
-      if(crashOptions?.technical) {
-        event.request.headers = {
-          'User-Agent': navigator.userAgent // Add UserAgent
+let client;
+let hub;
+function initClient() {
+  client = new BrowserClient({
+    enabled: true,
+    dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
+    defaultIntegrations: false,
+    release: version,
+    attachStacktrace: true,
+    maxValueLength: 500,
+    normalizeDepth: 4,
+    beforeSend: (event) => {
+      try {
+        event.request = {
+          url: !crashOptions?.video ? '?' : location.href
         }
-      }
-      // Normalize stacktrace domain of all browsers
-      for(const value of event.exception.values) {
-        if(value.stacktrace && value.stacktrace.frames) {
-          for(const frame of value.stacktrace.frames) {
-            frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
-            frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
-            frame.filename = frame.filename.replace(/\/s\/player\/[a-z|0-9]+?\//g, '/s/player/_hash_/')
+        if(crashOptions?.technical) {
+          event.request.headers = {
+            'User-Agent': navigator.userAgent // Add UserAgent
           }
         }
-      }
-    } catch (ex) { console.warn(ex) }
-    return event
-  }
-})
-const hub = new Hub(client)
+        // Normalize stacktrace domain of all browsers
+        for(const value of event.exception.values) {
+          if(value.stacktrace && value.stacktrace.frames) {
+            for(const frame of value.stacktrace.frames) {
+              frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+              frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
+              frame.filename = frame.filename.replace(/\/s\/player\/[a-z|0-9]+?\//g, '/s/player/_hash_/')
+            }
+          }
+        }
+      } catch (ex) { console.warn(ex) }
+      return event
+    }
+  })
+  hub = new Hub(client)
+}
 
 let userId;
 let reports;
 const initializeStorageEntries = (async () => {
-  const entries = await contentScript.getStorageEntryOrEntries(['reports', 'crash-reporter-id']) || {}
-  userId = entries['crash-reporter-id']
-  reports = JSON.parse(entries.reports || '[]')
-
   try {
-    localStorage.removeItem('ambilight-reports')
-  } catch {}
+    const entries = await contentScript.getStorageEntryOrEntries(['reports', 'crash-reporter-id']) || {}
+    userId = entries['crash-reporter-id']
+    reports = JSON.parse(entries.reports || '[]')
 
-  if(!userId) {
     try {
-      userId = localStorage.getItem('ambilight-crash-reporter-id')
+      localStorage.removeItem('ambilight-reports')
     } catch {}
-    if(userId) {
-      // Migrate from localStorage to storage.local
-      await contentScript.setStorageEntry('crash-reporter-id', userId)
-      localStorage.removeItem('ambilight-crash-reporter-id')
-    } else {
-      userId = uuidv4()
-      contentScript.setStorageEntry('crash-reporter-id', userId)
+
+    if(!userId) {
+      try {
+        userId = localStorage.getItem('ambilight-crash-reporter-id')
+      } catch {}
+      if(userId) {
+        // Migrate from localStorage to storage.local
+        await contentScript.setStorageEntry('crash-reporter-id', userId)
+        localStorage.removeItem('ambilight-crash-reporter-id')
+      } else {
+        userId = uuidv4()
+        await contentScript.setStorageEntry('crash-reporter-id', userId)
+      }
     }
-  }
+  } catch {}
 })()
 
 let sessionId;
@@ -168,6 +177,10 @@ export default class AmbilightSentry {
   static overflowProtection = 0
   static async captureExceptionWithDetails(ex) {
     try {
+      if(!client || !hub) {
+        initClient()
+      }
+
       this.overflowProtection++
       if(this.overflowProtection > 3) {
         return
@@ -198,23 +211,27 @@ export default class AmbilightSentry {
         return
       }
 
-      await initializeStorageEntries;
+      try {
+        await initializeStorageEntries
+      } catch {}
 
       try {
-        const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
-        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const reportsToday = reports.filter(report => report.time > dayAgo)
-        const reportsThisWeek = reports.filter(report => report.time > weekAgo)
-        if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
-          reportsThisWeek.push({
-            time: Date.now(),
-            error: ex.message
-          })
-        } else {
-          console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
-          return
+        if(reports) {
+          const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
+          const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          const reportsToday = reports.filter(report => report.time > dayAgo)
+          const reportsThisWeek = reports.filter(report => report.time > weekAgo)
+          if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
+            reportsThisWeek.push({
+              time: Date.now(),
+              error: ex.message
+            })
+          } else {
+            console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
+            return
+          }
+          await contentScript.setStorageEntry('reports', JSON.stringify(reportsThisWeek))
         }
-        contentScript.setStorageEntry('reports', JSON.stringify(reportsThisWeek))
       } catch (ex) { 
         console.warn(ex)
         return
@@ -435,8 +452,6 @@ export default class AmbilightSentry {
     }
   }
 }
-
-setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
 
 export class ErrorEvents {
   list = []

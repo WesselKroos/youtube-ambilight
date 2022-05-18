@@ -145,9 +145,17 @@ export default class ProjectorWebGL {
     }
   }
 
+  async getMajorPerformanceCaveatDetected() {
+    try {
+      return await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }
+
   async majorPerformanceCaveatDetected() {
     this.majorPerformanceCaveat = true
-    const detected = await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
+    const detected = await this.getMajorPerformanceCaveatDetected()
     if(detected) return
     
     const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
@@ -159,8 +167,8 @@ export default class ProjectorWebGL {
 
   async noMajorPerformanceCaveatDetected() {
     this.majorPerformanceCaveat = false
-    const detected = await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
-    if(!detected) return
+    const detected = await this.getMajorPerformanceCaveatDetected()
+    if(detected === false) return
 
     await contentScript.setStorageEntry('majorPerformanceCaveatDetected', false)
   }

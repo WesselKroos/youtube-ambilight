@@ -1,6 +1,16 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl } from './libs/generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError, ErrorEvents } from './libs/ambilight-sentry'
+import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError, ErrorEvents, setVersion, setCrashOptions } from './libs/ambilight-sentry'
 import Ambilight from './libs/ambilight'
+import { contentScript } from './libs/messaging'
+
+setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+wrapErrorHandler(function initVersionAndCrashOptions() {
+  setVersion(document.currentScript.getAttribute('data-version') || '')
+  setCrashOptions(JSON.parse(document.currentScript.getAttribute('data-crash-options')))
+  contentScript.addMessageListener('crashOptions', newCrashOptions => {
+    setCrashOptions(newCrashOptions)
+  }, true)
+})()
 
 const errorEvents = new ErrorEvents()
 

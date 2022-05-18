@@ -523,8 +523,13 @@ export default class Settings {
   async initWebGLExperiment() {
     if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
 
-    this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
-    if(this.webGLExperiment !== null) return
+    try {
+      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
+      if(this.webGLExperiment !== null) return
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      return
+    }
 
     let newUser = false
     try {
@@ -533,7 +538,12 @@ export default class Settings {
       newUser = true
     }
     this.webGLExperiment = (newUser || Math.random() > .9)
-    contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
+    try {
+      await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      return
+    }
     if(!this.webGLExperiment) return
 
     this.set('webGL', true)
@@ -553,7 +563,7 @@ export default class Settings {
     try {
       storedSettings = await contentScript.getStorageEntryOrEntries(names, true) || {}
     } catch {
-      this.setWarning('The settings cannot be retrieved because the extension has been updated.\nRefresh the page to retry again.')
+      this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
       
     for (const setting of this.config) {

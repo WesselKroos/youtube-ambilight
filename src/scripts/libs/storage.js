@@ -1,17 +1,21 @@
-import { appendErrorStack } from "./generic"
+import { appendErrorStack, wrapErrorHandler } from './generic'
 
 class Storage {
   async set(name, value) {
     const stack = new Error().stack
     return await new Promise(function storageSet(resolve, reject) {
-      chrome.storage.local.set({ [name]: value }, function setCallback() {
-        if (chrome.runtime.lastError) {
-          const error = chrome.runtime.lastError
-          appendErrorStack(stack, error)
-          return reject(error)
-        }
-        resolve()
-      })
+      try {
+        chrome.storage.local.set({ [name]: value }, function setCallback() {
+          try {
+            if (chrome.runtime.lastError) throw chrome.runtime.lastError
+            resolve()
+          } catch(ex) {
+            reject(appendErrorStack(stack, ex))
+          }
+        })
+      } catch(ex) {
+        reject(appendErrorStack(stack, ex))
+      }
     })
   }
 
@@ -20,21 +24,25 @@ class Storage {
     const names = multiple ? nameOrNames : [nameOrNames]
     const stack = new Error().stack
     return await new Promise(function storageGet(resolve, reject) {
-      chrome.storage.local.get(names, function getCallback(result) {
-        if (chrome.runtime.lastError) {
-          const error = chrome.runtime.lastError
-          appendErrorStack(stack, error)
-          return reject(error)
-        }
-        resolve(multiple ? result : (
-          result[nameOrNames] === undefined ? null : result[nameOrNames]
-        ))
-      })
+      try {
+        chrome.storage.local.get(names, function getCallback(result) {
+          try {
+            if (chrome.runtime.lastError) throw chrome.runtime.lastError
+            resolve(multiple ? result : (
+              result[nameOrNames] === undefined ? null : result[nameOrNames]
+            ))
+          } catch(ex) {
+            reject(appendErrorStack(stack, ex))
+          }
+        })
+      } catch(ex) {
+        reject(appendErrorStack(stack, ex))
+      }
     })
   }
 
   addListener(handler) {
-    chrome.storage.local.onChanged.addListener(handler)
+    chrome.storage.local.onChanged.addListener(wrapErrorHandler(handler, true))
   }
 }
 

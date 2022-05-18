@@ -17,7 +17,7 @@ class ContentScript {
         event.data?.type !== type
       ) return
       handler(event.data?.message)
-    }, true)
+    })
     window.addEventListener('message', listener, true)
     return listener
   }
@@ -35,63 +35,73 @@ class ContentScript {
   }
 
   getStorageEntriesId = 0
-  getStorageEntryOrEntries(nameOrNames, throwOnUninstalled) {
+  async getStorageEntryOrEntries(nameOrNames, throwOnUninstalled) {
+    this.getStorageEntriesId++;
+    let listener;
+    const removeListener = function removeGetStorageEntryOrEntriesMessageListener() {
+      this.removeMessageListener(listener)
+    }.bind(this)
+
     const stack = new Error().stack
-    return new Promise(function getStorageEntryOrEntries(resolve, reject) {
+    const getStorageEntriesPromise = new Promise(function getStorageEntryOrEntries(resolve, reject) {
       try {
-        this.getStorageEntriesId++;
-        let listener;
-        const removeListener = () => this.removeMessageListener(listener)
-        listener = this.addMessageListener('get-storage-entries', function getStorageEntryOrEntriesMessageListener({ id, valueOrValues, error }) {
-          if(id !== this.getStorageEntriesId) return
+        listener = this.addMessageListener('get-storage-entries',
+          function getStorageEntryOrEntriesMessageListener({ id, valueOrValues, error }) {
+            try {
+              if(id !== this.getStorageEntriesId) return
 
-          removeListener()
-          if(error?.message === 'uninstalled') {
-            if(throwOnUninstalled) return reject(error)
-          } else if(error) {
-            appendErrorStack(stack, error)
-            reject(error)
-            return
-          }
+              removeListener()
+              if(error &&
+                (throwOnUninstalled || error.message !== 'uninstalled')
+              ) throw error
 
-          resolve(valueOrValues)
-        }.bind(this))
-        this.postMessage('get-storage-entries', { id: this.getStorageEntriesId, nameOrNames })
-      } catch (ex) {
-        console.error(`Ambient light for YouTube™ | ${ex.message}`)
+              resolve(valueOrValues)
+            } catch(ex) {
+              reject(appendErrorStack(stack, ex))
+            }
+          }.bind(this))
+      } catch(ex) {
+        reject(appendErrorStack(stack, ex))
       }
     }.bind(this))
+
+    this.postMessage('get-storage-entries', { id: this.getStorageEntriesId, nameOrNames })
+    await getStorageEntriesPromise
   }
 
   setStorageEntryId = 0
-  setStorageEntry(name, value, throwOnUninstalled) {
+  async setStorageEntry(name, value, throwOnUninstalled) {
+    this.setStorageEntryId++;
+    let listener;
+    const removeListener = function removeSetStorageEntryMessageListener() {
+      this.removeMessageListener(listener)
+    }.bind(this)
+
     const stack = new Error().stack
-    return new Promise(function setStorageEntry(resolve, reject) {
+    const setStorageEntryPromise = new Promise(function setStorageEntry(resolve, reject) {
       try {
-        this.setStorageEntryId++;
-        let listener;
-        const removeListener = function setStorageEntryRemoveMessageListener() {
-          this.removeMessageListener(listener)
-        }.bind(this)
-        listener = this.addMessageListener('set-storage-entry', function setStorageEntryMessageListener({ id, error }) {
-          if(id !== this.setStorageEntryId) return
+        listener = this.addMessageListener('set-storage-entry', 
+          function setStorageEntryMessageListener({ id, error }) {
+            try {
+              if(id !== this.setStorageEntryId) return
 
-          removeListener()
-          if(error?.message === 'uninstalled') {
-            if(throwOnUninstalled) return reject(error)
-          } else if(error) {
-            appendErrorStack(stack, error)
-            reject(error)
-            return
-          }
+              removeListener()
+              if(error &&
+                (throwOnUninstalled || error.message !== 'uninstalled')
+              ) throw error
 
-          resolve()
-        }.bind(this))
-        this.postMessage('set-storage-entry', { id: this.setStorageEntryId, name, value })
-      } catch (ex) {
-        console.error(`Ambient light for YouTube™ | ${ex.message}`)
+              resolve()
+            } catch(ex) {
+              reject(appendErrorStack(stack, ex))
+            }
+          }.bind(this))
+      } catch(ex) {
+        reject(appendErrorStack(stack, ex))
       }
     }.bind(this))
+
+    this.postMessage('set-storage-entry', { id: this.setStorageEntryId, name, value })
+    await setStorageEntryPromise
   }
 }
 export const contentScript = new ContentScript()

@@ -177,10 +177,11 @@ export const appendErrorStack = (stack, ex) => {
     const stackToAppend = stack.substring(stack.indexOf('\n') + 1)
     const stackToSearch = stackToAppend.substring(stackToAppend.indexOf('\n') + 1) // The first line in the stack trace can contain an extra function name
     const alreadyContainsStack = ((ex.stack || ex.message).indexOf(stackToSearch) !== -1)
-    if(alreadyContainsStack) return
-
-    ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
+    if(!alreadyContainsStack) {
+      ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
+    }
   } catch(ex) { console.warn(ex) }
+  return ex
 }
 
 let _supportsWebGL;
