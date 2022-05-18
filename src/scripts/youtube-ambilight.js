@@ -26,6 +26,18 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       return
     }
 
+    const newYtdAppElem = document.querySelector('ytd-app') 
+    if(newYtdAppElem !== ytdAppElem) {
+      const details = {
+        newYtdAppElemContainsAmbilightVideoElem: newYtdAppElem?.contains(ambilight.videoElem),
+        oldYtdAppElemContainsAmbilightVideoElem: ytdAppElem?.contains(ambilight.videoElem),
+        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        tree: getSelectorTreeString('video,#player-container')
+      }
+      errorEvents.add('detectDetachedVideo | ytd-app element changed', details)
+      return
+    }
+
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
       const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
