@@ -33,8 +33,8 @@ const updateCrashReportOptions = () => {
   updateCrashReportOptions()
 })()
 
-;[...document.querySelectorAll('.info-toggle')].forEach(elem => {
+;[...document.querySelectorAll('.expandable__toggle')].forEach(elem => {
   elem.addEventListener('click', () => {
-    elem.classList.toggle('toggled')
+    elem.closest('.expandable').classList.toggle('expanded')
   })
 })

@@ -31,24 +31,34 @@
     <h3>A crash report is allowed to contain:</h3>
     <ul>
       <li>
-        <input type="checkbox" name="video"/>
-        <label>The url and video ID being watched at the time of the crash</label>
+        <div class="option">
+          <input type="checkbox" name="video"/>
+          <label>The url and video ID being watched at the time of the crash</label>
+        </div>
       </li>
       <li>
-        <input type="checkbox" name="technical"/>
-        <label>Anonymous technical data</label>
-        <button class="info-toggle" title="Display the list of technical info">&gt;</button>
-        <ul class="info">
-          <li>Browser version</li>
-          <li>Operating system version</li>
-          <li>Display capabilities</li>
-          <li>Videoplayer state <i>(Does not contain the video id or title)</i></li>
-          <li>YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
-        </ul>
+        <div class="option">
+          <input type="checkbox" name="technical"/>
+          <div class="expandable">
+            <div class="expandable__title">
+              <label>Anonymous technical data</label>
+              <button class="expandable__toggle" title="Display the list of technical info">&gt;</button>
+            </div>
+            <ul class="expandable__details">
+              <li>Browser version</li>
+              <li>Operating system version</li>
+              <li>Display capabilities</li>
+              <li>Videoplayer state <i>(Does not contain the video id or title)</i></li>
+              <li>YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
+            </ul>
+          </div>
+        </div>
       </li>
       <li>
-        <input type="checkbox" name="crash"/>
-        <label>Ambient light state and error information</label>
+        <div class="option">
+          <input type="checkbox" name="crash"/>
+          <label>Ambient light state and error information</label>
+        </div>
       </li>
     </ul>
     <p>
