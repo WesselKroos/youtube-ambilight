@@ -8,7 +8,7 @@ html {
   overflow-y: scroll;
 }
 body { 
-  width: 400px;
+  width: 420px;
 }
 
 main {
@@ -17,6 +17,10 @@ main {
   font-size: 12px;
   line-height: 15px;
   color: #ccc;
+}
+
+img {
+  width: 100%;
 }
 
 h1 {
