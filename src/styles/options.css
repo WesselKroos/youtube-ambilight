@@ -25,9 +25,20 @@ h1 {
 }
 
 h2 {
-  margin: 25px 0 5px;
+  margin: 15px 0 5px;
   font-size: 16px;
   color: #008ce3;
+}
+
+h3 {
+  margin: 0 0 3px 0;
+}
+
+p {
+  margin: 5px 0 10px 0;
+}
+p:last-child {
+  margin-bottom: 0;
 }
 
 a {

@@ -46,10 +46,7 @@ Crash reports, and individual groups of data, can be turned off. But in case a c
     - Display capabilities
     - Videoplayer state (Does not contain the video id or title)
     - YouTube layout state (Does not contain your YouTube account data)
-- Ambient light and crash data
-    - Ambient light state
-    - What the error message is
-    - Where it crashed
+- Ambient light state and error information
 
 
 ## Report, request or contribute

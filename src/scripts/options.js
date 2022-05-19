@@ -7,8 +7,8 @@ document.querySelector('#privacyPolicyLink').href = getPrivacyPolicyLink()
 let crashOptions;
 
 const updateCrashReportOptions = () => {
-  document.querySelector('#video').disabled = !crashOptions.crash
-  document.querySelector('#technical').disabled = !crashOptions.crash
+  document.querySelector('[name="video"]').disabled = !crashOptions.crash
+  document.querySelector('[name="technical"]').disabled = !crashOptions.crash
   document.querySelector('[name="crash"]').checked = crashOptions.crash
   document.querySelector('[name="technical"]').checked = crashOptions.crash && crashOptions.technical
   document.querySelector('[name="video"]').checked = crashOptions.crash && crashOptions.video
