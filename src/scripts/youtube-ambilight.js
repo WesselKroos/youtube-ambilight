@@ -40,8 +40,8 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
 
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
-      const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
-      const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
+      const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
+      const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
       const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
       if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem) {
         return
@@ -84,12 +84,12 @@ const tryInitAmbilight = async () => {
   const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
-    const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
+    const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
       // errorEvents.add('tryInit | video in yt-player-manager')
       return false
     }
-    const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
+    const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
       // errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
       return false
