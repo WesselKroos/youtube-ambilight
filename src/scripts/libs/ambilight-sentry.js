@@ -120,7 +120,7 @@ function initClient() {
     beforeSend: (event) => {
       try {
         event.request = {
-          url: !crashOptions?.video ? '?' : location.href
+          url: (navigator.doNotTrack === '1' || !crashOptions?.video) ? '?' : location.href
         }
         if(crashOptions?.technical) {
           event.request.headers = {
@@ -430,7 +430,7 @@ export default class AmbilightSentry {
         }
       }
 
-      if(crashOptions?.video) {
+      if(navigator.doNotTrack !== '1' && crashOptions?.video) {
         try {
           const ytdWatchFlexyElem = $.s('ytd-watch-flexy')
           if (ytdWatchFlexyElem) {
