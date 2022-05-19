@@ -128,10 +128,12 @@ const workerCode = function () {
         return
       }
 
-      averageSize = (sizes.reduce((a, b) => a + b, 0) / sizes.length)
-      const closestSizes = sizes.sort(sortSizes).slice(0, Math.min(6, sizes.length))
-
-      const maxDeviation = Math.abs(Math.min(...closestSizes) - Math.max(...closestSizes))
+      let closestSizes = sizes
+      while(closestSizes.length > 6) {
+        averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
+        closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
+      }
+      const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
       const allowed = height * 0.01
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = 0.4
