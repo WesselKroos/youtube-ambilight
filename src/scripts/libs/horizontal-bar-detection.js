@@ -262,7 +262,7 @@ const workerCode = function () {
   }
 }
 
-export class HorizontalBarDetection {
+export default class HorizontalBarDetection {
   worker
   workerMessageId = 0
   cancellable = true
@@ -414,5 +414,3 @@ export class HorizontalBarDetection {
     }
   }, true)
 }
-
-export default detectHorizontalBarSize

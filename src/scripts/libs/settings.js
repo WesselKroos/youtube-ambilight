@@ -864,7 +864,6 @@ export default class Settings {
             e.stopPropagation()
           })
           const onChange = (empty = false) => {
-            const manualValue = manualInputElem.value
             if(inputElem.value === manualInputElem.value) return
             inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))

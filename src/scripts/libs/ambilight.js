@@ -1,6 +1,6 @@
 import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
-import { HorizontalBarDetection } from './horizontal-bar-detection'
+import HorizontalBarDetection from './horizontal-bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
