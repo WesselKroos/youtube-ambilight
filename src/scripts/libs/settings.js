@@ -537,7 +537,7 @@ export default class Settings {
     } catch {
       newUser = true
     }
-    this.webGLExperiment = (newUser || Math.random() > .9)
+    this.webGLExperiment = (newUser || Math.random() > .8)
     try {
       await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
     } catch(ex) {
