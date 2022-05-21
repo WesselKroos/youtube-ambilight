@@ -995,7 +995,7 @@ export default class Settings {
             this.detectHorizontalBarSizeEnabled &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambilight.horizontalBarDetection.clear()
+            this.ambilight.barDetection.clear()
             this.ambilight.scheduleBarSizeDetection()
           }
 
@@ -1003,7 +1003,7 @@ export default class Settings {
             this.detectVerticalBarSizeEnabled &&
             setting.name === 'detectVerticalBarSizeOffsetPercentage'
           ) {
-            this.ambilight.verticalBarDetection.clear()
+            this.ambilight.barDetection.clear()
             this.ambilight.scheduleBarSizeDetection()
           }
 
@@ -1401,6 +1401,7 @@ export default class Settings {
     immersive: this.config.find(setting => setting.name === 'immersive').key,
     enabled: this.config.find(setting => setting.name === 'enabled').key,
     detectHorizontalBarSizeEnabled: this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
+    detectVerticalBarSizeEnabled: this.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
     detectVideoFillScaleEnabled: this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
   })
 
@@ -1423,7 +1424,9 @@ export default class Settings {
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
       $.s(`#setting-detectColoredHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
+      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`),
+      $.s(`#setting-detectColoredVerticalBarSizeEnabled`),
+      $.s(`#setting-detectVerticalBarSizeOffsetPercentage`)
     ].filter(setting => setting)
     if(allowed) {
       for (const setting of settings) {
