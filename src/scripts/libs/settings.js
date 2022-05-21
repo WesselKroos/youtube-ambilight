@@ -239,11 +239,25 @@ export default class Settings {
     },
     {
       name: 'detectHorizontalBarSizeEnabled',
-      label: 'Remove horizontal black bars',
+      label: 'Remove black bars',
       description: 'More CPU usage',
       type: 'checkbox',
       default: false,
       defaultKey: 'B'
+    },
+    {
+      name: 'detectVerticalBarSizeEnabled',
+      label: 'Remove vertical black bars',
+      description: 'More CPU usage',
+      type: 'checkbox',
+      default: false,
+      defaultKey: 'V'
+    },
+    {
+      name: 'detectColoredHorizontalBarSizeEnabled',
+      label: 'Also remove colored bars',
+      type: 'checkbox',
+      default: false
     },
     {
       name: 'detectHorizontalBarSizeOffsetPercentage',
@@ -257,7 +271,7 @@ export default class Settings {
     },
     {
       name: 'horizontalBarsClipPercentage',
-      label: 'Black bars size',
+      label: 'Horizontal black bars size',
       type: 'list',
       default: 0,
       min: 0,
@@ -271,24 +285,6 @@ export default class Settings {
       advanced: true
     },
     {
-      name: 'detectVerticalBarSizeEnabled',
-      label: 'Remove vertical black bars',
-      description: 'More CPU usage',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'V'
-    },
-    {
-      name: 'detectVerticalBarSizeOffsetPercentage',
-      label: 'Vertical black bar detection offset',
-      type: 'list',
-      default: 0,
-      min: -5,
-      max: 5,
-      step: 0.1,
-      advanced: true
-    },
-    {
       name: 'verticalBarsClipPercentage',
       label: 'Vertical black bars size',
       type: 'list',
@@ -297,12 +293,6 @@ export default class Settings {
       max: 40,
       step: 0.1,
       advanced: true
-    },
-    {
-      name: 'detectColoredHorizontalBarSizeEnabled',
-      label: 'Also remove colored bars',
-      type: 'checkbox',
-      default: false
     },
     {
       name: 'horizontalBarsClipPercentageReset',
@@ -992,16 +982,8 @@ export default class Settings {
           }
 
           if (
-            this.detectHorizontalBarSizeEnabled &&
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
-          ) {
-            this.ambilight.barDetection.clear()
-            this.ambilight.scheduleBarSizeDetection()
-          }
-
-          if (
-            this.detectVerticalBarSizeEnabled &&
-            setting.name === 'detectVerticalBarSizeOffsetPercentage'
           ) {
             this.ambilight.barDetection.clear()
             this.ambilight.scheduleBarSizeDetection()
@@ -1423,19 +1405,12 @@ export default class Settings {
   setGetImageDataAllowedVisibility = (allowed) => {
     const settings = [
       $.s(`#setting-detectHorizontalBarSizeEnabled`),
+      $.s(`#setting-detectVerticalBarSizeEnabled`),
       $.s(`#setting-detectColoredHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`),
-      $.s(`#setting-detectColoredVerticalBarSizeEnabled`),
-      $.s(`#setting-detectVerticalBarSizeOffsetPercentage`)
+      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
     ].filter(setting => setting)
-    if(allowed) {
-      for (const setting of settings) {
-        setting.style.display = ''
-      }
-    } else {
-      for (const setting of settings) {
-        setting.style.display = 'none'
-      }
+    for (const setting of settings) {
+      setting.style.display = allowed ? '' : 'none'
     }
   }
 

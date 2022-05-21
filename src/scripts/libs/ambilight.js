@@ -1936,11 +1936,10 @@ export default class Ambilight {
         this.barDetection.detect(
           this.projectorBuffer.elem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
-          this.settings.detectHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
+          this.settings.detectHorizontalBarSizeEnabled,
           this.settings.horizontalBarsClipPercentage,
           this.settings.detectVerticalBarSizeEnabled,
-          this.settings.detectVerticalBarSizeOffsetPercentage,
           this.settings.verticalBarsClipPercentage,
           wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )

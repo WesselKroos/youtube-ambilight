@@ -197,11 +197,10 @@ const workerCode = function () {
       id = e.data.id
       try {
         const detectColored = e.data.detectColored
+        const offsetPercentage = e.data.offsetPercentage
         const detectHorizontal = e.data.detectHorizontal
-        const offsetHorizontalPercentage = e.data.offsetHorizontalPercentage
         const currentHorizontalPercentage = e.data.currentHorizontalPercentage
         const detectVertical = e.data.detectVertical
-        const offsetVerticalPercentage = e.data.offsetVerticalPercentage
         const currentVerticalPercentage = e.data.currentVerticalPercentage
         const canvasInfo = e.data.canvasInfo
       
@@ -244,12 +243,12 @@ const workerCode = function () {
         
         const horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
-            'width', 'height', detectColored, offsetHorizontalPercentage, currentHorizontalPercentage
+            'width', 'height', detectColored, offsetPercentage, currentHorizontalPercentage
           )
           : undefined
         const verticalPercentage = detectVertical
           ? await workerDetectBarSize(
-            'height', 'width', detectColored, offsetVerticalPercentage, currentVerticalPercentage
+            'height', 'width', detectColored, offsetPercentage, currentVerticalPercentage
           )
           : undefined
         // ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -293,9 +292,9 @@ export default class BarDetection {
     this.run = null
   }
 
-  detect = (buffer, detectColored,
-    detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
-    detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+  detect = (buffer, detectColored, offsetPercentage,
+    detectHorizontal, currentHorizontalPercentage,
+    detectVertical, currentVerticalPercentage,
   callback) => {
     if(this.run) return
 
@@ -316,9 +315,9 @@ export default class BarDetection {
 
     this.idleHandlerArguments = {
       buffer,
-      detectColored,
-      detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
-      detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+      detectColored, offsetPercentage,
+      detectHorizontal, currentHorizontalPercentage,
+      detectVertical, currentVerticalPercentage,
       callback
     }
 
@@ -333,9 +332,9 @@ export default class BarDetection {
 
     const {
       buffer,
-      detectColored,
-      detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
-      detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+      detectColored, offsetPercentage,
+      detectHorizontal, currentHorizontalPercentage,
+      detectVertical, currentVerticalPercentage,
       callback
     } = this.idleHandlerArguments
     let canvasInfo;
@@ -393,9 +392,9 @@ export default class BarDetection {
         {
           id: this.workerMessageId,
           canvasInfo,
-          detectColored,
-          detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
-          detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+          detectColored, offsetPercentage,
+          detectHorizontal, currentHorizontalPercentage,
+          detectVertical, currentVerticalPercentage,
         },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
