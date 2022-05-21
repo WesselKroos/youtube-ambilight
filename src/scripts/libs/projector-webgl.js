@@ -95,16 +95,16 @@ export default class ProjectorWebGL {
     this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
   }
 
-  onBlurCtxLost = wrapErrorHandler((event) => {
+  onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
     event.preventDefault();
     this.lost = true
     this.lostCount++
     this.invalidateShaderCache()
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
     this.setWebGLWarning('restore')
-  })
+  }.bind(this))
 
-  onBlurCtxRestored = wrapErrorHandler(() => {
+  onBlurCtxRestored = wrapErrorHandler(function wrappedOnBlurCtxRestored() {
     if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
@@ -119,7 +119,7 @@ export default class ProjectorWebGL {
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
       this.setWebGLWarning('restore')
     }
-  })
+  }.bind(this))
 
   initBlurCtx() {
     if(this.blurCanvas) {

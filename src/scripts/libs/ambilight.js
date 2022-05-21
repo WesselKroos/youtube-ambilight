@@ -55,7 +55,7 @@ export default class Ambilight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    return (async () => {
+    return (async function ambilightConstructor() {
       this.ytdAppElem = ytdAppElem
       this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
       if(!this.mastheadElem) {
@@ -84,14 +84,14 @@ export default class Ambilight {
 
       this.initListeners()
 
-      setTimeout(() => {
+      setTimeout(function setTimeout() {
         if (!this.settings.enabled) return
 
         this.enable(true)
-      }, 0)
+      }.bind(this), 0)
       
       return this
-    })()
+    }.bind(this))()
   }
 
   initElems(videoElem) {
@@ -277,10 +277,7 @@ export default class Ambilight {
     this.updateImmersiveMode()
     if(wasView === this.view) {
       // Spare multiple resize handler calls when resizing the browser window
-      this.scheduledHandleVideoResize = raf(() => {
-        this.scheduledHandleVideoResize = null
-        this.handleVideoResize()
-      })
+      this.scheduledHandleVideoResize = raf(this.handleVideoResize)
     } else {
       // When changing viewmodes draw directly to prevent flickering
       this.handleVideoResize()
@@ -288,6 +285,7 @@ export default class Ambilight {
   }
 
   handleVideoResize = () => {
+    this.scheduledHandleVideoResize = null
     if (!this.settings.enabled || !this.isOnVideoPage) return
 
     this.nextFrame()
@@ -354,13 +352,7 @@ export default class Ambilight {
         console.warn('Ambient light for YouTube™ | Video error:', ex)
         this.clear()
         this.requestVideoFrameCallbackId = undefined
-        setTimeout(() => {
-          this.initVideoListeners()
-          if(!this.videoElem.paused) {
-            this.videoListeners.playing()
-          }
-        }, 1000)
-        if (!this.settings.enabled || !this.isOnVideoPage) return
+        setTimeout(handleVideoError, 1000)
       },
       click: this.settings.onCloseMenu
     }
@@ -368,6 +360,13 @@ export default class Ambilight {
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
       on(this.videoElem, name, this.videoListeners[name])
+    }
+  }
+
+  handleVideoError = () => {
+    this.initVideoListeners()
+    if(!this.videoElem.paused) {
+      this.videoListeners.playing()
     }
   }
 
@@ -386,41 +385,9 @@ export default class Ambilight {
       }
     }
 
-    on(document, 'visibilitychange', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      const isPageHidden = document.visibilityState === 'hidden'
-      if(this.isPageHidden === isPageHidden) return
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
 
-      this.isPageHidden = isPageHidden
-      if(this.settings.webGL) {
-        this.projector.handlePageVisibility(isPageHidden)
-      }
-      if(document.visibilityState !== 'hidden') return
-
-      this.buffersCleared = true
-      this.checkIfNeedToHideVideoOverlay()
-    }, false);
-
-    on(document, 'keydown', (e) => {
-      if (!this.isOnVideoPage) return
-      if (document.activeElement) {
-        const el = document.activeElement
-        const tag = el.tagName
-        const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
-        if (
-          inputs.indexOf(tag) !== -1 || 
-          (
-            el.getAttribute('contenteditable') !== null && 
-            el.getAttribute('contenteditable') !== 'false'
-          )
-        ) {
-          return
-        }
-      }
-      if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
-
-      this.onKeyPressed(e.key?.toUpperCase())
-    })
+    on(document, 'keydown', this.handleKeyDown)
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       try {
@@ -460,27 +427,7 @@ export default class Ambilight {
     this.videoResizeObserver.observe(this.videoElem)
 
     // Fix YouTube bug: focus on video element without scrolling to the top
-    on(this.videoElem, 'focus', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-
-      const startTop = {
-        window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-        video: this.videoContainerElem?.getBoundingClientRect()?.top
-      };
-      raf(() => {
-        const endTop = {
-          window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-          video: this.videoContainerElem?.getBoundingClientRect()?.top
-        }
-        if(startTop.window === endTop.window) return
-        
-        if(this.view === VIEW_FULLSCREEN) {
-          this.ytdAppElem.scrollTop = startTop.window
-        } else {
-          window.scrollTo(window.scrollX, startTop.window)
-        }
-      })
-    }, true)
+    on(this.videoElem, 'focus', this.handleVideoFocus, true)
 
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = html.getAttribute('dark') ? 1 : -1
@@ -542,6 +489,64 @@ export default class Ambilight {
     } else {
       console.warn('Ambient light for YouTube™ | html5-video-player not found')
     }
+  }
+
+  handleDocumentVisibilityChange = () => {
+    if (!this.settings.enabled || !this.isOnVideoPage) return
+    const isPageHidden = document.visibilityState === 'hidden'
+    if(this.isPageHidden === isPageHidden) return
+
+    this.isPageHidden = isPageHidden
+    if(this.settings.webGL) {
+      this.projector.handlePageVisibility(isPageHidden)
+    }
+    if(document.visibilityState !== 'hidden') return
+
+    this.buffersCleared = true
+    this.checkIfNeedToHideVideoOverlay()
+  }
+
+  handleKeyDown = (e) => {
+    if (!this.isOnVideoPage) return
+    if (document.activeElement) {
+      const el = document.activeElement
+      const tag = el.tagName
+      const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
+      if (
+        inputs.indexOf(tag) !== -1 || 
+        (
+          el.getAttribute('contenteditable') !== null && 
+          el.getAttribute('contenteditable') !== 'false'
+        )
+      ) {
+        return
+      }
+    }
+    if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+
+    this.onKeyPressed(e.key?.toUpperCase())
+  }
+
+  handleVideoFocus = () => {
+    if (!this.settings.enabled || !this.isOnVideoPage) return
+
+    const startTop = {
+      window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+      video: this.videoContainerElem?.getBoundingClientRect()?.top
+    };
+    raf(function handleVideoFocusRaf() {
+      const endTop = {
+        window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+        video: this.videoContainerElem?.getBoundingClientRect()?.top
+      }
+      if(startTop.window === endTop.window) return
+      
+      if(this.view === VIEW_FULLSCREEN) {
+        this.ytdAppElem.scrollTop = startTop.window
+      } else {
+        window.scrollTo(window.scrollX, startTop.window)
+      }
+    }.bind(this))
   }
 
   onKeyPressed = (key) => {
@@ -828,9 +833,9 @@ export default class Ambilight {
     this.settings.horizontalBarsClipPercentage = percentage
     this.sizesInvalidated = true
     this.optionalFrame()
-    setTimeout(() => {
+    setTimeout(function setHorizontalBarsClipPercentage() {
       this.settings.set('horizontalBarsClipPercentage', percentage, true)
-    }, 1)
+    }.bind(this), 1)
   }
 
   recreateProjectors() {
@@ -1358,10 +1363,12 @@ export default class Ambilight {
     if(!this.videoIsHidden)
       requestAnimationFrame(this.onNextFrame)
     else
-      setTimeout(() => requestAnimationFrame(this.onNextFrame), this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
+      setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
-  onNextFrame = wrapErrorHandler(() => {
+  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrame)
+
+  onNextFrame = wrapErrorHandler(function wrappedOnNextFrame() {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
@@ -1377,7 +1384,7 @@ export default class Ambilight {
     this.detectDisplayFrameRate()
     this.detectAmbilightFrameRate()
     this.detectVideoFrameRate()
-  })
+  }.bind(this))
 
   onNextLimitedFrame = () => {
     const time = performance.now()
@@ -2045,13 +2052,13 @@ export default class Ambilight {
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(() => {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(function videoFrameCallback() {
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
       this.receiveVideoFrame()
-    })
+    }.bind(this))
   }
 
   receiveVideoFrame = () => {
@@ -2142,13 +2149,13 @@ export default class Ambilight {
     })
     this.ytdAppElem.dispatchEvent(event)
 
-    this.darkThemeValidationTimeout = setTimeout(() => {
+    this.darkThemeValidationTimeout = setTimeout(function darkThemeValidation() {
       this.darkThemeValidationTimeout = undefined
       const isDark = !!html.getAttribute('dark')
       if (wasDark !== isDark) return
       
       throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
-    }, 0)
+    }.bind(this), 0)
   }
 
   updateLiveChatTheme() {

@@ -14,27 +14,31 @@ const updateCrashReportOptions = () => {
   document.querySelector('[name="video"]').checked = crashOptions.crash && crashOptions.video
 }
 
-[...document.querySelectorAll('[type="checkbox"]')].forEach(input => {
-  input.addEventListener('change', async () => {
-    try {
-      crashOptions[input.name] = input.checked
-      await storage.set('crashOptions', crashOptions)
-    } catch(ex) {
-      alert('Crash reports options changed to many times. Please wait a few seconds.')
-      input.checked = !input.checked
-      crashOptions[input.name] = input.checked
-    }
-    updateCrashReportOptions()
-  })
-})
+[...document.querySelectorAll('[type="checkbox"]')].forEach(
+  function addCheckboxInputChangeEventListener(input) {
+    input.addEventListener('change', async () => {
+      try {
+        crashOptions[input.name] = input.checked
+        await storage.set('crashOptions', crashOptions)
+      } catch(ex) {
+        alert('Crash reports options changed to many times. Please wait a few seconds.')
+        input.checked = !input.checked
+        crashOptions[input.name] = input.checked
+      }
+      updateCrashReportOptions()
+    })
+  }
+)
 
-;(async () => {
+;(async function initCrashReportOptions() {
   crashOptions = (await storage.get('crashOptions')) || defaultCrashOptions
   updateCrashReportOptions()
 })()
 
-;[...document.querySelectorAll('.expandable__toggle')].forEach(elem => {
-  elem.addEventListener('click', () => {
-    elem.closest('.expandable').classList.toggle('expanded')
-  })
-})
+;[...document.querySelectorAll('.expandable__toggle')].forEach(
+  function addExpendableToggleClickEventListener (elem) {
+    elem.addEventListener('click', () => {
+      elem.closest('.expandable').classList.toggle('expanded')
+    })
+  }
+)

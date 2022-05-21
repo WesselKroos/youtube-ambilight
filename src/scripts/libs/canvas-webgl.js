@@ -49,7 +49,7 @@ export class WebGLContext {
   constructor(canvas, type, options, setWarning) {
     this.setWarning = setWarning;
     this.canvas = canvas;
-    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler((event) => {
+    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
       event.preventDefault();
       this.lost = true
       this.lostCount++
@@ -58,8 +58,8 @@ export class WebGLContext {
       this.scaleY = undefined
       console.warn(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
       this.setWebGLWarning('restore')
-    }), false);
-    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(() => {
+    }.bind(this)), false);
+    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(function canvasWebGLContextRestored() {
       if(this.lostCount >= 3) {
         console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
         this.setWebGLWarning('3 times restore')
@@ -74,14 +74,14 @@ export class WebGLContext {
         console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
         this.setWebGLWarning('restore')
       }
-    }), false);
-    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler((e) => {
+    }.bind(this)), false);
+    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
       this.webglcontextcreationerrors.push({
         message: e.statusMessage || '?',
         time: performance.now(),
         webGLVersion: this.webGLVersion
       })
-    }), false);
+    }.bind(this)), false);
 
     this.options = options;
     try {

@@ -119,8 +119,9 @@ function initClient() {
     normalizeDepth: 4,
     beforeSend: (event) => {
       try {
-        event.request = {
-          url: (navigator.doNotTrack === '1' || !crashOptions?.video) ? '?' : location.href
+        event.request = {}
+        if(navigator.doNotTrack !== '1' && crashOptions?.video) {
+          event.request.url = location.href
         }
         if(crashOptions?.technical) {
           event.request.headers = {

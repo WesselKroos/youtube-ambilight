@@ -83,7 +83,7 @@ export function on(elem, eventNames, callback, options, getListenerCallback, rep
   const eventListenerCallback = namedCallbacks[callbacksName]
 
   const list = eventNames.split(' ')
-  list.forEach((eventName) => {
+  list.forEach(function eventNamesAddEventListener(eventName) {
     elem.addEventListener(eventName, eventListenerCallback, options)
   })
 
@@ -93,7 +93,7 @@ export function on(elem, eventNames, callback, options, getListenerCallback, rep
 
 export function off(elem, eventNames, callback) {
   const list = eventNames.split(' ')
-  list.forEach((eventName) => {
+  list.forEach(function eventNamesRemoveEventListener(eventName) {
     elem.removeEventListener(eventName, callback)
   })
 }
@@ -104,7 +104,7 @@ export const body = document.body
 export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
 export const ctxOptions = {
-  alpha: false, // false allows 8k60fps with frame blending + video overlay 30fps -> 144fps
+  alpha: false,
   // desynchronized: true,
   imageSmoothingQuality: 'low'
 }
@@ -120,23 +120,6 @@ export const $ = {
     if (!results) return null
     if (!results[2]) return ''
     return decodeURIComponent(results[2].replace(/\+/g, " "))
-  }
-}
-
-export function waitForDomElement(check, containerSelector, callback) {
-  if (check()) {
-    callback()
-  } else {
-    const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-      if (!check()) return
-      observer.disconnect()
-      callback()
-    }))
-    observer.observe($.s(containerSelector), {
-      childList: true,
-      subtree: true
-    })
-    return observer
   }
 }
 

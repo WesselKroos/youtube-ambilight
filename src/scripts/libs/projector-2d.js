@@ -23,7 +23,7 @@ export default class Projector2d {
       this.projectors = []
     }
 
-    this.projectors = this.projectors.filter((projector, i) => {
+    this.projectors = this.projectors.filter(function removeExcessProjector(projector, i) {
       if (i >= levels) {
         projector.elem.remove()
         return false

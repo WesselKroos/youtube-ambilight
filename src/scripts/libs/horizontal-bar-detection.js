@@ -304,10 +304,12 @@ export default class HorizontalBarDetection {
       callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
+    requestIdleCallback(function horizontalBarDetectionIdleCallback() {
+      return this.idleHandler(run)
+    }.bind(this), { timeout: 1000 })
   }
 
-  idleHandler = wrapErrorHandler(async (run) => {
+  idleHandler = wrapErrorHandler(async function idleHandler(run) {
     if(this.run !== run) return
     this.cancellable = false
 
@@ -342,7 +344,7 @@ export default class HorizontalBarDetection {
       this.workerMessageId++;
       const stack = new Error().stack
       let newPercentage;
-      const onMessagePromise = new Promise((resolve, reject) => {
+      const onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
           try {
@@ -369,7 +371,7 @@ export default class HorizontalBarDetection {
             reject(ex)
           }
         }
-      })
+      }.bind(this))
       this.worker.postMessage(
         {
           id: this.workerMessageId,
@@ -412,5 +414,5 @@ export default class HorizontalBarDetection {
         throw ex
       }
     }
-  }, true)
+  }.bind(this), true)
 }

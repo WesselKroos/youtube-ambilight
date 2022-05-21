@@ -116,12 +116,14 @@ const tryInitAmbilight = async () => {
   return true
 }
 
-const getWatchPageViewObserver = (() => {
+const getWatchPageViewObserver = (function initGetWatchPageViewObserver() {
   let observer;
-  return (ytdAppElem) => {
+  return function getWatchPageViewObserver(ytdAppElem) {
     if(!observer) {
-      observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => 
-        ambilightStartIfWatchPageHasVideo(ytdAppElem)
+      observer = new MutationObserver(wrapErrorHandler(
+        function watchPageViewObserved(mutationsList, observer) {
+          ambilightStartIfWatchPageHasVideo(ytdAppElem)
+        }
       ))
     }
     return observer;
@@ -148,7 +150,7 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
 }
 
 const ambilightDetectPageTransitions = (ytdAppElem) => {
-  on(document, 'yt-navigate-finish', () => {
+  on(document, 'yt-navigate-finish', function onYtNavigateFinish() {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       ambilightStartIfWatchPageHasVideo(ytdAppElem)
@@ -169,7 +171,9 @@ const loadAmbilight = async () => {
   const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
-      .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+      .filter(function getAppElems(elem) {
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+      })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
       throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
@@ -183,39 +187,42 @@ const loadAmbilight = async () => {
   // Listen to DOM changes
   let initializing = false
   let tryAgain = true
-  const observer = new MutationObserver(wrapErrorHandler(async (mutationsList, observer) => {
-    if (initializing) {
-      tryAgain = true
-      return
-    }
-
-    if (window.ambilight) {
-      observer.disconnect()
-      return
-    }
-
-    initializing = true
-    try {
-      if (await tryInitAmbilight()) {
-        // Initialized
-        observer.disconnect()
-      } else {
-        while(tryAgain) {
-          tryAgain = false
-          if(await tryInitAmbilight()) {
-            // Initialized
-            observer.disconnect()
-            tryAgain = false
-          }
-        }
-        initializing = false
+  const observer = new MutationObserver(wrapErrorHandler(
+    async function ytdAppObserved(mutationsList, observer) {
+      if (initializing) {
+        tryAgain = true
+        return
       }
-    } catch (ex) {
-      // Disconnect to prevent infinite loops
-      observer.disconnect()
-      throw ex
-    }
-  }, true))
+
+      if (window.ambilight) {
+        observer.disconnect()
+        return
+      }
+
+      initializing = true
+      try {
+        if (await tryInitAmbilight()) {
+          // Initialized
+          observer.disconnect()
+        } else {
+          while(tryAgain) {
+            tryAgain = false
+            if(await tryInitAmbilight()) {
+              // Initialized
+              observer.disconnect()
+              tryAgain = false
+            }
+          }
+          initializing = false
+        }
+      } catch (ex) {
+        // Disconnect to prevent infinite loops
+        observer.disconnect()
+        throw ex
+      }
+    },
+    true
+  ))
   observer.observe(ytdAppElem, {
     childList: true,
     subtree: true
