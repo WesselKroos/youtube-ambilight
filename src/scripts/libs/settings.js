@@ -247,7 +247,7 @@ export default class Settings {
     },
     {
       name: 'detectVerticalBarSizeEnabled',
-      label: 'Remove vertical black bars',
+      label: 'Remove black sidebars',
       description: 'More CPU usage',
       type: 'checkbox',
       default: false,
@@ -286,7 +286,7 @@ export default class Settings {
     },
     {
       name: 'verticalBarsClipPercentage',
-      label: 'Vertical black bars size',
+      label: 'Black sidebars size',
       type: 'list',
       default: 0,
       min: 0,
@@ -303,10 +303,10 @@ export default class Settings {
     },
     {
       name: 'detectVideoFillScaleEnabled',
-      label: 'Fill video to screen width',
+      label: 'Fill video to screen',
       type: 'checkbox',
       default: false,
-      defaultKey: 'W'
+      defaultKey: 'S'
     },
     {
       type: 'section',
@@ -996,6 +996,10 @@ export default class Settings {
             this.ambilight.canvassesInvalidated = true
           }
 
+          if(['surroundingContentShadowSize', 'videoShadowSize'].some(name => name === setting.name)) {
+            this.updateVisibility()
+          }
+
           this.ambilight.buffersCleared = true
           this.ambilight.sizesInvalidated = true
           this.ambilight.optionalFrame()
@@ -1046,6 +1050,10 @@ export default class Settings {
           if(setting.name === 'immersiveTheaterView') {
             this.ambilight.updateImmersiveMode()
           }
+          
+          if(['detectHorizontalBarSizeEnabled', 'detectVerticalBarSizeEnabled', 'frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
+            this.updateVisibility()
+          }
 
           if(setting.name === 'detectHorizontalBarSizeEnabled' || setting.name === 'detectVerticalBarSizeEnabled') {
             if(!value) {
@@ -1066,7 +1074,7 @@ export default class Settings {
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
-            this.updateControlledSettings()
+            this.updateVisibility()
             this.displayBezel(setting.key, !value)
 
             if(this.webGL) {
@@ -1088,7 +1096,7 @@ export default class Settings {
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
-            this.updateControlledSettings()
+            this.updateVisibility()
 
             const key = this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
             this.displayBezel(key, !value)
@@ -1136,7 +1144,7 @@ export default class Settings {
       }
     }
 
-    this.updateControlledSettings()
+    this.updateVisibility()
   }
 
   getSettingListDisplayText(setting) {
@@ -1229,15 +1237,47 @@ export default class Settings {
     {
       name: 'horizontalBarsClipPercentage',
       controllerName: 'detectHorizontalBarSizeEnabled',
-      controller: 'Remove horizontal black bars'
+      controller: 'Remove black bars'
     },
     {
       name: 'verticalBarsClipPercentage',
       controllerName: 'detectVerticalBarSizeEnabled',
-      controller: 'Remove vertical black bars'
+      controller: 'Remove black sidebars size'
     }
   ]
-  updateControlledSettings() {
+  optionalSettings = [
+    {
+      names: [
+        'detectHorizontalBarSizeEnabled',
+        'detectVerticalBarSizeEnabled'
+      ],
+      visible: () => this.ambilight.getImageDataAllowed
+    },
+    {
+      names: [
+        'detectColoredHorizontalBarSizeEnabled',
+        'detectHorizontalBarSizeOffsetPercentage'
+      ],
+      visible: () => this.ambilight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
+    },
+    {
+      names: [ 'frameBlendingSmoothness' ],
+      visible: () => this.frameBlending
+    },
+    {
+      names: [ 'videoOverlaySyncThreshold' ],
+      visible: () => this.videoOverlayEnabled
+    },
+    {
+      names: [ 'surroundingContentShadowOpacity' ],
+      visible: () => this.surroundingContentShadowSize
+    },
+    {
+      names: [ 'videoShadowOpacity' ],
+      visible: () => this.videoShadowSize
+    }
+  ]
+  updateVisibility() {
     for(const setting of this.controlledSettings) {
       const valueElem = $.s(`#setting-${setting.name}-value`)
       if(this[setting.controllerName]) {
@@ -1246,6 +1286,14 @@ export default class Settings {
       } else {
         valueElem.classList.remove('is-controlled-by-setting')
         valueElem.setAttribute('title', '')
+      }
+    }
+
+    for(const optionalGroup of this.optionalSettings) {
+      const optionalSettings = optionalGroup.names.map(name => $.s(`#setting-${name}`)).filter(setting => setting)
+      const visible = optionalGroup.visible()
+      for (const optionalSetting of optionalSettings) {
+        optionalSetting.style.display = visible ? '' : 'none'
       }
     }
   }
@@ -1400,18 +1448,6 @@ export default class Settings {
       this.bezelElem.style.display = ''
       this.bezelTextElem.textContent = text
     }, 0);
-  }
-
-  setGetImageDataAllowedVisibility = (allowed) => {
-    const settings = [
-      $.s(`#setting-detectHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectVerticalBarSizeEnabled`),
-      $.s(`#setting-detectColoredHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
-    ].filter(setting => setting)
-    for (const setting of settings) {
-      setting.style.display = allowed ? '' : 'none'
-    }
   }
 
   setWarning = (message, optional = false) => {

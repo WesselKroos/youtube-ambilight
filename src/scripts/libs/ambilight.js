@@ -599,7 +599,7 @@ export default class Ambilight {
 
     if(this.getImageDataAllowed === getImageDataAllowed) return
     this.getImageDataAllowed = getImageDataAllowed
-    this.settings.setGetImageDataAllowedVisibility(getImageDataAllowed)
+    this.settings.updateVisibility()
   }
 
   initAmbilightElems() {
