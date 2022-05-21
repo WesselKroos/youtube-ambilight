@@ -286,7 +286,7 @@ export default class Ambilight {
 
   handleVideoResize = () => {
     this.scheduledHandleVideoResize = null
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
 
     this.nextFrame()
   }
@@ -865,7 +865,11 @@ export default class Ambilight {
       }
     }
     for (const canvas of canvasses) {
-      canvas.elem.width = 1;
+      if(canvas.ctx?.clearRect) {
+        canvas.ctx.clearRect(0, 0, canvas.elem.width, canvas.elem.height)
+      } else {
+        canvas.elem.width = 1;
+      }
     }
 
     this.buffersCleared = true

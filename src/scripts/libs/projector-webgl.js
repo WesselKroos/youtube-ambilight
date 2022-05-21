@@ -7,6 +7,7 @@ export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
+  projectors = []
 
   constructor(containerElem, initProjectorListeners, settings) {
     this.containerElem = containerElem
@@ -142,6 +143,10 @@ export default class ProjectorWebGL {
     })
     if(!this.blurCtx) {
       throw new Error('ProjectorWebGL blur context creation failed')
+    }
+    this.projectors[0] = {
+      elem: this.blurCanvas,
+      ctx: this.blurCtx
     }
   }
 
@@ -301,10 +306,10 @@ export default class ProjectorWebGL {
 
     if(this.ctxIsInvalid) return
 
-    this.projectors = [{
+    this.projectors[1] = {
       elem: this.canvas,
-      ctx: this.ctx
-    }]
+      ctx: this
+    }
 
     // Program
     this.program = this.ctx.createProgram();
