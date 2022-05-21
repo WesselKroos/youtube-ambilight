@@ -183,7 +183,8 @@ export default class Settings {
       label: 'Hide when scrolled to top',
       type: 'checkbox',
       default: false,
-      defaultKey: 'Z'
+      defaultKey: 'Z',
+      advanced: true
     },
     {
       name: 'immersiveTheaterView',
@@ -293,7 +294,7 @@ export default class Settings {
       type: 'section',
       label: 'Filters',
       name: 'sectionAmbilightImageAdjustmentCollapsed',
-      default: false,
+      default: true,
       advanced: true
     },
     {
