@@ -1,6 +1,6 @@
 import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
-import HorizontalBarDetection from './horizontal-bar-detection'
+import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
@@ -19,7 +19,7 @@ const THEME_DARK = 1
 const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 
 export default class Ambilight {
-  horizontalBarDetection = new HorizontalBarDetection()
+  barDetection = new BarDetection()
   innerStrength = 2
   lastCheckVideoSizeTime = 0
 
@@ -555,6 +555,8 @@ export default class Ambilight {
     const keys = this.settings.getKeys()
     if (key === keys.detectHorizontalBarSizeEnabled) // b by default
       this.settings.clickUI('detectHorizontalBarSizeEnabled')
+    if (key === keys.detectVerticalBarSizeEnabled)
+      this.settings.clickUI('detectVerticalBarSizeEnabled')
     if (key === keys.detectVideoFillScaleEnabled) // w by default
       this.settings.clickUI('detectVideoFillScaleEnabled')
     if (key === keys.immersive) // z by default
@@ -818,7 +820,12 @@ export default class Ambilight {
     const videoPath = location.search
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.settings.horizontalBarsClipPercentageReset) {
-        this.setHorizontalBars(0)
+        const horizontalBarChanged = this.setHorizontalBars(0)
+        const verticalBarChanged = this.setVerticalBars(0)
+        if(horizontalBarChanged || verticalBarChanged) {
+          this.sizesInvalidated = true
+          this.optionalFrame()
+        }
       }
       if (this.settings.detectVideoFillScaleEnabled) {
         this.settings.set('videoScale', 100, true)
@@ -828,14 +835,23 @@ export default class Ambilight {
   }
 
   setHorizontalBars(percentage) {
-    if(this.settings.horizontalBarsClipPercentage === percentage) return
+    if(this.settings.horizontalBarsClipPercentage === percentage) return false
 
     this.settings.horizontalBarsClipPercentage = percentage
-    this.sizesInvalidated = true
-    this.optionalFrame()
     setTimeout(function setHorizontalBarsClipPercentage() {
       this.settings.set('horizontalBarsClipPercentage', percentage, true)
     }.bind(this), 1)
+    return true
+  }
+
+  setVerticalBars(percentage) {
+    if(this.settings.verticalBarsClipPercentage === percentage) return false
+
+    this.settings.verticalBarsClipPercentage = percentage
+    setTimeout(function setVerticalBarsClipPercentage() {
+      this.settings.set('verticalBarsClipPercentage', percentage, true)
+    }.bind(this), 1)
+    return true
   }
 
   recreateProjectors() {
@@ -846,7 +862,7 @@ export default class Ambilight {
   }
 
   clear() {
-    this.horizontalBarDetection.clear()
+    this.barDetection.clear()
 
     // Clear canvasses
     const canvasses = []
@@ -934,7 +950,7 @@ export default class Ambilight {
     this.updateView()
     this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && videoScale == 100)
+    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
 
     const videoElemParentElem = this.videoElem.parentNode
 
@@ -1082,7 +1098,7 @@ export default class Ambilight {
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : ((this.settings.resolution || 25) / 100)
+        const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : ((this.settings.resolution || 25) / 100)
         const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
@@ -1305,7 +1321,7 @@ export default class Ambilight {
       return this.updateSizes()
     }
     
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.videoScale == 100)
+    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && this.settings.videoScale == 100)
     if(!noClipOrScale) {
       const videoElemParentElem = this.videoElem.parentElement
       if(videoElemParentElem) {
@@ -1468,8 +1484,8 @@ export default class Ambilight {
       this.scheduleNextFrame()
     }
 
-    if (results.detectHorizontalBarSize) {
-      this.scheduleHorizontalBarSizeDetection()
+    if (results.detectBarSize) {
+      this.scheduleBarSizeDetection()
     }
 
     if(
@@ -1717,6 +1733,7 @@ export default class Ambilight {
         this.atTop &&
         this.isFillingFullscreen && 
         !this.settings.detectHorizontalBarSizeEnabled &&
+        !this.settings.detectVerticalBarSizeEnabled &&
         !this.settings.frameBlending &&
         !this.settings.videoOverlayEnabled
       ) ||
@@ -1901,40 +1918,56 @@ export default class Ambilight {
 
     // Horizontal bar detection
     if(
-      this.settings.detectHorizontalBarSizeEnabled &&
+      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) &&
       hasNewFrame
     ) {
-      return { detectHorizontalBarSize: true }
+      return { detectBarSize: true }
     }
   }
 
-  scheduleHorizontalBarSizeDetection = () => {
+  scheduleBarSizeDetection = () => {
     try {
-      if(this.horizontalBarDetection.run) return
+      if(this.barDetection.run) return
 
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
         this.getImageDataAllowed
       ) {
-        this.horizontalBarDetection.detect(
+        this.barDetection.detect(
           this.projectorBuffer.elem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
+          this.settings.detectHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.horizontalBarsClipPercentage,
-          wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
+          this.settings.detectVerticalBarSizeEnabled,
+          this.settings.detectVerticalBarSizeOffsetPercentage,
+          this.settings.verticalBarsClipPercentage,
+          wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }
     } catch (ex) {
-      if (!this.showedDetectHorizontalBarSizeWarning) {
-        this.showedDetectHorizontalBarSizeWarning = true
+      if (!this.showedDetectBarSizeWarning) {
+        this.showedDetectBarSizeWarning = true
         throw ex
       }
     }
   }
 
-  scheduleHorizontalBarSizeDetectionCallback = (percentage) => {
-    if(this.settings.detectHorizontalBarSizeEnabled && percentage !== undefined)
-      this.setHorizontalBars(percentage)
+  scheduleBarSizeDetectionCallback = (horizontalPercentage, verticalPercentage) => {
+    const horizontalBarChanged = (
+      this.settings.detectHorizontalBarSizeEnabled && 
+      horizontalPercentage !== undefined && 
+      this.setHorizontalBars(horizontalPercentage)
+    )
+    const verticalBarChanged = (
+      this.settings.detectVerticalBarSizeEnabled && 
+      verticalPercentage !== undefined && 
+      this.setVerticalBars(verticalPercentage)
+    )
+    if(!horizontalBarChanged && !verticalBarChanged) return
+
+    this.sizesInvalidated = true
+    this.optionalFrame()
   }
 
   checkIfNeedToHideVideoOverlay() {
@@ -2030,7 +2063,7 @@ export default class Ambilight {
     this.ambilightVideoDroppedFrameCount = 0
 
     this.showedCompareWarning = false
-    this.showedDetectHorizontalBarSizeWarning = false
+    this.showedDetectBarSizeWarning = false
 
     this.nextFrameTime = undefined
 

@@ -18,16 +18,20 @@ const workerCode = function () {
   let catchedWorkerCreationError = false
   let canvas;
   let ctx;
-  let imageVLines = []
-  let imageVLinesIndex = 0
+  let imageLines = []
+  let imageLinesIndex = 0
   let partSize = 1
   let getLineImageDataStack;
   let getLineImageDataResolve;
   let getLineImageDataReject;
+  let getLineImageDataYLength;
 
   function getLineImageData() {
     try {
-      const imageData = imageVLines.push(ctx.getImageData(imageVLinesIndex, 0, 1, canvas.height).data)
+      const params = getLineImageDataYLength === 'height' 
+        ? [imageLinesIndex, 0, 1, canvas.height]
+        : [0, imageLinesIndex, canvas.width, 1]
+      const length = imageLines.push(ctx.getImageData(...params).data)
       getLineImageDataResolve()
     } catch(ex) {
       appendErrorStack(getLineImageDataStack, ex)
@@ -49,13 +53,14 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectHorizontalBarSize = async (detectColored, offsetPercentage, currentPercentage) => {
-      partSize = (canvas.width / 5)
-      imageVLines = []
-      for (imageVLinesIndex = Math.ceil(partSize / 2) - 1; imageVLinesIndex < canvas.width; imageVLinesIndex += partSize) {
+    const workerDetectBarSize = async (xLength, yLength, detectColored, offsetPercentage, currentPercentage) => {
+      partSize = Math.floor(canvas[xLength] / 5)
+      imageLines = []
+      for (imageLinesIndex = Math.ceil(partSize / 2) - 1; imageLinesIndex < canvas[xLength]; imageLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
         }
+        getLineImageDataYLength = yLength
         await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
       }
       getLineImageDataResolve = undefined
@@ -65,14 +70,14 @@ const workerCode = function () {
       let sizes = []
       const colorIndex = (channels * 4)
       let color = detectColored ?
-        [imageVLines[0][colorIndex], imageVLines[0][colorIndex + 1], imageVLines[0][colorIndex + 2]] :
+        [imageLines[0][colorIndex], imageLines[0][colorIndex + 1], imageLines[0][colorIndex + 2]] :
         [2,2,2]
       const maxColorDeviation = 8
       const ignoreEdge = 2
-      const lineLimit = (imageVLines[0].length / 2)
+      const lineLimit = (imageLines[0].length / 2)
       const largeStep = 20
     
-      for(const line of imageVLines) {
+      for(const line of imageLines) {
         let step = largeStep
         const iStart = (channels * ignoreEdge)
         // From the top down
@@ -121,8 +126,8 @@ const workerCode = function () {
           break;
         }
       }
-      const height = (imageVLines[0].length / channels)
-      imageVLines.length = 0
+      const maxSize = (imageLines[0].length / channels)
+      imageLines.length = 0
 
       if(!sizes.length) {
         return
@@ -134,7 +139,7 @@ const workerCode = function () {
         closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
       }
       const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
-      const allowed = height * 0.01
+      const allowed = maxSize * 0.01
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = 0.4
       const maxPercentage = 30
@@ -142,39 +147,39 @@ const workerCode = function () {
       let size = 0;
       if(!deviationAllowed) {
         let lowestSize = Math.min(...closestSizes)
-        let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
+        let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
           return
         }
     
         size = lowestSize
-        if(size < (height * 0.012)) {
+        if(size < (maxSize * 0.012)) {
           size = 0
         } else {
-          size += (height * (offsetPercentage/100))
+          size += (maxSize * (offsetPercentage/100))
         }
       } else {
         size = Math.max(...closestSizes)
-        if(size < (height * 0.012)) {
+        if(size < (maxSize * 0.012)) {
           size = 0
         } else {
-          size += (height * ((baseOffsetPercentage + offsetPercentage)/100))
+          size += (maxSize * ((baseOffsetPercentage + offsetPercentage)/100))
         }
       }
 
-      if(size > (height * 0.49)) {
+      if(size > (maxSize * 0.49)) {
         let lowestSize = Math.min(...sizes)
-        if(lowestSize >= (height * 0.01)) {
-          lowestSize += (height * (offsetPercentage/100))
+        if(lowestSize >= (maxSize * 0.01)) {
+          lowestSize += (maxSize * (offsetPercentage/100))
         }
-        let lowestPercentage = Math.round((lowestSize / height) * 10000) / 100
+        let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage < currentPercentage) {
           return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
         }
         return // Filled with a almost single color
       }
       
-      let percentage = Math.round((size / height) * 10000) / 100
+      let percentage = Math.round((size / maxSize) * 10000) / 100
       percentage = Math.min(percentage, maxPercentage)
 
       const adjustment = (percentage - currentPercentage)
@@ -192,8 +197,12 @@ const workerCode = function () {
       id = e.data.id
       try {
         const detectColored = e.data.detectColored
-        const offsetPercentage = e.data.offsetPercentage
-        const currentPercentage = e.data.currentPercentage
+        const detectHorizontal = e.data.detectHorizontal
+        const offsetHorizontalPercentage = e.data.offsetHorizontalPercentage
+        const currentHorizontalPercentage = e.data.currentHorizontalPercentage
+        const detectVertical = e.data.detectVertical
+        const offsetVerticalPercentage = e.data.offsetVerticalPercentage
+        const currentVerticalPercentage = e.data.currentVerticalPercentage
         const canvasInfo = e.data.canvasInfo
       
         if(canvasInfo.bitmap) {
@@ -233,16 +242,22 @@ const workerCode = function () {
         // ctx2.transferFromImageBitmap(bitmap)
         // ctx.drawImage(canvas2, 0, 0)
         
-        const percentage = await workerDetectHorizontalBarSize(
-          detectColored, 
-          offsetPercentage, 
-          currentPercentage
-        )
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        const horizontalPercentage = detectHorizontal
+          ? await workerDetectBarSize(
+            'width', 'height', detectColored, offsetHorizontalPercentage, currentHorizontalPercentage
+          )
+          : undefined
+        const verticalPercentage = detectVertical
+          ? await workerDetectBarSize(
+            'height', 'width', detectColored, offsetVerticalPercentage, currentVerticalPercentage
+          )
+          : undefined
+        // ctx.clearRect(0, 0, canvas.width, canvas.height)
       
         this.postMessage({ 
           id,
-          percentage
+          horizontalPercentage,
+          verticalPercentage
         })
       } catch(ex) {
         this.postMessage({
@@ -262,14 +277,14 @@ const workerCode = function () {
   }
 }
 
-export default class HorizontalBarDetection {
+export default class BarDetection {
   worker
   workerMessageId = 0
   cancellable = true
   run = null
   canvas;
   ctx;
-  catchedDetectHorizontalBarSizeError = false;
+  catchedDetectBarSizeError = false;
   lastChange;
 
   clear = () => {
@@ -278,7 +293,10 @@ export default class HorizontalBarDetection {
     this.run = null
   }
 
-  detect = (buffer, detectColored, offsetPercentage, currentPercentage, callback) => {
+  detect = (buffer, detectColored,
+    detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
+    detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+  callback) => {
     if(this.run) return
 
     const run = this.run = {}
@@ -299,12 +317,12 @@ export default class HorizontalBarDetection {
     this.idleHandlerArguments = {
       buffer,
       detectColored,
-      offsetPercentage,
-      currentPercentage,
+      detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
+      detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
       callback
     }
 
-    requestIdleCallback(function horizontalBarDetectionIdleCallback() {
+    requestIdleCallback(function verticalBarDetectionIdleCallback() {
       return this.idleHandler(run)
     }.bind(this), { timeout: 1000 })
   }
@@ -316,8 +334,8 @@ export default class HorizontalBarDetection {
     const {
       buffer,
       detectColored,
-      offsetPercentage,
-      currentPercentage,
+      detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
+      detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
       callback
     } = this.idleHandlerArguments
     let canvasInfo;
@@ -325,7 +343,7 @@ export default class HorizontalBarDetection {
       const start = performance.now()
 
       if(!this.canvas) {
-        this.canvas = new SafeOffscreenCanvas(5, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
         this.ctx = this.canvas.getContext('2d', {
           alpha: false,
           desynchronized: true
@@ -343,7 +361,6 @@ export default class HorizontalBarDetection {
 
       this.workerMessageId++;
       const stack = new Error().stack
-      let newPercentage;
       const onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = (e) => {
@@ -352,18 +369,18 @@ export default class HorizontalBarDetection {
               this.run !== run || 
               e.data.id !== this.workerMessageId
             ) {
-              console.warn('Ambient light for YouTube™ | Ignoring old percentage:', e.data.id, e.data.percentage)
+              console.warn('Ambient light for YouTube™ | Ignoring old percentage:', 
+                e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
               return
             }
             if(e.data.error) {
               // Readable name for the worker script
-              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/horizontal-bar-detection-worker.js:')
+              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/bar-detection-worker.js:')
               appendErrorStack(stack, e.data.error)
               throw e.data.error
             }
-            callback(e.data.percentage)
-            newPercentage = e.data.percentage
-            if(newPercentage !== undefined) {
+            callback(e.data.horizontalPercentage, e.data.verticalPercentage)
+            if(e.data.horizontalPercentage !== undefined || e.data.verticalPercentage !== undefined) {
               this.lastChange = performance.now()
             }
             resolve()
@@ -377,9 +394,9 @@ export default class HorizontalBarDetection {
           id: this.workerMessageId,
           canvasInfo,
           detectColored,
-          offsetPercentage,
-          currentPercentage
-        }, 
+          detectHorizontal, offsetHorizontalPercentage, currentHorizontalPercentage,
+          detectVertical, offsetVerticalPercentage, currentVerticalPercentage,
+        },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
@@ -409,8 +426,8 @@ export default class HorizontalBarDetection {
       }
       this.cancellable = true
       this.run = null
-      if (!this.catchedDetectHorizontalBarSizeError) {
-        this.catchedDetectHorizontalBarSizeError = true
+      if (!this.catchedDetectBarSizeError) {
+        this.catchedDetectBarSizeError = true
         throw ex
       }
     }

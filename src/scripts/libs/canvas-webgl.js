@@ -313,8 +313,8 @@ export class WebGLContext {
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
     if(this.ctxIsInvalid) return
 
-    // Enough for 5 ImageData objects for the blackbar detection
-    if(this.getImageDataBuffersIndex > 4) {
+    // Enough for 10 ImageData objects for the blackbar detection
+    if(this.getImageDataBuffersIndex > 9) {
       this.getImageDataBuffersIndex = 0;
     } else {
       this.getImageDataBuffersIndex++;

@@ -239,17 +239,11 @@ export default class Settings {
     },
     {
       name: 'detectHorizontalBarSizeEnabled',
-      label: 'Remove black bars',
+      label: 'Remove horizontal black bars',
       description: 'More CPU usage',
       type: 'checkbox',
       default: false,
       defaultKey: 'B'
-    },
-    {
-      name: 'detectColoredHorizontalBarSizeEnabled',
-      label: 'Also remove colored bars',
-      type: 'checkbox',
-      default: false
     },
     {
       name: 'detectHorizontalBarSizeOffsetPercentage',
@@ -275,6 +269,40 @@ export default class Settings {
         { value: 13.5, label: 13 }
       ],
       advanced: true
+    },
+    {
+      name: 'detectVerticalBarSizeEnabled',
+      label: 'Remove vertical black bars',
+      description: 'More CPU usage',
+      type: 'checkbox',
+      default: false,
+      defaultKey: 'V'
+    },
+    {
+      name: 'detectVerticalBarSizeOffsetPercentage',
+      label: 'Vertical black bar detection offset',
+      type: 'list',
+      default: 0,
+      min: -5,
+      max: 5,
+      step: 0.1,
+      advanced: true
+    },
+    {
+      name: 'verticalBarsClipPercentage',
+      label: 'Vertical black bars size',
+      type: 'list',
+      default: 0,
+      min: 0,
+      max: 40,
+      step: 0.1,
+      advanced: true
+    },
+    {
+      name: 'detectColoredHorizontalBarSizeEnabled',
+      label: 'Also remove colored bars',
+      type: 'checkbox',
+      default: false
     },
     {
       name: 'horizontalBarsClipPercentageReset',
@@ -934,6 +962,15 @@ export default class Settings {
             controllerInput.click()
           }
 
+          if(
+            setting.name === 'verticalBarsClipPercentage' &&
+            this.detectVerticalBarSizeEnabled
+          ) {
+            const controllerInput = $.s(`#setting-detectVerticalBarSizeEnabled`)
+            controllerInput.dontResetControlledSetting = true
+            controllerInput.click()
+          }
+
           if(setting.name === 'videoScale') {
             if(this.detectVideoFillScaleEnabled) {
               const controllerInput = $.s(`#setting-detectVideoFillScaleEnabled`)
@@ -959,7 +996,15 @@ export default class Settings {
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
             this.ambilight.horizontalBarDetection.clear()
-            this.ambilight.scheduleHorizontalBarSizeDetection()
+            this.ambilight.scheduleBarSizeDetection()
+          }
+
+          if (
+            this.detectVerticalBarSizeEnabled &&
+            setting.name === 'detectVerticalBarSizeOffsetPercentage'
+          ) {
+            this.ambilight.verticalBarDetection.clear()
+            this.ambilight.scheduleBarSizeDetection()
           }
 
           if (
@@ -991,6 +1036,8 @@ export default class Settings {
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
             setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
+            setting.name === 'detectVerticalBarSizeEnabled' ||
+            setting.name === 'detectColoredVerticalBarSizeEnabled' ||
             setting.name === 'detectVideoFillScaleEnabled' ||
             setting.name === 'directionTopEnabled' ||
             setting.name === 'directionRightEnabled' ||
@@ -1018,25 +1065,27 @@ export default class Settings {
             this.ambilight.updateImmersiveMode()
           }
 
-          if(setting.name === 'detectHorizontalBarSizeEnabled') {
+          if(setting.name === 'detectHorizontalBarSizeEnabled' || setting.name === 'detectVerticalBarSizeEnabled') {
             if(!value) {
               if(!settingElem.dontResetControlledSetting) {
-                const horizontalBarsClipPercentageSetting = this.config.find(setting => setting.name === 'horizontalBarsClipPercentage')
-                const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
-                horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
-                horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                const controlledSettingName = ({
+                  'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
+                  'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage'
+                })[setting.name]
+                const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
+                const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+                percentageInputElem.value = percentageSetting.default
+                percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
               }
             } else {
-              this.ambilight.horizontalBarDetection.clear()
-              this.ambilight.scheduleHorizontalBarSizeDetection()
+              this.ambilight.barDetection.clear()
+              this.ambilight.scheduleBarSizeDetection()
             }
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
             this.updateControlledSettings()
-
-            const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
-            this.displayBezel(key, !value)
+            this.displayBezel(setting.key, !value)
 
             if(this.webGL) {
               this.ambilight.updateSizes()
@@ -1188,23 +1237,34 @@ export default class Settings {
     off(this.menuElem, 'animationend', this.onSettingsFadeOutEndListener)
   }
 
-  updateControlledSettings() {
-    const videoScaleValue = $.s(`#setting-videoScale-value`)
-    if(!this.detectVideoFillScaleEnabled) {
-      videoScaleValue.classList.remove('is-controlled-by-setting')
-      videoScaleValue.setAttribute('title', '')
-    } else {
-      videoScaleValue.classList.add('is-controlled-by-setting')
-      videoScaleValue.setAttribute('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
+  
+  controlledSettings = [
+    {
+      name: 'videoScale',
+      controllerName: 'detectVideoFillScaleEnabled',
+      controller: 'Fill video to screen width'
+    },
+    {
+      name: 'horizontalBarsClipPercentage',
+      controllerName: 'detectHorizontalBarSizeEnabled',
+      controller: 'Remove horizontal black bars'
+    },
+    {
+      name: 'verticalBarsClipPercentage',
+      controllerName: 'detectVerticalBarSizeEnabled',
+      controller: 'Remove vertical black bars'
     }
-
-    const horizontalBarsClipPercentageValue = $.s(`#setting-horizontalBarsClipPercentage-value`)
-    if(!this.detectHorizontalBarSizeEnabled) {
-      horizontalBarsClipPercentageValue.classList.remove('is-controlled-by-setting')
-      horizontalBarsClipPercentageValue.setAttribute('title', '')
-    } else {
-      horizontalBarsClipPercentageValue.classList.add('is-controlled-by-setting')
-      horizontalBarsClipPercentageValue.setAttribute('title', 'Controlled by the "Remove black bars" setting.\nManually adjusting this setting will turn off "Remove black bars"')
+  ]
+  updateControlledSettings() {
+    for(const setting of this.controlledSettings) {
+      const valueElem = $.s(`#setting-${setting.name}-value`)
+      if(this[setting.controllerName]) {
+        valueElem.classList.add('is-controlled-by-setting')
+        valueElem.setAttribute('title', `Controlled by the "${setting.controller}" setting.\nManually adjusting this setting will turn off "${setting.controller}"`)
+      } else {
+        valueElem.classList.remove('is-controlled-by-setting')
+        valueElem.setAttribute('title', '')
+      }
     }
   }
 
