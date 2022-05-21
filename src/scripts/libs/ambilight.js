@@ -898,8 +898,9 @@ export default class Ambilight {
     let videoScale = 100
     if(this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
       if(this.videoPlayerElem) {
+        const videoScaleX = (100 - (this.settings.verticalBarsClipPercentage * 2)) / 100
         const videoScaleY = (100 - (this.settings.horizontalBarsClipPercentage * 2)) / 100
-        const videoWidth = this.videoElem.offsetWidth
+        const videoWidth = this.videoElem.offsetWidth * videoScaleX
         const videoHeight = this.videoElem.offsetHeight * videoScaleY
         const containerWidth = this.videoPlayerElem.offsetWidth
         const containerHeight = this.videoPlayerElem.offsetHeight
@@ -982,23 +983,26 @@ export default class Ambilight {
       }
     }
 
-    const horizontalBarsClip = this.settings.horizontalBarsClipPercentage / 100
+    this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
+    this.clippedVideoScale = this.barsClip.map(clip => (1 - (clip * 2)))
     const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale
     if (shouldStyleVideoContainer) {
       const top = Math.max(0, parseInt(this.videoElem.style.top))
+      const left = Math.max(0, parseInt(this.videoElem.style.left))
+      const width = Math.max(0, parseInt(this.videoElem.style.width))
+      videoElemParentElem.style.width = `${width}px`
       videoElemParentElem.style.height = this.videoElem.style.height || '100%'
       videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
       videoElemParentElem.style.overflow = 'hidden'
-
-      this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
       videoElemParentElem.style.transform =  `
-        translateY(${top}px) 
+        translate(${left}px, ${top}px)
         scale(${(videoScale / 100)}) 
-        scaleY(${this.horizontalBarsClipScaleY})
+        scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `
+      const VideoClipScale = this.clippedVideoScale.map(scale => Math.round(1000 * (1 / scale)) / 1000)
       videoElemParentElem.style.setProperty('--video-transform', `
-        translateY(${-top}px) 
-        scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})
+        translate(${-left}px, ${-top}px) 
+        scale(${VideoClipScale[0]}, ${VideoClipScale[1]})
       `)
     }
 
@@ -1029,25 +1033,24 @@ export default class Ambilight {
       ((unscaledHeight - this.videoOffset.height) / 2)
     )
 
-    this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
     this.projectorsElem.style.left = `${unscaledLeft}px`
     this.projectorsElem.style.top = `${unscaledTop - 1}px`
     this.projectorsElem.style.width = `${unscaledWidth}px`
     this.projectorsElem.style.height = `${unscaledHeight}px`
     this.projectorsElem.style.transform = `
       scale(${(videoScale / 100)}) 
-      scaleY(${this.horizontalBarsClipScaleY})
+      scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
     `
     
     if(this.settings.videoShadowOpacity != 0 && this.settings.videoShadowSize != 0) {
       this.videoShadowElem.style.display = 'block'
       this.videoShadowElem.style.left = `${unscaledLeft}px`
       this.videoShadowElem.style.top = `${unscaledTop}px`
-      this.videoShadowElem.style.width = `${unscaledWidth}px`
-      this.videoShadowElem.style.height = `${(unscaledHeight * this.horizontalBarsClipScaleY)}px`
+      this.videoShadowElem.style.width = `${unscaledWidth * this.clippedVideoScale[0]}px`
+      this.videoShadowElem.style.height = `${(unscaledHeight * this.clippedVideoScale[1])}px`
       this.videoShadowElem.style.transform = `
-        translate3d(0,0,0) 
-        translateY(${(unscaledHeight * horizontalBarsClip)}px) 
+        translate3d(0,0,0)
+        translate(${(unscaledWidth * this.barsClip[0])}px, ${(unscaledHeight * this.barsClip[1])}px)
         scale(${(videoScale / 100)})
       `
     } else {
@@ -1242,8 +1245,8 @@ export default class Ambilight {
 
   resizeCanvasses() {
     const projectorSize = {
-      w: this.p.w,
-      h: Math.round(this.p.h * this.horizontalBarsClipScaleY)
+      w: Math.round(this.p.w * this.clippedVideoScale[0]),
+      h: Math.round(this.p.h * this.clippedVideoScale[1])
     }
     const ratio = (this.videoOffset.width > this.videoOffset.height) ?
       {
@@ -1291,7 +1294,8 @@ export default class Ambilight {
       })
     }
 
-    this.projector.rescale(scales, lastScale, projectorSize, (this.settings.horizontalBarsClipPercentage / 100), this.settings)
+    // Todo: verticalBarsClipPercentage
+    this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
   checkVideoSize(checkPosition = true) {
@@ -1321,16 +1325,22 @@ export default class Ambilight {
       return this.updateSizes()
     }
     
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && this.settings.videoScale == 100)
+    const noClipOrScale = (
+      this.settings.horizontalBarsClipPercentage == 0 &&
+      this.settings.verticalBarsClipPercentage == 0 &&
+      this.settings.videoScale == 100
+    )
     if(!noClipOrScale) {
       const videoElemParentElem = this.videoElem.parentElement
       if(videoElemParentElem) {
         const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
+        const left = Math.max(0, parseInt(this.videoElem.style.left))
         const top = Math.max(0, parseInt(this.videoElem.style.top))
-        const scaleY = (Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)
+        const scaleX = (Math.round(1000 * (1 / this.clippedVideoScale[0])) / 1000)
+        const scaleY = (Math.round(1000 * (1 / this.clippedVideoScale[1])) / 1000)
         if(
-          videoTransform.indexOf(`translateY(${-top}px)`) === -1 ||
-          videoTransform.indexOf(`scaleY(${scaleY})`) === -1
+          videoTransform.indexOf(`translate(${-left}px, ${-top}px)`) === -1 ||
+          videoTransform.indexOf(`scale(${scaleX}, ${scaleY})`) === -1
         ) {
           return this.updateSizes()
         }
@@ -1340,11 +1350,19 @@ export default class Ambilight {
     if(checkPosition) {
       const projectorsElemRect = this.getElemRect(this.projectorsElem)
       const videoElemRect = this.getElemRect(this.videoElem)
-      const expectedProjectsElemRectY = videoElemRect.top + (videoElemRect.height * (this.settings.horizontalBarsClipPercentage/100))
+      const topExtraOffset = this.horizontalBarsClipPercentage ? (videoElemRect.height * (this.horizontalBarsClipPercentage / 100)) : 0
+      const leftExtraOffset = this.verticalBarsClipPercentage ? (videoElemRect.width * (this.verticalBarsClipPercentage / 100)) : 0
+      const expectedProjectorsRect = {
+        width: videoElemRect.width - (leftExtraOffset * 2),
+        height: videoElemRect.height - (topExtraOffset * 2),
+        top: videoElemRect.top + topExtraOffset,
+        left: videoElemRect.left + leftExtraOffset
+      }
       if (
-        Math.abs(projectorsElemRect.width - videoElemRect.width) > 1 ||
-        Math.abs(projectorsElemRect.left - videoElemRect.left) > 1 ||
-        Math.abs(projectorsElemRect.top - expectedProjectsElemRectY) > 2
+        Math.abs(projectorsElemRect.height - expectedProjectorsRect.height) > 1 ||
+        Math.abs(projectorsElemRect.width - expectedProjectorsRect.width) > 1 ||
+        Math.abs(projectorsElemRect.top - expectedProjectorsRect.top) > 2 ||
+        Math.abs(projectorsElemRect.left - expectedProjectorsRect.left) > 2
       ) {
         return this.updateSizes()
       }
@@ -1746,38 +1764,28 @@ export default class Ambilight {
 
     let newVideoFrameCount = this.getVideoFrameCount()
 
-    let updateVideoSnapshot = this.buffersCleared
-    if(!updateVideoSnapshot) {
-      if (this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) {
-        if(this.videoIsHidden) {
-          updateVideoSnapshot = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
-        } else {
-          if(this.videoFrameCallbackReceived && this.videoFrameCount == newVideoFrameCount) {
-            newVideoFrameCount++
-          }
-          updateVideoSnapshot = this.videoFrameCallbackReceived
-          this.videoFrameCallbackReceived = false
-
-          // Fallback for when requestVideoFrameCallback stopped working
-          if (!updateVideoSnapshot) {
-            updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-          }
-        }
-      } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) {
-        updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-      } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) {
-        updateVideoSnapshot = true
-      }
-    }
-
-    let hasNewFrame = this.buffersCleared
+    let hasNewFrame = false
     if(this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) {
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      if(this.videoIsHidden) {
+        hasNewFrame = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
+      } else {
+        if(this.videoFrameCallbackReceived && this.videoFrameCount == newVideoFrameCount) {
+          newVideoFrameCount++
+        }
+        hasNewFrame = this.videoFrameCallbackReceived
+        this.videoFrameCallbackReceived = false
+
+        // Fallback for when requestVideoFrameCallback stopped working
+        if (!hasNewFrame) {
+          hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+        }
+      }
     } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) {
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) {
       hasNewFrame = true
     }
+    hasNewFrame = hasNewFrame || this.buffersCleared
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (droppedFrames && !this.buffersCleared) {

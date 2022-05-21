@@ -206,9 +206,11 @@ html[data-ambilight-enabled="true"] {
     opacity: 0;
   }
   .html5-main-video {
+    transform-origin: center center;
     transform: var(--video-transform);
   }
   .ambilight__video-overlay {
+    transform-origin: center center;
     transform: var(--video-transform);
   }
 

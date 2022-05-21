@@ -33,7 +33,7 @@ export default class ProjectorWebGL {
     this.fScale = undefined
     this.fScaleStep = undefined
     this.fScalesLength = undefined
-    this.fHeightCrop = undefined
+    this.fCrop = undefined
     this.fTextureMipmapLevel = undefined
   }
 
@@ -458,7 +458,7 @@ export default class ProjectorWebGL {
     this.updateCtx()
   }
 
-  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
+  rescale(scales, lastScale, projectorSize, crop, settings) {
     this.shadow.rescale(lastScale, projectorSize, settings)
 
     this.scaleStep = {
@@ -469,7 +469,7 @@ export default class ProjectorWebGL {
     this.scale = lastScale
     this.scalesLength = scales.length
 
-    this.heightCrop = heightCrop
+    this.crop = crop
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
@@ -502,17 +502,14 @@ export default class ProjectorWebGL {
       this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([this.fScaleStep?.x, this.fScaleStep?.y]));
     }
 
-    const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
-    if(fHeightCropChanged) {
-      this.fHeightCrop = this.heightCrop
-      const fCropScaleUV = [
-        1, 1 / (1 - this.fHeightCrop * 2)
-      ]
-      const fCropOffsetUV = [
-        .5, this.fHeightCrop + (1 / (fCropScaleUV[1] * 2))
-      ]
-      this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
-      this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
+    const crop = this.crop || [0, 0]
+    const fCropChanged = crop.some((crop, i) => crop !== (this.fCrop || [undefined, undefined])[i])
+    if(fCropChanged) {
+      this.fCrop = crop
+      const fCropScaleUV = crop.map(crop => 1 / (1 - crop * 2))
+      const fCropOffsetUV = fCropScaleUV.map((cropScale, i) => crop[i] + (1 / (cropScale * 2)))
+      this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV))
+      this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV))
     }
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
