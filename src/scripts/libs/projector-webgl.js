@@ -73,7 +73,7 @@ export default class ProjectorWebGL {
   }
 
   draw = (src) => {
-    if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
     const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
@@ -488,7 +488,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid) return
 
     const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
     if(fScaleChanged) {
@@ -526,7 +526,7 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
-    if(this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
