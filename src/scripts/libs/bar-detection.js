@@ -213,9 +213,6 @@ const workerCode = function () {
               desynchronized: true
             })
             ctx.imageSmoothingEnabled = false
-
-            // canvas2 = new SafeOffscreenCanvas(bitmap.width, bitmap.height)
-            // ctx2 = canvas2.getContext("bitmaprenderer")
           } else if(
             canvas.width !== bitmap.width ||
             canvas.height !== bitmap.height
@@ -226,10 +223,6 @@ const workerCode = function () {
               alpha: false
             })
             ctx.imageSmoothingEnabled = false
-
-            // canvas2.width = bitmap.width
-            // canvas2.height = bitmap.height
-            // ctx2 = canvas2.getContext("bitmaprenderer")
           } 
           ctx.drawImage(bitmap, 0, 0)
           bitmap.close()
@@ -237,9 +230,6 @@ const workerCode = function () {
           canvas = canvasInfo.canvas
           ctx = canvasInfo.ctx
         }
-
-        // ctx2.transferFromImageBitmap(bitmap)
-        // ctx.drawImage(canvas2, 0, 0)
         
         const horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
@@ -251,7 +241,7 @@ const workerCode = function () {
             'height', 'width', detectColored, offsetPercentage, currentVerticalPercentage
           )
           : undefined
-        // ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
       
         this.postMessage({ 
           id,

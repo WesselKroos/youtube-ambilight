@@ -202,15 +202,9 @@ export default class Ambilight {
         // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
         if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
           ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
-          // console.log('droppedVideoFramesCorrection ', ambilight.droppedVideoFramesCorrection)
-        } else {
-          // console.log('Reporting original', original.droppedVideoFrames, ' dropped frames')
         }
         ambilight.previousDroppedVideoFrames = droppedVideoFrames
         droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
-        // if(ambilight.droppedVideoFramesCorrection) {
-        //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected to:', droppedVideoFrames)
-        // }
         previousGetVideoPlaybackQualityTime = performance.now()
         return {
           corruptedVideoFrames: original.corruptedVideoFrames,
@@ -1294,7 +1288,6 @@ export default class Ambilight {
       })
     }
 
-    // Todo: verticalBarsClipPercentage
     this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
