@@ -575,7 +575,7 @@ export default class Ambilight {
 
   toggleImmersiveMode(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.settings.immersive
-    this.settings.set('immersive', enabled)
+    this.settings.set('immersive', enabled, true)
     this.updateImmersiveMode()
     this.settings.displayBezelForSetting('immersive')
   }
