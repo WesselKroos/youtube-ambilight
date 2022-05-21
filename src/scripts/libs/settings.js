@@ -179,18 +179,18 @@ export default class Settings {
       advanced: true
     },
     {
+      name: 'immersiveTheaterView',
+      label: 'Hide in theater mode',
+      type: 'checkbox',
+      default: false
+    },
+    {
       name: 'immersive',
       label: 'Hide when scrolled to top',
       type: 'checkbox',
       default: false,
       defaultKey: 'Z',
       advanced: true
-    },
-    {
-      name: 'immersiveTheaterView',
-      label: 'Hide in theater mode',
-      type: 'checkbox',
-      default: false
     },
     {
       name: 'hideScrollbar',
@@ -271,7 +271,7 @@ export default class Settings {
     },
     {
       name: 'horizontalBarsClipPercentage',
-      label: 'Horizontal black bars size',
+      label: 'Black bars size',
       type: 'list',
       default: 0,
       min: 0,
