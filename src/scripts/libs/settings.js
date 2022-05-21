@@ -573,8 +573,9 @@ export default class Settings {
 
       if(setting.defaultKey !== undefined) {
         let key = storedSettings[`setting-${setting.name}-key`]
-        key = (key === null || key === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(`${setting.name}-key`) : value
-        setting.key = (key !== null) ? key : setting.defaultKey
+        if(key === null || key === undefined) key = await this.tryGetAndMigrateLocalStorageEntry(`${setting.name}-key`)
+        if(key === null) key = setting.defaultKey
+        setting.key = key
       }
     }
     await this.flushPendingStorageEntries() // Complete migrations
