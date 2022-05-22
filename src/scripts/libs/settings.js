@@ -61,7 +61,7 @@ export default class Settings {
       min: 0,
       max: 60,
       step: 1,
-      advanced: true
+      advanced: false
     },
     {
       name: 'webGL',
@@ -650,8 +650,8 @@ export default class Settings {
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank">
-                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
+              <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank">
+                <span class="ytpa-feedback-link__text">Troubleshoot performance problems</span>
               </a>
             </div>
             <div class="ytp-menuitem-content">
@@ -659,6 +659,13 @@ export default class Settings {
                 class="ytpa-reset-settings-btn"
                 title="Reset all settings"
               ></button>
+            </div>
+          </div>
+          <div class="ytp-menuitem ytpa-menuitem--header">
+            <div class="ytp-menuitem-label">
+              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank">
+                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light</span>
+              </a>
             </div>
           </div>
           ${
