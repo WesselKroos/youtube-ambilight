@@ -17,7 +17,7 @@ But in case you don't want to reset all your current settings, here is a complet
 - Settings:
   - Advanced: `On`
 - Quality
-  - Synchronization: `Video framerate`
+  - Synchronization: `Video framerate` __(in Firefox: `Decoded framerate`)__
   - Limit framerate (per second): `30 fps` _(This reduces GPU usage in case you are watching a 60 fps video)_
   - WebGL renderer (uses less power): `On` _(If not available you need to turn on WebGL in the browser)_
   - WebGL resolution: `25%`
