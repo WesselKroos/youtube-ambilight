@@ -1,6 +1,6 @@
 import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
 import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
-import { HorizontalBarDetection } from './horizontal-bar-detection'
+import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
@@ -19,7 +19,7 @@ const THEME_DARK = 1
 const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 
 export default class Ambilight {
-  horizontalBarDetection = new HorizontalBarDetection()
+  barDetection = new BarDetection()
   innerStrength = 2
   lastCheckVideoSizeTime = 0
 
@@ -55,40 +55,43 @@ export default class Ambilight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    this.ytdAppElem = ytdAppElem
-    this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
-    if(!this.mastheadElem) {
-      throw new Error(`Cannot find mastheadElem: #masthead-container`)
-    }
+    return (async function ambilightConstructor() {
+      this.ytdAppElem = ytdAppElem
+      this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
+      if(!this.mastheadElem) {
+        throw new Error(`Cannot find mastheadElem: #masthead-container`)
+      }
 
-    this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
-    this.detectChromiumBug1142112Workaround()
-    this.initElems(videoElem)
-    this.initVideoElem(videoElem)
-    this.detectMozillaBug1606251Workaround()
-    this.detectChromiumBug1092080Workaround()
+      this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
+      this.detectChromiumBug1142112Workaround()
+      this.initElems(videoElem)
+      this.detectMozillaBug1606251Workaround()
+      this.detectChromiumBug1092080Workaround()
 
-    this.initSettings()
-    this.detectChromiumBug1123708Workaround()
+      await this.initSettings()
+      this.detectChromiumBug1123708Workaround()
 
-    this.initAmbilightElems()
-    this.initBuffers()
-    this.recreateProjectors()
-    this.initFPSListElem()
+      this.initAmbilightElems()
+      this.initBuffers()
+      this.recreateProjectors()
+      this.initFPSListElem()
 
-    this.initStyles()
-    this.updateStyles()
+      this.initStyles()
+      this.updateStyles()
 
-    this.updateImmersiveMode()
-    this.checkGetImageDataAllowed()
+      this.updateImmersiveMode()
+      this.checkGetImageDataAllowed()
 
-    this.initListeners()
+      this.initListeners()
 
-    setTimeout(() => {
-      if (!this.settings.enabled) return
+      setTimeout(function setTimeout() {
+        if (!this.settings.enabled) return
 
-      this.enable(true)
-    }, 0)
+        this.enable(true)
+      }.bind(this), 0)
+      
+      return this
+    }.bind(this))()
   }
 
   initElems(videoElem) {
@@ -111,11 +114,15 @@ export default class Ambilight {
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
+
+    this.initVideoElem(videoElem, false)
   }
 
-  initVideoElem(videoElem) {
+  initVideoElem(videoElem, initListeners = true) {
     this.videoElem = videoElem
+    this.requestVideoFrameCallbackId = undefined
     this.applyChromiumBug1142112Workaround()
+    if(initListeners) this.initVideoListeners()
   }
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
@@ -151,13 +158,17 @@ export default class Ambilight {
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
           wrapErrorHandler((entries, observer) => {
-            // Disconnect when ambilight crashed on initialization to avoid invalid error reports
-            if(!window.ambilight) {
-              observer.disconnect()
+            if(!window.ambilight) return
+            if(window.ambilight !== this) {
+              observer.disconnect() // Disconnect, because ambilight crashed on initialization and created a new instance
               return
             }
 
             for (const entry of entries) {
+              if(this.videoElem !== entry.target) {
+                this.videoObserver.unobserve(event.target) // video is detached and a new one was created
+                continue
+              }
               this.videoIsHidden = (entry.intersectionRatio === 0)
               this.videoVisibilityChangeTime = performance.now()
               this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
@@ -191,15 +202,9 @@ export default class Ambilight {
         // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
         if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
           ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
-          // console.log('droppedVideoFramesCorrection ', ambilight.droppedVideoFramesCorrection)
-        } else {
-          // console.log('Reporting original', original.droppedVideoFrames, ' dropped frames')
         }
         ambilight.previousDroppedVideoFrames = droppedVideoFrames
         droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
-        // if(ambilight.droppedVideoFramesCorrection) {
-        //   console.log('original droppedVideoFrames:', ambilight.previousDroppedVideoFrames, ' corrected:', droppedVideoFrames)
-        // }
         previousGetVideoPlaybackQualityTime = performance.now()
         return {
           corruptedVideoFrames: original.corruptedVideoFrames,
@@ -266,10 +271,7 @@ export default class Ambilight {
     this.updateImmersiveMode()
     if(wasView === this.view) {
       // Spare multiple resize handler calls when resizing the browser window
-      this.scheduledHandleVideoResize = raf(() => {
-        this.scheduledHandleVideoResize = null
-        this.handleVideoResize()
-      })
+      this.scheduledHandleVideoResize = raf(this.handleVideoResize)
     } else {
       // When changing viewmodes draw directly to prevent flickering
       this.handleVideoResize()
@@ -277,7 +279,8 @@ export default class Ambilight {
   }
 
   handleVideoResize = () => {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+    this.scheduledHandleVideoResize = null
+    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
 
     this.nextFrame()
   }
@@ -343,13 +346,7 @@ export default class Ambilight {
         console.warn('Ambient light for YouTube™ | Video error:', ex)
         this.clear()
         this.requestVideoFrameCallbackId = undefined
-        setTimeout(() => {
-          this.initVideoListeners()
-          if(!this.videoElem.paused) {
-            this.videoListeners.playing()
-          }
-        }, 1000)
-        if (!this.settings.enabled || !this.isOnVideoPage) return
+        setTimeout(this.handleVideoError, 1000)
       },
       click: this.settings.onCloseMenu
     }
@@ -357,6 +354,13 @@ export default class Ambilight {
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
       on(this.videoElem, name, this.videoListeners[name])
+    }
+  }
+
+  handleVideoError = () => {
+    this.initVideoListeners()
+    if(!this.videoElem.paused) {
+      this.videoListeners.playing()
     }
   }
 
@@ -375,41 +379,9 @@ export default class Ambilight {
       }
     }
 
-    on(document, 'visibilitychange', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-      const isPageHidden = document.visibilityState === 'hidden'
-      if(this.isPageHidden === isPageHidden) return
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
 
-      this.isPageHidden = isPageHidden
-      if(this.settings.webGL) {
-        this.projector.handlePageVisibility(isPageHidden)
-      }
-      if(document.visibilityState !== 'hidden') return
-
-      this.buffersCleared = true
-      this.checkIfNeedToHideVideoOverlay()
-    }, false);
-
-    on(document, 'keydown', (e) => {
-      if (!this.isOnVideoPage) return
-      if (document.activeElement) {
-        const el = document.activeElement
-        const tag = el.tagName
-        const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
-        if (
-          inputs.indexOf(tag) !== -1 || 
-          (
-            el.getAttribute('contenteditable') !== null && 
-            el.getAttribute('contenteditable') !== 'false'
-          )
-        ) {
-          return
-        }
-      }
-      if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
-
-      this.onKeyPressed(e.key?.toUpperCase())
-    })
+    on(document, 'keydown', this.handleKeyDown)
 
     this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       try {
@@ -449,27 +421,7 @@ export default class Ambilight {
     this.videoResizeObserver.observe(this.videoElem)
 
     // Fix YouTube bug: focus on video element without scrolling to the top
-    on(this.videoElem, 'focus', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
-
-      const startTop = {
-        window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-        video: this.videoContainerElem?.getBoundingClientRect()?.top
-      };
-      raf(() => {
-        const endTop = {
-          window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-          video: this.videoContainerElem?.getBoundingClientRect()?.top
-        }
-        if(startTop.window === endTop.window) return
-        
-        if(this.view === VIEW_FULLSCREEN) {
-          this.ytdAppElem.scrollTop = startTop.window
-        } else {
-          window.scrollTo(window.scrollX, startTop.window)
-        }
-      })
-    }, true)
+    on(this.videoElem, 'focus', this.handleVideoFocus, true)
 
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = html.getAttribute('dark') ? 1 : -1
@@ -533,12 +485,72 @@ export default class Ambilight {
     }
   }
 
+  handleDocumentVisibilityChange = () => {
+    if (!this.settings.enabled || !this.isOnVideoPage) return
+    const isPageHidden = document.visibilityState === 'hidden'
+    if(this.isPageHidden === isPageHidden) return
+
+    this.isPageHidden = isPageHidden
+    if(this.settings.webGL) {
+      this.projector.handlePageVisibility(isPageHidden)
+    }
+    if(document.visibilityState !== 'hidden') return
+
+    this.buffersCleared = true
+    this.checkIfNeedToHideVideoOverlay()
+  }
+
+  handleKeyDown = (e) => {
+    if (!this.isOnVideoPage) return
+    if (document.activeElement) {
+      const el = document.activeElement
+      const tag = el.tagName
+      const inputs = ['INPUT', 'SELECT', 'TEXTAREA']
+      if (
+        inputs.indexOf(tag) !== -1 || 
+        (
+          el.getAttribute('contenteditable') !== null && 
+          el.getAttribute('contenteditable') !== 'false'
+        )
+      ) {
+        return
+      }
+    }
+    if(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+
+    this.onKeyPressed(e.key?.toUpperCase())
+  }
+
+  handleVideoFocus = () => {
+    if (!this.settings.enabled || !this.isOnVideoPage) return
+
+    const startTop = {
+      window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+      video: this.videoContainerElem?.getBoundingClientRect()?.top
+    };
+    raf(function handleVideoFocusRaf() {
+      const endTop = {
+        window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
+        video: this.videoContainerElem?.getBoundingClientRect()?.top
+      }
+      if(startTop.window === endTop.window) return
+      
+      if(this.view === VIEW_FULLSCREEN) {
+        this.ytdAppElem.scrollTop = startTop.window
+      } else {
+        window.scrollTo(window.scrollX, startTop.window)
+      }
+    }.bind(this))
+  }
+
   onKeyPressed = (key) => {
     if(key === ' ') return
 
     const keys = this.settings.getKeys()
     if (key === keys.detectHorizontalBarSizeEnabled) // b by default
       this.settings.clickUI('detectHorizontalBarSizeEnabled')
+    if (key === keys.detectVerticalBarSizeEnabled)
+      this.settings.clickUI('detectVerticalBarSizeEnabled')
     if (key === keys.detectVideoFillScaleEnabled) // w by default
       this.settings.clickUI('detectVideoFillScaleEnabled')
     if (key === keys.immersive) // z by default
@@ -559,7 +571,7 @@ export default class Ambilight {
 
   toggleImmersiveMode(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.settings.immersive
-    this.settings.set('immersive', enabled)
+    this.settings.set('immersive', enabled, true)
     this.updateImmersiveMode()
     this.settings.displayBezelForSetting('immersive')
   }
@@ -587,7 +599,7 @@ export default class Ambilight {
 
     if(this.getImageDataAllowed === getImageDataAllowed) return
     this.getImageDataAllowed = getImageDataAllowed
-    this.settings.setGetImageDataAllowedVisibility(getImageDataAllowed)
+    this.settings.updateVisibility()
   }
 
   initAmbilightElems() {
@@ -695,8 +707,8 @@ export default class Ambilight {
     this.elem.appendChild(this.buffersWrapperElem)
   }
 
-  initSettings() {
-    this.settings = new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
+  async initSettings() {
+    this.settings = await new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
     parseSettingsToSentry(this.settings)
   }
 
@@ -802,7 +814,12 @@ export default class Ambilight {
     const videoPath = location.search
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.settings.horizontalBarsClipPercentageReset) {
-        this.setHorizontalBars(0)
+        const horizontalBarChanged = this.setHorizontalBars(0)
+        const verticalBarChanged = this.setVerticalBars(0)
+        if(horizontalBarChanged || verticalBarChanged) {
+          this.sizesInvalidated = true
+          this.optionalFrame()
+        }
       }
       if (this.settings.detectVideoFillScaleEnabled) {
         this.settings.set('videoScale', 100, true)
@@ -812,14 +829,23 @@ export default class Ambilight {
   }
 
   setHorizontalBars(percentage) {
-    if(this.settings.horizontalBarsClipPercentage === percentage) return
+    if(this.settings.horizontalBarsClipPercentage === percentage) return false
 
     this.settings.horizontalBarsClipPercentage = percentage
-    this.sizesInvalidated = true
-    this.optionalFrame()
-    setTimeout(() => {
+    setTimeout(function setHorizontalBarsClipPercentage() {
       this.settings.set('horizontalBarsClipPercentage', percentage, true)
-    }, 1)
+    }.bind(this), 1)
+    return true
+  }
+
+  setVerticalBars(percentage) {
+    if(this.settings.verticalBarsClipPercentage === percentage) return false
+
+    this.settings.verticalBarsClipPercentage = percentage
+    setTimeout(function setVerticalBarsClipPercentage() {
+      this.settings.set('verticalBarsClipPercentage', percentage, true)
+    }.bind(this), 1)
+    return true
   }
 
   recreateProjectors() {
@@ -830,7 +856,7 @@ export default class Ambilight {
   }
 
   clear() {
-    this.horizontalBarDetection.clear()
+    this.barDetection.clear()
 
     // Clear canvasses
     const canvasses = []
@@ -849,7 +875,11 @@ export default class Ambilight {
       }
     }
     for (const canvas of canvasses) {
-      canvas.elem.width = 1;
+      if(canvas.ctx?.clearRect) {
+        canvas.ctx.clearRect(0, 0, canvas.elem.width, canvas.elem.height)
+      } else {
+        canvas.elem.width = 1;
+      }
     }
 
     this.buffersCleared = true
@@ -862,8 +892,9 @@ export default class Ambilight {
     let videoScale = 100
     if(this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
       if(this.videoPlayerElem) {
+        const videoScaleX = (100 - (this.settings.verticalBarsClipPercentage * 2)) / 100
         const videoScaleY = (100 - (this.settings.horizontalBarsClipPercentage * 2)) / 100
-        const videoWidth = this.videoElem.offsetWidth
+        const videoWidth = this.videoElem.offsetWidth * videoScaleX
         const videoHeight = this.videoElem.offsetHeight * videoScaleY
         const containerWidth = this.videoPlayerElem.offsetWidth
         const containerHeight = this.videoPlayerElem.offsetHeight
@@ -914,7 +945,7 @@ export default class Ambilight {
     this.updateView()
     this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && videoScale == 100)
+    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
 
     const videoElemParentElem = this.videoElem.parentNode
 
@@ -946,23 +977,26 @@ export default class Ambilight {
       }
     }
 
-    const horizontalBarsClip = this.settings.horizontalBarsClipPercentage / 100
+    this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
+    this.clippedVideoScale = this.barsClip.map(clip => (1 - (clip * 2)))
     const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale
     if (shouldStyleVideoContainer) {
       const top = Math.max(0, parseInt(this.videoElem.style.top))
+      const left = Math.max(0, parseInt(this.videoElem.style.left))
+      const width = Math.max(0, parseInt(this.videoElem.style.width))
+      videoElemParentElem.style.width = `${width}px`
       videoElemParentElem.style.height = this.videoElem.style.height || '100%'
       videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
       videoElemParentElem.style.overflow = 'hidden'
-
-      this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
       videoElemParentElem.style.transform =  `
-        translateY(${top}px) 
+        translate(${left}px, ${top}px)
         scale(${(videoScale / 100)}) 
-        scaleY(${this.horizontalBarsClipScaleY})
+        scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `
+      const VideoClipScale = this.clippedVideoScale.map(scale => Math.round(1000 * (1 / scale)) / 1000)
       videoElemParentElem.style.setProperty('--video-transform', `
-        translateY(${-top}px) 
-        scaleY(${(Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)})
+        translate(${-left}px, ${-top}px) 
+        scale(${VideoClipScale[0]}, ${VideoClipScale[1]})
       `)
     }
 
@@ -993,25 +1027,24 @@ export default class Ambilight {
       ((unscaledHeight - this.videoOffset.height) / 2)
     )
 
-    this.horizontalBarsClipScaleY = (1 - (horizontalBarsClip * 2))
     this.projectorsElem.style.left = `${unscaledLeft}px`
     this.projectorsElem.style.top = `${unscaledTop - 1}px`
     this.projectorsElem.style.width = `${unscaledWidth}px`
     this.projectorsElem.style.height = `${unscaledHeight}px`
     this.projectorsElem.style.transform = `
       scale(${(videoScale / 100)}) 
-      scaleY(${this.horizontalBarsClipScaleY})
+      scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
     `
     
     if(this.settings.videoShadowOpacity != 0 && this.settings.videoShadowSize != 0) {
       this.videoShadowElem.style.display = 'block'
       this.videoShadowElem.style.left = `${unscaledLeft}px`
       this.videoShadowElem.style.top = `${unscaledTop}px`
-      this.videoShadowElem.style.width = `${unscaledWidth}px`
-      this.videoShadowElem.style.height = `${(unscaledHeight * this.horizontalBarsClipScaleY)}px`
+      this.videoShadowElem.style.width = `${unscaledWidth * this.clippedVideoScale[0]}px`
+      this.videoShadowElem.style.height = `${(unscaledHeight * this.clippedVideoScale[1])}px`
       this.videoShadowElem.style.transform = `
-        translate3d(0,0,0) 
-        translateY(${(unscaledHeight * horizontalBarsClip)}px) 
+        translate3d(0,0,0)
+        translate(${(unscaledWidth * this.barsClip[0])}px, ${(unscaledHeight * this.barsClip[1])}px)
         scale(${(videoScale / 100)})
       `
     } else {
@@ -1062,7 +1095,7 @@ export default class Ambilight {
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = this.settings.detectHorizontalBarSizeEnabled ? 1 : ((this.settings.resolution || 25) / 100)
+        const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : ((this.settings.resolution || 25) / 100)
         const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
@@ -1206,16 +1239,16 @@ export default class Ambilight {
 
   resizeCanvasses() {
     const projectorSize = {
-      w: this.p.w,
-      h: Math.round(this.p.h * this.horizontalBarsClipScaleY)
+      w: Math.round(this.p.w * this.clippedVideoScale[0]),
+      h: Math.round(this.p.h * this.clippedVideoScale[1])
     }
-    const ratio = (this.videoOffset.width > this.videoOffset.height) ?
+    const ratio = (this.p.w > this.p.h) ?
       {
-        x: 1,
-        y: (this.videoOffset.width / this.videoOffset.height)
+        x: (this.p.w / projectorSize.w),
+        y: (this.p.w / projectorSize.w) * (projectorSize.w / projectorSize.h)
       } : {
-        x: (this.videoOffset.height / this.videoOffset.width),
-        y: 1
+        x: (this.p.h / projectorSize.h) * (projectorSize.h / projectorSize.w),
+        y: (this.p.h / projectorSize.h)
       }
     const lastScale = {
       x: 1,
@@ -1255,7 +1288,7 @@ export default class Ambilight {
       })
     }
 
-    this.projector.rescale(scales, lastScale, projectorSize, (this.settings.horizontalBarsClipPercentage / 100), this.settings)
+    this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
   checkVideoSize(checkPosition = true) {
@@ -1285,16 +1318,22 @@ export default class Ambilight {
       return this.updateSizes()
     }
     
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.videoScale == 100)
+    const noClipOrScale = (
+      this.settings.horizontalBarsClipPercentage == 0 &&
+      this.settings.verticalBarsClipPercentage == 0 &&
+      this.settings.videoScale == 100
+    )
     if(!noClipOrScale) {
       const videoElemParentElem = this.videoElem.parentElement
       if(videoElemParentElem) {
         const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
+        const left = Math.max(0, parseInt(this.videoElem.style.left))
         const top = Math.max(0, parseInt(this.videoElem.style.top))
-        const scaleY = (Math.round(1000 * (1 / this.horizontalBarsClipScaleY)) / 1000)
+        const scaleX = (Math.round(1000 * (1 / this.clippedVideoScale[0])) / 1000)
+        const scaleY = (Math.round(1000 * (1 / this.clippedVideoScale[1])) / 1000)
         if(
-          videoTransform.indexOf(`translateY(${-top}px)`) === -1 ||
-          videoTransform.indexOf(`scaleY(${scaleY})`) === -1
+          videoTransform.indexOf(`translate(${-left}px, ${-top}px)`) === -1 ||
+          videoTransform.indexOf(`scale(${scaleX}, ${scaleY})`) === -1
         ) {
           return this.updateSizes()
         }
@@ -1304,11 +1343,19 @@ export default class Ambilight {
     if(checkPosition) {
       const projectorsElemRect = this.getElemRect(this.projectorsElem)
       const videoElemRect = this.getElemRect(this.videoElem)
-      const expectedProjectsElemRectY = videoElemRect.top + (videoElemRect.height * (this.settings.horizontalBarsClipPercentage/100))
+      const topExtraOffset = this.horizontalBarsClipPercentage ? (videoElemRect.height * (this.horizontalBarsClipPercentage / 100)) : 0
+      const leftExtraOffset = this.verticalBarsClipPercentage ? (videoElemRect.width * (this.verticalBarsClipPercentage / 100)) : 0
+      const expectedProjectorsRect = {
+        width: videoElemRect.width - (leftExtraOffset * 2),
+        height: videoElemRect.height - (topExtraOffset * 2),
+        top: videoElemRect.top + topExtraOffset,
+        left: videoElemRect.left + leftExtraOffset
+      }
       if (
-        Math.abs(projectorsElemRect.width - videoElemRect.width) > 1 ||
-        Math.abs(projectorsElemRect.left - videoElemRect.left) > 1 ||
-        Math.abs(projectorsElemRect.top - expectedProjectsElemRectY) > 2
+        Math.abs(projectorsElemRect.height - expectedProjectorsRect.height) > 1 ||
+        Math.abs(projectorsElemRect.width - expectedProjectorsRect.width) > 1 ||
+        Math.abs(projectorsElemRect.top - expectedProjectorsRect.top) > 2 ||
+        Math.abs(projectorsElemRect.left - expectedProjectorsRect.left) > 2
       ) {
         return this.updateSizes()
       }
@@ -1347,10 +1394,12 @@ export default class Ambilight {
     if(!this.videoIsHidden)
       requestAnimationFrame(this.onNextFrame)
     else
-      setTimeout(() => requestAnimationFrame(this.onNextFrame), this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
+      setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
-  onNextFrame = wrapErrorHandler(() => {
+  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrame)
+
+  onNextFrame = wrapErrorHandler(function wrappedOnNextFrame() {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
@@ -1366,7 +1415,7 @@ export default class Ambilight {
     this.detectDisplayFrameRate()
     this.detectAmbilightFrameRate()
     this.detectVideoFrameRate()
-  })
+  }.bind(this))
 
   onNextLimitedFrame = () => {
     const time = performance.now()
@@ -1446,8 +1495,8 @@ export default class Ambilight {
       this.scheduleNextFrame()
     }
 
-    if (results.detectHorizontalBarSize) {
-      this.scheduleHorizontalBarSizeDetection()
+    if (results.detectBarSize) {
+      this.scheduleBarSizeDetection()
     }
 
     if(
@@ -1695,6 +1744,7 @@ export default class Ambilight {
         this.atTop &&
         this.isFillingFullscreen && 
         !this.settings.detectHorizontalBarSizeEnabled &&
+        !this.settings.detectVerticalBarSizeEnabled &&
         !this.settings.frameBlending &&
         !this.settings.videoOverlayEnabled
       ) ||
@@ -1707,38 +1757,28 @@ export default class Ambilight {
 
     let newVideoFrameCount = this.getVideoFrameCount()
 
-    let updateVideoSnapshot = this.buffersCleared
-    if(!updateVideoSnapshot) {
-      if (this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) {
-        if(this.videoIsHidden) {
-          updateVideoSnapshot = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
-        } else {
-          if(this.videoFrameCallbackReceived && this.videoFrameCount == newVideoFrameCount) {
-            newVideoFrameCount++
-          }
-          updateVideoSnapshot = this.videoFrameCallbackReceived
-          this.videoFrameCallbackReceived = false
-
-          // Fallback for when requestVideoFrameCallback stopped working
-          if (!updateVideoSnapshot) {
-            updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-          }
-        }
-      } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) {
-        updateVideoSnapshot = (this.videoFrameCount < newVideoFrameCount)
-      } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) {
-        updateVideoSnapshot = true
-      }
-    }
-
-    let hasNewFrame = this.buffersCleared
+    let hasNewFrame = false
     if(this.settings.frameSync == FRAMESYNC_VIDEOFRAMES) {
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      if(this.videoIsHidden) {
+        hasNewFrame = (this.previousFrameTime < (drawTime - (1000 / Math.max(24, this.videoFrameRate)))) // Force video.webkitDecodedFrameCount to update on Chromium by always executing drawImage
+      } else {
+        if(this.videoFrameCallbackReceived && this.videoFrameCount == newVideoFrameCount) {
+          newVideoFrameCount++
+        }
+        hasNewFrame = this.videoFrameCallbackReceived
+        this.videoFrameCallbackReceived = false
+
+        // Fallback for when requestVideoFrameCallback stopped working
+        if (!hasNewFrame) {
+          hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
+        }
+      }
     } else if(this.settings.frameSync == FRAMESYNC_DECODEDFRAMES) {
-      hasNewFrame = hasNewFrame || updateVideoSnapshot
+      hasNewFrame = (this.videoFrameCount < newVideoFrameCount)
     } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) {
       hasNewFrame = true
     }
+    hasNewFrame = hasNewFrame || this.buffersCleared
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (droppedFrames && !this.buffersCleared) {
@@ -1879,40 +1919,55 @@ export default class Ambilight {
 
     // Horizontal bar detection
     if(
-      this.settings.detectHorizontalBarSizeEnabled &&
+      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) &&
       hasNewFrame
     ) {
-      return { detectHorizontalBarSize: true }
+      return { detectBarSize: true }
     }
   }
 
-  scheduleHorizontalBarSizeDetection = () => {
+  scheduleBarSizeDetection = () => {
     try {
-      if(this.horizontalBarDetection.run) return
+      if(this.barDetection.run) return
 
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
         this.getImageDataAllowed
       ) {
-        this.horizontalBarDetection.detect(
+        this.barDetection.detect(
           this.projectorBuffer.elem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
+          this.settings.detectHorizontalBarSizeEnabled,
           this.settings.horizontalBarsClipPercentage,
-          wrapErrorHandler(this.scheduleHorizontalBarSizeDetectionCallback)
+          this.settings.detectVerticalBarSizeEnabled,
+          this.settings.verticalBarsClipPercentage,
+          wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }
     } catch (ex) {
-      if (!this.showedDetectHorizontalBarSizeWarning) {
-        this.showedDetectHorizontalBarSizeWarning = true
+      if (!this.showedDetectBarSizeWarning) {
+        this.showedDetectBarSizeWarning = true
         throw ex
       }
     }
   }
 
-  scheduleHorizontalBarSizeDetectionCallback = (percentage) => {
-    if(this.settings.detectHorizontalBarSizeEnabled && percentage !== undefined)
-      this.setHorizontalBars(percentage)
+  scheduleBarSizeDetectionCallback = (horizontalPercentage, verticalPercentage) => {
+    const horizontalBarChanged = (
+      this.settings.detectHorizontalBarSizeEnabled && 
+      horizontalPercentage !== undefined && 
+      this.setHorizontalBars(horizontalPercentage)
+    )
+    const verticalBarChanged = (
+      this.settings.detectVerticalBarSizeEnabled && 
+      verticalPercentage !== undefined && 
+      this.setVerticalBars(verticalPercentage)
+    )
+    if(!horizontalBarChanged && !verticalBarChanged) return
+
+    this.sizesInvalidated = true
+    this.optionalFrame()
   }
 
   checkIfNeedToHideVideoOverlay() {
@@ -2008,7 +2063,7 @@ export default class Ambilight {
     this.ambilightVideoDroppedFrameCount = 0
 
     this.showedCompareWarning = false
-    this.showedDetectHorizontalBarSizeWarning = false
+    this.showedDetectBarSizeWarning = false
 
     this.nextFrameTime = undefined
 
@@ -2034,13 +2089,13 @@ export default class Ambilight {
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(() => {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(function videoFrameCallback() {
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
       this.receiveVideoFrame()
-    })
+    }.bind(this))
   }
 
   receiveVideoFrame = () => {
@@ -2131,13 +2186,13 @@ export default class Ambilight {
     })
     this.ytdAppElem.dispatchEvent(event)
 
-    this.darkThemeValidationTimeout = setTimeout(() => {
+    this.darkThemeValidationTimeout = setTimeout(function darkThemeValidation() {
       this.darkThemeValidationTimeout = undefined
       const isDark = !!html.getAttribute('dark')
       if (wasDark !== isDark) return
       
       throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
-    }, 0)
+    }.bind(this), 0)
   }
 
   updateLiveChatTheme() {

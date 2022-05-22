@@ -22,9 +22,7 @@ export const workerFromCode = (func) => {
           onmessage: () => console.error('Ambient light for YouTube™ | onmessage not implemented'),
           isFallbackWorker: true
         }
-        ;(function() {
-          const result = func.bind(globalScope)()
-        })()
+        func.bind(globalScope)()
       }
     
       onerror = (error) => {

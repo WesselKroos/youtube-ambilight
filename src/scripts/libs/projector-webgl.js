@@ -1,11 +1,13 @@
 import AmbilightSentry, { AmbilightError } from './ambilight-sentry'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
   scales = [{ x: 1, y: 1 }]
+  projectors = []
 
   constructor(containerElem, initProjectorListeners, settings) {
     this.containerElem = containerElem
@@ -31,7 +33,7 @@ export default class ProjectorWebGL {
     this.fScale = undefined
     this.fScaleStep = undefined
     this.fScalesLength = undefined
-    this.fHeightCrop = undefined
+    this.fCrop = undefined
     this.fTextureMipmapLevel = undefined
   }
 
@@ -71,7 +73,7 @@ export default class ProjectorWebGL {
   }
 
   draw = (src) => {
-    if(this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
     const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
@@ -94,16 +96,16 @@ export default class ProjectorWebGL {
     this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
   }
 
-  onBlurCtxLost = wrapErrorHandler((event) => {
+  onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
     event.preventDefault();
     this.lost = true
     this.lostCount++
     this.invalidateShaderCache()
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
     this.setWebGLWarning('restore')
-  })
+  }.bind(this))
 
-  onBlurCtxRestored = wrapErrorHandler(() => {
+  onBlurCtxRestored = wrapErrorHandler(function wrappedOnBlurCtxRestored() {
     if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
@@ -118,7 +120,7 @@ export default class ProjectorWebGL {
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
       this.setWebGLWarning('restore')
     }
-  })
+  }.bind(this))
 
   initBlurCtx() {
     if(this.blurCanvas) {
@@ -142,26 +144,38 @@ export default class ProjectorWebGL {
     if(!this.blurCtx) {
       throw new Error('ProjectorWebGL blur context creation failed')
     }
+    this.projectors[0] = {
+      elem: this.blurCanvas,
+      ctx: this.blurCtx
+    }
   }
 
-  majorPerformanceCaveatDetected() {
-    this.majorPerformanceCaveatDetected = true
-    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
+  async getMajorPerformanceCaveatDetected() {
+    try {
+      return await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+    }
+  }
+
+  async majorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveat = true
+    const detected = await this.getMajorPerformanceCaveatDetected()
     if(detected) return
     
     const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
-    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', true)
+    await contentScript.setStorageEntry('majorPerformanceCaveatDetected', true)
   }
 
-  noMajorPerformanceCaveatDetected() {
-    this.majorPerformanceCaveatDetected = false
-    const detected = this.settings.getStorageEntry('majorPerformanceCaveatDetected') === 'true'
-    if(!detected) return
+  async noMajorPerformanceCaveatDetected() {
+    this.majorPerformanceCaveat = false
+    const detected = await this.getMajorPerformanceCaveatDetected()
+    if(detected === false) return
 
-    this.settings.saveStorageEntry('majorPerformanceCaveatDetected', false)
+    await contentScript.setStorageEntry('majorPerformanceCaveatDetected', false)
   }
 
   onCtxLost = wrapErrorHandler(function onCtxLost(event) {
@@ -292,10 +306,10 @@ export default class ProjectorWebGL {
 
     if(this.ctxIsInvalid) return
 
-    this.projectors = [{
+    this.projectors[1] = {
       elem: this.canvas,
-      ctx: this.ctx
-    }]
+      ctx: this
+    }
 
     // Program
     this.program = this.ctx.createProgram();
@@ -444,7 +458,7 @@ export default class ProjectorWebGL {
     this.updateCtx()
   }
 
-  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
+  rescale(scales, lastScale, projectorSize, crop, settings) {
     this.shadow.rescale(lastScale, projectorSize, settings)
 
     this.scaleStep = {
@@ -455,7 +469,7 @@ export default class ProjectorWebGL {
     this.scale = lastScale
     this.scalesLength = scales.length
 
-    this.heightCrop = heightCrop
+    this.crop = crop
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
@@ -474,7 +488,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid) return
 
     const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
     if(fScaleChanged) {
@@ -488,17 +502,14 @@ export default class ProjectorWebGL {
       this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([this.fScaleStep?.x, this.fScaleStep?.y]));
     }
 
-    const fHeightCropChanged = this.fHeightCrop !== this.heightCrop;
-    if(fHeightCropChanged) {
-      this.fHeightCrop = this.heightCrop
-      const fCropScaleUV = [
-        1, 1 / (1 - this.fHeightCrop * 2)
-      ]
-      const fCropOffsetUV = [
-        .5, this.fHeightCrop + (1 / (fCropScaleUV[1] * 2))
-      ]
-      this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV));
-      this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV));
+    const crop = this.crop || [0, 0]
+    const fCropChanged = crop.some((crop, i) => crop !== (this.fCrop || [undefined, undefined])[i])
+    if(fCropChanged) {
+      this.fCrop = crop
+      const fCropScaleUV = crop.map(crop => 1 / (1 - crop * 2))
+      const fCropOffsetUV = fCropScaleUV.map((cropScale, i) => crop[i] + (1 / (cropScale * 2)))
+      this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV))
+      this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV))
     }
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
@@ -512,7 +523,7 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
-    if(this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 

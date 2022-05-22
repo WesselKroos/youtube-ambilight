@@ -8,21 +8,68 @@
 <body>
   <main>
     <h1>Ambient light for YouTube&trade;</h1>
-    The settings are accessible from the YouTube video player.<br/><br/>
-    <img src="images/settings-moved-to.png" />
+    <p>
+      The settings are accessible from the YouTube video player.<br/><br/>
+      <img src="images/settings-moved-to.png" />
+    </p>
+    
+    <h2>If you see no settings button after installation</h2>
+    <p>
+      Please refresh the webpage in the browser.<br/>
+      If after the refresh the Ambient light settings button is still not shown you can create an issue on the 
+      <a href="https://github.com/WesselKroos/youtube-ambilight/issues" target="_blank">issues list</a>
+      Alternatively if you have no GitHub account leave your feedback via the
+      <a id="feedbackFormLink" href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank">Feedback form</a>
+    </p>
+    <h2>Performance issues</h2>
+    <p>
+      Follow the <a href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank">troubelshoot guide</a> to resolve performance issue
+    </p>
 
-    <h2 class="important">I see no settings button after installation!</h2>
-    Please click on the refresh button in the browser or press the F5 shortkey.
-    <br/><br/>
-    If after the refresh the Ambient light settings button is still not shown you can create an issue on the 
-    <a href="https://github.com/WesselKroos/youtube-ambilight/issues" target="_blank">issues list</a>
-    and I'll respond within 24 hours on workdays.
-    Alternatively if you have no GitHub account leave your feedback via the
-    <a href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank">Feedback form</a>
+    <h2>Crash reports & Privacy</h2>
+    <p>
+      A crash report contains only anonymous data and will be deleted after 30 days.
+      However, we understand that anonymous data is still your data. That's why you can control what it contains via the settings below.<br/>
+    </p>
 
-    <h2>Why do I see no Ambient light settings button after installation?</h2>
-    The extension is not loaded on YouTube webpages that were already open before the installation. 
-    So please click on the refresh button in the browser or press the F5 shortkey to load the extension.
+    <h3>A crash report is allowed to contain:</h3>
+    <ul>
+      <li>
+        <div class="option">
+          <input type="checkbox" name="video"/>
+          <label>The url and video ID being watched at the time of the crash</label>
+        </div>
+      </li>
+      <li>
+        <div class="option">
+          <input type="checkbox" name="technical"/>
+          <div class="expandable">
+            <div class="expandable__title">
+              <label>Anonymous technical data</label>
+              <button class="expandable__toggle" title="Display the list of technical info">&gt;</button>
+            </div>
+            <ul class="expandable__details">
+              <li>Browser version</li>
+              <li>Operating system version</li>
+              <li>Display capabilities</li>
+              <li>Videoplayer state <i>(Does not contain the video id or title)</i></li>
+              <li>YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
+            </ul>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="option">
+          <input type="checkbox" name="crash"/>
+          <label>Ambient light state and error information</label>
+        </div>
+      </li>
+    </ul>
+    <p>
+      No crash reports will be sent when all checkboxes are unchecked.<br/>
+      <a id="privacyPolicyLink" href="#" target="_blank">Our privacy policy</a>
+    </p>
   </main>
+  <script src="scripts/options.js"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ export default class Projector2d {
       this.projectors = []
     }
 
-    this.projectors = this.projectors.filter((projector, i) => {
+    this.projectors = this.projectors.filter(function removeExcessProjector(projector, i) {
       if (i >= levels) {
         projector.elem.remove()
         return false
@@ -56,8 +56,8 @@ export default class Projector2d {
     }
   }
 
-  rescale(scales, lastScale, projectorSize, heightCrop, settings) {
-    this.heightCrop = heightCrop
+  rescale(scales, lastScale, projectorSize, crop, settings) {
+    this.crop = crop
     for(const i in scales) {
       this.projectors[i].elem.style.transform = `scale(${scales[i].x}, ${scales[i].y})`
     }
@@ -66,10 +66,12 @@ export default class Projector2d {
   }
 
   draw(src) {
-    const srcY = src.height * this.heightCrop
-    const srcHeight = src.height * (1 - this.heightCrop * 2)
+    const srcX = src.width * this.crop[0]
+    const srcY = src.height * this.crop[1]
+    const srcWidth = src.width * (1 - this.crop[0] * 2)
+    const srcHeight = src.height * (1 - this.crop[1] * 2)
     for(const projector of this.projectors) {
-      projector.ctx.drawImage(src, 0, srcY, src.width, srcHeight, 0, 0, projector.elem.width, projector.elem.height)
+      projector.ctx.drawImage(src, srcX, srcY, srcWidth, srcHeight, 0, 0, projector.elem.width, projector.elem.height)
     }
   }
 }

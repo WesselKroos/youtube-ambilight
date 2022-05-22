@@ -1,6 +1,7 @@
-import { $, html, setErrorHandler, uuidv4 } from './generic';
+import { $, html, on, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
+import { contentScript } from './messaging';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -95,45 +96,92 @@ export class AmbilightError extends Error {
   }
 }
 
-const version = document.currentScript.getAttribute('data-version') || ''
+let version = ''
+export const setVersion = (newVersion) => {
+  version = newVersion
+}
 
-const client = new BrowserClient({
-  enabled: true,
-  dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
-  defaultIntegrations: false,
-  release: version,
-  attachStacktrace: true,
-  maxValueLength: 500,
-  normalizeDepth: 4,
-  beforeSend: (event) => {
-    try {
-      event.request = {
-        url: (!navigator.doNotTrack) ? location.href : '?', // Respect DoNotTrack
-        headers: {
-          'User-Agent': navigator.userAgent // Add UserAgent
+let crashOptions = null
+export const setCrashOptions = (newCrashOptions) => {
+  crashOptions = newCrashOptions
+}
+
+let client;
+let hub;
+function initClient() {
+  client = new BrowserClient({
+    enabled: true,
+    dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
+    defaultIntegrations: false,
+    release: version,
+    attachStacktrace: true,
+    maxValueLength: 500,
+    normalizeDepth: 4,
+    beforeSend: (event) => {
+      try {
+        event.request = {}
+        if(navigator.doNotTrack !== '1' && crashOptions?.video) {
+          event.request.url = location.href
         }
-      };
-      // Normalize stacktrace domain of all browsers
-      for(const value of event.exception.values) {
-        if(value.stacktrace && value.stacktrace.frames) {
-          for(const frame of value.stacktrace.frames) {
-            frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
-            frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
-            frame.filename = frame.filename.replace(/\/s\/player\/[a-z|0-9]+?\//g, '/s/player/_hash_/')
+        if(crashOptions?.technical) {
+          event.request.headers = {
+            'User-Agent': navigator.userAgent // Add UserAgent
           }
         }
+        // Normalize stacktrace domain of all browsers
+        for(const value of event.exception.values) {
+          if(value.stacktrace && value.stacktrace.frames) {
+            for(const frame of value.stacktrace.frames) {
+              frame.filename = frame.filename.replace(/[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g, 'extension://')
+              frame.filename = frame.filename.replace(/\/[a-z|0-9]+?\/jsbin\//g, '/_hash_/jsbin/')
+              frame.filename = frame.filename.replace(/\/s\/player\/[a-z|0-9]+?\//g, '/s/player/_hash_/')
+            }
+          }
+        }
+      } catch (ex) { console.warn(ex) }
+      return event
+    }
+  })
+  hub = new Hub(client)
+}
+
+let userId;
+let reports;
+const initializeStorageEntries = (async () => {
+  try {
+    const entries = await contentScript.getStorageEntryOrEntries(['reports', 'crash-reporter-id']) || {}
+    userId = entries['crash-reporter-id']
+    reports = JSON.parse(entries.reports || '[]')
+
+    try {
+      localStorage.removeItem('ambilight-reports')
+    } catch {}
+
+    if(!userId) {
+      try {
+        userId = localStorage.getItem('ambilight-crash-reporter-id')
+      } catch {}
+      if(userId) {
+        // Migrate from localStorage to storage.local
+        await contentScript.setStorageEntry('crash-reporter-id', userId)
+        localStorage.removeItem('ambilight-crash-reporter-id')
+      } else {
+        userId = uuidv4()
+        await contentScript.setStorageEntry('crash-reporter-id', userId)
       }
-    } catch (ex) { console.warn(ex) }
-    return event
-  }
-})
-const hub = new Hub(client)
+    }
+  } catch {}
+})()
 
 let sessionId;
 export default class AmbilightSentry {
   static overflowProtection = 0
-  static captureExceptionWithDetails(ex) {
+  static async captureExceptionWithDetails(ex) {
     try {
+      if(!client || !hub) {
+        initClient()
+      }
+
       this.overflowProtection++
       if(this.overflowProtection > 3) {
         return
@@ -154,26 +202,37 @@ export default class AmbilightSentry {
       } catch (ex) { console.warn(ex) }
 
       console.error('Ambient light for YouTube™ | ', ex)
+
       if(this.overflowProtection === 3) {
         console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
       }
 
+      if(!crashOptions?.crash) {
+        console.warn('Ambient light for YouTube™ | Crash reporting is disabled. If you want this error to be fixed, open the extension options to enable crash reporting. Then refresh the page and reproduce the error again to send a crash report.')
+        return
+      }
+
       try {
-        const reports = JSON.parse(localStorage.getItem('ambilight-reports') || '[]')
-        const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
-        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const reportsToday = reports.filter(report => report.time > dayAgo)
-        const reportsThisWeek = reports.filter(report => report.time > weekAgo)
-        if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
-          reportsThisWeek.push({
-            time: Date.now(),
-            error: ex.message
-          })
-        } else {
-          console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
-          return
+        await initializeStorageEntries
+      } catch {}
+
+      try {
+        if(reports) {
+          const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
+          const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          const reportsToday = reports.filter(report => report.time > dayAgo)
+          const reportsThisWeek = reports.filter(report => report.time > weekAgo)
+          if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
+            reportsThisWeek.push({
+              time: Date.now(),
+              error: ex.message
+            })
+          } else {
+            console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
+            return
+          }
+          await contentScript.setStorageEntry('reports', JSON.stringify(reportsThisWeek))
         }
-        localStorage.setItem('ambilight-reports', JSON.stringify(reportsThisWeek))
       } catch (ex) { 
         console.warn(ex)
         return
@@ -181,11 +240,6 @@ export default class AmbilightSentry {
 
       const scope = new Scope()
       try {
-        let userId = localStorage.getItem('ambilight-crash-reporter-id')
-        if(!userId) {
-          userId = uuidv4()
-          localStorage.setItem('ambilight-crash-reporter-id', userId)
-        }
         scope.setUser({ id: userId })
       } catch { console.warn(ex) }
 
@@ -201,88 +255,15 @@ export default class AmbilightSentry {
           scope.setExtra(name, (value === undefined) ? null : value)
         } catch (ex) { console.warn(ex) }
       }
-
+      
       try {
-        if(ex && ex.details) {
-          setExtra('Details', ex.details)
-        }
+        setExtra('CrashOptions', crashOptions)
       } catch (ex) {
-        setExtra('Details (exception)', ex)
+        setExtra('CrashOptions (exception)', ex)
       }
 
       try {
-        setExtra('Window', {
-          width: window.innerWidth,
-          height: window.innerHeight,
-          scrollY: window.scrollY,
-          devicePixelRatio: window.devicePixelRatio,
-          fullscreen: document.fullscreen
-        })
-      } catch (ex) {
-        setExtra('Window (exception)', ex)
-      }
-
-      try {
-        if (window.screen) {
-          setExtra('Screen', {
-            width: screen.width,
-            height: screen.height,
-            availWidth: screen.availWidth,
-            availHeight: screen.availHeight,
-            colorDepth: screen.colorDepth,
-            pixelDepth: screen.pixelDepth
-          })
-        }
-      } catch (ex) {
-        setExtra('Screen (exception)', ex)
-      }
-
-      try {
-        setExtra('YouTube', {
-          dark: !!html?.attributes?.dark,
-          lang: html?.attributes?.lang?.value,
-          loggedIn: yt?.config_?.LOGGED_IN
-        })
-      } catch (ex) {
-        setExtra('YouTube (exception)', ex)
-      }
-
-      const pageExtra = {}
-      try {
-        pageExtra.isVideo = (location.pathname == '/watch')
-      } catch (ex) {
-        setExtra('Page .isVideo (exception)', ex)
-      }
-      try {
-        pageExtra.isYtdApp = !!$.s('ytd-app')
-      } catch (ex) { 
-        setExtra('Page .isYtdApp (exception)', ex)
-      }
-      setExtra('Page', pageExtra)
-
-      try {
-        setExtra('Video elements', $.sa('video').length)
-      } catch (ex) { 
-        setExtra('Video elements (exception)', ex)
-      }
-
-      try {
-        const videoPlayerElem = $.s('#movie_player')
-        if (videoPlayerElem) {
-          const stats = videoPlayerElem.getStatsForNerds()
-          const relevantStats = ['bandwidth_kbps', 'buffer_health_seconds', 'codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
-          Object.keys(stats).forEach(key => {
-            if(!relevantStats.includes(key))
-              delete stats[key]
-          })
-          setExtra('Player', stats)
-        }
-      } catch (ex) { 
-        setExtra('Player (exception)', ex)
-      }
-
-      let ambilightExtra = {}
-      try {
+        let ambilightExtra = {}
         ambilightExtra.initialized = (typeof ambilight !== 'undefined')
         if (typeof ambilight !== 'undefined') {
           ambilightExtra.now = performance.now()
@@ -339,7 +320,7 @@ export default class AmbilightSentry {
             'projector.scale.x',
             'projector.scale.y',
             'projector.lostCount',
-            'projector.majorPerformanceCaveatDetected'
+            'projector.majorPerformanceCaveat'
           ]
           keys.forEach(key => {
             try {
@@ -370,6 +351,98 @@ export default class AmbilightSentry {
         setExtra('Settings (exception)', ex)
       }
 
+      if(crashOptions?.technical) {
+        try {
+          if(ex && ex.details) {
+            setExtra('Details', ex.details)
+          }
+        } catch (ex) {
+          setExtra('Details (exception)', ex)
+        }
+
+        try {
+          setExtra('YouTube', {
+            dark: !!html?.attributes?.dark,
+            loggedIn: yt?.config_?.LOGGED_IN
+          })
+        } catch (ex) {
+          setExtra('YouTube (exception)', ex)
+        }
+
+        const pageExtra = {}
+        try {
+          pageExtra.isVideo = (location.pathname == '/watch')
+        } catch (ex) {
+          setExtra('Page .isVideo (exception)', ex)
+        }
+        try {
+          pageExtra.isYtdApp = !!$.s('ytd-app')
+        } catch (ex) { 
+          setExtra('Page .isYtdApp (exception)', ex)
+        }
+        setExtra('Page', pageExtra)
+
+        try {
+          setExtra('Video elements', $.sa('video').length)
+        } catch (ex) { 
+          setExtra('Video elements (exception)', ex)
+        }
+
+        try {
+          setExtra('Window', {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollY: window.scrollY,
+            devicePixelRatio: window.devicePixelRatio,
+            fullscreen: document.fullscreen
+          })
+        } catch (ex) {
+          setExtra('Window (exception)', ex)
+        }
+
+        try {
+          if (window.screen) {
+            setExtra('Screen', {
+              width: screen.width,
+              height: screen.height,
+              availWidth: screen.availWidth,
+              availHeight: screen.availHeight,
+              colorDepth: screen.colorDepth,
+              pixelDepth: screen.pixelDepth
+            })
+          }
+        } catch (ex) {
+          setExtra('Screen (exception)', ex)
+        }
+
+        try {
+          const videoPlayerElem = $.s('#movie_player')
+          if (videoPlayerElem) {
+            const stats = videoPlayerElem.getStatsForNerds()
+            const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
+            Object.keys(stats).forEach(key => {
+              if(!relevantStats.includes(key))
+                delete stats[key]
+            })
+            setExtra('Player', stats)
+          }
+        } catch (ex) { 
+          setExtra('Player (exception)', ex)
+        }
+      }
+
+      if(navigator.doNotTrack !== '1' && crashOptions?.video) {
+        try {
+          const ytdWatchFlexyElem = $.s('ytd-watch-flexy')
+          if (ytdWatchFlexyElem) {
+            const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
+            setExtra('ytd-watch-flexy[video-id]', videoId)
+          }
+        } catch (ex) { 
+          setExtra('ytd-watch-flexy[video-id] (exception)', ex)
+        }
+      }
+
       const previousHub = getCurrentHub()
       makeMain(hub)
       const response = client.captureException(ex, {}, scope)
@@ -381,4 +454,80 @@ export default class AmbilightSentry {
   }
 }
 
-setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+export class ErrorEvents {
+  list = []
+  
+  constructor() {
+    on(window, 'beforeunload', (e) => {
+      if(!this.list.length) return
+      
+      this.add('tab beforeunload')
+      this.send()
+    }, false)
+    
+    on(window, 'pagehide', (e) => {
+      if(!this.list.length) return
+      
+      this.add('tab pagehide')
+    }, false)
+    
+    on(document, 'visibilitychange', () => {
+      if(document.visibilityState !== 'hidden') return
+      if(!this.list.length) return
+      
+      this.add('tab visibilitychange hidden')
+      this.send()
+    }, false)
+  }
+
+  send = () => {
+    const lastEvent = this.list[this.list.length - 1]
+    const lastTime = lastEvent.time
+    const firstTime =  this.list[0].firstTime || this.list[0].time
+    if(lastTime - firstTime < 10) {
+      return // Give the site 10 seconds to load the watch page or move the video element
+    }
+
+    AmbilightSentry.captureExceptionWithDetails(
+      new AmbilightError('Closed or hid the webpage tab with pending errors events', this.list)
+    )
+    this.list = []
+  }
+
+  add = (type, details = {}) => {
+    if(!crashOptions?.technical) {
+      if(details['ambilight.videoElem']) details['ambilight.videoElem'] = undefined
+      if(details.tree) details.tree = undefined
+    }
+    const time = Math.round(performance.now()) / 1000
+  
+    if(this.list.length) {
+      const last = this.list.slice(-1)[0]
+      const {
+        count: lastCount,
+        time: lastTime,
+        firstTime,
+        type: lastType,
+        ...lastDetails
+      } = last
+  
+      if(
+        lastType === type && 
+        JSON.stringify(lastDetails) === JSON.stringify(details)
+      ) {
+        last.count = last.count ? last.count + 1 : 2
+        last.time = time
+        last.firstTime = firstTime || lastTime
+        return
+      }
+    }
+  
+    let event = {
+      type,
+      time,
+      ...details,
+    }
+    event.time = time
+    this.list.push(event)
+  }
+}

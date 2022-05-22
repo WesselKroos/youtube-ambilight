@@ -1,5 +1,5 @@
-import babel from 'rollup-plugin-babel'
-import resolve from 'rollup-plugin-node-resolve'
+import babel from '@rollup/plugin-babel'
+import resolve from '@rollup/plugin-node-resolve'
 import cleanup from 'rollup-plugin-cleanup'
 import stripCode from "rollup-plugin-strip-code"
 
@@ -7,14 +7,15 @@ const common = {
   context: 'window',
   plugins: [
     resolve(),
+    stripCode({
+      pattern: /var script = global\.document\.createElement\('script'\);(.*?)appendChild\(script\);(.*?)\}/gs // Removes Sentry script injection
+    }),
+    stripCode({
+      pattern: /var sandbox = doc(.*?)\.createElement\('iframe'\);(.*?)removeChild\(sandbox\);/gs // Removes Sentry iframe injection
+    }),
     babel({
-      exclude: 'node_modules/**'
-    }),
-    stripCode({
-      pattern: /var script = document\.createElement\('script'\);(.*?)appendChild\(script\);/gs // Removes Sentry script injection
-    }),
-    stripCode({
-      pattern: /var sandbox = doc\.createElement\('iframe'\);(.*?)removeChild\(sandbox\);/gs // Removes Sentry iframe injection
+      exclude: 'node_modules/**',
+      babelHelpers: 'bundled'
     }),
     cleanup({
       comments: 'none',
@@ -23,32 +24,12 @@ const common = {
   ]
 }
 
-const background = {
-   input:  './src/scripts/background.js',
-   output:  { 
-    file: './dist/scripts/background.js',
-    format: 'iife'
-  }
-}
+const scripts = ['background', 'options', 'content', 'youtube-ambilight']
 
-const content = {
-   input:  './src/scripts/content.js',
-   output:  { 
-    file: './dist/scripts/content.js',
-    format: 'iife'
-  }
-}
-
-const youtubeAmbilight = {
-   input:  './src/scripts/youtube-ambilight.js',
-   output:  { 
-    file: './dist/scripts/youtube-ambilight.js',
-    format: 'iife'
-  }
-}
-
-export default [
-  Object.assign({}, background, common),
-  Object.assign({}, content, common),
-  Object.assign({}, youtubeAmbilight, common)
-]
+export default scripts.map(script => Object.assign({}, {
+  input:  `./src/scripts/${script}.js`,
+  output:  { 
+   file: `./dist/scripts/${script}.js`,
+   format: 'iife'
+ }
+}, common))

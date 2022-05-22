@@ -1,12 +1,13 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import AmbilightSentry from './ambilight-sentry'
-import { getBrowser, getBrowserVersion, getOS } from './utils'
+import { contentScript } from './messaging'
+import { getBrowser } from './utils'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
 export const FRAMESYNC_VIDEOFRAMES = 2
 
-const version = document.currentScript.getAttribute('data-version') || ''
+const feedbackFormLink = document.currentScript.getAttribute('data-feedback-form-link') || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 
 export default class Settings {
   saveStorageEntryTimeout = {}
@@ -60,7 +61,7 @@ export default class Settings {
       min: 0,
       max: 60,
       step: 1,
-      advanced: true
+      advanced: false
     },
     {
       name: 'webGL',
@@ -178,17 +179,18 @@ export default class Settings {
       advanced: true
     },
     {
-      name: 'immersive',
-      label: 'Hide when scrolled to top',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'Z'
-    },
-    {
       name: 'immersiveTheaterView',
       label: 'Hide in theater mode',
       type: 'checkbox',
       default: false
+    },
+    {
+      name: 'immersive',
+      label: 'Hide when scrolled to top',
+      type: 'checkbox',
+      default: false,
+      defaultKey: 'Z',
+      advanced: true
     },
     {
       name: 'hideScrollbar',
@@ -244,6 +246,14 @@ export default class Settings {
       defaultKey: 'B'
     },
     {
+      name: 'detectVerticalBarSizeEnabled',
+      label: 'Remove black sidebars',
+      description: 'More CPU usage',
+      type: 'checkbox',
+      default: false,
+      defaultKey: 'V'
+    },
+    {
       name: 'detectColoredHorizontalBarSizeEnabled',
       label: 'Also remove colored bars',
       type: 'checkbox',
@@ -275,6 +285,16 @@ export default class Settings {
       advanced: true
     },
     {
+      name: 'verticalBarsClipPercentage',
+      label: 'Black sidebars size',
+      type: 'list',
+      default: 0,
+      min: 0,
+      max: 40,
+      step: 0.1,
+      advanced: true
+    },
+    {
       name: 'horizontalBarsClipPercentageReset',
       label: 'Reset black bars next video',
       type: 'checkbox',
@@ -283,16 +303,16 @@ export default class Settings {
     },
     {
       name: 'detectVideoFillScaleEnabled',
-      label: 'Fill video to screen width',
+      label: 'Fill video to screen',
       type: 'checkbox',
       default: false,
-      defaultKey: 'W'
+      defaultKey: 'S'
     },
     {
       type: 'section',
       label: 'Filters',
       name: 'sectionAmbilightImageAdjustmentCollapsed',
-      default: false,
+      default: true,
       advanced: true
     },
     {
@@ -470,56 +490,63 @@ export default class Settings {
   ]
 
   constructor(ambilight, menuBtnParent, menuElemParent) {
-    this.ambilight = ambilight
-    this.menuBtnParent = menuBtnParent
-    this.menuElemParent = menuElemParent
+    return (async () => {
+      this.ambilight = ambilight
+      this.menuBtnParent = menuBtnParent
+      this.menuElemParent = menuElemParent
 
-    this.config = this.config.map(setting => {
-      if(this.ambilight.videoHasRequestVideoFrameCallback) {
-        if(setting.name === 'frameSync') {
+      this.config = this.config.map(setting => {
+        if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
+          setting.default = true
+        }
+        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
+          setting.default = 25
+        }
+        if(setting.name === 'frameSync' && this.ambilight.videoHasRequestVideoFrameCallback) {
           setting.max = 2
           setting.default = 2
           setting.advanced = true
         }
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && !supportsWebGL()) {
+        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && this.ambilight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
           setting.advanced = true
         }
-      }
-      return setting
-    })
+        return setting
+      })
 
-    this.getAll()
-    this.initWebGLExperiment()
+      await this.getAll()
+      await this.initWebGLExperiment()
 
-    this.config = this.config.map(setting => {
-      if(setting.name === 'webGL') {
-        if(!supportsWebGL()) {
+      this.config = this.config.map(setting => {
+        if(setting.name === 'webGL' && !supportsWebGL()) {
           this.webGL = undefined
           return undefined
         }
-      }
-      if(setting.name === 'resolution' && !this.webGL) {
-        this.resolution = undefined
-        return undefined
-      }
-      return setting
-    }).filter(setting => setting)
+        if(setting.name === 'resolution' && !this.webGL) {
+          this.resolution = undefined
+          return undefined
+        }
+        return setting
+      }).filter(setting => setting)
 
-    this.initFeedbackLink()
-    this.initMenu()
+      this.initMenu()
+
+      if(this.pendingWarning) {
+        this.pendingWarning()
+        this.pendingWarning = undefined
+      }
+
+      return this
+    })()
   }
 
-  initFeedbackLink() {
-    const os = getOS() || ''
-    const browser = getBrowser() || ''
-    const browserVersion = getBrowserVersion() || ''
-    this.feedbackFormLink = `https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform?usp=pp_url&entry.1590539866=${version}&entry.1676661118=${os}&entry.964326861=${browser}&entry.908541589=${browserVersion}`
-  }
+  async initWebGLExperiment() {
+    if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
 
-  initWebGLExperiment() {
-    this.webGLExperiment = this.getStorageEntry('webGL-experiment')
-    if(this.webGLExperiment !== null) {
-      this.webGLExperiment = this.webGLExperiment === 'true'
+    try {
+      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
+      if(this.webGLExperiment !== null) return
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
       return
     }
 
@@ -529,22 +556,48 @@ export default class Settings {
     } catch {
       newUser = true
     }
-
-    this.webGLExperiment = supportsWebGL() && (newUser || Math.random() > .9)
-    this.saveStorageEntry('webGL-experiment', this.webGLExperiment)
-    if(!this.webGLExperiment || this.webGL) return
+    this.webGLExperiment = (newUser || Math.random() > .8)
+    try {
+      await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      return
+    }
+    if(!this.webGLExperiment) return
 
     this.set('webGL', true)
   }
   
-  getAll() {
+  async getAll() {
+    const names = []
     for (const setting of this.config) {
-      this[setting.name] = this.get(setting.name)
+      names.push(`setting-${setting.name}`)
+
       if(setting.defaultKey !== undefined) {
-        const key = this.getKey(setting.name)
-        setting.key = (key !== null) ? key : setting.defaultKey
+        names.push(`setting-${setting.name}-key`)
       }
     }
+
+    let storedSettings = {}
+    try {
+      storedSettings = await contentScript.getStorageEntryOrEntries(names, true) || {}
+    } catch {
+      this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
+    }
+      
+    for (const setting of this.config) {
+      let value = storedSettings[`setting-${setting.name}`]
+      value = (value === null || value === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(setting.name) : value
+      this[setting.name] = this.processStorageEntry(setting.name, value)
+
+      if(setting.defaultKey !== undefined) {
+        let key = storedSettings[`setting-${setting.name}-key`]
+        if(key === null || key === undefined) key = await this.tryGetAndMigrateLocalStorageEntry(`${setting.name}-key`)
+        if(key === null) key = setting.defaultKey
+        setting.key = key
+      }
+    }
+    await this.flushPendingStorageEntries() // Complete migrations
 
     html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
   }
@@ -597,8 +650,8 @@ export default class Settings {
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="${this.feedbackFormLink}" target="_blank">
-                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light for YouTube™</span>
+              <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank">
+                <span class="ytpa-feedback-link__text">Troubleshoot performance problems</span>
               </a>
             </div>
             <div class="ytp-menuitem-content">
@@ -606,6 +659,13 @@ export default class Settings {
                 class="ytpa-reset-settings-btn"
                 title="Reset all settings"
               ></button>
+            </div>
+          </div>
+          <div class="ytp-menuitem ytpa-menuitem--header">
+            <div class="ytp-menuitem-label">
+              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank">
+                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light</span>
+              </a>
             </div>
           </div>
           ${
@@ -831,7 +891,6 @@ export default class Settings {
             e.stopPropagation()
           })
           const onChange = (empty = false) => {
-            const manualValue = manualInputElem.value
             if(inputElem.value === manualInputElem.value) return
             inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))
@@ -900,6 +959,15 @@ export default class Settings {
             controllerInput.click()
           }
 
+          if(
+            setting.name === 'verticalBarsClipPercentage' &&
+            this.detectVerticalBarSizeEnabled
+          ) {
+            const controllerInput = $.s(`#setting-detectVerticalBarSizeEnabled`)
+            controllerInput.dontResetControlledSetting = true
+            controllerInput.click()
+          }
+
           if(setting.name === 'videoScale') {
             if(this.detectVideoFillScaleEnabled) {
               const controllerInput = $.s(`#setting-detectVideoFillScaleEnabled`)
@@ -921,11 +989,11 @@ export default class Settings {
           }
 
           if (
-            this.detectHorizontalBarSizeEnabled &&
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambilight.horizontalBarDetection.clear()
-            this.ambilight.scheduleHorizontalBarSizeDetection()
+            this.ambilight.barDetection.clear()
+            this.ambilight.scheduleBarSizeDetection()
           }
 
           if (
@@ -933,6 +1001,10 @@ export default class Settings {
             setting.name === 'edge'
           ) {
             this.ambilight.canvassesInvalidated = true
+          }
+
+          if(['surroundingContentShadowSize', 'videoShadowSize'].some(name => name === setting.name)) {
+            this.updateVisibility()
           }
 
           this.ambilight.buffersCleared = true
@@ -946,17 +1018,7 @@ export default class Settings {
             value = this.config.find(s => s.name === setting.name).default
             if(value === this[setting.name]) return
           }
-          this[setting.name] = value
 
-          if (setting.name === 'enabled') {
-            this.ambilight.toggleEnabled(value)
-          }
-          if (setting.name === 'immersive') {
-            this.ambilight.toggleImmersiveMode(value)
-          }
-          if (setting.name === 'hideScrollbar') {
-            html.setAttribute('data-ambilight-hide-scrollbar', value)
-          }
           if (
             setting.name === 'videoOverlayEnabled' ||
             setting.name === 'frameSync' ||
@@ -967,6 +1029,8 @@ export default class Settings {
             setting.name === 'horizontalBarsClipPercentageReset' ||
             setting.name === 'detectHorizontalBarSizeEnabled' ||
             setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
+            setting.name === 'detectVerticalBarSizeEnabled' ||
+            setting.name === 'detectColoredVerticalBarSizeEnabled' ||
             setting.name === 'detectVideoFillScaleEnabled' ||
             setting.name === 'directionTopEnabled' ||
             setting.name === 'directionRightEnabled' ||
@@ -981,29 +1045,44 @@ export default class Settings {
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
+          if (setting.name === 'enabled') {
+            this.ambilight.toggleEnabled(value)
+          }
+          if (setting.name === 'immersive') {
+            this.ambilight.toggleImmersiveMode(value)
+          }
+          if (setting.name === 'hideScrollbar') {
+            html.setAttribute('data-ambilight-hide-scrollbar', value)
+          }
           if(setting.name === 'immersiveTheaterView') {
             this.ambilight.updateImmersiveMode()
           }
+          
+          if(['detectHorizontalBarSizeEnabled', 'detectVerticalBarSizeEnabled', 'frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
+            this.updateVisibility()
+          }
 
-          if(setting.name === 'detectHorizontalBarSizeEnabled') {
+          if(setting.name === 'detectHorizontalBarSizeEnabled' || setting.name === 'detectVerticalBarSizeEnabled') {
             if(!value) {
               if(!settingElem.dontResetControlledSetting) {
-                const horizontalBarsClipPercentageSetting = this.config.find(setting => setting.name === 'horizontalBarsClipPercentage')
-                const horizontalBarsClipPercentageInputElem = $.s(`#setting-${horizontalBarsClipPercentageSetting.name}-range`)
-                horizontalBarsClipPercentageInputElem.value = horizontalBarsClipPercentageSetting.default
-                horizontalBarsClipPercentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                const controlledSettingName = ({
+                  'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
+                  'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage'
+                })[setting.name]
+                const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
+                const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+                percentageInputElem.value = percentageSetting.default
+                percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
               }
             } else {
-              this.ambilight.horizontalBarDetection.clear()
-              this.ambilight.scheduleHorizontalBarSizeDetection()
+              this.ambilight.barDetection.clear()
+              this.ambilight.scheduleBarSizeDetection()
             }
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
-            this.updateControlledSettings()
-
-            const key = this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key
-            this.displayBezel(key, !value)
+            this.updateVisibility()
+            this.displayBezel(setting.key, !value)
 
             if(this.webGL) {
               this.ambilight.updateSizes()
@@ -1024,7 +1103,7 @@ export default class Settings {
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
-            this.updateControlledSettings()
+            this.updateVisibility()
 
             const key = this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
             this.displayBezel(key, !value)
@@ -1054,8 +1133,8 @@ export default class Settings {
 
           if(setting.name === 'webGL') {
             // setTimeout to allow processing of all settings in case the reset button was clicked
-            setTimeout(() => {
-              this.flushPendingStorageEntries()
+            setTimeout(async () => {
+              await this.flushPendingStorageEntries()
   
               const search = new URLSearchParams(location.search)
               const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
@@ -1072,7 +1151,7 @@ export default class Settings {
       }
     }
 
-    this.updateControlledSettings()
+    this.updateVisibility()
   }
 
   getSettingListDisplayText(setting) {
@@ -1155,23 +1234,74 @@ export default class Settings {
     off(this.menuElem, 'animationend', this.onSettingsFadeOutEndListener)
   }
 
-  updateControlledSettings() {
-    const videoScaleValue = $.s(`#setting-videoScale-value`)
-    if(!this.detectVideoFillScaleEnabled) {
-      videoScaleValue.classList.remove('is-controlled-by-setting')
-      videoScaleValue.setAttribute('title', '')
-    } else {
-      videoScaleValue.classList.add('is-controlled-by-setting')
-      videoScaleValue.setAttribute('title', 'Controlled by the "Fill video to screen width" setting.\nManually adjusting this setting will turn off "Fill video to screen width"')
+  
+  controlledSettings = [
+    {
+      name: 'videoScale',
+      controllerName: 'detectVideoFillScaleEnabled',
+      controller: 'Fill video to screen width'
+    },
+    {
+      name: 'horizontalBarsClipPercentage',
+      controllerName: 'detectHorizontalBarSizeEnabled',
+      controller: 'Remove black bars'
+    },
+    {
+      name: 'verticalBarsClipPercentage',
+      controllerName: 'detectVerticalBarSizeEnabled',
+      controller: 'Remove black sidebars size'
+    }
+  ]
+  optionalSettings = [
+    {
+      names: [
+        'detectHorizontalBarSizeEnabled',
+        'detectVerticalBarSizeEnabled'
+      ],
+      visible: () => this.ambilight.getImageDataAllowed
+    },
+    {
+      names: [
+        'detectColoredHorizontalBarSizeEnabled',
+        'detectHorizontalBarSizeOffsetPercentage'
+      ],
+      visible: () => this.ambilight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
+    },
+    {
+      names: [ 'frameBlendingSmoothness' ],
+      visible: () => this.frameBlending
+    },
+    {
+      names: [ 'videoOverlaySyncThreshold' ],
+      visible: () => this.videoOverlayEnabled
+    },
+    {
+      names: [ 'surroundingContentShadowOpacity' ],
+      visible: () => this.surroundingContentShadowSize
+    },
+    {
+      names: [ 'videoShadowOpacity' ],
+      visible: () => this.videoShadowSize
+    }
+  ]
+  updateVisibility() {
+    for(const setting of this.controlledSettings) {
+      const valueElem = $.s(`#setting-${setting.name}-value`)
+      if(this[setting.controllerName]) {
+        valueElem.classList.add('is-controlled-by-setting')
+        valueElem.setAttribute('title', `Controlled by the "${setting.controller}" setting.\nManually adjusting this setting will turn off "${setting.controller}"`)
+      } else {
+        valueElem.classList.remove('is-controlled-by-setting')
+        valueElem.setAttribute('title', '')
+      }
     }
 
-    const horizontalBarsClipPercentageValue = $.s(`#setting-horizontalBarsClipPercentage-value`)
-    if(!this.detectHorizontalBarSizeEnabled) {
-      horizontalBarsClipPercentageValue.classList.remove('is-controlled-by-setting')
-      horizontalBarsClipPercentageValue.setAttribute('title', '')
-    } else {
-      horizontalBarsClipPercentageValue.classList.add('is-controlled-by-setting')
-      horizontalBarsClipPercentageValue.setAttribute('title', 'Controlled by the "Remove black bars" setting.\nManually adjusting this setting will turn off "Remove black bars"')
+    for(const optionalGroup of this.optionalSettings) {
+      const optionalSettings = optionalGroup.names.map(name => $.s(`#setting-${name}`)).filter(setting => setting)
+      const visible = optionalGroup.visible()
+      for (const optionalSetting of optionalSettings) {
+        optionalSetting.style.display = visible ? '' : 'none'
+      }
     }
   }
 
@@ -1181,11 +1311,8 @@ export default class Settings {
     this.saveStorageEntry(`${setting.name}-key`, key)
   }
 
-  getKey(name) {
-    return this.getStorageEntry(`${name}-key`)
-  }
-
   set(name, value, updateUI) {
+    const changed = this[name] !== value
     this[name] = value
 
     if (name === 'blur')
@@ -1193,7 +1320,9 @@ export default class Settings {
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
-    this.saveStorageEntry(name, value)
+    if(changed) {
+      this.saveStorageEntry(name, value)
+    }
 
     if (updateUI) {
       this.updateUI(name)
@@ -1225,13 +1354,15 @@ export default class Settings {
     $.s(`#setting-${name}`).click()
   }
 
-  get(name) {
-    let value = this.getStorageEntry(name)
+  processStorageEntry(name, value) {
     const setting = this.config.find(setting => setting.name === name) || {}
-    if (value === null) {
+    if (value === null || value === undefined) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
-      value = (value === 'true')
+      value = (
+        value === 'true' || // localStorage
+        value === true // storage.local
+      )
     } else if (setting.type === 'list') {
       value = parseFloat(value)
       if (name === 'blur')
@@ -1257,10 +1388,14 @@ export default class Settings {
     this.loggedLocalStorageWarning = true
   }
 
-  getStorageEntry(name) {
+  async tryGetAndMigrateLocalStorageEntry(name) {
     let value = null
     try {
       value = localStorage.getItem(`ambilight-${name}`)
+      if(value !== null) {
+        localStorage.removeItem(`ambilight-${name}`)
+        this.saveStorageEntry(name, JSON.parse(value))
+      }
     } catch (ex) {
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
     }
@@ -1273,32 +1408,29 @@ export default class Settings {
     if (this.saveStorageEntryTimeout)
       clearTimeout(this.saveStorageEntryTimeout)
 
-    this.saveStorageEntryTimeout = setTimeout(() => {
+    this.saveStorageEntryTimeout = setTimeout(function saveStorageEntryTimeout() {
       delete this.saveStorageEntryTimeout
       this.flushPendingStorageEntries()
-    }, 500)
+    }.bind(this), 500)
   }
 
-  removeStorageEntry(name) {
-    try {
-      localStorage.removeItem(`ambilight-${name}`)
-    } catch (ex) {
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
-    }
-  }
-
-  flushPendingStorageEntries() {
+  async flushPendingStorageEntries() {
     try {
       if (this.saveStorageEntryTimeout)
         clearTimeout(this.saveStorageEntryTimeout)
       
       const names = Object.keys(this.pendingStorageEntries)
       for(const name of names) {
-        localStorage.setItem(`ambilight-${name}`, this.pendingStorageEntries[name])
+        await contentScript.setStorageEntry(`setting-${name}`, this.pendingStorageEntries[name], true)
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
+      if(ex?.message === 'uninstalled') {
+        this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
+        return
+      }
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
 
@@ -1306,6 +1438,7 @@ export default class Settings {
     immersive: this.config.find(setting => setting.name === 'immersive').key,
     enabled: this.config.find(setting => setting.name === 'enabled').key,
     detectHorizontalBarSizeEnabled: this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
+    detectVerticalBarSizeEnabled: this.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
     detectVideoFillScaleEnabled: this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
   })
 
@@ -1324,29 +1457,23 @@ export default class Settings {
     }, 0);
   }
 
-  setGetImageDataAllowedVisibility = (allowed) => {
-    const settings = [
-      $.s(`#setting-detectHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectColoredHorizontalBarSizeEnabled`),
-      $.s(`#setting-detectHorizontalBarSizeOffsetPercentage`)
-    ].filter(setting => setting)
-    if(allowed) {
-      for (const setting of settings) {
-        setting.style.display = ''
-      }
-    } else {
-      for (const setting of settings) {
-        setting.style.display = 'none'
-      }
-    }
-  }
-
   setWarning = (message, optional = false) => {
+    if(!this.menuElem) {
+      this.pendingWarning = () => this.setWarning(message, optional)
+      return
+    }
+
     if(optional && this.warningElem.textContent.length) return
 
+    const messageChanged = this.warningElem.textContent !== message
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
     
     this.menuBtn.classList.toggle('has-warning', !!message)
+    if(message && messageChanged)
+      this.menuElem.scrollTo({
+        behavior: 'smooth',
+        top: 0
+      })
   }
 }

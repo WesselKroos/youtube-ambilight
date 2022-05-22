@@ -1,7 +1,16 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl } from './libs/generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError } from './libs/ambilight-sentry'
-import ErrorEvents from './libs/error-events'
+import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
+import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError, ErrorEvents, setVersion, setCrashOptions } from './libs/ambilight-sentry'
 import Ambilight from './libs/ambilight'
+import { contentScript } from './libs/messaging'
+
+setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+wrapErrorHandler(function initVersionAndCrashOptions() {
+  setVersion(document.currentScript.getAttribute('data-version') || '')
+  setCrashOptions(JSON.parse(document.currentScript.getAttribute('data-crash-options')))
+  contentScript.addMessageListener('crashOptions', newCrashOptions => {
+    setCrashOptions(newCrashOptions)
+  }, true)
+})()
 
 const errorEvents = new ErrorEvents()
 
@@ -17,18 +26,40 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       return
     }
 
+    const newYtdAppElem = document.querySelector('ytd-app') 
+    if(newYtdAppElem !== ytdAppElem) {
+      const details = {
+        newYtdAppElemContainsAmbilightVideoElem: newYtdAppElem?.contains(ambilight.videoElem),
+        oldYtdAppElemContainsAmbilightVideoElem: ytdAppElem?.contains(ambilight.videoElem),
+        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        tree: getSelectorTreeString('video,#player-container')
+      }
+      errorEvents.add('detectDetachedVideo | ytd-app element changed', details)
+      return
+    }
+
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
+      const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
+      const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
+      const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+      if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem) {
+        return
+      }
+
       const details = {
         documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem),
         'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
-      errorEvents.add('detectDetachedVideo | video detached and no new video', details)
+      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', details)
       return
     }
 
-    ambilight.initVideoElem(videoElem)
+    if(ambilight.videoElem !== videoElem) {
+      ambilight.initVideoElem(videoElem)
+      ambilight.initVideoListeners()
+    }
     ambilight.start()
 
     if(errorEvents.list.length) {
@@ -46,37 +77,35 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   })
 }
 
-const tryInitAmbilight = (ytdAppElem) => {
+let initializingAmbilight = false
+const tryInitAmbilight = async () => {
   if (!isWatchPageUrl()) return
 
+  const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
-    const ytPlayerManagerVideoElem = ytdAppElem.querySelector('yt-player-manager video.html5-main-video')
+    const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
-      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the player-api')
-      // console.log(playerApiElem.cloneNode(true))
-      errorEvents.add('tryInit | video in yt-player-manager')
+      // errorEvents.add('tryInit | video in yt-player-manager')
       return false
     }
-    const ytdMiniplayerVideoElem = ytdAppElem.querySelector('ytd-miniplayer video.html5-main-video')
+    const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      // console.warn('Ambient light for YouTube™ | Waiting for the video to transition from the miniplayer')
-      errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
+      // errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
       return false
     }
-    const playerApiElem = document.querySelector('#player-api video.html5-main-video')
-    if(playerApiElem) {
-      errorEvents.add('tryInitAmbilight | video in #player-api')
+    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+    if(playerApiVideoElem) {
+      // errorEvents.add('tryInitAmbilight | video in #player-api')
       return false
     }
-    // console.warn('Ambient light for YouTube™ | Waiting for the video to be created in ytd-app')
-    errorEvents.add('tryInitAmbilight | no video in ytd-app ytd-watch-flexy', {
+    errorEvents.add('tryInitAmbilight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', {
       tree: getSelectorTreeString('video,#player-container')
     })
     return false
   }
   
-  window.ambilight = new Ambilight(ytdAppElem, videoElem)
+  window.ambilight = await new Ambilight(ytdAppElem, videoElem)
 
   errorEvents.list = []
   ambilightDetectDetachedVideo(ytdAppElem)
@@ -87,12 +116,14 @@ const tryInitAmbilight = (ytdAppElem) => {
   return true
 }
 
-const getWatchPageViewObserver = (() => {
+const getWatchPageViewObserver = (function initGetWatchPageViewObserver() {
   let observer;
-  return (ytdAppElem) => {
+  return function getWatchPageViewObserver(ytdAppElem) {
     if(!observer) {
-      observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => 
-        ambilightStartIfWatchPageHasVideo(ytdAppElem)
+      observer = new MutationObserver(wrapErrorHandler(
+        function watchPageViewObserved(mutationsList, observer) {
+          ambilightStartIfWatchPageHasVideo(ytdAppElem)
+        }
       ))
     }
     return observer;
@@ -119,7 +150,7 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
 }
 
 const ambilightDetectPageTransitions = (ytdAppElem) => {
-  on(document, 'yt-navigate-finish', () => {
+  on(document, 'yt-navigate-finish', function onYtNavigateFinish() {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       ambilightStartIfWatchPageHasVideo(ytdAppElem)
@@ -135,12 +166,14 @@ const ambilightDetectPageTransitions = (ytdAppElem) => {
   }, undefined, undefined, true);
 }
 
-const loadAmbilight = () => {
+const loadAmbilight = async () => {
   // Validate YouTube desktop web app
   const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
-      .filter(elem => elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+      .filter(function getAppElems(elem) {
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+      })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
       throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
@@ -148,37 +181,58 @@ const loadAmbilight = () => {
     return
   }
 
-  if (tryInitAmbilight(ytdAppElem)) return
+  if (await tryInitAmbilight()) return
   // Not on the watch page yet
 
   // Listen to DOM changes
-  const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-    if (window.ambilight) {
-      observer.disconnect()
-      return
-    }
-
-    try {
-      if (tryInitAmbilight(ytdAppElem)) {
-        // Initialized
-        observer.disconnect()
+  let initializing = false
+  let tryAgain = true
+  const observer = new MutationObserver(wrapErrorHandler(
+    async function ytdAppObserved(mutationsList, observer) {
+      if (initializing) {
+        tryAgain = true
+        return
       }
-    } catch (ex) {
-      // Disconnect to prevent infinite loops
-      observer.disconnect()
-      throw ex
-    }
-  }, true))
+
+      if (window.ambilight) {
+        observer.disconnect()
+        return
+      }
+
+      initializing = true
+      try {
+        if (await tryInitAmbilight()) {
+          // Initialized
+          observer.disconnect()
+        } else {
+          while(tryAgain) {
+            tryAgain = false
+            if(await tryInitAmbilight()) {
+              // Initialized
+              observer.disconnect()
+              tryAgain = false
+            }
+          }
+          initializing = false
+        }
+      } catch (ex) {
+        // Disconnect to prevent infinite loops
+        observer.disconnect()
+        throw ex
+      }
+    },
+    true
+  ))
   observer.observe(ytdAppElem, {
     childList: true,
     subtree: true
   })
 }
 
-const onLoad = () => requestIdleCallback(function onLoad() {
+const onLoad = () => requestIdleCallback(async function onLoadIdleCallback() {
   if(window.ambilight) return
-    
-  loadAmbilight()
+
+  await loadAmbilight()
 }, { timeout: 5000 })
 
 try {

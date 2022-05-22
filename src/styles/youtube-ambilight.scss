@@ -206,9 +206,11 @@ html[data-ambilight-enabled="true"] {
     opacity: 0;
   }
   .html5-main-video {
+    transform-origin: center center;
     transform: var(--video-transform);
   }
   .ambilight__video-overlay {
+    transform-origin: center center;
     transform: var(--video-transform);
   }
 
@@ -998,21 +1000,6 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
-  .ytpa-menuitem--warning {
-    margin-bottom: 5px;
-    cursor: default !important;
-    &,
-    &:hover {
-      background: #f52 !important;
-    }
-  }
-  .ytpa-warning {
-    color: #000;
-    text-shadow: none;
-    font-weight: bold;
-    white-space: pre-line;
-  }
-
   .ytp-menuitem {
     display: flex;
     width: 100%;
@@ -1029,6 +1016,21 @@ html[data-ambilight-enabled="true"] {
     .ytp-fullscreen & {
       padding: 9px 0;
     }
+  }
+
+  .ytpa-menuitem--warning {
+    margin-bottom: 5px;
+    cursor: default !important;
+    &,
+    &:hover {
+      background: #f52 !important;
+    }
+  }
+  .ytpa-warning {
+    color: #000;
+    text-shadow: none;
+    font-weight: bold;
+    white-space: pre-line;
   }
 
   .ytp-menuitem-label {
