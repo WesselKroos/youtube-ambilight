@@ -1242,13 +1242,13 @@ export default class Ambilight {
       w: Math.round(this.p.w * this.clippedVideoScale[0]),
       h: Math.round(this.p.h * this.clippedVideoScale[1])
     }
-    const ratio = (this.videoOffset.width > this.videoOffset.height) ?
+    const ratio = (this.p.w > this.p.h) ?
       {
-        x: 1,
-        y: (this.videoOffset.width / this.videoOffset.height)
+        x: (this.p.w / projectorSize.w),
+        y: (this.p.w / projectorSize.w) * (projectorSize.w / projectorSize.h)
       } : {
-        x: (this.videoOffset.height / this.videoOffset.width),
-        y: 1
+        x: (this.p.h / projectorSize.h) * (projectorSize.h / projectorSize.w),
+        y: (this.p.h / projectorSize.h)
       }
     const lastScale = {
       x: 1,
