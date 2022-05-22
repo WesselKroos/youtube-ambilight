@@ -19,12 +19,14 @@ Go to the extensions site of your browser and add the extension:
 ## Minimum requirements
 
 ### Performance
-A video card with a score of at least 5000 points in the PassMark Video Card Benchmark is recommended.
+A video card with a score of at least 1000 points in the PassMark Video Card Benchmark is recommended.
 Check your video card's score here:
 
 https://www.videocardbenchmark.net/gpu_list.php
 
-With a score lower than 5000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+With a score lower than 1000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
+> To troubleshoot performance problems or maximze the performance you can follow the checks and steps in the [Troubleshoot guide](https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md)
+
 
 ### Browser versions
 | Browser  | Version | Reason |
@@ -35,21 +37,26 @@ With a score lower than 5000 the extension will still work but it is likely that
 
 ## Privacy & Security
 - This extension only runs on tabs that start with the url https://www.youtube.com. The extension will only activate the ambient light effect on YouTube's /watch page
+- The only requests being sent are crash reports. (But crash reports can be turned off.) No other requests are sent to any webserver, website or api. But in case a crash occurs the report is sent to [Sentri.io](https://sentry.io) and will always be deleted after 30 days. Because the only goal of these crash reports is to fix the crash.
 
-The following projectfiles are inserted into that specific webpage:
-- \src\scripts\youtube-ambilight.js
-- \src\styles\youtube-ambilight.css
-
-The only requests being sent are crash reports. If a crash occures a request is being sent to [Sentri.io](https://sentry.io). 
-No other requests are sent to any webserver, website or api.
+### Crash report data
+Crash reports, and individual groups of data, can be turned off. But in case a crash report is sent it could contain:
+- The url and video ID being watched at the time of the crash
+- Anonymous technical data
+    - Browser version
+    - Operating system version
+    - Display capabilities
+    - Videoplayer state (Does not contain the video id or title)
+    - YouTube layout state (Does not contain your YouTube account data)
+- Ambient light state and error information
 
 
 ## Report, request or contribute
 Feel free to 
-- contribute to the project at https://github.com/WesselKroos/youtube-ambilight
-- report bugs at https://github.com/WesselKroos/youtube-ambilight/issues
-- request a feature at https://github.com/WesselKroos/youtube-ambilight/issues
-- or ask a question at https://github.com/WesselKroos/youtube-ambilight/issues
+- contribute to the project at [/youtube-ambilight](https://github.com/WesselKroos/youtube-ambilight)
+- report bugs at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
+- request a feature at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
+- or ask a question at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
 
 
 ## Development
