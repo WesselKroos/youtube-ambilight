@@ -346,7 +346,7 @@ export default class Ambilight {
         console.warn('Ambient light for YouTube™ | Video error:', ex)
         this.clear()
         this.requestVideoFrameCallbackId = undefined
-        setTimeout(handleVideoError, 1000)
+        setTimeout(this.handleVideoError, 1000)
       },
       click: this.settings.onCloseMenu
     }
