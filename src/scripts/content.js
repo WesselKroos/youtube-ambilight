@@ -20,6 +20,7 @@ storage.addListener(
     if (!changes.crashOptions?.newValue) return
 
     const crashOptions = changes.crashOptions.newValue
+    setCrashOptions(crashOptions)
     injectedScript.postMessage('crashOptions', crashOptions)
   })
 
