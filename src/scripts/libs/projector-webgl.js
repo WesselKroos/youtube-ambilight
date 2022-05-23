@@ -139,7 +139,7 @@ export default class ProjectorWebGL {
     this.blurCanvas.addEventListener('contextrestored', this.onBlurCtxRestored)
     this.blurCtx = this.blurCanvas.getContext('2d', {
       alpha: true,
-      desynchronized: true
+      desynchronized: false // true: Does not work when canvas elements are not hardware accelerated
     })
     if(!this.blurCtx) {
       throw new Error('ProjectorWebGL blur context creation failed')
