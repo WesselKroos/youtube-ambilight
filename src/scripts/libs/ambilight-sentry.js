@@ -113,7 +113,7 @@ function initClient() {
     enabled: true,
     dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
     defaultIntegrations: false,
-    release: version,
+    release: version || 'pending',
     attachStacktrace: true,
     maxValueLength: 500,
     normalizeDepth: 4,
@@ -220,12 +220,14 @@ export default class AmbilightSentry {
         if(reports) {
           const dayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000;
           const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          reports = reports.filter(report => !version || report.version === version)
           const reportsToday = reports.filter(report => report.time > dayAgo)
           const reportsThisWeek = reports.filter(report => report.time > weekAgo)
           if(reportsToday.length < 4 && reportsThisWeek.length < 5) {
             reportsThisWeek.push({
               time: Date.now(),
-              error: ex.message
+              error: ex.message,
+              version: version || 'pending'
             })
           } else {
             console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
