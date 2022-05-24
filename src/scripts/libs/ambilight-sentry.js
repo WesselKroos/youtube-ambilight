@@ -491,7 +491,7 @@ export class ErrorEvents {
     }
 
     AmbilightSentry.captureExceptionWithDetails(
-      new AmbilightError('Closed or hid the webpage tab with pending errors events', this.list)
+      new AmbilightError('Closed or hid the page with pending errors', this.list)
     )
     this.list = []
   }

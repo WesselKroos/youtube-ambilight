@@ -43,7 +43,8 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
       const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
       const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
-      if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem) {
+      const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
+      if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem || outsideYtdAppVideoElem) {
         return
       }
 
@@ -52,7 +53,7 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
         'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
-      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', details)
+      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', details)
       return
     }
 
@@ -99,7 +100,13 @@ const tryInitAmbilight = async () => {
       // errorEvents.add('tryInitAmbilight | video in #player-api')
       return false
     }
-    errorEvents.add('tryInitAmbilight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api', {
+    const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
+    if(outsideYtdAppVideoElem) {
+      // errorEvents.add('tryInitAmbilight | video outside ytd-app, probably moved by another extension')
+      return false
+    }
+      
+    errorEvents.add('tryInitAmbilight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', {
       tree: getSelectorTreeString('video,#player-container')
     })
     return false
