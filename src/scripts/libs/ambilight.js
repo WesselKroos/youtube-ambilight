@@ -7,7 +7,7 @@ import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
 
 const VIEW_DETACHED = 'VIEW_DETACHED'
-const VIEW_SMALL = 'VIEW_SMALL'
+const VIEW_DEFAULT = 'VIEW_DEFAULT'
 const VIEW_THEATER = 'VIEW_THEATER'
 const VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
 const VIEW_POPUP = 'VIEW_POPUP'
@@ -405,6 +405,8 @@ export default class Ambilight {
         // Ignore errors in interal youtube script
         console.warn('Ambient light for YouTube™ | YouTube script | setSize or setInternalSize error:', ex)
       }
+      this.sizesInvalidated = true
+      this.scheduleHandleVideoResize()
     })
     this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
@@ -925,7 +927,7 @@ export default class Ambilight {
       else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
         this.view = VIEW_THEATER
       else
-        this.view = VIEW_SMALL
+        this.view = VIEW_DEFAULT
     } else {
       this.view = VIEW_DETACHED
     }
