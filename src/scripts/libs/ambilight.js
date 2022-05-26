@@ -939,6 +939,18 @@ export default class Ambilight {
     // }
   }
 
+  isInEnabledView = () => {
+    const enableInViews = this.settings.enableInViews
+    if(enableInViews === 0) return true
+
+    const enabled = {
+      VIEW_DEFAULT: enableInViews <= 2,
+      VIEW_THEATER: enableInViews >= 2 && enableInViews <= 4,
+      VIEW_FULLSCREEN: enableInViews >= 4
+    }[this.view]
+    return enabled
+  }
+
   updateSizes() {
     if(this.settings.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
@@ -957,7 +969,7 @@ export default class Ambilight {
       !videoElemParentElem ||
       !this.videoPlayerElem ||
       this.videoPlayerElem.classList.contains('ytp-player-minimized') ||
-      (this.isFullscreen && !this.settings.enableInFullscreen)
+      !this.isInEnabledView()
     )
     if (notVisible || noClipOrScale) {
       this.resetVideoContainerStyle()
@@ -1730,7 +1742,7 @@ export default class Ambilight {
 
     if (
       this.isVR ||
-      (!this.settings.enableInFullscreen && this.isFullscreen)
+      !this.isInEnabledView()
     ) {
       this.hide()
       return
