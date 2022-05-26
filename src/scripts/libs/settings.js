@@ -540,7 +540,7 @@ export default class Settings {
       }).filter(setting => setting)
 
       try {
-        const enableInFullscreen = await contentScript.getStorageEntryOrEntries('setting-enableInFullscreen') ?? null
+        const enableInFullscreen = await contentScript.getStorageEntryOrEntries('setting-enableInFullscreen')
         if(enableInFullscreen === false) {
           this.enableInViews = 2
           this.saveStorageEntry('enableInViews', 2)
@@ -565,7 +565,7 @@ export default class Settings {
     if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
 
     try {
-      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
+      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment')
       if(this.webGLExperiment !== null) return
     } catch(ex) {
       AmbilightSentry.captureExceptionWithDetails(ex)
