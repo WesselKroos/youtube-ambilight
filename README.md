@@ -31,8 +31,8 @@ With a score lower than 1000 the extension will still work but it is likely that
 ### Browser versions
 | Browser  | Version | Reason |
 | -------- | ------- | ------ |
-| Chromium | 69      | [OffscreenCanvas.getContext('2d')](https://caniuse.com/mdn-api_offscreencanvas_getcontext) |
-| Firefox  | 69.0    | [ResizeObserver](https://caniuse.com/resizeobserver) |
+| Chromium | 80      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
+| Firefox  | 74      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
 
 
 ## Privacy & Security

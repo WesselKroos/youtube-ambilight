@@ -9,10 +9,10 @@
     "32": "images/icon-32.png",
     "128": "images/icon-128.png"
   },
-  "minimum_chrome_version": "69",
+  "minimum_chrome_version": "80",
   "browser_specific_settings": {
     "gecko": {
-      "strict_min_version": "69.0"
+      "strict_min_version": "74"
     }
   },
   "browser_action": {
