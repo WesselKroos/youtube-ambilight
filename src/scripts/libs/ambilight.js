@@ -268,7 +268,6 @@ export default class Ambilight {
 
     const wasView = this.view
     this.updateView()
-    this.updateImmersiveMode()
     if(wasView === this.view) {
       // Spare multiple resize handler calls when resizing the browser window
       this.scheduledHandleVideoResize = raf(this.handleVideoResize)
@@ -395,9 +394,15 @@ export default class Ambilight {
     }))
     this.bodyResizeObserver.observe(document.body)
 
+    this.videoPlayerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
+      this.sizesInvalidated = true
+      this.scheduleHandleVideoResize()
+    }))
+    this.videoPlayerResizeObserver.observe(this.videoPlayerElem)
+    
     // Makes sure the player size is updated before the first frame is rendered
     // (youtube does this to late in the next frame)
-    this.videoContainerResizeObserver = new ResizeObserver(entries => {
+    this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
       try {
         this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
         this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
@@ -407,7 +412,7 @@ export default class Ambilight {
       }
       this.sizesInvalidated = true
       this.scheduleHandleVideoResize()
-    })
+    }))
     this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
     this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
@@ -918,7 +923,7 @@ export default class Ambilight {
   }
 
   updateView() {
-    // const prevView = this.view
+    const wasView = this.view
     if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
         this.view = VIEW_FULLSCREEN
@@ -931,7 +936,11 @@ export default class Ambilight {
     } else {
       this.view = VIEW_DETACHED
     }
+    if(wasView === this.view) return
+
     this.isFullscreen = (this.view == VIEW_FULLSCREEN)
+    this.updateImmersiveMode()
+
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -2220,7 +2229,6 @@ export default class Ambilight {
   }
 
   updateImmersiveMode() {
-    this.updateView()
     const immersiveMode = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
     const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
