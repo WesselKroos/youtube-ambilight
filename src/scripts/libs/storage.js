@@ -42,7 +42,11 @@ class Storage {
   }
 
   addListener(handler) {
-    chrome.storage.local.onChanged.addListener(wrapErrorHandler(handler, true))
+    try {
+      chrome.storage.local.onChanged.addListener(wrapErrorHandler(handler, true))
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Failed to listen to crash report option changes. If any of them change you\'ll have to refresh the page to update the new crash report options.')
+    }
   }
 }
 
