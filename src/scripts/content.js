@@ -4,9 +4,9 @@ import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 import AmbilightSentry, { setCrashOptions, setVersion } from './libs/ambilight-sentry'
 
-(wrapErrorHandler(async function loadContentScript() {
-  setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
 
+;(wrapErrorHandler(async function loadContentScript() {
   const version = getVersion()
   setVersion(version)
 

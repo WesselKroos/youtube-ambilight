@@ -175,6 +175,7 @@ const initializeStorageEntries = (async () => {
 
 let sessionId;
 export default class AmbilightSentry {
+  static script = window.yt ? 'injected' : 'content'
   static overflowProtection = 0
   static async captureExceptionWithDetails(ex) {
     try {
@@ -265,74 +266,83 @@ export default class AmbilightSentry {
       }
 
       try {
-        let ambilightExtra = {}
-        ambilightExtra.initialized = (typeof ambilight !== 'undefined')
-        if (typeof ambilight !== 'undefined') {
-          ambilightExtra.now = performance.now()
-          const keys = [
-            'ambilightFrameCount',
-            'videoFrameCount',
-            'ambilightVideoDroppedFrameCount',
-            'droppedVideoFramesCorrection',
-            'ambilightFrameRate',
-            'videoFrameRate',
-            'displayFrameRate',
-            'previousDrawTime',
-            'previousFrameTime',
-            'buffersCleared',
-            'sizesInvalidated',
-            'delayedCheckVideoSizeAndPosition',
-            'requestVideoFrameCallbackId',
-            'videoFrameCallbackReceived',
-            'scheduledNextFrame',
-            'scheduledHandleVideoResize',
-            'view',
-            'isOnVideoPage',
-            'atTop',
-            'isFillingFullscreen',
-            'isHidden',
-            'isPageHidden',
-            'videoIsHidden',
-            'isAmbilightHiddenOnWatchPage',
-            'isVideoHiddenOnWatchPage',
-            'isBuffering',
-            'isVR',
-            'srcVideoOffset.top',
-            'srcVideoOffset.width',
-            'srcVideoOffset.height',
-            'videoOffset.left',
-            'videoOffset.top',
-            'videoOffset.width',
-            'videoOffset.height',
-            'p.w',
-            'p.h',
-            'levels',
-            'enableChromiumBug1092080Workaround',
-            'enableChromiumBug1123708Workaround',
-            'enableChromiumBug1142112Workaround',
-            'enableMozillaBug1606251Workaround',
-            'getImageDataAllowed',
-            'projector.type',
-            'projector.webGLVersion',
-            'projector.width',
-            'projector.height',
-            'projector.heightCrop',
-            'projector.blurBound',
-            'projector.projectors.length',
-            'projector.scale.x',
-            'projector.scale.y',
-            'projector.lostCount',
-            'projector.majorPerformanceCaveat'
-          ]
-          keys.forEach(key => {
-            try {
-              let value = ambilight
-              key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
-              ambilightExtra[key] = value
-            } catch (ex) {}
-          })
+        setExtra('Script', this.script)
+      } catch (ex) {
+        setExtra('Script (exception)', ex)
+      }
+
+      try {
+        if(window.yt) {
+          const ambilightExtra = {
+            initialized: (typeof ambilight !== 'undefined')
+          }
+          if (ambilightExtra.initialized) {
+            ambilightExtra.now = performance.now()
+            const keys = [
+              'ambilightFrameCount',
+              'videoFrameCount',
+              'ambilightVideoDroppedFrameCount',
+              'droppedVideoFramesCorrection',
+              'ambilightFrameRate',
+              'videoFrameRate',
+              'displayFrameRate',
+              'previousDrawTime',
+              'previousFrameTime',
+              'buffersCleared',
+              'sizesInvalidated',
+              'delayedCheckVideoSizeAndPosition',
+              'requestVideoFrameCallbackId',
+              'videoFrameCallbackReceived',
+              'scheduledNextFrame',
+              'scheduledHandleVideoResize',
+              'view',
+              'isOnVideoPage',
+              'atTop',
+              'isFillingFullscreen',
+              'isHidden',
+              'isPageHidden',
+              'videoIsHidden',
+              'isAmbilightHiddenOnWatchPage',
+              'isVideoHiddenOnWatchPage',
+              'isBuffering',
+              'isVR',
+              'srcVideoOffset.top',
+              'srcVideoOffset.width',
+              'srcVideoOffset.height',
+              'videoOffset.left',
+              'videoOffset.top',
+              'videoOffset.width',
+              'videoOffset.height',
+              'p.w',
+              'p.h',
+              'levels',
+              'enableChromiumBug1092080Workaround',
+              'enableChromiumBug1123708Workaround',
+              'enableChromiumBug1142112Workaround',
+              'enableMozillaBug1606251Workaround',
+              'getImageDataAllowed',
+              'projector.type',
+              'projector.webGLVersion',
+              'projector.width',
+              'projector.height',
+              'projector.heightCrop',
+              'projector.blurBound',
+              'projector.projectors.length',
+              'projector.scale.x',
+              'projector.scale.y',
+              'projector.lostCount',
+              'projector.majorPerformanceCaveat'
+            ]
+            keys.forEach(key => {
+              try {
+                let value = ambilight
+                key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
+                ambilightExtra[key] = value
+              } catch (ex) {}
+            })
+          }
+          setExtra('Ambilight', ambilightExtra)
         }
-        setExtra('Ambilight', ambilightExtra)
       } catch (ex) {
         setExtra('Ambilight (exception)', ex)
       }
@@ -365,7 +375,9 @@ export default class AmbilightSentry {
         try {
           setExtra('YouTube', {
             dark: !!html?.attributes?.dark,
-            loggedIn: yt?.config_?.LOGGED_IN
+            loggedIn: (window.yt)
+              ? !!window.yt?.config_?.LOGGED_IN
+              : ($.s('ytd-topbar-menu-button-renderer') ? !!$.s('#avatar-btn') : undefined)
           })
         } catch (ex) {
           setExtra('YouTube (exception)', ex)
@@ -419,7 +431,7 @@ export default class AmbilightSentry {
 
         try {
           const videoPlayerElem = $.s('#movie_player')
-          if (videoPlayerElem) {
+          if (videoPlayerElem?.getStatsForNerds) {
             const stats = videoPlayerElem.getStatsForNerds()
             const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
             Object.keys(stats).forEach(key => {

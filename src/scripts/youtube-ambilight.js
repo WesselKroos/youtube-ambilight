@@ -4,6 +4,7 @@ import Ambilight from './libs/ambilight'
 import { contentScript } from './libs/messaging'
 
 setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+
 wrapErrorHandler(function initVersionAndCrashOptions() {
   setVersion(document.currentScript.getAttribute('data-version') || '')
   setCrashOptions(JSON.parse(document.currentScript.getAttribute('data-crash-options')))
