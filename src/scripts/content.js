@@ -6,17 +6,19 @@ import AmbilightSentry, { setCrashOptions, setVersion } from './libs/ambilight-s
 
 setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
 
-const version = getVersion()
-setVersion(version)
+;(wrapErrorHandler(async function loadContentScript() {
+  const version = getVersion()
+  setVersion(version)
 
-let crashOptions = defaultCrashOptions
-const setCrashOptionsPromise = wrapErrorHandler(async function contentSetCrashOptions() {
-  crashOptions = await storage.get('crashOptions') || defaultCrashOptions
-  setCrashOptions(crashOptions)
-})()
+  let crashOptions = defaultCrashOptions
+  try {
+    crashOptions = await storage.get('crashOptions') || defaultCrashOptions
+    setCrashOptions(crashOptions)
+  } catch(ex) {
+    AmbilightSentry.captureExceptionWithDetails(ex)
+  }
 
-storage.addListener(
-  function storageListener(changes) {
+  storage.addListener(function storageListener(changes) {
     if (!changes.crashOptions?.newValue) return
 
     const crashOptions = changes.crashOptions.newValue
@@ -24,45 +26,42 @@ storage.addListener(
     injectedScript.postMessage('crashOptions', crashOptions)
   })
 
-injectedScript.addMessageListener('get-storage-entries',
-  async function getStorageEntry({ id, nameOrNames }) {
-    try {
-      if(!chrome.runtime.id) throw new Error('uninstalled')
-      let valueOrValues = await storage.get(nameOrNames)
-      if(Array.isArray(nameOrNames)) {
-        for(const name of nameOrNames) {
-          valueOrValues[name] = (valueOrValues[name] === undefined) ? null : valueOrValues[name] // Backward compatibility with localStorage
+  injectedScript.addMessageListener('get-storage-entries',
+    async function getStorageEntry({ id, nameOrNames }) {
+      try {
+        if(!chrome.runtime.id) throw new Error('uninstalled')
+        let valueOrValues = await storage.get(nameOrNames)
+        if(Array.isArray(nameOrNames)) {
+          for(const name of nameOrNames) {
+            valueOrValues[name] = (valueOrValues[name] === undefined) ? null : valueOrValues[name] // Backward compatibility with localStorage
+          }
+        } else {
+          valueOrValues = (valueOrValues === undefined) ? null : valueOrValues // Backward compatibility with localStorage
         }
-      } else {
-        valueOrValues = (valueOrValues === undefined) ? null : valueOrValues // Backward compatibility with localStorage
+        injectedScript.postMessage('get-storage-entries', { id, valueOrValues })
+      } catch(error) {
+        injectedScript.postMessage('get-storage-entries', { id, error })
       }
-      injectedScript.postMessage('get-storage-entries', { id, valueOrValues })
-    } catch(error) {
-      injectedScript.postMessage('get-storage-entries', { id, error })
-    }
-  })
+    })
 
-injectedScript.addMessageListener('set-storage-entry', 
-  async function setStorageEntry({ id, name, value }) {
-    try {
-      if(!chrome.runtime.id) throw new Error('uninstalled')
-      await storage.set(name, value)
-      injectedScript.postMessage('set-storage-entry', { id })
-    } catch(error) {
-      injectedScript.postMessage('set-storage-entry', { id, error })
-    }
-  })
-
-wrapErrorHandler(async function injectScript() {
-  await setCrashOptionsPromise;
+  injectedScript.addMessageListener('set-storage-entry', 
+    async function setStorageEntry({ id, name, value }) {
+      try {
+        if(!chrome.runtime.id) throw new Error('uninstalled')
+        await storage.set(name, value)
+        injectedScript.postMessage('set-storage-entry', { id })
+      } catch(error) {
+        injectedScript.postMessage('set-storage-entry', { id, error })
+      }
+    })
 
   const s = document.createElement('script')
   s.defer = true
-  s.src = chrome.extension.getURL('scripts/youtube-ambilight.js')
+  s.src = chrome.runtime.getURL('scripts/youtube-ambilight.js')
   s.setAttribute('data-crash-options', JSON.stringify(crashOptions))
   s.setAttribute('data-version', version)
   s.setAttribute('data-feedback-form-link', getFeedbackFormLink())
-  s.setAttribute('data-base-url', chrome.extension.getURL('') || '')
+  s.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
   
   s.onload = wrapErrorHandler(function injectScriptOnLoad() {
     s.parentNode.removeChild(s)
@@ -71,4 +70,4 @@ wrapErrorHandler(async function injectScript() {
     AmbilightSentry.captureExceptionWithDetails(ex)
   }.bind(this)
   document.body.appendChild(s)
-})()
+}))()

@@ -11,9 +11,11 @@ Go to the extensions site of your browser and add the extension:
 
 [![Google Chrome Web Store](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Google%20Chrome.png?raw=true)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj)
 
-[![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
-
 [![Microsoft Edge Store](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Microsoft%20Edge.png?raw=true)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf)
+
+[![Firefox Add-ons](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/browsers/Firefox.png?raw=true)](https://addons.mozilla.org/en-US/firefox/addon/ambient-light-for-youtube/)
+
+[![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
 
 ## Minimum requirements
@@ -31,8 +33,8 @@ With a score lower than 1000 the extension will still work but it is likely that
 ### Browser versions
 | Browser  | Version | Reason |
 | -------- | ------- | ------ |
-| Chromium | 69      | [OffscreenCanvas.getContext('2d')](https://caniuse.com/mdn-api_offscreencanvas_getcontext) |
-| Firefox  | 69.0    | [ResizeObserver](https://caniuse.com/resizeobserver) |
+| Chromium | 80      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
+| Firefox  | 74      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
 
 
 ## Privacy & Security

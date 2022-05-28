@@ -474,11 +474,22 @@ export default class Settings {
       ]
     },
     {
-      name: 'enableInFullscreen',
-      label: 'Keep enabled in fullscreen',
-      type: 'checkbox',
-      default: true,
-      advanced: true
+      name: 'enableInViews',
+      label: 'View mode(s)',
+      type: 'list',
+      manualinput: false,
+      default: 0,
+      min: 0,
+      max: 5,
+      step: 1,
+      snapPoints: [
+        { value:  0, label: 'All' },
+        { value:  1, label: 'Small' },
+        { value:  2, hiddenLabel: 'Small & Theater' },
+        { value:  3, label: 'Theater' },
+        { value:  4, hiddenLabel: 'Theater & Fullscreen' },
+        { value:  5, label: 'Fullscreen' },
+      ]
     },
     {
       name: 'enabled',
@@ -528,6 +539,17 @@ export default class Settings {
         return setting
       }).filter(setting => setting)
 
+      try {
+        const enableInFullscreen = await contentScript.getStorageEntryOrEntries('setting-enableInFullscreen')
+        if(enableInFullscreen === false) {
+          this.enableInViews = 2
+          this.saveStorageEntry('enableInViews', 2)
+          this.saveStorageEntry('enableInFullscreen', null)
+        }
+      } catch(ex) {
+        AmbilightSentry.captureExceptionWithDetails(ex)
+      }
+
       this.initMenu()
 
       if(this.pendingWarning) {
@@ -543,7 +565,7 @@ export default class Settings {
     if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
 
     try {
-      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment') || null
+      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment')
       if(this.webGLExperiment !== null) return
     } catch(ex) {
       AmbilightSentry.captureExceptionWithDetails(ex)
@@ -736,16 +758,16 @@ export default class Settings {
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                  ${setting.snapPoints.map(({ label, value, flip }, i) => {
+                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }, i) => {
                     return `
                       <option 
                         value="${value}" 
                         class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
                         style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%"
-                        label="${label}"
-                        title="Snap to ${label}"
+                        label="${label || ''}"
+                        title="Set to ${hiddenLabel || label}"
                       >
-                        ${label}
+                        ${label || ''}
                       </option>
                     `;
                   }).join('')}
@@ -1023,7 +1045,6 @@ export default class Settings {
             setting.name === 'videoOverlayEnabled' ||
             setting.name === 'frameSync' ||
             setting.name === 'frameBlending' ||
-            setting.name === 'enableInFullscreen' ||
             setting.name === 'showFPS' ||
             setting.name === 'surroundingContentTextAndBtnOnly' ||
             setting.name === 'horizontalBarsClipPercentageReset' ||
@@ -1166,8 +1187,9 @@ export default class Settings {
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
-    if(setting.name === 'theme') {
-      return setting.snapPoints.find(point => point.value === value)?.label
+    if(setting.name === 'theme' || setting.name === 'enableInViews') {
+      const snapPoint = setting.snapPoints.find(point => point.value === value)
+      return snapPoint?.hiddenLabel || snapPoint?.label
     }
     return `${value}${setting.unit || '%'}`
   }

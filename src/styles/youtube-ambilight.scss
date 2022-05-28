@@ -1290,6 +1290,7 @@ html[data-ambilight-enabled="true"] {
     }
 
     &__label {
+      position: relative;
       width: 17px;
       height: 20px;
       margin-right: -17px;
@@ -1305,6 +1306,7 @@ html[data-ambilight-enabled="true"] {
       }
       &::before {
         content: '';
+        position: absolute;
         display: block;
         width: 1px;
         height: 13px;
@@ -1334,6 +1336,18 @@ html[data-ambilight-enabled="true"] {
           transform: translate(-8.5px, -38px);
           &::before {
             transform: translate(8.5px, 13px);
+          }
+        }
+      }
+
+      &:last-child {
+        direction: rtl;
+        &::before {
+          transform: translate(-8.5px, -12px);
+        }
+        .ytp-fullscreen & {
+          &::before {
+            transform: translate(-8.5px, -20px);
           }
         }
       }

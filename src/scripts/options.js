@@ -42,3 +42,10 @@ const updateCrashReportOptions = () => {
     })
   }
 )
+
+if(!chrome?.storage?.local?.onChanged) {
+  const synchronizationWarning = document.createElement('div')
+  synchronizationWarning.textContent = 'Unable to synchronize any crash option changes to youtube pages that are already open. Make sure to refresh any open youtube pages after you\'ve changed an option.'
+  synchronizationWarning.classList.add('warning')
+  document.querySelector('.warnings-container').appendChild(synchronizationWarning)
+}

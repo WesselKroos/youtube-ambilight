@@ -111,3 +111,12 @@ label {
 .expandable__details li {
   margin: 0;
 }
+
+.warning {
+  background: #ffaa0011;
+  margin-top: 20px;
+  border: 1px solid #fa0;
+  border-radius: 2px;
+  padding: 3px 5px;
+  color: #fec;
+}
