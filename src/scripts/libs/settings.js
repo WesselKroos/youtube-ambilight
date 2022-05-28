@@ -484,8 +484,8 @@ export default class Settings {
       step: 1,
       snapPoints: [
         { value:  0, label: 'All' },
-        { value:  1, label: 'Default' },
-        { value:  2, hiddenLabel: 'Default & Theater' },
+        { value:  1, label: 'Small' },
+        { value:  2, hiddenLabel: 'Small & Theater' },
         { value:  3, label: 'Theater' },
         { value:  4, hiddenLabel: 'Theater & Fullscreen' },
         { value:  5, label: 'Fullscreen' },

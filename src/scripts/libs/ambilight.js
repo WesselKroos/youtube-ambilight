@@ -7,7 +7,7 @@ import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
 
 const VIEW_DETACHED = 'VIEW_DETACHED'
-const VIEW_DEFAULT = 'VIEW_DEFAULT'
+const VIEW_SMALL = 'VIEW_SMALL'
 const VIEW_THEATER = 'VIEW_THEATER'
 const VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
 const VIEW_POPUP = 'VIEW_POPUP'
@@ -932,7 +932,7 @@ export default class Ambilight {
       else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
         this.view = VIEW_THEATER
       else
-        this.view = VIEW_DEFAULT
+        this.view = VIEW_SMALL
     } else {
       this.view = VIEW_DETACHED
     }
@@ -953,7 +953,7 @@ export default class Ambilight {
     if(enableInViews === 0) return true
 
     const enabled = {
-      VIEW_DEFAULT: enableInViews <= 2,
+      VIEW_SMALL: enableInViews <= 2,
       VIEW_THEATER: enableInViews >= 2 && enableInViews <= 4,
       VIEW_FULLSCREEN: enableInViews >= 4
     }[this.view]
