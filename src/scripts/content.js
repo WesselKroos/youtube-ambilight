@@ -4,26 +4,27 @@ import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 import AmbilightSentry, { setCrashOptions, setVersion } from './libs/ambilight-sentry'
 
-try {
+(wrapErrorHandler(async function loadContentScript() {
   setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
 
   const version = getVersion()
   setVersion(version)
 
   let crashOptions = defaultCrashOptions
-  const setCrashOptionsPromise = wrapErrorHandler(async function contentSetCrashOptions() {
+  try {
     crashOptions = await storage.get('crashOptions') || defaultCrashOptions
     setCrashOptions(crashOptions)
-  })()
+  } catch(ex) {
+    AmbilightSentry.captureExceptionWithDetails(ex)
+  }
 
-  storage.addListener(
-    function storageListener(changes) {
-      if (!changes.crashOptions?.newValue) return
+  storage.addListener(function storageListener(changes) {
+    if (!changes.crashOptions?.newValue) return
 
-      const crashOptions = changes.crashOptions.newValue
-      setCrashOptions(crashOptions)
-      injectedScript.postMessage('crashOptions', crashOptions)
-    })
+    const crashOptions = changes.crashOptions.newValue
+    setCrashOptions(crashOptions)
+    injectedScript.postMessage('crashOptions', crashOptions)
+  })
 
   injectedScript.addMessageListener('get-storage-entries',
     async function getStorageEntry({ id, nameOrNames }) {
@@ -54,26 +55,19 @@ try {
       }
     })
 
-  wrapErrorHandler(async function injectScript() {
-    await setCrashOptionsPromise;
-
-    const s = document.createElement('script')
-    s.defer = true
-    s.src = chrome.extension.getURL('scripts/youtube-ambilight.js')
-    s.setAttribute('data-crash-options', JSON.stringify(crashOptions))
-    s.setAttribute('data-version', version)
-    s.setAttribute('data-feedback-form-link', getFeedbackFormLink())
-    s.setAttribute('data-base-url', chrome.extension.getURL('') || '')
-    
-    s.onload = wrapErrorHandler(function injectScriptOnLoad() {
-      s.parentNode.removeChild(s)
-    }.bind(this))
-    s.onerror = function injectScriptOnError(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
-    }.bind(this)
-    document.body.appendChild(s)
-  })()
-} catch(ex) {
-  console.error('Ambient light for YouTube™ |', ex)
-  AmbilightSentry.captureExceptionWithDetails(ex)
-}
+  const s = document.createElement('script')
+  s.defer = true
+  s.src = chrome.runtime.getURL('scripts/youtube-ambilight.js')
+  s.setAttribute('data-crash-options', JSON.stringify(crashOptions))
+  s.setAttribute('data-version', version)
+  s.setAttribute('data-feedback-form-link', getFeedbackFormLink())
+  s.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
+  
+  s.onload = wrapErrorHandler(function injectScriptOnLoad() {
+    s.parentNode.removeChild(s)
+  }.bind(this))
+  s.onerror = function injectScriptOnError(ex) {
+    AmbilightSentry.captureExceptionWithDetails(ex)
+  }.bind(this)
+  document.body.appendChild(s)
+}))()
