@@ -12,7 +12,7 @@
   "minimum_chrome_version": "80",
   "browser_specific_settings": {
     "gecko": {
-      "strict_min_version": "74"
+      "strict_min_version": "74.0"
     }
   },
   "browser_action": {
