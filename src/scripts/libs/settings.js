@@ -475,7 +475,7 @@ export default class Settings {
     },
     {
       name: 'enableInViews',
-      label: 'View(s)',
+      label: 'View mode(s)',
       type: 'list',
       manualinput: false,
       default: 0,
