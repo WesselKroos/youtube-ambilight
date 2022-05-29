@@ -176,6 +176,12 @@ html[data-ambilight-enabled="true"] {
     overflow-x: visible !important;
   }
 
+  /* Prevent ambient light overlaying content */
+  
+  ytd-watch-flexy[fullscreen] {
+    z-index: 1;
+  }
+
   /* Video preview while moving the timeline */
 
   .ytp-storyboard-framepreview {
