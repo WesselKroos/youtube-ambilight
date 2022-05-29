@@ -406,7 +406,7 @@ export default class Ambilight {
       try {
         this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
         this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
-      } catch {
+      } catch (ex) {
         // Ignore errors in interal youtube script
         console.warn('Ambient light for YouTube™ | YouTube script | setSize or setInternalSize error:', ex)
       }
