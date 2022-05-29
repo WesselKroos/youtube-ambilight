@@ -168,6 +168,13 @@ html[data-ambilight-enabled="true"] {
     }
   }
 
+  /* Prevent YouTube's horizontal scrollbar in fullscreen when the video is zoomed in */
+
+  ytd-app[scrolling] {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
   /* Prevent YouTube's flickering scrollbar bug */
 
   #page-manager.ytd-app {
