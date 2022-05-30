@@ -185,14 +185,6 @@ export default class Settings {
       default: false
     },
     {
-      name: 'immersive',
-      label: 'Hide when scrolled to top',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'Z',
-      advanced: true
-    },
-    {
       name: 'hideScrollbar',
       label: 'Hide scrollbar',
       type: 'checkbox',
@@ -1069,9 +1061,6 @@ export default class Settings {
           if (setting.name === 'enabled') {
             this.ambilight.toggleEnabled(value)
           }
-          if (setting.name === 'immersive') {
-            this.ambilight.toggleImmersiveMode(value)
-          }
           if (setting.name === 'hideScrollbar') {
             html.setAttribute('data-ambilight-hide-scrollbar', value)
           }
@@ -1457,7 +1446,6 @@ export default class Settings {
   }
 
   getKeys = () => ({
-    immersive: this.config.find(setting => setting.name === 'immersive').key,
     enabled: this.config.find(setting => setting.name === 'enabled').key,
     detectHorizontalBarSizeEnabled: this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
     detectVerticalBarSizeEnabled: this.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,

@@ -489,21 +489,7 @@ html[data-ambilight-enabled="true"] {
   /* Immersive mode */
 
   &[data-ambilight-immersive-mode="true"] {
-    @mixin hidable() {
-      will-change: opacity;
-    }
-    @mixin hidden() {
-      transition: opacity .15s ease-out;
-      opacity: 0;
-    }
-
     ytd-watch-flexy {
-      &:not([theater]):not([fullscreen]) #player.ytd-watch-flexy {
-        height: calc(100vh - 160px) !important;
-        max-height: calc(100vh - 160px) !important;
-        margin-top: 0;
-        margin-bottom: 60px;
-      }
       &[theater] #player-theater-container.ytd-watch-flexy {
         height: calc(100vh - 168px) !important;
         max-height: calc(100vh - 168px) !important;
@@ -512,14 +498,12 @@ html[data-ambilight-enabled="true"] {
       }
     }
 
-    ytd-app #masthead-container,
-    ytd-watch-flexy:not([theater]):not([fullscreen]) #secondary {
-      @include hidable();
-    }
-    ytd-app #masthead-container.at-top,
-    ytd-watch-flexy:not([theater]):not([fullscreen]).at-top #secondary {
-      &:not(:hover):not(:focus-within) {
-        @include hidden();
+    ytd-app #masthead-container {
+      will-change: opacity;
+      
+      &.at-top:not(:hover):not(:focus-within) {
+        transition: opacity .15s ease-out;
+        opacity: 0;
       }
     }
   } 

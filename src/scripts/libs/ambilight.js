@@ -548,8 +548,6 @@ export default class Ambilight {
       this.settings.clickUI('detectVerticalBarSizeEnabled')
     if (key === keys.detectVideoFillScaleEnabled) // w by default
       this.settings.clickUI('detectVideoFillScaleEnabled')
-    if (key === keys.immersive) // z by default
-      this.toggleImmersiveMode()
     if (key === keys.enabled) // a by default
       this.toggleEnabled()
   }
@@ -562,13 +560,6 @@ export default class Ambilight {
       this.disable()
     }
     this.settings.displayBezelForSetting('enabled')
-  }
-
-  toggleImmersiveMode(enabled) {
-    enabled = (enabled !== undefined) ? enabled : !this.settings.immersive
-    this.settings.set('immersive', enabled, true)
-    this.updateImmersiveMode()
-    this.settings.displayBezelForSetting('immersive')
   }
 
   checkGetImageDataAllowed(reportUnexpectedChange = false) {
@@ -2146,14 +2137,6 @@ export default class Ambilight {
   }
 
   updateAtTop = () => {
-    const immersive = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
-
-    if (this.atTop && immersive && this.view === VIEW_SMALL) {
-      this.ytdWatchFlexyElem.classList.add('at-top')
-    } else {
-      this.ytdWatchFlexyElem.classList.remove('at-top')
-    }
-
     if (this.atTop) {
       this.mastheadElem.classList.add('at-top')
     } else {
@@ -2219,11 +2202,10 @@ export default class Ambilight {
   }
 
   updateImmersiveMode() {
-    const immersiveMode = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
-    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
+    const immersive = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
+    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersive.toString())
     if(changed) {
-      html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
+      html.setAttribute('data-ambilight-immersive-mode', immersive)
     }
-    this.updateAtTop()
   }
 }
