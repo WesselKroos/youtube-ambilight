@@ -1953,6 +1953,7 @@ export default class Ambilight {
           this.settings.horizontalBarsClipPercentage,
           this.settings.detectVerticalBarSizeEnabled,
           this.settings.verticalBarsClipPercentage,
+          this.p ? this.p.h / this.p.w : 1,
           wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }
@@ -2061,7 +2062,7 @@ export default class Ambilight {
       videoElemParentElem.style.height = ''
       videoElemParentElem.style.marginBottom = ''
     }
-
+    
     this.checkVideoSize()
     this.hide()
     this.updateVideoPlayerSize()
@@ -2221,7 +2222,7 @@ export default class Ambilight {
     const immersiveMode = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
     const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
     if(changed) {
-    html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
+      html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
     }
     this.updateAtTop()
   }
