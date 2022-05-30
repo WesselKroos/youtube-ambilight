@@ -610,7 +610,7 @@ export default class Ambilight {
       wrapErrorHandler((entries, observer) => {
         for (const entry of entries) {
           this.atTop = (entry.intersectionRatio !== 0)
-          this.checkScrollPosition()
+          this.updateAtTop()
 
           // When the video is filled and paused in fullscreen the ambilight is out of sync with the video
           if(this.isFillingFullscreen && !this.atTop) {
@@ -2144,10 +2144,10 @@ export default class Ambilight {
     this.updateTheme()
   }
 
-  checkScrollPosition = () => {
+  updateAtTop = () => {
     const immersive = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
 
-    if (this.atTop && immersive) {
+    if (this.atTop && immersive && this.view === VIEW_SMALL) {
       this.ytdWatchFlexyElem.classList.add('at-top')
     } else {
       this.ytdWatchFlexyElem.classList.remove('at-top')
@@ -2220,9 +2220,9 @@ export default class Ambilight {
   updateImmersiveMode() {
     const immersiveMode = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
     const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
+    if(changed) {
     html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
-    if(!changed) return
-
-    this.checkScrollPosition()
+    }
+    this.updateAtTop()
   }
 }

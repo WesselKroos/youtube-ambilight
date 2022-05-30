@@ -194,15 +194,6 @@ html[data-ambilight-enabled="true"] {
   .ytp-storyboard-framepreview {
     max-width: 100%; //Prevent horizontal scrollbar bug
   }
-
-  /* Theater mode */
-
-  &[data-ambilight-immersive-mode="true"] ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
-    height: calc(100vh - 168px) !important;
-    max-height: calc(100vh - 168px) !important;
-    margin-top: 28px;
-    margin-bottom: 84px;
-  }
   
   //Reduce theater mode flicker when switching between enabled and disabled
   ytd-app #player-theater-container {
@@ -506,44 +497,27 @@ html[data-ambilight-enabled="true"] {
       opacity: 0;
     }
 
+    ytd-watch-flexy {
+      &:not([theater]):not([fullscreen]) #player.ytd-watch-flexy {
+        height: calc(100vh - 160px) !important;
+        max-height: calc(100vh - 160px) !important;
+        margin-top: 0;
+        margin-bottom: 60px;
+      }
+      &[theater] #player-theater-container.ytd-watch-flexy {
+        height: calc(100vh - 168px) !important;
+        max-height: calc(100vh - 168px) !important;
+        margin-top: 28px;
+        margin-bottom: 64px;
+      }
+    }
+
     ytd-app #masthead-container,
-    ytd-watch-flexy #secondary {
+    ytd-watch-flexy:not([theater]):not([fullscreen]) #secondary {
       @include hidable();
     }
     ytd-app #masthead-container.at-top,
-    ytd-watch-flexy.at-top #secondary {
-      &:not(:hover):not(:focus-within) {
-        @include hidden();
-      }
-    }
-
-    ytd-watch-flexy:not([theater]) {
-      #primary-inner {
-        > *:not(#player) {
-          @include hidable();
-        }
-      }
-    }
-    ytd-watch-flexy:not([theater]).at-top {
-      #primary-inner {
-        > *:not(#player) {
-          @include hidden();
-        }
-
-        &:hover > *:not(#player) {
-          opacity: 1;
-        }
-
-        > #player:hover ~ *:not(#player) {
-          @include hidden();
-        }
-      }
-    }
-
-    ytd-watch-flexy[theater] #primary-inner {
-      @include hidable();
-    }
-    ytd-watch-flexy[theater].at-top #primary-inner {
+    ytd-watch-flexy:not([theater]):not([fullscreen]).at-top #secondary {
       &:not(:hover):not(:focus-within) {
         @include hidden();
       }
