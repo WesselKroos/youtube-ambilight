@@ -198,8 +198,10 @@ html[data-ambilight-enabled="true"] {
   /* Theater mode */
 
   &[data-ambilight-immersive-mode="true"] ytd-watch-flexy[theater]:not([fullscreen]) #player-theater-container.ytd-watch-flexy {
+    height: calc(100vh - 168px) !important;
+    max-height: calc(100vh - 168px) !important;
     margin-top: 28px;
-    margin-bottom: 85px;
+    margin-bottom: 84px;
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
