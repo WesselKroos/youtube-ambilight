@@ -1345,8 +1345,8 @@ export default class Ambilight {
     if(checkPosition) {
       const projectorsElemRect = this.getElemRect(this.projectorsElem)
       const videoElemRect = this.getElemRect(this.videoElem)
-      const topExtraOffset = this.horizontalBarsClipPercentage ? (videoElemRect.height * (this.horizontalBarsClipPercentage / 100)) : 0
-      const leftExtraOffset = this.verticalBarsClipPercentage ? (videoElemRect.width * (this.verticalBarsClipPercentage / 100)) : 0
+      const topExtraOffset = this.settings.horizontalBarsClipPercentage ? (videoElemRect.height * (this.settings.horizontalBarsClipPercentage / 100)) : 0
+      const leftExtraOffset = this.settings.verticalBarsClipPercentage ? (videoElemRect.width * (this.settings.verticalBarsClipPercentage / 100)) : 0
       const expectedProjectorsRect = {
         width: videoElemRect.width - (leftExtraOffset * 2),
         height: videoElemRect.height - (topExtraOffset * 2),
