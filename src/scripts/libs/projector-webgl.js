@@ -113,9 +113,11 @@ export default class ProjectorWebGL {
     }
     this.initBlurCtx()
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
-      this.initProjectorListeners()
-      this.lost = false
-      this.setWarning('')
+      if(!this.ctxIsInvalid) {
+        this.initProjectorListeners()
+        this.lost = false
+        this.setWarning('')
+      }
     } else {
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
       this.setWebGLWarning('restore')
@@ -182,8 +184,8 @@ export default class ProjectorWebGL {
     event.preventDefault();
     if(!this.isControlledLose) {
       console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
-      this.setWebGLWarning('restore')
     }
+    this.setWebGLWarning('restore')
     this.invalidateShaderCache()
     this.lost = true
     if(!this.isControlledLose) {
@@ -206,14 +208,13 @@ export default class ProjectorWebGL {
       this.initBlurCtx()
     }
     if(
-      this.ctx && !this.ctx.isContextLost() && 
-      this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())
+      this.ctx && !this.ctx.isContextLost()
     ) {
-      this.initProjectorListeners()
-      this.lost = false
-      if(!this.isControlledLose) {
-        this.lostCount = 0
+      if(!this.ctxIsInvalid) {
+        this.initProjectorListeners()
+        this.lost = false
         this.setWarning('')
+        this.lostCount = 0
       }
     } else {
       if(!this.isControlledLose) {
