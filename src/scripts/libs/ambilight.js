@@ -1945,6 +1945,7 @@ export default class Ambilight {
           this.settings.detectVerticalBarSizeEnabled,
           this.settings.verticalBarsClipPercentage,
           this.p ? this.p.h / this.p.w : 1,
+          !this.settings.frameBlending,
           wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }

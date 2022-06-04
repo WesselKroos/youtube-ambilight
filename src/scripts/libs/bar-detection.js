@@ -287,7 +287,7 @@ export default class BarDetection {
   detect = (buffer, detectColored, offsetPercentage,
     detectHorizontal, currentHorizontalPercentage,
     detectVertical, currentVerticalPercentage,
-    ratio, callback) => {
+    ratio, allowedToTransfer, callback) => {
     if(this.run) return
 
     const run = this.run = {}
@@ -306,11 +306,10 @@ export default class BarDetection {
     }
 
     this.idleHandlerArguments = {
-      buffer,
-      detectColored, offsetPercentage,
+      buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, callback
+      ratio, allowedToTransfer, callback
     }
 
     requestIdleCallback(function verticalBarDetectionIdleCallback() {
@@ -323,32 +322,39 @@ export default class BarDetection {
     this.cancellable = false
 
     const {
-      buffer,
-      detectColored, offsetPercentage,
+      buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, callback
+      ratio, allowedToTransfer, callback
     } = this.idleHandlerArguments
     let canvasInfo;
     try {
       const start = performance.now()
 
-      if(!this.canvas) {
-        this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-        this.ctx = this.canvas.getContext('2d', {
-          alpha: false,
-          desynchronized: true
-        })
-        this.ctx.imageSmoothingEnabled = true
-      }
+      if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap) {
+        if(!this.canvas) {
+          this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+          this.ctx = this.canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+          })
+          this.ctx.imageSmoothingEnabled = true
+        }
 
-      this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
-      canvasInfo = this.worker.isFallbackWorker ? {
-        canvas: this.canvas,
-        ctx: this.ctx
-      } : {
-        bitmap: this.canvas.transferToImageBitmap()
+        this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
       }
+      canvasInfo = this.worker.isFallbackWorker ? {
+          canvas: this.canvas,
+          ctx: this.ctx
+        }
+        : ((allowedToTransfer && buffer.transferToImageBitmap)
+          ? {
+            bitmap: buffer.transferToImageBitmap()
+          }
+          : {
+            bitmap: this.canvas.transferToImageBitmap()
+          }
+        )
 
       this.workerMessageId++;
       const stack = new Error().stack
