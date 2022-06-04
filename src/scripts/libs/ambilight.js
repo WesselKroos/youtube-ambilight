@@ -21,7 +21,7 @@ const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 export default class Ambilight {
   barDetection = new BarDetection()
   innerStrength = 2
-  lastCheckVideoSizeTime = 0
+  lastUpdateSizesChanged = 0
 
   videoOffset = {}
   srcVideoOffset = {}
@@ -81,14 +81,15 @@ export default class Ambilight {
 
       this.updateImmersiveMode()
       this.checkGetImageDataAllowed()
-
       this.initListeners()
 
-      setTimeout(function setTimeout() {
-        if (!this.settings.enabled) return
-
-        this.enable(true)
-      }.bind(this), 0)
+      if (this.settings.enabled) {
+        try {
+          this.enable(true)
+        } catch(ex) {
+          console.warn('Failed to enable on launch', ex)
+        }
+      }
       
       return this
     }.bind(this))()
@@ -261,6 +262,7 @@ export default class Ambilight {
   }
 
   updateVideoPlayerSize = () => {
+    if(this.isFullscreen) return // Not necessary in fullscreen because the scrollbar is always hidden
     try {
       this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
       this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
@@ -272,27 +274,21 @@ export default class Ambilight {
 
   scheduleHandleVideoResize = wrapErrorHandler(() => {
     if (!this.settings.enabled || !this.isOnVideoPage) return
-    if (this.scheduledHandleVideoResize) return
+    if (this.videoResizeHandled) return
 
-    this.updateVideoPlayerSize()
-    this.sizesInvalidated = true
-    
-    const wasView = this.view
-    this.updateView()
-    if (wasView === this.view) {
-      // Spare multiple resize handler calls when resizing the browser window
-      this.scheduledHandleVideoResize = raf(this.handleVideoResize)
-    } else {
-      // When changing viewmodes draw directly to prevent flickering
-      this.handleVideoResize()
-    }
+    this.handleVideoResize()
+    // Mark as handled untill the next frame
+    this.videoResizeHandled = raf(() => {
+      this.videoResizeHandled = null
+    })
   })
 
   handleVideoResize = () => {
-    this.scheduledHandleVideoResize = null
     if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
 
-    this.nextFrame()
+    // console.log('handleVideoResize')
+    this.sizesInvalidated = true
+    this.optionalFrame()
   }
 
   initVideoListeners() {
@@ -380,7 +376,8 @@ export default class Ambilight {
     if(this.settings.webGL) {
       this.projector.handleRestored = (isControlledLose) => {
         this.buffersCleared = true
-        this.sizesInvalidated = true
+        // console.log('handleRestored sizesChanged')
+        this.sizesChanged = true
         if(!isControlledLose) {
           this.requestVideoFrameCallbackId = undefined
           this.videoElem.currentTime = this.videoElem.currentTime // Trigger video draw call
@@ -803,7 +800,7 @@ export default class Ambilight {
         const horizontalBarChanged = this.setHorizontalBars(0)
         const verticalBarChanged = this.setVerticalBars(0)
         if(horizontalBarChanged || verticalBarChanged) {
-          this.sizesInvalidated = true
+          this.sizesChanged = true
           this.optionalFrame()
         }
       }
@@ -869,7 +866,6 @@ export default class Ambilight {
     }
 
     this.buffersCleared = true
-    this.sizesInvalidated = true
     this.checkIfNeedToHideVideoOverlay()
     this.scheduleNextFrame()
   }
@@ -940,6 +936,7 @@ export default class Ambilight {
   }
 
   updateSizes() {
+    // console.log('===== updateSizes. changed:', this.sizesChanged)
     if(this.settings.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
     }
@@ -962,9 +959,10 @@ export default class Ambilight {
     if (notVisible || noClipOrScale) {
       this.resetVideoContainerStyle()
     }
+    this.lastUpdateSizesChanged = performance.now()
     if (notVisible) {
       this.hide()
-      return true
+      return false
     }
     
     if(this.isFullscreen) {
@@ -1151,7 +1149,7 @@ export default class Ambilight {
     this.resizeCanvasses()
     this.initFPSListElem()
 
-    this.sizesInvalidated = false
+    this.sizesChanged = false
     this.buffersCleared = true
     return true
   }
@@ -1240,6 +1238,11 @@ export default class Ambilight {
   }
 
   resizeCanvasses() {
+    if (this.canvassesInvalidated) {
+      this.recreateProjectors()
+      this.canvassesInvalidated = false
+    }
+
     const projectorSize = {
       w: Math.round(this.p.w * this.clippedVideoScale[0]),
       h: Math.round(this.p.h * this.clippedVideoScale[1])
@@ -1293,31 +1296,28 @@ export default class Ambilight {
     this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
-  checkVideoSize(checkPosition = true) {
-    if (this.canvassesInvalidated) {
-      this.canvassesInvalidated = false
-      this.recreateProjectors()
-    }
+  updateSizesChanged(checkPosition) {
+    // console.log('updateSizesChanged', this.sizesInvalidated)
+    this.sizesChanged = this.sizesChanged || this.getSizesChanged(checkPosition)
+    this.lastUpdateSizesChanged = performance.now()
+    this.sizesInvalidated = false
+  }
 
-    if (this.sizesInvalidated) {
-      this.sizesInvalidated = false
-      return this.updateSizes()
-    }
-
+  getSizesChanged(checkPosition = true) {
     //Resized
     if (this.previousEnabled !== this.settings.enabled) {
       this.previousEnabled = this.settings.enabled
-      return this.updateSizes()
+      return true
     }
 
     //Auto quality moved up or down
     if (this.srcVideoOffset.width !== this.videoElem.videoWidth
       || this.srcVideoOffset.height !== this.videoElem.videoHeight) {
-      return this.updateSizes()
+        return true
     }
 
     if (this.settings.videoOverlayEnabled && this.videoOverlay && this.videoElem.getAttribute('style') !== this.videoOverlay.elem.getAttribute('style')) {
-      return this.updateSizes()
+      return true
     }
     
     const noClipOrScale = (
@@ -1337,7 +1337,7 @@ export default class Ambilight {
           videoTransform.indexOf(`translate(${-left}px, ${-top}px)`) === -1 ||
           videoTransform.indexOf(`scale(${scaleX}, ${scaleY})`) === -1
         ) {
-          return this.updateSizes()
+          return true
         }
       }
     }
@@ -1359,11 +1359,11 @@ export default class Ambilight {
         Math.abs(projectorsElemRect.top - expectedProjectorsRect.top) > 2 ||
         Math.abs(projectorsElemRect.left - expectedProjectorsRect.left) > 2
       ) {
-        return this.updateSizes()
+        return true
       }
     }
 
-    return true
+    return false
   }
 
   getElemRect(elem) {
@@ -1460,16 +1460,16 @@ export default class Ambilight {
   }
 
   nextFrame = () => {
-    this.delayedCheckVideoSizeAndPosition = false
-    if (!this.p) {
-      if(!this.checkVideoSize()) {
-        //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
-        return
-      }
-    } else if(this.sizesInvalidated) {
-      this.checkVideoSize(false)
+    this.delayedUpdateSizesChanged = false
+    if(this.p && this.sizesInvalidated) {
+      this.updateSizesChanged()
+    }
+    if (!this.p || this.sizesChanged) {
+      //If was detected hidden by updateSizes, this.p won't be initialized yet
+      // if(!this.p) console.log('p is null -> updateSizes')
+      if(!this.updateSizes()) return
     } else {
-      this.delayedCheckVideoSizeAndPosition = true
+      this.delayedUpdateSizesChanged = true
     }
     
     let results = {}
@@ -1506,8 +1506,8 @@ export default class Ambilight {
       (
         !this.settings.videoOverlayEnabled &&
         !(
-          this.delayedCheckVideoSizeAndPosition &&
-          (performance.now() - this.lastCheckVideoSizeTime) > 2000
+          this.delayedUpdateSizesChanged &&
+          (performance.now() - this.lastUpdateSizesChanged) > 2000
         ) &&
         !((performance.now() - this.lastUpdateStatsTime) > 2000)
       )
@@ -1525,12 +1525,11 @@ export default class Ambilight {
       }
       
       if (
-        this.delayedCheckVideoSizeAndPosition &&
-        (performance.now() - this.lastCheckVideoSizeTime) > 2000
+        this.delayedUpdateSizesChanged &&
+        (performance.now() - this.lastUpdateSizesChanged) > 2000
       ) {
-        const videoSizeChanged = this.checkVideoSize(true)
-        this.lastCheckVideoSizeTime = performance.now()
-        if(videoSizeChanged) {
+        this.updateSizesChanged(true)
+        if(this.sizesChanged) {
           this.optionalFrame()
         }
       } else if((performance.now() - this.lastUpdateStatsTime) > 2000) {
@@ -1725,21 +1724,22 @@ export default class Ambilight {
     this.ambilightDroppedFramesElem.style.color = ambilightDroppedFramesColor
   }
 
-  drawAmbilight() {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+  shouldShow = () => (
+    this.settings.enabled &&
+    this.isOnVideoPage &&
+    !this.isVR &&
+    this.isInEnabledView()
+  )
 
-    if (
-      this.isVR ||
-      !this.isInEnabledView()
-    ) {
-      this.hide()
+  drawAmbilight() {
+    const shouldShow = this.shouldShow()
+    if(!shouldShow) {
+      if (!this.isHidden) this.hide()
       return
     }
 
     const drawTime = performance.now()
-    if (this.isHidden) {
-      this.show()
-    }
+    if (this.isHidden) this.show()
 
     if (
       (
@@ -1979,7 +1979,7 @@ export default class Ambilight {
     )
     if(!horizontalBarChanged && !verticalBarChanged) return
 
-    this.sizesInvalidated = true
+    this.sizesChanged = true
     this.optionalFrame()
   }
 
@@ -2045,12 +2045,8 @@ export default class Ambilight {
   }
 
   enable(initial = false) {
-    if (!initial)
-      this.settings.set('enabled', true, true)
+    if (!initial) this.settings.set('enabled', true, true)
     
-    this.updateView()
-    if (!this.settings.enableInFullscreen && this.view === VIEW_FULLSCREEN) return
-
     this.start()
   }
 
@@ -2064,32 +2060,35 @@ export default class Ambilight {
       videoElemParentElem.style.marginBottom = ''
     }
     
-    this.checkVideoSize()
-    this.hide()
-    this.updateVideoPlayerSize()
+    this.updateSizes()
+    if(this.immersive || this.settings.hideScrollbar) {
+      this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
+    }
   }
 
-  start() {
+  start = () => {
     if (!this.isOnVideoPage || !this.settings.enabled) return
-
-    this.videoFrameRateMeasureStartFrame = 0
-    this.videoFrameRateMeasureStartTime = 0
-    this.ambilightVideoDroppedFrameCount = 0
 
     this.showedCompareWarning = false
     this.showedDetectBarSizeWarning = false
-
     this.nextFrameTime = undefined
-
-    this.sizesInvalidated = true // Prevent wrong size from being used
+    this.videoFrameRateMeasureStartFrame = 0
+    this.videoFrameRateMeasureStartTime = 0
+    this.ambilightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
+
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
+    if(this.shouldShow()) this.show()
+    this.updateSizes()
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
-
     this.nextFrame()
+    
+    if(this.immersive || this.settings.hideScrollbar) {
+      this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
+    }
   }
 
   scheduleRequestVideoFrame = () => {
@@ -2212,10 +2211,15 @@ export default class Ambilight {
   }
 
   updateImmersiveMode() {
-    const immersive = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
-    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersive.toString())
-    if(changed) {
-      html.setAttribute('data-ambilight-immersive-mode', immersive)
+    this.immersive = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
+    const changed = (html.getAttribute('data-ambilight-immersive-mode') === 'true') !== this.immersive
+    if(!changed) return
+
+    if(this.immersive) {
+      html.setAttribute('data-ambilight-immersive-mode', this.immersive)
+    } else {
+      html.removeAttribute('data-ambilight-immersive-mode')
     }
+    this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
   }
 }

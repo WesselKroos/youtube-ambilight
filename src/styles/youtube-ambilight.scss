@@ -1486,6 +1486,7 @@ html[data-ambilight-enabled="true"] {
 
 .yta-bezel {
   pointer-events: none;
+  contain: strict;
 
   .ytp-svg-fill {
     font-size: 30px;

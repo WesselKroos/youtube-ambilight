@@ -832,16 +832,6 @@ export default class Settings {
     })
 
     this.menuElemParent.prepend(this.menuElem)
-    try {
-      this.menuElem.scrollTop = this.menuElem.scrollHeight
-      this.menuOnCloseScrollBottom = (!this.menuElem.scrollTop) 
-        ? -1 
-        : (this.menuElem.scrollHeight - this.menuElem.offsetHeight) - this.menuElem.scrollTop
-      this.menuOnCloseScrollHeight = (this.menuElem.scrollHeight - this.menuElem.offsetHeight)
-    } catch(ex) {
-      console.error('Ambient light for YouTube™ | initSettingsMenuScrollInformation', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-    }
 
     this.bezelElem = document.createElement('div')
     this.bezelElem.classList.add('yta-bezel', 'ytp-bezel')
@@ -1021,8 +1011,7 @@ export default class Settings {
             this.updateVisibility()
           }
 
-          this.ambilight.buffersCleared = true
-          this.ambilight.sizesInvalidated = true
+          this.ambilight.sizesChanged = true
           this.ambilight.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
@@ -1063,6 +1052,7 @@ export default class Settings {
           }
           if (setting.name === 'hideScrollbar') {
             html.setAttribute('data-ambilight-hide-scrollbar', value)
+            if(this.enabled) this.ambilight.updateVideoPlayerSize()
           }
           if(setting.name === 'immersiveTheaterView') {
             this.ambilight.updateImmersiveMode()
@@ -1094,7 +1084,7 @@ export default class Settings {
             this.updateVisibility()
             this.displayBezel(setting.key, !value)
 
-            if(this.webGL) {
+            if(this.enabled && this.webGL) {
               this.ambilight.updateSizes()
             }
             this.ambilight.optionalFrame()
@@ -1155,7 +1145,7 @@ export default class Settings {
             return
           }
 
-          this.ambilight.updateSizes()
+          if(this.enabled) this.ambilight.updateSizes()
           this.ambilight.optionalFrame()
         })
       }
@@ -1183,8 +1173,8 @@ export default class Settings {
     return `${value}${setting.unit || '%'}`
   }
 
-  settingsMenuOnCloseScrollBottom = 0
-  settingsMenuOnCloseScrollHeight = 0
+  menuOnCloseScrollBottom = -1
+  menuOnCloseScrollHeight = 1
   onSettingsBtnClicked = () => {
     const isOpen = this.menuElem.classList.contains('is-visible')
     if (isOpen) return
