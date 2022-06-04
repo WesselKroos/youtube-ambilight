@@ -1790,10 +1790,20 @@ export default class Ambilight {
       this.videoFrameCount = newVideoFrameCount
     }
 
+
+    // Horizontal bar detection
+    const detectBarSize = (
+      hasNewFrame &&
+      !this.barDetection?.run && 
+      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
+    )
+
     const dontDrawAmbilight = (
       this.atTop &&
       this.isFillingFullscreen
     )
+
+    const dontDrawBuffer = (dontDrawAmbilight && !detectBarSize)
 
     if (this.settings.frameBlending && this.settings.frameBlendingSmoothness) {
       if (!this.previousProjectorBuffer) {
@@ -1814,16 +1824,19 @@ export default class Ambilight {
               this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
             }
           }
-          if(!this.buffersCleared) {
-            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-          }
-          // Prevent adjusted barsClipPx from leaking previous frame into the frame
-          this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-          
-          this.projectorBuffer.ctx.drawImage(this.videoElem,
-            0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-          if(this.buffersCleared) {
-            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+
+          if(!dontDrawBuffer) {
+            if(!this.buffersCleared) {
+              this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+            }
+            // Prevent adjusted barsClipPx from leaking previous frame into the frame
+            this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+            
+            this.projectorBuffer.ctx.drawImage(this.videoElem,
+              0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+            if(this.buffersCleared) {
+              this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+            }
           }
         }
 
@@ -1900,16 +1913,18 @@ export default class Ambilight {
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
       }
 
-      if (!dontDrawAmbilight) {
+      if (!dontDrawBuffer) {
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-        this.projector.draw(this.projectorBuffer.elem)
+        if (!dontDrawAmbilight) {
+          this.projector.draw(this.projectorBuffer.elem)
+        }
       }
     }
 
     this.buffersCleared = false
-    this.ambilightFrameCount++
+    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) this.ambilightFrameCount++
     this.previousDrawTime = drawTime
     if(hasNewFrame) {
       this.previousFrameTime = drawTime
@@ -1918,14 +1933,8 @@ export default class Ambilight {
     if(this.enableMozillaBug1606251Workaround) {
       this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
     }
-
-    // Horizontal bar detection
-    if(
-      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) &&
-      hasNewFrame
-    ) {
-      return { detectBarSize: true }
-    }
+    
+    return { detectBarSize }
   }
 
   scheduleBarSizeDetection = () => {
