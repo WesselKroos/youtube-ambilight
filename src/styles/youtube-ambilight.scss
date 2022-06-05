@@ -112,7 +112,7 @@ html[data-ambilight-enabled="true"] {
     &[data-ambilight-immersive-mode="true"] {
       scrollbar-width: none !important;
       body::-webkit-scrollbar {
-        width: 0 !important;
+        display: none !important;
       }
     }
   }
