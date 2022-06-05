@@ -532,6 +532,7 @@ html[data-ambilight-enabled="true"] {
 }
 
 .ytpa-ambilight-settings-menu {
+  contain: content;
   width: 320px;
   max-height: calc(100% - 70px);
   overflow-y: auto !important;
@@ -585,6 +586,7 @@ html[data-ambilight-enabled="true"] {
   position: relative !important;
   overflow: initial !important;
   font-size: calc(100% / 1.09) !important;
+  contain: strict;
   &::after {
     content: '';
     position: absolute;

@@ -543,12 +543,7 @@ export default class Settings {
       }
 
       this.initMenu()
-
-      if(this.pendingWarning) {
-        this.pendingWarning()
-        this.pendingWarning = undefined
-      }
-
+      if(this.pendingWarning) this.pendingWarning()
       return this
     })()
   }
@@ -1152,6 +1147,7 @@ export default class Settings {
     }
 
     this.updateVisibility()
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
   }
 
   getSettingListDisplayText(setting) {
@@ -1199,6 +1195,7 @@ export default class Settings {
     off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
       on(body, 'click', this.onCloseMenu, undefined, (listener) => this.onCloseMenuListener = listener)
+      this.scrollToWarning()
     }, 100)
   }
 
@@ -1457,23 +1454,44 @@ export default class Settings {
     }, 0);
   }
 
+  handleDocumentVisibilityChange = () => {
+    const isPageHidden = document.visibilityState === 'hidden'
+    if(isPageHidden) return
+
+    setTimeout(() => {
+      if(!this.pendingWarning) return
+      
+      this.pendingWarning()
+    }, 1) // Give ambient light the time to clear existing warnings
+  }
+
   setWarning = (message, optional = false) => {
-    if(!this.menuElem) {
+    if(!this.menuElem || this.ambilight.isPageHidden) {
       this.pendingWarning = () => this.setWarning(message, optional)
       return
+    } else {
+      this.pendingWarning = undefined
     }
 
     if(optional && this.warningElem.textContent.length) return
+    if(this.warningElem.textContent === message) return
 
-    const messageChanged = this.warningElem.textContent !== message
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
-    
     this.menuBtn.classList.toggle('has-warning', !!message)
-    if(message && messageChanged)
-      this.menuElem.scrollTo({
-        behavior: 'smooth',
-        top: 0
-      })
+    this.scrollToWarningQueued = !!message
+    if(!message) return
+
+    this.scrollToWarning()
+  }
+
+  scrollToWarning() {
+    if(!this.warningElem.textContent || !this.scrollToWarningQueued || !this.onCloseMenuListener) return
+    
+    this.scrollToWarningQueued = false
+    this.menuElem.scrollTo({
+      behavior: 'smooth',
+      top: 0
+    })
   }
 }
