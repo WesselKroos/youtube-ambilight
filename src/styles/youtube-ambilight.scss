@@ -1488,7 +1488,12 @@ html[data-ambilight-enabled="true"] {
 
 .yta-bezel {
   pointer-events: none;
-  contain: strict;
+  contain: size style layout paint;
+
+  &--no-animation {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 
   .ytp-svg-fill {
     font-size: 30px;
@@ -1497,8 +1502,8 @@ html[data-ambilight-enabled="true"] {
   .ytp-bezel-icon {
     position: relative;
   }
-
-  &--strike .ytp-bezel-icon::before {
+  
+  .ytp-bezel-icon::before {
     content: '';
     display: block;
     position: absolute;
@@ -1507,6 +1512,7 @@ html[data-ambilight-enabled="true"] {
     margin: 0;
     top: calc(50% - 1.5px);
     left: 10%;
+    opacity: 0;
     outline: 3px solid #111;
     transform: rotate(-45deg);
     background: #fff;
@@ -1515,5 +1521,9 @@ html[data-ambilight-enabled="true"] {
       height: 4px;
       top: calc(50% - 2px);
     }
+  }
+
+  &--strike .ytp-bezel-icon::before {
+    opacity: 1;
   }
 }

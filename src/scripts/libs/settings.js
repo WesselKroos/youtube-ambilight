@@ -838,7 +838,7 @@ export default class Settings {
         </svg>
       </div>`
     on(this.bezelElem, 'animationend', () => {
-      this.bezelElem.style.display = 'none'
+      this.bezelElem.classList.add('yta-bezel--no-animation')
     })
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
@@ -1446,10 +1446,10 @@ export default class Settings {
   }
 
   displayBezel(text, strike = false) {
-    this.bezelElem.style.display = 'none'
+    this.bezelElem.classList.add('yta-bezel--no-animation')
     setTimeout(() => {
       this.bezelElem.classList.toggle('yta-bezel--strike', strike)
-      this.bezelElem.style.display = ''
+      this.bezelElem.classList.remove('yta-bezel--no-animation')
       this.bezelTextElem.textContent = text
     }, 0);
   }
