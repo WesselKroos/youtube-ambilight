@@ -6,11 +6,11 @@ import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
 
-const VIEW_DETACHED = 'VIEW_DETACHED'
-const VIEW_SMALL = 'VIEW_SMALL'
-const VIEW_THEATER = 'VIEW_THEATER'
-const VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
-const VIEW_POPUP = 'VIEW_POPUP'
+const VIEW_DETACHED = 'DETACHED'
+const VIEW_SMALL = 'SMALL'
+const VIEW_THEATER = 'THEATER'
+const VIEW_FULLSCREEN = 'FULLSCREEN'
+const VIEW_POPUP = 'POPUP'
 
 const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
@@ -33,7 +33,7 @@ export default class Ambilight {
 
   atTop = true
   p = null
-  view = -1
+  view = undefined
   isFullscreen = false
   isFillingFullscreen = false
   isVR = false
@@ -261,49 +261,6 @@ export default class Ambilight {
     return true
   }
 
-  updateVideoPlayerSize = () => {
-    if(this.isFullscreen) return // Not necessary in fullscreen because the scrollbar is always hidden
-    try {
-      if(this.view === VIEW_SMALL) {
-        if(!this.outerPlayerContainer) {
-          this.outerPlayerContainer = document.querySelector('#player-container-outer')
-        }
-        this.outerPlayerContainer.style.width = 'calc(100% + 5px)'
-        raf(() => {
-          this.outerPlayerContainer.style.width = ''
-          this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
-          this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
-          this.sizesChanged = true
-        })
-      } else {
-        this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
-        this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
-      }
-    } catch (ex) {
-      // Ignore errors in interal youtube script
-      console.warn('Ambient light for YouTube™ | YouTube script | setSize or setInternalSize error:', ex)
-    }
-  }
-
-  scheduleHandleVideoResize = wrapErrorHandler(() => {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
-    if (this.videoResizeHandled) return
-
-    this.handleVideoResize()
-    // Mark as handled untill the next frame
-    this.videoResizeHandled = raf(() => {
-      this.videoResizeHandled = null
-    })
-  })
-
-  handleVideoResize = () => {
-    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
-
-    // console.log('handleVideoResize')
-    this.sizesInvalidated = true
-    this.optionalFrame()
-  }
-
   initVideoListeners() {
     ////// PLAYER FLOW
     //
@@ -404,23 +361,25 @@ export default class Ambilight {
     on(document, 'keydown', this.handleKeyDown)
 
     this.bodyResizeObserver = new ResizeObserver(function bodyResize() {
+      if(!this.settings.enabled || !this.isOnVideoPage) return
       this.scheduleHandleVideoResize() // Because the position could be shifted
     }.bind(this))
     this.bodyResizeObserver.observe(document.body)
 
     this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize() {
+      if(!this.isOnVideoPage) return
+      this.videoPlayerElem.setSize()
+      this.videoPlayerElem.setInternalSize()
+      if(!this.settings.enabled) return
+      
+      this.handleVideoResizeAfterRafs = true
       this.scheduleHandleVideoResize()
     }.bind(this))
     this.videoPlayerResizeObserver.observe(this.videoPlayerElem)
     
-    // Makes sure the player size is updated before the first frame is rendered
-    // (youtube does this to late in the next frame)
-    this.videoContainerResizeObserver = new ResizeObserver(function videoContainerResize() {
-      this.scheduleHandleVideoResize()
-    }.bind(this))
-    this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
     this.videoResizeObserver = new ResizeObserver(function videoResize() {
+      if(!this.settings.enabled || !this.isOnVideoPage) return
       this.scheduleHandleVideoResize()
     }.bind(this))
     this.videoResizeObserver.observe(this.videoElem)
@@ -488,6 +447,36 @@ export default class Ambilight {
     } else {
       console.warn('Ambient light for YouTube™ | html5-video-player not found')
     }
+  }
+
+  handleVideoResizeAfterRafs = false
+  scheduleHandleVideoResize = wrapErrorHandler(() => {
+    if (!this.settings.enabled || !this.isOnVideoPage) return
+    if (this.videoResizeHandled) return
+
+    if(!this.handleVideoResizeAfterRafs) {
+      this.handleVideoResize()
+    }
+    // Mark as handled untill the next frame
+    this.videoResizeHandled = raf(() => {
+      if(!this.handleVideoResizeAfterRafs) {
+        this.videoResizeHandled = null
+        return
+      }
+
+      this.videoResizeHandled = raf(() => {
+        this.handleVideoResize()
+        this.videoResizeHandled = null
+        this.handleVideoResizeAfterRafs = false
+      })
+    })
+  })
+
+  handleVideoResize = () => {
+    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
+
+    this.sizesInvalidated = true
+    this.optionalFrame()
   }
 
   handleDocumentVisibilityChange = () => {
@@ -927,8 +916,7 @@ export default class Ambilight {
     if(wasView === this.view) return
 
     this.isFullscreen = (this.view == VIEW_FULLSCREEN)
-    const immersiveChanged = this.updateImmersiveMode()
-    if(!immersiveChanged && this.settings.hideScrollbar && this.view == VIEW_SMALL) this.updateVideoPlayerSize()
+    this.updateImmersiveMode()
 
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
@@ -945,7 +933,7 @@ export default class Ambilight {
       VIEW_SMALL: enableInViews <= 2,
       VIEW_THEATER: enableInViews >= 2 && enableInViews <= 4,
       VIEW_FULLSCREEN: enableInViews >= 4
-    }[this.view]
+    }[this.view] || false
     return enabled
   }
 
@@ -2074,10 +2062,10 @@ export default class Ambilight {
       videoElemParentElem.style.marginBottom = ''
     }
     
+    if((this.settings.hideScrollbar && !this.isFullscreen) || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
     this.updateSizes()
-    if(this.immersive || this.settings.hideScrollbar) {
-      this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
-    }
+    else
+      this.hide()
   }
 
   start = () => {
@@ -2095,10 +2083,6 @@ export default class Ambilight {
     this.resetSettingsIfNeeded()
 
     if(this.shouldShow()) this.show()
-    if(this.immersive || this.settings.hideScrollbar) {
-      this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
-    }
-    this.updateSizes()
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
@@ -2146,7 +2130,10 @@ export default class Ambilight {
     this.clear()
     this.hideStats()
 
-    html.setAttribute('data-ambilight-enabled', false)
+    html.removeAttribute('data-ambilight-enabled')
+    html.removeAttribute('data-ambilight-immersive')
+    this.immersiveTheater = false
+    this.view = undefined
     this.updateTheme()
   }
 
@@ -2157,6 +2144,7 @@ export default class Ambilight {
     this.elem.style.opacity = 1
     html.setAttribute('data-ambilight-enabled', true)
     this.updateTheme()
+    this.updateView()
   }
 
   updateAtTop = () => {
@@ -2225,17 +2213,14 @@ export default class Ambilight {
   }
 
   updateImmersiveMode() {
-    this.immersive = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
-    const changed = (html.getAttribute('data-ambilight-immersive-mode') === 'true') !== this.immersive
-    if(!changed) return false
+    this.immersiveTheater = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
+    const changed = (html.getAttribute('data-ambilight-immersive') === 'true') !== this.immersiveTheater
+    if(!changed) return
 
-    if(this.immersive) {
-      html.setAttribute('data-ambilight-immersive-mode', this.immersive)
+    if(this.immersiveTheater) {
+      html.setAttribute('data-ambilight-immersive', this.immersiveTheater)
     } else {
-      html.removeAttribute('data-ambilight-immersive-mode')
+      html.removeAttribute('data-ambilight-immersive')
     }
-
-    this.updateVideoPlayerSize() // Because the position could be shifted but youtube does not update it themselve
-    return true
   }
 }

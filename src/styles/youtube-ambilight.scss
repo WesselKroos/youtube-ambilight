@@ -109,7 +109,7 @@ html[data-ambilight-enabled="true"] {
     @include scrollbar-dark-thin();
 
     &[data-ambilight-hide-scrollbar="true"],
-    &[data-ambilight-immersive-mode="true"] {
+    &[data-ambilight-immersive="true"] {
       scrollbar-width: none !important;
       body::-webkit-scrollbar {
         display: none !important;
@@ -488,7 +488,7 @@ html[data-ambilight-enabled="true"] {
 
   /* Immersive mode */
 
-  &[data-ambilight-immersive-mode="true"] {
+  &[data-ambilight-immersive="true"] {
     ytd-watch-flexy {
       &[theater] #player-theater-container.ytd-watch-flexy {
         height: calc(100vh - 168px) !important;

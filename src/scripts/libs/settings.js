@@ -1047,7 +1047,6 @@ export default class Settings {
           }
           if (setting.name === 'hideScrollbar') {
             html.setAttribute('data-ambilight-hide-scrollbar', value)
-            if(this.enabled) this.ambilight.updateVideoPlayerSize()
           }
           if(setting.name === 'immersiveTheaterView') {
             this.ambilight.updateImmersiveMode()
