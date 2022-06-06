@@ -372,8 +372,12 @@ export default class Ambilight {
     // YouTube does this incorrect by calculating it before the styles are recalculated.
     this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize() {
       if(!this.isOnVideoPage) return
+      try {
       this.videoPlayerElem.setSize()
       this.videoPlayerElem.setInternalSize()
+      } catch(ex) {
+        console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+      }
       if(!this.settings.enabled) return
       
       this.handleVideoResizeAfterRafs = true
