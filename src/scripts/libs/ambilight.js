@@ -434,7 +434,7 @@ export default class Ambilight {
       })
       this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
 
-      const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
+      const videoPlayerObserver = new MutationObserver(wrapErrorHandler((mutationsList) => {
         const mutation = mutationsList[0]
         const classList = mutation.target.classList
         
@@ -455,7 +455,7 @@ export default class Ambilight {
         this.resetVideoContainerStyle()
       }))
     
-      observer.observe(this.videoPlayerElem, {
+      videoPlayerObserver.observe(this.videoPlayerElem, {
         attributes: true,
         attributeOldValue: true,
         attributeFilter: ['class']
