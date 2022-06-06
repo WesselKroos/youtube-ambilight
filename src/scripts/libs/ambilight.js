@@ -107,9 +107,10 @@ export default class Ambilight {
     }
 
     this.videoContainerElem = videoElem.closest('.html5-video-container')
-    if (!this.videoContainerElem) {
-      throw new Error('Cannot find videoContainerElem: .html5-video-container')
-    }
+    // // Deprecated: videoContainerElem is optional and only used in the videoOverlayEnabled setting
+    // if (!this.videoContainerElem) {
+    //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
+    // }
     
     this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
@@ -362,10 +363,13 @@ export default class Ambilight {
 
     this.bodyResizeObserver = new ResizeObserver(function bodyResize() {
       if(!this.settings.enabled || !this.isOnVideoPage) return
-      this.scheduleHandleVideoResize() // Because the position could be shifted
+      this.scheduleHandleVideoResize() // Because the video position could be shifted
     }.bind(this))
     this.bodyResizeObserver.observe(document.body)
 
+    // Makes sure the player size is recalculated after the scrollbar has been hidden
+    // and the styles are recalculated.
+    // YouTube does this incorrect by calculating it before the styles are recalculated.
     this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize() {
       if(!this.isOnVideoPage) return
       this.videoPlayerElem.setSize()
@@ -377,6 +381,11 @@ export default class Ambilight {
     }.bind(this))
     this.videoPlayerResizeObserver.observe(this.videoPlayerElem)
     
+    // // Deprecated: Moved to videoPlayerResizeObserver
+    // this.videoContainerResizeObserver = new ResizeObserver(function videoContainerResize() {
+    //   this.scheduleHandleVideoResize()
+    // }.bind(this))
+    // this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
     this.videoResizeObserver = new ResizeObserver(function videoResize() {
       if(!this.settings.enabled || !this.isOnVideoPage) return
@@ -454,16 +463,16 @@ export default class Ambilight {
     if (!this.settings.enabled || !this.isOnVideoPage) return
     if (this.videoResizeHandled) return
 
-    if(!this.handleVideoResizeAfterRafs) {
-      this.handleVideoResize()
-    }
-    // Mark as handled untill the next frame
+    if (!this.handleVideoResizeAfterRafs) this.handleVideoResize()
+
+    // Do not resize untill the next animation frame
     this.videoResizeHandled = raf(() => {
       if(!this.handleVideoResizeAfterRafs) {
         this.videoResizeHandled = null
         return
       }
 
+      // Unless the player sizes has been recalculated in the videoPlayerResizeObserver
       this.videoResizeHandled = raf(() => {
         this.handleVideoResize()
         this.videoResizeHandled = null
@@ -518,21 +527,15 @@ export default class Ambilight {
   handleVideoFocus = () => {
     if (!this.settings.enabled || !this.isOnVideoPage) return
 
-    const startTop = {
-      window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-      video: this.videoContainerElem?.getBoundingClientRect()?.top
-    };
+    const startTop = this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY
     raf(function handleVideoFocusRaf() {
-      const endTop = {
-        window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-        video: this.videoContainerElem?.getBoundingClientRect()?.top
-      }
-      if(startTop.window === endTop.window) return
+      const endTop = VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY
+      if(startTop === endTop) return
       
       if(this.view === VIEW_FULLSCREEN) {
-        this.ytdAppElem.scrollTop = startTop.window
+        this.ytdAppElem.scrollTop = startTop
       } else {
-        window.scrollTo(window.scrollX, startTop.window)
+        window.scrollTo(window.scrollX, startTop)
       }
     }.bind(this))
   }
@@ -902,11 +905,11 @@ export default class Ambilight {
   updateView() {
     const wasView = this.view
     if(document.contains(this.videoPlayerElem)) {
-      if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
+      if(this.videoPlayerElem?.classList.contains('ytp-fullscreen'))
         this.view = VIEW_FULLSCREEN
-      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
+      else if(this.videoPlayerElem?.classList.contains('ytp-player-minimized'))
         this.view = VIEW_POPUP
-      else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
+      else if(this.ytdWatchFlexyElem?.getAttribute('theater') !== null)
         this.view = VIEW_THEATER
       else
         this.view = VIEW_SMALL
@@ -1130,10 +1133,23 @@ export default class Ambilight {
       this.checkIfNeedToHideVideoOverlay()
 
     if (videoOverlayEnabled && videoOverlay && !videoOverlay.elem.parentNode) {
+      if(this.videoContainerElem) {
       this.videoContainerElem.appendChild(videoOverlay.elem)
+      } else {
+        if(!this.videoContainerElemMissingThrown) {
+          AmbilightSentry.captureExceptionWithDetails(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
+          this.videoContainerElemMissingThrown = true
+        }
+        this.videoContainerElemMissingWarning = true
+        this.settings.setWarning('Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to a update of the YouTube design. This will probably soon be fixed in a new version.')
+      }
     } else if (!videoOverlayEnabled && videoOverlay && videoOverlay.elem.parentNode) {
       videoOverlay.elem.parentNode.removeChild(videoOverlay.elem)
+    } else if(this.videoContainerElemMissingWarning) {
+      this.settings.setWarning('')
+      this.videoContainerElemMissingWarning = false
     }
+
     if (videoOverlayEnabled && videoOverlay) {
       videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
       videoOverlay.elem.width = this.srcVideoOffset.width
