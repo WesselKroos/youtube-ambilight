@@ -2079,7 +2079,7 @@ export default class Ambilight {
   enable(initial = false) {
     if (!initial) this.settings.set('enabled', true, true)
     
-    this.start()
+    this.start(initial)
   }
 
   disable() {
@@ -2106,8 +2106,7 @@ export default class Ambilight {
     this.startRequest = undefined
   }
 
-  start = () => {
-    this.cancelStartRequest()
+  start = (initial = false) => {
     if (!this.isOnVideoPage || !this.settings.enabled) return
 
     this.showedCompareWarning = false
@@ -2120,17 +2119,22 @@ export default class Ambilight {
 
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
-
     if(this.shouldShow()) this.show()
-
     if(this.startRequest) return
-    this.startRequest = requestIdleCallback(function enabledStart() {
+
+    if(initial) {
+      this.startRequest = requestIdleCallback(this.startCallback, { timeout: 5000 })
+    } else {
+      this.startCallback()
+    }
+  }
+
+  startCallback = () => {
       this.startRequest = undefined
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
     this.nextFrame()
-    }.bind(this), { timeout: 5000 })
   }
 
   scheduleRequestVideoFrame = () => {
