@@ -464,7 +464,7 @@ export default class Ambilight {
 
   handleVideoResizeAfterRafs = false
   scheduleHandleVideoResize = wrapErrorHandler(() => {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+    if (!this.settings.enabled || !this.isOnVideoPage || this.startRequest) return
     if (this.videoResizeHandled) return
 
     if (!this.handleVideoResizeAfterRafs) this.handleVideoResize()
@@ -1470,6 +1470,7 @@ export default class Ambilight {
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
     !this.isOnVideoPage ||
+    this.startRequest ||
     this.videoElem.ended ||
     this.videoElem.paused ||
     this.videoElem.seeking ||
@@ -1482,6 +1483,7 @@ export default class Ambilight {
     if(
       !this.settings.enabled ||
       !this.isOnVideoPage ||
+      this.startRequest ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2081,6 +2083,7 @@ export default class Ambilight {
   }
 
   disable() {
+    this.cancelStartRequest()
     this.settings.set('enabled', false, true)
     const videoElemParentElem = this.videoElem.parentNode
     if (videoElemParentElem) {
@@ -2096,7 +2099,15 @@ export default class Ambilight {
       this.hide()
   }
 
+  cancelStartRequest() {
+    if (!this.startRequest) return
+    
+    cancelIdleCallback(this.startRequest)
+    this.startRequest = undefined
+  }
+
   start = () => {
+    this.cancelStartRequest()
     if (!this.isOnVideoPage || !this.settings.enabled) return
 
     this.showedCompareWarning = false
@@ -2112,9 +2123,14 @@ export default class Ambilight {
 
     if(this.shouldShow()) this.show()
 
+    if(this.startRequest) return
+    this.startRequest = requestIdleCallback(function enabledStart() {
+      this.startRequest = undefined
+
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
     this.nextFrame()
+    }.bind(this), { timeout: 5000 })
   }
 
   scheduleRequestVideoFrame = () => {
@@ -2154,6 +2170,7 @@ export default class Ambilight {
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
+    this.cancelStartRequest()
     this.resetVideoContainerStyle()
     this.clear()
     this.hideStats()
