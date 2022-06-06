@@ -19,7 +19,10 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
 
-    const isDetached = (!ambilight.videoElem || !ambilight.ytdWatchFlexyElem.contains(ambilight.videoElem))
+    const isDetached = (
+      !ambilight.videoElem ||
+      !ytdAppElem?.contains(ambilight.videoElem)
+    )
     if (!isDetached) {
       if(errorEvents.list.length) {
         errorEvents.list = []
@@ -62,6 +65,7 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       ambilight.initVideoElem(videoElem)
       ambilight.initVideoListeners()
     }
+    
     ambilight.start()
 
     if(errorEvents.list.length) {

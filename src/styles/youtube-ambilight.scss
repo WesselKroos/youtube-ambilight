@@ -150,13 +150,10 @@ html[data-ambilight-enabled="true"] {
 
   ytd-app {
     &,
-    ytd-watch,
-    ytd-watch-flexy,
     #player-theater-container,
-    #columns.ytd-watch-flexy,
     #player-container,
-    .html5-main-video,
-    #movie_player {
+    .html5-video-player,
+    .html5-main-video {
       background: none !important;
     }
 

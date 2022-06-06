@@ -95,12 +95,16 @@ export default class Ambilight {
     }.bind(this))()
   }
 
-  initElems(videoElem) {
-    this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
-    if(!this.ytdWatchFlexyElem) {
-      throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
+  get playerTheaterContainerElem() {
+    return this.videoPlayerElem?.closest('#player-theater-container')
+  }
+
+  get ytdWatchFlexyElem() {
+    if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = this.videoElem?.closest('ytd-watch-flexy, .ytd-page-manager')
+    return this._ytdWatchFlexyElem
     }
 
+  initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
     if(!this.videoPlayerElem) {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
@@ -422,7 +426,6 @@ export default class Ambilight {
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
-    if (this.videoPlayerElem) {
       on(this.videoPlayerElem, 'onStateChange', (state) => {
         this.isBuffering = (state === 3)
 
@@ -457,9 +460,6 @@ export default class Ambilight {
         attributeOldValue: true,
         attributeFilter: ['class']
       })
-    } else {
-      console.warn('Ambient light for YouTube™ | html5-video-player not found')
-    }
   }
 
   handleVideoResizeAfterRafs = false
@@ -746,7 +746,7 @@ export default class Ambilight {
     this.ambilightDroppedFramesElem.appendChild(ambilightDroppedFramesElemNode)
     this.FPSListElem.append(this.ambilightDroppedFramesElem)
 
-    this.videoPlayerElem.prepend(this.FPSListElem)
+    this.videoPlayerElem?.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
@@ -906,14 +906,25 @@ export default class Ambilight {
     this.settings.set('videoScale', videoScale, true)
   }
 
+  get isFullscreen() {
+    return document.fullscreen && this._isFullscreen
+  }
+  set isFullscreen(value) {
+    this._isFullscreen = value
+  }
+
   updateView() {
     const wasView = this.view
     if(document.contains(this.videoPlayerElem)) {
-      if(this.videoPlayerElem?.classList.contains('ytp-fullscreen'))
+      if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
         this.view = VIEW_FULLSCREEN
-      else if(this.videoPlayerElem?.classList.contains('ytp-player-minimized'))
+      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
         this.view = VIEW_POPUP
-      else if(this.ytdWatchFlexyElem?.getAttribute('theater') !== null)
+      else if(
+        this.ytdWatchFlexyElem
+          ? this.ytdWatchFlexyElem.getAttribute('theater') !== null
+          : this.playerTheaterContainerElem
+      )
         this.view = VIEW_THEATER
       else
         this.view = VIEW_SMALL
@@ -951,7 +962,7 @@ export default class Ambilight {
     }
 
     this.updateView()
-    this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
+    this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
     const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
 
@@ -1389,8 +1400,11 @@ export default class Ambilight {
   }
 
   getElemRect(elem) {
-    const scrollableRect = (this.isFullscreen) ? this.ytdWatchFlexyElem.getBoundingClientRect() : body.getBoundingClientRect()
+    const scrollableRect = (this.isFullscreen)
+      ? (this.ytdWatchFlexyElem || this.playerTheaterContainerElem || body).getBoundingClientRect()
+      : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
+
     return {
       top: elemRect.top - scrollableRect.top,
       left: elemRect.left - scrollableRect.left,

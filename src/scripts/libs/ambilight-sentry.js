@@ -432,7 +432,7 @@ export default class AmbilightSentry {
         }
 
         try {
-          const videoPlayerElem = $.s('#movie_player')
+          const videoPlayerElem = $.s('#movie_player, .html5-video-player')
           if (videoPlayerElem?.getStatsForNerds) {
             const stats = videoPlayerElem.getStatsForNerds()
             const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
@@ -449,7 +449,7 @@ export default class AmbilightSentry {
 
       if(navigator.doNotTrack !== '1' && crashOptions?.video) {
         try {
-          const ytdWatchFlexyElem = $.s('ytd-watch-flexy')
+          const ytdWatchFlexyElem = $.s('ytd-watch-flexy, .ytd-page-manager')
           if (ytdWatchFlexyElem) {
             const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
             setExtra('ytd-watch-flexy[video-id]', videoId)
