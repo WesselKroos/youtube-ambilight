@@ -823,20 +823,14 @@ export default class Ambilight {
   setHorizontalBars(percentage) {
     if(this.settings.horizontalBarsClipPercentage === percentage) return false
 
-    this.settings.horizontalBarsClipPercentage = percentage
-    setTimeout(function setHorizontalBarsClipPercentage() {
       this.settings.set('horizontalBarsClipPercentage', percentage, true)
-    }.bind(this), 1)
     return true
   }
 
   setVerticalBars(percentage) {
     if(this.settings.verticalBarsClipPercentage === percentage) return false
 
-    this.settings.verticalBarsClipPercentage = percentage
-    setTimeout(function setVerticalBarsClipPercentage() {
       this.settings.set('verticalBarsClipPercentage', percentage, true)
-    }.bind(this), 1)
     return true
   }
 
