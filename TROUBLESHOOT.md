@@ -4,7 +4,17 @@ The best way to debug troubleshoot problems is to first set the Ambient light ex
 
 >  Make sure you are running a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
 
+### Index
+- [Ambient light extension settings](#ambient-light-extension-settings)
+- [Browser settings: Chrome / Edge / Opera / Vivaldi (Chromium browsers)](#chrome--edge--opera--vivaldi-chromium-browsers)
+- [Browser settings: Firefox](#firefox)
+- [Known issues and solutions](#known-issues-and-solutions)
+- [Request troubleshooting assistance or report a browser bug](#request-troubleshooting-assistance-or-report-a-browser-bug)
+
+---
+
 # Ambient light extension settings
+### Quick steps
 A quick guide to get the best settings for performance:
 
 1. Click on the `Reset all settings` arrow in the top right of the ambient light menu and then change these settings:
@@ -12,6 +22,7 @@ A quick guide to get the best settings for performance:
     - Quality > WebGL renderer (uses less power): `On` _(If not available you need to turn on WebGL in the browser)_
     - Quality > WebGL resolution: `25%`
 
+### Manual steps
 But in case you don't want to reset all your current settings, here is a complete list of optimal settings that you can use to start from. From then on you can gradually turn up individual settings to test the limits of your device:
 
 - Settings:
@@ -34,24 +45,27 @@ But in case you don't want to reset all your current settings, here is a complet
   - Blur: `30% or lower`
   - Spread: `30% or lower`
 
+---
+
 # Browser settings
 For the best performance it's important to have an integrated or dedicated graphics card, so that you can enable hardware acceleration in the browser and validate that the browser is using your graphics card. These steps differ per browser.
 
 ## Chrome / Edge / Opera / Vivaldi (Chromium browsers)
-How to make sure that your graphics card is used by the browser:
-1. Go to the url [chrome://settings/system]() _(The browser blocks `chrome://` links, you have to manually copy and paste this url in a new tab)_
-   - Check `Use hardware acceleration when available`
+### Check graphics card availability
+1. Make sure that your graphics card is used by the browser:
+    1. Go to the url [chrome://settings/system]() _(The browser blocks `chrome://` links, you have to manually copy and paste this url in a new tab)_
+    2. Check `Use hardware acceleration when available`
 
-How to make sure that your graphics card is detected by the browser:
-1. Go to the url [chrome://gpu]()
-2. Check the values:
-    - GL_RENDERER: `<the name of you graphics card>`
+2. Make sure that your graphics card is detected by the browser:
+    1. Go to the url [chrome://gpu]()
+    2. Check the value `GL_RENDERER: <the name of you graphics card>`
 
-> If your graphics card is not detected: `Hardware acceleration` may not be enabled or you need to assign the browser to your graphics card from the graphics control panel of 
+If your graphics card is not detected: `Hardware acceleration` may not be enabled or you need to assign the browser to your graphics card from the graphics control panel of 
 [NVidia](https://nvidia.custhelp.com/app/answers/detail/a_id/5035/kw/preferred),
 [AMD & Intel switchable](https://www.amd.com/en/support/kb/faq/dh-017)
 or via the [Windows graphics settings](https://www.amd.com/en/support/kb/faq/gpu-110#faq-Customizing-Graphics-Performance-Preference-for-a-Desktop-App).
 
+### Check graphics card features
 How to check that your graphics card's features are used by the browser:
 1. Go to the url [chrome://gpu]()
 2. Check the values:
@@ -64,25 +78,28 @@ How to check that your graphics card's features are used by the browser:
     - WebGL: `Hardware accelerated`
     - WebGL2: `Hardware accelerated` _(WebGL2 requires a DirectX 11 capable graphics card)_
 
-> If some of the values are not `Enabled` / `Hardware accelerated` you can try to enable features via certain flags in [chrome://flags]().
-> However there is always a chance that the browser will crash when a flag is enabled. In case this happens you can always launch Chrome without flags by creating a shortcut with `--no-experiments`. _(Set the shortcut target field to: `"...\chrome.exe" --no-experiments`)_
+If some of the values are not `Enabled` / `Hardware accelerated` you can try to enable features via certain flags in [chrome://flags]().
 
-> Here is a list of the flags that may fix the values in [chrome://gpu]() if necessary:
-> - [chrome://flags/#ignore-gpu-blocklist](): `Enabled` (& [chrome://settings/system](): `Use hardware acceleration when available`)
->   - Compositing
->   - OpenGL
->   - Skia Renderer
->   - WebGL
->   - WebGL2
-> - [chrome://flags/#disable-accelerated-2d-canvas](): `Enabled`
->   - Canvas
-> - [chrome://flags/#enable-gpu-rasterization](): `Enabled` (`Default` could also work)
->   - Rasterization
-> - [chrome://flags/#disable-accelerated-video-decode](): `Enabled`
->   - Video Decode
+> ⚠️ __However there is always a chance that the browser will crash when a flag is enabled.__
+> 
+> In case this happens you can always launch Chrome without flags by creating a shortcut with `--no-experiments`. _(Set the shortcut target field to: `"...\chrome.exe" --no-experiments`)_
 
+Here is a list of the flags that may fix the values in [chrome://gpu]() if necessary:
+- [chrome://flags/#ignore-gpu-blocklist](): `Enabled` (& [chrome://settings/system](): `Use hardware acceleration when available`)
+  - Compositing
+  - OpenGL
+  - Skia Renderer
+  - WebGL
+  - WebGL2
+- [chrome://flags/#disable-accelerated-2d-canvas](): `Enabled`
+  - Canvas
+- [chrome://flags/#enable-gpu-rasterization](): `Enabled` (`Default` could also work)
+  - Rasterization
+- [chrome://flags/#disable-accelerated-video-decode](): `Enabled`
+  - Video Decode
+
+### Select the best graphics card backend
 When you have hardware acceleration enabled the browser has a range of graphics backends available that you can use. You want to enable the fastest graphics backend that runs stable on your device. So be aware that not all the backends might run correctly or at all on your graphics card.
-> In cause the browser is broken and cannot be opened anymore 
 1. Go to [chrome://flags/#use-angle]() and open the dropdown
 2. Enable every option in the following order from fastest to slowest: `D3D11on12 > D3D11 > D3D9 > OpenGL` And check if it works correctly by browsing a few webpages and playing some videos. If it does, this is the fastest usable backend for your graphics card.
 
@@ -92,25 +109,27 @@ When you have hardware acceleration enabled the browser has a range of graphics 
 ---
 
 ## Firefox
-How to make sure that your graphics card is used by Firefox:
+### Check graphics card availability
+1. How to make sure that your graphics card is used by Firefox:
 
-1. Go to [about:preferences]() _(The browser blocks `about:` links, you have to manually copy and paste this url in a new tab)_
-   - Scroll down to `Performance`
-   - Uncheck `Use recommended performance settings` and make sure that `Use hardware acceleration when available` is checked. 
+   1. Go to [about:preferences]() _(The browser blocks `about:` links, you have to manually copy and paste this url in a new tab)_
+   2. Scroll down to `Performance`
+   3. Uncheck `Use recommended performance settings` and make sure that `Use hardware acceleration when available` is checked. 
 
 > If `Use hardware acceleration when available` was already checked you can re-check `Use recommended performance settings`
 
-How to check that your graphics card is detected by Firefox:
-1. Go to [about:support#graphics-gpu-1-tbody]()
-2. Check the values:
-    - GPU #1 > Active: `Yes`
-    - GPU #1 > Description: `<the name of you graphics card>`
+2. How to check that your graphics card is detected by Firefox:
+    1. Go to [about:support#graphics-gpu-1-tbody]()
+    2. Check the values:
+        - GPU #1 > Active: `Yes`
+        - GPU #1 > Description: `<the name of you graphics card>`
 
-> If your graphics card is not detected: `Hardware acceleration` may not be enabled or you need to assign the browser to your graphics card from the graphics control panel of 
+If your graphics card is not detected: `Hardware acceleration` may not be enabled or you need to assign the browser to your graphics card from the graphics control panel of 
 [NVidia](https://nvidia.custhelp.com/app/answers/detail/a_id/5035/kw/preferred),
 [AMD & Intel switchable](https://www.amd.com/en/support/kb/faq/dh-017)
 or via the [Windows graphics settings](https://www.amd.com/en/support/kb/faq/gpu-110#faq-Customizing-Graphics-Performance-Preference-for-a-Desktop-App).
 
+### Check graphics card features
 How to check that your graphics card's features are used by Firefox:
 1. Go to [about:support#graphics]()  and check the values:
     - Compositing: `WebRender`
@@ -131,14 +150,26 @@ How to check that your graphics card's features are used by Firefox:
     - WEBRENDER_COMPOSITOR: `available`
     - VP9_HW_DECODE: `available` _(This is important because most youtube video's are served in the VP9 codec)_
 
-> If any of the values in step 2 and 3 are incorrect you can go to [about:config]() to turn the features on. Because every device is different you'll have to match the incorrect features to the correct configuration flags. But here are at least a few configuration flags that you can try out to get the correct values:
-> - gfx.webrender.all: `true`
-> - gfx.webrender.compositor: `true`
-> - gfx.webrender.compositor.force-enabled: `true`
-> - gfx.webrender.enabled: `true`
-> - gfx.webrender.force-angle: `true`
+If any of the values in step 2 and 3 are incorrect you can go to [about:config]() to turn the features on. Because every device is different you'll have to match the incorrect features to the correct configuration flags. But here are at least a few configuration flags that you can try out to get the correct values:
+- gfx.webrender.all: `true`
+- gfx.webrender.compositor: `true`
+- gfx.webrender.compositor.force-enabled: `true`
+- gfx.webrender.enabled: `true`
+- gfx.webrender.force-angle: `true`
 
 > More information about enabling hardware acceleration on Firefox can be found in the Mozilla wiki: https://wiki.mozilla.org/Blocklisting/Blocked_Graphics_Drivers#How_to_force-enable_blocked_graphics_features
+
+---
+
+# Known issues and solutions
+
+#### In Firefox the ambient light and video stutters when black bar detection is enabled
+Go to the url [about:config](), set `gfx.offscreencanvas.enabled` to `true` and refresh the YouTube website
+
+#### Video's in 4K and higher resolutions or 50/60fps are stuttering or dropping frames
+For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
+
+---
 
 # Request troubleshooting assistance or report a browser bug
 If the above steps did not work you can report bugs or ask for help via these links:
