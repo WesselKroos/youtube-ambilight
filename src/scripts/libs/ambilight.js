@@ -2205,10 +2205,6 @@ export default class Ambilight {
   }.bind(this), true)
 
   toggleDarkTheme() {
-    if(this.darkThemeValidationTimeout) {
-      clearTimeout(this.darkThemeValidationTimeout)
-    }
-
     const wasDark = !!html.getAttribute('dark')
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
@@ -2225,15 +2221,18 @@ export default class Ambilight {
       detail,
       returnValue: true
     })
-    this.ytdAppElem.dispatchEvent(event)
 
-    this.darkThemeValidationTimeout = setTimeout(function darkThemeValidation() {
-      this.darkThemeValidationTimeout = undefined
-      const isDark = !!html.getAttribute('dark')
-      if (wasDark !== isDark) return
-      
-      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
-    }.bind(this), 0)
+    try {
+      this.ytdAppElem.dispatchEvent(event)
+    } catch(ex) {
+      AmbilightSentry.captureExceptionWithDetails(ex)
+      return
+    }
+
+    const isDark = !!html.getAttribute('dark')
+    if (wasDark !== isDark) return
+    
+    AmbilightSentry.captureExceptionWithDetails(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
   updateLiveChatTheme() {
