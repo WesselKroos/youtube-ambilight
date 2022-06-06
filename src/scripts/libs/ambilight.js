@@ -2123,7 +2123,7 @@ export default class Ambilight {
     if(this.startRequest) return
 
     if(initial) {
-      this.startRequest = requestIdleCallback(this.startCallback, { timeout: 5000 })
+      this.startRequest = requestIdleCallback(this.startCallback, { timeout: 3000 })
     } else {
       this.startCallback()
     }
