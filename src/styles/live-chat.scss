@@ -49,7 +49,7 @@ yt-live-chat-item-list-renderer[allow-scroll] #item-scroller.yt-live-chat-item-l
   @include scrollbar-thin();
 }
 
-// Todo: Only style when upper frame has html[data-ambilight-enabled="true"]
+// Todo: Only style when upper frame has html[data-ambientlight-enabled="true"]
 html[dark] {
   yt-live-chat-item-list-renderer[allow-scroll] #item-scroller.yt-live-chat-item-list-renderer {
     @include scrollbar-dark();

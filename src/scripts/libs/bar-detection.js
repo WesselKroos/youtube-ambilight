@@ -1,5 +1,5 @@
 import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
-import AmbilightSentry from './ambilight-sentry'
+import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
 const workerCode = function () {
@@ -300,7 +300,7 @@ export default class BarDetection {
           return
         }
         if(e.data.error) {
-          AmbilightSentry.captureExceptionWithDetails(e.data.error)
+          SentryReporter.captureException(e.data.error)
         }
       }
     }

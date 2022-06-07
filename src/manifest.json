@@ -32,19 +32,19 @@
       "matches": ["https://www.youtube.com/*"],
       "exclude_matches": ["https://www.youtube.com/live_chat*"],
       "js": ["scripts/content.js"],
-      "css": ["styles/youtube-ambilight.css"]
+      "css": ["styles/content.css"]
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
       "css": [
-        "styles/youtube-ambilight-iframe-live-chat.css"
+        "styles/live-chat.css"
       ],
       "all_frames": true
     }
   ],
   "web_accessible_resources": [
     "styles/options.css",
-    "scripts/youtube-ambilight.js",
+    "scripts/injected.js",
     "images/noise-1.png",
     "images/noise-2.png",
     "images/noise-3.png"

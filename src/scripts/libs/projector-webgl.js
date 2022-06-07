@@ -1,4 +1,4 @@
-import AmbilightSentry, { AmbilightError } from './ambilight-sentry'
+import SentryReporter, { AmbientlightError } from './sentry-reporter'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
@@ -21,7 +21,7 @@ export default class ProjectorWebGL {
       this.initCtx()
     } catch(ex) {
       this.setWebGLWarning('create', false)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       this.ctx = undefined
       return
     }
@@ -134,7 +134,7 @@ export default class ProjectorWebGL {
     }
 
     this.blurCanvas = document.createElement('canvas')
-    this.blurCanvas.classList.add('ambilight__projector')
+    this.blurCanvas.classList.add('ambientlight__projector')
     this.containerElem.prepend(this.blurCanvas)
     this.boundaryElem = this.blurCanvas
     this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost)
@@ -156,7 +156,7 @@ export default class ProjectorWebGL {
     try {
       return await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
     }
   }
 
@@ -298,7 +298,7 @@ export default class ProjectorWebGL {
                 if(duplicate) errors[i].message = '"'
               }
 
-              throw new AmbilightError('ProjectorWebGL context creation failed', errors)
+              throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
             }
           }
         }
@@ -392,10 +392,10 @@ export default class ProjectorWebGL {
       }
 
       void main(void) {
-        vec4 ambilight = multiTexture(textureSampler, fUV);
+        vec4 ambientlight = multiTexture(textureSampler, fUV);
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
-        ambilight[3] = 1. - shadowAlpha;
-        gl_FragColor = ambilight;
+        ambientlight[3] = 1. - shadowAlpha;
+        gl_FragColor = ambientlight;
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);

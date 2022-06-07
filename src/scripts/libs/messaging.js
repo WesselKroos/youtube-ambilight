@@ -1,7 +1,7 @@
 import { appendErrorStack, wrapErrorHandler } from './generic'
 
 const origin = 'https://www.youtube.com'
-const extensionId = 'youtube-ambilight'
+const extensionId = 'youtube-ambientlight'
 
 const isSameWindowMessage = (event) => (
   event.source === window &&

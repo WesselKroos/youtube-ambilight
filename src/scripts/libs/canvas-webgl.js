@@ -1,4 +1,4 @@
-import AmbilightSentry, { AmbilightError } from './ambilight-sentry';
+import SentryReporter, { AmbientlightError } from './sentry-reporter';
 import { wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
@@ -88,7 +88,7 @@ export class WebGLContext {
       this.initCtx(options);
     } catch(ex) {
       this.setWebGLWarning('create', false)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       this.ctx = undefined
     }
   }
@@ -127,7 +127,7 @@ export class WebGLContext {
             if(duplicate) errors[i].message = '"'
           }
 
-          throw new AmbilightError('WebGLContext creation failed', errors)
+          throw new AmbientlightError('WebGLContext creation failed', errors)
         }
       }
     }

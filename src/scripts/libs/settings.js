@@ -1,5 +1,5 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
-import AmbilightSentry from './ambilight-sentry'
+import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
 
@@ -28,7 +28,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Quality',
-      name: 'sectionAmbilightQualityPerformanceCollapsed',
+      name: 'sectionQualityPerformanceCollapsed',
       default: true,
       advanced: false
     },
@@ -303,7 +303,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Filters',
-      name: 'sectionAmbilightImageAdjustmentCollapsed',
+      name: 'sectionImageAdjustmentCollapsed',
       default: true,
       advanced: true
     },
@@ -375,7 +375,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Ambient light',
-      name: 'sectionAmbilightCollapsed',
+      name: 'sectionAmbientlightCollapsed',
       default: false
     },
     {
@@ -492,9 +492,9 @@ export default class Settings {
     },
   ]
 
-  constructor(ambilight, menuBtnParent, menuElemParent) {
+  constructor(ambientlight, menuBtnParent, menuElemParent) {
     return (async () => {
-      this.ambilight = ambilight
+      this.ambientlight = ambientlight
       this.menuBtnParent = menuBtnParent
       this.menuElemParent = menuElemParent
 
@@ -505,12 +505,12 @@ export default class Settings {
         if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
           setting.default = 25
         }
-        if(setting.name === 'frameSync' && this.ambilight.videoHasRequestVideoFrameCallback) {
+        if(setting.name === 'frameSync' && this.ambientlight.videoHasRequestVideoFrameCallback) {
           setting.max = 2
           setting.default = 2
           setting.advanced = true
         }
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && this.ambilight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
+        if(setting.name === 'sectionQualityPerformanceCollapsed' && this.ambientlight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
           setting.advanced = true
         }
         return setting
@@ -539,7 +539,7 @@ export default class Settings {
           this.saveStorageEntry('enableInFullscreen', null)
         }
       } catch(ex) {
-        AmbilightSentry.captureExceptionWithDetails(ex)
+        SentryReporter.captureException(ex)
       }
 
       this.initMenu()
@@ -555,7 +555,7 @@ export default class Settings {
       this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment')
       if(this.webGLExperiment !== null) return
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       return
     }
 
@@ -569,7 +569,7 @@ export default class Settings {
     try {
       await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       return
     }
     if(!this.webGLExperiment) return
@@ -608,12 +608,12 @@ export default class Settings {
     }
     await this.flushPendingStorageEntries() // Complete migrations
 
-    html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
+    html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
   }
   
   initMenu() {
     this.menuBtn = document.createElement('button')
-    this.menuBtn.classList.add('ytp-button', 'ytp-ambilight-settings-button')
+    this.menuBtn.classList.add('ytp-button', 'ytp-ambientlight-settings-button')
     this.menuBtn.setAttribute('aria-owns', 'ytp-id-190')
     on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     this.menuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
@@ -621,7 +621,7 @@ export default class Settings {
     </svg>`
 
     const settingsMenuBtnTooltip = document.createElement('div')
-    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambilight-settings-button-tooltip')
+    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambientlight-settings-button-tooltip')
     settingsMenuBtnTooltip.setAttribute('aria-live', 'polite')
     const settingsMenuBtnTooltipTextWrapper = document.createElement('div')
     settingsMenuBtnTooltipTextWrapper.classList.add('ytp-tooltip-text-wrapper')
@@ -644,8 +644,8 @@ export default class Settings {
       ...([
         'ytp-popup', 
         'ytp-settings-menu', 
-        'ytpa-ambilight-settings-menu', 
-        (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : undefined
+        'ytpa-ambientlight-settings-menu', 
+        (this.advancedSettings) ? 'ytpa-ambientlight-settings-menu--advanced' : undefined
       ].filter(c => c))
     )
     this.menuElem.setAttribute('id', 'ytp-id-190')
@@ -929,7 +929,7 @@ export default class Settings {
           valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
-            this.ambilight.updateTheme()
+            this.ambientlight.updateTheme()
             return
           }
 
@@ -984,30 +984,30 @@ export default class Settings {
             setting.name === 'videoShadowOpacity' ||
             setting.name === 'videoScale'
           ) {
-            this.ambilight.updateStyles()
+            this.ambientlight.updateStyles()
           }
 
           if (
             (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambilight.barDetection.clear()
-            this.ambilight.scheduleBarSizeDetection()
+            this.ambientlight.barDetection.clear()
+            this.ambientlight.scheduleBarSizeDetection()
           }
 
           if (
             setting.name === 'spread' || 
             setting.name === 'edge'
           ) {
-            this.ambilight.canvassesInvalidated = true
+            this.ambientlight.canvassesInvalidated = true
           }
 
           if(['surroundingContentShadowSize', 'videoShadowSize'].some(name => name === setting.name)) {
             this.updateVisibility()
           }
 
-          this.ambilight.sizesChanged = true
-          this.ambilight.optionalFrame()
+          this.ambientlight.sizesChanged = true
+          this.ambientlight.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', (e) => {
@@ -1043,13 +1043,13 @@ export default class Settings {
           }
 
           if (setting.name === 'enabled') {
-            this.ambilight.toggleEnabled(value)
+            this.ambientlight.toggleEnabled(value)
           }
           if (setting.name === 'hideScrollbar') {
-            html.setAttribute('data-ambilight-hide-scrollbar', value)
+            html.setAttribute('data-ambientlight-hide-scrollbar', value)
           }
           if(setting.name === 'immersiveTheaterView') {
-            this.ambilight.updateImmersiveMode()
+            this.ambientlight.updateImmersiveMode()
           }
           
           if(['detectHorizontalBarSizeEnabled', 'detectVerticalBarSizeEnabled', 'frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
@@ -1069,8 +1069,8 @@ export default class Settings {
                 percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
               }
             } else {
-              this.ambilight.barDetection.clear()
-              this.ambilight.scheduleBarSizeDetection()
+              this.ambientlight.barDetection.clear()
+              this.ambientlight.scheduleBarSizeDetection()
             }
             if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
@@ -1079,9 +1079,9 @@ export default class Settings {
             this.displayBezel(setting.key, !value)
 
             if(this.enabled && this.webGL) {
-              this.ambilight.updateSizes()
+              this.ambientlight.updateSizes()
             }
-            this.ambilight.optionalFrame()
+            this.ambientlight.optionalFrame()
             return
           }
 
@@ -1105,23 +1105,23 @@ export default class Settings {
 
           if(setting.name === 'advancedSettings') {
             if(value) {
-              this.menuElem.classList.add('ytpa-ambilight-settings-menu--advanced')
+              this.menuElem.classList.add('ytpa-ambientlight-settings-menu--advanced')
             } else {
-              this.menuElem.classList.remove('ytpa-ambilight-settings-menu--advanced')
+              this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--advanced')
             }
           }
 
           if (setting.name === 'showFPS') {
             if(value) {
-              this.ambilight.updateStats()
+              this.ambientlight.updateStats()
             } else {
-              this.ambilight.hideStats()
+              this.ambientlight.hideStats()
             }
             return
           }
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
-            this.ambilight.updateStyles()
+            this.ambientlight.updateStyles()
             return
           }
 
@@ -1131,7 +1131,7 @@ export default class Settings {
               await this.flushPendingStorageEntries()
   
               const search = new URLSearchParams(location.search)
-              const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
+              const time = Math.max(0, Math.floor(this.ambientlight.videoElem?.currentTime || 0) - 2)
               time ? search.set('t', time) : search.delete('t')
               history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
               location.reload()
@@ -1139,8 +1139,8 @@ export default class Settings {
             return
           }
 
-          if(this.enabled) this.ambilight.updateSizes()
-          this.ambilight.optionalFrame()
+          if(this.enabled) this.ambientlight.updateSizes()
+          this.ambientlight.optionalFrame()
         })
       }
     }
@@ -1187,8 +1187,8 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', true)
 
-    if(this.ambilight.videoPlayerElem) {
-      this.ambilight.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
+    if(this.ambientlight.videoPlayerElem) {
+      this.ambientlight.videoPlayerElem.classList.add('ytp-ambientlight-settings-shown')
     }
 
     off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
@@ -1215,8 +1215,8 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', false)
 
-    if(this.ambilight.videoPlayerElem) {
-      this.ambilight.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
+    if(this.ambientlight.videoPlayerElem) {
+      this.ambientlight.videoPlayerElem.classList.remove('ytp-ambientlight-settings-shown')
     }
 
     off(body, 'click', this.onCloseMenuListener)
@@ -1255,14 +1255,14 @@ export default class Settings {
         'detectHorizontalBarSizeEnabled',
         'detectVerticalBarSizeEnabled'
       ],
-      visible: () => this.ambilight.getImageDataAllowed
+      visible: () => this.ambientlight.getImageDataAllowed
     },
     {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
         'detectHorizontalBarSizeOffsetPercentage'
       ],
-      visible: () => this.ambilight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
+      visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },
     {
       names: [ 'frameBlendingSmoothness' ],
@@ -1426,7 +1426,7 @@ export default class Settings {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
@@ -1465,7 +1465,7 @@ export default class Settings {
   }
 
   setWarning = (message, optional = false) => {
-    if(!this.menuElem || this.ambilight.isPageHidden) {
+    if(!this.menuElem || this.ambientlight.isPageHidden) {
       this.pendingWarning = () => this.setWarning(message, optional)
       return
     } else {

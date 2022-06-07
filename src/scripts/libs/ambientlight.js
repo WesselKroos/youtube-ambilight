@@ -1,5 +1,5 @@
 import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
+import SentryReporter, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
@@ -18,7 +18,7 @@ const THEME_DARK = 1
 
 const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 
-export default class Ambilight {
+export default class Ambientlight {
   barDetection = new BarDetection()
   innerStrength = 2
   lastUpdateSizesChanged = 0
@@ -44,9 +44,9 @@ export default class Ambilight {
   videoFrameRate = 0
   videoFrameRateMeasureStartTime = 0
   videoFrameRateMeasureStartFrame = 0
-  ambilightFrameCount = 0
-  ambilightFrameRate = 0
-  ambilightVideoDroppedFrameCount = 0
+  ambientlightFrameCount = 0
+  ambientlightFrameRate = 0
+  ambientlightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
 
@@ -55,7 +55,7 @@ export default class Ambilight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    return (async function ambilightConstructor() {
+    return (async function ambientlightConstructor() {
       this.ytdAppElem = ytdAppElem
       this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
       if(!this.mastheadElem) {
@@ -71,7 +71,7 @@ export default class Ambilight {
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
 
-      this.initAmbilightElems()
+      this.initAmbientlightElems()
       this.initBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
@@ -164,9 +164,9 @@ export default class Ambilight {
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
           wrapErrorHandler((entries, observer) => {
-            if(!window.ambilight) return
-            if(window.ambilight !== this) {
-              observer.disconnect() // Disconnect, because ambilight crashed on initialization and created a new instance
+            if(!window.ambientlight) return
+            if(window.ambientlight !== this) {
+              observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
               return
             }
 
@@ -189,28 +189,28 @@ export default class Ambilight {
       const videoElem = this.videoElem
       this.videoObserver.observe(videoElem)
       
-      if(videoElem.ambilightGetVideoPlaybackQuality) return
+      if(videoElem.ambientlightGetVideoPlaybackQuality) return
 
-      const ambilight = this
-      Object.defineProperty(videoElem, 'ambilightGetVideoPlaybackQuality', {
+      const ambientlight = this
+      Object.defineProperty(videoElem, 'ambientlightGetVideoPlaybackQuality', {
         value: videoElem.getVideoPlaybackQuality
       })
       this.previousDroppedVideoFrames = 0
       this.droppedVideoFramesCorrection = 0
       let previousGetVideoPlaybackQualityTime = performance.now()
       videoElem.getVideoPlaybackQuality = function() {
-        const original = videoElem.ambilightGetVideoPlaybackQuality()
+        const original = videoElem.ambientlightGetVideoPlaybackQuality()
         let droppedVideoFrames = original.droppedVideoFrames
-        if(droppedVideoFrames < ambilight.previousDroppedVideoFrames) {
-          ambilight.previousDroppedVideoFrames = 0
-          ambilight.droppedVideoFramesCorrection = 0
+        if(droppedVideoFrames < ambientlight.previousDroppedVideoFrames) {
+          ambientlight.previousDroppedVideoFrames = 0
+          ambientlight.droppedVideoFramesCorrection = 0
         }
         // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
-        if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
-          ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
+        if(ambientlight.videoIsHidden || (ambientlight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
+          ambientlight.droppedVideoFramesCorrection += (droppedVideoFrames - ambientlight.previousDroppedVideoFrames)
         }
-        ambilight.previousDroppedVideoFrames = droppedVideoFrames
-        droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
+        ambientlight.previousDroppedVideoFrames = droppedVideoFrames
+        droppedVideoFrames = Math.max(0, droppedVideoFrames - ambientlight.droppedVideoFramesCorrection)
         previousGetVideoPlaybackQualityTime = performance.now()
         return {
           corruptedVideoFrames: original.corruptedVideoFrames,
@@ -220,8 +220,8 @@ export default class Ambilight {
         }
       }
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambientlight initialization...')
+      SentryReporter.captureException(ex)
     }
   }
 
@@ -440,7 +440,7 @@ export default class Ambilight {
         
         const isVideoHiddenOnWatchPage = (
           classList.contains('ended-mode') || 
-          (classList.contains('unstarted-mode') && classList.contains('playing-mode') && !classList.contains('paused-mode'))  || // Autoplay disabled - Initial render without ambilight
+          (classList.contains('unstarted-mode') && classList.contains('playing-mode') && !classList.contains('paused-mode'))  || // Autoplay disabled - Initial render without ambientlight
           classList.contains('ytp-player-minimized')
         )
         if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
@@ -594,13 +594,13 @@ export default class Ambilight {
     this.settings.updateVisibility()
   }
 
-  initAmbilightElems() {
+  initAmbientlightElems() {
     this.elem = document.createElement('div')
-    this.elem.classList.add('ambilight')
+    this.elem.classList.add('ambientlight')
     body.prepend(this.elem)
 
     this.topElem = document.createElement('div')
-    this.topElem.classList.add('ambilight__top')
+    this.topElem.classList.add('ambientlight__top')
     body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
@@ -609,7 +609,7 @@ export default class Ambilight {
           this.atTop = (entry.intersectionRatio !== 0)
           this.updateAtTop()
 
-          // When the video is filled and paused in fullscreen the ambilight is out of sync with the video
+          // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
           if(this.isFillingFullscreen && !this.atTop) {
             this.buffersCleared = true
             this.optionalFrame()
@@ -623,29 +623,29 @@ export default class Ambilight {
     this.topElemObserver.observe(this.topElem)
 
     this.videoShadowElem = document.createElement('div')
-    this.videoShadowElem.classList.add('ambilight__video-shadow')
+    this.videoShadowElem.classList.add('ambientlight__video-shadow')
     this.elem.prepend(this.videoShadowElem)
 
     this.filterElem = document.createElement('div')
-    this.filterElem.classList.add('ambilight__filter')
+    this.filterElem.classList.add('ambientlight__filter')
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
       this.chromiumBug1123708WorkaroundElem = new Canvas(1, 1, true)
-      this.chromiumBug1123708WorkaroundElem.classList.add('ambilight__chromium-bug-1123708-workaround')
+      this.chromiumBug1123708WorkaroundElem.classList.add('ambientlight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }
   
     this.clipElem = document.createElement('div')
-    this.clipElem.classList.add('ambilight__clip')
+    this.clipElem.classList.add('ambientlight__clip')
     this.filterElem.prepend(this.clipElem)
 
     this.projectorsElem = document.createElement('div')
-    this.projectorsElem.classList.add('ambilight__projectors')
+    this.projectorsElem.classList.add('ambientlight__projectors')
     this.clipElem.prepend(this.projectorsElem)
     
     this.projectorListElem = document.createElement('div')
-    this.projectorListElem.classList.add('ambilight__projector-list')
+    this.projectorListElem.classList.add('ambientlight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
@@ -656,17 +656,17 @@ export default class Ambilight {
   }
 
   initProjectorListeners = () => {
-    // Dont draw ambilight when its not in viewport
-    this.isAmbilightHiddenOnWatchPage = false
-    if(this.ambilightObserver) {
-      this.ambilightObserver.disconnect()
+    // Dont draw ambientlight when its not in viewport
+    this.isAmbientlightHiddenOnWatchPage = false
+    if(this.ambientlightObserver) {
+      this.ambientlightObserver.disconnect()
     }
-    if(!this.ambilightObserver) {
-      this.ambilightObserver = new IntersectionObserver(
+    if(!this.ambientlightObserver) {
+      this.ambientlightObserver = new IntersectionObserver(
         wrapErrorHandler((entries, observer) => {
           for (const entry of entries) {
-            this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
-            if(this.isAmbilightHiddenOnWatchPage) continue
+            this.isAmbientlightHiddenOnWatchPage = (entry.intersectionRatio === 0)
+            if(this.isAmbientlightHiddenOnWatchPage) continue
             
             this.optionalFrame()
           }
@@ -676,12 +676,12 @@ export default class Ambilight {
         }
       )
     }
-    this.ambilightObserver.observe(this.projector.boundaryElem)
+    this.ambientlightObserver.observe(this.projector.boundaryElem)
   }
 
   initBuffers() {
     this.buffersWrapperElem = document.createElement('div')
-    this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
+    this.buffersWrapperElem.classList.add('ambientlight__buffers-wrapper')
 
     const projectorsBufferElem =  this.settings.webGL
       ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
@@ -708,50 +708,50 @@ export default class Ambilight {
     if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
 
     this.FPSListElem = document.createElement('div')
-    this.FPSListElem.classList.add('ambilight__fps-list')
+    this.FPSListElem.classList.add('ambientlight__fps-list')
 
     this.displayFPSElem = document.createElement('div')
-    this.displayFPSElem.classList.add('ambilight__display-fps')
+    this.displayFPSElem.classList.add('ambientlight__display-fps')
     const displayFPSElemNode = document.createTextNode('')
     this.displayFPSElem.appendChild(displayFPSElemNode)
     this.FPSListElem.append(this.displayFPSElem)
 
     this.videoFPSElem = document.createElement('div')
-    this.videoFPSElem.classList.add('ambilight__video-fps')
+    this.videoFPSElem.classList.add('ambientlight__video-fps')
     const videoFPSElemNode = document.createTextNode('')
     this.videoFPSElem.appendChild(videoFPSElemNode)
     this.FPSListElem.append(this.videoFPSElem)
 
     this.videoDroppedFramesElem = document.createElement('div')
-    this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
+    this.videoDroppedFramesElem.classList.add('ambientlight__video-dropped-frames')
     const videoDroppedFramesElemNode = document.createTextNode('')
     this.videoDroppedFramesElem.appendChild(videoDroppedFramesElemNode)
     this.FPSListElem.append(this.videoDroppedFramesElem)
 
     this.videoSyncedElem = document.createElement('div')
-    this.videoSyncedElem.classList.add('ambilight__video-synced')
+    this.videoSyncedElem.classList.add('ambientlight__video-synced')
     const videoSyncedElemNode = document.createTextNode('')
     this.videoSyncedElem.appendChild(videoSyncedElemNode)
     this.FPSListElem.append(this.videoSyncedElem)
 
-    this.ambilightFPSElem = document.createElement('div')
-    this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
-    const ambilightFPSElemNode = document.createTextNode('')
-    this.ambilightFPSElem.appendChild(ambilightFPSElemNode)
-    this.FPSListElem.append(this.ambilightFPSElem)
+    this.ambientlightFPSElem = document.createElement('div')
+    this.ambientlightFPSElem.classList.add('ambientlight__ambientlight-fps')
+    const ambientlightFPSElemNode = document.createTextNode('')
+    this.ambientlightFPSElem.appendChild(ambientlightFPSElemNode)
+    this.FPSListElem.append(this.ambientlightFPSElem)
 
-    this.ambilightDroppedFramesElem = document.createElement('div')
-    this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
-    const ambilightDroppedFramesElemNode = document.createTextNode('')
-    this.ambilightDroppedFramesElem.appendChild(ambilightDroppedFramesElemNode)
-    this.FPSListElem.append(this.ambilightDroppedFramesElem)
+    this.ambientlightDroppedFramesElem = document.createElement('div')
+    this.ambientlightDroppedFramesElem.classList.add('ambientlight__ambientlight-dropped-frames')
+    const ambientlightDroppedFramesElemNode = document.createTextNode('')
+    this.ambientlightDroppedFramesElem.appendChild(ambientlightDroppedFramesElemNode)
+    this.FPSListElem.append(this.ambientlightDroppedFramesElem)
 
     this.videoPlayerElem?.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
     const videoOverlayElem = new Canvas(1, 1)
-    videoOverlayElem.classList.add('ambilight__video-overlay')
+    videoOverlayElem.classList.add('ambientlight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
       ctx: videoOverlayElem.getContext('2d', {
@@ -1146,7 +1146,7 @@ export default class Ambilight {
       this.videoContainerElem.appendChild(videoOverlay.elem)
       } else {
         if(!this.videoContainerElemMissingThrown) {
-          AmbilightSentry.captureExceptionWithDetails(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
+          SentryReporter.captureException(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
           this.videoContainerElemMissingThrown = true
         }
         this.videoContainerElemMissingWarning = true
@@ -1196,7 +1196,7 @@ export default class Ambilight {
     // Images transparency
     const ImagesTransparency = this.settings.surroundingContentImagesTransparency
     const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''
-    document.body.style.setProperty('--ambilight-image-opacity', imageOpacity)
+    document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
 
 
     // Content shadow
@@ -1215,29 +1215,29 @@ export default class Ambilight {
         : `drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity * 2}))`
       )
       : ''
-    document.body.style.setProperty(`--ambilight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambilight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
     
     // Text and buttons only
-    document.body.style.setProperty(`--ambilight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
     const getTextShadow = (color) => (shadowSize && shadowOpacity) 
       ? `
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
       `
       : ''
-    document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
-    document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
+    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
 
     // Video shadow
     const videoShadowSize = parseFloat(this.settings.videoShadowSize, 10) / 2 + Math.pow(this.settings.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.settings.videoShadowOpacity / 100
     
-    document.body.style.setProperty('--ambilight-video-shadow-background', 
+    document.body.style.setProperty('--ambientlight-video-shadow-background', 
       (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
-    document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
+    document.body.style.setProperty('--ambientlight-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
@@ -1247,7 +1247,7 @@ export default class Ambilight {
 
 
     // Video scale
-    document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
+    document.body.style.setProperty('--ambientlight-html5-video-player-overflow', 
       (this.settings.videoScale > 100) ?  'visible' : '')
 
 
@@ -1256,11 +1256,11 @@ export default class Ambilight {
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
 
-    document.body.style.setProperty('--ambilight-debanding-content', 
+    document.body.style.setProperty('--ambientlight-debanding-content', 
       debandingStrength ? `''` : '')
-    document.body.style.setProperty('--ambilight-debanding-background', 
+    document.body.style.setProperty('--ambientlight-debanding-background', 
       debandingStrength ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')` : '')
-    document.body.style.setProperty('--ambilight-debanding-opacity', 
+    document.body.style.setProperty('--ambientlight-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
   }
 
@@ -1445,7 +1445,7 @@ export default class Ambilight {
     }
 
     this.detectDisplayFrameRate()
-    this.detectAmbilightFrameRate()
+    this.detectAmbientlightFrameRate()
     this.detectVideoFrameRate()
   }.bind(this))
 
@@ -1456,10 +1456,10 @@ export default class Ambilight {
       return
     }
 
-    const ambilightFrameCount = this.ambilightFrameCount
+    const ambientlightFrameCount = this.ambientlightFrameCount
     this.nextFrame()
     if(
-      this.ambilightFrameCount <= ambilightFrameCount
+      this.ambientlightFrameCount <= ambientlightFrameCount
     ) {
       return
     }
@@ -1476,7 +1476,7 @@ export default class Ambilight {
     this.videoElem.seeking ||
     // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
     this.isVideoHiddenOnWatchPage ||
-    this.isAmbilightHiddenOnWatchPage
+    this.isAmbientlightHiddenOnWatchPage
   ))
 
   optionalFrame = () => {
@@ -1507,7 +1507,7 @@ export default class Ambilight {
     let results = {}
     try {
       if(!this.settings.webGL || this.getImageDataAllowed) {
-        results = this.drawAmbilight() || {}
+        results = this.drawAmbientlight() || {}
       }
     } catch (ex) {
       if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
@@ -1638,25 +1638,25 @@ export default class Ambilight {
     }
   }
 
-  detectAmbilightFrameRate() {
-    if (this.ambilightFrameRateStartTime === undefined) {
-      this.ambilightFrameRateStartTime = 0
-      this.ambilightFrameRateStartCount = 0
+  detectAmbientlightFrameRate() {
+    if (this.ambientlightFrameRateStartTime === undefined) {
+      this.ambientlightFrameRateStartTime = 0
+      this.ambientlightFrameRateStartCount = 0
     }
 
     const time = performance.now()
-    if (this.ambilightFrameRateStartTime + 2000 < time) {
-      const count = this.ambilightFrameCount
-      if (this.ambilightFrameRateStartCount !== 0) {
-        this.ambilightFrameRate = Math.max(0, 
+    if (this.ambientlightFrameRateStartTime + 2000 < time) {
+      const count = this.ambientlightFrameCount
+      if (this.ambientlightFrameRateStartCount !== 0) {
+        this.ambientlightFrameRate = Math.max(0, 
           (
-            (count - this.ambilightFrameRateStartCount) / 
-            ((time - this.ambilightFrameRateStartTime) / 1000)
+            (count - this.ambientlightFrameRateStartCount) / 
+            ((time - this.ambientlightFrameRateStartTime) / 1000)
           )
         )
       }
-      this.ambilightFrameRateStartCount = count
-      this.ambilightFrameRateStartTime = time
+      this.ambientlightFrameRateStartCount = count
+      this.ambientlightFrameRateStartTime = time
     }
   }
 
@@ -1696,8 +1696,8 @@ export default class Ambilight {
     this.videoFPSElem.childNodes[0].nodeValue = ''
     this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
     this.videoSyncedElem.childNodes[0].nodeValue = ''
-    this.ambilightFPSElem.childNodes[0].nodeValue = ''
-    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ''
+    this.ambientlightFPSElem.childNodes[0].nodeValue = ''
+    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
     this.displayFPSElem.childNodes[0].nodeValue = ''
   }
 
@@ -1727,15 +1727,15 @@ export default class Ambilight {
       this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
     }
 
-    // Ambilight FPS
-    const ambilightFPSText = `AMBIENT LIGHT: ${this.ambilightFrameRate.toFixed(2)} ${this.ambilightFrameRate ? `(${(1000/this.ambilightFrameRate).toFixed(2)}ms)` : ''}`
-    const ambilightFPSColor = (this.ambilightFrameRate < this.videoFrameRate * .9)
+    // Ambientlight FPS
+    const ambientlightFPSText = `AMBIENT LIGHT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
+    const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
       ? '#f55'
-      : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+      : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
 
-    // Ambilight dropped frames
-    const ambilightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
-    const ambilightDroppedFramesColor = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+    // Ambientlight dropped frames
+    const ambientlightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
+    const ambientlightDroppedFramesColor = (this.ambientlightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Render all stats
     this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
@@ -1749,11 +1749,11 @@ export default class Ambilight {
     this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
     this.videoSyncedElem.style.color = videoSyncedColor
 
-    this.ambilightFPSElem.childNodes[0].nodeValue = ambilightFPSText
-    this.ambilightFPSElem.style.color = ambilightFPSColor
+    this.ambientlightFPSElem.childNodes[0].nodeValue = ambientlightFPSText
+    this.ambientlightFPSElem.style.color = ambientlightFPSColor
 
-    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ambilightDroppedFramesText
-    this.ambilightDroppedFramesElem.style.color = ambilightDroppedFramesColor
+    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ambientlightDroppedFramesText
+    this.ambientlightDroppedFramesElem.style.color = ambientlightDroppedFramesColor
   }
 
   shouldShow = () => (
@@ -1763,7 +1763,7 @@ export default class Ambilight {
     this.isInEnabledView()
   )
 
-  drawAmbilight() {
+  drawAmbientlight() {
     const shouldShow = this.shouldShow()
     if(!shouldShow) {
       if (!this.isHidden) this.hide()
@@ -1783,7 +1783,7 @@ export default class Ambilight {
         !this.settings.videoOverlayEnabled
       ) ||
       this.isVideoHiddenOnWatchPage || 
-      // this.isAmbilightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambilight element. So instead we handle this in the canScheduleNextFrame check
+      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1    // HAVE_METADATA
@@ -1816,7 +1816,7 @@ export default class Ambilight {
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (droppedFrames && !this.buffersCleared) {
-      this.ambilightVideoDroppedFrameCount += newVideoFrameCount - (this.videoFrameCount + 1)
+      this.ambientlightVideoDroppedFrameCount += newVideoFrameCount - (this.videoFrameCount + 1)
     }
     if (newVideoFrameCount > this.videoFrameCount || newVideoFrameCount < this.videoFrameCount - 60) {
       this.videoFrameCount = newVideoFrameCount
@@ -1830,12 +1830,12 @@ export default class Ambilight {
       (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
     )
 
-    const dontDrawAmbilight = (
+    const dontDrawAmbientlight = (
       this.atTop &&
       this.isFillingFullscreen
     )
 
-    const dontDrawBuffer = (dontDrawAmbilight && !detectBarSize)
+    const dontDrawBuffer = (dontDrawAmbientlight && !detectBarSize)
 
     if (this.settings.frameBlending && this.settings.frameBlendingSmoothness) {
       if (!this.previousProjectorBuffer) {
@@ -1845,7 +1845,7 @@ export default class Ambilight {
         this.initVideoOverlayWithFrameBlending()
       }
 
-      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambilightFrameRate
+      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambientlightFrameRate
       if(hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
@@ -1873,9 +1873,9 @@ export default class Ambilight {
         }
 
         let alpha =  1
-        const ambilightFrameDuration = 1000 / this.ambilightFrameRate
+        const ambientlightFrameDuration = 1000 / this.ambientlightFrameRate
         if(hasNewFrame) {
-          this.frameBlendingFrameTimeStart = drawTime - (ambilightFrameDuration / 2)
+          this.frameBlendingFrameTimeStart = drawTime - (ambientlightFrameDuration / 2)
         }
         if(this.displayFrameRate >= this.videoFrameRate * 1.33) {
           if(hasNewFrame && !this.previousDrawFullAlpha) {
@@ -1883,7 +1883,7 @@ export default class Ambilight {
           } else {
             const videoFrameDuration = 1000 / this.videoFrameRate
             const frameToDrawDuration = drawTime - this.frameBlendingFrameTimeStart
-            const frameToDrawDurationThresshold = (frameToDrawDuration + (ambilightFrameDuration / 2)) / (this.settings.frameBlendingSmoothness / 100)
+            const frameToDrawDurationThresshold = (frameToDrawDuration + (ambientlightFrameDuration / 2)) / (this.settings.frameBlendingSmoothness / 100)
             if (frameToDrawDurationThresshold < videoFrameDuration) {
               alpha = Math.min(1, (
                 frameToDrawDuration / (
@@ -1916,7 +1916,7 @@ export default class Ambilight {
           this.videoOverlay.ctx.globalAlpha = 1
         }
 
-        if (!dontDrawAmbilight) {
+        if (!dontDrawAmbientlight) {
           //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
           //this.previousProjectorBuffer can also contain an old frame
           
@@ -1949,21 +1949,21 @@ export default class Ambilight {
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-        if (!dontDrawAmbilight) {
+        if (!dontDrawAmbientlight) {
           this.projector.draw(this.projectorBuffer.elem)
         }
       }
     }
 
     this.buffersCleared = false
-    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) this.ambilightFrameCount++
+    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) this.ambientlightFrameCount++
     this.previousDrawTime = drawTime
     if(hasNewFrame) {
       this.previousFrameTime = drawTime
     }
 
     if(this.enableMozillaBug1606251Workaround) {
-      this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+      this.elem.style.transform = `translateZ(${this.ambientlightFrameCount % 10}px)`;
     }
     
     return { detectBarSize }
@@ -2020,20 +2020,20 @@ export default class Ambilight {
 
     if(!this.hideVideoOverlayCache) {
       this.hideVideoOverlayCache = {
-        prevAmbilightVideoDroppedFrameCount: this.ambilightVideoDroppedFrameCount,
+        prevAmbientlightVideoDroppedFrameCount: this.ambientlightVideoDroppedFrameCount,
         framesInfo: [],
         isHiddenChangeTimestamp: 0
       }
     }
 
     let {
-      prevAmbilightVideoDroppedFrameCount,
+      prevAmbientlightVideoDroppedFrameCount,
       framesInfo,
       isHiddenChangeTimestamp
     } = this.hideVideoOverlayCache
 
-    const newFramesDropped = Math.max(0, this.ambilightVideoDroppedFrameCount - prevAmbilightVideoDroppedFrameCount)
-    this.hideVideoOverlayCache.prevAmbilightVideoDroppedFrameCount = this.ambilightVideoDroppedFrameCount
+    const newFramesDropped = Math.max(0, this.ambientlightVideoDroppedFrameCount - prevAmbientlightVideoDroppedFrameCount)
+    this.hideVideoOverlayCache.prevAmbientlightVideoDroppedFrameCount = this.ambientlightVideoDroppedFrameCount
     framesInfo.push({
       time: performance.now(),
       framesDropped: newFramesDropped
@@ -2058,7 +2058,7 @@ export default class Ambilight {
 
     if (hide) {
       if (!this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.classList.add('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.add('ambientlight__video-overlay--hide')
         this.videoOverlay.isHidden = true
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2068,7 +2068,7 @@ export default class Ambilight {
       isHiddenChangeTimestamp + 2000 < performance.now()
     ) {
       if (this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.classList.remove('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.remove('ambientlight__video-overlay--hide')
         this.videoOverlay.isHidden = false
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2114,7 +2114,7 @@ export default class Ambilight {
     this.nextFrameTime = undefined
     this.videoFrameRateMeasureStartFrame = 0
     this.videoFrameRateMeasureStartTime = 0
-    this.ambilightVideoDroppedFrameCount = 0
+    this.ambientlightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
 
     this.checkGetImageDataAllowed()
@@ -2170,7 +2170,6 @@ export default class Ambilight {
     if (this.isHidden) return
     this.isHidden = true
 
-    this.elem.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
@@ -2179,8 +2178,10 @@ export default class Ambilight {
     this.clear()
     this.hideStats()
 
-    html.removeAttribute('data-ambilight-enabled')
-    html.removeAttribute('data-ambilight-immersive')
+    this.elem.style.opacity = 0.001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+    html.removeAttribute('data-ambientlight-enabled')
+    html.removeAttribute('data-ambientlight-immersive')
+
     this.immersiveTheater = false
     this.view = undefined
     this.updateTheme()
@@ -2191,7 +2192,8 @@ export default class Ambilight {
     this.isHidden = false
 
     this.elem.style.opacity = 1
-    html.setAttribute('data-ambilight-enabled', true)
+    html.setAttribute('data-ambientlight-enabled', true)
+
     this.updateTheme()
     this.updateView()
   }
@@ -2240,14 +2242,14 @@ export default class Ambilight {
     try {
       this.ytdAppElem.dispatchEvent(event)
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       return
     }
 
     const isDark = !!html.getAttribute('dark')
     if (wasDark !== isDark) return
     
-    AmbilightSentry.captureExceptionWithDetails(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
+    SentryReporter.captureException(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
   updateLiveChatTheme() {
@@ -2262,13 +2264,13 @@ export default class Ambilight {
 
   updateImmersiveMode() {
     this.immersiveTheater = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
-    const changed = (html.getAttribute('data-ambilight-immersive') === 'true') !== this.immersiveTheater
+    const changed = (html.getAttribute('data-ambientlight-immersive') === 'true') !== this.immersiveTheater
     if(!changed) return
 
     if(this.immersiveTheater) {
-      html.setAttribute('data-ambilight-immersive', this.immersiveTheater)
+      html.setAttribute('data-ambientlight-immersive', this.immersiveTheater)
     } else {
-      html.removeAttribute('data-ambilight-immersive')
+      html.removeAttribute('data-ambientlight-immersive')
     }
   }
 }

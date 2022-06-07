@@ -88,10 +88,10 @@ export const parseSettingsToSentry = (newSettings) => {
   settings = newSettings
 }
 
-export class AmbilightError extends Error {
+export class AmbientlightError extends Error {
   constructor(message, details) {
     super(message)
-    this.name = 'AmbilightError'
+    this.name = 'AmbientlightError'
     this.details = details
   }
 }
@@ -174,10 +174,10 @@ const initializeStorageEntries = (async () => {
 })()
 
 let sessionId;
-export default class AmbilightSentry {
+export default class SentryReporter {
   static script = window.yt ? 'injected' : 'content'
   static overflowProtection = 0
-  static async captureExceptionWithDetails(ex) {
+  static async captureException(ex) {
     try {
       if(!client || !hub) {
         initClient()
@@ -273,17 +273,17 @@ export default class AmbilightSentry {
 
       try {
         if(window.yt) {
-          const ambilightExtra = {
-            initialized: (typeof ambilight !== 'undefined')
+          const ambientlightExtra = {
+            initialized: (typeof ambientlight !== 'undefined')
           }
-          if (ambilightExtra.initialized) {
-            ambilightExtra.now = performance.now()
+          if (ambientlightExtra.initialized) {
+            ambientlightExtra.now = performance.now()
             const keys = [
-              'ambilightFrameCount',
+              'ambientlightFrameCount',
               'videoFrameCount',
-              'ambilightVideoDroppedFrameCount',
+              'ambientlightVideoDroppedFrameCount',
               'droppedVideoFramesCorrection',
-              'ambilightFrameRate',
+              'ambientlightFrameRate',
               'videoFrameRate',
               'displayFrameRate',
               'previousDrawTime',
@@ -304,7 +304,7 @@ export default class AmbilightSentry {
               'isHidden',
               'isPageHidden',
               'videoIsHidden',
-              'isAmbilightHiddenOnWatchPage',
+              'isAmbientlightHiddenOnWatchPage',
               'isVideoHiddenOnWatchPage',
               'isBuffering',
               'isVR',
@@ -337,16 +337,16 @@ export default class AmbilightSentry {
             ]
             keys.forEach(key => {
               try {
-                let value = ambilight
+                let value = ambientlight
                 key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
-                ambilightExtra[key] = value
+                ambientlightExtra[key] = value
               } catch (ex) {}
             })
           }
-          setExtra('Ambilight', ambilightExtra)
+          setExtra('Ambientlight', ambientlightExtra)
         }
       } catch (ex) {
-        setExtra('Ambilight (exception)', ex)
+        setExtra('Ambientlight (exception)', ex)
       }
 
       try {
@@ -504,15 +504,15 @@ export class ErrorEvents {
       return // Give the site 10 seconds to load the watch page or move the video element
     }
 
-    AmbilightSentry.captureExceptionWithDetails(
-      new AmbilightError('Closed or hid the page with pending errors', this.list)
+    SentryReporter.captureException(
+      new AmbientlightError('Closed or hid the page with pending errors', this.list)
     )
     this.list = []
   }
 
   add = (type, details = {}) => {
     if(!crashOptions?.technical) {
-      if(details['ambilight.videoElem']) details['ambilight.videoElem'] = undefined
+      if(details['ambientlight.videoElem']) details['ambientlight.videoElem'] = undefined
       if(details.tree) details.tree = undefined
     }
     const time = Math.round(performance.now()) / 1000

@@ -63,7 +63,7 @@ export const getFeedbackFormLink = (version) => {
 }
 
 const privacyPolicyLinks = {
-  Firefox: 'https://addons.mozilla.org/firefox/addon/youtube-ambilight/privacy/'
+  Firefox: 'https://addons.mozilla.org/firefox/addon/youtube-ambientlight/privacy/'
 }
 export const getPrivacyPolicyLink = () => {
   const browser = getBrowser()
