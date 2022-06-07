@@ -85,7 +85,7 @@ export default class Ambientlight {
 
       if (this.settings.enabled) {
         try {
-          this.enable(true)
+          await this.enable(true)
         } catch(ex) {
           console.warn('Failed to enable on launch', ex)
         }
@@ -558,10 +558,10 @@ export default class Ambientlight {
       this.toggleEnabled()
   }
 
-  toggleEnabled(enabled) {
+  async toggleEnabled(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.settings.enabled
     if (enabled) {
-      this.enable()
+      await this.enable()
     } else {
       this.disable()
     }
@@ -1470,7 +1470,7 @@ export default class Ambientlight {
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
     !this.isOnVideoPage ||
-    this.startRequest ||
+    this.pendingStart ||
     this.videoElem.ended ||
     this.videoElem.paused ||
     this.videoElem.seeking ||
@@ -1483,7 +1483,7 @@ export default class Ambientlight {
     if(
       !this.settings.enabled ||
       !this.isOnVideoPage ||
-      this.startRequest ||
+      this.pendingStart ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2076,10 +2076,10 @@ export default class Ambientlight {
     }
   }
 
-  enable(initial = false) {
+  async enable(initial = false) {
     if (!initial) this.settings.set('enabled', true, true)
     
-    this.start(initial)
+    await this.start(initial)
   }
 
   disable() {
@@ -2100,14 +2100,13 @@ export default class Ambientlight {
   }
 
   cancelStartRequest() {
-    if (!this.startRequest) return
+    if (!this.pendingStart) return
     
-    cancelIdleCallback(this.startRequest)
-    this.startRequest = undefined
+    this.pendingStart.cancel()
   }
 
-  start = (initial = false) => {
-    if (!this.isOnVideoPage || !this.settings.enabled) return
+  start = async (initial = false) => {
+    if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     this.showedCompareWarning = false
     this.showedDetectBarSizeWarning = false
@@ -2119,18 +2118,39 @@ export default class Ambientlight {
 
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
-    if(this.shouldShow()) this.show()
-    if(this.startRequest) return
 
     if(initial) {
-      this.startRequest = requestIdleCallback(this.startCallback, { timeout: 3000 })
+      this.pendingStart = {}
+      this.pendingStart.promise = new Promise((resolve, reject) => {
+        let ricId = requestIdleCallback(async () => {
+          ricId = undefined
+          try {
+            await this.startCallback()
+            resolve()
+          } catch(ex) {
+            reject(ex)
+          } finally {
+            this.pendingStart = undefined
+          }
+        }, { timeout: 3000 })
+        this.pendingStart.cancel = () => {
+          if(ricId) cancelIdleCallback(ricId)
+          this.pendingStart = undefined
+          reject()
+        }
+      })
+      try {
+        await this.pendingStart.promise
+      } catch(ex) {
+        if(ex) throw ex
+      }
     } else {
       this.startCallback()
     }
   }
 
-  startCallback = () => {
-      this.startRequest = undefined
+  startCallback = async () => {
+    if(this.shouldShow()) await this.show()
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
@@ -2178,24 +2198,41 @@ export default class Ambientlight {
     this.clear()
     this.hideStats()
 
-    this.elem.style.opacity = 0.001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+    this.elem.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-immersive')
+    html.removeAttribute('data-ambientlight-hide-scrollbar')
 
     this.immersiveTheater = false
     this.view = undefined
     this.updateTheme()
   }
 
-  show() {
+  async show() {
     if (!this.isHidden) return
     this.isHidden = false
 
-    this.elem.style.opacity = 1
+    // Pre-style to prevent black/white flashes
+    if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
+    html.style.setProperty('background', this.shouldbeDarkTheme() ? '#000' : '#fff', 'important')
+    
+    await new Promise((resolve, reject) => raf(() => {
+      try {
     html.setAttribute('data-ambientlight-enabled', true)
+        if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+        this.elem.style.opacity = 1
+
+        // Reset
+        if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
+        html.style.background = ''
 
     this.updateTheme()
     this.updateView()
+        resolve()
+      } catch(ex) {
+        reject(ex)
+      }
+    }))
   }
 
   updateAtTop = () => {

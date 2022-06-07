@@ -608,7 +608,7 @@ export default class Settings {
     }
     await this.flushPendingStorageEntries() // Complete migrations
 
-    html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
+    if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
   }
   
   initMenu() {
@@ -829,7 +829,7 @@ export default class Settings {
     this.menuElemParent.prepend(this.menuElem)
 
     this.bezelElem = document.createElement('div')
-    this.bezelElem.classList.add('yta-bezel', 'ytp-bezel')
+    this.bezelElem.classList.add('yta-bezel', 'ytp-bezel', 'yta-bezel--no-animation')
     this.bezelElem.setAttribute('role', 'status')
     this.bezelElem.innerHTML = `
       <div class="ytp-bezel-icon">
@@ -1045,10 +1045,10 @@ export default class Settings {
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
           }
-          if (setting.name === 'hideScrollbar') {
+          if (setting.name === 'hideScrollbar' && this.enabled) {
             html.setAttribute('data-ambientlight-hide-scrollbar', value)
           }
-          if(setting.name === 'immersiveTheaterView') {
+          if(setting.name === 'immersiveTheaterView' && this.enabled) {
             this.ambientlight.updateImmersiveMode()
           }
           
