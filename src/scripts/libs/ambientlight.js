@@ -942,9 +942,9 @@ export default class Ambientlight {
     if(enableInViews === 0) return true
 
     const enabled = {
-      VIEW_SMALL: enableInViews <= 2,
-      VIEW_THEATER: enableInViews >= 2 && enableInViews <= 4,
-      VIEW_FULLSCREEN: enableInViews >= 4
+      SMALL: enableInViews <= 2,
+      THEATER: enableInViews >= 2 && enableInViews <= 4,
+      FULLSCREEN: enableInViews >= 4
     }[this.view] || false
     return enabled
   }
@@ -2204,7 +2204,6 @@ export default class Ambientlight {
     html.removeAttribute('data-ambientlight-hide-scrollbar')
 
     this.immersiveTheater = false
-    this.view = undefined
     this.updateTheme()
   }
 
