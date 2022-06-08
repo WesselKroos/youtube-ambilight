@@ -361,43 +361,85 @@ export default class Ambientlight {
       }
     }
 
-    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false)
+    on(document, 'fullscreenchange', this.updateView, false)
 
     on(document, 'keydown', this.handleKeyDown)
 
-    this.bodyResizeObserver = new ResizeObserver(function bodyResize() {
+    const resizeToSmall = (pRect, rect) => (
+      Math.abs(rect.x - (pRect?.x || 0)) <= 2 &&
+      Math.abs(rect.y - (pRect?.y || 0)) <= 2 &&
+      Math.abs(rect.width - (pRect?.width || 0)) <= 2 &&
+      Math.abs(rect.height - (pRect?.height || 0)) <= 2
+    )
+    // Only triggers when the body width changes because the height is 0
+    let previousBodyRect;
+    this.bodyResizeObserver = new ResizeObserver(function bodyResize(e) {
       if(!this.settings.enabled || !this.isOnVideoPage) return
-      this.scheduleHandleVideoResize() // Because the video position could be shifted
+      
+      const rect = e[0].contentRect
+      if(resizeToSmall(previousBodyRect, rect)) return
+      
+      previousBodyRect = rect
+      this.resize(1) // Because the video position could be shifted
     }.bind(this))
     this.bodyResizeObserver.observe(document.body)
 
     // Makes sure the player size is recalculated after the scrollbar has been hidden
     // and the styles are recalculated.
     // YouTube does this incorrect by calculating it before the styles are recalculated.
-    this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize() {
-      if(!this.isOnVideoPage) return
-      try {
-      this.videoPlayerElem.setSize()
-      this.videoPlayerElem.setInternalSize()
-      } catch(ex) {
-        console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+    let previousVideoPlayerRect;
+    this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize(e) {
+      if(!this.settings.enabled || !this.isOnVideoPage) {
+        previousVideoPlayerRect = undefined
+        return
+      }
+
+      const rect = e[0].contentRect
+      if(resizeToSmall(previousVideoPlayerRect, rect)) return
+      
+      if(!this.isFullscreen) {
+        try {
+          this.videoPlayerElem.setSize()
+          this.videoPlayerElem.setInternalSize()
+        } catch(ex) {
+          console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+        }
       }
       if(!this.settings.enabled) return
-      
-      this.handleVideoResizeAfterRafs = true
-      this.scheduleHandleVideoResize()
+
+      previousVideoPlayerRect = rect
+      this.resize(this.videoPlayerResizeToFullscreen 
+        ? 2
+        : this.videoPlayerResizeFromFullscreen
+          ? 1
+          : 1
+      )
+      this.videoPlayerResizeFromFullscreen = false
+      this.videoPlayerResizeToFullscreen = false
     }.bind(this))
     this.videoPlayerResizeObserver.observe(this.videoPlayerElem)
     
     // // Deprecated: Moved to videoPlayerResizeObserver
     // this.videoContainerResizeObserver = new ResizeObserver(function videoContainerResize() {
-    //   this.scheduleHandleVideoResize()
+    //   this.resize()
     // }.bind(this))
     // this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
-    this.videoResizeObserver = new ResizeObserver(function videoResize() {
-      if(!this.settings.enabled || !this.isOnVideoPage) return
-      this.scheduleHandleVideoResize()
+    let previousVideoRect;
+    this.videoResizeObserver = new ResizeObserver(function videoResize(e) {
+      if(!this.settings.enabled || !this.isOnVideoPage) {
+        previousVideoRect = undefined
+        return
+      }
+
+      const rect = e[0].contentRect
+      if(resizeToSmall(previousVideoRect, rect)) {
+        return
+      }
+      
+      previousVideoRect = rect
+      this.resize()
     }.bind(this))
     this.videoResizeObserver.observe(this.videoElem)
 
@@ -462,34 +504,46 @@ export default class Ambientlight {
       })
   }
 
-  handleVideoResizeAfterRafs = false
-  scheduleHandleVideoResize = wrapErrorHandler(() => {
-    if (!this.settings.enabled || !this.isOnVideoPage || this.startRequest) return
-    if (this.videoResizeHandled) return
+  delayResizes = true
+  resizeDurationThreshold = 300
+  resizeDurations = [this.resizeDurationThreshold, this.resizeDurationThreshold, this.resizeDurationThreshold, this.resizeDurationThreshold]
 
-    if (!this.handleVideoResizeAfterRafs) this.handleVideoResize()
+  resizeAfterFrames = 0
+  resize = wrapErrorHandler((afterFrames = 0) => {
+    if (!this.settings.enabled || !this.isOnVideoPage || this.pendingStart) {
+      this.resizeAfterFrames = 0
+      if(this.scheduledResize) cancelAnimationFrame(this.scheduledResize)
+      this.scheduledResize = undefined
+      return
+    }
+    if(this.scheduledResize) return
+
+    this.resizeAfterFrames = this.delayResizes ? Math.max(this.resizeAfterFrames, afterFrames) : 0
+    if (this.resizeAfterFrames === 0) {
+      this.sizesInvalidated = true
+      const start = performance.now()
+      this.optionalFrame()
+      this.measureResizeDuration(start)
+    }
 
     // Do not resize untill the next animation frame
-    this.videoResizeHandled = raf(() => {
-      if(!this.handleVideoResizeAfterRafs) {
-        this.videoResizeHandled = null
-        return
-      }
+    this.scheduledResize = raf(() => {
+      this.scheduledResize = undefined
+      if(this.resizeAfterFrames === 0) return
 
-      // Unless the player sizes has been recalculated in the videoPlayerResizeObserver
-      this.videoResizeHandled = raf(() => {
-        this.handleVideoResize()
-        this.videoResizeHandled = null
-        this.handleVideoResizeAfterRafs = false
-      })
+      this.resizeAfterFrames--
+      this.resize()
     })
   })
 
-  handleVideoResize = () => {
-    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
-
-    this.sizesInvalidated = true
-    this.optionalFrame()
+  measureResizeDuration(start) {
+    requestIdleCallback(() => {
+      const duration = Math.min(1000, performance.now() - start)
+      this.resizeDurations.push(duration)
+      if(this.resizeDurations.length > 4) this.resizeDurations.splice(0, 1)
+      const averageDuration = this.resizeDurations.reduce((a, b) => a + b) / this.resizeDurations.length
+      this.delayResizes = averageDuration >= this.resizeDurationThreshold
+    }, { timeout: 1000 })
   }
 
   handleDocumentVisibilityChange = () => {
@@ -900,14 +954,8 @@ export default class Ambientlight {
     this.settings.set('videoScale', videoScale, true)
   }
 
-  get isFullscreen() {
-    return document.fullscreen && this._isFullscreen
-  }
-  set isFullscreen(value) {
-    this._isFullscreen = value
-  }
-
-  updateView() {
+  updateView = () => {
+    this.scheduleUpdateView = undefined
     const wasView = this.view
     if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
@@ -927,7 +975,29 @@ export default class Ambientlight {
     }
     if(wasView === this.view) return
 
-    this.isFullscreen = (this.view == VIEW_FULLSCREEN)
+    const isFullscreen = (this.view == VIEW_FULLSCREEN)
+    const fullscreenChanged = isFullscreen !== this.isFullscreen
+    this.isFullscreen = isFullscreen
+    
+    if(fullscreenChanged && this.settings.enabled && this.isOnVideoPage) {
+      this.videoPlayerResizeFromFullscreen = !this.isFullscreen
+      this.videoPlayerResizeToFullscreen = this.isFullscreen
+    }
+
+    if(this.isFullscreen) {
+      if(this.elem.parentElement !== this.ytdAppElem) {
+        this.ytdAppElem.prepend(this.elem)
+        this.ytdAppElem.prepend(this.topElem)
+        this.clear() // donnu, this.hide() vs this.clear() is better because it does not move the scrollbar
+      }
+    } else {
+      if(this.elem.parentElement !== body) {
+        body.prepend(this.elem)
+        body.prepend(this.topElem)
+        this.clear() // donnu, this.hide() vs this.clear() is better because it does not move the scrollbar
+      }
+    }
+    
     this.updateImmersiveMode()
 
     // Todo: Set the settings for the specific view
@@ -950,7 +1020,7 @@ export default class Ambientlight {
   }
 
   updateSizes() {
-    // console.log('===== updateSizes. changed:', this.sizesChanged)
+    // console.log('--> updateSizes')
     if(this.settings.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
     }
@@ -977,18 +1047,6 @@ export default class Ambientlight {
     if (notVisible) {
       this.hide()
       return false
-    }
-    
-    if(this.isFullscreen) {
-      if(this.elem.parentElement !== this.ytdAppElem) {
-        this.ytdAppElem.prepend(this.elem)
-        this.ytdAppElem.prepend(this.topElem)
-      }
-    } else {
-      if(this.elem.parentElement !== body) {
-        body.prepend(this.elem)
-        body.prepend(this.topElem)
-      }
     }
 
     this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
@@ -1323,11 +1381,20 @@ export default class Ambientlight {
     this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
+  updatedSizesChanged = false
   updateSizesChanged(checkPosition) {
-    // console.log('updateSizesChanged', this.sizesInvalidated)
+    if(this.updatedSizesChanged) {
+      return
+    }
+
     this.sizesChanged = this.sizesChanged || this.getSizesChanged(checkPosition)
     this.lastUpdateSizesChanged = performance.now()
     this.sizesInvalidated = false
+
+    this.updatedSizesChanged = true
+    raf(() => {
+      this.updatedSizesChanged = false
+    })
   }
 
   getSizesChanged(checkPosition = true) {
@@ -1484,6 +1551,7 @@ export default class Ambientlight {
       !this.settings.enabled ||
       !this.isOnVideoPage ||
       this.pendingStart ||
+      this.resizeAfterFrames > 0 ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
@@ -2094,7 +2162,7 @@ export default class Ambientlight {
     }
     
     if((this.settings.hideScrollbar && !this.isFullscreen) || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
-    this.updateSizes()
+      this.updateSizes()
     else
       this.hide()
   }
@@ -2217,7 +2285,7 @@ export default class Ambientlight {
     
     await new Promise((resolve, reject) => raf(() => {
       try {
-    html.setAttribute('data-ambientlight-enabled', true)
+        html.setAttribute('data-ambientlight-enabled', true)
         if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
         this.elem.style.opacity = 1
 
@@ -2225,8 +2293,8 @@ export default class Ambientlight {
         if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
         html.style.background = ''
 
-    this.updateTheme()
-    this.updateView()
+        this.updateTheme()
+        this.updateView()
         resolve()
       } catch(ex) {
         reject(ex)

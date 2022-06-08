@@ -1046,7 +1046,10 @@ export default class Settings {
             this.ambientlight.toggleEnabled(value)
           }
           if (setting.name === 'hideScrollbar' && this.enabled) {
-            html.setAttribute('data-ambientlight-hide-scrollbar', value)
+            if(value)
+              html.setAttribute('data-ambientlight-hide-scrollbar', true)
+            else
+              html.removeAttribute('data-ambientlight-hide-scrollbar')
           }
           if(setting.name === 'immersiveTheaterView' && this.enabled) {
             this.ambientlight.updateImmersiveMode()
