@@ -376,8 +376,8 @@ export default class BarDetection {
               appendErrorStack(stack, e.data.error)
               throw e.data.error
             }
-            callback(e.data.horizontalPercentage, e.data.verticalPercentage)
             if(e.data.horizontalPercentage !== undefined || e.data.verticalPercentage !== undefined) {
+              callback(e.data.horizontalPercentage, e.data.verticalPercentage)
               this.lastChange = performance.now()
             }
             resolve()

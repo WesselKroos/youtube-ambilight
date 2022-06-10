@@ -877,14 +877,14 @@ export default class Ambientlight {
   setHorizontalBars(percentage) {
     if(this.settings.horizontalBarsClipPercentage === percentage) return false
 
-      this.settings.set('horizontalBarsClipPercentage', percentage, true)
+    this.settings.set('horizontalBarsClipPercentage', percentage, true)
     return true
   }
 
   setVerticalBars(percentage) {
     if(this.settings.verticalBarsClipPercentage === percentage) return false
 
-      this.settings.set('verticalBarsClipPercentage', percentage, true)
+    this.settings.set('verticalBarsClipPercentage', percentage, true)
     return true
   }
 
@@ -988,17 +988,15 @@ export default class Ambientlight {
       if(this.elem.parentElement !== this.ytdAppElem) {
         this.ytdAppElem.prepend(this.elem)
         this.ytdAppElem.prepend(this.topElem)
-        this.clear() // donnu, this.hide() vs this.clear() is better because it does not move the scrollbar
+        // this.clear() // dunno, this.hide() vs this.clear() is better because it does not move the scrollbar
       }
     } else {
       if(this.elem.parentElement !== body) {
         body.prepend(this.elem)
         body.prepend(this.topElem)
-        this.clear() // donnu, this.hide() vs this.clear() is better because it does not move the scrollbar
+        // this.clear() // dunno, this.hide() vs this.clear() is better because it does not move the scrollbar
       }
     }
-    
-    this.updateImmersiveMode()
 
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
@@ -1026,6 +1024,7 @@ export default class Ambientlight {
     }
 
     this.updateView()
+    this.updateImmersiveMode()
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
     const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
@@ -2192,13 +2191,12 @@ export default class Ambientlight {
       this.pendingStart.promise = new Promise((resolve, reject) => {
         let ricId = requestIdleCallback(async () => {
           ricId = undefined
+          this.pendingStart = undefined
           try {
             await this.startCallback()
             resolve()
           } catch(ex) {
             reject(ex)
-          } finally {
-            this.pendingStart = undefined
           }
         }, { timeout: 3000 })
         this.pendingStart.cancel = () => {
@@ -2295,6 +2293,7 @@ export default class Ambientlight {
 
         this.updateTheme()
         this.updateView()
+        this.updateImmersiveMode()
         resolve()
       } catch(ex) {
         reject(ex)
@@ -2372,7 +2371,7 @@ export default class Ambientlight {
     if(!changed) return
 
     if(this.immersiveTheater) {
-      html.setAttribute('data-ambientlight-immersive', this.immersiveTheater)
+      html.setAttribute('data-ambientlight-immersive', true)
     } else {
       html.removeAttribute('data-ambientlight-immersive')
     }
