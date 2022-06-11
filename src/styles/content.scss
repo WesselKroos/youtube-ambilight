@@ -439,9 +439,7 @@ html[data-ambientlight-enabled="true"] {
     user-select: none;
     top: 0;
     left: 0;
-    opacity: 0;
     contain: strict;
-    //transition: opacity .15s;
   }
 
   .ambientlight__clip {

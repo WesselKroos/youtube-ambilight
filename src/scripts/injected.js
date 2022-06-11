@@ -245,7 +245,7 @@ const onLoad = () => requestIdleCallback(async function onLoadIdleCallback() {
   if(window.ambientlight) return
 
   await loadAmbientlight()
-}, { timeout: 5000 })
+}, { timeout: 4000 })
 
 try {
   if(document.readyState === 'complete') {

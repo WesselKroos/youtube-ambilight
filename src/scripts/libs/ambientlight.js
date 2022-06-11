@@ -2198,7 +2198,7 @@ export default class Ambientlight {
           } catch(ex) {
             reject(ex)
           }
-        }, { timeout: 3000 })
+        }, { timeout: 1000 })
         this.pendingStart.cancel = () => {
           if(ricId) cancelIdleCallback(ricId)
           this.pendingStart = undefined
@@ -2264,7 +2264,6 @@ export default class Ambientlight {
     this.clear()
     this.hideStats()
 
-    this.elem.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-immersive')
     html.removeAttribute('data-ambientlight-hide-scrollbar')
@@ -2285,7 +2284,6 @@ export default class Ambientlight {
       try {
         html.setAttribute('data-ambientlight-enabled', true)
         if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
-        this.elem.style.opacity = 1
 
         // Reset
         if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
