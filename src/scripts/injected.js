@@ -1,4 +1,4 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
+import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -241,11 +241,11 @@ const loadAmbientlight = async () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(async function onLoadIdleCallback() {
+const onLoad = () => requestIdleCallback(() => raf(async function onLoadIdleCallback() {
   if(window.ambientlight) return
 
   await loadAmbientlight()
-}, { timeout: 4000 })
+}), { timeout: 4000 })
 
 try {
   if(document.readyState === 'complete') {

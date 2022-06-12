@@ -1,4 +1,4 @@
-import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
+import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -2146,6 +2146,7 @@ export default class Ambientlight {
   }
 
   async enable(initial = false) {
+    if (initial) await new Promise(resolve => raf(resolve))
     if (!initial) this.settings.set('enabled', true, true)
     
     await this.start(initial)
@@ -2187,33 +2188,36 @@ export default class Ambientlight {
 
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
+    
+    if(!initial) {
+      await this.startCallback()
+      return
+    }
 
-    if(initial) {
-      this.pendingStart = {}
-      this.pendingStart.promise = new Promise((resolve, reject) => {
-        let ricId = requestIdleCallback(async () => {
-          ricId = undefined
-          this.pendingStart = undefined
-          try {
-            await this.startCallback()
-            resolve()
-          } catch(ex) {
-            reject(ex)
-          }
-        }, { timeout: 1000 })
-        this.pendingStart.cancel = () => {
-          if(ricId) cancelIdleCallback(ricId)
-          this.pendingStart = undefined
-          reject()
+    this.pendingStart = {}
+    const stack = new Error().stack
+    this.pendingStart.promise = new Promise((resolve, reject) => {
+      let ricId = requestIdleCallback(async () => {
+        ricId = undefined
+        this.pendingStart = undefined
+        try {
+          await this.startCallback()
+          resolve()
+        } catch(ex) {
+          appendErrorStack(stack, ex)
+          reject(ex)
         }
-      })
-      try {
-        await this.pendingStart.promise
-      } catch(ex) {
-        if(ex) throw ex
+      }, { timeout: 1000 })
+      this.pendingStart.cancel = () => {
+        if(ricId) cancelIdleCallback(ricId)
+        this.pendingStart = undefined
+        reject()
       }
-    } else {
-      this.startCallback()
+    })
+    try {
+      await this.pendingStart.promise
+    } catch(ex) {
+      if(ex) throw ex
     }
   }
 
@@ -2282,6 +2286,7 @@ export default class Ambientlight {
     if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
     html.style.setProperty('background', this.shouldbeDarkTheme() ? '#000' : '#fff', 'important')
     
+    const stack = new Error().stack
     await new Promise((resolve, reject) => raf(() => {
       try {
         html.setAttribute('data-ambientlight-enabled', true)
@@ -2296,6 +2301,7 @@ export default class Ambientlight {
         this.updateImmersiveMode()
         resolve()
       } catch(ex) {
+        appendErrorStack(stack, ex)
         reject(ex)
       }
     }))
