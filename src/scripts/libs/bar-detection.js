@@ -135,7 +135,7 @@ const workerCode = function () {
       }
 
       let closestSizes = sizes
-      while(closestSizes.length > 6) {
+      while(closestSizes.length > 7) {
         averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
         closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
       }

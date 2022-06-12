@@ -362,7 +362,7 @@ export default class Ambientlight {
     }
 
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false)
-    on(document, 'fullscreenchange', this.updateView, false)
+    on(document, 'fullscreenchange', function fullscreenchange() { this.updateView() }.bind(this), false)
 
     on(document, 'keydown', this.handleKeyDown)
 
@@ -973,7 +973,7 @@ export default class Ambientlight {
     } else {
       this.view = VIEW_DETACHED
     }
-    if(wasView === this.view) return
+    if(wasView === this.view) return false
 
     const isFullscreen = (this.view == VIEW_FULLSCREEN)
     const fullscreenChanged = isFullscreen !== this.isFullscreen
@@ -1003,6 +1003,8 @@ export default class Ambientlight {
     //   console.log('VIEW CHANGED: ', this.view)
     //   this.getAllSettings()
     // }
+
+    return true
   }
 
   isInEnabledView = () => {
@@ -1023,8 +1025,8 @@ export default class Ambientlight {
       this.detectVideoFillScale()
     }
 
-    this.updateView()
-    this.updateImmersiveMode()
+    const changed = this.updateView()
+    if(changed) this.updateImmersiveMode()
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
     const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
