@@ -362,7 +362,10 @@ export default class Ambientlight {
     }
 
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false)
-    on(document, 'fullscreenchange', function fullscreenchange() { this.updateView() }.bind(this), false)
+    on(document, 'fullscreenchange', function fullscreenchange() {
+      const changed = this.updateView()
+      if(changed) this.updateImmersiveMode()
+    }.bind(this), false)
 
     on(document, 'keydown', this.handleKeyDown)
 
