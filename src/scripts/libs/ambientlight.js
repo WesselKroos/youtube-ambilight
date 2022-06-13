@@ -369,7 +369,7 @@ export default class Ambientlight {
 
     on(document, 'keydown', this.handleKeyDown)
 
-    const resizeToSmall = (pRect, rect) => (
+    const resizeTooSmall = (pRect, rect) => (
       Math.abs(rect.x - (pRect?.x || 0)) <= 2 &&
       Math.abs(rect.y - (pRect?.y || 0)) <= 2 &&
       Math.abs(rect.width - (pRect?.width || 0)) <= 2 &&
@@ -381,7 +381,7 @@ export default class Ambientlight {
       if(!this.settings.enabled || !this.isOnVideoPage) return
       
       const rect = e[0].contentRect
-      if(resizeToSmall(previousBodyRect, rect)) return
+      if(resizeTooSmall(previousBodyRect, rect)) return
       
       previousBodyRect = rect
       this.resize(1) // Because the video position could be shifted
@@ -399,7 +399,7 @@ export default class Ambientlight {
       }
 
       const rect = e[0].contentRect
-      if(resizeToSmall(previousVideoPlayerRect, rect)) return
+      if(resizeTooSmall(previousVideoPlayerRect, rect)) return
       
       if(!this.isFullscreen) {
         try {
@@ -437,7 +437,7 @@ export default class Ambientlight {
       }
 
       const rect = e[0].contentRect
-      if(resizeToSmall(previousVideoRect, rect)) {
+      if(resizeTooSmall(previousVideoRect, rect)) {
         return
       }
       
