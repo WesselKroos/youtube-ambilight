@@ -468,6 +468,22 @@ export default class Ambientlight {
         this.updateLiveChatTheme()
       }
     }, undefined, undefined, true)
+    
+    let themeCorrections = 0
+    this.themeObserver = new MutationObserver(wrapErrorHandler((a) => {
+      const isDark = !!html.getAttribute('dark')
+      const toDark = this.shouldBeDarkTheme()
+      if(isDark === toDark) return
+      
+      themeCorrections++
+      this.toggleDarkTheme()
+      if(themeCorrections === 5) this.themeObserver.disconnect()
+    }))
+    this.themeObserver.observe(html, {
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ['dark']
+    })
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
@@ -2295,7 +2311,7 @@ export default class Ambientlight {
 
     // Pre-style to prevent black/white flashes
     if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
-    html.style.setProperty('background', this.shouldbeDarkTheme() ? '#000' : '#fff', 'important')
+    html.style.setProperty('background', this.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
     
     const stack = new Error().stack
     await new Promise((resolve, reject) => raf(() => {
@@ -2326,13 +2342,13 @@ export default class Ambientlight {
     }
   }
   
-  shouldbeDarkTheme = () => {
+  shouldBeDarkTheme = () => {
     const toTheme = ((!this.settings.enabled || this.isHidden || this.settings.theme === THEME_DEFAULT) ? this.originalTheme : this.settings.theme)
     return (toTheme === THEME_DARK)
   }
 
   updateTheme = wrapErrorHandler(function updateTheme() {
-    const toDark = this.shouldbeDarkTheme()
+    const toDark = this.shouldBeDarkTheme()
     if (
       !!html.getAttribute('dark') === toDark ||
       (toDark && !isWatchPageUrl())
@@ -2351,7 +2367,7 @@ export default class Ambientlight {
       returnValue: []
     }
     const event = new CustomEvent('yt-action', {
-      currentTarget: document.querySelector('ytd-app'),
+      currentTarget: this.ytdAppElem,
       bubbles: true,
       cancelable: false,
       composed: true,
@@ -2376,7 +2392,7 @@ export default class Ambientlight {
     const liveChat = document.querySelector('ytd-live-chat-frame')
     if (!liveChat) return
 
-    const toDark = this.shouldbeDarkTheme()
+    const toDark = this.shouldBeDarkTheme()
     liveChat.postToContentWindow({
       'yt-live-chat-set-dark-theme': toDark
     })
