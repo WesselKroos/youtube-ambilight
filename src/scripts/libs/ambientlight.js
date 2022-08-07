@@ -5,6 +5,7 @@ import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_V
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
+import { contentScript } from './messaging'
 
 const VIEW_DETACHED = 'DETACHED'
 const VIEW_SMALL = 'SMALL'
@@ -2357,8 +2358,23 @@ export default class Ambientlight {
     this.toggleDarkTheme()
   }.bind(this), true)
 
-  toggleDarkTheme() {
+  async toggleDarkTheme() {
     const wasDark = !!html.getAttribute('dark')
+    const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+    if(lastFailedThemeToggle) {
+      const now = new Date().getTime()
+      const withinThresshold = now - 10000 < lastFailedThemeToggle
+      if(withinThresshold) {
+        this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${wasDark ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.`)
+        return
+      }
+      contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
+    }
+    
+    try {
+      yt.config_.EXPERIMENT_FLAGS.kevlar_refresh_on_theme_change = false // Prevents the video page from refreshing every time
+    } catch { }
+    
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
@@ -2385,6 +2401,7 @@ export default class Ambientlight {
     const isDark = !!html.getAttribute('dark')
     if (wasDark !== isDark) return
     
+    contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
     SentryReporter.captureException(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
