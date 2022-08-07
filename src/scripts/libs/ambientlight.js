@@ -87,7 +87,7 @@ export default class Ambientlight {
         try {
           await this.enable(true)
         } catch(ex) {
-          console.warn('Failed to enable on launch', ex)
+          console.warn('Ambient light for YouTube™ | Failed to enable on launch', ex)
         }
       }
       
@@ -102,7 +102,7 @@ export default class Ambientlight {
   get ytdWatchFlexyElem() {
     if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = this.videoElem?.closest('ytd-watch-flexy, .ytd-page-manager')
     return this._ytdWatchFlexyElem
-    }
+  }
 
   initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
@@ -479,18 +479,10 @@ export default class Ambientlight {
       })
       this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
 
-      const videoPlayerObserver = new MutationObserver(wrapErrorHandler((mutationsList) => {
-        const mutation = mutationsList[0]
-        const classList = mutation.target.classList
-        
-        const isVideoHiddenOnWatchPage = (
-          classList.contains('ended-mode') || 
-          (classList.contains('unstarted-mode') && classList.contains('playing-mode') && !classList.contains('paused-mode'))  || // Autoplay disabled - Initial render without ambientlight
-          classList.contains('ytp-player-minimized')
-        )
-        if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
+      const videoPlayerObserver = new MutationObserver(wrapErrorHandler(() => {
+        const changed = this.updateIsVideoHiddenOnWatchPage()
+        if(!changed) return
 
-        this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
         if(!this.isVideoHiddenOnWatchPage) {
           this.optionalFrame()
           return
@@ -505,6 +497,21 @@ export default class Ambientlight {
         attributeOldValue: true,
         attributeFilter: ['class']
       })
+
+      this.updateIsVideoHiddenOnWatchPage()
+  }
+
+  updateIsVideoHiddenOnWatchPage = () => {
+    const classList = this.videoPlayerElem.classList;
+    const hidden = (
+      classList.contains('ended-mode') || 
+      classList.contains('unstarted-mode') || // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
+      classList.contains('ytp-player-minimized')
+    )
+    if(this.isVideoHiddenOnWatchPage === hidden) return false
+
+    this.isVideoHiddenOnWatchPage = hidden
+    return true
   }
 
   delayResizes = true
@@ -2225,6 +2232,7 @@ export default class Ambientlight {
   }
 
   startCallback = async () => {
+    this.updateView()
     if(this.shouldShow()) await this.show()
 
     // Prevent incorrect stats from showing
