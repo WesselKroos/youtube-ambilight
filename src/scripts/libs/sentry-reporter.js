@@ -50,22 +50,20 @@ const entryToString = (entry) => {
 export const getSelectorTreeString = (selector) => {
   const trees = [...$.sa(selector)]
     .map(elem => getNodeTree(elem))
-  let documentTree;
+
+  const documentTrees = []
   trees.forEach(nodeTree => {
+    let documentTree;
     let previousEntry;
     nodeTree.forEach(node => {
-      if(!documentTree) {
-        documentTree = createNodeEntry(node, 0)
+      if(!previousEntry) {
+        documentTree = documentTrees.find(dt => dt.node === node)
+        if(!documentTree) {
+          documentTree = createNodeEntry(node, 0)
+          documentTrees.push(documentTree)
+        }
         previousEntry = documentTree
         return
-      }
-      if(!previousEntry) {
-        if(documentTree.node === node) {
-          previousEntry = documentTree
-          return
-        } else {
-          throw new Error('Cannot create tree of nodes that are not in the same document.')
-        }
       }
 
       const existingEntry = previousEntry.children.find(entry => entry.node === node)
@@ -80,7 +78,12 @@ export const getSelectorTreeString = (selector) => {
     })
   })
 
-  return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
+  return documentTrees
+    .map(documentTree => documentTree 
+      ? entryToString(documentTree) 
+      : `No nodes found for selector: '${selector}'`
+    )
+    .join('\n')
 }
 
 let settings;
