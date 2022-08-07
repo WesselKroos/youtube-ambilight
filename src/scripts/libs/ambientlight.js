@@ -2402,7 +2402,7 @@ export default class Ambientlight {
     if (wasDark !== isDark) return
     
     contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
-    SentryReporter.captureException(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
+    console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
   updateLiveChatTheme() {
