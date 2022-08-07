@@ -77,6 +77,7 @@ export default class Ambientlight {
       this.initBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
+      this.initLiveChat()
 
       this.initStyles()
       this.updateStyles()
@@ -2410,22 +2411,59 @@ export default class Ambientlight {
     console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
-  updateLiveChatTheme() {
-    const liveChat = document.querySelector('ytd-live-chat-frame')
-    if (!liveChat) return
+  initLiveChat = () => {
+    this.initLiveChatSecondaryElem()
+    if(this.secondaryInnerElem) return
 
-    if (this.liveChat !== liveChat) {
-      const iframe = liveChat.querySelector('iframe')
-      if (iframe) {
-        iframe.addEventListener('load', () => {
-          this.updateLiveChatTheme()
-        })
-      }
-      this.liveChat = liveChat
-    }
+    const observer = new MutationObserver(wrapErrorHandler(() => {
+      this.initLiveChatSecondaryElem()
+      if(!this.secondaryInnerElem) return
+
+      observer.disconnect()
+    }))
+    this.observer.observe(this.ytdAppElem, {
+      childList: true,
+      subtree: true
+    })
+  }
+  
+  initLiveChatSecondaryElem = () => {
+    this.secondaryInnerElem = document.querySelector('#secondary-inner')
+    if(!this.secondaryInnerElem) return
+
+    this.initLiveChatElem()
+    const observer = new MutationObserver(wrapErrorHandler(this.initLiveChatElem))
+    observer.observe(this.secondaryInnerElem, {
+      childList: true
+    })
+  }
+
+  initLiveChatElem = () => {
+    const liveChat = this.secondaryInnerElem.querySelector('ytd-live-chat-frame')
+    if(!liveChat || this.liveChat === liveChat) return
+    
+    this.liveChat = liveChat
+    this.initLiveChatIframe()
+    const observer = new MutationObserver(wrapErrorHandler(this.initLiveChatIframe))
+    observer.observe(liveChat, {
+      childList: true
+    })
+  }
+
+  initLiveChatIframe = () => {
+    const iframe = this.liveChat.querySelector('iframe')
+    if(!iframe || this.liveChatIframe === iframe) return
+
+    this.liveChatIframe = iframe
+    this.updateLiveChatTheme()
+    iframe.addEventListener('load', this.updateLiveChatTheme)
+  }
+
+  updateLiveChatTheme = () => {
+    if (!this.liveChat || !this.liveChatIframe) return
 
     const toDark = this.shouldBeDarkTheme()
-    liveChat.postToContentWindow({
+    this.liveChat.postToContentWindow({
       'yt-live-chat-set-dark-theme': toDark
     })
   }
