@@ -2414,6 +2414,16 @@ export default class Ambientlight {
     const liveChat = document.querySelector('ytd-live-chat-frame')
     if (!liveChat) return
 
+    if (this.liveChat !== liveChat) {
+      const iframe = liveChat.querySelector('iframe')
+      if (iframe) {
+        iframe.addEventListener('load', () => {
+          this.updateLiveChatTheme()
+        })
+      }
+      this.liveChat = liveChat
+    }
+
     const toDark = this.shouldBeDarkTheme()
     liveChat.postToContentWindow({
       'yt-live-chat-set-dark-theme': toDark
