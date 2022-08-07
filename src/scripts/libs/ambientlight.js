@@ -38,6 +38,7 @@ export default class Ambientlight {
   isFullscreen = false
   isFillingFullscreen = false
   isVR = false
+  isHdr = false
 
   lastUpdateStatsTime = 0
   videoFrameCount = 0
@@ -660,10 +661,8 @@ export default class Ambientlight {
       
       try {
         const currentTime = this.videoElem.currentTime
-        const player = document.querySelector('#movie_player')
-        
         this.videoElem.crossOrigin = 'use-credentials'
-        player.loadVideoById(player.getVideoData().video_id) // Refreshes auto quality setting range above 480p
+        this.videoPlayerElem.loadVideoById(this.videoPlayerElem.getVideoData().video_id) // Refreshes auto quality setting range above 480p
         this.videoElem.currentTime = currentTime
       } catch(ex) {
         console.warn(`Ambient light for YouTube™ | Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
@@ -899,6 +898,7 @@ export default class Ambientlight {
       }
     }
     this.prevVideoPath = videoPath
+    this.settings.updateHdr()
   }
 
   setHorizontalBars(percentage) {
@@ -1151,9 +1151,9 @@ export default class Ambientlight {
       this.videoShadowElem.style.display = ''
     }
 
-    const contrast = this.settings.contrast
-    const brightness = this.settings.brightness
-    const saturation = this.settings.saturation
+    const contrast = this.settings.contrast + (this.isHdr ? this.settings.hdrContrast - 100 : 0)
+    const brightness = this.settings.brightness + (this.isHdr ? this.settings.hdrBrightness - 100 : 0)
+    const saturation = this.settings.saturation + (this.isHdr ? this.settings.hdrSaturation - 100 : 0)
     this.filterElem.style.filter = `
       ${(!this.settings.webGL && blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
@@ -2213,6 +2213,11 @@ export default class Ambientlight {
     this.ambientlightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
 
+    try {
+      this.isHdr = this.videoPlayerElem.getVideoData().isHdr
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
+    }
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
     

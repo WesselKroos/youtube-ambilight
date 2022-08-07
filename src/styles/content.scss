@@ -1340,6 +1340,20 @@ html[data-ambientlight-enabled="true"] {
     display: none;
   }
 }
+.ytpa-ambientlight-settings-menu:not(.ytpa-ambientlight-settings-menu--hdr) {
+  .ytpa-section--hdr {
+    display: none !important;
+  }
+  .ytpa-menuitem--hdr {
+    &,
+    + .ytp-menuitem-range {
+      display: none !important;
+      + .setting-range-datalist {
+        display: none !important;
+      }
+    }
+  }
+}
 
 
 /* injected.js Ambientlight.updateStyles variables */

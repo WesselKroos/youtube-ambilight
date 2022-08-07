@@ -339,6 +339,47 @@ export default class Settings {
     },
     {
       type: 'section',
+      label: 'HDR Filters',
+      name: 'sectionHdrImageAdjustmentCollapsed',
+      default: false,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrBrightness',
+      label: 'Brightness',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrContrast',
+      label: 'Contrast',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrSaturation',
+      label: 'Saturation',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
+    },
+    {
+      type: 'section',
       label: 'Directions',
       name: 'sectionDirectionsCollapsed',
       default: true,
@@ -681,6 +722,7 @@ export default class Settings {
       this.config.map(setting => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
+        if(setting.hdr) classes += ' ytpa-menuitem--hdr'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
         
@@ -765,7 +807,7 @@ export default class Settings {
         } else if (setting.type === 'section') {
           return `
             <div 
-              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" 
+              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}" 
               data-name="${setting.name}">
               <div class="ytpa-section__cell">
                 <div class="ytpa-section__label">${label}</div>
@@ -1485,6 +1527,14 @@ export default class Settings {
     if(!message) return
 
     this.scrollToWarning()
+  }
+
+  updateHdr() {
+    if(this.ambientlight.isHdr) {
+      this.menuElem.classList.add('ytpa-ambientlight-settings-menu--hdr')
+    } else {
+      this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--hdr')
+    }
   }
 
   scrollToWarning() {
