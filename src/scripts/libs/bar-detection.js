@@ -343,7 +343,8 @@ export default class BarDetection {
 
         this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
       }
-      canvasInfo = this.worker.isFallbackWorker ? {
+      canvasInfo = this.worker.isFallbackWorker 
+        ? {
           canvas: this.canvas,
           ctx: this.ctx
         }

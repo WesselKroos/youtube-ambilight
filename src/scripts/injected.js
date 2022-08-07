@@ -184,7 +184,7 @@ const loadAmbientlight = async () => {
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(function getAppElems(elem) {
-        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP')
       })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
