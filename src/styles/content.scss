@@ -1386,64 +1386,28 @@ html[data-ambientlight-enabled="true"] {
       filter: var(--ambientlight-filter-shadow) !important;
     }
   }
-  ytd-app #top > #container > *,
-  ytd-app #primary-inner > *:not(#player),
-  ytd-app #secondary,
-  #watch7-main,
-  #player-playlist .watch-playlist {
-    filter: var(--ambientlight-filter-shadow-inverted) !important;
-    text-shadow: var(--ambientlight-text-shadow-inverted) !important;
-  }
-  &[dark="true"] {
-    // All shadows
+  
+  @mixin filter-and-text-shadow-selectors {
     ytd-app #top > #container > *,
     ytd-app #primary-inner > *:not(#player),
     ytd-app #secondary,
     #watch7-main,
     #player-playlist .watch-playlist {
+      @content;
+    }
+  }
+
+  &:not([dark="true"]) {
+    @include filter-and-text-shadow-selectors {
+      filter: var(--ambientlight-filter-shadow-inverted) !important;
+      text-shadow: var(--ambientlight-text-shadow-inverted) !important;
+    }
+  }
+
+  &[dark="true"] {
+    @include filter-and-text-shadow-selectors {
       filter: var(--ambientlight-filter-shadow) !important;
       text-shadow: var(--ambientlight-text-shadow) !important;
-    }
-
-    > body[style*="--ambientlight-text-shadow:"] {
-      // Buttons & icons shadows
-      ytd-app #primary-inner > *:not(#player),
-      ytd-app #secondary {
-        $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
-        $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
-        $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
-
-        #{$info} ytd-toggle-button-renderer,
-        #{$info} ytd-button-renderer,
-        #{$info} yt-icon.ytd-menu-renderer,
-
-        #{$chapters-header} yt-icon,
-        #{$chapters-header} #title-container,
-
-        #{$playlist-header} h3,
-        #{$playlist-header} ytd-badge-supported-renderer,
-        #{$playlist-header} .publisher,
-        #{$playlist-header} .index-message-wrapper,
-        #{$playlist-header} yt-icon-button,
-        ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
-
-        #subscribe-button,
-        #action, // Ad button: More info
-        #action-button, // Ad button: Visite website
-        ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
-        paper-toggle-button.ytd-compact-autoplay-renderer,
-        #chatframe,
-        paper-menu-button {
-          filter: var(--ambientlight-button-shadow) !important;
-          text-shadow: none !important;
-        }
-
-        $chapters-content: '#content.ytd-engagement-panel-section-list-renderer';
-
-        #{$chapters-content} #sync-button {
-          text-shadow: none !important;
-        }
-      }
     }
   }
 
@@ -1474,6 +1438,65 @@ html[data-ambientlight-enabled="true"] {
       padding-left: 10px !important;
       padding-top: 10px !important;
       padding-right: 10px !important;
+    }
+
+    // Chapters
+    ytd-app #primary-inner > *:not(#player),
+    ytd-app #secondary {
+      $chapters-content: '#content.ytd-engagement-panel-section-list-renderer';
+      #{$chapters-content} #sync-button {
+        text-shadow: none !important;
+      }
+    }
+  }
+
+  @mixin filter-shadow-selectors {
+    > body[style*="--ambientlight-text-shadow:"] {
+      // Buttons & icons shadows
+      ytd-app #primary-inner > *:not(#player),
+      ytd-app #secondary {
+        $info: 'ytd-menu-renderer.ytd-video-primary-info-renderer';
+        $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
+        $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
+
+        #{$info} ytd-toggle-button-renderer,
+        #{$info} ytd-button-renderer,
+        #{$info} yt-icon.ytd-menu-renderer,
+
+        #{$chapters-header} yt-icon,
+        #{$chapters-header} #title-container,
+
+        #{$playlist-header} h3,
+        #{$playlist-header} ytd-badge-supported-renderer,
+        #{$playlist-header} .publisher,
+        #{$playlist-header} .index-message-wrapper,
+        #{$playlist-header} yt-icon-button,
+        ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
+
+        #subscribe-button,
+        #action, // Ad button: More info
+        #action-button, // Ad button: Visite website
+        ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
+        paper-toggle-button.ytd-compact-autoplay-renderer,
+        #chatframe,
+        paper-menu-button,
+        yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button {
+          @content;
+          text-shadow: none !important;
+        }
+      }
+    }
+  }
+  
+  &:not([dark="true"]) {
+    @include filter-shadow-selectors {
+      filter: var(--ambientlight-button-shadow-inverted) !important;
+    }
+  }
+  
+  &[dark="true"] {
+    @include filter-shadow-selectors {
+      filter: var(--ambientlight-button-shadow) !important;
     }
   }
 
