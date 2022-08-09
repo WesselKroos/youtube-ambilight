@@ -491,12 +491,10 @@ export default class Ambientlight {
     
     let themeCorrections = 0
     this.themeObserver = new MutationObserver(wrapErrorHandler((a) => {
-      const isDark = !!html.getAttribute('dark')
-      const toDark = this.shouldBeDarkTheme()
-      if(isDark === toDark) return
+      if(!this.shouldToggleTheme()) return
       
       themeCorrections++
-      this.toggleDarkTheme()
+      this.updateTheme()
       if(themeCorrections === 5) this.themeObserver.disconnect()
     }))
     this.themeObserver.observe(html, {
@@ -2391,18 +2389,17 @@ export default class Ambientlight {
     return (toTheme === THEME_DARK)
   }
 
-  updateTheme = wrapErrorHandler(async function updateTheme() {
+  shouldToggleTheme = () => {
     const toDark = this.shouldBeDarkTheme()
-    if (
+    return !(
       !!html.getAttribute('dark') === toDark ||
       (toDark && !isWatchPageUrl())
-    ) return
+    )
+  }
 
-    await this.toggleDarkTheme()
-  }.bind(this), true)
-
-  async toggleDarkTheme() {
-    const wasDark = !!html.getAttribute('dark')
+  updateTheme = wrapErrorHandler(async function updateTheme() {
+    if (!this.shouldToggleTheme()) return
+    
     const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
     if(lastFailedThemeToggle) {
       const now = new Date().getTime()
@@ -2413,6 +2410,14 @@ export default class Ambientlight {
       }
       contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
     }
+
+    if (!this.shouldToggleTheme()) return
+
+    await this.toggleDarkTheme()
+  }.bind(this), true)
+
+  async toggleDarkTheme() {
+    const wasDark = !!html.getAttribute('dark')
     
     try {
       yt.config_.EXPERIMENT_FLAGS.kevlar_refresh_on_theme_change = false // Prevents the video page from refreshing every time
