@@ -1044,7 +1044,7 @@ export default class Ambientlight {
     }
     if(wasView === this.view) return false
 
-    this.updateImmersiveMode()
+    const videoPlayerSizeUpdated = this.updateImmersiveMode()
 
     const isFullscreen = (this.view == VIEW_FULLSCREEN)
     const fullscreenChanged = isFullscreen !== this.isFullscreen
@@ -1073,11 +1073,7 @@ export default class Ambientlight {
     //   this.getAllSettings()
     // }
 
-    // if(!this.isFullscreen && (this.settings.immersiveTheaterView || this.settings.hideScrollbar)) {
-    //   await new Promise(resolve => raf(resolve))
-    //   this.updateVideoPlayerSize()
-    //   this.sizesInvalidated = true
-    // }
+    if(!videoPlayerSizeUpdated) raf(() => this.updateVideoPlayerSize()) // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
 
     return true
   }
@@ -2509,7 +2505,7 @@ export default class Ambientlight {
   updateImmersiveMode() {
     this.immersiveTheater = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
     const changed = (html.getAttribute('data-ambientlight-immersive') === 'true') !== this.immersiveTheater
-    if(!changed) return
+    if(!changed) return false
 
     if(this.immersiveTheater) {
       html.setAttribute('data-ambientlight-immersive', true)
@@ -2518,5 +2514,6 @@ export default class Ambientlight {
     }
 
     raf(() => this.updateVideoPlayerSize()) // Because it is incorrect when transitioning from immersive theater to small
+    return true
   }
 }
