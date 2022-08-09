@@ -2351,10 +2351,11 @@ export default class Ambientlight {
     if (!this.isHidden) return
     this.isHidden = false
 
-    await this.updateTheme()
-    // Pre-style to prevent black/white flashes
-    if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
-    html.style.setProperty('background', this.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
+    await this.updateTheme(() => {
+      // Pre-style to prevent black/white flashes
+      if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
+      html.style.setProperty('background', this.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
+    })
     
     const stack = new Error().stack
     await new Promise((resolve, reject) => raf(() => {
@@ -2397,8 +2398,8 @@ export default class Ambientlight {
     )
   }
 
-  updateTheme = wrapErrorHandler(async function updateTheme() {
-    if (!this.shouldToggleTheme()) return
+  updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
+    if (!this.shouldToggleTheme()) return beforeToggleCallback()
     
     const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
     if(lastFailedThemeToggle) {
@@ -2406,17 +2407,18 @@ export default class Ambientlight {
       const withinThresshold = now - 10000 < lastFailedThemeToggle
       if(withinThresshold) {
         this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${wasDark ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.`)
-        return
+        return beforeToggleCallback()
       }
       contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
     }
 
-    if (!this.shouldToggleTheme()) return
+    if (!this.shouldToggleTheme()) return beforeToggleCallback()
 
-    await this.toggleDarkTheme()
+    beforeToggleCallback()
+    this.toggleDarkTheme()
   }.bind(this), true)
 
-  async toggleDarkTheme() {
+  toggleDarkTheme() {
     const wasDark = !!html.getAttribute('dark')
     
     try {
