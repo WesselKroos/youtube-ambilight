@@ -2,9 +2,9 @@ import { getFeedbackFormLink, getVersion } from './libs/utils'
 import { setErrorHandler, wrapErrorHandler } from './libs/generic'
 import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
-import AmbilightSentry, { setCrashOptions, setVersion } from './libs/ambilight-sentry'
+import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-reporter'
 
-setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+setErrorHandler((ex) => SentryReporter.captureException(ex))
 
 ;(wrapErrorHandler(async function loadContentScript() {
   const version = getVersion()
@@ -15,7 +15,7 @@ setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
     crashOptions = await storage.get('crashOptions') || defaultCrashOptions
     setCrashOptions(crashOptions)
   } catch(ex) {
-    AmbilightSentry.captureExceptionWithDetails(ex)
+    SentryReporter.captureException(ex)
   }
 
   storage.addListener(function storageListener(changes) {
@@ -57,7 +57,7 @@ setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
 
   const s = document.createElement('script')
   s.defer = true
-  s.src = chrome.runtime.getURL('scripts/youtube-ambilight.js')
+  s.src = chrome.runtime.getURL('scripts/injected.js')
   s.setAttribute('data-crash-options', JSON.stringify(crashOptions))
   s.setAttribute('data-version', version)
   s.setAttribute('data-feedback-form-link', getFeedbackFormLink())
@@ -67,7 +67,7 @@ setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
     s.parentNode.removeChild(s)
   }.bind(this))
   s.onerror = function injectScriptOnError(ex) {
-    AmbilightSentry.captureExceptionWithDetails(ex)
+    SentryReporter.captureException(ex)
   }.bind(this)
   document.body.appendChild(s)
 }))()

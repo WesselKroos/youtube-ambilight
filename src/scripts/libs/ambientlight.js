@@ -1,16 +1,18 @@
-import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl } from './generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './ambilight-sentry'
+import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
+import SentryReporter, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
+import { contentScript } from './messaging'
 
-const VIEW_DETACHED = 'VIEW_DETACHED'
-const VIEW_SMALL = 'VIEW_SMALL'
-const VIEW_THEATER = 'VIEW_THEATER'
-const VIEW_FULLSCREEN = 'VIEW_FULLSCREEN'
-const VIEW_POPUP = 'VIEW_POPUP'
+const VIEW_DISABLED = 'DISABLED'
+const VIEW_DETACHED = 'DETACHED'
+const VIEW_SMALL = 'SMALL'
+const VIEW_THEATER = 'THEATER'
+const VIEW_FULLSCREEN = 'FULLSCREEN'
+const VIEW_POPUP = 'POPUP'
 
 const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
@@ -18,10 +20,10 @@ const THEME_DARK = 1
 
 const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
 
-export default class Ambilight {
+export default class Ambientlight {
   barDetection = new BarDetection()
   innerStrength = 2
-  lastCheckVideoSizeTime = 0
+  lastUpdateSizesChanged = 0
 
   videoOffset = {}
   srcVideoOffset = {}
@@ -33,10 +35,13 @@ export default class Ambilight {
 
   atTop = true
   p = null
-  view = -1
+  view = undefined
+  immersiveTheater = false
   isFullscreen = false
   isFillingFullscreen = false
+  isVideoHiddenOnWatchPage = false
   isVR = false
+  isHdr = false
 
   lastUpdateStatsTime = 0
   videoFrameCount = 0
@@ -44,9 +49,9 @@ export default class Ambilight {
   videoFrameRate = 0
   videoFrameRateMeasureStartTime = 0
   videoFrameRateMeasureStartFrame = 0
-  ambilightFrameCount = 0
-  ambilightFrameRate = 0
-  ambilightVideoDroppedFrameCount = 0
+  ambientlightFrameCount = 0
+  ambientlightFrameRate = 0
+  ambientlightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
 
@@ -55,7 +60,7 @@ export default class Ambilight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    return (async function ambilightConstructor() {
+    return (async function ambientlightConstructor() {
       this.ytdAppElem = ytdAppElem
       this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
       if(!this.mastheadElem) {
@@ -71,44 +76,54 @@ export default class Ambilight {
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
 
-      this.initAmbilightElems()
+      this.initAmbientlightElems()
       this.initBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
+      this.initLiveChat()
 
       this.initStyles()
       this.updateStyles()
 
-      this.updateImmersiveMode()
       this.checkGetImageDataAllowed()
-
       this.initListeners()
 
-      setTimeout(function setTimeout() {
-        if (!this.settings.enabled) return
-
-        this.enable(true)
-      }.bind(this), 0)
+      if (this.settings.enabled) {
+        try {
+          await this.enable(true)
+        } catch(ex) {
+          console.warn('Ambient light for YouTube™ | Failed to enable on launch', ex)
+        }
+      }
       
       return this
     }.bind(this))()
   }
 
-  initElems(videoElem) {
-    this.ytdWatchFlexyElem = videoElem.closest('ytd-watch-flexy')
-    if(!this.ytdWatchFlexyElem) {
-      throw new Error('Cannot find ytdWatchFlexyElem: ytd-watch-flexy')
-    }
+  get playerSmallContainerElem() {
+    return this.ytdWatchFlexyElem.querySelector('#player-container-inner')
+  }
 
+  get playerTheaterContainerElem() {
+    return this.ytdWatchFlexyElem.querySelector('#player-theater-container')
+  }
+
+  get ytdWatchFlexyElem() {
+    if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = this.videoElem?.closest('ytd-watch-flexy, .ytd-page-manager')
+    return this._ytdWatchFlexyElem
+  }
+
+  initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
     if(!this.videoPlayerElem) {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
     }
 
     this.videoContainerElem = videoElem.closest('.html5-video-container')
-    if (!this.videoContainerElem) {
-      throw new Error('Cannot find videoContainerElem: .html5-video-container')
-    }
+    // // Deprecated: videoContainerElem is optional and only used in the videoOverlayEnabled setting
+    // if (!this.videoContainerElem) {
+    //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
+    // }
     
     this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
@@ -158,9 +173,9 @@ export default class Ambilight {
       if(!this.videoObserver) {
         this.videoObserver = new IntersectionObserver(
           wrapErrorHandler((entries, observer) => {
-            if(!window.ambilight) return
-            if(window.ambilight !== this) {
-              observer.disconnect() // Disconnect, because ambilight crashed on initialization and created a new instance
+            if(!window.ambientlight) return
+            if(window.ambientlight !== this) {
+              observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
               return
             }
 
@@ -183,28 +198,28 @@ export default class Ambilight {
       const videoElem = this.videoElem
       this.videoObserver.observe(videoElem)
       
-      if(videoElem.ambilightGetVideoPlaybackQuality) return
+      if(videoElem.ambientlightGetVideoPlaybackQuality) return
 
-      const ambilight = this
-      Object.defineProperty(videoElem, 'ambilightGetVideoPlaybackQuality', {
+      const ambientlight = this
+      Object.defineProperty(videoElem, 'ambientlightGetVideoPlaybackQuality', {
         value: videoElem.getVideoPlaybackQuality
       })
       this.previousDroppedVideoFrames = 0
       this.droppedVideoFramesCorrection = 0
       let previousGetVideoPlaybackQualityTime = performance.now()
       videoElem.getVideoPlaybackQuality = function() {
-        const original = videoElem.ambilightGetVideoPlaybackQuality()
+        const original = videoElem.ambientlightGetVideoPlaybackQuality()
         let droppedVideoFrames = original.droppedVideoFrames
-        if(droppedVideoFrames < ambilight.previousDroppedVideoFrames) {
-          ambilight.previousDroppedVideoFrames = 0
-          ambilight.droppedVideoFramesCorrection = 0
+        if(droppedVideoFrames < ambientlight.previousDroppedVideoFrames) {
+          ambientlight.previousDroppedVideoFrames = 0
+          ambientlight.droppedVideoFramesCorrection = 0
         }
         // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
-        if(ambilight.videoIsHidden || (ambilight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
-          ambilight.droppedVideoFramesCorrection += (droppedVideoFrames - ambilight.previousDroppedVideoFrames)
+        if(ambientlight.videoIsHidden || (ambientlight.videoVisibilityChangeTime > previousGetVideoPlaybackQualityTime - 2000)) {
+          ambientlight.droppedVideoFramesCorrection += (droppedVideoFrames - ambientlight.previousDroppedVideoFrames)
         }
-        ambilight.previousDroppedVideoFrames = droppedVideoFrames
-        droppedVideoFrames = Math.max(0, droppedVideoFrames - ambilight.droppedVideoFramesCorrection)
+        ambientlight.previousDroppedVideoFrames = droppedVideoFrames
+        droppedVideoFrames = Math.max(0, droppedVideoFrames - ambientlight.droppedVideoFramesCorrection)
         previousGetVideoPlaybackQualityTime = performance.now()
         return {
           corruptedVideoFrames: original.corruptedVideoFrames,
@@ -214,8 +229,8 @@ export default class Ambilight {
         }
       }
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambilight initialization...')
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambientlight initialization...')
+      SentryReporter.captureException(ex)
     }
   }
 
@@ -260,30 +275,6 @@ export default class Ambilight {
     return true
   }
 
-  scheduleHandleVideoResize = () => {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
-    if(this.scheduledHandleVideoResize) {
-      return
-    }
-
-    const wasView = this.view
-    this.updateView()
-    if(wasView === this.view) {
-      // Spare multiple resize handler calls when resizing the browser window
-      this.scheduledHandleVideoResize = raf(this.handleVideoResize)
-    } else {
-      // When changing viewmodes draw directly to prevent flickering
-      this.handleVideoResize()
-    }
-  }
-
-  handleVideoResize = () => {
-    this.scheduledHandleVideoResize = null
-    if (!this.settings.enabled || !this.isOnVideoPage || this.videoElem.ended) return
-
-    this.nextFrame()
-  }
-
   initVideoListeners() {
     ////// PLAYER FLOW
     //
@@ -311,13 +302,13 @@ export default class Ambilight {
     //////
   
     this.videoListeners = this.videoListeners || {
-      seeked: () => {
+      seeked: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
   
         this.buffersCleared = true // Always prevent old frame from being drawn
-        this.optionalFrame()
+        await this.optionalFrame()
       },
       loadeddata: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
@@ -325,10 +316,10 @@ export default class Ambilight {
         this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
         this.initVideoIfSrcChanged()
       },
-      playing: () => {
+      playing: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         if (this.videoElem.paused) return // When paused handled by [seeked]
-        this.optionalFrame()
+        await this.optionalFrame()
       },
       ended: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
@@ -363,68 +354,116 @@ export default class Ambilight {
     }
   }
 
+  updateVideoPlayerSize = () => {
+    try {
+      this.videoPlayerElem.setSize()
+      this.videoPlayerElem.setInternalSize()
+      this.sizesChanged = true
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+    }
+  }
+
   initListeners() {
     this.initVideoListeners()
 
     if(this.settings.webGL) {
-      this.projector.handleRestored = (isControlledLose) => {
+      this.projector.handleRestored = async (isControlledLose) => {
         this.buffersCleared = true
-        this.sizesInvalidated = true
+        this.sizesChanged = true
         if(!isControlledLose) {
           this.requestVideoFrameCallbackId = undefined
           this.videoElem.currentTime = this.videoElem.currentTime // Trigger video draw call
         }
-        this.optionalFrame()
+        await this.optionalFrame()
       }
     }
 
-    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false)
+    on(document, 'fullscreenchange', function fullscreenchange() {
+      this.updateSizes()
+    }.bind(this), false)
 
     on(document, 'keydown', this.handleKeyDown)
 
-    this.bodyResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      try {
-        this.videoPlayerElem.setInternalSize() // Video element has the wrong size when resizing the browser down to width to ytp-large-width-mode
-      } catch (ex) {
-        // Ignore errors in interal youtube script
-        console.warn('Ambient light for YouTube™ | YouTube script | setInternalSize error:', ex)
-      }
-      this.sizesInvalidated = true
-      this.scheduleHandleVideoResize() // Because the position could be shifted
-    }))
+    const resizeTooSmall = (pRect, rect) => (
+      Math.abs(rect.x - (pRect?.x || 0)) <= 2 &&
+      Math.abs(rect.y - (pRect?.y || 0)) <= 2 &&
+      Math.abs(rect.width - (pRect?.width || 0)) <= 2 &&
+      Math.abs(rect.height - (pRect?.height || 0)) <= 2
+    )
+    // Only triggers when the body width changes because the height is 0
+    let previousBodyRect;
+    this.bodyResizeObserver = new ResizeObserver(function bodyResize(e) {
+      if(!this.settings.enabled || !this.isOnVideoPage) return
+      
+      const rect = e[0].contentRect
+      if(resizeTooSmall(previousBodyRect, rect)) return
+      
+      previousBodyRect = rect
+      this.resize() // Because the video position could be shifted
+    }.bind(this))
     this.bodyResizeObserver.observe(document.body)
 
-    this.videoPlayerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      this.sizesInvalidated = true
-      this.scheduleHandleVideoResize()
-    }))
+    // Makes sure the player size is recalculated after the scrollbar has been hidden
+    // and the styles are recalculated.
+    // YouTube does this incorrect by calculating it before the styles are recalculated.
+    let previousVideoPlayerRect;
+    this.videoPlayerResizeObserver = new ResizeObserver(async function videoPlayerResize(e) {
+      if(!this.settings.enabled || !this.isOnVideoPage) {
+        previousVideoPlayerRect = undefined
+        return
+      }
+
+      const rect = e[0].contentRect
+      if(resizeTooSmall(previousVideoPlayerRect, rect)) return
+      
+      // if(!this.isFullscreen) {
+      //   try {
+      //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
+      //     this.videoPlayerElem.setSize()
+      //     this.videoPlayerElem.setInternalSize()
+      //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
+      //     this.sizesChanged = true
+      //   } catch(ex) {
+      //     console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+      //   }
+      // }
+      if(!this.settings.enabled) return
+
+      previousVideoPlayerRect = rect
+      this.resize(this.videoPlayerResizeToFullscreen 
+        ? 0
+        : this.videoPlayerResizeFromFullscreen
+          ? 0
+          : 0
+      )
+      this.videoPlayerResizeFromFullscreen = false
+      this.videoPlayerResizeToFullscreen = false
+    }.bind(this))
     this.videoPlayerResizeObserver.observe(this.videoPlayerElem)
     
-    // Makes sure the player size is updated before the first frame is rendered
-    // (youtube does this to late in the next frame)
-    this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      try {
-        this.videoPlayerElem.setSize() // Resize the video element because youtube does not observe the player
-        this.videoPlayerElem.setInternalSize() // setSize alone does not always resize the videoElem
-      } catch {
-        // Ignore errors in interal youtube script
-        console.warn('Ambient light for YouTube™ | YouTube script | setSize or setInternalSize error:', ex)
-      }
-      this.sizesInvalidated = true
-      this.scheduleHandleVideoResize()
-    }))
-    this.videoContainerResizeObserver.observe(this.videoContainerElem)
+    // // Deprecated: Moved to videoPlayerResizeObserver
+    // this.videoContainerResizeObserver = new ResizeObserver(function videoContainerResize() {
+    //   this.resize()
+    // }.bind(this))
+    // this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
-    this.videoResizeObserver = new ResizeObserver(wrapErrorHandler(entries => {
-      try {
-        this.videoPlayerElem.setInternalSize() // Sometimes when the video is resized by setInternalSize it is incorrect
-      } catch (ex) {
-        // Ignore errors in interal youtube script
-        console.warn('Ambient light for YouTube™ | YouTube script | setInternalSize error:', ex)
+    let previousVideoRect;
+    this.videoResizeObserver = new ResizeObserver(function videoResize(e) {
+      if(!this.settings.enabled || !this.isOnVideoPage) {
+        previousVideoRect = undefined
+        return
       }
-      this.sizesInvalidated = true
-      this.scheduleHandleVideoResize()
-    }))
+
+      const rect = e[0].contentRect
+      if(resizeTooSmall(previousVideoRect, rect)) {
+        return
+      }
+      
+      previousVideoRect = rect
+      this.resize()
+    }.bind(this))
     this.videoResizeObserver.observe(this.videoElem)
 
     // Fix YouTube bug: focus on video element without scrolling to the top
@@ -449,47 +488,127 @@ export default class Ambilight {
         this.updateLiveChatTheme()
       }
     }, undefined, undefined, true)
+    
+    let themeCorrections = 0
+    this.themeObserver = new MutationObserver(wrapErrorHandler((a) => {
+      if(!this.shouldToggleTheme()) return
+      
+      themeCorrections++
+      this.updateTheme()
+      if(themeCorrections === 5) this.themeObserver.disconnect()
+    }))
+    this.themeObserver.observe(html, {
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ['dark']
+    })
 
     // More reliable way to detect the end screen and other modes in which the video is invisible.
     // Because when seeking to the end the ended event is not fired from the videoElem
-    if (this.videoPlayerElem) {
-      on(this.videoPlayerElem, 'onStateChange', (state) => {
-        this.isBuffering = (state === 3)
+    on(this.videoPlayerElem, 'onStateChange', (state) => {
+      this.isBuffering = (state === 3)
 
-        if(!this.isBuffering && this.settings.enabled && this.isOnVideoPage)
-          this.scheduleNextFrame()
-      })
-      this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
+      if(!this.isBuffering && this.settings.enabled && this.isOnVideoPage)
+        this.scheduleNextFrame()
+    })
+    this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
 
-      const observer = new MutationObserver(wrapErrorHandler((mutationsList, observer) => {
-        const mutation = mutationsList[0]
-        const classList = mutation.target.classList
-        
-        const isVideoHiddenOnWatchPage = (
-          classList.contains('ended-mode') || 
-          classList.contains('unstarted-mode')  || // Autoplay disabled - Initial render without ambilight
-          classList.contains('ytp-player-minimized')
-        )
-        if(this.isVideoHiddenOnWatchPage === isVideoHiddenOnWatchPage) return
+    const videoPlayerObserver = new MutationObserver(wrapErrorHandler(async () => {
+      const viewChanged = await this.updateView()
+      const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage()
+      if(!viewChanged && !videoHiddenChanged) return
 
-        this.isVideoHiddenOnWatchPage = isVideoHiddenOnWatchPage
-        if(!this.isVideoHiddenOnWatchPage) {
-          this.optionalFrame()
-          return
-        }
-
+      if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
         this.clear()
         this.resetVideoContainerStyle()
-      }))
-    
-      observer.observe(this.videoPlayerElem, {
-        attributes: true,
-        attributeOldValue: true,
-        attributeFilter: ['class']
-      })
-    } else {
-      console.warn('Ambient light for YouTube™ | html5-video-player not found')
+        return
+      }
+
+      if(viewChanged || (videoHiddenChanged && !this.isVideoHiddenOnWatchPage)) {
+        this.optionalFrame()
+      }
+    }))
+  
+    videoPlayerObserver.observe(this.videoPlayerElem, {
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ['class']
+    })
+
+    // When the video moves between the small and theater views
+    const playerContainersObserver = new MutationObserver(wrapErrorHandler(async (mutationsList) => {
+      await this.updateView()
+      this.optionalFrame()
+    }))
+    const playerContainersObserverOptions = {
+      childList: true
     }
+    
+    if(this.playerTheaterContainerElem) {
+      playerContainersObserver.observe(this.playerTheaterContainerElem, playerContainersObserverOptions)
+    }
+    if(this.playerSmallContainerElem) {
+      playerContainersObserver.observe(this.playerSmallContainerElem, playerContainersObserverOptions)
+    }
+
+    this.updateView()
+  }
+  
+  updateIsVideoHiddenOnWatchPage = () => {
+    const classList = this.videoPlayerElem.classList;
+    const hidden = (
+      classList.contains('ended-mode') || 
+      classList.contains('unstarted-mode') // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
+    )
+    if(this.isVideoHiddenOnWatchPage === hidden) return false
+
+    this.isVideoHiddenOnWatchPage = hidden
+    return true
+  }
+
+  delayResizes = true
+  resizeDurationThreshold = 300
+  resizeDurations = [this.resizeDurationThreshold, this.resizeDurationThreshold, this.resizeDurationThreshold, this.resizeDurationThreshold]
+
+  resizeAfterFrames = 0
+  resize = wrapErrorHandler((afterFrames = 0) => {
+    if (!this.settings.enabled || !this.isOnVideoPage || this.pendingStart) {
+      this.resizeAfterFrames = 0
+      if(this.scheduledResize) cancelAnimationFrame(this.scheduledResize)
+      this.scheduledResize = undefined
+      return
+    }
+
+    this.delayResizes = this.delayResizes || this.videoPlayerResizeFromFullscreen || this.videoPlayerResizeToFullscreen
+    this.resizeAfterFrames = this.delayResizes ? Math.max(this.resizeAfterFrames, afterFrames) : 0
+    
+    if(this.scheduledResize) return
+
+    if (this.resizeAfterFrames === 0) {
+      this.sizesInvalidated = true
+      const start = performance.now()
+      this.optionalFrame()
+      this.measureResizeDuration(start)
+    }
+
+    // Do not resize untill the next animation frame
+    this.scheduledResize = raf(() => {
+      this.scheduledResize = undefined
+      if(this.resizeAfterFrames === 0) return
+
+      this.resizeAfterFrames--
+      this.resize()
+    })
+  })
+
+  measureResizeDuration(start) {
+    requestIdleCallback(() => {
+      const duration = Math.min(1000, performance.now() - start)
+      this.resizeDurations.push(duration)
+      if(this.resizeDurations.length > 4) this.resizeDurations.splice(0, 1)
+      const averageDuration = this.resizeDurations.reduce((a, b) => a + b) / this.resizeDurations.length
+      this.delayResizes = averageDuration >= this.resizeDurationThreshold
+    }, { timeout: 1000 })
   }
 
   handleDocumentVisibilityChange = () => {
@@ -531,21 +650,15 @@ export default class Ambilight {
   handleVideoFocus = () => {
     if (!this.settings.enabled || !this.isOnVideoPage) return
 
-    const startTop = {
-      window: this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-      video: this.videoContainerElem?.getBoundingClientRect()?.top
-    };
+    const startTop = this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY
     raf(function handleVideoFocusRaf() {
-      const endTop = {
-        window: VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY,
-        video: this.videoContainerElem?.getBoundingClientRect()?.top
-      }
-      if(startTop.window === endTop.window) return
+      const endTop = VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY
+      if(startTop === endTop) return
       
       if(this.view === VIEW_FULLSCREEN) {
-        this.ytdAppElem.scrollTop = startTop.window
+        this.ytdAppElem.scrollTop = startTop
       } else {
-        window.scrollTo(window.scrollX, startTop.window)
+        window.scrollTo(window.scrollX, startTop)
       }
     }.bind(this))
   }
@@ -560,27 +673,18 @@ export default class Ambilight {
       this.settings.clickUI('detectVerticalBarSizeEnabled')
     if (key === keys.detectVideoFillScaleEnabled) // w by default
       this.settings.clickUI('detectVideoFillScaleEnabled')
-    if (key === keys.immersive) // z by default
-      this.toggleImmersiveMode()
     if (key === keys.enabled) // a by default
       this.toggleEnabled()
   }
 
-  toggleEnabled(enabled) {
+  async toggleEnabled(enabled) {
     enabled = (enabled !== undefined) ? enabled : !this.settings.enabled
     if (enabled) {
-      this.enable()
+      await this.enable()
     } else {
       this.disable()
     }
     this.settings.displayBezelForSetting('enabled')
-  }
-
-  toggleImmersiveMode(enabled) {
-    enabled = (enabled !== undefined) ? enabled : !this.settings.immersive
-    this.settings.set('immersive', enabled, true)
-    this.updateImmersiveMode()
-    this.settings.displayBezelForSetting('immersive')
   }
 
   checkGetImageDataAllowed(reportUnexpectedChange = false) {
@@ -594,10 +698,8 @@ export default class Ambilight {
       
       try {
         const currentTime = this.videoElem.currentTime
-        const player = document.querySelector('#movie_player')
-        
         this.videoElem.crossOrigin = 'use-credentials'
-        player.loadVideoById(player.getVideoData().video_id) // Refreshes auto quality setting range above 480p
+        this.videoPlayerElem.loadVideoById(this.videoPlayerElem.getVideoData().video_id) // Refreshes auto quality setting range above 480p
         this.videoElem.currentTime = currentTime
       } catch(ex) {
         console.warn(`Ambient light for YouTube™ | Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
@@ -609,22 +711,22 @@ export default class Ambilight {
     this.settings.updateVisibility()
   }
 
-  initAmbilightElems() {
+  initAmbientlightElems() {
     this.elem = document.createElement('div')
-    this.elem.classList.add('ambilight')
+    this.elem.classList.add('ambientlight')
     body.prepend(this.elem)
 
     this.topElem = document.createElement('div')
-    this.topElem.classList.add('ambilight__top')
+    this.topElem.classList.add('ambientlight__top')
     body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
       wrapErrorHandler((entries, observer) => {
         for (const entry of entries) {
           this.atTop = (entry.intersectionRatio !== 0)
-          this.checkScrollPosition()
+          this.updateAtTop()
 
-          // When the video is filled and paused in fullscreen the ambilight is out of sync with the video
+          // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
           if(this.isFillingFullscreen && !this.atTop) {
             this.buffersCleared = true
             this.optionalFrame()
@@ -638,29 +740,29 @@ export default class Ambilight {
     this.topElemObserver.observe(this.topElem)
 
     this.videoShadowElem = document.createElement('div')
-    this.videoShadowElem.classList.add('ambilight__video-shadow')
+    this.videoShadowElem.classList.add('ambientlight__video-shadow')
     this.elem.prepend(this.videoShadowElem)
 
     this.filterElem = document.createElement('div')
-    this.filterElem.classList.add('ambilight__filter')
+    this.filterElem.classList.add('ambientlight__filter')
     this.elem.prepend(this.filterElem)
 
     if (this.enableChromiumBug1123708Workaround) {
       this.chromiumBug1123708WorkaroundElem = new Canvas(1, 1, true)
-      this.chromiumBug1123708WorkaroundElem.classList.add('ambilight__chromium-bug-1123708-workaround')
+      this.chromiumBug1123708WorkaroundElem.classList.add('ambientlight__chromium-bug-1123708-workaround')
       this.filterElem.prepend(this.chromiumBug1123708WorkaroundElem)
     }
   
     this.clipElem = document.createElement('div')
-    this.clipElem.classList.add('ambilight__clip')
+    this.clipElem.classList.add('ambientlight__clip')
     this.filterElem.prepend(this.clipElem)
 
     this.projectorsElem = document.createElement('div')
-    this.projectorsElem.classList.add('ambilight__projectors')
+    this.projectorsElem.classList.add('ambientlight__projectors')
     this.clipElem.prepend(this.projectorsElem)
     
     this.projectorListElem = document.createElement('div')
-    this.projectorListElem.classList.add('ambilight__projector-list')
+    this.projectorListElem.classList.add('ambientlight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
     this.projector = this.settings.webGL
@@ -671,17 +773,17 @@ export default class Ambilight {
   }
 
   initProjectorListeners = () => {
-    // Dont draw ambilight when its not in viewport
-    this.isAmbilightHiddenOnWatchPage = false
-    if(this.ambilightObserver) {
-      this.ambilightObserver.disconnect()
+    // Dont draw ambientlight when its not in viewport
+    this.isAmbientlightHiddenOnWatchPage = false
+    if(this.ambientlightObserver) {
+      this.ambientlightObserver.disconnect()
     }
-    if(!this.ambilightObserver) {
-      this.ambilightObserver = new IntersectionObserver(
+    if(!this.ambientlightObserver) {
+      this.ambientlightObserver = new IntersectionObserver(
         wrapErrorHandler((entries, observer) => {
           for (const entry of entries) {
-            this.isAmbilightHiddenOnWatchPage = (entry.intersectionRatio === 0)
-            if(this.isAmbilightHiddenOnWatchPage) continue
+            this.isAmbientlightHiddenOnWatchPage = (entry.intersectionRatio === 0)
+            if(this.isAmbientlightHiddenOnWatchPage) continue
             
             this.optionalFrame()
           }
@@ -691,12 +793,12 @@ export default class Ambilight {
         }
       )
     }
-    this.ambilightObserver.observe(this.projector.boundaryElem)
+    this.ambientlightObserver.observe(this.projector.boundaryElem)
   }
 
   initBuffers() {
     this.buffersWrapperElem = document.createElement('div')
-    this.buffersWrapperElem.classList.add('ambilight__buffers-wrapper')
+    this.buffersWrapperElem.classList.add('ambientlight__buffers-wrapper')
 
     const projectorsBufferElem =  this.settings.webGL
       ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
@@ -723,50 +825,50 @@ export default class Ambilight {
     if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
 
     this.FPSListElem = document.createElement('div')
-    this.FPSListElem.classList.add('ambilight__fps-list')
+    this.FPSListElem.classList.add('ambientlight__fps-list')
 
     this.displayFPSElem = document.createElement('div')
-    this.displayFPSElem.classList.add('ambilight__display-fps')
+    this.displayFPSElem.classList.add('ambientlight__display-fps')
     const displayFPSElemNode = document.createTextNode('')
     this.displayFPSElem.appendChild(displayFPSElemNode)
     this.FPSListElem.append(this.displayFPSElem)
 
     this.videoFPSElem = document.createElement('div')
-    this.videoFPSElem.classList.add('ambilight__video-fps')
+    this.videoFPSElem.classList.add('ambientlight__video-fps')
     const videoFPSElemNode = document.createTextNode('')
     this.videoFPSElem.appendChild(videoFPSElemNode)
     this.FPSListElem.append(this.videoFPSElem)
 
     this.videoDroppedFramesElem = document.createElement('div')
-    this.videoDroppedFramesElem.classList.add('ambilight__video-dropped-frames')
+    this.videoDroppedFramesElem.classList.add('ambientlight__video-dropped-frames')
     const videoDroppedFramesElemNode = document.createTextNode('')
     this.videoDroppedFramesElem.appendChild(videoDroppedFramesElemNode)
     this.FPSListElem.append(this.videoDroppedFramesElem)
 
     this.videoSyncedElem = document.createElement('div')
-    this.videoSyncedElem.classList.add('ambilight__video-synced')
+    this.videoSyncedElem.classList.add('ambientlight__video-synced')
     const videoSyncedElemNode = document.createTextNode('')
     this.videoSyncedElem.appendChild(videoSyncedElemNode)
     this.FPSListElem.append(this.videoSyncedElem)
 
-    this.ambilightFPSElem = document.createElement('div')
-    this.ambilightFPSElem.classList.add('ambilight__ambilight-fps')
-    const ambilightFPSElemNode = document.createTextNode('')
-    this.ambilightFPSElem.appendChild(ambilightFPSElemNode)
-    this.FPSListElem.append(this.ambilightFPSElem)
+    this.ambientlightFPSElem = document.createElement('div')
+    this.ambientlightFPSElem.classList.add('ambientlight__ambientlight-fps')
+    const ambientlightFPSElemNode = document.createTextNode('')
+    this.ambientlightFPSElem.appendChild(ambientlightFPSElemNode)
+    this.FPSListElem.append(this.ambientlightFPSElem)
 
-    this.ambilightDroppedFramesElem = document.createElement('div')
-    this.ambilightDroppedFramesElem.classList.add('ambilight__ambilight-dropped-frames')
-    const ambilightDroppedFramesElemNode = document.createTextNode('')
-    this.ambilightDroppedFramesElem.appendChild(ambilightDroppedFramesElemNode)
-    this.FPSListElem.append(this.ambilightDroppedFramesElem)
+    this.ambientlightDroppedFramesElem = document.createElement('div')
+    this.ambientlightDroppedFramesElem.classList.add('ambientlight__ambientlight-dropped-frames')
+    const ambientlightDroppedFramesElemNode = document.createTextNode('')
+    this.ambientlightDroppedFramesElem.appendChild(ambientlightDroppedFramesElemNode)
+    this.FPSListElem.append(this.ambientlightDroppedFramesElem)
 
-    this.videoPlayerElem.prepend(this.FPSListElem)
+    this.videoPlayerElem?.prepend(this.FPSListElem)
   }
 
   initVideoOverlay() {
     const videoOverlayElem = new Canvas(1, 1)
-    videoOverlayElem.classList.add('ambilight__video-overlay')
+    videoOverlayElem.classList.add('ambientlight__video-overlay')
     this.videoOverlay = {
       elem: videoOverlayElem,
       ctx: videoOverlayElem.getContext('2d', {
@@ -824,7 +926,7 @@ export default class Ambilight {
         const horizontalBarChanged = this.setHorizontalBars(0)
         const verticalBarChanged = this.setVerticalBars(0)
         if(horizontalBarChanged || verticalBarChanged) {
-          this.sizesInvalidated = true
+          this.sizesChanged = true
           this.optionalFrame()
         }
       }
@@ -833,25 +935,20 @@ export default class Ambilight {
       }
     }
     this.prevVideoPath = videoPath
+    this.settings.updateHdr()
   }
 
   setHorizontalBars(percentage) {
     if(this.settings.horizontalBarsClipPercentage === percentage) return false
 
-    this.settings.horizontalBarsClipPercentage = percentage
-    setTimeout(function setHorizontalBarsClipPercentage() {
-      this.settings.set('horizontalBarsClipPercentage', percentage, true)
-    }.bind(this), 1)
+    this.settings.set('horizontalBarsClipPercentage', percentage, true)
     return true
   }
 
   setVerticalBars(percentage) {
     if(this.settings.verticalBarsClipPercentage === percentage) return false
 
-    this.settings.verticalBarsClipPercentage = percentage
-    setTimeout(function setVerticalBarsClipPercentage() {
-      this.settings.set('verticalBarsClipPercentage', percentage, true)
-    }.bind(this), 1)
+    this.settings.set('verticalBarsClipPercentage', percentage, true)
     return true
   }
 
@@ -890,7 +987,6 @@ export default class Ambilight {
     }
 
     this.buffersCleared = true
-    this.sizesInvalidated = true
     this.checkIfNeedToHideVideoOverlay()
     this.scheduleNextFrame()
   }
@@ -922,72 +1018,41 @@ export default class Ambilight {
     this.settings.set('videoScale', videoScale, true)
   }
 
-  updateView() {
+  updateView = async () => {
+    this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
+
     const wasView = this.view
-    if(document.contains(this.videoPlayerElem)) {
+    if(!this.settings.enabled) {
+      this.view = VIEW_DISABLED
+    } else if(document.contains(this.videoPlayerElem)) {
       if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
         this.view = VIEW_FULLSCREEN
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
         this.view = VIEW_POPUP
-      else if(this.ytdWatchFlexyElem && this.ytdWatchFlexyElem.getAttribute('theater') !== null)
+      else if(
+        this.ytdWatchFlexyElem
+          ? this.ytdWatchFlexyElem.getAttribute('theater') !== null
+          : this.playerTheaterContainerElem
+      )
         this.view = VIEW_THEATER
       else
         this.view = VIEW_SMALL
     } else {
       this.view = VIEW_DETACHED
     }
-    if(wasView === this.view) return
+    if(wasView === this.view) return false
 
-    this.isFullscreen = (this.view == VIEW_FULLSCREEN)
-    this.updateImmersiveMode()
+    const videoPlayerSizeUpdated = this.updateImmersiveMode()
 
-    // Todo: Set the settings for the specific view
-    // if(prevView !== this.view) {
-    //   console.log('VIEW CHANGED: ', this.view)
-    //   this.getAllSettings()
-    // }
-  }
-
-  isInEnabledView = () => {
-    const enableInViews = this.settings.enableInViews
-    if(enableInViews === 0) return true
-
-    const enabled = {
-      VIEW_SMALL: enableInViews <= 2,
-      VIEW_THEATER: enableInViews >= 2 && enableInViews <= 4,
-      VIEW_FULLSCREEN: enableInViews >= 4
-    }[this.view]
-    return enabled
-  }
-
-  updateSizes() {
-    if(this.settings.detectVideoFillScaleEnabled){
-      this.detectVideoFillScale()
-    }
-
-    this.updateView()
-    this.isVR = this.videoPlayerElem.classList.contains('ytp-webgl-spherical')
-    const videoScale = this.settings.videoScale
-    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
-
-    const videoElemParentElem = this.videoElem.parentNode
-
-    const notVisible = (
-      !this.settings.enabled ||
-      this.isVR ||
-      !videoElemParentElem ||
-      !this.videoPlayerElem ||
-      this.videoPlayerElem.classList.contains('ytp-player-minimized') ||
-      !this.isInEnabledView()
-    )
-    if (notVisible || noClipOrScale) {
-      this.resetVideoContainerStyle()
-    }
-    if (notVisible) {
-      this.hide()
-      return true
-    }
+    const isFullscreen = (this.view == VIEW_FULLSCREEN)
+    const fullscreenChanged = isFullscreen !== this.isFullscreen
+    this.isFullscreen = isFullscreen
     
+    if(fullscreenChanged && this.settings.enabled && this.isOnVideoPage) {
+      this.videoPlayerResizeFromFullscreen = !this.isFullscreen
+      this.videoPlayerResizeToFullscreen = this.isFullscreen
+    }
+
     if(this.isFullscreen) {
       if(this.elem.parentElement !== this.ytdAppElem) {
         this.ytdAppElem.prepend(this.elem)
@@ -998,6 +1063,56 @@ export default class Ambilight {
         body.prepend(this.elem)
         body.prepend(this.topElem)
       }
+    }
+
+    // Todo: Set the settings for the specific view
+    // if(prevView !== this.view) {
+    //   console.log('VIEW CHANGED: ', this.view)
+    //   this.getAllSettings()
+    // }
+
+    if(!videoPlayerSizeUpdated) raf(() => this.updateVideoPlayerSize()) // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
+
+    return true
+  }
+
+  isInEnabledView = () => {
+    const enableInViews = this.settings.enableInViews
+    if(enableInViews === 0) return true
+
+    const enabled = {
+      SMALL: enableInViews <= 2,
+      THEATER: enableInViews >= 2 && enableInViews <= 4,
+      FULLSCREEN: enableInViews >= 4
+    }[this.view] || false
+    return enabled
+  }
+
+  async updateSizes() {
+    await this.updateView()
+
+    if(this.settings.detectVideoFillScaleEnabled){
+      this.detectVideoFillScale()
+    }
+    const videoScale = this.settings.videoScale
+    const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
+
+    const videoElemParentElem = this.videoElem.parentNode
+
+    const notVisible = (
+      !this.settings.enabled ||
+      this.isVR ||
+      !videoElemParentElem ||
+      !this.videoPlayerElem ||
+      !this.isInEnabledView()
+    )
+    if (notVisible || noClipOrScale) {
+      this.resetVideoContainerStyle()
+    }
+    this.lastUpdateSizesChanged = performance.now()
+    if (notVisible) {
+      this.hide()
+      return false
     }
 
     this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
@@ -1074,9 +1189,9 @@ export default class Ambilight {
       this.videoShadowElem.style.display = ''
     }
 
-    const contrast = this.settings.contrast
-    const brightness = this.settings.brightness
-    const saturation = this.settings.saturation
+    const contrast = this.settings.contrast + (this.isHdr ? this.settings.hdrContrast - 100 : 0)
+    const brightness = this.settings.brightness + (this.isHdr ? this.settings.hdrBrightness - 100 : 0)
+    const saturation = this.settings.saturation + (this.isHdr ? this.settings.hdrSaturation - 100 : 0)
     this.filterElem.style.filter = `
       ${(!this.settings.webGL && blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
@@ -1151,10 +1266,23 @@ export default class Ambilight {
       this.checkIfNeedToHideVideoOverlay()
 
     if (videoOverlayEnabled && videoOverlay && !videoOverlay.elem.parentNode) {
+      if(this.videoContainerElem) {
       this.videoContainerElem.appendChild(videoOverlay.elem)
+      } else {
+        if(!this.videoContainerElemMissingThrown) {
+          SentryReporter.captureException(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
+          this.videoContainerElemMissingThrown = true
+        }
+        this.videoContainerElemMissingWarning = true
+        this.settings.setWarning('Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to a update of the YouTube design. This will probably soon be fixed in a new version.')
+      }
     } else if (!videoOverlayEnabled && videoOverlay && videoOverlay.elem.parentNode) {
       videoOverlay.elem.parentNode.removeChild(videoOverlay.elem)
+    } else if(this.videoContainerElemMissingWarning) {
+      this.settings.setWarning('')
+      this.videoContainerElemMissingWarning = false
     }
+
     if (videoOverlayEnabled && videoOverlay) {
       videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
       videoOverlay.elem.width = this.srcVideoOffset.width
@@ -1172,7 +1300,7 @@ export default class Ambilight {
     this.resizeCanvasses()
     this.initFPSListElem()
 
-    this.sizesInvalidated = false
+    this.sizesChanged = false
     this.buffersCleared = true
     return true
   }
@@ -1192,7 +1320,7 @@ export default class Ambilight {
     // Images transparency
     const ImagesTransparency = this.settings.surroundingContentImagesTransparency
     const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''
-    document.body.style.setProperty('--ambilight-image-opacity', imageOpacity)
+    document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
 
 
     // Content shadow
@@ -1211,29 +1339,29 @@ export default class Ambilight {
         : `drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity * 2}))`
       )
       : ''
-    document.body.style.setProperty(`--ambilight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambilight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
     
     // Text and buttons only
-    document.body.style.setProperty(`--ambilight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambilight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
     const getTextShadow = (color) => (shadowSize && shadowOpacity) 
       ? `
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
         rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
       `
       : ''
-    document.body.style.setProperty('--ambilight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
-    document.body.style.setProperty('--ambilight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
+    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
 
 
     // Video shadow
     const videoShadowSize = parseFloat(this.settings.videoShadowSize, 10) / 2 + Math.pow(this.settings.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.settings.videoShadowOpacity / 100
     
-    document.body.style.setProperty('--ambilight-video-shadow-background', 
+    document.body.style.setProperty('--ambientlight-video-shadow-background', 
       (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
-    document.body.style.setProperty('--ambilight-video-shadow-box-shadow', 
+    document.body.style.setProperty('--ambientlight-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
@@ -1243,7 +1371,7 @@ export default class Ambilight {
 
 
     // Video scale
-    document.body.style.setProperty('--ambilight-html5-video-player-overflow', 
+    document.body.style.setProperty('--ambientlight-html5-video-player-overflow', 
       (this.settings.videoScale > 100) ?  'visible' : '')
 
 
@@ -1252,15 +1380,20 @@ export default class Ambilight {
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
 
-    document.body.style.setProperty('--ambilight-debanding-content', 
+    document.body.style.setProperty('--ambientlight-debanding-content', 
       debandingStrength ? `''` : '')
-    document.body.style.setProperty('--ambilight-debanding-background', 
+    document.body.style.setProperty('--ambientlight-debanding-background', 
       debandingStrength ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')` : '')
-    document.body.style.setProperty('--ambilight-debanding-opacity', 
+    document.body.style.setProperty('--ambientlight-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
   }
 
   resizeCanvasses() {
+    if (this.canvassesInvalidated) {
+      this.recreateProjectors()
+      this.canvassesInvalidated = false
+    }
+
     const projectorSize = {
       w: Math.round(this.p.w * this.clippedVideoScale[0]),
       h: Math.round(this.p.h * this.clippedVideoScale[1])
@@ -1314,31 +1447,37 @@ export default class Ambilight {
     this.projector.rescale(scales, lastScale, projectorSize, this.barsClip, this.settings)
   }
 
-  checkVideoSize(checkPosition = true) {
-    if (this.canvassesInvalidated) {
-      this.canvassesInvalidated = false
-      this.recreateProjectors()
+  updatedSizesChanged = false
+  updateSizesChanged(checkPosition) {
+    if(this.updatedSizesChanged) {
+      return
     }
 
-    if (this.sizesInvalidated) {
-      this.sizesInvalidated = false
-      return this.updateSizes()
-    }
+    this.sizesChanged = this.sizesChanged || this.getSizesChanged(checkPosition)
+    this.lastUpdateSizesChanged = performance.now()
+    this.sizesInvalidated = false
 
+    this.updatedSizesChanged = true
+    raf(() => {
+      this.updatedSizesChanged = false
+    })
+  }
+
+  getSizesChanged(checkPosition = true) {
     //Resized
     if (this.previousEnabled !== this.settings.enabled) {
       this.previousEnabled = this.settings.enabled
-      return this.updateSizes()
+      return true
     }
 
     //Auto quality moved up or down
     if (this.srcVideoOffset.width !== this.videoElem.videoWidth
       || this.srcVideoOffset.height !== this.videoElem.videoHeight) {
-      return this.updateSizes()
+        return true
     }
 
     if (this.settings.videoOverlayEnabled && this.videoOverlay && this.videoElem.getAttribute('style') !== this.videoOverlay.elem.getAttribute('style')) {
-      return this.updateSizes()
+      return true
     }
     
     const noClipOrScale = (
@@ -1358,7 +1497,7 @@ export default class Ambilight {
           videoTransform.indexOf(`translate(${-left}px, ${-top}px)`) === -1 ||
           videoTransform.indexOf(`scale(${scaleX}, ${scaleY})`) === -1
         ) {
-          return this.updateSizes()
+          return true
         }
       }
     }
@@ -1366,8 +1505,8 @@ export default class Ambilight {
     if(checkPosition) {
       const projectorsElemRect = this.getElemRect(this.projectorsElem)
       const videoElemRect = this.getElemRect(this.videoElem)
-      const topExtraOffset = this.horizontalBarsClipPercentage ? (videoElemRect.height * (this.horizontalBarsClipPercentage / 100)) : 0
-      const leftExtraOffset = this.verticalBarsClipPercentage ? (videoElemRect.width * (this.verticalBarsClipPercentage / 100)) : 0
+      const topExtraOffset = this.settings.horizontalBarsClipPercentage ? (videoElemRect.height * (this.settings.horizontalBarsClipPercentage / 100)) : 0
+      const leftExtraOffset = this.settings.verticalBarsClipPercentage ? (videoElemRect.width * (this.settings.verticalBarsClipPercentage / 100)) : 0
       const expectedProjectorsRect = {
         width: videoElemRect.width - (leftExtraOffset * 2),
         height: videoElemRect.height - (topExtraOffset * 2),
@@ -1380,16 +1519,19 @@ export default class Ambilight {
         Math.abs(projectorsElemRect.top - expectedProjectorsRect.top) > 2 ||
         Math.abs(projectorsElemRect.left - expectedProjectorsRect.left) > 2
       ) {
-        return this.updateSizes()
+        return true
       }
     }
 
-    return true
+    return false
   }
 
   getElemRect(elem) {
-    const scrollableRect = (this.isFullscreen) ? this.ytdWatchFlexyElem.getBoundingClientRect() : body.getBoundingClientRect()
+    const scrollableRect = (this.isFullscreen)
+      ? (this.ytdWatchFlexyElem || this.playerTheaterContainerElem || body).getBoundingClientRect()
+      : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
+
     return {
       top: elemRect.top - scrollableRect.top,
       left: elemRect.left - scrollableRect.left,
@@ -1422,35 +1564,35 @@ export default class Ambilight {
 
   scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrame)
 
-  onNextFrame = wrapErrorHandler(function wrappedOnNextFrame() {
+  onNextFrame = wrapErrorHandler(async function wrappedOnNextFrame() {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
 
     if(this.settings.framerateLimit) {
-      this.onNextLimitedFrame()
+      await this.onNextLimitedFrame()
     } else {
-      this.nextFrame()
+      await this.nextFrame()
       this.nextFrameTime = undefined
     }
 
     this.detectDisplayFrameRate()
-    this.detectAmbilightFrameRate()
+    this.detectAmbientlightFrameRate()
     this.detectVideoFrameRate()
   }.bind(this))
 
-  onNextLimitedFrame = () => {
+  onNextLimitedFrame = async () => {
     const time = performance.now()
     if(this.nextFrameTime > time) {
       this.scheduleNextFrame()
       return
     }
 
-    const ambilightFrameCount = this.ambilightFrameCount
-    this.nextFrame()
+    const ambientlightFrameCount = this.ambientlightFrameCount
+    await this.nextFrame()
     if(
-      this.ambilightFrameCount <= ambilightFrameCount
+      this.ambientlightFrameCount <= ambientlightFrameCount
     ) {
       return
     }
@@ -1461,42 +1603,44 @@ export default class Ambilight {
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
     !this.isOnVideoPage ||
+    this.pendingStart ||
     this.videoElem.ended ||
     this.videoElem.paused ||
     this.videoElem.seeking ||
     // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
     this.isVideoHiddenOnWatchPage ||
-    this.isAmbilightHiddenOnWatchPage
+    this.isAmbientlightHiddenOnWatchPage
   ))
 
-  optionalFrame = () => {
+  optionalFrame = async () => {
     if(
       !this.settings.enabled ||
       !this.isOnVideoPage ||
+      this.pendingStart ||
+      this.resizeAfterFrames > 0 ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
     ) return
     
-    this.nextFrame()
+    await this.nextFrame()
   }
 
-  nextFrame = () => {
-    this.delayedCheckVideoSizeAndPosition = false
-    if (!this.p) {
-      if(!this.checkVideoSize()) {
-        //If was detected hidden by checkVideoSize => updateSizes this.p won't be initialized yet
-        return
-      }
-    } else if(this.sizesInvalidated) {
-      this.checkVideoSize(false)
+  nextFrame = async () => {
+    this.delayedUpdateSizesChanged = false
+    if(this.p && this.sizesInvalidated) {
+      this.updateSizesChanged()
+    }
+    if (!this.p || this.sizesChanged) {
+      //If was detected hidden by updateSizes, this.p won't be initialized yet
+      if(!await this.updateSizes()) return
     } else {
-      this.delayedCheckVideoSizeAndPosition = true
+      this.delayedUpdateSizesChanged = true
     }
     
     let results = {}
     try {
       if(!this.settings.webGL || this.getImageDataAllowed) {
-        results = this.drawAmbilight() || {}
+        results = this.drawAmbientlight() || {}
       }
     } catch (ex) {
       if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
@@ -1527,8 +1671,8 @@ export default class Ambilight {
       (
         !this.settings.videoOverlayEnabled &&
         !(
-          this.delayedCheckVideoSizeAndPosition &&
-          (performance.now() - this.lastCheckVideoSizeTime) > 2000
+          this.delayedUpdateSizesChanged &&
+          (performance.now() - this.lastUpdateSizesChanged) > 2000
         ) &&
         !((performance.now() - this.lastUpdateStatsTime) > 2000)
       )
@@ -1537,7 +1681,7 @@ export default class Ambilight {
     this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
-  afterNextFrame = () => {
+  afterNextFrame = async () => {
     try {
       this.afterNextFrameIdleCallback = undefined
 
@@ -1546,13 +1690,12 @@ export default class Ambilight {
       }
       
       if (
-        this.delayedCheckVideoSizeAndPosition &&
-        (performance.now() - this.lastCheckVideoSizeTime) > 2000
+        this.delayedUpdateSizesChanged &&
+        (performance.now() - this.lastUpdateSizesChanged) > 2000
       ) {
-        const videoSizeChanged = this.checkVideoSize(true)
-        this.lastCheckVideoSizeTime = performance.now()
-        if(videoSizeChanged) {
-          this.optionalFrame()
+        this.updateSizesChanged(true)
+        if(this.sizesChanged) {
+          await this.optionalFrame()
         }
       } else if((performance.now() - this.lastUpdateStatsTime) > 2000) {
         this.updateStats()
@@ -1628,25 +1771,25 @@ export default class Ambilight {
     }
   }
 
-  detectAmbilightFrameRate() {
-    if (this.ambilightFrameRateStartTime === undefined) {
-      this.ambilightFrameRateStartTime = 0
-      this.ambilightFrameRateStartCount = 0
+  detectAmbientlightFrameRate() {
+    if (this.ambientlightFrameRateStartTime === undefined) {
+      this.ambientlightFrameRateStartTime = 0
+      this.ambientlightFrameRateStartCount = 0
     }
 
     const time = performance.now()
-    if (this.ambilightFrameRateStartTime + 2000 < time) {
-      const count = this.ambilightFrameCount
-      if (this.ambilightFrameRateStartCount !== 0) {
-        this.ambilightFrameRate = Math.max(0, 
+    if (this.ambientlightFrameRateStartTime + 2000 < time) {
+      const count = this.ambientlightFrameCount
+      if (this.ambientlightFrameRateStartCount !== 0) {
+        this.ambientlightFrameRate = Math.max(0, 
           (
-            (count - this.ambilightFrameRateStartCount) / 
-            ((time - this.ambilightFrameRateStartTime) / 1000)
+            (count - this.ambientlightFrameRateStartCount) / 
+            ((time - this.ambientlightFrameRateStartTime) / 1000)
           )
         )
       }
-      this.ambilightFrameRateStartCount = count
-      this.ambilightFrameRateStartTime = time
+      this.ambientlightFrameRateStartCount = count
+      this.ambientlightFrameRateStartTime = time
     }
   }
 
@@ -1686,8 +1829,8 @@ export default class Ambilight {
     this.videoFPSElem.childNodes[0].nodeValue = ''
     this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
     this.videoSyncedElem.childNodes[0].nodeValue = ''
-    this.ambilightFPSElem.childNodes[0].nodeValue = ''
-    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ''
+    this.ambientlightFPSElem.childNodes[0].nodeValue = ''
+    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
     this.displayFPSElem.childNodes[0].nodeValue = ''
   }
 
@@ -1717,15 +1860,15 @@ export default class Ambilight {
       this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
     }
 
-    // Ambilight FPS
-    const ambilightFPSText = `AMBIENT LIGHT: ${this.ambilightFrameRate.toFixed(2)} ${this.ambilightFrameRate ? `(${(1000/this.ambilightFrameRate).toFixed(2)}ms)` : ''}`
-    const ambilightFPSColor = (this.ambilightFrameRate < this.videoFrameRate * .9)
+    // Ambientlight FPS
+    const ambientlightFPSText = `AMBIENT LIGHT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
+    const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
       ? '#f55'
-      : (this.ambilightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+      : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
 
-    // Ambilight dropped frames
-    const ambilightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambilightVideoDroppedFrameCount}`
-    const ambilightDroppedFramesColor = (this.ambilightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+    // Ambientlight dropped frames
+    const ambientlightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
+    const ambientlightDroppedFramesColor = (this.ambientlightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Render all stats
     this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
@@ -1739,28 +1882,29 @@ export default class Ambilight {
     this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
     this.videoSyncedElem.style.color = videoSyncedColor
 
-    this.ambilightFPSElem.childNodes[0].nodeValue = ambilightFPSText
-    this.ambilightFPSElem.style.color = ambilightFPSColor
+    this.ambientlightFPSElem.childNodes[0].nodeValue = ambientlightFPSText
+    this.ambientlightFPSElem.style.color = ambientlightFPSColor
 
-    this.ambilightDroppedFramesElem.childNodes[0].nodeValue = ambilightDroppedFramesText
-    this.ambilightDroppedFramesElem.style.color = ambilightDroppedFramesColor
+    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ambientlightDroppedFramesText
+    this.ambientlightDroppedFramesElem.style.color = ambientlightDroppedFramesColor
   }
 
-  drawAmbilight() {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+  shouldShow = () => (
+    this.settings.enabled &&
+    this.isOnVideoPage &&
+    !this.isVR &&
+    this.isInEnabledView()
+  )
 
-    if (
-      this.isVR ||
-      !this.isInEnabledView()
-    ) {
-      this.hide()
+  drawAmbientlight() {
+    const shouldShow = this.shouldShow()
+    if(!shouldShow) {
+      if (!this.isHidden) this.hide()
       return
     }
 
     const drawTime = performance.now()
-    if (this.isHidden) {
-      this.show()
-    }
+    if (this.isHidden) this.show()
 
     if (
       (
@@ -1772,7 +1916,7 @@ export default class Ambilight {
         !this.settings.videoOverlayEnabled
       ) ||
       this.isVideoHiddenOnWatchPage || 
-      // this.isAmbilightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambilight element. So instead we handle this in the canScheduleNextFrame check
+      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1    // HAVE_METADATA
@@ -1805,16 +1949,26 @@ export default class Ambilight {
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (droppedFrames && !this.buffersCleared) {
-      this.ambilightVideoDroppedFrameCount += newVideoFrameCount - (this.videoFrameCount + 1)
+      this.ambientlightVideoDroppedFrameCount += newVideoFrameCount - (this.videoFrameCount + 1)
     }
     if (newVideoFrameCount > this.videoFrameCount || newVideoFrameCount < this.videoFrameCount - 60) {
       this.videoFrameCount = newVideoFrameCount
     }
 
-    const dontDrawAmbilight = (
+
+    // Horizontal bar detection
+    const detectBarSize = (
+      hasNewFrame &&
+      !this.barDetection?.run && 
+      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
+    )
+
+    const dontDrawAmbientlight = (
       this.atTop &&
       this.isFillingFullscreen
     )
+
+    const dontDrawBuffer = (dontDrawAmbientlight && !detectBarSize)
 
     if (this.settings.frameBlending && this.settings.frameBlendingSmoothness) {
       if (!this.previousProjectorBuffer) {
@@ -1824,7 +1978,7 @@ export default class Ambilight {
         this.initVideoOverlayWithFrameBlending()
       }
 
-      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambilightFrameRate
+      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambientlightFrameRate
       if(hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
@@ -1835,23 +1989,26 @@ export default class Ambilight {
               this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
             }
           }
-          if(!this.buffersCleared) {
-            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
-          }
-          // Prevent adjusted barsClipPx from leaking previous frame into the frame
-          this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-          
-          this.projectorBuffer.ctx.drawImage(this.videoElem,
-            0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
-          if(this.buffersCleared) {
-            this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+
+          if(!dontDrawBuffer) {
+            if(!this.buffersCleared) {
+              this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+            }
+            // Prevent adjusted barsClipPx from leaking previous frame into the frame
+            this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+            
+            this.projectorBuffer.ctx.drawImage(this.videoElem,
+              0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+            if(this.buffersCleared) {
+              this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
+            }
           }
         }
 
         let alpha =  1
-        const ambilightFrameDuration = 1000 / this.ambilightFrameRate
+        const ambientlightFrameDuration = 1000 / this.ambientlightFrameRate
         if(hasNewFrame) {
-          this.frameBlendingFrameTimeStart = drawTime - (ambilightFrameDuration / 2)
+          this.frameBlendingFrameTimeStart = drawTime - (ambientlightFrameDuration / 2)
         }
         if(this.displayFrameRate >= this.videoFrameRate * 1.33) {
           if(hasNewFrame && !this.previousDrawFullAlpha) {
@@ -1859,7 +2016,7 @@ export default class Ambilight {
           } else {
             const videoFrameDuration = 1000 / this.videoFrameRate
             const frameToDrawDuration = drawTime - this.frameBlendingFrameTimeStart
-            const frameToDrawDurationThresshold = (frameToDrawDuration + (ambilightFrameDuration / 2)) / (this.settings.frameBlendingSmoothness / 100)
+            const frameToDrawDurationThresshold = (frameToDrawDuration + (ambientlightFrameDuration / 2)) / (this.settings.frameBlendingSmoothness / 100)
             if (frameToDrawDurationThresshold < videoFrameDuration) {
               alpha = Math.min(1, (
                 frameToDrawDuration / (
@@ -1892,7 +2049,7 @@ export default class Ambilight {
           this.videoOverlay.ctx.globalAlpha = 1
         }
 
-        if (!dontDrawAmbilight) {
+        if (!dontDrawAmbientlight) {
           //this.blendedProjectorBuffer can contain an old frame and be impossible to drawImage onto
           //this.previousProjectorBuffer can also contain an old frame
           
@@ -1921,32 +2078,28 @@ export default class Ambilight {
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
       }
 
-      if (!dontDrawAmbilight) {
+      if (!dontDrawBuffer) {
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
 
-        this.projector.draw(this.projectorBuffer.elem)
+        if (!dontDrawAmbientlight) {
+          this.projector.draw(this.projectorBuffer.elem)
+        }
       }
     }
 
     this.buffersCleared = false
-    this.ambilightFrameCount++
+    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) this.ambientlightFrameCount++
     this.previousDrawTime = drawTime
     if(hasNewFrame) {
       this.previousFrameTime = drawTime
     }
 
     if(this.enableMozillaBug1606251Workaround) {
-      this.elem.style.transform = `translateZ(${this.ambilightFrameCount % 10}px)`;
+      this.elem.style.transform = `translateZ(${this.ambientlightFrameCount % 10}px)`;
     }
-
-    // Horizontal bar detection
-    if(
-      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) &&
-      hasNewFrame
-    ) {
-      return { detectBarSize: true }
-    }
+    
+    return { detectBarSize }
   }
 
   scheduleBarSizeDetection = () => {
@@ -1965,6 +2118,8 @@ export default class Ambilight {
           this.settings.horizontalBarsClipPercentage,
           this.settings.detectVerticalBarSizeEnabled,
           this.settings.verticalBarsClipPercentage,
+          this.p ? this.p.h / this.p.w : 1,
+          !this.settings.frameBlending,
           wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }
@@ -1976,7 +2131,7 @@ export default class Ambilight {
     }
   }
 
-  scheduleBarSizeDetectionCallback = (horizontalPercentage, verticalPercentage) => {
+  scheduleBarSizeDetectionCallback = async (horizontalPercentage, verticalPercentage) => {
     const horizontalBarChanged = (
       this.settings.detectHorizontalBarSizeEnabled && 
       horizontalPercentage !== undefined && 
@@ -1989,8 +2144,8 @@ export default class Ambilight {
     )
     if(!horizontalBarChanged && !verticalBarChanged) return
 
-    this.sizesInvalidated = true
-    this.optionalFrame()
+    this.sizesChanged = true
+    await this.optionalFrame()
   }
 
   checkIfNeedToHideVideoOverlay() {
@@ -1998,20 +2153,20 @@ export default class Ambilight {
 
     if(!this.hideVideoOverlayCache) {
       this.hideVideoOverlayCache = {
-        prevAmbilightVideoDroppedFrameCount: this.ambilightVideoDroppedFrameCount,
+        prevAmbientlightVideoDroppedFrameCount: this.ambientlightVideoDroppedFrameCount,
         framesInfo: [],
         isHiddenChangeTimestamp: 0
       }
     }
 
     let {
-      prevAmbilightVideoDroppedFrameCount,
+      prevAmbientlightVideoDroppedFrameCount,
       framesInfo,
       isHiddenChangeTimestamp
     } = this.hideVideoOverlayCache
 
-    const newFramesDropped = Math.max(0, this.ambilightVideoDroppedFrameCount - prevAmbilightVideoDroppedFrameCount)
-    this.hideVideoOverlayCache.prevAmbilightVideoDroppedFrameCount = this.ambilightVideoDroppedFrameCount
+    const newFramesDropped = Math.max(0, this.ambientlightVideoDroppedFrameCount - prevAmbientlightVideoDroppedFrameCount)
+    this.hideVideoOverlayCache.prevAmbientlightVideoDroppedFrameCount = this.ambientlightVideoDroppedFrameCount
     framesInfo.push({
       time: performance.now(),
       framesDropped: newFramesDropped
@@ -2036,7 +2191,7 @@ export default class Ambilight {
 
     if (hide) {
       if (!this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.classList.add('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.add('ambientlight__video-overlay--hide')
         this.videoOverlay.isHidden = true
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2046,7 +2201,7 @@ export default class Ambilight {
       isHiddenChangeTimestamp + 2000 < performance.now()
     ) {
       if (this.videoOverlay.isHidden) {
-        this.videoOverlay.elem.classList.remove('ambilight__video-overlay--hide')
+        this.videoOverlay.elem.classList.remove('ambientlight__video-overlay--hide')
         this.videoOverlay.isHidden = false
         this.hideVideoOverlayCache.isHiddenChangeTimestamp = performance.now()
         this.updateStats()
@@ -2054,18 +2209,19 @@ export default class Ambilight {
     }
   }
 
-  enable(initial = false) {
-    if (!initial)
-      this.settings.set('enabled', true, true)
+  async enable(initial = false) {
+    if (initial) await new Promise(resolve => raf(resolve))
+    if (!initial) this.settings.set('enabled', true, true)
     
-    this.updateView()
-    if (!this.settings.enableInFullscreen && this.view === VIEW_FULLSCREEN) return
-
-    this.start()
+    await this.start(initial)
   }
 
-  disable() {
+  async disable() {
+    this.cancelStartRequest()
     this.settings.set('enabled', false, true)
+
+    await this.hide()
+
     const videoElemParentElem = this.videoElem.parentNode
     if (videoElemParentElem) {
       videoElemParentElem.style.overflow = ''
@@ -2073,32 +2229,72 @@ export default class Ambilight {
       videoElemParentElem.style.height = ''
       videoElemParentElem.style.marginBottom = ''
     }
-
-    this.checkVideoSize()
-    this.hide()
   }
 
-  start() {
-    if (!this.isOnVideoPage || !this.settings.enabled) return
+  cancelStartRequest() {
+    if (!this.pendingStart) return
+    
+    this.pendingStart.cancel()
+  }
 
-    this.videoFrameRateMeasureStartFrame = 0
-    this.videoFrameRateMeasureStartTime = 0
-    this.ambilightVideoDroppedFrameCount = 0
+  start = async (initial = false) => {
+    if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     this.showedCompareWarning = false
     this.showedDetectBarSizeWarning = false
-
     this.nextFrameTime = undefined
-
-    this.sizesInvalidated = true // Prevent wrong size from being used
+    this.videoFrameRateMeasureStartFrame = 0
+    this.videoFrameRateMeasureStartTime = 0
+    this.ambientlightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
+
+    try {
+      this.isHdr = this.videoPlayerElem.getVideoData().isHdr
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
+    }
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
+    
+    if(!initial) {
+      await this.startCallback()
+      return
+    }
+
+    this.pendingStart = {}
+    const stack = new Error().stack
+    this.pendingStart.promise = new Promise((resolve, reject) => {
+      let ricId = requestIdleCallback(async () => {
+        ricId = undefined
+        this.pendingStart = undefined
+        try {
+          await this.startCallback()
+          resolve()
+        } catch(ex) {
+          appendErrorStack(stack, ex)
+          reject(ex)
+        }
+      }, { timeout: 1000 })
+      this.pendingStart.cancel = () => {
+        if(ricId) cancelIdleCallback(ricId)
+        this.pendingStart = undefined
+        reject()
+      }
+    })
+    try {
+      await this.pendingStart.promise
+    } catch(ex) {
+      if(ex) throw ex
+    }
+  }
+
+  startCallback = async () => {
+    this.updateView()
+    if(this.shouldShow()) await this.show()
 
     // Prevent incorrect stats from showing
     this.lastUpdateStatsTime = performance.now() + 2000
-
-    this.nextFrame()
+    await this.nextFrame()
   }
 
   scheduleRequestVideoFrame = () => {
@@ -2112,58 +2308,76 @@ export default class Ambilight {
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(function videoFrameCallback() {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(async function videoFrameCallback() {
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
-      this.receiveVideoFrame()
+      await this.receiveVideoFrame()
     }.bind(this))
   }
 
-  receiveVideoFrame = () => {
+  receiveVideoFrame = async () => {
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
-    this.onNextFrame()
+    await this.onNextFrame()
   }
 
-  hide() {
+  async hide() {
     if (this.isHidden) return
     this.isHidden = true
 
-    this.elem.style.opacity = 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+    await this.updateTheme()
+
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
+    this.cancelStartRequest()
     this.resetVideoContainerStyle()
     this.clear()
     this.hideStats()
 
-    html.setAttribute('data-ambilight-enabled', false)
-    this.updateTheme()
+    html.removeAttribute('data-ambientlight-enabled')
+    html.removeAttribute('data-ambientlight-hide-scrollbar')
+
+    this.updateSizes()
+    this.updateVideoPlayerSize()
   }
 
-  show() {
+  async show() {
     if (!this.isHidden) return
     this.isHidden = false
 
-    this.elem.style.opacity = 1
-    html.setAttribute('data-ambilight-enabled', true)
-    this.updateTheme()
+    await this.updateTheme(() => {
+      // Pre-style to prevent black/white flashes
+      if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
+      html.style.setProperty('background', this.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
+    })
+    
+    const stack = new Error().stack
+    await new Promise((resolve, reject) => raf(() => {
+      try {
+        html.setAttribute('data-ambientlight-enabled', true)
+        if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+
+        // Reset
+        if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
+        html.style.background = ''
+
+        this.updateVideoPlayerSize()
+        this.updateSizes()
+        resolve()
+      } catch(ex) {
+        appendErrorStack(stack, ex)
+        reject(ex)
+      }
+    }))
   }
 
-  checkScrollPosition = () => {
-    const immersive = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
-
-    if (this.atTop && immersive) {
-      this.ytdWatchFlexyElem.classList.add('at-top')
-    } else {
-      this.ytdWatchFlexyElem.classList.remove('at-top')
-    }
-
+  updateAtTop = () => {
     if (this.atTop) {
       this.mastheadElem.classList.add('at-top')
     } else {
@@ -2171,27 +2385,46 @@ export default class Ambilight {
     }
   }
   
-  shouldbeDarkTheme = () => {
+  shouldBeDarkTheme = () => {
     const toTheme = ((!this.settings.enabled || this.isHidden || this.settings.theme === THEME_DEFAULT) ? this.originalTheme : this.settings.theme)
     return (toTheme === THEME_DARK)
   }
 
-  updateTheme = wrapErrorHandler(function updateTheme() {
-    const toDark = this.shouldbeDarkTheme()
-    if (
+  shouldToggleTheme = () => {
+    const toDark = this.shouldBeDarkTheme()
+    return !(
       !!html.getAttribute('dark') === toDark ||
       (toDark && !isWatchPageUrl())
-    ) return
+    )
+  }
 
+  updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
+    if (!this.shouldToggleTheme()) return beforeToggleCallback()
+    
+    const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+    if(lastFailedThemeToggle) {
+      const now = new Date().getTime()
+      const withinThresshold = now - 10000 < lastFailedThemeToggle
+      if(withinThresshold) {
+        this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${wasDark ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.`)
+        return beforeToggleCallback()
+      }
+      contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
+    }
+
+    if (!this.shouldToggleTheme()) return beforeToggleCallback()
+
+    beforeToggleCallback()
     this.toggleDarkTheme()
   }.bind(this), true)
 
   toggleDarkTheme() {
-    if(this.darkThemeValidationTimeout) {
-      clearTimeout(this.darkThemeValidationTimeout)
-    }
-
     const wasDark = !!html.getAttribute('dark')
+    
+    try {
+      yt.config_.EXPERIMENT_FLAGS.kevlar_refresh_on_theme_change = false // Prevents the video page from refreshing every time
+    } catch { }
+    
     const detail = {
       actionName: 'yt-dark-mode-toggled-action',
       optionalAction: false,
@@ -2200,40 +2433,97 @@ export default class Ambilight {
       returnValue: []
     }
     const event = new CustomEvent('yt-action', {
-      currentTarget: document.querySelector('ytd-app'),
+      currentTarget: this.ytdAppElem,
       bubbles: true,
       cancelable: false,
       composed: true,
       detail,
       returnValue: true
     })
-    this.ytdAppElem.dispatchEvent(event)
 
-    this.darkThemeValidationTimeout = setTimeout(function darkThemeValidation() {
-      this.darkThemeValidationTimeout = undefined
-      const isDark = !!html.getAttribute('dark')
-      if (wasDark !== isDark) return
-      
-      throw new Error(`Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
-    }.bind(this), 0)
+    try {
+      this.ytdAppElem.dispatchEvent(event)
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+      return
+    }
+
+    const isDark = !!html.getAttribute('dark')
+    if (wasDark !== isDark) return
+    
+    contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
+    console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
-  updateLiveChatTheme() {
-    const liveChat = document.querySelector('ytd-live-chat-frame')
-    if (!liveChat) return
+  initLiveChat = () => {
+    this.initLiveChatSecondaryElem()
+    if(this.secondaryInnerElem) return
 
-    const toDark = this.shouldbeDarkTheme()
-    liveChat.postToContentWindow({
+    const observer = new MutationObserver(wrapErrorHandler(() => {
+      this.initLiveChatSecondaryElem()
+      if(!this.secondaryInnerElem) return
+
+      observer.disconnect()
+    }))
+    this.observer.observe(this.ytdAppElem, {
+      childList: true,
+      subtree: true
+    })
+  }
+  
+  initLiveChatSecondaryElem = () => {
+    this.secondaryInnerElem = document.querySelector('#secondary-inner')
+    if(!this.secondaryInnerElem) return
+
+    this.initLiveChatElem()
+    const observer = new MutationObserver(wrapErrorHandler(this.initLiveChatElem))
+    observer.observe(this.secondaryInnerElem, {
+      childList: true
+    })
+  }
+
+  initLiveChatElem = () => {
+    const liveChat = this.secondaryInnerElem.querySelector('ytd-live-chat-frame')
+    if(!liveChat || this.liveChat === liveChat) return
+    
+    this.liveChat = liveChat
+    this.initLiveChatIframe()
+    const observer = new MutationObserver(wrapErrorHandler(this.initLiveChatIframe))
+    observer.observe(liveChat, {
+      childList: true
+    })
+  }
+
+  initLiveChatIframe = () => {
+    const iframe = this.liveChat.querySelector('iframe')
+    if(!iframe || this.liveChatIframe === iframe) return
+
+    this.liveChatIframe = iframe
+    this.updateLiveChatTheme()
+    iframe.addEventListener('load', this.updateLiveChatTheme)
+  }
+
+  updateLiveChatTheme = () => {
+    if (!this.liveChat || !this.liveChatIframe) return
+
+    const toDark = this.shouldBeDarkTheme()
+    this.liveChat.postToContentWindow({
       'yt-live-chat-set-dark-theme': toDark
     })
   }
 
   updateImmersiveMode() {
-    const immersiveMode = (this.settings.immersive || (this.settings.immersiveTheaterView && this.view === VIEW_THEATER))
-    const changed = (html.getAttribute('data-ambilight-immersive-mode') !== immersiveMode.toString())
-    html.setAttribute('data-ambilight-immersive-mode', immersiveMode)
-    if(!changed) return
+    this.immersiveTheater = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
+    const changed = (html.getAttribute('data-ambientlight-immersive') === 'true') !== this.immersiveTheater
+    if(!changed) return false
 
-    this.checkScrollPosition()
+    if(this.immersiveTheater) {
+      html.setAttribute('data-ambientlight-immersive', true)
+    } else {
+      html.removeAttribute('data-ambientlight-immersive')
+    }
+
+    raf(() => this.updateVideoPlayerSize()) // Because it is incorrect when transitioning from immersive theater to small
+    return true
   }
 }

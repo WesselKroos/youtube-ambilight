@@ -50,22 +50,20 @@ const entryToString = (entry) => {
 export const getSelectorTreeString = (selector) => {
   const trees = [...$.sa(selector)]
     .map(elem => getNodeTree(elem))
-  let documentTree;
+
+  const documentTrees = []
   trees.forEach(nodeTree => {
+    let documentTree;
     let previousEntry;
     nodeTree.forEach(node => {
-      if(!documentTree) {
-        documentTree = createNodeEntry(node, 0)
+      if(!previousEntry) {
+        documentTree = documentTrees.find(dt => dt.node === node)
+        if(!documentTree) {
+          documentTree = createNodeEntry(node, 0)
+          documentTrees.push(documentTree)
+        }
         previousEntry = documentTree
         return
-      }
-      if(!previousEntry) {
-        if(documentTree.node === node) {
-          previousEntry = documentTree
-          return
-        } else {
-          throw new Error('Cannot create tree of nodes that are not in the same document.')
-        }
       }
 
       const existingEntry = previousEntry.children.find(entry => entry.node === node)
@@ -80,7 +78,12 @@ export const getSelectorTreeString = (selector) => {
     })
   })
 
-  return documentTree ? entryToString(documentTree) : `No nodes found for selector: '${selector}'`
+  return documentTrees
+    .map(documentTree => documentTree 
+      ? entryToString(documentTree) 
+      : `No nodes found for selector: '${selector}'`
+    )
+    .join('\n')
 }
 
 let settings;
@@ -88,10 +91,10 @@ export const parseSettingsToSentry = (newSettings) => {
   settings = newSettings
 }
 
-export class AmbilightError extends Error {
+export class AmbientlightError extends Error {
   constructor(message, details) {
     super(message)
-    this.name = 'AmbilightError'
+    this.name = 'AmbientlightError'
     this.details = details
   }
 }
@@ -174,10 +177,10 @@ const initializeStorageEntries = (async () => {
 })()
 
 let sessionId;
-export default class AmbilightSentry {
+export default class SentryReporter {
   static script = window.yt ? 'injected' : 'content'
   static overflowProtection = 0
-  static async captureExceptionWithDetails(ex) {
+  static async captureException(ex) {
     try {
       if(!client || !hub) {
         initClient()
@@ -273,28 +276,30 @@ export default class AmbilightSentry {
 
       try {
         if(window.yt) {
-          const ambilightExtra = {
-            initialized: (typeof ambilight !== 'undefined')
+          const ambientlightExtra = {
+            initialized: (typeof ambientlight !== 'undefined')
           }
-          if (ambilightExtra.initialized) {
-            ambilightExtra.now = performance.now()
+          if (ambientlightExtra.initialized) {
+            ambientlightExtra.now = performance.now()
             const keys = [
-              'ambilightFrameCount',
+              'ambientlightFrameCount',
               'videoFrameCount',
-              'ambilightVideoDroppedFrameCount',
+              'ambientlightVideoDroppedFrameCount',
               'droppedVideoFramesCorrection',
-              'ambilightFrameRate',
+              'ambientlightFrameRate',
               'videoFrameRate',
               'displayFrameRate',
               'previousDrawTime',
               'previousFrameTime',
               'buffersCleared',
+              'canvassesInvalidated',
               'sizesInvalidated',
-              'delayedCheckVideoSizeAndPosition',
+              'sizesChanged',
+              'delayedUpdateSizesChanged',
               'requestVideoFrameCallbackId',
               'videoFrameCallbackReceived',
               'scheduledNextFrame',
-              'scheduledHandleVideoResize',
+              'videoResizeHandled',
               'view',
               'isOnVideoPage',
               'atTop',
@@ -302,7 +307,7 @@ export default class AmbilightSentry {
               'isHidden',
               'isPageHidden',
               'videoIsHidden',
-              'isAmbilightHiddenOnWatchPage',
+              'isAmbientlightHiddenOnWatchPage',
               'isVideoHiddenOnWatchPage',
               'isBuffering',
               'isVR',
@@ -335,16 +340,16 @@ export default class AmbilightSentry {
             ]
             keys.forEach(key => {
               try {
-                let value = ambilight
+                let value = ambientlight
                 key.split('.').forEach(key => value = value ? value[key] : undefined) // Find multi depth values
-                ambilightExtra[key] = value
+                ambientlightExtra[key] = value
               } catch (ex) {}
             })
           }
-          setExtra('Ambilight', ambilightExtra)
+          setExtra('Ambientlight', ambientlightExtra)
         }
       } catch (ex) {
-        setExtra('Ambilight (exception)', ex)
+        setExtra('Ambientlight (exception)', ex)
       }
 
       try {
@@ -430,7 +435,7 @@ export default class AmbilightSentry {
         }
 
         try {
-          const videoPlayerElem = $.s('#movie_player')
+          const videoPlayerElem = $.s('#movie_player, .html5-video-player')
           if (videoPlayerElem?.getStatsForNerds) {
             const stats = videoPlayerElem.getStatsForNerds()
             const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
@@ -447,7 +452,7 @@ export default class AmbilightSentry {
 
       if(navigator.doNotTrack !== '1' && crashOptions?.video) {
         try {
-          const ytdWatchFlexyElem = $.s('ytd-watch-flexy')
+          const ytdWatchFlexyElem = $.s('ytd-watch-flexy, .ytd-page-manager')
           if (ytdWatchFlexyElem) {
             const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
             setExtra('ytd-watch-flexy[video-id]', videoId)
@@ -502,15 +507,15 @@ export class ErrorEvents {
       return // Give the site 10 seconds to load the watch page or move the video element
     }
 
-    AmbilightSentry.captureExceptionWithDetails(
-      new AmbilightError('Closed or hid the page with pending errors', this.list)
+    SentryReporter.captureException(
+      new AmbientlightError('Closed or hid the page with pending errors', this.list)
     )
     this.list = []
   }
 
   add = (type, details = {}) => {
     if(!crashOptions?.technical) {
-      if(details['ambilight.videoElem']) details['ambilight.videoElem'] = undefined
+      if(details['ambientlight.videoElem']) details['ambientlight.videoElem'] = undefined
       if(details.tree) details.tree = undefined
     }
     const time = Math.round(performance.now()) / 1000

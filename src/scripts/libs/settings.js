@@ -1,5 +1,5 @@
 import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
-import AmbilightSentry from './ambilight-sentry'
+import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
 
@@ -28,7 +28,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Quality',
-      name: 'sectionAmbilightQualityPerformanceCollapsed',
+      name: 'sectionQualityPerformanceCollapsed',
       default: true,
       advanced: false
     },
@@ -185,14 +185,6 @@ export default class Settings {
       default: false
     },
     {
-      name: 'immersive',
-      label: 'Hide when scrolled to top',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'Z',
-      advanced: true
-    },
-    {
       name: 'hideScrollbar',
       label: 'Hide scrollbar',
       type: 'checkbox',
@@ -311,7 +303,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Filters',
-      name: 'sectionAmbilightImageAdjustmentCollapsed',
+      name: 'sectionImageAdjustmentCollapsed',
       default: true,
       advanced: true
     },
@@ -344,6 +336,47 @@ export default class Settings {
       max: 200,
       step: 1,
       advanced: true
+    },
+    {
+      type: 'section',
+      label: 'HDR Filters',
+      name: 'sectionHdrImageAdjustmentCollapsed',
+      default: false,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrBrightness',
+      label: 'Brightness',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrContrast',
+      label: 'Contrast',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
+    },
+    {
+      name: 'hdrSaturation',
+      label: 'Saturation',
+      type: 'list',
+      default: 100,
+      min: 0,
+      max: 200,
+      step: 1,
+      advanced: false,
+      hdr: true
     },
     {
       type: 'section',
@@ -383,7 +416,7 @@ export default class Settings {
     {
       type: 'section',
       label: 'Ambient light',
-      name: 'sectionAmbilightCollapsed',
+      name: 'sectionAmbientlightCollapsed',
       default: false
     },
     {
@@ -500,9 +533,9 @@ export default class Settings {
     },
   ]
 
-  constructor(ambilight, menuBtnParent, menuElemParent) {
+  constructor(ambientlight, menuBtnParent, menuElemParent) {
     return (async () => {
-      this.ambilight = ambilight
+      this.ambientlight = ambientlight
       this.menuBtnParent = menuBtnParent
       this.menuElemParent = menuElemParent
 
@@ -513,12 +546,12 @@ export default class Settings {
         if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
           setting.default = 25
         }
-        if(setting.name === 'frameSync' && this.ambilight.videoHasRequestVideoFrameCallback) {
+        if(setting.name === 'frameSync' && this.ambientlight.videoHasRequestVideoFrameCallback) {
           setting.max = 2
           setting.default = 2
           setting.advanced = true
         }
-        if(setting.name === 'sectionAmbilightQualityPerformanceCollapsed' && this.ambilight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
+        if(setting.name === 'sectionQualityPerformanceCollapsed' && this.ambientlight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
           setting.advanced = true
         }
         return setting
@@ -547,16 +580,11 @@ export default class Settings {
           this.saveStorageEntry('enableInFullscreen', null)
         }
       } catch(ex) {
-        AmbilightSentry.captureExceptionWithDetails(ex)
+        SentryReporter.captureException(ex)
       }
 
       this.initMenu()
-
-      if(this.pendingWarning) {
-        this.pendingWarning()
-        this.pendingWarning = undefined
-      }
-
+      if(this.pendingWarning) this.pendingWarning()
       return this
     })()
   }
@@ -568,7 +596,7 @@ export default class Settings {
       this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment')
       if(this.webGLExperiment !== null) return
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       return
     }
 
@@ -582,7 +610,7 @@ export default class Settings {
     try {
       await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       return
     }
     if(!this.webGLExperiment) return
@@ -621,12 +649,12 @@ export default class Settings {
     }
     await this.flushPendingStorageEntries() // Complete migrations
 
-    html.setAttribute('data-ambilight-hide-scrollbar', this.hideScrollbar)
+    if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
   }
   
   initMenu() {
     this.menuBtn = document.createElement('button')
-    this.menuBtn.classList.add('ytp-button', 'ytp-ambilight-settings-button')
+    this.menuBtn.classList.add('ytp-button', 'ytp-ambientlight-settings-button')
     this.menuBtn.setAttribute('aria-owns', 'ytp-id-190')
     on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     this.menuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
@@ -634,7 +662,7 @@ export default class Settings {
     </svg>`
 
     const settingsMenuBtnTooltip = document.createElement('div')
-    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambilight-settings-button-tooltip')
+    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambientlight-settings-button-tooltip')
     settingsMenuBtnTooltip.setAttribute('aria-live', 'polite')
     const settingsMenuBtnTooltipTextWrapper = document.createElement('div')
     settingsMenuBtnTooltipTextWrapper.classList.add('ytp-tooltip-text-wrapper')
@@ -657,8 +685,8 @@ export default class Settings {
       ...([
         'ytp-popup', 
         'ytp-settings-menu', 
-        'ytpa-ambilight-settings-menu', 
-        (this.advancedSettings) ? 'ytpa-ambilight-settings-menu--advanced' : undefined
+        'ytpa-ambientlight-settings-menu', 
+        (this.advancedSettings) ? 'ytpa-ambientlight-settings-menu--advanced' : undefined
       ].filter(c => c))
     )
     this.menuElem.setAttribute('id', 'ytp-id-190')
@@ -694,6 +722,7 @@ export default class Settings {
       this.config.map(setting => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
+        if(setting.hdr) classes += ' ytpa-menuitem--hdr'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
         
@@ -748,8 +777,8 @@ export default class Settings {
                   type="range" 
                   colspan="2" 
                   value="${setting.valuePoints ? setting.valuePoints.indexOf(value) : value}" 
-                  ${setting.min ? `min="${setting.min}"` : ''} 
-                  ${setting.max ? `max="${setting.max}"` : ''} 
+                  ${setting.min !== undefined ? `min="${setting.min}"` : ''} 
+                  ${setting.max !== undefined ? `max="${setting.max}"` : ''} 
                   ${setting.valuePoints 
                     ? `min="0" max="${setting.valuePoints.length - 1}"` 
                     : ''}
@@ -778,7 +807,7 @@ export default class Settings {
         } else if (setting.type === 'section') {
           return `
             <div 
-              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''}" 
+              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}" 
               data-name="${setting.name}">
               <div class="ytpa-section__cell">
                 <div class="ytpa-section__label">${label}</div>
@@ -840,19 +869,9 @@ export default class Settings {
     })
 
     this.menuElemParent.prepend(this.menuElem)
-    try {
-      this.menuElem.scrollTop = this.menuElem.scrollHeight
-      this.menuOnCloseScrollBottom = (!this.menuElem.scrollTop) 
-        ? -1 
-        : (this.menuElem.scrollHeight - this.menuElem.offsetHeight) - this.menuElem.scrollTop
-      this.menuOnCloseScrollHeight = (this.menuElem.scrollHeight - this.menuElem.offsetHeight)
-    } catch(ex) {
-      console.error('Ambient light for YouTube™ | initSettingsMenuScrollInformation', ex)
-      AmbilightSentry.captureExceptionWithDetails(ex)
-    }
 
     this.bezelElem = document.createElement('div')
-    this.bezelElem.classList.add('yta-bezel', 'ytp-bezel')
+    this.bezelElem.classList.add('yta-bezel', 'ytp-bezel', 'yta-bezel--no-animation')
     this.bezelElem.setAttribute('role', 'status')
     this.bezelElem.innerHTML = `
       <div class="ytp-bezel-icon">
@@ -861,7 +880,7 @@ export default class Settings {
         </svg>
       </div>`
     on(this.bezelElem, 'animationend', () => {
-      this.bezelElem.style.display = 'none'
+      this.bezelElem.classList.add('yta-bezel--no-animation')
     })
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
@@ -952,7 +971,7 @@ export default class Settings {
           valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
-            this.ambilight.updateTheme()
+            this.ambientlight.updateTheme()
             return
           }
 
@@ -972,66 +991,72 @@ export default class Settings {
             }
           }
 
-          if(
-            setting.name === 'horizontalBarsClipPercentage' &&
-            this.detectHorizontalBarSizeEnabled
-          ) {
-            const controllerInput = $.s(`#setting-detectHorizontalBarSizeEnabled`)
-            controllerInput.dontResetControlledSetting = true
-            controllerInput.click()
-          }
-
-          if(
-            setting.name === 'verticalBarsClipPercentage' &&
-            this.detectVerticalBarSizeEnabled
-          ) {
-            const controllerInput = $.s(`#setting-detectVerticalBarSizeEnabled`)
-            controllerInput.dontResetControlledSetting = true
-            controllerInput.click()
-          }
-
-          if(setting.name === 'videoScale') {
-            if(this.detectVideoFillScaleEnabled) {
-              const controllerInput = $.s(`#setting-detectVideoFillScaleEnabled`)
-              controllerInput.dontResetControlledSetting = true
-              controllerInput.click()
+          if([
+            'horizontalBarsClipPercentage',
+            'verticalBarsClipPercentage',
+            'videoScale'
+          ].some(name => name === setting.name)) {
+            if(!inputElem.dontResetControllerSetting) {
+              const controllerSetting = ({
+                'horizontalBarsClipPercentage': 'detectHorizontalBarSizeEnabled',
+                'verticalBarsClipPercentage': 'detectVerticalBarSizeEnabled',
+                'videoScale': 'detectVideoFillScaleEnabled'
+              })[setting.name]
+              if(this[controllerSetting]) {
+                const controllerInput = $.s(`#setting-${controllerSetting}`)
+                controllerInput.dontResetControlledSetting = true
+                controllerInput.click()
+                return
+              }
+            } else {
+              inputElem.dontResetControllerSetting = false
             }
-          }
+            this.updateVisibility()
 
-          if (
-            setting.name === 'surroundingContentShadowSize' ||
-            setting.name === 'surroundingContentShadowOpacity' ||
-            setting.name === 'surroundingContentImagesTransparency' ||
-            setting.name === 'debandingStrength' ||
-            setting.name === 'videoShadowSize' ||
-            setting.name === 'videoShadowOpacity' ||
-            setting.name === 'videoScale'
-          ) {
-            this.ambilight.updateStyles()
+            this.ambientlight.barDetection.clear()
+            if(this.enabled && this.webGL) {
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+            }
           }
 
           if (
             (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambilight.barDetection.clear()
-            this.ambilight.scheduleBarSizeDetection()
+            this.ambientlight.barDetection.clear()
+            if(this.enabled && this.webGL) {
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+            }
+          }
+
+          if ([
+            'surroundingContentShadowSize',
+            'surroundingContentShadowOpacity',
+            'surroundingContentImagesTransparency',
+            'debandingStrength',
+            'videoShadowSize',
+            'videoShadowOpacity',
+            'videoScale'
+          ].some(name => name === setting.name)) {
+            this.ambientlight.updateStyles()
           }
 
           if (
             setting.name === 'spread' || 
             setting.name === 'edge'
           ) {
-            this.ambilight.canvassesInvalidated = true
+            this.ambientlight.canvassesInvalidated = true
           }
 
-          if(['surroundingContentShadowSize', 'videoShadowSize'].some(name => name === setting.name)) {
+          if([
+            'surroundingContentShadowSize',
+            'videoShadowSize'
+          ].some(name => name === setting.name)) {
             this.updateVisibility()
           }
 
-          this.ambilight.buffersCleared = true
-          this.ambilight.sizesInvalidated = true
-          this.ambilight.optionalFrame()
+          this.ambientlight.sizesChanged = true
+          this.ambientlight.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', (e) => {
@@ -1041,114 +1066,113 @@ export default class Settings {
             if(value === this[setting.name]) return
           }
 
-          if (
-            setting.name === 'videoOverlayEnabled' ||
-            setting.name === 'frameSync' ||
-            setting.name === 'frameBlending' ||
-            setting.name === 'showFPS' ||
-            setting.name === 'surroundingContentTextAndBtnOnly' ||
-            setting.name === 'horizontalBarsClipPercentageReset' ||
-            setting.name === 'detectHorizontalBarSizeEnabled' ||
-            setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
-            setting.name === 'detectVerticalBarSizeEnabled' ||
-            setting.name === 'detectColoredVerticalBarSizeEnabled' ||
-            setting.name === 'detectVideoFillScaleEnabled' ||
-            setting.name === 'directionTopEnabled' ||
-            setting.name === 'directionRightEnabled' ||
-            setting.name === 'directionBottomEnabled' ||
-            setting.name === 'directionLeftEnabled' ||
-            setting.name === 'advancedSettings' ||
-            setting.name === 'hideScrollbar' ||
-            setting.name === 'immersiveTheaterView' ||
-            setting.name === 'webGL'
-          ) {
+          if ([
+            'videoOverlayEnabled',
+            'frameSync',
+            'frameBlending',
+            'showFPS',
+            'surroundingContentTextAndBtnOnly',
+            'horizontalBarsClipPercentageReset',
+            'detectHorizontalBarSizeEnabled',
+            'detectColoredHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectColoredVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled',
+            'directionTopEnabled',
+            'directionRightEnabled',
+            'directionBottomEnabled',
+            'directionLeftEnabled',
+            'advancedSettings',
+            'hideScrollbar',
+            'immersiveTheaterView',
+            'webGL'
+          ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
-          if (setting.name === 'enabled') {
-            this.ambilight.toggleEnabled(value)
-          }
-          if (setting.name === 'immersive') {
-            this.ambilight.toggleImmersiveMode(value)
-          }
-          if (setting.name === 'hideScrollbar') {
-            html.setAttribute('data-ambilight-hide-scrollbar', value)
-          }
-          if(setting.name === 'immersiveTheaterView') {
-            this.ambilight.updateImmersiveMode()
-          }
-          
-          if(['detectHorizontalBarSizeEnabled', 'detectVerticalBarSizeEnabled', 'frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
-            this.updateVisibility()
-          }
-
-          if(setting.name === 'detectHorizontalBarSizeEnabled' || setting.name === 'detectVerticalBarSizeEnabled') {
-            if(!value) {
-              if(!settingElem.dontResetControlledSetting) {
-                const controlledSettingName = ({
-                  'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
-                  'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage'
-                })[setting.name]
-                const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
-                const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+          if([
+            'detectHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled'
+          ].some(name => name === setting.name)) {
+            this.displayBezel(setting.key, !value)
+            if(!settingElem.dontResetControlledSetting) {
+              const controlledSettingName = ({
+                'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
+                'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage',
+                'detectVideoFillScaleEnabled': 'videoScale'
+              })[setting.name]
+              const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
+              const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+              if(percentageInputElem.value != percentageSetting.default) {
+                percentageInputElem.dontResetControllerSetting = true
                 percentageInputElem.value = percentageSetting.default
                 percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                return
               }
             } else {
-              this.ambilight.barDetection.clear()
-              this.ambilight.scheduleBarSizeDetection()
-            }
-            if(settingElem.dontResetControlledSetting) {
               settingElem.dontResetControlledSetting = false
             }
-            this.updateVisibility()
-            this.displayBezel(setting.key, !value)
-
-            if(this.webGL) {
-              this.ambilight.updateSizes()
-            }
-            this.ambilight.optionalFrame()
-            return
           }
 
-          if(setting.name === 'detectVideoFillScaleEnabled') {
-            if(!value) {
-              if(!settingElem.dontResetControlledSetting) {
-                const videoScaleSetting = this.config.find(setting => setting.name === 'videoScale')
-                const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
-                videoScaleInputElem.value = videoScaleSetting.default
-                videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-              }
-            }
-            if(settingElem.dontResetControlledSetting) {
-              settingElem.dontResetControlledSetting = false
-            }
-            this.updateVisibility()
+          if (setting.name === 'enabled') {
+            this.ambientlight.toggleEnabled(value)
+          }
 
-            const key = this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
-            this.displayBezel(key, !value)
+          if (setting.name === 'hideScrollbar' && this.enabled) {
+            if(value)
+              html.setAttribute('data-ambientlight-hide-scrollbar', true)
+            else
+              html.removeAttribute('data-ambientlight-hide-scrollbar')
+            this.ambientlight.updateVideoPlayerSize()
+          }
+
+          if(setting.name === 'immersiveTheaterView' && this.enabled) {
+            this.ambientlight.updateImmersiveMode()
+          }
+          
+          if([
+            'frameBlending',
+            'videoOverlayEnabled'
+          ].some(name => name === setting.name)) {
+            this.updateVisibility()
+          }
+
+          if([
+            'detectHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectColoredHorizontalBarSizeEnabled',
+            'detectColoredVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled'
+          ].some(name => name === setting.name)) {
+            this.ambientlight.barDetection.clear()
+            if(this.enabled && this.webGL) {
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+            }
+            this.ambientlight.sizesChanged = true
+            this.updateVisibility()
           }
 
           if(setting.name === 'advancedSettings') {
             if(value) {
-              this.menuElem.classList.add('ytpa-ambilight-settings-menu--advanced')
+              this.menuElem.classList.add('ytpa-ambientlight-settings-menu--advanced')
             } else {
-              this.menuElem.classList.remove('ytpa-ambilight-settings-menu--advanced')
+              this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--advanced')
             }
           }
 
           if (setting.name === 'showFPS') {
             if(value) {
-              this.ambilight.updateStats()
+              this.ambientlight.updateStats()
             } else {
-              this.ambilight.hideStats()
+              this.ambientlight.hideStats()
             }
             return
           }
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
-            this.ambilight.updateStyles()
+            this.ambientlight.updateStyles()
             return
           }
 
@@ -1158,7 +1182,7 @@ export default class Settings {
               await this.flushPendingStorageEntries()
   
               const search = new URLSearchParams(location.search)
-              const time = Math.max(0, Math.floor(this.ambilight.videoElem?.currentTime || 0) - 2)
+              const time = Math.max(0, Math.floor(this.ambientlight.videoElem?.currentTime || 0) - 2)
               time ? search.set('t', time) : search.delete('t')
               history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
               location.reload()
@@ -1166,13 +1190,14 @@ export default class Settings {
             return
           }
 
-          this.ambilight.updateSizes()
-          this.ambilight.optionalFrame()
+          this.ambientlight.sizesInvalidated = true
+          this.ambientlight.optionalFrame()
         })
       }
     }
 
     this.updateVisibility()
+    on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
   }
 
   getSettingListDisplayText(setting) {
@@ -1194,8 +1219,8 @@ export default class Settings {
     return `${value}${setting.unit || '%'}`
   }
 
-  settingsMenuOnCloseScrollBottom = 0
-  settingsMenuOnCloseScrollHeight = 0
+  menuOnCloseScrollBottom = -1
+  menuOnCloseScrollHeight = 1
   onSettingsBtnClicked = () => {
     const isOpen = this.menuElem.classList.contains('is-visible')
     if (isOpen) return
@@ -1213,13 +1238,14 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', true)
 
-    if(this.ambilight.videoPlayerElem) {
-      this.ambilight.videoPlayerElem.classList.add('ytp-ambilight-settings-shown')
+    if(this.ambientlight.videoPlayerElem) {
+      this.ambientlight.videoPlayerElem.classList.add('ytp-ambientlight-settings-shown')
     }
 
     off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
       on(body, 'click', this.onCloseMenu, undefined, (listener) => this.onCloseMenuListener = listener)
+      this.scrollToWarning()
     }, 100)
   }
 
@@ -1240,8 +1266,8 @@ export default class Settings {
 
     this.menuBtn.setAttribute('aria-expanded', false)
 
-    if(this.ambilight.videoPlayerElem) {
-      this.ambilight.videoPlayerElem.classList.remove('ytp-ambilight-settings-shown')
+    if(this.ambientlight.videoPlayerElem) {
+      this.ambientlight.videoPlayerElem.classList.remove('ytp-ambientlight-settings-shown')
     }
 
     off(body, 'click', this.onCloseMenuListener)
@@ -1280,14 +1306,14 @@ export default class Settings {
         'detectHorizontalBarSizeEnabled',
         'detectVerticalBarSizeEnabled'
       ],
-      visible: () => this.ambilight.getImageDataAllowed
+      visible: () => this.ambientlight.getImageDataAllowed
     },
     {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
         'detectHorizontalBarSizeOffsetPercentage'
       ],
-      visible: () => this.ambilight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
+      visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },
     {
       names: [ 'frameBlendingSmoothness' ],
@@ -1451,13 +1477,12 @@ export default class Settings {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
 
   getKeys = () => ({
-    immersive: this.config.find(setting => setting.name === 'immersive').key,
     enabled: this.config.find(setting => setting.name === 'enabled').key,
     detectHorizontalBarSizeEnabled: this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
     detectVerticalBarSizeEnabled: this.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
@@ -1471,31 +1496,60 @@ export default class Settings {
   }
 
   displayBezel(text, strike = false) {
-    this.bezelElem.style.display = 'none'
+    this.bezelElem.classList.add('yta-bezel--no-animation')
     setTimeout(() => {
       this.bezelElem.classList.toggle('yta-bezel--strike', strike)
-      this.bezelElem.style.display = ''
+      this.bezelElem.classList.remove('yta-bezel--no-animation')
       this.bezelTextElem.textContent = text
     }, 0);
   }
 
+  handleDocumentVisibilityChange = () => {
+    const isPageHidden = document.visibilityState === 'hidden'
+    if(isPageHidden) return
+
+    setTimeout(() => {
+      if(!this.pendingWarning) return
+      
+      this.pendingWarning()
+    }, 1) // Give ambient light the time to clear existing warnings
+  }
+
   setWarning = (message, optional = false) => {
-    if(!this.menuElem) {
+    if(!this.menuElem || this.ambientlight.isPageHidden) {
       this.pendingWarning = () => this.setWarning(message, optional)
       return
+    } else {
+      this.pendingWarning = undefined
     }
 
     if(optional && this.warningElem.textContent.length) return
+    if(this.warningElem.textContent === message) return
 
-    const messageChanged = this.warningElem.textContent !== message
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
-    
     this.menuBtn.classList.toggle('has-warning', !!message)
-    if(message && messageChanged)
-      this.menuElem.scrollTo({
-        behavior: 'smooth',
-        top: 0
-      })
+    this.scrollToWarningQueued = !!message
+    if(!message) return
+
+    this.scrollToWarning()
+  }
+
+  updateHdr() {
+    if(this.ambientlight.isHdr) {
+      this.menuElem.classList.add('ytpa-ambientlight-settings-menu--hdr')
+    } else {
+      this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--hdr')
+    }
+  }
+
+  scrollToWarning() {
+    if(!this.warningElem.textContent || !this.scrollToWarningQueued || !this.onCloseMenuListener) return
+    
+    this.scrollToWarningQueued = false
+    this.menuElem.scrollTo({
+      behavior: 'smooth',
+      top: 0
+    })
   }
 }

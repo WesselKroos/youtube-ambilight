@@ -1,5 +1,5 @@
 import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
-import AmbilightSentry from './ambilight-sentry'
+import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
 const workerCode = function () {
@@ -53,7 +53,7 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectBarSize = async (xLength, yLength, detectColored, offsetPercentage, currentPercentage) => {
+    const workerDetectBarSize = async (xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
       partSize = Math.floor(canvas[xLength] / 5)
       imageLines = []
       for (imageLinesIndex = Math.ceil(partSize / 2) - 1; imageLinesIndex < canvas[xLength]; imageLinesIndex += partSize) {
@@ -127,6 +127,7 @@ const workerCode = function () {
         }
       }
       const maxSize = (imageLines[0].length / channels)
+      const minSize = maxSize * (0.012 * scale)
       imageLines.length = 0
 
       if(!sizes.length) {
@@ -134,14 +135,14 @@ const workerCode = function () {
       }
 
       let closestSizes = sizes
-      while(closestSizes.length > 6) {
+      while(closestSizes.length > 7) {
         averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
         closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
       }
       const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
-      const allowed = maxSize * 0.01
+      const allowed = maxSize * (0.0125 * scale)
       const deviationAllowed = (maxDeviation <= allowed)
-      const baseOffsetPercentage = 0.4
+      const baseOffsetPercentage = (0.4 * scale)
       const maxPercentage = 32
 
       let size = 0;
@@ -153,14 +154,14 @@ const workerCode = function () {
         }
     
         size = lowestSize
-        if(size < (maxSize * 0.012)) {
+        if(size < minSize) {
           size = 0
         } else {
           size += (maxSize * (offsetPercentage/100))
         }
       } else {
         size = Math.max(...closestSizes)
-        if(size < (maxSize * 0.012)) {
+        if(size < minSize) {
           size = 0
         } else {
           size += (maxSize * ((baseOffsetPercentage + offsetPercentage)/100))
@@ -169,7 +170,7 @@ const workerCode = function () {
 
       if(size > (maxSize * 0.49)) {
         let lowestSize = Math.min(...sizes)
-        if(lowestSize >= (maxSize * 0.01)) {
+        if(lowestSize >= minSize) {
           lowestSize += (maxSize * (offsetPercentage/100))
         }
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
@@ -203,6 +204,7 @@ const workerCode = function () {
         const detectVertical = e.data.detectVertical
         const currentVerticalPercentage = e.data.currentVerticalPercentage
         const canvasInfo = e.data.canvasInfo
+        const ratio = e.data.ratio
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -233,12 +235,12 @@ const workerCode = function () {
         
         const horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
-            'width', 'height', detectColored, offsetPercentage, currentHorizontalPercentage
+            'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
           )
           : undefined
         const verticalPercentage = detectVertical
           ? await workerDetectBarSize(
-            'height', 'width', detectColored, offsetPercentage, currentVerticalPercentage
+            'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
           )
           : undefined
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -285,7 +287,7 @@ export default class BarDetection {
   detect = (buffer, detectColored, offsetPercentage,
     detectHorizontal, currentHorizontalPercentage,
     detectVertical, currentVerticalPercentage,
-  callback) => {
+    ratio, allowedToTransfer, callback) => {
     if(this.run) return
 
     const run = this.run = {}
@@ -298,17 +300,16 @@ export default class BarDetection {
           return
         }
         if(e.data.error) {
-          AmbilightSentry.captureExceptionWithDetails(e.data.error)
+          SentryReporter.captureException(e.data.error)
         }
       }
     }
 
     this.idleHandlerArguments = {
-      buffer,
-      detectColored, offsetPercentage,
+      buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      callback
+      ratio, allowedToTransfer, callback
     }
 
     requestIdleCallback(function verticalBarDetectionIdleCallback() {
@@ -321,32 +322,40 @@ export default class BarDetection {
     this.cancellable = false
 
     const {
-      buffer,
-      detectColored, offsetPercentage,
+      buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      callback
+      ratio, allowedToTransfer, callback
     } = this.idleHandlerArguments
     let canvasInfo;
     try {
       const start = performance.now()
 
-      if(!this.canvas) {
-        this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-        this.ctx = this.canvas.getContext('2d', {
-          alpha: false,
-          desynchronized: true
-        })
-        this.ctx.imageSmoothingEnabled = true
-      }
+      if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap) {
+        if(!this.canvas) {
+          this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+          this.ctx = this.canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+          })
+          this.ctx.imageSmoothingEnabled = true
+        }
 
-      this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
-      canvasInfo = this.worker.isFallbackWorker ? {
-        canvas: this.canvas,
-        ctx: this.ctx
-      } : {
-        bitmap: this.canvas.transferToImageBitmap()
+        this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
       }
+      canvasInfo = this.worker.isFallbackWorker 
+        ? {
+          canvas: this.canvas,
+          ctx: this.ctx
+        }
+        : ((allowedToTransfer && buffer.transferToImageBitmap)
+          ? {
+            bitmap: buffer.transferToImageBitmap()
+          }
+          : {
+            bitmap: this.canvas.transferToImageBitmap()
+          }
+        )
 
       this.workerMessageId++;
       const stack = new Error().stack
@@ -368,8 +377,8 @@ export default class BarDetection {
               appendErrorStack(stack, e.data.error)
               throw e.data.error
             }
-            callback(e.data.horizontalPercentage, e.data.verticalPercentage)
             if(e.data.horizontalPercentage !== undefined || e.data.verticalPercentage !== undefined) {
+              callback(e.data.horizontalPercentage, e.data.verticalPercentage)
               this.lastChange = performance.now()
             }
             resolve()
@@ -385,6 +394,7 @@ export default class BarDetection {
           detectColored, offsetPercentage,
           detectHorizontal, currentHorizontalPercentage,
           detectVertical, currentVerticalPercentage,
+          ratio
         },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )

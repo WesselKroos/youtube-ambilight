@@ -1,5 +1,5 @@
 {
-  "name": "youtube-ambilight",
+  "name": "youtube-ambientlight",
   "version": "1.0.0",
   "description": "This browser extension adds ambient light to the videos you view on YouTube",
   "repository": {
@@ -30,10 +30,10 @@
     "build:manifest": "copyfiles -u 1 src/manifest.json dist",
     "build:html": "copyfiles -u 1 src/options.html dist",
     "build:images": "copyfiles -u 2 src/images/* dist/images",
-    "build:css:ambilight": "sass --no-source-map src/styles/youtube-ambilight.scss dist/styles/youtube-ambilight.css",
-    "build:css:ambilight-iframes": "sass --no-source-map src/styles/youtube-ambilight-iframe-live-chat.scss dist/styles/youtube-ambilight-iframe-live-chat.css",
+    "build:css:content": "sass --no-source-map src/styles/content.scss dist/styles/content.css",
+    "build:css:live-chat": "sass --no-source-map src/styles/live-chat.scss dist/styles/live-chat.css",
     "build:css:options": "copyfiles -u 2 src/styles/options.css dist/styles",
-    "build:css": "run-p build:css:ambilight build:css:ambilight-iframes build:css:options",
+    "build:css": "run-p build:css:content build:css:live-chat build:css:options",
     "build:scripts": "rollup -c",
     "build": "run-p build:manifest build:html build:images build:css build:scripts"
   }

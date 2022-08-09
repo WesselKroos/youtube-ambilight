@@ -1,9 +1,9 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
-import AmbilightSentry, { getSelectorTreeString, getNodeTreeString, AmbilightError, ErrorEvents, setVersion, setCrashOptions } from './libs/ambilight-sentry'
-import Ambilight from './libs/ambilight'
+import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
+import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
+import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
 
-setErrorHandler((ex) => AmbilightSentry.captureExceptionWithDetails(ex))
+setErrorHandler((ex) => SentryReporter.captureException(ex))
 
 wrapErrorHandler(function initVersionAndCrashOptions() {
   setVersion(document.currentScript.getAttribute('data-version') || '')
@@ -15,11 +15,14 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
 
 const errorEvents = new ErrorEvents()
 
-const ambilightDetectDetachedVideo = (ytdAppElem) => {
+const detectDetachedVideo = (ytdAppElem) => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
 
-    const isDetached = (!ambilight.videoElem || !ambilight.ytdWatchFlexyElem.contains(ambilight.videoElem))
+    const isDetached = (
+      !ambientlight.videoElem ||
+      !ytdAppElem?.contains(ambientlight.videoElem)
+    )
     if (!isDetached) {
       if(errorEvents.list.length) {
         errorEvents.list = []
@@ -30,9 +33,9 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
     const newYtdAppElem = document.querySelector('ytd-app') 
     if(newYtdAppElem !== ytdAppElem) {
       const details = {
-        newYtdAppElemContainsAmbilightVideoElem: newYtdAppElem?.contains(ambilight.videoElem),
-        oldYtdAppElemContainsAmbilightVideoElem: ytdAppElem?.contains(ambilight.videoElem),
-        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        newYtdAppElemContainsAmbientlightVideoElem: newYtdAppElem?.contains(ambientlight.videoElem),
+        oldYtdAppElemContainsAmbientlightVideoElem: ytdAppElem?.contains(ambientlight.videoElem),
+        'ambientlight.videoElem': getNodeTreeString(ambientlight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
       errorEvents.add('detectDetachedVideo | ytd-app element changed', details)
@@ -50,19 +53,20 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
       }
 
       const details = {
-        documentContainsAmbilightVideoElem: document.contains(ambilight.videoElem),
-        'ambilight.videoElem': getNodeTreeString(ambilight.videoElem),
+        documentContainsAmbientlightVideoElem: document.contains(ambientlight.videoElem),
+        'ambientlight.videoElem': getNodeTreeString(ambientlight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
       errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', details)
       return
     }
 
-    if(ambilight.videoElem !== videoElem) {
-      ambilight.initVideoElem(videoElem)
-      ambilight.initVideoListeners()
+    if(ambientlight.videoElem !== videoElem) {
+      ambientlight.initVideoElem(videoElem)
+      ambientlight.initVideoListeners()
     }
-    ambilight.start()
+    
+    ambientlight.start()
 
     if(errorEvents.list.length) {
       errorEvents.list = []
@@ -79,9 +83,10 @@ const ambilightDetectDetachedVideo = (ytdAppElem) => {
   })
 }
 
-let initializingAmbilight = false
-const tryInitAmbilight = async () => {
-  if (!isWatchPageUrl()) return
+let initializingAmbientlight = false
+const tryInitAmbientlight = async () => {
+  const isPageHidden = document.visibilityState === 'hidden' // Prevents lost WebGLContext on pageload in a background tab
+  if (isPageHidden || !isWatchPageUrl()) return
 
   const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
@@ -93,33 +98,33 @@ const tryInitAmbilight = async () => {
     }
     const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
-      // errorEvents.add('tryInitAmbilight | video in ytd-miniplayer')
+      // errorEvents.add('tryInitAmbientlight | video in ytd-miniplayer')
       return false
     }
     const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
     if(playerApiVideoElem) {
-      // errorEvents.add('tryInitAmbilight | video in #player-api')
+      // errorEvents.add('tryInitAmbientlight | video in #player-api')
       return false
     }
     const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
     if(outsideYtdAppVideoElem) {
-      // errorEvents.add('tryInitAmbilight | video outside ytd-app, probably moved by another extension')
+      // errorEvents.add('tryInitAmbientlight | video outside ytd-app, probably moved by another extension')
       return false
     }
       
-    errorEvents.add('tryInitAmbilight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', {
+    errorEvents.add('tryInitAmbientlight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', {
       tree: getSelectorTreeString('video,#player-container')
     })
     return false
   }
   
-  window.ambilight = await new Ambilight(ytdAppElem, videoElem)
+  window.ambientlight = await new Ambientlight(ytdAppElem, videoElem)
 
   errorEvents.list = []
-  ambilightDetectDetachedVideo(ytdAppElem)
-  ambilightDetectPageTransitions(ytdAppElem)
-  if(!window.ambilight.isOnVideoPage) {
-    ambilightDetectWatchPageVideo(ytdAppElem);
+  detectDetachedVideo(ytdAppElem)
+  detectPageTransitions(ytdAppElem)
+  if(!window.ambientlight.isOnVideoPage) {
+    detectWatchPageVideo(ytdAppElem);
   }
   return true
 }
@@ -130,21 +135,21 @@ const getWatchPageViewObserver = (function initGetWatchPageViewObserver() {
     if(!observer) {
       observer = new MutationObserver(wrapErrorHandler(
         function watchPageViewObserved(mutationsList, observer) {
-          ambilightStartIfWatchPageHasVideo(ytdAppElem)
+          startIfWatchPageHasVideo(ytdAppElem)
         }
       ))
     }
     return observer;
   }
 })();
-const ambilightDetectWatchPageVideo = (ytdAppElem) => {
+const detectWatchPageVideo = (ytdAppElem) => {
   getWatchPageViewObserver(ytdAppElem).observe(ytdAppElem, {
     childList: true,
     subtree: true
   })
 }
-const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
-  if (!isWatchPageUrl() || window.ambilight.isOnVideoPage) {
+const startIfWatchPageHasVideo = (ytdAppElem) => {
+  if (!isWatchPageUrl() || window.ambientlight.isOnVideoPage) {
     getWatchPageViewObserver().disconnect()
     return
   }
@@ -153,43 +158,43 @@ const ambilightStartIfWatchPageHasVideo = (ytdAppElem) => {
   if(!videoElem) return
 
   getWatchPageViewObserver().disconnect()
-  window.ambilight.isOnVideoPage = true
-  window.ambilight.start()
+  window.ambientlight.isOnVideoPage = true
+  window.ambientlight.start()
 }
 
-const ambilightDetectPageTransitions = (ytdAppElem) => {
+const detectPageTransitions = (ytdAppElem) => {
   on(document, 'yt-navigate-finish', function onYtNavigateFinish() {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
-      ambilightStartIfWatchPageHasVideo(ytdAppElem)
-      if(!window.ambilight.isOnVideoPage) {
-        ambilightDetectWatchPageVideo(ytdAppElem)
+      startIfWatchPageHasVideo(ytdAppElem)
+      if(!window.ambientlight.isOnVideoPage) {
+        detectWatchPageVideo(ytdAppElem)
       }
     } else {
-      if(window.ambilight.isOnVideoPage) {
-        window.ambilight.isOnVideoPage = false
-        window.ambilight.hide()
+      if(window.ambientlight.isOnVideoPage) {
+        window.ambientlight.isOnVideoPage = false
+        window.ambientlight.hide()
       }
     }
   }, undefined, undefined, true);
 }
 
-const loadAmbilight = async () => {
+const loadAmbientlight = async () => {
   // Validate YouTube desktop web app
   const ytdAppElem = $.s('ytd-app')
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(function getAppElems(elem) {
-        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP')
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP')
       })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
-      throw new AmbilightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
+      throw new AmbientlightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
     }
     return
   }
 
-  if (await tryInitAmbilight()) return
+  if (await tryInitAmbientlight()) return
   // Not on the watch page yet
 
   // Listen to DOM changes
@@ -202,20 +207,20 @@ const loadAmbilight = async () => {
         return
       }
 
-      if (window.ambilight) {
+      if (window.ambientlight) {
         observer.disconnect()
         return
       }
 
       initializing = true
       try {
-        if (await tryInitAmbilight()) {
+        if (await tryInitAmbientlight()) {
           // Initialized
           observer.disconnect()
         } else {
           while(tryAgain) {
             tryAgain = false
-            if(await tryInitAmbilight()) {
+            if(await tryInitAmbientlight()) {
               // Initialized
               observer.disconnect()
               tryAgain = false
@@ -237,11 +242,11 @@ const loadAmbilight = async () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(async function onLoadIdleCallback() {
-  if(window.ambilight) return
+const onLoad = () => requestIdleCallback(() => raf(async function onLoadIdleCallback() {
+  if(window.ambientlight) return
 
-  await loadAmbilight()
-}, { timeout: 5000 })
+  await loadAmbientlight()
+}), { timeout: 4000 })
 
 try {
   if(document.readyState === 'complete') {
@@ -250,5 +255,5 @@ try {
     window.addEventListener('load', onLoad)
   }
 } catch (ex) {
-  AmbilightSentry.captureExceptionWithDetails(ex)
+  SentryReporter.captureException(ex)
 }

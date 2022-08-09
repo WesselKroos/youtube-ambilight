@@ -7,7 +7,7 @@ export default class Projector2d {
     this.containerElem = containerElem
 
     this.shadow = new ProjectorShadow(false)
-    this.shadow.elem.classList.add('ambilight__shadow')
+    this.shadow.elem.classList.add('ambientlight__shadow')
     this.containerElem.appendChild(this.shadow.elem)
     
     this.boundaryElem = this.shadow.elem
@@ -33,7 +33,7 @@ export default class Projector2d {
 
     for (let i = this.projectors.length; i < levels; i++) {
       const projectorElem = new Canvas(1, 1)
-      projectorElem.classList.add('ambilight__projector')
+      projectorElem.classList.add('ambientlight__projector')
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
       this.containerElem.prepend(projectorElem)

@@ -1,4 +1,4 @@
-import AmbilightSentry, { AmbilightError } from './ambilight-sentry'
+import SentryReporter, { AmbientlightError } from './sentry-reporter'
 import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
@@ -21,7 +21,7 @@ export default class ProjectorWebGL {
       this.initCtx()
     } catch(ex) {
       this.setWebGLWarning('create', false)
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
       this.ctx = undefined
       return
     }
@@ -113,9 +113,11 @@ export default class ProjectorWebGL {
     }
     this.initBlurCtx()
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
-      this.initProjectorListeners()
-      this.lost = false
-      this.setWarning('')
+      if(!this.ctxIsInvalid) {
+        this.initProjectorListeners()
+        this.lost = false
+        this.setWarning('')
+      }
     } else {
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
       this.setWebGLWarning('restore')
@@ -132,7 +134,7 @@ export default class ProjectorWebGL {
     }
 
     this.blurCanvas = document.createElement('canvas')
-    this.blurCanvas.classList.add('ambilight__projector')
+    this.blurCanvas.classList.add('ambientlight__projector')
     this.containerElem.prepend(this.blurCanvas)
     this.boundaryElem = this.blurCanvas
     this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost)
@@ -154,7 +156,7 @@ export default class ProjectorWebGL {
     try {
       return await contentScript.getStorageEntryOrEntries('majorPerformanceCaveatDetected') || false
     } catch(ex) {
-      AmbilightSentry.captureExceptionWithDetails(ex)
+      SentryReporter.captureException(ex)
     }
   }
 
@@ -182,8 +184,8 @@ export default class ProjectorWebGL {
     event.preventDefault();
     if(!this.isControlledLose) {
       console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
-      this.setWebGLWarning('restore')
     }
+    this.setWebGLWarning('restore')
     this.invalidateShaderCache()
     this.lost = true
     if(!this.isControlledLose) {
@@ -206,14 +208,13 @@ export default class ProjectorWebGL {
       this.initBlurCtx()
     }
     if(
-      this.ctx && !this.ctx.isContextLost() && 
-      this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())
+      this.ctx && !this.ctx.isContextLost()
     ) {
-      this.initProjectorListeners()
-      this.lost = false
-      if(!this.isControlledLose) {
-        this.lostCount = 0
+      if(!this.ctxIsInvalid) {
+        this.initProjectorListeners()
+        this.lost = false
         this.setWarning('')
+        this.lostCount = 0
       }
     } else {
       if(!this.isControlledLose) {
@@ -297,7 +298,7 @@ export default class ProjectorWebGL {
                 if(duplicate) errors[i].message = '"'
               }
 
-              throw new AmbilightError('ProjectorWebGL context creation failed', errors)
+              throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
             }
           }
         }
@@ -391,10 +392,10 @@ export default class ProjectorWebGL {
       }
 
       void main(void) {
-        vec4 ambilight = multiTexture(textureSampler, fUV);
+        vec4 ambientlight = multiTexture(textureSampler, fUV);
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
-        ambilight[3] = 1. - shadowAlpha;
-        gl_FragColor = ambilight;
+        ambientlight[3] = 1. - shadowAlpha;
+        gl_FragColor = ambientlight;
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);

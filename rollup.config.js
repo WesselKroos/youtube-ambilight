@@ -24,7 +24,7 @@ const common = {
   ]
 }
 
-const scripts = ['background', 'options', 'content', 'youtube-ambilight']
+const scripts = ['background', 'options', 'content', 'injected']
 
 export default scripts.map(script => Object.assign({}, {
   input:  `./src/scripts/${script}.js`,
