@@ -777,8 +777,8 @@ export default class Settings {
                   type="range" 
                   colspan="2" 
                   value="${setting.valuePoints ? setting.valuePoints.indexOf(value) : value}" 
-                  ${setting.min ? `min="${setting.min}"` : ''} 
-                  ${setting.max ? `max="${setting.max}"` : ''} 
+                  ${setting.min !== undefined ? `min="${setting.min}"` : ''} 
+                  ${setting.max !== undefined ? `max="${setting.max}"` : ''} 
                   ${setting.valuePoints 
                     ? `min="0" max="${setting.valuePoints.length - 1}"` 
                     : ''}
@@ -1012,6 +1012,21 @@ export default class Settings {
               inputElem.dontResetControllerSetting = false
             }
             this.updateVisibility()
+
+            this.ambientlight.barDetection.clear()
+            if(this.enabled && this.webGL) {
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+            }
+          }
+
+          if (
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
+            setting.name === 'detectHorizontalBarSizeOffsetPercentage'
+          ) {
+            this.ambientlight.barDetection.clear()
+            if(this.enabled && this.webGL) {
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+            }
           }
 
           if ([
@@ -1024,14 +1039,6 @@ export default class Settings {
             'videoScale'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
-          }
-
-          if (
-            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
-            setting.name === 'detectHorizontalBarSizeOffsetPercentage'
-          ) {
-            this.ambientlight.barDetection.clear()
-            this.ambientlight.buffersCleared = true
           }
 
           if (
@@ -1125,7 +1132,10 @@ export default class Settings {
             this.ambientlight.updateImmersiveMode()
           }
           
-          if(['frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
+          if([
+            'frameBlending',
+            'videoOverlayEnabled'
+          ].some(name => name === setting.name)) {
             this.updateVisibility()
           }
 
@@ -1141,9 +1151,7 @@ export default class Settings {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
             this.ambientlight.sizesChanged = true
-            this.ambientlight.optionalFrame()
             this.updateVisibility()
-            return
           }
 
           if(setting.name === 'advancedSettings') {
