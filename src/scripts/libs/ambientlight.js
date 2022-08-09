@@ -2218,9 +2218,12 @@ export default class Ambientlight {
     await this.start(initial)
   }
 
-  disable() {
+  async disable() {
     this.cancelStartRequest()
     this.settings.set('enabled', false, true)
+
+    await this.hide()
+
     const videoElemParentElem = this.videoElem.parentNode
     if (videoElemParentElem) {
       videoElemParentElem.style.overflow = ''
@@ -2228,8 +2231,6 @@ export default class Ambientlight {
       videoElemParentElem.style.height = ''
       videoElemParentElem.style.marginBottom = ''
     }
-    
-    this.hide()
   }
 
   cancelStartRequest() {
@@ -2327,9 +2328,11 @@ export default class Ambientlight {
     await this.onNextFrame()
   }
 
-  hide() {
+  async hide() {
     if (this.isHidden) return
     this.isHidden = true
+
+    await this.updateTheme()
 
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
@@ -2342,7 +2345,6 @@ export default class Ambientlight {
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-hide-scrollbar')
 
-    this.updateTheme()
     this.updateSizes()
     this.updateVideoPlayerSize()
   }
@@ -2351,6 +2353,7 @@ export default class Ambientlight {
     if (!this.isHidden) return
     this.isHidden = false
 
+    await this.updateTheme()
     // Pre-style to prevent black/white flashes
     if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
     html.style.setProperty('background', this.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
@@ -2388,14 +2391,14 @@ export default class Ambientlight {
     return (toTheme === THEME_DARK)
   }
 
-  updateTheme = wrapErrorHandler(function updateTheme() {
+  updateTheme = wrapErrorHandler(async function updateTheme() {
     const toDark = this.shouldBeDarkTheme()
     if (
       !!html.getAttribute('dark') === toDark ||
       (toDark && !isWatchPageUrl())
     ) return
 
-    this.toggleDarkTheme()
+    await this.toggleDarkTheme()
   }.bind(this), true)
 
   async toggleDarkTheme() {
