@@ -85,7 +85,8 @@ const detectDetachedVideo = (ytdAppElem) => {
 
 let initializingAmbientlight = false
 const tryInitAmbientlight = async () => {
-  if (!isWatchPageUrl()) return
+  const isPageHidden = document.visibilityState === 'hidden' // Prevents lost WebGLContext on pageload in a background tab
+  if (isPageHidden || !isWatchPageUrl()) return
 
   const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
