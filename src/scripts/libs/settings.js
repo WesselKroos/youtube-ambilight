@@ -991,41 +991,38 @@ export default class Settings {
             }
           }
 
-          if(
-            setting.name === 'horizontalBarsClipPercentage' &&
-            this.detectHorizontalBarSizeEnabled
-          ) {
-            const controllerInput = $.s(`#setting-detectHorizontalBarSizeEnabled`)
-            controllerInput.dontResetControlledSetting = true
-            controllerInput.click()
-          }
-
-          if(
-            setting.name === 'verticalBarsClipPercentage' &&
-            this.detectVerticalBarSizeEnabled
-          ) {
-            const controllerInput = $.s(`#setting-detectVerticalBarSizeEnabled`)
-            controllerInput.dontResetControlledSetting = true
-            controllerInput.click()
-          }
-
-          if(setting.name === 'videoScale') {
-            if(this.detectVideoFillScaleEnabled) {
-              const controllerInput = $.s(`#setting-detectVideoFillScaleEnabled`)
-              controllerInput.dontResetControlledSetting = true
-              controllerInput.click()
+          if([
+            'horizontalBarsClipPercentage',
+            'verticalBarsClipPercentage',
+            'videoScale'
+          ].some(name => name === setting.name)) {
+            if(!inputElem.dontResetControllerSetting) {
+              const controllerSetting = ({
+                'horizontalBarsClipPercentage': 'detectHorizontalBarSizeEnabled',
+                'verticalBarsClipPercentage': 'detectVerticalBarSizeEnabled',
+                'videoScale': 'detectVideoFillScaleEnabled'
+              })[setting.name]
+              if(this[controllerSetting]) {
+                const controllerInput = $.s(`#setting-${controllerSetting}`)
+                controllerInput.dontResetControlledSetting = true
+                controllerInput.click()
+                return
+              }
+            } else {
+              inputElem.dontResetControllerSetting = false
             }
+            this.updateVisibility()
           }
 
-          if (
-            setting.name === 'surroundingContentShadowSize' ||
-            setting.name === 'surroundingContentShadowOpacity' ||
-            setting.name === 'surroundingContentImagesTransparency' ||
-            setting.name === 'debandingStrength' ||
-            setting.name === 'videoShadowSize' ||
-            setting.name === 'videoShadowOpacity' ||
-            setting.name === 'videoScale'
-          ) {
+          if ([
+            'surroundingContentShadowSize',
+            'surroundingContentShadowOpacity',
+            'surroundingContentImagesTransparency',
+            'debandingStrength',
+            'videoShadowSize',
+            'videoShadowOpacity',
+            'videoScale'
+          ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
           }
 
@@ -1034,7 +1031,7 @@ export default class Settings {
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
             this.ambientlight.barDetection.clear()
-            this.ambientlight.scheduleBarSizeDetection()
+            this.ambientlight.buffersCleared = true
           }
 
           if (
@@ -1044,7 +1041,10 @@ export default class Settings {
             this.ambientlight.canvassesInvalidated = true
           }
 
-          if(['surroundingContentShadowSize', 'videoShadowSize'].some(name => name === setting.name)) {
+          if([
+            'surroundingContentShadowSize',
+            'videoShadowSize'
+          ].some(name => name === setting.name)) {
             this.updateVisibility()
           }
 
@@ -1059,93 +1059,91 @@ export default class Settings {
             if(value === this[setting.name]) return
           }
 
-          if (
-            setting.name === 'videoOverlayEnabled' ||
-            setting.name === 'frameSync' ||
-            setting.name === 'frameBlending' ||
-            setting.name === 'showFPS' ||
-            setting.name === 'surroundingContentTextAndBtnOnly' ||
-            setting.name === 'horizontalBarsClipPercentageReset' ||
-            setting.name === 'detectHorizontalBarSizeEnabled' ||
-            setting.name === 'detectColoredHorizontalBarSizeEnabled' ||
-            setting.name === 'detectVerticalBarSizeEnabled' ||
-            setting.name === 'detectColoredVerticalBarSizeEnabled' ||
-            setting.name === 'detectVideoFillScaleEnabled' ||
-            setting.name === 'directionTopEnabled' ||
-            setting.name === 'directionRightEnabled' ||
-            setting.name === 'directionBottomEnabled' ||
-            setting.name === 'directionLeftEnabled' ||
-            setting.name === 'advancedSettings' ||
-            setting.name === 'hideScrollbar' ||
-            setting.name === 'immersiveTheaterView' ||
-            setting.name === 'webGL'
-          ) {
+          if ([
+            'videoOverlayEnabled',
+            'frameSync',
+            'frameBlending',
+            'showFPS',
+            'surroundingContentTextAndBtnOnly',
+            'horizontalBarsClipPercentageReset',
+            'detectHorizontalBarSizeEnabled',
+            'detectColoredHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectColoredVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled',
+            'directionTopEnabled',
+            'directionRightEnabled',
+            'directionBottomEnabled',
+            'directionLeftEnabled',
+            'advancedSettings',
+            'hideScrollbar',
+            'immersiveTheaterView',
+            'webGL'
+          ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
+          }
+
+          if([
+            'detectHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled'
+          ].some(name => name === setting.name)) {
+            this.displayBezel(setting.key, !value)
+            if(!settingElem.dontResetControlledSetting) {
+              const controlledSettingName = ({
+                'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
+                'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage',
+                'detectVideoFillScaleEnabled': 'videoScale'
+              })[setting.name]
+              const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
+              const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+              if(percentageInputElem.value != percentageSetting.default) {
+                percentageInputElem.dontResetControllerSetting = true
+                percentageInputElem.value = percentageSetting.default
+                percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
+                return
+              }
+            } else {
+              settingElem.dontResetControlledSetting = false
+            }
           }
 
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
           }
+
           if (setting.name === 'hideScrollbar' && this.enabled) {
             if(value)
               html.setAttribute('data-ambientlight-hide-scrollbar', true)
             else
               html.removeAttribute('data-ambientlight-hide-scrollbar')
+            this.ambientlight.updateVideoPlayerSize()
           }
+
           if(setting.name === 'immersiveTheaterView' && this.enabled) {
             this.ambientlight.updateImmersiveMode()
           }
           
-          if(['detectHorizontalBarSizeEnabled', 'detectVerticalBarSizeEnabled', 'frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
+          if(['frameBlending', 'videoOverlayEnabled'].some(name => name === setting.name)) {
             this.updateVisibility()
           }
 
-          if(setting.name === 'detectHorizontalBarSizeEnabled' || setting.name === 'detectVerticalBarSizeEnabled') {
-            if(!value) {
-              if(!settingElem.dontResetControlledSetting) {
-                const controlledSettingName = ({
-                  'detectHorizontalBarSizeEnabled': 'horizontalBarsClipPercentage',
-                  'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage'
-                })[setting.name]
-                const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
-                const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
-                percentageInputElem.value = percentageSetting.default
-                percentageInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-              }
-            } else {
-              this.ambientlight.barDetection.clear()
-              this.ambientlight.scheduleBarSizeDetection()
-            }
-            if(settingElem.dontResetControlledSetting) {
-              settingElem.dontResetControlledSetting = false
-            }
-            this.updateVisibility()
-            this.displayBezel(setting.key, !value)
-
+          if([
+            'detectHorizontalBarSizeEnabled',
+            'detectVerticalBarSizeEnabled',
+            'detectColoredHorizontalBarSizeEnabled',
+            'detectColoredVerticalBarSizeEnabled',
+            'detectVideoFillScaleEnabled'
+          ].some(name => name === setting.name)) {
+            this.ambientlight.barDetection.clear()
             if(this.enabled && this.webGL) {
-              this.ambientlight.updateSizes()
+              this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
+            this.ambientlight.sizesChanged = true
             this.ambientlight.optionalFrame()
-            return
-          }
-
-          if(setting.name === 'detectVideoFillScaleEnabled') {
-            if(!value) {
-              if(!settingElem.dontResetControlledSetting) {
-                const videoScaleSetting = this.config.find(setting => setting.name === 'videoScale')
-                const videoScaleInputElem = $.s(`#setting-${videoScaleSetting.name}-range`)
-                videoScaleInputElem.value = videoScaleSetting.default
-                videoScaleInputElem.dispatchEvent(new Event('change', { bubbles: true }))
-              }
-            }
-            if(settingElem.dontResetControlledSetting) {
-              settingElem.dontResetControlledSetting = false
-            }
             this.updateVisibility()
-
-            const key = this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
-            this.displayBezel(key, !value)
+            return
           }
 
           if(setting.name === 'advancedSettings') {
@@ -1184,7 +1182,7 @@ export default class Settings {
             return
           }
 
-          if(this.enabled) this.ambientlight.updateSizes()
+          this.ambientlight.sizesInvalidated = true
           this.ambientlight.optionalFrame()
         })
       }

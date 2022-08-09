@@ -36,8 +36,10 @@ export default class Ambientlight {
   atTop = true
   p = null
   view = undefined
+  immersiveTheater = false
   isFullscreen = false
   isFillingFullscreen = false
+  isVideoHiddenOnWatchPage = false
   isVR = false
   isHdr = false
 
@@ -368,7 +370,6 @@ export default class Ambientlight {
     if(this.settings.webGL) {
       this.projector.handleRestored = async (isControlledLose) => {
         this.buffersCleared = true
-        // console.log('handleRestored sizesChanged')
         this.sizesChanged = true
         if(!isControlledLose) {
           this.requestVideoFrameCallbackId = undefined
@@ -514,17 +515,20 @@ export default class Ambientlight {
     })
     this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
 
-    const videoPlayerObserver = new MutationObserver(wrapErrorHandler((mutationsList) => {
-      const changed = this.updateIsVideoHiddenOnWatchPage()
-      if(!changed) return
+    const videoPlayerObserver = new MutationObserver(wrapErrorHandler(async () => {
+      const viewChanged = await this.updateView()
+      const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage()
+      if(!viewChanged && !videoHiddenChanged) return
 
-      if(!this.isVideoHiddenOnWatchPage) {
-        this.optionalFrame()
+      if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
+        this.clear()
+        this.resetVideoContainerStyle()
         return
       }
 
-      this.clear()
-      this.resetVideoContainerStyle()
+      if(viewChanged || (videoHiddenChanged && !this.isVideoHiddenOnWatchPage)) {
+        this.optionalFrame()
+      }
     }))
   
     videoPlayerObserver.observe(this.videoPlayerElem, {
@@ -532,8 +536,6 @@ export default class Ambientlight {
       attributeOldValue: true,
       attributeFilter: ['class']
     })
-
-    this.updateIsVideoHiddenOnWatchPage()
 
     // When the video moves between the small and theater views
     const playerContainersObserver = new MutationObserver(wrapErrorHandler(async (mutationsList) => {
@@ -550,14 +552,15 @@ export default class Ambientlight {
     if(this.playerSmallContainerElem) {
       playerContainersObserver.observe(this.playerSmallContainerElem, playerContainersObserverOptions)
     }
+
+    this.updateView()
   }
   
   updateIsVideoHiddenOnWatchPage = () => {
     const classList = this.videoPlayerElem.classList;
     const hidden = (
       classList.contains('ended-mode') || 
-      classList.contains('unstarted-mode') || // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
-      classList.contains('ytp-player-minimized')
+      classList.contains('unstarted-mode') // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
     )
     if(this.isVideoHiddenOnWatchPage === hidden) return false
 
@@ -1018,7 +1021,8 @@ export default class Ambientlight {
   }
 
   updateView = async () => {
-    this.scheduleUpdateView = undefined
+    this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
+
     const wasView = this.view
     if(!this.settings.enabled) {
       this.view = VIEW_DISABLED
@@ -1055,13 +1059,11 @@ export default class Ambientlight {
       if(this.elem.parentElement !== this.ytdAppElem) {
         this.ytdAppElem.prepend(this.elem)
         this.ytdAppElem.prepend(this.topElem)
-        // this.clear() // dunno, this.hide() vs this.clear() is better because it does not move the scrollbar
       }
     } else {
       if(this.elem.parentElement !== body) {
         body.prepend(this.elem)
         body.prepend(this.topElem)
-        // this.clear() // dunno, this.hide() vs this.clear() is better because it does not move the scrollbar
       }
     }
 
@@ -1071,11 +1073,11 @@ export default class Ambientlight {
     //   this.getAllSettings()
     // }
 
-    if(!this.isFullscreen && (this.settings.immersiveTheater || this.settings.hideScrollbar)) {
-      await new Promise(resolve => raf(resolve))
-      this.updateVideoPlayerSize()
-      this.sizesInvalidated = true
-    }
+    // if(!this.isFullscreen && (this.settings.immersiveTheaterView || this.settings.hideScrollbar)) {
+    //   await new Promise(resolve => raf(resolve))
+    //   this.updateVideoPlayerSize()
+    //   this.sizesInvalidated = true
+    // }
 
     return true
   }
@@ -1093,13 +1095,11 @@ export default class Ambientlight {
   }
 
   async updateSizes() {
-    // console.log('--> updateSizes')
+    await this.updateView()
+
     if(this.settings.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
     }
-
-    await this.updateView()
-    this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
     const videoScale = this.settings.videoScale
     const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
 
@@ -1110,7 +1110,6 @@ export default class Ambientlight {
       this.isVR ||
       !videoElemParentElem ||
       !this.videoPlayerElem ||
-      this.videoPlayerElem.classList.contains('ytp-player-minimized') ||
       !this.isInEnabledView()
     )
     if (notVisible || noClipOrScale) {
@@ -1639,7 +1638,6 @@ export default class Ambientlight {
     }
     if (!this.p || this.sizesChanged) {
       //If was detected hidden by updateSizes, this.p won't be initialized yet
-      // if(!this.p) console.log('p is null -> updateSizes')
       if(!await this.updateSizes()) return
     } else {
       this.delayedUpdateSizesChanged = true
@@ -2518,5 +2516,7 @@ export default class Ambientlight {
     } else {
       html.removeAttribute('data-ambientlight-immersive')
     }
+
+    raf(() => this.updateVideoPlayerSize()) // Because it is incorrect when transitioning from immersive theater to small
   }
 }
