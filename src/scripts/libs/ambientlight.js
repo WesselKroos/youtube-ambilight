@@ -101,11 +101,15 @@ export default class Ambientlight {
   }
 
   get playerSmallContainerElem() {
-    return this.ytdWatchFlexyElem.querySelector('#player-container-inner')
+    return this.ytdAppElem.querySelector('#player-container-inner')
   }
 
   get playerTheaterContainerElem() {
-    return this.ytdWatchFlexyElem.querySelector('#player-theater-container')
+    return this.ytdAppElem.querySelector('#player-theater-container')
+  }
+
+  get playerTheaterContainerElemFromVideo() {
+    return this.videoElem?.closest('#player-theater-container')
   }
 
   get ytdWatchFlexyElem() {
@@ -1032,7 +1036,7 @@ export default class Ambientlight {
       else if(
         this.ytdWatchFlexyElem
           ? this.ytdWatchFlexyElem.getAttribute('theater') !== null
-          : this.playerTheaterContainerElem
+          : this.playerTheaterContainerElemFromVideo
       )
         this.view = VIEW_THEATER
       else
@@ -1528,7 +1532,7 @@ export default class Ambientlight {
 
   getElemRect(elem) {
     const scrollableRect = (this.isFullscreen)
-      ? (this.ytdWatchFlexyElem || this.playerTheaterContainerElem || body).getBoundingClientRect()
+      ? (this.ytdWatchFlexyElem || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
       : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
 
