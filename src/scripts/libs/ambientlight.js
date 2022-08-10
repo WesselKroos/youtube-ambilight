@@ -548,11 +548,13 @@ export default class Ambientlight {
       childList: true
     }
     
-    if(this.playerTheaterContainerElem) {
-      playerContainersObserver.observe(this.playerTheaterContainerElem, playerContainersObserverOptions)
+    const playerTheaterContainerElem = this.playerTheaterContainerElem
+    if(playerTheaterContainerElem) {
+      playerContainersObserver.observe(playerTheaterContainerElem, playerContainersObserverOptions)
     }
-    if(this.playerSmallContainerElem) {
-      playerContainersObserver.observe(this.playerSmallContainerElem, playerContainersObserverOptions)
+    const playerSmallContainerElem = this.playerSmallContainerElem
+    if(playerSmallContainerElem) {
+      playerContainersObserver.observe(playerSmallContainerElem, playerContainersObserverOptions)
     }
 
     this.updateView()
