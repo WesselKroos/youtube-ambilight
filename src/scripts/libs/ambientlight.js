@@ -2407,18 +2407,24 @@ export default class Ambientlight {
   updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
     if (!this.shouldToggleTheme()) return beforeToggleCallback()
     
-    const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
-    if(lastFailedThemeToggle) {
-      const now = new Date().getTime()
-      const withinThresshold = now - 10000 < lastFailedThemeToggle
-      if(withinThresshold) {
-        this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${wasDark ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.`)
-        return beforeToggleCallback()
+    if(this.themeToggleFailed !== false) {
+      const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+      if(lastFailedThemeToggle) {
+        const now = new Date().getTime()
+        const withinThresshold = now - 10000 < lastFailedThemeToggle
+        if(withinThresshold) {
+          this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${!!html.getAttribute('dark') ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
+          return beforeToggleCallback()
+        }
+        contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
       }
-      contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
-    }
+      if(this.themeToggleFailed) {
+        this.settings.setWarning('')
+        this.themeToggleFailed = false
+      }
 
-    if (!this.shouldToggleTheme()) return beforeToggleCallback()
+      if (!this.shouldToggleTheme()) return beforeToggleCallback()
+    }
 
     beforeToggleCallback()
     this.toggleDarkTheme()
@@ -2457,6 +2463,7 @@ export default class Ambientlight {
     const isDark = !!html.getAttribute('dark')
     if (wasDark !== isDark) return
     
+    this.themeToggleFailed = true
     contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
     console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
