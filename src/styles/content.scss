@@ -85,7 +85,7 @@ html[data-ambientlight-enabled="true"] {
     --yt-spec-text-secondary: rgba(20, 20, 20, 0.75);
     --yt-spec-icon-inactive: rgba(20, 20, 20, 0.5);
   }
-  &[dark="true"] {
+  &[dark] {
     // Make all card backgrounds transparent
     // --yt-spec-brand-background-solid: none; // Causes transparent add-to-playlist popup on Firefox
     //--yt-spec-brand-background-primary: none; // Causes transparent account popup on Firefox
@@ -117,7 +117,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  &[dark="true"] {
+  &[dark] {
     &,
     &[lang],
     &[style],
@@ -262,7 +262,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   // Body light & search light & at top
-  &:not([dark="true"]) #masthead-container.at-top {
+  &:not([dark]) #masthead-container.at-top {
     --yt-button-color: #000;
     #guide-icon.ytd-masthead,
     yt-icon.ytd-topbar-logo-renderer {
@@ -303,7 +303,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  &[dark="true"] #masthead-container.at-top ytd-searchbox {
+  &[dark] #masthead-container.at-top ytd-searchbox {
     &:not(:hover):not(:focus-within) {
       #container.ytd-searchbox,
       #search-icon-legacy {
@@ -400,7 +400,7 @@ html[data-ambientlight-enabled="true"] {
       background-color: rgba(20,20,20,.15);
     }
   }
-  &[dark="true"] {
+  &[dark] {
     ytd-app {
       #playlist #header-description a,
       #index.ytd-playlist-panel-video-renderer,
@@ -425,7 +425,7 @@ html[data-ambientlight-enabled="true"] {
     height: 100%;
   }
 
-  &:not([dark="true"]) {
+  &:not([dark]) {
     .ambientlight__shadow {
       filter: invert(1);
     }
@@ -1381,7 +1381,7 @@ html[data-ambientlight-enabled="true"] {
   
 
   // All shadows
-  &:not([dark="true"]) {
+  &:not([dark]) {
     ytd-masthead {
       filter: var(--ambientlight-filter-shadow) !important;
     }
@@ -1397,14 +1397,14 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  &:not([dark="true"]) {
+  &:not([dark]) {
     @include filter-and-text-shadow-selectors {
       filter: var(--ambientlight-filter-shadow-inverted) !important;
       text-shadow: var(--ambientlight-text-shadow-inverted) !important;
     }
   }
 
-  &[dark="true"] {
+  &[dark] {
     @include filter-and-text-shadow-selectors {
       filter: var(--ambientlight-filter-shadow) !important;
       text-shadow: var(--ambientlight-text-shadow) !important;
@@ -1489,13 +1489,13 @@ html[data-ambientlight-enabled="true"] {
     }
   }
   
-  &:not([dark="true"]) {
+  &:not([dark]) {
     @include filter-shadow-selectors {
       filter: var(--ambientlight-button-shadow-inverted) !important;
     }
   }
   
-  &[dark="true"] {
+  &[dark] {
     @include filter-shadow-selectors {
       filter: var(--ambientlight-button-shadow) !important;
     }
