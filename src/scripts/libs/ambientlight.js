@@ -474,7 +474,7 @@ export default class Ambientlight {
     on(this.videoElem, 'focus', this.handleVideoFocus, true)
 
     // Appearance (theme) changes initiated by the YouTube menu
-    this.originalTheme = html.getAttribute('dark') ? 1 : -1
+    this.originalTheme = this.isDarkTheme() ? 1 : -1
     on(document, 'yt-action', (e) => {
       if (!this.settings.enabled) return
       const name = e?.detail?.actionName
@@ -2390,6 +2390,8 @@ export default class Ambientlight {
       this.mastheadElem.classList.remove('at-top')
     }
   }
+
+  isDarkTheme = () => (html.getAttribute('dark') !== null)
   
   shouldBeDarkTheme = () => {
     const toTheme = ((!this.settings.enabled || this.isHidden || this.settings.theme === THEME_DEFAULT) ? this.originalTheme : this.settings.theme)
@@ -2399,7 +2401,7 @@ export default class Ambientlight {
   shouldToggleTheme = () => {
     const toDark = this.shouldBeDarkTheme()
     return !(
-      !!html.getAttribute('dark') === toDark ||
+      this.isDarkTheme() === toDark ||
       (toDark && !isWatchPageUrl())
     )
   }
@@ -2413,7 +2415,7 @@ export default class Ambientlight {
         const now = new Date().getTime()
         const withinThresshold = now - 10000 < lastFailedThemeToggle
         if(withinThresshold) {
-          this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${!!html.getAttribute('dark') ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
+          this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${this.isDarkTheme() ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
           return beforeToggleCallback()
         }
         contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
@@ -2427,11 +2429,11 @@ export default class Ambientlight {
     }
 
     beforeToggleCallback()
-    this.toggleDarkTheme()
+    await this.toggleDarkTheme()
   }.bind(this), true)
 
-  toggleDarkTheme() {
-    const wasDark = !!html.getAttribute('dark')
+  async toggleDarkTheme() {
+    const wasDark = this.isDarkTheme()
     
     try {
       yt.config_.EXPERIMENT_FLAGS.kevlar_refresh_on_theme_change = false // Prevents the video page from refreshing every time
@@ -2453,14 +2455,14 @@ export default class Ambientlight {
       returnValue: true
     })
 
-    try {
-      this.ytdAppElem.dispatchEvent(event)
+        try {
+          this.ytdAppElem.dispatchEvent(event)
     } catch(ex) {
       SentryReporter.captureException(ex)
       return
     }
 
-    const isDark = !!html.getAttribute('dark')
+    const isDark = this.isDarkTheme()
     if (wasDark !== isDark) return
     
     this.themeToggleFailed = true
