@@ -1423,7 +1423,8 @@ html[data-ambientlight-enabled="true"] {
     yt-formatted-string.ytd-button-renderer,
     ytd-video-secondary-info-renderer .ytd-channel-name,
     #byline-container.ytd-video-meta-block,
-    #metadata-line.ytd-video-meta-block {
+    #metadata-line.ytd-video-meta-block,
+    #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
     }
 
