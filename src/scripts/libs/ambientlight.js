@@ -93,7 +93,8 @@ export default class Ambientlight {
         try {
           await this.enable(true)
         } catch(ex) {
-          console.warn('Ambient light for YouTube™ | Failed to enable on launch', ex)
+          console.warn('Ambient light for YouTube™ | Failed to enable on launch')
+          SentryReporter.captureException(ex)
         }
       }
       

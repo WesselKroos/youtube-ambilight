@@ -145,7 +145,12 @@ export default class ProjectorShadow {
 
     gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
     for (const gs of gradientStops) {
-      gradient.addColorStop(...gs)
+      try {
+        gradient.addColorStop(...gs)
+      } catch(ex) {
+        ex.details = { size, edge, keyframes, fadeOutFrom, darkest, horizontal, gs }
+        throw ex
+      }
     }
     this.ctx.fillStyle = gradient
     this.ctx.fillRect(0, 0, this.elem.width, this.elem.height)
