@@ -42,6 +42,7 @@ export default class Ambientlight {
   isVideoHiddenOnWatchPage = false
   isVR = false
   isHdr = false
+  isControlledByAnotherExtension = false
 
   lastUpdateStatsTime = 0
   videoFrameCount = 0
@@ -1027,6 +1028,14 @@ export default class Ambientlight {
   updateView = async () => {
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
 
+    const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
+    this.isControlledByAnotherExtension = (
+      body.classList.contains('efyt-mini-player') // Enhancer for YouTube
+    )
+    if(wasControlledByAnotherExtension !== this.isControlledByAnotherExtension) {
+      this.sizesChanged = true
+    }
+
     const wasView = this.view
     if(!this.settings.enabled) {
       this.view = VIEW_DISABLED
@@ -1123,11 +1132,11 @@ export default class Ambientlight {
 
     this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
     this.clippedVideoScale = this.barsClip.map(clip => (1 - (clip * 2)))
-    const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale
+    const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale && !this.isControlledByAnotherExtension
     if (shouldStyleVideoContainer) {
-      const top = Math.max(0, parseInt(this.videoElem.style.top))
-      const left = Math.max(0, parseInt(this.videoElem.style.left))
-      const width = Math.max(0, parseInt(this.videoElem.style.width))
+      const top = Math.max(0, parseInt(this.videoElem.style.top) || 0)
+      const left = Math.max(0, parseInt(this.videoElem.style.left) || 0)
+      const width = Math.max(0, parseInt(this.videoElem.style.width) || 0)
       videoElemParentElem.style.width = `${width}px`
       videoElemParentElem.style.height = this.videoElem.style.height || '100%'
       videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
@@ -1142,6 +1151,8 @@ export default class Ambientlight {
         translate(${-left}px, ${-top}px) 
         scale(${VideoClipScale[0]}, ${VideoClipScale[1]})
       `)
+    } else {
+      this.resetVideoContainerStyle()
     }
 
     this.videoOffset = this.getElemRect(this.videoElem)
@@ -1495,8 +1506,8 @@ export default class Ambientlight {
       const videoElemParentElem = this.videoElem.parentElement
       if(videoElemParentElem) {
         const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
-        const left = Math.max(0, parseInt(this.videoElem.style.left))
-        const top = Math.max(0, parseInt(this.videoElem.style.top))
+        const left = Math.max(0, parseInt(this.videoElem.style.left) || 0)
+        const top = Math.max(0, parseInt(this.videoElem.style.top) || 0)
         const scaleX = (Math.round(1000 * (1 / this.clippedVideoScale[0])) / 1000)
         const scaleY = (Math.round(1000 * (1 / this.clippedVideoScale[1])) / 1000)
         if(
@@ -1921,6 +1932,7 @@ export default class Ambientlight {
         !this.settings.frameBlending &&
         !this.settings.videoOverlayEnabled
       ) ||
+      this.isControlledByAnotherExtension ||
       this.isVideoHiddenOnWatchPage || 
       // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
