@@ -16,8 +16,9 @@ Features:
 
 2. Black bars
 - Remove black bars
+- Remove black sidebars
 - Also remove colored bars
-- Fill video to screen width
+- Fill video to screen
 
 3. Video
 - Size (scale/zoom)

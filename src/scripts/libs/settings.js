@@ -1287,7 +1287,7 @@ export default class Settings {
     {
       name: 'videoScale',
       controllerName: 'detectVideoFillScaleEnabled',
-      controller: 'Fill video to screen width'
+      controller: 'Fill video to screen'
     },
     {
       name: 'horizontalBarsClipPercentage',
