@@ -570,6 +570,7 @@ export default class Ambientlight {
     if(this.isVideoHiddenOnWatchPage === hidden) return false
 
     this.isVideoHiddenOnWatchPage = hidden
+    this.sizesInvalidated = true
     return true
   }
 
