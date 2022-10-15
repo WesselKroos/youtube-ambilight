@@ -12,7 +12,7 @@ const feedbackFormLink = document.currentScript.getAttribute('data-feedback-form
 export default class Settings {
   saveStorageEntryTimeout = {}
 
-  config = [
+  static config = [
     {
       type: 'section',
       label: 'Settings',
@@ -539,28 +539,10 @@ export default class Settings {
       this.menuBtnParent = menuBtnParent
       this.menuElemParent = menuElemParent
 
-      this.config = this.config.map(setting => {
-        if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
-          setting.default = true
-        }
-        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-          setting.default = 25
-        }
-        if(setting.name === 'frameSync' && this.ambientlight.videoHasRequestVideoFrameCallback) {
-          setting.max = 2
-          setting.default = 2
-          setting.advanced = true
-        }
-        if(setting.name === 'sectionQualityPerformanceCollapsed' && this.ambientlight.videoHasRequestVideoFrameCallback && !supportsWebGL()) {
-          setting.advanced = true
-        }
-        return setting
-      })
-
       await this.getAll()
       await this.initWebGLExperiment()
 
-      this.config = this.config.map(setting => {
+      Settings.config = Settings.config.map(setting => {
         if(setting.name === 'webGL' && !supportsWebGL()) {
           this.webGL = undefined
           return undefined
@@ -617,10 +599,32 @@ export default class Settings {
 
     this.set('webGL', true)
   }
-  
-  async getAll() {
+
+  static getStoredSettingsCached = async () => {
+    if(Settings.storedSettingsCached) {
+      return Settings.storedSettingsCached
+    }
+
+    Settings.config = Settings.config.map(setting => {
+      if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
+        setting.default = true
+      }
+      if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
+        setting.default = 25
+      }
+      if(setting.name === 'frameSync' && HTMLVideoElement.prototype.requestVideoFrameCallback) {
+        setting.max = 2
+        setting.default = 2
+        setting.advanced = true
+      }
+      if(setting.name === 'sectionQualityPerformanceCollapsed' && HTMLVideoElement.prototype.requestVideoFrameCallback && !supportsWebGL()) {
+        setting.advanced = true
+      }
+      return setting
+    })
+
     const names = []
-    for (const setting of this.config) {
+    for (const setting of Settings.config) {
       names.push(`setting-${setting.name}`)
 
       if(setting.defaultKey !== undefined) {
@@ -628,14 +632,20 @@ export default class Settings {
       }
     }
 
+    Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+
+    return Settings.storedSettingsCached;
+  }
+  
+  async getAll() {
     let storedSettings = {}
     try {
-      storedSettings = await contentScript.getStorageEntryOrEntries(names, true) || {}
+      storedSettings = await Settings.getStoredSettingsCached();
     } catch {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
-      
-    for (const setting of this.config) {
+
+    for (const setting of Settings.config) {
       let value = storedSettings[`setting-${setting.name}`]
       value = (value === null || value === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(setting.name) : value
       this[setting.name] = this.processStorageEntry(setting.name, value)
@@ -719,7 +729,7 @@ export default class Settings {
             </div>
           </div>
           ${
-      this.config.map(setting => {
+      Settings.config.map(setting => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
         if(setting.hdr) classes += ' ytpa-menuitem--hdr'
@@ -836,7 +846,7 @@ export default class Settings {
       }
 
       // Reset keys
-      for (const setting of this.config.filter(setting => setting.key)) {
+      for (const setting of Settings.config.filter(setting => setting.key)) {
           const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
@@ -885,7 +895,7 @@ export default class Settings {
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
 
-    for (const setting of this.config) {
+    for (const setting of Settings.config) {
       const settingElem = $.s(`#setting-${setting.name}`)
       if (!settingElem) continue
       
@@ -949,7 +959,7 @@ export default class Settings {
 
           let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            value = this.config.find(s => s.name === setting.name).default
+            value = Settings.config.find(s => s.name === setting.name).default
             if(setting.valuePoints) {
               value = setting.valuePoints.indexOf(value)
             }
@@ -984,7 +994,7 @@ export default class Settings {
                   : (value / 2.5)
                 )
 
-              const edgeSetting = this.config.find(setting => setting.name === 'edge')
+              const edgeSetting = Settings.config.find(setting => setting.name === 'edge')
               const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
@@ -1062,7 +1072,7 @@ export default class Settings {
         on(settingElem, 'dblclick contextmenu click', (e) => {
           let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            value = this.config.find(s => s.name === setting.name).default
+            value = Settings.config.find(s => s.name === setting.name).default
             if(value === this[setting.name]) return
           }
 
@@ -1103,7 +1113,7 @@ export default class Settings {
                 'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage',
                 'detectVideoFillScaleEnabled': 'videoScale'
               })[setting.name]
-              const percentageSetting = this.config.find(setting => setting.name === controlledSettingName)
+              const percentageSetting = Settings.config.find(setting => setting.name === controlledSettingName)
               const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
               if(percentageInputElem.value != percentageSetting.default) {
                 percentageInputElem.dontResetControllerSetting = true
@@ -1354,7 +1364,7 @@ export default class Settings {
   }
 
   setKey(name, key) {
-    const setting = this.config.find(setting => setting.name === name) || {}
+    const setting = Settings.config.find(setting => setting.name === name) || {}
     setting.key = key
     this.saveStorageEntry(`${setting.name}-key`, key)
   }
@@ -1378,7 +1388,7 @@ export default class Settings {
   }
 
   updateUI(name) {
-    const setting = this.config.find(setting => setting.name === name) || {}
+    const setting = Settings.config.find(setting => setting.name === name) || {}
     if (setting.type === 'checkbox') {
       const checkboxInput = $.s(`#setting-${name}`)
       if (checkboxInput) {
@@ -1403,7 +1413,7 @@ export default class Settings {
   }
 
   processStorageEntry(name, value) {
-    const setting = this.config.find(setting => setting.name === name) || {}
+    const setting = Settings.config.find(setting => setting.name === name) || {}
     if (value === null || value === undefined) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
@@ -1483,14 +1493,14 @@ export default class Settings {
   }
 
   getKeys = () => ({
-    enabled: this.config.find(setting => setting.name === 'enabled').key,
-    detectHorizontalBarSizeEnabled: this.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
-    detectVerticalBarSizeEnabled: this.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
-    detectVideoFillScaleEnabled: this.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+    enabled: Settings.config.find(setting => setting.name === 'enabled').key,
+    detectHorizontalBarSizeEnabled: Settings.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
+    detectVerticalBarSizeEnabled: Settings.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
+    detectVideoFillScaleEnabled: Settings.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
   })
 
   displayBezelForSetting(name) {
-    const key = this.config.find(setting => setting.name === name).key
+    const key = Settings.config.find(setting => setting.name === name).key
     const strike = !this[name]
     this.displayBezel(key, strike)
   }

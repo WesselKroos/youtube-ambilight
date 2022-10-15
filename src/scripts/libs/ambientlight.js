@@ -68,7 +68,6 @@ export default class Ambientlight {
         throw new Error(`Cannot find mastheadElem: #masthead-container`)
       }
 
-      this.videoHasRequestVideoFrameCallback = !!videoElem.requestVideoFrameCallback
       this.detectChromiumBug1142112Workaround()
       this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
@@ -162,7 +161,7 @@ export default class Ambientlight {
   detectChromiumBug1142112Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && this.videoHasRequestVideoFrameCallback) {
+    if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.enableChromiumBug1142112Workaround = true
     }
   }
@@ -2236,7 +2235,6 @@ export default class Ambientlight {
   }
 
   async disable() {
-    this.cancelStartRequest()
     this.settings.set('enabled', false, true)
 
     await this.hide()
@@ -2248,12 +2246,6 @@ export default class Ambientlight {
       videoElemParentElem.style.height = ''
       videoElemParentElem.style.marginBottom = ''
     }
-  }
-
-  cancelStartRequest() {
-    if (!this.pendingStart) return
-    
-    this.pendingStart.cancel()
   }
 
   start = async (initial = false) => {
@@ -2272,54 +2264,27 @@ export default class Ambientlight {
     } catch(ex) {
       console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
     }
+
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
-    
-    if(!initial) {
-      await this.startCallback()
-      return
-    }
-
-    this.pendingStart = {}
-    const stack = new Error().stack
-    this.pendingStart.promise = new Promise((resolve, reject) => {
-      let ricId = requestIdleCallback(async () => {
-        ricId = undefined
-        this.pendingStart = undefined
-        try {
-          await this.startCallback()
-          resolve()
-        } catch(ex) {
-          appendErrorStack(stack, ex)
-          reject(ex)
-        }
-      }, { timeout: 1000 })
-      this.pendingStart.cancel = () => {
-        if(ricId) cancelIdleCallback(ricId)
-        this.pendingStart = undefined
-        reject()
-      }
-    })
-    try {
-      await this.pendingStart.promise
-    } catch(ex) {
-      if(ex) throw ex
-    }
-  }
-
-  startCallback = async () => {
     this.updateView()
+
+    this.pendingStart = true
     if(this.shouldShow()) await this.show()
 
-    // Prevent incorrect stats from showing
-    this.lastUpdateStatsTime = performance.now() + 2000
-    await this.nextFrame()
+    // Continue only if still enabled after await
+    if(this.settings.enabled) {
+      // Prevent incorrect stats from showing
+      this.lastUpdateStatsTime = performance.now() + 2000
+      await this.nextFrame()
+    }
+
+    this.pendingStart = undefined
   }
 
   scheduleRequestVideoFrame = () => {
     if (
       !this.canScheduleNextFrame() ||
-      
       // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
       this.requestVideoFrameCallbackId ||
       this.settings.frameSync != FRAMESYNC_VIDEOFRAMES ||
@@ -2354,7 +2319,6 @@ export default class Ambientlight {
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
-    this.cancelStartRequest()
     this.resetVideoContainerStyle()
     this.clear()
     this.hideStats()
