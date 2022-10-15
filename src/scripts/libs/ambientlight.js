@@ -2231,7 +2231,7 @@ export default class Ambientlight {
     if (initial) await new Promise(resolve => raf(resolve))
     if (!initial) this.settings.set('enabled', true, true)
     
-    await this.start(initial)
+    await this.start()
   }
 
   async disable() {
@@ -2248,7 +2248,7 @@ export default class Ambientlight {
     }
   }
 
-  start = async (initial = false) => {
+  start = async () => {
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     this.showedCompareWarning = false
