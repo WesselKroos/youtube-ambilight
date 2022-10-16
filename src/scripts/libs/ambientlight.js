@@ -1570,7 +1570,7 @@ export default class Ambientlight {
       this.requestVideoFrameCallbackId &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
-      !this.settings.showFPS
+      !this.settings.showDisplayFPS
     ) return
 
     this.scheduledNextFrame = true
@@ -1855,12 +1855,6 @@ export default class Ambientlight {
   updateStats() {
     if (!this.settings.showFPS || this.isHidden) return;
 
-    // Display FPS
-    const displayFPSText = `DISPLAY: ${this.displayFrameRate.toFixed(2)} ${this.displayFrameRate ? `(${(1000/this.displayFrameRate).toFixed(2)}ms)` : ''}`
-    const displayFPSColor = (this.displayFrameRate < this.videoFrameRate - 1)
-      ? '#f55'
-      : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
-
     // Video FPS
     const videoFPSText = `VIDEO: ${this.videoFrameRate.toFixed(2)} ${this.videoFrameRate ? `(${(1000/this.videoFrameRate).toFixed(2)}ms)` : ''}`
 
@@ -1889,8 +1883,6 @@ export default class Ambientlight {
     const ambientlightDroppedFramesColor = (this.ambientlightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
     // Render all stats
-    this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
-    this.displayFPSElem.style.color = displayFPSColor
 
     this.videoFPSElem.childNodes[0].nodeValue = videoFPSText
 
@@ -1905,6 +1897,19 @@ export default class Ambientlight {
 
     this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ambientlightDroppedFramesText
     this.ambientlightDroppedFramesElem.style.color = ambientlightDroppedFramesColor
+
+    if(this.settings.showDisplayFPS) {
+      // Display FPS
+      const displayFPSText = `DISPLAY: ${this.displayFrameRate.toFixed(2)} ${this.displayFrameRate ? `(${(1000/this.displayFrameRate).toFixed(2)}ms)` : ''}`
+      const displayFPSColor = (this.displayFrameRate < this.videoFrameRate - 1)
+        ? '#f55'
+        : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+
+      this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
+      this.displayFPSElem.style.color = displayFPSColor
+    } else {
+      this.displayFPSElem.childNodes[0].nodeValue = ''
+    }
   }
 
   shouldShow = () => (

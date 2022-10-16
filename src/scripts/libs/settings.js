@@ -34,7 +34,18 @@ export default class Settings {
     },
     {
       name: 'showFPS',
-      label: 'Show framerate',
+      label: 'Framerate stats',
+      type: 'checkbox',
+      default: false,
+      advanced: true
+    },
+    {
+      name: 'showDisplayFPS',
+      label: 'Display framerate stats',
+      description: 'More CPU usage',
+      questionMark: {
+        title: 'The display framerate is not measured by default because this requires extra CPU usage.\nThis also means that the measured display framerate is not a reflection of the real performance.\nHowever, this statistic could be helpful to debug other issues.'
+      },
       type: 'checkbox',
       default: false,
       advanced: true
@@ -94,7 +105,7 @@ export default class Settings {
       name: 'videoOverlayEnabled',
       label: 'Sync video with ambient light',
       questionMark: {
-        title: 'Delays the video frames according to the ambient light frametimes. This makes sure that that the ambient light is never out of sync with the video, but it can introduce stuttering and/or dropped frames.'
+        title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
       },
       type: 'checkbox',
       default: false,
@@ -1081,6 +1092,7 @@ export default class Settings {
             'frameSync',
             'frameBlending',
             'showFPS',
+            'showDisplayFPS',
             'surroundingContentTextAndBtnOnly',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
@@ -1172,13 +1184,18 @@ export default class Settings {
             }
           }
 
-          if (setting.name === 'showFPS') {
+          if(setting.name === 'showFPS') {
             if(value) {
               this.ambientlight.updateStats()
             } else {
               this.ambientlight.hideStats()
             }
+            this.updateVisibility()
             return
+          }
+
+          if(setting.name === 'showDisplayFPS') {
+            this.ambientlight.updateStats()
           }
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
@@ -1340,6 +1357,10 @@ export default class Settings {
     {
       names: [ 'videoShadowOpacity' ],
       visible: () => this.videoShadowSize
+    },
+    {
+      names: [ 'showDisplayFPS' ],
+      visible: () => this.showFPS
     }
   ]
   updateVisibility() {
