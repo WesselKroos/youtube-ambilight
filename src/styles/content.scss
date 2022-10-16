@@ -67,15 +67,43 @@
   z-index: 11;
   top: 5px;
   left: 5px;
-  width: 320px;
-  height: 140px;
-  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
+  width: calc(100% - 10px);
+  height: 340px;
   color: #fff;
   font-size: 18px;
   pointer-events: none;
   user-select: none;
   overflow: hidden;
   contain: strict;
+}
+.ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
+.ambientlight__ambientlight-ft-legend {
+  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
+}
+.ambientlight__ambientlight-ft {
+  pointer-events: auto;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  background: rgba(0, 0, 0, .85);
+  margin-bottom: 10px;
+  cursor: help;
+  overflow: hidden;
+}
+.ambientlight__ambientlight-ft canvas {
+  border: 1px solid #000;
+  transform: scaleY(-1);
+}
+.ambientlight__ambientlight-ft-legend {
+  flex-shrink: 0;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 13.5px;
+  white-space: pre-wrap;
+  letter-spacing: 0px;
+}
+.ambientlight__ambientlight-ft:not([legend]) .ambientlight__ambientlight-ft-legend {
+  display: none;
 }
 
 html[data-ambientlight-enabled="true"] {

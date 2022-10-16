@@ -40,11 +40,11 @@ export default class Settings {
       advanced: true
     },
     {
-      name: 'showDisplayFPS',
-      label: 'Display framerate stats',
+      name: 'showFrametimes',
+      label: 'Frametime stats',
       description: 'More CPU usage',
       questionMark: {
-        title: 'The display framerate is not measured by default because this requires extra CPU usage.\nThis also means that the measured display framerate is not a reflection of the real performance.\nHowever, this statistic could be helpful to debug other issues.'
+        title: 'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
       },
       type: 'checkbox',
       default: false,
@@ -1092,7 +1092,7 @@ export default class Settings {
             'frameSync',
             'frameBlending',
             'showFPS',
-            'showDisplayFPS',
+            'showFrametimes',
             'surroundingContentTextAndBtnOnly',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
@@ -1184,18 +1184,13 @@ export default class Settings {
             }
           }
 
-          if(setting.name === 'showFPS') {
+          if(setting.name === 'showFPS' || setting.name === 'showFrametimes') {
             if(value) {
               this.ambientlight.updateStats()
             } else {
               this.ambientlight.hideStats()
             }
-            this.updateVisibility()
             return
-          }
-
-          if(setting.name === 'showDisplayFPS') {
-            this.ambientlight.updateStats()
           }
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
@@ -1357,10 +1352,6 @@ export default class Settings {
     {
       names: [ 'videoShadowOpacity' ],
       visible: () => this.videoShadowSize
-    },
-    {
-      names: [ 'showDisplayFPS' ],
-      visible: () => this.showFPS
     }
   ]
   updateVisibility() {

@@ -313,6 +313,10 @@ export default class Ambientlight {
         if (this.initVideoIfSrcChanged()) return
   
         this.buffersCleared = true // Always prevent old frame from being drawn
+        this.previousPresentedFrames = 0
+        this.videoFrameTimes = []
+        this.frameTimes = []
+        this.lastUpdateStatsTime = performance.now() + 2000
         await this.optionalFrame()
       },
       loadeddata: () => {
@@ -834,6 +838,24 @@ export default class Ambientlight {
 
     this.FPSListElem = document.createElement('div')
     this.FPSListElem.classList.add('ambientlight__fps-list')
+
+    this.ambientlightFTElem = document.createElement('div')
+    this.ambientlightFTElem.classList.add('ambientlight__ambientlight-ft')
+    this.ambientlightFTElem.style.display = 'none'
+    this.ambientlightFTElem.setAttribute('title', 'Click to toggle legend')
+    on(this.ambientlightFTElem, 'click', e => {
+      e.preventDefault();
+      this.ambientlightFTElem.toggleAttribute('legend');
+    }, { capture: true })
+    on(this.ambientlightFTElem, 'mousedown', e => {
+      e.preventDefault();
+    }, { capture: true }) // Prevent pause
+    this.ambientlightFTLegedElem = document.createElement('div')
+    this.ambientlightFTLegedElem.classList.add('ambientlight__ambientlight-ft-legend')
+    const ambientlightFTLegedElemNode = document.createTextNode('')
+    this.ambientlightFTLegedElem.appendChild(ambientlightFTLegedElemNode)
+    this.ambientlightFTElem.append(this.ambientlightFTLegedElem)
+    this.FPSListElem.append(this.ambientlightFTElem)
 
     this.displayFPSElem = document.createElement('div')
     this.displayFPSElem.classList.add('ambientlight__display-fps')
@@ -1570,7 +1592,7 @@ export default class Ambientlight {
       this.requestVideoFrameCallbackId &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
-      !this.settings.showDisplayFPS
+      !this.settings.showFrametimes
     ) return
 
     this.scheduledNextFrame = true
@@ -1643,7 +1665,14 @@ export default class Ambientlight {
     await this.nextFrame()
   }
 
+  getNow = () => Math.round(100 * performance.now()) / 100
+
   nextFrame = async () => {
+    const videoFrameTimes = this.settings.showFrametimes ? [...this.videoFrameTimes] : []
+    const frameTimes = this.settings.showFrametimes ? {
+      frameStart: this.getNow()
+    } : {}
+  
     this.delayedUpdateSizesChanged = false
     if(this.p && this.sizesInvalidated) {
       this.updateSizesChanged()
@@ -1657,9 +1686,15 @@ export default class Ambientlight {
     
     let results = {}
     try {
+      if (this.settings.showFrametimes)
+        frameTimes.drawStart = this.getNow()
+
       if(!this.settings.webGL || this.getImageDataAllowed) {
         results = this.drawAmbientlight() || {}
       }
+
+      if (this.settings.showFrametimes)
+        frameTimes.drawEnd = this.getNow()
     } catch (ex) {
       if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
         if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
@@ -1680,9 +1715,11 @@ export default class Ambientlight {
       this.scheduleNextFrame()
     }
 
-    if (results.detectBarSize) {
+    if (results?.detectBarSize) {
       this.scheduleBarSizeDetection()
     }
+
+    this.nextFrametimes(videoFrameTimes, frameTimes, results)
 
     if(
       this.afterNextFrameIdleCallback ||
@@ -1697,6 +1734,28 @@ export default class Ambientlight {
     ) return
     
     this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
+  }
+
+  nextFrametimes = (videoFrameTimes, frameTimes, results) => {
+    if(this.settings.showFrametimes && results?.hasNewFrame) {
+      frameTimes.frameEnd = this.getNow()
+      frameTimes.video = videoFrameTimes.pop() || 0
+      this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(frameTimes.video), 1)
+      for (const video of videoFrameTimes) {
+        this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(video), 1)
+        this.frameTimes.push({
+          video
+        })
+      }
+      this.frameTimes.push(frameTimes)
+
+      requestIdleCallback(() => {
+        frameTimes.displayEnd = this.getNow()
+      }, { timeout: 1 })
+      requestIdleCallback(() => {
+        frameTimes.busyEnd = this.getNow()
+      })
+    }
   }
 
   afterNextFrame = async () => {
@@ -1844,61 +1903,78 @@ export default class Ambientlight {
   }
 
   hideStats() {
-    this.videoFPSElem.childNodes[0].nodeValue = ''
-    this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
-    this.videoSyncedElem.childNodes[0].nodeValue = ''
-    this.ambientlightFPSElem.childNodes[0].nodeValue = ''
-    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
-    this.displayFPSElem.childNodes[0].nodeValue = ''
-  }
-
-  updateStats() {
-    if (!this.settings.showFPS || this.isHidden) return;
-
-    // Video FPS
-    const videoFPSText = `VIDEO: ${this.videoFrameRate.toFixed(2)} ${this.videoFrameRate ? `(${(1000/this.videoFrameRate).toFixed(2)}ms)` : ''}`
-
-    // Video dropped frames
-    const videoDroppedFrameCount = this.getVideoDroppedFrameCount()
-    const videoDroppedFramesText = `VIDEO DROPPED: ${videoDroppedFrameCount}`
-    const videoDroppedFramesColor = (videoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
-
-    // Video synced
-    let videoSyncedText = '';
-    let videoSyncedColor = '#f55';
-    if (this.settings.videoOverlayEnabled) {
-      videoSyncedText = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
-      videoSyncedColor = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
-      this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
+    if(this.isHidden || !this.settings.showFPS) {
+      this.videoFPSElem.childNodes[0].nodeValue = ''
+      this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
+      this.videoSyncedElem.childNodes[0].nodeValue = ''
+      this.ambientlightFPSElem.childNodes[0].nodeValue = ''
+      this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
     }
 
-    // Ambientlight FPS
-    const ambientlightFPSText = `AMBIENT LIGHT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
-    const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
-      ? '#f55'
-      : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+    if(this.isHidden || !this.settings.showFPS || !this.settings.showFrametimes) {
+      this.displayFPSElem.childNodes[0].nodeValue = ''
+    }
 
-    // Ambientlight dropped frames
-    const ambientlightDroppedFramesText = `AMBIENT LIGHT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
-    const ambientlightDroppedFramesColor = (this.ambientlightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+    if((this.isHidden || !this.settings.showFrametimes) && this.frameTimesCanvas.parentNode) {
+      this.ambientlightFTLegedElem.childNodes[0].nodeValue = ''
+      this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
+      this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
+      this.ambientlightFTElem.style.display = 'none'
+    }
+  }
 
-    // Render all stats
+  videoFrameTimes = []
+  frameTimes = []
 
-    this.videoFPSElem.childNodes[0].nodeValue = videoFPSText
+  updateStats() {
+    if (this.isHidden) return;
 
-    this.videoDroppedFramesElem.childNodes[0].nodeValue = videoDroppedFramesText
-    this.videoDroppedFramesElem.style.color = videoDroppedFramesColor
+    if(this.settings.showFPS) {
+      // Video FPS
+      const videoFPSText = `VIDEO: ${this.videoFrameRate.toFixed(2)} ${this.videoFrameRate ? `(${(1000/this.videoFrameRate).toFixed(2)}ms)` : ''}`
 
-    this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
-    this.videoSyncedElem.style.color = videoSyncedColor
+      // Video dropped frames
+      const videoDroppedFrameCount = this.getVideoDroppedFrameCount()
+      const videoDroppedFramesText = `VIDEO DROPPED: ${videoDroppedFrameCount}`
+      const videoDroppedFramesColor = (videoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
 
-    this.ambientlightFPSElem.childNodes[0].nodeValue = ambientlightFPSText
-    this.ambientlightFPSElem.style.color = ambientlightFPSColor
+      // Video synced
+      let videoSyncedText = '';
+      let videoSyncedColor = '#f55';
+      if (this.settings.videoOverlayEnabled) {
+        videoSyncedText = `VIDEO SYNCED: ${this.videoOverlay?.isHidden ? 'NO' : 'YES'}`
+        videoSyncedColor = this.videoOverlay?.isHidden ? '#f55' : '#7f7'
+        this.detectVideoSyncedWasHidden = this.videoOverlay?.isHidden
+      }
 
-    this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ambientlightDroppedFramesText
-    this.ambientlightDroppedFramesElem.style.color = ambientlightDroppedFramesColor
+      // Ambientlight FPS
+      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
+      const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
+        ? '#f55'
+        : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
 
-    if(this.settings.showDisplayFPS) {
+      // Ambientlight dropped frames
+      const ambientlightDroppedFramesText = `AMBIENT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
+      const ambientlightDroppedFramesColor = (this.ambientlightVideoDroppedFrameCount > 0) ? '#ff3' : '#7f7'
+
+      // Render all stats
+
+      this.videoFPSElem.childNodes[0].nodeValue = videoFPSText
+
+      this.videoDroppedFramesElem.childNodes[0].nodeValue = videoDroppedFramesText
+      this.videoDroppedFramesElem.style.color = videoDroppedFramesColor
+
+      this.videoSyncedElem.childNodes[0].nodeValue = videoSyncedText
+      this.videoSyncedElem.style.color = videoSyncedColor
+
+      this.ambientlightFPSElem.childNodes[0].nodeValue = ambientlightFPSText
+      this.ambientlightFPSElem.style.color = ambientlightFPSColor
+
+      this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ambientlightDroppedFramesText
+      this.ambientlightDroppedFramesElem.style.color = ambientlightDroppedFramesColor
+    }
+
+    if(this.settings.showFrametimes && this.settings.showFPS) {
       // Display FPS
       const displayFPSText = `DISPLAY: ${this.displayFrameRate.toFixed(2)} ${this.displayFrameRate ? `(${(1000/this.displayFrameRate).toFixed(2)}ms)` : ''}`
       const displayFPSColor = (this.displayFrameRate < this.videoFrameRate - 1)
@@ -1910,7 +1986,168 @@ export default class Ambientlight {
     } else {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
+
+    this.updateFrameTimesStats();
   }
+
+  updateFrameTimesStats = () => {
+    if(!this.settings.showFrametimes || this.isHidden || !this.frameTimes.length) {
+      if(this.frameTimesCanvas.parentNode) {
+        this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
+        this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
+        this.ambientlightFTLegedElem.childNodes[0].nodeValue = ''
+        this.ambientlightFTElem.style.display = 'none'
+      }
+      return
+    }
+
+    // Ambient light FrameTimes
+    let frameTimes = this.frameTimes
+    this.frameTimes = this.frameTimes.slice(this.frameTimes.length - 1, 1)
+    frameTimes.pop()
+    if(frameTimes.length > 120) {
+      frameTimes = frameTimes.slice(frameTimes.length - 120, frameTimes.length)
+    }
+
+    const videoFrameDuration = (1000 / (this.videoFrameRate || 1000))
+    let lastVideoFrameTime = 0
+    for (const ft of frameTimes) {
+      if (!ft.video)
+        ft.video = {
+          processingDuration: lastVideoFrameTime.processingDuration,
+          timestamp: lastVideoFrameTime.timestamp + videoFrameDuration,
+          presentationTime: lastVideoFrameTime.presentationTime + videoFrameDuration,
+          received: lastVideoFrameTime.received + videoFrameDuration,
+          expectedDisplayTime: lastVideoFrameTime.expectedDisplayTime + videoFrameDuration
+        }
+      lastVideoFrameTime = ft.video
+      if (!ft.displayEnd)
+        ft.displayEnd = ft.video.received + videoFrameDuration
+      if (!ft.busyEnd)
+        ft.busyEnd = ft.video.received + videoFrameDuration
+    }
+
+    const videoProcessingRange = this.getRange(
+      frameTimes.map(ft => ft.video.received - (ft.video.timestamp - ft.video.processingDuration))
+    );
+    const ambientlightProcessingRange = this.getRange(
+      frameTimes.map(ft => ft.displayEnd - ft.video.received)
+    );
+    const ambientlightBudgetRange = this.getRange(
+      frameTimes.map(ft => ft.video.expectedDisplayTime - ft.video.received)
+    );
+    const delayedFrames = frameTimes.filter(ft => ft.displayEnd > ft.video.expectedDisplayTime).length
+    const lostFrames = frameTimes.filter(ft => !ft.frameStart).length
+
+    const leged = `         FRAMETIMES                 MIN        MAX
+BLUE   | video processing:   ${videoProcessingRange[0]       }ms ${videoProcessingRange[1]       }ms
+GREEN  | ambient processing: ${ambientlightProcessingRange[0]}ms ${ambientlightProcessingRange[1]}ms
+GRAY   | ambient budget:     ${ambientlightBudgetRange[0]    }ms ${ambientlightBudgetRange[1]    }ms
+
+                 FRAMES
+GREEN          | on time:  ${frameTimes.length - delayedFrames - lostFrames}
+YELLOW/ORANGE  | delayed:  ${delayedFrames}
+RED            | dropped:  ${lostFrames}
+
+measured over 2 seconds`
+    this.ambientlightFTLegedElem.childNodes[0].nodeValue = leged
+
+    const scaleX = 3
+    const width = frameTimes.length * scaleX
+    const height = 200
+    const rangeY = 1.6
+    const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
+    
+    const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
+    const displayFrameDuration = (1000 / (this.displayFrameRate || 1000))
+    const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
+    const displayEndY3x = Math.ceil(displayEndY + ((displayFrameDuration * 2) * scaleY))
+    const displayEndY4x = Math.ceil(displayEndY + ((displayFrameDuration * 3) * scaleY))
+    const displayEndYxn = Math.ceil(displayEndY - (displayFrameDuration * scaleY))
+    const displayEndY2xn = Math.ceil(displayEndY - (displayFrameDuration * 2 * scaleY))
+    const displayEndY3xn = Math.ceil(displayEndY - ((displayFrameDuration * 3) * scaleY))
+    const displayEndY4xn = Math.ceil(displayEndY - ((displayFrameDuration * 4) * scaleY))
+
+    if(!this.frameTimesCanvas) {
+      this.frameTimesCanvas = new Canvas(width, height)
+      this.frameTimesCtx = this.frameTimesCanvas.getContext('2d', { alpha: true })
+      this.ambientlightFTElem.appendChild(this.frameTimesCanvas)
+      this.ambientlightFTElem.style.display = ''
+    } else if (
+      this.frameTimesCanvas.width !== width ||
+      this.frameTimesCanvas.height !== height
+    ) {
+      this.frameTimesCanvas.width = width
+      this.frameTimesCanvas.height = height
+    } else {
+      this.frameTimesCtx.clearRect(0, 0, width, height)
+    }
+    if(!this.frameTimesCanvas.parentNode) {
+      this.ambientlightFTElem.appendChild(this.frameTimesCanvas)
+      this.ambientlightFTElem.style.display = ''
+    }
+
+    const rects = []
+    for (let i = 0, length = frameTimes.length; i < length; i++ ) {
+      const ft = frameTimes[i];
+      const videoSubmit = ft.video.timestamp
+      const videoDisplay = ft.video.expectedDisplayTime - videoSubmit
+      const x = i * scaleX
+      const y = Math.ceil(((videoFrameDuration * rangeY) - videoDisplay) * scaleY)
+      if (ft.frameStart !== undefined) {
+        const nextTimestamp = (i === frameTimes.length - 1) ? null : (frameTimes[i+1].video.timestamp - videoSubmit)
+        const busyEnd = (ft.busyEnd - videoSubmit)
+        const displayEnd = (ft.displayEnd - videoSubmit)
+        const displayEnd2x = videoDisplay + displayFrameDuration
+        const drawEnd = (ft.drawEnd - videoSubmit)
+        const drawStart = (ft.drawStart - videoSubmit)
+        const received = (ft.video.received - videoSubmit)
+        const presented = (ft.video.presentationTime - videoSubmit)
+        const timestamp = ft.video.processingDuration
+        const previousBusyEnd = (i === 0) ? null : (frameTimes[i-1].busyEnd - videoSubmit)
+        
+        if (nextTimestamp) {
+          rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
+        }
+        if (previousBusyEnd) {
+          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
+        }
+        rects.push(['#04a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f80')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0d0' : (displayEnd <= displayEnd2x ? '#dd0' : '#d70')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#cc0' : '#c60')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
+        rects.push(['#04a', x, y, scaleX, Math.ceil(received * scaleY)])
+        // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
+        rects.push(['#0af', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
+      } else {
+        rects.push(['#f00', x, 0, scaleX, height])
+      }
+    }
+    rects.push(['#ffff0066', 0, displayEndY, width, 1])
+    rects.push(['#ff880066', 0, displayEndY2x, width, 1])
+    rects.push(['#ff880066', 0, displayEndY3x, width, 1])
+    rects.push(['#ff880066', 0, displayEndY4x, width, 1])
+    rects.push(['#ffffff66', 0, displayEndYxn, width, 1])
+    rects.push(['#ffffff66', 0, displayEndY2xn, width, 1])
+    rects.push(['#ffffff66', 0, displayEndY3xn, width, 1])
+    rects.push(['#ffffff66', 0, displayEndY4xn, width, 1])
+
+    for (const rect of rects) {
+      this.frameTimesCtx.fillStyle = rect[0]
+      this.frameTimesCtx.fillRect(rect[1], rect[2], rect[3], rect[4])
+    }
+  }
+
+  getRange = (list) => list.length 
+    ? list
+      .sort((a, b) => a - b)
+      .reduce((lowest, de, i) => (i === 0)
+        ? [de]
+        : (i === list.length - 1)
+          ? [lowest.toFixed(2)?.padStart(8, ' '), de.toFixed(2)?.padStart(8, ' ')]
+          : lowest
+      )
+    : ['?', '?'];
 
   shouldShow = () => (
     this.settings.enabled &&
@@ -2123,7 +2360,7 @@ export default class Ambientlight {
       this.elem.style.transform = `translateZ(${this.ambientlightFrameCount % 10}px)`;
     }
     
-    return { detectBarSize }
+    return { hasNewFrame, detectBarSize }
   }
 
   scheduleBarSizeDetection = () => {
@@ -2298,22 +2535,49 @@ export default class Ambientlight {
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(async function videoFrameCallback() {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(async function videoFrameCallback(timestamp, info) {
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
-      await this.receiveVideoFrame()
+      await this.receiveVideoFrame(timestamp, info)
     }.bind(this))
   }
 
-  receiveVideoFrame = async () => {
+  receiveVideoFrame = async (timestamp, info) => {
+    this.receiveVideoFrametimes(timestamp, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
     await this.onNextFrame()
+  }
+
+  receiveVideoFrametimes = (timestamp, info) => {
+    if (this.settings.showFrametimes) {
+      const now = this.getNow()
+      if (this.previousPresentedFrames) {
+        const skippedFrames = info.presentedFrames - this.previousPresentedFrames - 1
+        for (let i = 0; i < skippedFrames; i++) {
+          this.videoFrameTimes.push({
+            processingDuration: info.processingDuration * 1000,
+            timestamp,
+            presentationTime: info.presentationTime - (0.1 * i),
+            received: now - (0.1 * i),
+            expectedDisplayTime: info.expectedDisplayTime - (0.1 * i)
+          })
+        }
+      }
+      this.videoFrameTimes.push({
+        processingDuration: info.processingDuration * 1000,
+        timestamp,
+        presentationTime: info.presentationTime,
+        received: now,
+        expectedDisplayTime: info.expectedDisplayTime
+      })
+      this.previousPresentedFrames = info.presentedFrames
+    }
   }
 
   async hide() {
