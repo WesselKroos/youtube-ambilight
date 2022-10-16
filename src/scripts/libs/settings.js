@@ -1,4 +1,4 @@
-import { $, html, body, on, off, setTimeout, supportsWebGL } from './generic'
+import { html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -847,7 +847,7 @@ export default class Settings {
 
       // Reset keys
       for (const setting of Settings.config.filter(setting => setting.key)) {
-          const keyElem = $.s(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
+          const keyElem = this.menuElem.querySelector(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
           }))
@@ -857,7 +857,7 @@ export default class Settings {
       on(label, 'click', (e) => {
         const value = e.target.value
         const name = e.target.parentNode.id.replace('snap-points-', '')
-        const inputElem = $.s(`#setting-${name}-range`)
+        const inputElem = this.menuElem.querySelector(`#setting-${name}-range`)
         inputElem.value = value
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
@@ -896,12 +896,12 @@ export default class Settings {
     this.menuElemParent.prepend(this.bezelElem)
 
     for (const setting of Settings.config) {
-      const settingElem = $.s(`#setting-${setting.name}`)
+      const settingElem = this.menuElem.querySelector(`#setting-${setting.name}`)
       if (!settingElem) continue
       
       const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
       if (keyElem) {
-        const settingElem = $.s(`#setting-${setting.name}`)
+        const settingElem = this.menuElem.querySelector(`#setting-${setting.name}`)
         on(keyElem, 'click', (e) => {
           e.stopPropagation()
           e.preventDefault()
@@ -933,10 +933,10 @@ export default class Settings {
       }
 
       if (setting.type === 'list') {
-        const inputElem = $.s(`#setting-${setting.name}-range`)
-        const valueElem = $.s(`#setting-${setting.name}-value`)
+        const inputElem = this.menuElem.querySelector(`#setting-${setting.name}-range`)
+        const valueElem = this.menuElem.querySelector(`#setting-${setting.name}-value`)
 
-        const manualInputElem = $.s(`#setting-${setting.name}-manualinput`)
+        const manualInputElem = this.menuElem.querySelector(`#setting-${setting.name}-manualinput`)
         if(manualInputElem) {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
             e.stopPropagation()
@@ -995,7 +995,7 @@ export default class Settings {
                 )
 
               const edgeSetting = Settings.config.find(setting => setting.name === 'edge')
-              const edgeInputElem = $.s(`#setting-${edgeSetting.name}-range`)
+              const edgeInputElem = this.menuElem.querySelector(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
             }
@@ -1013,7 +1013,7 @@ export default class Settings {
                 'videoScale': 'detectVideoFillScaleEnabled'
               })[setting.name]
               if(this[controllerSetting]) {
-                const controllerInput = $.s(`#setting-${controllerSetting}`)
+                const controllerInput = this.menuElem.querySelector(`#setting-${controllerSetting}`)
                 controllerInput.dontResetControlledSetting = true
                 controllerInput.click()
                 return
@@ -1098,7 +1098,7 @@ export default class Settings {
             'webGL'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
-            $.s(`#setting-${setting.name}`).setAttribute('aria-checked', value)
+            this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
           if([
@@ -1114,7 +1114,7 @@ export default class Settings {
                 'detectVideoFillScaleEnabled': 'videoScale'
               })[setting.name]
               const percentageSetting = Settings.config.find(setting => setting.name === controlledSettingName)
-              const percentageInputElem = $.s(`#setting-${percentageSetting.name}-range`)
+              const percentageInputElem = this.menuElem.querySelector(`#setting-${percentageSetting.name}-range`)
               if(percentageInputElem.value != percentageSetting.default) {
                 percentageInputElem.dontResetControllerSetting = true
                 percentageInputElem.value = percentageSetting.default
@@ -1344,7 +1344,7 @@ export default class Settings {
   ]
   updateVisibility() {
     for(const setting of this.controlledSettings) {
-      const valueElem = $.s(`#setting-${setting.name}-value`)
+      const valueElem = this.menuElem.querySelector(`#setting-${setting.name}-value`)
       if(this[setting.controllerName]) {
         valueElem.classList.add('is-controlled-by-setting')
         valueElem.setAttribute('title', `Controlled by the "${setting.controller}" setting.\nManually adjusting this setting will turn off "${setting.controller}"`)
@@ -1355,7 +1355,7 @@ export default class Settings {
     }
 
     for(const optionalGroup of this.optionalSettings) {
-      const optionalSettings = optionalGroup.names.map(name => $.s(`#setting-${name}`)).filter(setting => setting)
+      const optionalSettings = optionalGroup.names.map(name => this.menuElem.querySelector(`#setting-${name}`)).filter(setting => setting)
       const visible = optionalGroup.visible()
       for (const optionalSetting of optionalSettings) {
         optionalSetting.style.display = visible ? '' : 'none'
@@ -1390,17 +1390,17 @@ export default class Settings {
   updateUI(name) {
     const setting = Settings.config.find(setting => setting.name === name) || {}
     if (setting.type === 'checkbox') {
-      const checkboxInput = $.s(`#setting-${name}`)
+      const checkboxInput = this.menuElem.querySelector(`#setting-${name}`)
       if (checkboxInput) {
         checkboxInput.setAttribute('aria-checked', this[name] ? 'true' : 'false')
       }
     } else if (setting.type === 'list') {
-      const rangeInput = $.s(`#setting-${name}-range`)
+      const rangeInput = this.menuElem.querySelector(`#setting-${name}-range`)
       if (rangeInput) {
         rangeInput.value = setting.valuePoints ? setting.valuePoints.indexOf(this[name]) : this[name]
         rangeInput.setAttribute('data-previous-value', rangeInput.value)
-        $.s(`#setting-${name}-value`).textContent = this.getSettingListDisplayText(setting)
-        const manualInput = $.s(`#setting-${name}-manualinput`)
+        this.menuElem.querySelector(`#setting-${name}-value`).textContent = this.getSettingListDisplayText(setting)
+        const manualInput = this.menuElem.querySelector(`#setting-${name}-manualinput`)
         if(manualInput) {
           manualInput.value = rangeInput.value
         }
@@ -1409,7 +1409,7 @@ export default class Settings {
   }
 
   clickUI(name) {
-    $.s(`#setting-${name}`).click()
+    this.menuElem.querySelector(`#setting-${name}`).click()
   }
 
   processStorageEntry(name, value) {
