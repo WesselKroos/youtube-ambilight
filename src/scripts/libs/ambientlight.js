@@ -2058,26 +2058,35 @@ GREEN  | ambient processing: ${ambientlightProcessingRange[0]}ms ${ambientlightP
 GRAY   | ambient budget:     ${ambientlightBudgetRange[0]    }ms ${ambientlightBudgetRange[1]    }ms
 PURPLE | other processing:   ${otherBusyRange[0]             }ms ${otherBusyRange[1]             }ms
 
-                 FRAMES
+                 FRAMECOUNTERS
 GREEN          | on time:  ${frameTimes.length - delayedFrames - lostFrames}
 YELLOW/ORANGE  | delayed:  ${delayedFrames}
-RED            | dropped:  ${lostFrames}`
+RED            | dropped:  ${lostFrames}
+
+         LINES
+GREEN  | when the video frame is rendered
+YELLOW | the next rendered display frame
+ORANGE | any following rendered display frames
+GREY   | any previous rendered display frames`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const scaleX = 3
     const width = frameTimes.length * scaleX
-    const height = 200
-    const rangeY = 1.6
+    const height = 300
+    const rangeY = 1.4
     const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
     
     const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
     const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
     const displayEndY3x = Math.ceil(displayEndY + ((displayFrameDuration * 2) * scaleY))
     const displayEndY4x = Math.ceil(displayEndY + ((displayFrameDuration * 3) * scaleY))
+    const displayEndY5x = Math.ceil(displayEndY + ((displayFrameDuration * 4) * scaleY))
+    const displayEndY6x = Math.ceil(displayEndY + ((displayFrameDuration * 5) * scaleY))
     const displayEndYxn = Math.ceil(displayEndY - (displayFrameDuration * scaleY))
     const displayEndY2xn = Math.ceil(displayEndY - (displayFrameDuration * 2 * scaleY))
     const displayEndY3xn = Math.ceil(displayEndY - ((displayFrameDuration * 3) * scaleY))
     const displayEndY4xn = Math.ceil(displayEndY - ((displayFrameDuration * 4) * scaleY))
+    const displayEndY5xn = Math.ceil(displayEndY - ((displayFrameDuration * 5) * scaleY))
 
     if(!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height)
@@ -2117,31 +2126,34 @@ RED            | dropped:  ${lostFrames}`
         const timestamp = ft.video.processingDuration
         const previousBusyEnd = (i === 0) ? null : (frameTimes[i-1].busyEnd - videoSubmit)
         
+        rects.push(['#a0a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#d60')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0c0' : (displayEnd <= displayEnd2x ? '#aa0' : '#b20')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#550' : '#620')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
+        rects.push(['#06f', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
+        rects.push(['#03f', x, y, scaleX, Math.ceil(received * scaleY)])
+        // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
         if (nextTimestamp) {
           rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
         }
         if (previousBusyEnd) {
           rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
         }
-        rects.push(['#d0d', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f80')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0d0' : (displayEnd <= displayEnd2x ? '#dd0' : '#d70')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#cc0' : '#c60')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
-        rects.push(['#04a', x, y, scaleX, Math.ceil(received * scaleY)])
-        // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
-        rects.push(['#0af', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
       } else {
         rects.push(['#f00', x, 0, scaleX, height])
       }
     }
-    rects.push(['#ffff0066', 0, displayEndY, width, 1])
-    rects.push(['#ff880066', 0, displayEndY2x, width, 1])
+    rects.push(['#00ff00aa', 0, displayEndY, width, 1])
+    rects.push(['#ffff0099', 0, displayEndY2x, width, 1])
     rects.push(['#ff880066', 0, displayEndY3x, width, 1])
     rects.push(['#ff880066', 0, displayEndY4x, width, 1])
+    rects.push(['#ff880066', 0, displayEndY5x, width, 1])
+    rects.push(['#ff880066', 0, displayEndY6x, width, 1])
     rects.push(['#ffffff66', 0, displayEndYxn, width, 1])
     rects.push(['#ffffff66', 0, displayEndY2xn, width, 1])
     rects.push(['#ffffff66', 0, displayEndY3xn, width, 1])
     rects.push(['#ffffff66', 0, displayEndY4xn, width, 1])
+    rects.push(['#ffffff66', 0, displayEndY5xn, width, 1])
 
     for (const rect of rects) {
       this.frameTimesCtx.fillStyle = rect[0]
