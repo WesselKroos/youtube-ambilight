@@ -2073,7 +2073,7 @@ GREY   | any previous rendered display frames`
     const scaleX = 3
     const width = frameTimes.length * scaleX
     const height = 300
-    const rangeY = 1.4
+    const rangeY = 1.65
     const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
     
     const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
@@ -2102,7 +2102,7 @@ GREY   | any previous rendered display frames`
     } else {
       this.frameTimesCtx.clearRect(0, 0, width, height)
     }
-    if(!this.frameTimesCanvas.parentNode) {
+    if(!this.frameTimesCanvas?.parentNode) {
       this.ambientlightFTElem.appendChild(this.frameTimesCanvas)
       this.ambientlightFTElem.style.display = ''
     }
@@ -2126,7 +2126,10 @@ GREY   | any previous rendered display frames`
         const timestamp = ft.video.processingDuration
         const previousBusyEnd = (i === 0) ? null : (frameTimes[i-1].busyEnd - videoSubmit)
         
-        rects.push(['#a0a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        if (previousBusyEnd) {
+          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
+        }
+        rects.push(['#808', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#d60')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0c0' : (displayEnd <= displayEnd2x ? '#aa0' : '#b20')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#550' : '#620')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
@@ -2135,9 +2138,6 @@ GREY   | any previous rendered display frames`
         // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
         if (nextTimestamp) {
           rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
-        }
-        if (previousBusyEnd) {
-          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
         }
       } else {
         rects.push(['#f00', x, 0, scaleX, height])
