@@ -1,5 +1,5 @@
-import { $, html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
-import SentryReporter, { getSelectorTreeString, getNodeTreeString, parseSettingsToSentry } from './sentry-reporter'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
+import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
@@ -850,11 +850,11 @@ export default class Ambientlight {
     on(this.ambientlightFTElem, 'mousedown', e => {
       e.preventDefault();
     }, { capture: true }) // Prevent pause
-    this.ambientlightFTLegedElem = document.createElement('div')
-    this.ambientlightFTLegedElem.classList.add('ambientlight__ambientlight-ft-legend')
-    const ambientlightFTLegedElemNode = document.createTextNode('')
-    this.ambientlightFTLegedElem.appendChild(ambientlightFTLegedElemNode)
-    this.ambientlightFTElem.append(this.ambientlightFTLegedElem)
+    this.ambientlightFTLegendElem = document.createElement('div')
+    this.ambientlightFTLegendElem.classList.add('ambientlight__ambientlight-ft-legend')
+    const ambientlightFTLegendElemNode = document.createTextNode('')
+    this.ambientlightFTLegendElem.appendChild(ambientlightFTLegendElemNode)
+    this.ambientlightFTElem.append(this.ambientlightFTLegendElem)
     this.FPSListElem.append(this.ambientlightFTElem)
 
     this.displayFPSElem = document.createElement('div')
@@ -1737,25 +1737,25 @@ export default class Ambientlight {
   }
 
   nextFrametimes = (videoFrameTimes, frameTimes, results) => {
-    if(this.settings.showFrametimes && results?.hasNewFrame) {
-      frameTimes.frameEnd = this.getNow()
-      frameTimes.video = videoFrameTimes.pop() || 0
-      this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(frameTimes.video), 1)
-      for (const video of videoFrameTimes) {
-        this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(video), 1)
-        this.frameTimes.push({
-          video
-        })
-      }
-      this.frameTimes.push(frameTimes)
-
-      requestIdleCallback(() => {
-        frameTimes.displayEnd = this.getNow()
-      }, { timeout: 1 })
-      requestIdleCallback(() => {
-        frameTimes.busyEnd = this.getNow()
+    if(!this.settings.showFrametimes || !results?.hasNewFrame) return
+  
+    frameTimes.frameEnd = this.getNow()
+    frameTimes.video = videoFrameTimes.pop() || 0
+    this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(frameTimes.video), 1)
+    for (const video of videoFrameTimes) {
+      this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(video), 1)
+      this.frameTimes.push({
+        video
       })
     }
+    this.frameTimes.push(frameTimes)
+
+    requestIdleCallback(() => {
+      frameTimes.displayEnd = this.getNow()
+    }, { timeout: 1 })
+    requestIdleCallback(() => {
+      frameTimes.busyEnd = this.getNow()
+    })
   }
 
   afterNextFrame = async () => {
@@ -1915,8 +1915,8 @@ export default class Ambientlight {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    if((this.isHidden || !this.settings.showFrametimes) && this.frameTimesCanvas.parentNode) {
-      this.ambientlightFTLegedElem.childNodes[0].nodeValue = ''
+    if((this.isHidden || !this.settings.showFrametimes) && this.frameTimesCanvas?.parentNode) {
+      this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
       this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
       this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
       this.ambientlightFTElem.style.display = 'none'
@@ -1992,10 +1992,10 @@ export default class Ambientlight {
 
   updateFrameTimesStats = () => {
     if(!this.settings.showFrametimes || this.isHidden || !this.frameTimes.length) {
-      if(this.frameTimesCanvas.parentNode) {
+      if(this.frameTimesCanvas?.parentNode) {
         this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
         this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
-        this.ambientlightFTLegedElem.childNodes[0].nodeValue = ''
+        this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
         this.ambientlightFTElem.style.display = 'none'
       }
       return
@@ -2009,17 +2009,27 @@ export default class Ambientlight {
       frameTimes = frameTimes.slice(frameTimes.length - 120, frameTimes.length)
     }
 
+    const displayFrameDuration = (1000 / (this.displayFrameRate || 1000))
     const videoFrameDuration = (1000 / (this.videoFrameRate || 1000))
     let lastVideoFrameTime = 0
     for (const ft of frameTimes) {
-      if (!ft.video)
-        ft.video = {
-          processingDuration: lastVideoFrameTime.processingDuration,
-          timestamp: lastVideoFrameTime.timestamp + videoFrameDuration,
-          presentationTime: lastVideoFrameTime.presentationTime + videoFrameDuration,
-          received: lastVideoFrameTime.received + videoFrameDuration,
-          expectedDisplayTime: lastVideoFrameTime.expectedDisplayTime + videoFrameDuration
-        }
+      if (!ft.video) {
+        ft.video = (this.settings.frameSync === FRAMESYNC_VIDEOFRAMES)
+          ? {
+            processingDuration: lastVideoFrameTime.processingDuration,
+            timestamp: lastVideoFrameTime.timestamp + videoFrameDuration,
+            presentationTime: lastVideoFrameTime.presentationTime + videoFrameDuration,
+            received: lastVideoFrameTime.received + videoFrameDuration,
+            expectedDisplayTime: lastVideoFrameTime.expectedDisplayTime + videoFrameDuration
+          }
+          : {
+            processingDuration: 0,
+            timestamp: ft.frameStart,
+            presentationTime: ft.frameStart,
+            received: ft.frameStart,
+            expectedDisplayTime: ft.frameStart + displayFrameDuration
+          }
+      }
       lastVideoFrameTime = ft.video
       if (!ft.displayEnd)
         ft.displayEnd = ft.video.received + videoFrameDuration
@@ -2036,21 +2046,23 @@ export default class Ambientlight {
     const ambientlightBudgetRange = this.getRange(
       frameTimes.map(ft => ft.video.expectedDisplayTime - ft.video.received)
     );
+    const otherBusyRange = this.getRange(
+      frameTimes.map(ft => ft.busyEnd - ft.displayEnd)
+    );
     const delayedFrames = frameTimes.filter(ft => ft.displayEnd > ft.video.expectedDisplayTime).length
     const lostFrames = frameTimes.filter(ft => !ft.frameStart).length
 
-    const leged = `         FRAMETIMES                 MIN        MAX
+    const legend = `         FRAMETIMES                 MIN        MAX
 BLUE   | video processing:   ${videoProcessingRange[0]       }ms ${videoProcessingRange[1]       }ms
 GREEN  | ambient processing: ${ambientlightProcessingRange[0]}ms ${ambientlightProcessingRange[1]}ms
 GRAY   | ambient budget:     ${ambientlightBudgetRange[0]    }ms ${ambientlightBudgetRange[1]    }ms
+PURPLE | other processing:   ${otherBusyRange[0]             }ms ${otherBusyRange[1]             }ms
 
                  FRAMES
 GREEN          | on time:  ${frameTimes.length - delayedFrames - lostFrames}
 YELLOW/ORANGE  | delayed:  ${delayedFrames}
-RED            | dropped:  ${lostFrames}
-
-measured over 2 seconds`
-    this.ambientlightFTLegedElem.childNodes[0].nodeValue = leged
+RED            | dropped:  ${lostFrames}`
+    this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const scaleX = 3
     const width = frameTimes.length * scaleX
@@ -2059,7 +2071,6 @@ measured over 2 seconds`
     const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
     
     const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
-    const displayFrameDuration = (1000 / (this.displayFrameRate || 1000))
     const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
     const displayEndY3x = Math.ceil(displayEndY + ((displayFrameDuration * 2) * scaleY))
     const displayEndY4x = Math.ceil(displayEndY + ((displayFrameDuration * 3) * scaleY))
@@ -2112,7 +2123,7 @@ measured over 2 seconds`
         if (previousBusyEnd) {
           rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
         }
-        rects.push(['#04a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        rects.push(['#d0d', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f80')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0d0' : (displayEnd <= displayEnd2x ? '#dd0' : '#d70')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#cc0' : '#c60')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
