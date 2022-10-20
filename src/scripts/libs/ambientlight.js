@@ -45,6 +45,9 @@ export default class Ambientlight {
   isControlledByAnotherExtension = false
 
   lastUpdateStatsTime = 0
+  updateStatsInterval = 400
+  frameCountHistory = 5000
+  updateStatsFrametimesHistoryMax = 120
   videoFrameCount = 0
   displayFrameRate = 0
   videoFrameRate = 0
@@ -72,6 +75,7 @@ export default class Ambientlight {
       this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectChromiumBug1092080Workaround()
+      this.detectChromiumBug3Workaround()
 
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
@@ -163,6 +167,16 @@ export default class Ambientlight {
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.enableChromiumBug1142112Workaround = true
+    }
+  }
+
+  detectChromiumBug3Workaround() {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
+      this.elemTightFrametimeWorkaround = document.createElement('div')
+      this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
+      this.videoPlayerElem?.prepend(this.elemTightFrametimeWorkaround)
     }
   }
 
@@ -314,9 +328,9 @@ export default class Ambientlight {
   
         this.buffersCleared = true // Always prevent old frame from being drawn
         this.previousPresentedFrames = 0
-        this.videoFrameTimes = []
-        this.frameTimes = []
-        this.lastUpdateStatsTime = performance.now() + 2000
+        // this.videoFrameTimes = []
+        // this.frameTimes = []
+        this.lastUpdateStatsTime = performance.now() + 1000
         await this.optionalFrame()
       },
       loadeddata: () => {
@@ -1729,7 +1743,7 @@ export default class Ambientlight {
           this.delayedUpdateSizesChanged &&
           (performance.now() - this.lastUpdateSizesChanged) > 2000
         ) &&
-        !((performance.now() - this.lastUpdateStatsTime) > 2000)
+        !((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval)
       )
     ) return
     
@@ -1774,7 +1788,7 @@ export default class Ambientlight {
         if(this.sizesChanged) {
           await this.optionalFrame()
         }
-      } else if((performance.now() - this.lastUpdateStatsTime) > 2000) {
+      } else if((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval) {
         this.updateStats()
         this.lastUpdateStatsTime = performance.now()
       }
@@ -1805,69 +1819,67 @@ export default class Ambientlight {
     return false
   }
 
-  detectVideoFrameRate() {
-    if (this.videoFrameRateStartTime === undefined) {
-      this.videoFrameRateStartTime = 0
-      this.videoFrameRateStartCount = 0
-    }
+  // Todo: Fix frame drops on 60hz monitors with a 50hz video playing
+  detectFrameRate(list, count) {
+    // Remove old items
+    const time = performance.now()
+    const thresholdTime = time - this.frameCountHistory
+    const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
+    if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
-    const videoFrameRateTime = performance.now()
-    if (this.videoFrameRateStartTime + 2000 < videoFrameRateTime) {
-      const videoFrameRateCount = this.getVideoFrameCount() + this.getVideoDroppedFrameCount()
-      if (this.videoFrameRateStartCount !== 0) {
-        this.videoFrameRate = Math.max(0,
-          (
-            (videoFrameRateCount - this.videoFrameRateStartCount) / 
-            ((videoFrameRateTime - this.videoFrameRateStartTime) / 1000)
-          )
-        )
-      }
-      this.videoFrameRateStartCount = videoFrameRateCount
-      this.videoFrameRateStartTime = videoFrameRateTime
-    }
-  }
-
-  detectDisplayFrameRate = () => {
-    const displayFrameRateTime = performance.now()
-    if (this.displayFrameRateStartTime < displayFrameRateTime - 2000) {
-      this.displayFrameRate = Math.max(0, 
+    // Add new item
+    let fps = 0
+    if (list.length) {
+      const previous = list[Math.min(list.length - 1, 2)]
+      fps = Math.max(0,
         (
-          this.displayFrameRateFrame / 
-          ((displayFrameRateTime - this.displayFrameRateStartTime) / 1000)
+          (count - previous.count) / 
+          ((time - previous.time) / 1000)
         )
       )
-      this.displayFrameRateFrame = 1
-      this.displayFrameRateStartTime = displayFrameRateTime
-    } else {
-      if (!this.displayFrameRateFrame) {
-        this.displayFrameRateFrame = 1
-        this.displayFrameRateStartTime = displayFrameRateTime
-      } else {
-        this.displayFrameRateFrame++
-      }
     }
+    list.push({
+      count,
+      time,
+      fps
+    })
+
+    if (list.length < 2) return 0
+
+    // Calculate fps
+    const aligableList = list.filter(i => i.fps).sort((a, b) => a - b)
+    if(aligableList.length > 10) {
+      const bound = Math.min(aligableList.length / 4)
+      aligableList.splice(0, bound)
+      aligableList.splice(aligableList.length - bound, bound)
+    }
+    return aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
   }
 
-  detectAmbientlightFrameRate() {
-    if (this.ambientlightFrameRateStartTime === undefined) {
-      this.ambientlightFrameRateStartTime = 0
-      this.ambientlightFrameRateStartCount = 0
-    }
+  videoFrameCounts = []
+  detectVideoFrameRate() {
+    this.videoFrameRate = this.detectFrameRate(
+      this.videoFrameCounts,
+      this.getVideoFrameCount() + this.getVideoDroppedFrameCount()
+    )
+  }
 
-    const time = performance.now()
-    if (this.ambientlightFrameRateStartTime + 2000 < time) {
-      const count = this.ambientlightFrameCount
-      if (this.ambientlightFrameRateStartCount !== 0) {
-        this.ambientlightFrameRate = Math.max(0, 
-          (
-            (count - this.ambientlightFrameRateStartCount) / 
-            ((time - this.ambientlightFrameRateStartTime) / 1000)
-          )
-        )
-      }
-      this.ambientlightFrameRateStartCount = count
-      this.ambientlightFrameRateStartTime = time
-    }
+  displayFrameCounts = []
+  displayFrameCount = 0
+  detectDisplayFrameRate = () => {
+    this.displayFrameCount++
+    this.displayFrameRate = this.detectFrameRate(
+      this.displayFrameCounts,
+      this.displayFrameCount
+    )
+  }
+
+  ambientlightFrameCounts = []
+  detectAmbientlightFrameRate() {
+    this.ambientlightFrameRate = this.detectFrameRate(
+      this.ambientlightFrameCounts,
+      this.ambientlightFrameCount
+    )
   }
 
   getVideoDroppedFrameCount() {
@@ -2003,11 +2015,9 @@ export default class Ambientlight {
 
     // Ambient light FrameTimes
     let frameTimes = this.frameTimes
-    this.frameTimes = this.frameTimes.slice(this.frameTimes.length - 1, 1)
+    this.frameTimes = this.frameTimes.slice(-this.updateStatsFrametimesHistoryMax)
     frameTimes.pop()
-    if(frameTimes.length > 120) {
-      frameTimes = frameTimes.slice(frameTimes.length - 120, frameTimes.length)
-    }
+    frameTimes = frameTimes.slice(-this.updateStatsFrametimesHistoryMax)
 
     const displayFrameDuration = (1000 / (this.displayFrameRate || 1000))
     const videoFrameDuration = (1000 / (this.videoFrameRate || 1000))
@@ -2065,9 +2075,9 @@ RED            | dropped:  ${lostFrames}
 
          LINES
 GREEN  | when the video frame is rendered
-YELLOW | the next rendered display frame
-ORANGE | any following rendered display frames
-GREY   | any previous rendered display frames`
+YELLOW | render delayed by 1 display frame
+ORANGE | delayed by more than 1 display frame
+GREY   | previous display frames`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const scaleX = 3
@@ -2075,18 +2085,6 @@ GREY   | any previous rendered display frames`
     const height = 300
     const rangeY = 1.65
     const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
-    
-    const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
-    const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
-    const displayEndY3x = Math.ceil(displayEndY + ((displayFrameDuration * 2) * scaleY))
-    const displayEndY4x = Math.ceil(displayEndY + ((displayFrameDuration * 3) * scaleY))
-    const displayEndY5x = Math.ceil(displayEndY + ((displayFrameDuration * 4) * scaleY))
-    const displayEndY6x = Math.ceil(displayEndY + ((displayFrameDuration * 5) * scaleY))
-    const displayEndYxn = Math.ceil(displayEndY - (displayFrameDuration * scaleY))
-    const displayEndY2xn = Math.ceil(displayEndY - (displayFrameDuration * 2 * scaleY))
-    const displayEndY3xn = Math.ceil(displayEndY - ((displayFrameDuration * 3) * scaleY))
-    const displayEndY4xn = Math.ceil(displayEndY - ((displayFrameDuration * 4) * scaleY))
-    const displayEndY5xn = Math.ceil(displayEndY - ((displayFrameDuration * 5) * scaleY))
 
     if(!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height)
@@ -2129,10 +2127,10 @@ GREY   | any previous rendered display frames`
         if (previousBusyEnd) {
           rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
         }
-        rects.push(['#808', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#d60')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0c0' : (displayEnd <= displayEnd2x ? '#aa0' : '#b20')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#550' : '#620')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
+        rects.push(['#60a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f90')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#bb0' : '#e80')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#990' : '#c70')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
         rects.push(['#06f', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
         rects.push(['#03f', x, y, scaleX, Math.ceil(received * scaleY)])
         // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
@@ -2143,17 +2141,21 @@ GREY   | any previous rendered display frames`
         rects.push(['#f00', x, 0, scaleX, height])
       }
     }
+    
+    const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
     rects.push(['#00ff00aa', 0, displayEndY, width, 1])
+    const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
     rects.push(['#ffff0099', 0, displayEndY2x, width, 1])
-    rects.push(['#ff880066', 0, displayEndY3x, width, 1])
-    rects.push(['#ff880066', 0, displayEndY4x, width, 1])
-    rects.push(['#ff880066', 0, displayEndY5x, width, 1])
-    rects.push(['#ff880066', 0, displayEndY6x, width, 1])
-    rects.push(['#ffffff66', 0, displayEndYxn, width, 1])
-    rects.push(['#ffffff66', 0, displayEndY2xn, width, 1])
-    rects.push(['#ffffff66', 0, displayEndY3xn, width, 1])
-    rects.push(['#ffffff66', 0, displayEndY4xn, width, 1])
-    rects.push(['#ffffff66', 0, displayEndY5xn, width, 1])
+    for(let i = 0; i < 50; i++) {
+      const displayEndYnx = Math.ceil(displayEndY + ((displayFrameDuration * (2 + i)) * scaleY))
+      if(displayEndYnx > height) break;
+      rects.push(['#ff880066', 0, displayEndYnx, width, 1])
+    }
+    for(let i = 0; i < 50; i++) {
+      const displayEndYxn = Math.ceil(displayEndY - (displayFrameDuration * (1 + i) * scaleY))
+      if(displayEndYxn < 0) break;
+      rects.push(['#ffffff66', 0, displayEndYxn, width, 1])
+    }
 
     for (const rect of rects) {
       this.frameTimesCtx.fillStyle = rect[0]
@@ -2541,7 +2543,7 @@ GREY   | any previous rendered display frames`
     // Continue only if still enabled after await
     if(this.settings.enabled) {
       // Prevent incorrect stats from showing
-      this.lastUpdateStatsTime = performance.now() + 2000
+      this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
     }
 
@@ -2574,6 +2576,7 @@ GREY   | any previous rendered display frames`
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
+    // this.scheduleRequestVideoFrame() // Requesting? as soon as possible to prevent many 1 frame delayed ambient frames on low fps displays
     await this.onNextFrame()
   }
 

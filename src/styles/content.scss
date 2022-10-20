@@ -37,6 +37,33 @@
   pointer-events: none;
 }
 
+/* Workaround for issue where chromium often delays video frames with 1 display frame */
+.ambientlight__tight-frametime-workaround {
+  display: none;
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  background: #888;
+  width: 0.2px;
+  height: 0.2px;
+  opacity: .0004;
+  pointer-events: none;
+  animation: ambientlight-tight-frametime-workaround 1s linear infinite;
+
+  @keyframes ambientlight-tight-frametime-workaround {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  html[data-ambientlight-enabled="true"] .playing-mode & {
+    display: block;
+  }
+}
+
 /* Workaround for issue with OffScreenCanvas */
 .ambientlight__buffers {
   position: absolute;
