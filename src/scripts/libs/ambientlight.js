@@ -2130,15 +2130,15 @@ GREY   | previous display frames`
         const previousExpectedDisplayTime = (i === 0) ? null : (frameTimes[i-1].video.expectedDisplayTime - videoSubmit)
         
         if (previousBusyEnd) {
-          rects.push(['#aaa', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
+          rects.push(['#999', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
           rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousExpectedDisplayTime * scaleY)])
         }
-        rects.push(['#60a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f90')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#bb0' : '#e80')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#990' : '#c70')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
-        rects.push(['#03f', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
-        rects.push(['#06f', x, y, scaleX, Math.ceil(received * scaleY)])
+        rects.push(['#999', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f80')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#3e1' : (displayEnd <= displayEnd2x ? '#cc0' : '#e60')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
+        rects.push([(displayEnd <= videoDisplay ? '#8f4' : (displayEnd <= displayEnd2x ? '#990' : '#c50')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
+        rects.push(['#06d', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
+        rects.push(['#00f', x, y, scaleX, Math.ceil(received * scaleY)])
         // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
         // rects.push(['#f0f', x, y + Math.ceil(videoDisplay * scaleY) - 1, scaleX, 3])
         if (nextTimestamp) {
