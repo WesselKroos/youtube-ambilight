@@ -95,7 +95,7 @@
   top: 5px;
   left: 5px;
   width: calc(100% - 10px);
-  height: 440px;
+  height: inherit;
   color: #fff;
   font-size: 18px;
   pointer-events: none;
@@ -112,14 +112,21 @@
   display: flex;
   width: fit-content;
   max-width: 100%;
-  background: rgba(0, 0, 0, .85);
+  min-height: 152px;
+  max-height: min(900px, calc(100% - 65px));
   margin-bottom: 10px;
-  cursor: help;
+  background: rgba(0, 0, 0, .85);
   overflow: hidden;
+  resize: vertical;
 }
 .ambientlight__ambientlight-ft canvas {
   border: 1px solid #000;
   transform: scaleY(-1);
+  cursor: help;
+
+  @at-root .ambientlight__ambientlight-ft:not([style*="height: 1"]):not([style*="height: 2"]):not([style*="height: 3"]) canvas {
+    image-rendering: pixelated;
+  }
 }
 .ambientlight__ambientlight-ft-legend {
   flex-shrink: 0;

@@ -330,7 +330,10 @@ export default class Ambientlight {
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
         // this.frameTimes = []
-        this.lastUpdateStatsTime = performance.now() + 1000
+        this.videoFrameCounts = []
+        this.displayFrameCounts = []
+        this.ambientlightFrameCounts = []
+        this.lastUpdateStatsTime = performance.now()
         await this.optionalFrame()
       },
       loadeddata: () => {
@@ -856,14 +859,6 @@ export default class Ambientlight {
     this.ambientlightFTElem = document.createElement('div')
     this.ambientlightFTElem.classList.add('ambientlight__ambientlight-ft')
     this.ambientlightFTElem.style.display = 'none'
-    this.ambientlightFTElem.setAttribute('title', 'Click to toggle legend')
-    on(this.ambientlightFTElem, 'click', e => {
-      e.preventDefault();
-      this.ambientlightFTElem.toggleAttribute('legend');
-    }, { capture: true })
-    on(this.ambientlightFTElem, 'mousedown', e => {
-      e.preventDefault();
-    }, { capture: true }) // Prevent pause
     this.ambientlightFTLegendElem = document.createElement('div')
     this.ambientlightFTLegendElem.classList.add('ambientlight__ambientlight-ft-legend')
     const ambientlightFTLegendElemNode = document.createTextNode('')
@@ -2088,9 +2083,18 @@ GREY   | previous display frames`
 
     if(!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height)
-      this.frameTimesCtx = this.frameTimesCanvas.getContext('2d', { alpha: true })
+      this.frameTimesCanvas.setAttribute('title', 'Click to toggle legend')
+      on(this.frameTimesCanvas, 'click', e => {
+        e.preventDefault();
+        this.ambientlightFTElem.toggleAttribute('legend');
+      }, { capture: true })
+      on(this.frameTimesCanvas, 'mousedown', e => {
+        e.preventDefault();
+      }, { capture: true }) // Prevent pause
       this.ambientlightFTElem.appendChild(this.frameTimesCanvas)
       this.ambientlightFTElem.style.display = ''
+
+      this.frameTimesCtx = this.frameTimesCanvas.getContext('2d', { alpha: true })
     } else if (
       this.frameTimesCanvas.width !== width ||
       this.frameTimesCanvas.height !== height
@@ -2123,17 +2127,20 @@ GREY   | previous display frames`
         const presented = (ft.video.presentationTime - videoSubmit)
         const timestamp = ft.video.processingDuration
         const previousBusyEnd = (i === 0) ? null : (frameTimes[i-1].busyEnd - videoSubmit)
+        const previousExpectedDisplayTime = (i === 0) ? null : (frameTimes[i-1].video.expectedDisplayTime - videoSubmit)
         
         if (previousBusyEnd) {
-          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
+          rects.push(['#aaa', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
+          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousExpectedDisplayTime * scaleY)])
         }
         rects.push(['#60a', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f90')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#0b0' : (displayEnd <= displayEnd2x ? '#bb0' : '#e80')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
         rects.push([(displayEnd <= videoDisplay ? '#090' : (displayEnd <= displayEnd2x ? '#990' : '#c70')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
-        rects.push(['#06f', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
-        rects.push(['#03f', x, y, scaleX, Math.ceil(received * scaleY)])
+        rects.push(['#03f', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
+        rects.push(['#06f', x, y, scaleX, Math.ceil(received * scaleY)])
         // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
+        // rects.push(['#f0f', x, y + Math.ceil(videoDisplay * scaleY) - 1, scaleX, 3])
         if (nextTimestamp) {
           rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
         }
