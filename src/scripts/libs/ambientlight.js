@@ -45,7 +45,7 @@ export default class Ambientlight {
   isControlledByAnotherExtension = false
 
   lastUpdateStatsTime = 0
-  updateStatsInterval = 400
+  updateStatsInterval = 1000
   frameCountHistory = 5000
   updateStatsFrametimesHistoryMax = 120
   videoFrameCount = 0
@@ -176,7 +176,7 @@ export default class Ambientlight {
     if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.elemTightFrametimeWorkaround = document.createElement('div')
       this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
-      this.videoPlayerElem?.prepend(this.elemTightFrametimeWorkaround)
+      this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
     }
   }
 
