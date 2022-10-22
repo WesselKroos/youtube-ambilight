@@ -1626,9 +1626,7 @@ export default class Ambientlight {
       this.nextFrameTime = undefined
     }
 
-    this.detectDisplayFrameRate()
-    this.detectAmbientlightFrameRate()
-    this.detectVideoFrameRate()
+    this.detectFrameRates()
   }.bind(this))
 
   onNextLimitedFrame = async () => {
@@ -1814,13 +1812,13 @@ export default class Ambientlight {
     return false
   }
 
-  // Todo: Fix frame drops on 60hz monitors with a 50hz video playing
-  detectFrameRate(list, count) {
-    // Remove old items
+  // Todo:
+  // - Fix frame drops on 60hz monitors with a 50hz video playing:
+  //     Was caused by faulty NVidia 3050TI driver 
+  //     and chromium video callback being sometimes 1 frame delayed
+  // - Do more complex logic at a later time
+  detectFrameRate(list, count, currentFrameRate, update) {
     const time = performance.now()
-    const thresholdTime = time - this.frameCountHistory
-    const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
-    if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
     // Add new item
     let fps = 0
@@ -1840,6 +1838,14 @@ export default class Ambientlight {
     })
 
     if (list.length < 2) return 0
+    if (!update) return currentFrameRate
+
+    // Todo: delay removal and calculations to idle callback?
+
+    // Remove old items
+    const thresholdTime = time - this.frameCountHistory
+    const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
+    if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
     // Calculate fps
     const aligableList = list.filter(i => i.fps).sort((a, b) => a - b)
@@ -1851,29 +1857,43 @@ export default class Ambientlight {
     return aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
   }
 
+  detectFrameRates() {
+    const update = performance.now() > (this.previousUpdate || 0) + this.updateStatsInterval
+    if(update) this.previousUpdate = performance.now()
+    this.detectDisplayFrameRate(update)
+    this.detectAmbientlightFrameRate(update)
+    this.detectVideoFrameRate(update)
+  }
+
   videoFrameCounts = []
-  detectVideoFrameRate() {
+  detectVideoFrameRate(update) {
     this.videoFrameRate = this.detectFrameRate(
       this.videoFrameCounts,
-      this.getVideoFrameCount() + this.getVideoDroppedFrameCount()
+      this.getVideoFrameCount() + this.getVideoDroppedFrameCount(),
+      this.videoFrameRate,
+      update
     )
   }
 
   displayFrameCounts = []
   displayFrameCount = 0
-  detectDisplayFrameRate = () => {
+  detectDisplayFrameRate = (update) => {
     this.displayFrameCount++
     this.displayFrameRate = this.detectFrameRate(
       this.displayFrameCounts,
-      this.displayFrameCount
+      this.displayFrameCount,
+      this.displayFrameRate,
+      update
     )
   }
 
   ambientlightFrameCounts = []
-  detectAmbientlightFrameRate() {
+  detectAmbientlightFrameRate(update) {
     this.ambientlightFrameRate = this.detectFrameRate(
       this.ambientlightFrameCounts,
-      this.ambientlightFrameCount
+      this.ambientlightFrameCount,
+      this.ambientlightFrameRate,
+      update
     )
   }
 
