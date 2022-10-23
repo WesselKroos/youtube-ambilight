@@ -1159,6 +1159,7 @@ export default class Settings {
             'videoOverlayEnabled'
           ].some(name => name === setting.name)) {
             this.updateVisibility()
+            this.ambientlight.sizesChanged = true
           }
 
           if([
