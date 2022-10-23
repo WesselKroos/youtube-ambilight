@@ -180,6 +180,16 @@ export default class Ambientlight {
     }
   }
 
+  updateChromium3Workaround() {
+    if(!this.elemTightFrametimeWorkaround) return
+
+    this.elemTightFrametimeWorkaround.style.display = (
+      (this.atTop && this.isFillingFullscreen)
+    )
+      ? 'none' 
+      : ''
+  }
+
   applyChromiumBug1142112Workaround() {
     if(!this.enableChromiumBug1142112Workaround) return;
 
@@ -1194,6 +1204,7 @@ export default class Ambientlight {
       Math.abs(this.videoOffset.height - window.innerHeight) < 10 &&
       noClipOrScale
     )
+    this.updateChromium3Workaround()
     
     if (
       this.videoOffset.top === undefined ||
@@ -2689,6 +2700,7 @@ GREY   | previous display frames`
     } else {
       this.mastheadElem.classList.remove('at-top')
     }
+    this.updateChromium3Workaround()
   }
 
   isDarkTheme = () => (html.getAttribute('dark') !== null)
