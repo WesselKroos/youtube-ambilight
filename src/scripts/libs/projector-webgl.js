@@ -305,7 +305,7 @@ export default class ProjectorWebGL {
       }
     }
 
-    if(this.ctxIsInvalid) return
+    if(!this.ctx || this.ctx.isContextLost()) return
 
     this.projectors[1] = {
       elem: this.canvas,

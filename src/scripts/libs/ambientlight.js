@@ -176,7 +176,8 @@ export default class Ambientlight {
     if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.elemTightFrametimeWorkaround = document.createElement('div')
       this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
-      this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
+      // this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
+      this.videoContainerElem?.after(this.elemTightFrametimeWorkaround)
     }
   }
 
