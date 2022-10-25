@@ -326,8 +326,46 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  #masthead-container.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
-    opacity: .3;
+  $account-btn: '.yt-spec-button-shape-next--outline';
+  @mixin masthead-icon {
+    #buttons.ytd-masthead ytd-topbar-menu-button-renderer button:not(:hover):not(:focus) yt-icon,
+    #buttons.ytd-masthead ytd-notification-topbar-button-renderer button:not(:hover):not(:focus) yt-icon,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] button:not(:hover):not(:focus) yt-icon {
+      @content;
+    }
+  }
+
+  #masthead-container {
+    ytd-notification-topbar-button-renderer {
+      color: var(--yt-spec-icon-active-other);
+      
+      .yt-spec-icon-badge-shape,
+      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon {
+        color: inherit;
+      }
+    }
+
+    @include masthead-icon {
+      transition: color .15s;
+    }
+    &.at-top {
+      @include masthead-icon {
+        color: rgba(0,0,0,.4) !important;
+      }
+    }
+
+    #{$account-btn} {
+      transition: border-color .15s, color .15s;
+    }
+    &.at-top {
+      #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
+        color: inherit;
+      }
+    }
+
+    &.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
+      opacity: .3;
+    }
   }
 
   // Body light & search light & at top
@@ -355,9 +393,56 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-masthead[dark] ytd-searchbox {
-      &:not(:hover):not(:focus-within) .gsst_e {
-        filter: none;
+    ytd-topbar-menu-button-renderer,
+    ytd-notification-topbar-button-renderer,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
+      color: rgba(0,0,0,.4) !important;
+    }
+
+    #{$account-btn} {
+      border-color: rgba(0,0,0,.2) !important;
+      &:not(.yt-spec-button-shape-next--call-to-action) {
+        color: rgba(0,0,0,.4) !important;
+      }
+    }
+
+    ytd-masthead[dark] {
+      @include masthead-icon {
+        color: rgba(0,0,0,.4) !important;
+      }
+
+      ytd-searchbox {
+        &:not(:hover):not(:focus-within) .gsst_e {
+          filter: none;
+        }
+        
+        &:hover,
+        &:focus-within {
+          #search-icon-legacy {
+            background-color: rgb(44,44,44) !important;
+          }
+          #search-clear-button yt-icon {
+            color: rgba(255,255,255) !important;
+          }
+        }
+      }
+    }
+  }
+
+  &[dark] #masthead-container.at-top {
+    ytd-searchbox {
+      &:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox,
+        #search-icon-legacy {
+          background-color: transparent !important;
+          border-color: rgba(255,255,255,.2) !important;
+        }
+        #search,
+        #search::-webkit-input-placeholder,
+        #search-clear-button yt-icon,
+        #search-icon-legacy yt-icon {
+          color: rgba(255,255,255,.4) !important;
+        }
       }
       
       &:hover,
@@ -365,32 +450,17 @@ html[data-ambientlight-enabled="true"] {
         #search-icon-legacy {
           background-color: rgb(44,44,44) !important;
         }
-        #search-clear-button yt-icon {
-          color: rgba(255,255,255) !important;
-        }
-      }
-    }
-  }
-
-  &[dark] #masthead-container.at-top ytd-searchbox {
-    &:not(:hover):not(:focus-within) {
-      #container.ytd-searchbox,
-      #search-icon-legacy {
-        background-color: transparent !important;
-        border-color: rgba(255,255,255,.2) !important;
-      }
-      #search,
-      #search::-webkit-input-placeholder,
-      #search-clear-button yt-icon,
-      #search-icon-legacy yt-icon {
-        color: rgba(255,255,255,.4) !important;
       }
     }
     
-    &:hover,
-    &:focus-within {
-      #search-icon-legacy {
-        background-color: rgb(44,44,44) !important;
+    @include masthead-icon {
+      color: rgba(255,255,255,.4) !important;
+    }
+
+    #{$account-btn} {
+      border-color: rgba(255,255,255,.2) !important;
+      &:not(.yt-spec-button-shape-next--call-to-action) {
+        color: rgba(255,255,255,.4) !important;
       }
     }
   }
@@ -405,6 +475,9 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Clarify box info panel */
 
   ytd-info-panel-content-renderer {
+    background: rgba(255,255,255,.1) !important;
+  }
+  &[dark] ytd-info-panel-content-renderer {
     background: rgba(0,0,0,.1) !important;
   }
   ytd-info-panel-content-renderer .content {
@@ -414,22 +487,29 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Merch shelf */
 
   ytd-merch-shelf-renderer {
-    background: rgba(0,0,0,.1);
+    background: rgba(0,0,0,.1) !important;
+  }
+  &[dark] ytd-merch-shelf-renderer {
+    background: rgba(255,255,255,.1) !important;
   }
 
   /* Cosmetics - Movie offer */ 
 
-  #header.ytd-movie-offer-module-renderer,
-  #wide-clickable-area.ytd-movie-offer-module-renderer,
-  ytd-tvfilm-offer-module-renderer,
-  #header.ytd-tvfilm-offer-module-renderer {
-    background: rgba(0,0,0,.1);
+  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, ytd-tvfilm-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
+  #{$movie-offer} {
+    background: rgba(0,0,0,.1) !important;
+  }
+  &[dark] #{$movie-offer} {
+    background: rgba(255,255,255,.1) !important;
   }
 
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: rgba(0,0,0,.1);
+    background: rgba(255,255,255,.1) !important;
+  }
+  &[dark] ytd-rich-metadata-renderer {
+    background: rgba(0,0,0,.1) !important;
   }
 
   /* Cosmetics - Donation */
@@ -468,6 +548,33 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
     }
+    
+    ytd-watch-metadata[modern-metapanel] {
+      #description.ytd-watch-metadata {
+        background: rgba(255,255,255,.1) !important;
+        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+      }
+      
+      .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
+        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        &.yt-spec-button-shape-next {
+          &--segmented-start,
+          &--segmented-end {
+            border-width: 1px 0 !important;
+          }
+          &--segmented-start {
+            border-left-width: 1px !important;
+          }
+          &--segmented-end {
+            border-right-width: 1px !important;
+          }
+        }
+        
+        &:not(:hover):not(:focus) {
+          background: rgba(255,255,255,.1) !important;
+        }
+      }
+    }
   }
   &[dark] {
     ytd-app {
@@ -475,6 +582,18 @@ html[data-ambientlight-enabled="true"] {
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
         color: rgba(255, 255, 255, 0.882) !important;
+      }
+      
+    
+      ytd-watch-metadata[modern-metapanel] {
+        #description.ytd-watch-metadata {
+          background: rgba(0,0,0,.1) !important;
+        }
+        .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
+          &:not(:hover):not(:focus) {
+            background: rgba(0,0,0,.1) !important;
+          }
+        }
       }
     } 
   }
@@ -1443,7 +1562,8 @@ html[data-ambientlight-enabled="true"] {
     ytd-comment-renderer#{$not-hover} #author-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
-    .ytd-item-section-renderer#{$not-hover} #thumbnail {
+    .ytd-item-section-renderer#{$not-hover} #thumbnail,
+    .ytd-watch-next-secondary-results-renderer#{$not-hover} #thumbnail {
       opacity: var(--ambientlight-image-opacity) !important;
     }
   }
@@ -1484,6 +1604,19 @@ html[data-ambientlight-enabled="true"] {
     // Remove default title text-shadow
     .title.ytd-video-primary-info-renderer {
       text-shadow: inherit !important;
+    }
+
+    tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
+    yt-chip-cloud-chip-renderer[selected] {
+      text-shadow: none !important;
+    }
+
+    ytd-button-renderer.style-primary[is-paper-button],
+    .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
+    #action, // Ad button: More info
+    #action-button { // Ad button: Visite website
+      filter: none !important;
+      text-shadow: none !important;
     }
 
     // Remove shadow capping
@@ -1532,6 +1665,9 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
+        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next__icon,
+        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next--button-text-content,
+        ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
         #{$chapters-header} #title-container,
@@ -1543,10 +1679,7 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} yt-icon-button,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
-        #subscribe-button,
-        #action, // Ad button: More info
-        #action-button, // Ad button: Visite website
-        ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
+
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
         paper-menu-button,
