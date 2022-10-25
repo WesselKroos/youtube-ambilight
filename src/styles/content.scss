@@ -248,6 +248,12 @@ html[data-ambientlight-enabled="true"] {
     z-index: 1;
   }
 
+  /* Disable ambient mode */
+  
+  #cinematics.ytd-watch-flexy {
+    display: none !important;
+  }
+
   /* Video preview while moving the timeline */
 
   .ytp-storyboard-framepreview {
