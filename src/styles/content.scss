@@ -1606,11 +1606,9 @@ html[data-ambientlight-enabled="true"] {
       text-shadow: inherit !important;
     }
 
+    #subscribe-button ytd-button-renderer:not([subscribed]),
     tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
-    yt-chip-cloud-chip-renderer[selected] {
-      text-shadow: none !important;
-    }
-
+    yt-chip-cloud-chip-renderer[selected],
     ytd-button-renderer.style-primary[is-paper-button],
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
     #action, // Ad button: More info
