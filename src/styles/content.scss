@@ -1600,6 +1600,11 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Fix ellipsis after the views counter
+  #info-text.ytd-video-primary-info-renderer {
+    color: var(--yt-spec-text-secondary);
+  }
+
   > body[style*="--ambientlight-text-shadow:"] {
     // Remove default title text-shadow
     .title.ytd-video-primary-info-renderer {
@@ -1612,20 +1617,43 @@ html[data-ambientlight-enabled="true"] {
     ytd-button-renderer.style-primary[is-paper-button],
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
     #action, // Ad button: More info
-    #action-button { // Ad button: Visite website
+    #action-button,
+    .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
+    ytd-author-comment-badge-renderer { // Ad button: Visite website
       filter: none !important;
       text-shadow: none !important;
     }
 
-    // Remove shadow capping
+    //// Remove shadow capping
+    // old video info
     .title.ytd-video-primary-info-renderer,
     #info-text.ytd-video-primary-info-renderer,
     yt-formatted-string.ytd-button-renderer,
     ytd-video-secondary-info-renderer .ytd-channel-name,
     #byline-container.ytd-video-meta-block,
+
+    // new video info
+    h1.ytd-watch-metadata,
+    #upload-info.ytd-video-owner-renderer,
+    #container.ytd-channel-name,
+    #container.ytd-channel-name .yt-simple-endpoint,
+    #owner-sub-count.ytd-video-owner-renderer,
+
     #metadata-line.ytd-video-meta-block,
     #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
+    }
+
+    // New video description
+    #description-inline-expander {
+      overflow: initial !important;
+      contain: initial !important;
+    }
+    #info-container.ytd-watch-metadata,
+    #snippet.ytd-text-inline-expander {
+      overflow: initial !important;
+      -webkit-mask-image: initial !important;
+      mask-image: initial !important;
     }
 
     // Remove a bit of the shadow capping from elements that cap lines as well
@@ -1677,7 +1705,8 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} yt-icon-button,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
-
+        ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
+        ytd-comment-action-buttons-renderer .yt-spec-button-shape-next--icon-button, // Reply like/dislike button
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
         paper-menu-button,
