@@ -524,6 +524,7 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Text visibility */
 
+  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
   ytd-app {
     ytd-watch #top > #player {
       z-index: 2;
@@ -547,6 +548,10 @@ html[data-ambientlight-enabled="true"] {
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
+    }
+    
+    #{$comments-reply-input} {
+      border-bottom-color: rgba(20,20,20,.5);
     }
     
     ytd-watch-metadata[modern-metapanel] {
@@ -594,6 +599,10 @@ html[data-ambientlight-enabled="true"] {
             background: rgba(0,0,0,.1) !important;
           }
         }
+      }
+    
+      #{$comments-reply-input} {
+        border-bottom-color: rgba(255, 255, 255,.5);
       }
     } 
   }
@@ -1709,7 +1718,10 @@ html[data-ambientlight-enabled="true"] {
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
         ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
-        ytd-comment-action-buttons-renderer .yt-spec-button-shape-next--icon-button, // Reply like/dislike button
+        #like-button.ytd-comment-action-buttons-renderer, // Comment like button
+        #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
+        #reply-button-end.ytd-comment-action-buttons-renderer, // Reply button
+        #cancel-button.ytd-commentbox, // Reply form cancel button
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
         paper-menu-button,
