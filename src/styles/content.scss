@@ -1639,6 +1639,9 @@ html[data-ambientlight-enabled="true"] {
     #container.ytd-channel-name .yt-simple-endpoint,
     #owner-sub-count.ytd-video-owner-renderer,
 
+    // New comment
+    #author-text.yt-simple-endpoint.ytd-comment-renderer,
+
     #metadata-line.ytd-video-meta-block,
     #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
