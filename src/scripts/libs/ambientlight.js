@@ -75,7 +75,6 @@ export default class Ambientlight {
       this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectChromiumBug1092080Workaround()
-      this.detectChromiumBug3Workaround()
 
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
@@ -168,27 +167,6 @@ export default class Ambientlight {
     if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.enableChromiumBug1142112Workaround = true
     }
-  }
-
-  detectChromiumBug3Workaround() {
-    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
-      this.elemTightFrametimeWorkaround = document.createElement('div')
-      this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
-      // this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
-      this.videoContainerElem?.after(this.elemTightFrametimeWorkaround)
-    }
-  }
-
-  updateChromium3Workaround() {
-    if(!this.elemTightFrametimeWorkaround) return
-
-    this.elemTightFrametimeWorkaround.style.display = (
-      (this.atTop && this.isFillingFullscreen)
-    )
-      ? 'none' 
-      : ''
   }
 
   applyChromiumBug1142112Workaround() {
@@ -1205,7 +1183,6 @@ export default class Ambientlight {
       Math.abs(this.videoOffset.height - window.innerHeight) < 10 &&
       noClipOrScale
     )
-    this.updateChromium3Workaround()
     
     if (
       this.videoOffset.top === undefined ||
@@ -2145,7 +2122,7 @@ GREY   | previous display frames`
     for (let i = 0, length = frameTimes.length; i < length; i++ ) {
       const ft = frameTimes[i];
       const videoSubmit = ft.video.timestamp
-      const videoDisplay = ft.video.expectedDisplayTime - videoSubmit
+      const videoDisplay = ft.video.expectedDisplayTime - videoSubmit // Todo: Fix frametimes relative to the displayTime instead of the video timestamp
       const x = i * scaleX
       const y = Math.ceil(((videoFrameDuration * rangeY) - videoDisplay) * scaleY)
       if (ft.frameStart !== undefined) {
@@ -2701,7 +2678,6 @@ GREY   | previous display frames`
     } else {
       this.mastheadElem.classList.remove('at-top')
     }
-    this.updateChromium3Workaround()
   }
 
   isDarkTheme = () => (html.getAttribute('dark') !== null)
