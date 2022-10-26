@@ -510,13 +510,25 @@ html[data-ambientlight-enabled="true"] {
     yt-chip-cloud-renderer {
       #left-arrow,
       #right-arrow {
-        transition: opacity .25s;
+        pointer-events: none;
       }
-      &:not(:hover):not(:focus-within) {
+      &:not(:hover):not(:focus-visible) {
         #left-arrow,
         #right-arrow {
           opacity: 0;
         }
+      }
+      #left-arrow.yt-chip-cloud-renderer::after {
+        background: linear-gradient(to left, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
+      }
+      #right-arrow.yt-chip-cloud-renderer::before {
+        background: linear-gradient(to right, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
+      }
+      #left-arrow-button,
+      #right-arrow-button {
+        pointer-events: all;
+        background: var(--yt-spec-10-percent-layer) !important;
+        backdrop-filter: blur(3px) !important;
       }
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
