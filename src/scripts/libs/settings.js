@@ -51,6 +51,16 @@ export default class Settings {
       advanced: true
     },
     {
+      name: 'chromiumBug3Workaround',
+      label: 'Delayed frames fix',
+      questionMark: {
+        title: 'This decreases the amount of delayed (yellow) frames in the frametime stats.\nThis is a temporary workaround for an bug in chromium.'
+      },
+      type: 'checkbox',
+      default: false,
+      advanced: true
+    },
+    {
       name: 'frameSync',
       label: 'Synchronization',
       questionMark: {
@@ -1093,6 +1103,7 @@ export default class Settings {
             'frameBlending',
             'showFPS',
             'showFrametimes',
+            'chromiumBug3Workaround',
             'surroundingContentTextAndBtnOnly',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
@@ -1192,6 +1203,11 @@ export default class Settings {
               this.ambientlight.hideStats()
             }
             return
+          }
+
+          if(setting.name === 'chromiumBug3Workaround') {
+            this.ambientlight.detectChromiumBug3Workaround()
+            this.ambientlight.updateChromium3Workaround()
           }
 
           if(setting.name === 'surroundingContentTextAndBtnOnly') {
@@ -1353,6 +1369,13 @@ export default class Settings {
     {
       names: [ 'videoShadowOpacity' ],
       visible: () => this.videoShadowSize
+    },
+    {
+      names: [ 'chromiumBug3Workaround' ],
+      visible: () => (
+        this.frameSync === FRAMESYNC_VIDEOFRAMES &&
+        this.ambientlight.canEnableChromiumBug3Workaround()
+      )
     }
   ]
   updateVisibility() {

@@ -170,21 +170,30 @@ export default class Ambientlight {
     }
   }
 
-  detectChromiumBug3Workaround() {
+  canEnableChromiumBug3Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
-      this.elemTightFrametimeWorkaround = document.createElement('div')
-      this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
-      // this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
-      this.videoContainerElem?.after(this.elemTightFrametimeWorkaround)
-    }
+    return version && HTMLVideoElement.prototype.requestVideoFrameCallback;
+  }
+
+  detectChromiumBug3Workaround() {
+    if(
+      this.elemTightFrametimeWorkaround ||
+      !this.canEnableChromiumBug3Workaround()
+    ) return
+
+    this.elemTightFrametimeWorkaround = document.createElement('div')
+    this.elemTightFrametimeWorkaround.classList.add('ambientlight__tight-frametime-workaround')
+    // this.videoPlayerElem?.append(this.elemTightFrametimeWorkaround)
+    this.videoContainerElem?.after(this.elemTightFrametimeWorkaround)
   }
 
   updateChromium3Workaround() {
     if(!this.elemTightFrametimeWorkaround) return
 
     this.elemTightFrametimeWorkaround.style.display = (
+      !this.settings.chromiumBug3Workaround || 
+      this.settings.frameSync !== FRAMESYNC_VIDEOFRAMES ||
       (this.atTop && this.isFillingFullscreen)
     )
       ? 'none' 
