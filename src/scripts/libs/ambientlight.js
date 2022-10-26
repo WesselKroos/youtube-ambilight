@@ -2149,7 +2149,7 @@ GREY   | previous display frames`
         rects.push(['#06d', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
         rects.push(['#00f', x, y, scaleX, Math.ceil(received * scaleY)])
         // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
-        // rects.push(['#f0f', x, y + Math.ceil(videoDisplay * scaleY) - 1, scaleX, 3])
+        // rects.push(['#f0f', x, y + Math.ceil(videoDisplay * scaleY) - 2, scaleX, 3])
         if (nextTimestamp) {
           rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
         }
