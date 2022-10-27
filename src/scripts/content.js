@@ -29,7 +29,7 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   injectedScript.addMessageListener('get-storage-entries',
     async function getStorageEntry({ id, nameOrNames }) {
       try {
-        if(!chrome.runtime.id) throw new Error('uninstalled')
+        if(!chrome.runtime?.id) throw new Error('uninstalled')
         let valueOrValues = await storage.get(nameOrNames)
         if(Array.isArray(nameOrNames)) {
           for(const name of nameOrNames) {
@@ -47,7 +47,7 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   injectedScript.addMessageListener('set-storage-entry', 
     async function setStorageEntry({ id, name, value }) {
       try {
-        if(!chrome.runtime.id) throw new Error('uninstalled')
+        if(!chrome.runtime?.id) throw new Error('uninstalled')
         await storage.set(name, value)
         injectedScript.postMessage('set-storage-entry', { id })
       } catch(error) {

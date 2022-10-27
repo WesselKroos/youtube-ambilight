@@ -24,7 +24,7 @@
     "rollup": "^2.74.1",
     "rollup-plugin-cleanup": "^3.2.1",
     "rollup-plugin-strip-code": "^0.2.7",
-    "sass": "^1.52.0"
+    "sass": "^1.55.0"
   },
   "scripts": {
     "build:manifest": "copyfiles -u 1 src/manifest.json dist",

@@ -67,15 +67,50 @@
   z-index: 11;
   top: 5px;
   left: 5px;
-  width: 320px;
-  height: 140px;
-  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
+  width: calc(100% - 10px);
+  height: inherit;
   color: #fff;
   font-size: 18px;
   pointer-events: none;
   user-select: none;
   overflow: hidden;
   contain: strict;
+}
+.ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
+.ambientlight__ambientlight-ft-legend {
+  filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
+}
+.ambientlight__ambientlight-ft {
+  pointer-events: auto;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 152px;
+  max-height: min(900px, calc(100% - 65px));
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, .85);
+  overflow: hidden;
+  resize: vertical;
+}
+.ambientlight__ambientlight-ft canvas {
+  border: 1px solid #000;
+  transform: scaleY(-1);
+  cursor: help;
+
+  @at-root .ambientlight__ambientlight-ft:not([style*="height: 1"]):not([style*="height: 2"]):not([style*="height: 3"]) canvas {
+    image-rendering: pixelated;
+  }
+}
+.ambientlight__ambientlight-ft-legend {
+  flex-shrink: 0;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 13.5px;
+  white-space: pre-wrap;
+  letter-spacing: 0px;
+}
+.ambientlight__ambientlight-ft:not([legend]) .ambientlight__ambientlight-ft-legend {
+  display: none;
 }
 
 html[data-ambientlight-enabled="true"] {
@@ -104,7 +139,8 @@ html[data-ambientlight-enabled="true"] {
   &[lang],
   &[style],
   body {
-    transition: background-color .1s;
+    background: #fff !important;
+    background-color: #fff !important;
 
     @include scrollbar-dark-thin();
 
@@ -185,6 +221,12 @@ html[data-ambientlight-enabled="true"] {
     z-index: 1;
   }
 
+  /* Disable ambient mode */
+  
+  #cinematics.ytd-watch-flexy {
+    display: none !important;
+  }
+
   /* Video preview while moving the timeline */
 
   .ytp-storyboard-framepreview {
@@ -257,8 +299,46 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  #masthead-container.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
-    opacity: .3;
+  $account-btn: '.yt-spec-button-shape-next--outline';
+  @mixin masthead-icon {
+    #buttons.ytd-masthead ytd-topbar-menu-button-renderer button:not(:hover):not(:focus) yt-icon,
+    #buttons.ytd-masthead ytd-notification-topbar-button-renderer button:not(:hover):not(:focus) yt-icon,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] button:not(:hover):not(:focus) yt-icon {
+      @content;
+    }
+  }
+
+  #masthead-container {
+    ytd-notification-topbar-button-renderer {
+      color: var(--yt-spec-icon-active-other);
+      
+      .yt-spec-icon-badge-shape,
+      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon {
+        color: inherit;
+      }
+    }
+
+    @include masthead-icon {
+      transition: color .15s;
+    }
+    &.at-top {
+      @include masthead-icon {
+        color: rgba(0,0,0,.4) !important;
+      }
+    }
+
+    #{$account-btn} {
+      transition: border-color .15s, color .15s;
+    }
+    &.at-top {
+      #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
+        color: inherit;
+      }
+    }
+
+    &.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
+      opacity: .3;
+    }
   }
 
   // Body light & search light & at top
@@ -286,9 +366,56 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-masthead[dark] ytd-searchbox {
-      &:not(:hover):not(:focus-within) .gsst_e {
-        filter: none;
+    ytd-topbar-menu-button-renderer,
+    ytd-notification-topbar-button-renderer,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
+      color: rgba(0,0,0,.4) !important;
+    }
+
+    #{$account-btn} {
+      border-color: rgba(0,0,0,.2) !important;
+      &:not(.yt-spec-button-shape-next--call-to-action) {
+        color: rgba(0,0,0,.4) !important;
+      }
+    }
+
+    ytd-masthead[dark] {
+      @include masthead-icon {
+        color: rgba(0,0,0,.4) !important;
+      }
+
+      ytd-searchbox {
+        &:not(:hover):not(:focus-within) .gsst_e {
+          filter: none;
+        }
+        
+        &:hover,
+        &:focus-within {
+          #search-icon-legacy {
+            background-color: rgb(44,44,44) !important;
+          }
+          #search-clear-button yt-icon {
+            color: rgba(255,255,255) !important;
+          }
+        }
+      }
+    }
+  }
+
+  &[dark] #masthead-container.at-top {
+    ytd-searchbox {
+      &:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox,
+        #search-icon-legacy {
+          background-color: transparent !important;
+          border-color: rgba(255,255,255,.2) !important;
+        }
+        #search,
+        #search::-webkit-input-placeholder,
+        #search-clear-button yt-icon,
+        #search-icon-legacy yt-icon {
+          color: rgba(255,255,255,.4) !important;
+        }
       }
       
       &:hover,
@@ -296,32 +423,17 @@ html[data-ambientlight-enabled="true"] {
         #search-icon-legacy {
           background-color: rgb(44,44,44) !important;
         }
-        #search-clear-button yt-icon {
-          color: rgba(255,255,255) !important;
-        }
-      }
-    }
-  }
-
-  &[dark] #masthead-container.at-top ytd-searchbox {
-    &:not(:hover):not(:focus-within) {
-      #container.ytd-searchbox,
-      #search-icon-legacy {
-        background-color: transparent !important;
-        border-color: rgba(255,255,255,.2) !important;
-      }
-      #search,
-      #search::-webkit-input-placeholder,
-      #search-clear-button yt-icon,
-      #search-icon-legacy yt-icon {
-        color: rgba(255,255,255,.4) !important;
       }
     }
     
-    &:hover,
-    &:focus-within {
-      #search-icon-legacy {
-        background-color: rgb(44,44,44) !important;
+    @include masthead-icon {
+      color: rgba(255,255,255,.4) !important;
+    }
+
+    #{$account-btn} {
+      border-color: rgba(255,255,255,.2) !important;
+      &:not(.yt-spec-button-shape-next--call-to-action) {
+        color: rgba(255,255,255,.4) !important;
       }
     }
   }
@@ -336,6 +448,9 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Clarify box info panel */
 
   ytd-info-panel-content-renderer {
+    background: rgba(255,255,255,.1) !important;
+  }
+  &[dark] ytd-info-panel-content-renderer {
     background: rgba(0,0,0,.1) !important;
   }
   ytd-info-panel-content-renderer .content {
@@ -345,22 +460,29 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Merch shelf */
 
   ytd-merch-shelf-renderer {
-    background: rgba(0,0,0,.1);
+    background: rgba(0,0,0,.1) !important;
+  }
+  &[dark] ytd-merch-shelf-renderer {
+    background: rgba(255,255,255,.1) !important;
   }
 
   /* Cosmetics - Movie offer */ 
 
-  #header.ytd-movie-offer-module-renderer,
-  #wide-clickable-area.ytd-movie-offer-module-renderer,
-  ytd-tvfilm-offer-module-renderer,
-  #header.ytd-tvfilm-offer-module-renderer {
-    background: rgba(0,0,0,.1);
+  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, ytd-tvfilm-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
+  #{$movie-offer} {
+    background: rgba(0,0,0,.1) !important;
+  }
+  &[dark] #{$movie-offer} {
+    background: rgba(255,255,255,.1) !important;
   }
 
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: rgba(0,0,0,.1);
+    background: rgba(255,255,255,.1) !important;
+  }
+  &[dark] ytd-rich-metadata-renderer {
+    background: rgba(0,0,0,.1) !important;
   }
 
   /* Cosmetics - Donation */
@@ -375,6 +497,7 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Text visibility */
 
+  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
   ytd-app {
     ytd-watch #top > #player {
       z-index: 2;
@@ -387,17 +510,60 @@ html[data-ambientlight-enabled="true"] {
     yt-chip-cloud-renderer {
       #left-arrow,
       #right-arrow {
-        transition: opacity .25s;
+        pointer-events: none;
       }
-      &:not(:hover):not(:focus-within) {
+      &:not(:hover):not(:focus-visible) {
         #left-arrow,
         #right-arrow {
           opacity: 0;
         }
       }
+      #left-arrow.yt-chip-cloud-renderer::after {
+        background: linear-gradient(to left, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
+      }
+      #right-arrow.yt-chip-cloud-renderer::before {
+        background: linear-gradient(to right, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
+      }
+      #left-arrow-button,
+      #right-arrow-button {
+        pointer-events: all;
+        background: var(--yt-spec-10-percent-layer) !important;
+        backdrop-filter: blur(3px) !important;
+      }
     }
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
+    }
+    
+    #{$comments-reply-input} {
+      border-bottom-color: rgba(20,20,20,.5);
+    }
+    
+    ytd-watch-metadata[modern-metapanel] {
+      #description.ytd-watch-metadata {
+        background: rgba(255,255,255,.1) !important;
+        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+      }
+      
+      .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
+        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        &.yt-spec-button-shape-next {
+          &--segmented-start,
+          &--segmented-end {
+            border-width: 1px 0 !important;
+          }
+          &--segmented-start {
+            border-left-width: 1px !important;
+          }
+          &--segmented-end {
+            border-right-width: 1px !important;
+          }
+        }
+        
+        &:not(:hover):not(:focus) {
+          background: rgba(255,255,255,.1) !important;
+        }
+      }
     }
   }
   &[dark] {
@@ -406,6 +572,22 @@ html[data-ambientlight-enabled="true"] {
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
         color: rgba(255, 255, 255, 0.882) !important;
+      }
+      
+    
+      ytd-watch-metadata[modern-metapanel] {
+        #description.ytd-watch-metadata {
+          background: rgba(0,0,0,.1) !important;
+        }
+        .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
+          &:not(:hover):not(:focus) {
+            background: rgba(0,0,0,.1) !important;
+          }
+        }
+      }
+    
+      #{$comments-reply-input} {
+        border-bottom-color: rgba(255, 255, 255,.5);
       }
     } 
   }
@@ -485,10 +667,10 @@ html[data-ambientlight-enabled="true"] {
   &[data-ambientlight-immersive="true"] {
     ytd-watch-flexy {
       &[theater] #player-theater-container.ytd-watch-flexy {
-        height: calc(100vh - 168px) !important;
-        max-height: calc(100vh - 168px) !important;
-        margin-top: 28px;
-        margin-bottom: 64px;
+        height: calc(100vh - 169px) !important;
+        max-height: calc(100vh - 169px) !important;
+        margin-top: 29px;
+        margin-bottom: 84px;
       }
     }
 
@@ -1374,7 +1556,8 @@ html[data-ambientlight-enabled="true"] {
     ytd-comment-renderer#{$not-hover} #author-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
-    .ytd-item-section-renderer#{$not-hover} #thumbnail {
+    .ytd-item-section-renderer#{$not-hover} #thumbnail,
+    .ytd-watch-next-secondary-results-renderer#{$not-hover} #thumbnail {
       opacity: var(--ambientlight-image-opacity) !important;
     }
   }
@@ -1411,21 +1594,63 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Fix ellipsis after the views counter
+  #info-text.ytd-video-primary-info-renderer {
+    color: var(--yt-spec-text-secondary);
+  }
+
   > body[style*="--ambientlight-text-shadow:"] {
     // Remove default title text-shadow
     .title.ytd-video-primary-info-renderer {
       text-shadow: inherit !important;
     }
 
-    // Remove shadow capping
+    #subscribe-button ytd-button-renderer:not([subscribed]),
+    tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
+    yt-chip-cloud-chip-renderer[selected],
+    ytd-button-renderer.style-primary[is-paper-button],
+    .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
+    #action, // Ad button: More info
+    #action-button,
+    .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
+    ytd-author-comment-badge-renderer { // Ad button: Visite website
+      filter: none !important;
+      text-shadow: none !important;
+    }
+
+    //// Remove shadow capping
+    // old video info
     .title.ytd-video-primary-info-renderer,
     #info-text.ytd-video-primary-info-renderer,
     yt-formatted-string.ytd-button-renderer,
     ytd-video-secondary-info-renderer .ytd-channel-name,
     #byline-container.ytd-video-meta-block,
+
+    // new video info
+    h1.ytd-watch-metadata,
+    #upload-info.ytd-video-owner-renderer,
+    #container.ytd-channel-name,
+    #container.ytd-channel-name .yt-simple-endpoint,
+    #owner-sub-count.ytd-video-owner-renderer,
+
+    // New comment
+    #author-text.yt-simple-endpoint.ytd-comment-renderer,
+
     #metadata-line.ytd-video-meta-block,
     #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
+    }
+
+    // New video description
+    #description-inline-expander {
+      overflow: initial !important;
+      contain: initial !important;
+    }
+    #info-container.ytd-watch-metadata,
+    #snippet.ytd-text-inline-expander {
+      overflow: initial !important;
+      -webkit-mask-image: initial !important;
+      mask-image: initial !important;
     }
 
     // Remove a bit of the shadow capping from elements that cap lines as well
@@ -1463,6 +1688,9 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
+        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next__icon,
+        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next--button-text-content,
+        ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
         #{$chapters-header} #title-container,
@@ -1474,10 +1702,11 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} yt-icon-button,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
-        #subscribe-button,
-        #action, // Ad button: More info
-        #action-button, // Ad button: Visite website
-        ytd-button-renderer.style-primary[is-paper-button], // Ad button: Buy or rent
+        ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
+        #like-button.ytd-comment-action-buttons-renderer, // Comment like button
+        #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
+        #reply-button-end.ytd-comment-action-buttons-renderer, // Reply button
+        #cancel-button.ytd-commentbox, // Reply form cancel button
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
         paper-menu-button,
@@ -1501,16 +1730,29 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  .ambientlight::after {
+  .ambientlight::before {
+    content: var(--ambientlight-debanding-content, none);
     position: absolute;
+    z-index: 2;
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
-    content: var(--ambientlight-debanding-content, none);
     background: var(--ambientlight-debanding-background, none);
     opacity: var(--ambientlight-debanding-opacity, 0);
-    box-shadow: #000 0px -500px 300px -350px inset;
+  }
+  .ambientlight::after {
+    content: '';
+    position: absolute;
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(0deg, #ffff 0px, #fffe 25px, #fffc 50px, #fff8 100px, #fff3 150px, #fff1 175px, #fff0 200px);
+  }
+  &[dark] .ambientlight::after {
+    background: linear-gradient(0deg, #000f 0px, #000e 25px, #000c 50px, #0008 100px, #0003 150px, #0001 175px, #0000 200px);
   }
 
  .html5-video-player {

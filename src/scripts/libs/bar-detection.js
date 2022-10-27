@@ -349,13 +349,22 @@ export default class BarDetection {
           ctx: this.ctx
         }
         : ((allowedToTransfer && buffer.transferToImageBitmap)
-          ? {
-            bitmap: buffer.transferToImageBitmap()
-          }
+          ? (!buffer.ctx?.lost
+            ? {
+              bitmap: buffer.transferToImageBitmap()
+            }
+            : null
+          )
           : {
             bitmap: this.canvas.transferToImageBitmap()
           }
         )
+
+      if(!canvasInfo) {
+        this.cancellable = true
+        this.run = null
+        return
+      }
 
       this.workerMessageId++;
       const stack = new Error().stack

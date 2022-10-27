@@ -2,6 +2,7 @@ import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setE
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
+import Settings from './libs/settings'
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
@@ -196,6 +197,13 @@ const loadAmbientlight = async () => {
 
   if (await tryInitAmbientlight()) return
   // Not on the watch page yet
+
+  try {
+    await Settings.getStoredSettingsCached()
+  } catch(ex) {
+    console.warn('Ambient light for YouTube™ | The settings cannot be precached')
+    console.error(ex)
+  }
 
   // Listen to DOM changes
   let initializing = false
