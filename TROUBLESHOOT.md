@@ -1,3 +1,9 @@
+>  ## ⚠️YouTube's new "ambient mode" feature
+>  YouTube has rolled out an "ambient mode" feature on the October 24th. If you see multiple ambient effects or still an ambient effect when the extension is disabled, you wil have to disable YouTube's "ambient mode" feature. You can do this via the settings menu in the video player:
+>  
+>  ![image](https://user-images.githubusercontent.com/31220528/197637853-74e13f55-3ca2-4ba7-92e6-88bfcc08c5dc.png)
+
+
 # Optimizing or troubleshooting performance problems
 This is a performance guide that helps you get the best performance (and reduced CPU and GPU usage) in your browser.
 The best way to debug troubleshoot problems is to first set the Ambient light extension settings to their optimal values and then start to optimize your browser settings.
