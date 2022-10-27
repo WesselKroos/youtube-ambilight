@@ -502,6 +502,14 @@ html[data-ambientlight-enabled="true"] {
     ytd-watch #top > #player {
       z-index: 2;
     }
+
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+      background: rgba(255,255,255,.1) !important;
+    }
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
+      border-top: 1px solid var(--yt-spec-10-percent-layer) !important;
+    }
+
     .header.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
     yt-chip-cloud-renderer {
@@ -530,13 +538,23 @@ html[data-ambientlight-enabled="true"] {
         background: var(--yt-spec-10-percent-layer) !important;
         backdrop-filter: blur(3px) !important;
       }
+      #left-arrow-button {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+      }
+      #right-arrow-button {
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+      }
     }
+
     ytd-playlist-panel-video-renderer:hover:not(.dragging) {
       background-color: rgba(20,20,20,.15);
     }
-    
-    #{$comments-reply-input} {
-      border-bottom-color: rgba(20,20,20,.5);
+
+    yt-chip-cloud-chip-renderer:not([selected]) {
+      background: rgba(255,255,255,.1) !important;
+      border: 1px solid var(--yt-spec-10-percent-layer) !important;
     }
     
     ytd-watch-metadata[modern-metapanel] {
@@ -565,9 +583,21 @@ html[data-ambientlight-enabled="true"] {
         }
       }
     }
+    
+    #{$comments-reply-input} {
+      border-bottom-color: rgba(20,20,20,.5);
+    }
   }
   &[dark] {
     ytd-app {
+      ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+        background: rgba(0,0,0,.1) !important;
+      }
+
+      yt-chip-cloud-chip-renderer:not([selected]) {
+        background: rgba(0,0,0,.1) !important;
+      }
+
       #playlist #header-description a,
       #index.ytd-playlist-panel-video-renderer,
       span.yt-view-count-renderer {
