@@ -180,6 +180,16 @@ export default class Settings {
       step: .1
     },
     {
+      name: 'surroundingContentFillTransparency',
+      label: 'Fill transparency',
+      type: 'list',
+      default: 90,
+      min: 0,
+      max: 100,
+      step: 1,
+      advanced: false
+    },
+    {
       name: 'surroundingContentImagesTransparency',
       label: 'Images transparency',
       type: 'list',
@@ -704,8 +714,9 @@ export default class Settings {
     this.menuElem = document.createElement('div')
     this.menuElem.classList.add(
       ...([
-        'ytp-popup', 
-        'ytp-settings-menu', 
+        'ytp-popup',
+        'ytp-settings-menu',
+        'ytp-rounded-menu',
         'ytpa-ambientlight-settings-menu', 
         (this.advancedSettings) ? 'ytpa-ambientlight-settings-menu--advanced' : undefined
       ].filter(c => c))
@@ -1053,6 +1064,7 @@ export default class Settings {
           if ([
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
+            'surroundingContentFillTransparency',
             'surroundingContentImagesTransparency',
             'debandingStrength',
             'videoShadowSize',
