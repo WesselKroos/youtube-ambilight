@@ -180,6 +180,16 @@ export default class Settings {
       step: .1
     },
     {
+      name: 'surroundingContentFillTransparency',
+      label: 'Fill transparency',
+      type: 'list',
+      default: 90,
+      min: 0,
+      max: 100,
+      step: 1,
+      advanced: true
+    },
+    {
       name: 'surroundingContentImagesTransparency',
       label: 'Images transparency',
       type: 'list',
@@ -1054,6 +1064,7 @@ export default class Settings {
           if ([
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
+            'surroundingContentFillTransparency',
             'surroundingContentImagesTransparency',
             'debandingStrength',
             'videoShadowSize',

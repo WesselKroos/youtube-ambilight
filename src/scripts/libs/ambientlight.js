@@ -1355,6 +1355,12 @@ export default class Ambientlight {
   }
 
   updateStyles() {
+    // Fill transparency
+    const fillTransparency = this.settings.surroundingContentFillTransparency
+    const fillOpacity = (fillTransparency) ? (1 - (fillTransparency / 100)) : ''
+    document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
+    
+
     // Images transparency
     const ImagesTransparency = this.settings.surroundingContentImagesTransparency
     const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''

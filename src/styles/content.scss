@@ -504,7 +504,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
-      background: rgba(255,255,255,.1) !important;
+      background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
     }
     ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
       border-top: 1px solid var(--yt-spec-10-percent-layer) !important;
@@ -553,13 +553,13 @@ html[data-ambientlight-enabled="true"] {
     }
 
     yt-chip-cloud-chip-renderer:not([selected]) {
-      background: rgba(255,255,255,.1) !important;
+      background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
       border: 1px solid var(--yt-spec-10-percent-layer) !important;
     }
     
     ytd-watch-metadata[modern-metapanel] {
       #description.ytd-watch-metadata {
-        background: rgba(255,255,255,.1) !important;
+        background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
         border: 1px solid var(--yt-spec-10-percent-layer) !important;
       }
       
@@ -579,7 +579,7 @@ html[data-ambientlight-enabled="true"] {
         }
         
         &:not(:hover):not(:focus) {
-          background: rgba(255,255,255,.1) !important;
+          background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
         }
       }
     }
@@ -591,11 +591,11 @@ html[data-ambientlight-enabled="true"] {
   &[dark] {
     ytd-app {
       ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
-        background: rgba(0,0,0,.1) !important;
+        background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
       }
 
       yt-chip-cloud-chip-renderer:not([selected]) {
-        background: rgba(0,0,0,.1) !important;
+        background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
       }
 
       #playlist #header-description a,
@@ -607,11 +607,11 @@ html[data-ambientlight-enabled="true"] {
     
       ytd-watch-metadata[modern-metapanel] {
         #description.ytd-watch-metadata {
-          background: rgba(0,0,0,.1) !important;
+          background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
         }
         .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
           &:not(:hover):not(:focus) {
-            background: rgba(0,0,0,.1) !important;
+            background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
           }
         }
       }
