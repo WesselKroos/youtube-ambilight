@@ -704,8 +704,9 @@ export default class Settings {
     this.menuElem = document.createElement('div')
     this.menuElem.classList.add(
       ...([
-        'ytp-popup', 
-        'ytp-settings-menu', 
+        'ytp-popup',
+        'ytp-settings-menu',
+        'ytp-rounded-menu',
         'ytpa-ambientlight-settings-menu', 
         (this.advancedSettings) ? 'ytpa-ambientlight-settings-menu--advanced' : undefined
       ].filter(c => c))
