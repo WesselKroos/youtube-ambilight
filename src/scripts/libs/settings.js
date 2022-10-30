@@ -507,6 +507,17 @@ export default class Settings {
       advanced: true
     },
     {
+      experimental: true,
+      name: 'smoothness',
+      label: 'Smoothness',
+      type: 'list',
+      default: 0,
+      min: 0,
+      max: 14,
+      step: 1,
+      advanced: true
+    },
+    {
       type: 'section',
       label: 'General',
       name: 'sectionGeneralCollapsed',
@@ -1074,6 +1085,14 @@ export default class Settings {
             this.ambientlight.updateStyles()
           }
 
+
+          if ([
+            'smoothness',
+          ].some(name => name === setting.name)) {
+            this.ambientlight.projector.updateSmoothness()
+          }
+          
+
           if (
             setting.name === 'spread' || 
             setting.name === 'edge'
@@ -1247,6 +1266,9 @@ export default class Settings {
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
+    if(setting.name === 'smoothness') {
+      return value > 0 ? `${value + 1} frames` : 'Disabled'
+    }
     if(setting.name === 'theme' || setting.name === 'enableInViews') {
       const snapPoint = setting.snapPoints.find(point => point.value === value)
       return snapPoint?.hiddenLabel || snapPoint?.label
@@ -1365,6 +1387,10 @@ export default class Settings {
     {
       names: [ 'videoShadowOpacity' ],
       visible: () => this.videoShadowSize
+    },
+    {
+      names: [ 'smoothness' ],
+      visible: () => this.webGL
     }
   ]
   updateVisibility() {

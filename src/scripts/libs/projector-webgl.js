@@ -72,6 +72,7 @@ export default class ProjectorWebGL {
     this.shadow = new ProjectorShadow()
   }
 
+  drawIndex = 1
   draw = (src) => {
     if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
@@ -81,15 +82,20 @@ export default class ProjectorWebGL {
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
 
+    this.ctx.activeTexture(this.ctx[`TEXTURE${this.drawIndex}`]);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src);
     this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
     
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null); // clear projectorsTexture
-
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
+
+    if(this.drawIndex < this.projectorsTexture.length) {
+      this.drawIndex++
+    } else {
+      this.drawIndex = 1
+    }
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
@@ -325,26 +331,33 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
 
-    this.projectorsTexture = this.ctx.createTexture();
-    this.ctx.activeTexture(this.ctx.TEXTURE1);
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture);
-    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-    if(this.webGLVersion !== 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
-    }
-    const tfaExt = (
-      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
-    );
-    if(tfaExt) {
-      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 0;
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+    this.projectorsTexture = []
+    const maxTextures = this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8
+    const maxSmoothness = maxTextures - 2
+    const smoothness  = Math.min(this.settings.smoothness, maxSmoothness)
+
+    for(let i = 0; i < smoothness + 1; i++) {
+      this.projectorsTexture[i] = this.ctx.createTexture();
+      this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`]);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture[i]);
+      this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+      if(this.webGLVersion !== 1) {
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
+      }
+      const tfaExt = (
+        this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+      );
+      if(tfaExt) {
+        let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 0;
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      }
     }
 
     // Shaders
@@ -367,39 +380,42 @@ export default class ProjectorWebGL {
     }
     this.ctx.attachShader(this.program, vertexShader);
     
-    const fragmentShaderSrc = `
+    this.fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
       uniform float fTextureMipmapLevel;
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
-      uniform sampler2D textureSampler;
+      uniform sampler2D textureSampler[${this.projectorsTexture.length}];
       uniform sampler2D shadowSampler;
       uniform vec2 fScale;
       uniform vec2 fScaleStep;
 
-      vec4 multiTexture(sampler2D sampler, vec2 uv) {
-        vec2 direction = ceil(uv * 2.) - 1.;
-        vec2 iUV = ((direction - uv) * fScale) / ((direction - .5) * fScaleStep);
+      vec4 multiTexture() {
+        vec2 direction = ceil(fUV * 2.) - 1.;
+        vec2 iUV = ((direction - fUV) * fScale) / ((direction - .5) * fScaleStep);
         int impreciseI = int(min(iUV[0], iUV[1]));
         for (int preciseI = 0; preciseI < 200; preciseI++) {
           if (preciseI < impreciseI) continue;
           int i = ${(this.webGLVersion === 1) ? 'impreciseI' : 'preciseI'};
-          vec2 scaledUV = (uv - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
+          vec2 scaledUV = (fUV - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
           vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
-          return texture2D(sampler, croppedUV, fTextureMipmapLevel);
+          
+          vec4 color = vec4(0, 0, 0, 1);
+          ${new Array(this.projectorsTexture.length).fill(undefined).map((_, i) => `color += ${(1/this.projectorsTexture.length).toString().padEnd(2, '.')} * texture2D(textureSampler[${i}], croppedUV, fTextureMipmapLevel);`).join('\n')}
+          return color;
         }
       }
 
       void main(void) {
-        vec4 ambientlight = multiTexture(textureSampler, fUV);
+        vec4 ambientlight = multiTexture();
         float shadowAlpha = texture2D(shadowSampler, fUV).a;
         ambientlight[3] = 1. - shadowAlpha;
         gl_FragColor = ambientlight;
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
-    this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
+    this.ctx.shaderSource(fragmentShader, this.fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
     if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
       throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
@@ -446,7 +462,7 @@ export default class ProjectorWebGL {
     this.ctx.uniform1i(shadowSamplerLoc, 0);
 
     const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
-    this.ctx.uniform1i(textureSamplerLoc, 1);
+    this.ctx.uniform1iv(textureSamplerLoc, this.projectorsTexture.map((_, i) => 1 + i));
     
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
@@ -457,6 +473,10 @@ export default class ProjectorWebGL {
     this.invalidateShaderCache()
 
     this.updateCtx()
+  }
+
+  updateSmoothness() {
+    this.initCtx()
   }
 
   rescale(scales, lastScale, projectorSize, crop, settings) {
@@ -515,7 +535,6 @@ export default class ProjectorWebGL {
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.ALPHA, this.ctx.ALPHA, this.ctx.UNSIGNED_BYTE, this.shadow.elem);
-    this.ctx.activeTexture(this.ctx.TEXTURE1);
     
     if (!this.viewport || this.viewport.width !== this.ctx.drawingBufferWidth || this.viewport.height !== this.ctx.drawingBufferHeight) {
       this.viewport = { width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
