@@ -2,6 +2,7 @@ import { $, html, on, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
+import Settings from './settings';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -355,7 +356,7 @@ export default class SentryReporter {
       try {
         if (settings) {
           const settingsExtra = {}
-          ;(settings?.config || []).forEach(setting => {
+          ;(Settings?.config || []).forEach(setting => {
             if (!setting || !setting.name) return
             settingsExtra[setting.name] = settings[setting.name]
             if (!setting.key) return
