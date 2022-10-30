@@ -1,8 +1,15 @@
->  ## ⚠️YouTube's new "ambient mode" feature
->  YouTube has rolled out an "ambient mode" feature on the October 24th. If you see multiple ambient effects or still an ambient effect when the extension is disabled, you wil have to disable YouTube's "ambient mode" feature. You can do this via the settings menu in the video player:
->  
->  ![image](https://user-images.githubusercontent.com/31220528/197637853-74e13f55-3ca2-4ba7-92e6-88bfcc08c5dc.png)
+# ⚠️ Known issues
+#### 1. YouTube's new "ambient mode" feature creates a black box around the video.
+YouTube has rolled out an "ambient mode" feature on the October 24th. Make sure to update the extension to version 2.36.33 to fix this problem.
+(Or disable the feature in the video settings:
 
+<img src="https://user-images.githubusercontent.com/31220528/197637853-74e13f55-3ca2-4ba7-92e6-88bfcc08c5dc.png" height=200 />
+
+#### 2. Sometimes there are black lines at the bottom or right side of the video.
+This is a bug in the chromium browser. For a list of workarounds visit [issue #136](https://github.com/WesselKroos/youtube-ambilight/issues/136)
+
+#### 3. Parts of the ambient light or video is sometimes flickering to black triangles or triangles that contain the previous video frame
+This is a bug in the chromium browser. For a list of workarounds visit [issue #97](https://github.com/WesselKroos/youtube-ambilight/issues/97)
 
 # Optimizing or troubleshooting performance problems
 This is a performance guide that helps you get the best performance (and reduced CPU and GPU usage) in your browser.
