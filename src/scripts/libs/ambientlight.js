@@ -18,7 +18,7 @@ const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
 const THEME_DARK = 1
 
-const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
+const baseUrl = document.currentScript?.getAttribute('data-base-url') || ''
 
 export default class Ambientlight {
   barDetection = new BarDetection()

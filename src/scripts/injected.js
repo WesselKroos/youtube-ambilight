@@ -7,8 +7,10 @@ import Settings from './libs/settings'
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
 wrapErrorHandler(function initVersionAndCrashOptions() {
-  setVersion(document.currentScript.getAttribute('data-version') || '')
-  setCrashOptions(JSON.parse(document.currentScript.getAttribute('data-crash-options')))
+  const version = document.currentScript?.getAttribute('data-version') || ''
+  setVersion(version)
+  const options = JSON.parse(document.currentScript?.getAttribute('data-crash-options'))
+  setCrashOptions(options)
   contentScript.addMessageListener('crashOptions', newCrashOptions => {
     setCrashOptions(newCrashOptions)
   }, true)
