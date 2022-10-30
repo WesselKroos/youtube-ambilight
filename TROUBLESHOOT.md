@@ -8,7 +8,7 @@ YouTube has rolled out an "ambient mode" feature on the October 24th. Make sure 
 #### 2. Sometimes there are black lines at the bottom or right side of the video.
 This is a bug in the chromium browser. For a list of workarounds visit [issue #136](https://github.com/WesselKroos/youtube-ambilight/issues/136)
 
-#### 3. Parts of the ambient light or video is sometimes flickering to black triangles or triangles that contain the previous video frame
+#### 3. Parts of the ambient light or video has sometimes flickering black triangles or triangles that contain the previous video frame
 This is a bug in the chromium browser. For a list of workarounds visit [issue #97](https://github.com/WesselKroos/youtube-ambilight/issues/97)
 
 # Optimizing or troubleshooting performance problems
