@@ -508,8 +508,11 @@ export default class Settings {
     },
     {
       experimental: true,
-      name: 'smoothness',
-      label: 'Smoothness',
+      name: 'framesFading',
+      label: 'Fade frames',
+      questionMark: {
+        title: 'Fades the ambient frames in/out by a x amount of frames'
+      },
       type: 'list',
       default: 0,
       min: 0,
@@ -1087,9 +1090,9 @@ export default class Settings {
 
 
           if ([
-            'smoothness',
+            'framesFading',
           ].some(name => name === setting.name)) {
-            this.ambientlight.projector.updateSmoothness()
+            this.ambientlight.projector.initCtx()
           }
           
 
@@ -1266,7 +1269,7 @@ export default class Settings {
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
-    if(setting.name === 'smoothness') {
+    if(setting.name === 'framesFading') {
       return value > 0 ? `${value + 1} frames` : 'Disabled'
     }
     if(setting.name === 'theme' || setting.name === 'enableInViews') {
@@ -1389,7 +1392,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'smoothness' ],
+      names: [ 'framesFading' ],
       visible: () => this.webGL
     }
   ]

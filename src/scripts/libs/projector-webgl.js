@@ -91,11 +91,7 @@ export default class ProjectorWebGL {
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
     this.blurCtx.drawImage(this.canvas, this.blurBound, this.blurBound);
 
-    if(this.drawIndex < this.projectorsTexture.length) {
-      this.drawIndex++
-    } else {
-      this.drawIndex = 1
-    }
+    this.drawIndex = 1 + ((this.drawIndex + Math.round(Math.random() * .5)) % this.projectorsTexture.length)
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
@@ -333,10 +329,10 @@ export default class ProjectorWebGL {
 
     this.projectorsTexture = []
     const maxTextures = this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8
-    const maxSmoothness = maxTextures - 2
-    const smoothness  = Math.min(this.settings.smoothness, maxSmoothness)
+    const maxFramesFading = maxTextures - 2
+    const framesFading  = Math.min(this.settings.framesFading, maxFramesFading)
 
-    for(let i = 0; i < smoothness + 1; i++) {
+    for(let i = 0; i < framesFading + 1; i++) {
       this.projectorsTexture[i] = this.ctx.createTexture();
       this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`]);
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture[i]);
@@ -473,10 +469,6 @@ export default class ProjectorWebGL {
     this.invalidateShaderCache()
 
     this.updateCtx()
-  }
-
-  updateSmoothness() {
-    this.initCtx()
   }
 
   rescale(scales, lastScale, projectorSize, crop, settings) {
