@@ -68,7 +68,7 @@ export default class Settings {
       name: 'framerateLimit',
       label: 'Limit framerate (per second)',
       type: 'list',
-      default: 0,
+      default: 30,
       min: 0,
       max: 60,
       step: 1,
@@ -509,16 +509,17 @@ export default class Settings {
     {
       experimental: true,
       name: 'framesFading',
-      label: 'Fade frames',
+      label: 'Fade in duration',
       questionMark: {
         title: 'Fades the ambient frames in/out by a x amount of frames'
       },
       type: 'list',
       default: 0,
       min: 0,
-      max: 14,
-      step: 1,
-      advanced: true
+      max: 20,
+      step: .02,
+      manualinput: false,
+      advanced: false
     },
     {
       type: 'section',
@@ -822,7 +823,7 @@ export default class Settings {
                   id="setting-${setting.name}-range" 
                   type="range" 
                   colspan="2" 
-                  value="${setting.valuePoints ? setting.valuePoints.indexOf(value) : value}" 
+                  value="${this.getInputRangeValue(setting.name)}" 
                   ${setting.min !== undefined ? `min="${setting.min}"` : ''} 
                   ${setting.max !== undefined ? `max="${setting.max}"` : ''} 
                   ${setting.valuePoints 
@@ -1010,6 +1011,9 @@ export default class Settings {
           if(setting.valuePoints) {
             value = setting.valuePoints[value]
           }
+          if(setting.name === 'framesFading') {
+            value = Math.round(Math.pow(value, 2))
+          }
 
           if(this[setting.name] === value) return
 
@@ -1088,13 +1092,34 @@ export default class Settings {
             this.ambientlight.updateStyles()
           }
 
-
           if ([
             'framesFading',
           ].some(name => name === setting.name)) {
+            if(value > 0) {
+              if(this['framerateLimit'] !== 30) {
+                this.set('framerateLimit', 30, true)
+                this.updateVisibility()
+              }
+            } else {
+              const defaultValue = Settings.config.find(s => s.name === 'framerateLimit').default
+              if(this['framerateLimit'] !== defaultValue) {
+                this.set('framerateLimit', defaultValue, true)
+                this.updateVisibility()
+              }
+            }
             this.ambientlight.projector.initCtx()
           }
-          
+
+          if ([
+            'framerateLimit',
+          ].some(name => name === setting.name)) {
+            const defaultValue = Settings.config.find(s => s.name === 'framesFading').default
+            if(this['framesFading'] !== defaultValue) {
+              this.set('framesFading', defaultValue, true)
+              this.updateVisibility()
+              this.ambientlight.projector.initCtx()
+            }
+          }
 
           if (
             setting.name === 'spread' || 
@@ -1270,7 +1295,7 @@ export default class Settings {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
     if(setting.name === 'framesFading') {
-      return value > 0 ? `${value + 1} frames` : 'Disabled'
+      return value > 0 ? `${value} frames` : 'Disabled'
     }
     if(setting.name === 'theme' || setting.name === 'enableInViews') {
       const snapPoint = setting.snapPoints.find(point => point.value === value)
@@ -1358,6 +1383,11 @@ export default class Settings {
       name: 'verticalBarsClipPercentage',
       controllerName: 'detectVerticalBarSizeEnabled',
       controller: 'Remove black sidebars size'
+    },
+    {
+      name: 'framerateLimit',
+      controllerName: 'framesFading',
+      controller: 'Fade in duration'
     }
   ]
   optionalSettings = [
@@ -1451,7 +1481,7 @@ export default class Settings {
     } else if (setting.type === 'list') {
       const rangeInput = this.menuElem.querySelector(`#setting-${name}-range`)
       if (rangeInput) {
-        rangeInput.value = setting.valuePoints ? setting.valuePoints.indexOf(this[name]) : this[name]
+        rangeInput.value = this.getInputRangeValue(name)
         rangeInput.setAttribute('data-previous-value', rangeInput.value)
         this.menuElem.querySelector(`#setting-${name}-value`).textContent = this.getSettingListDisplayText(setting)
         const manualInput = this.menuElem.querySelector(`#setting-${name}-manualinput`)
@@ -1459,6 +1489,17 @@ export default class Settings {
           manualInput.value = rangeInput.value
         }
       }
+    }
+  }
+
+  getInputRangeValue(name) {
+    const setting = Settings.config.find(setting => setting.name === name) || {}
+    if(name === 'framesFading') {
+      return Math.round(5 * (Math.exp(Math.log(this[name]) / 2))) / 5
+    } else if(setting.valuePoints){
+      return setting.valuePoints.indexOf(this[name])
+    } else {
+      return this[name]
     }
   }
 
