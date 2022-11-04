@@ -2591,24 +2591,24 @@ GREY   | previous display frames`
       this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(async function videoFrameCallback(timestamp, info) {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(wrapErrorHandler(function requestVideoFrameCallback(timestamp, info) {
+      this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
-      await this.receiveVideoFrame(timestamp, info)
-    }.bind(this))
+      this.receiveVideoFrame(timestamp, info)
+    }.bind(this)))
   }
 
-  receiveVideoFrame = async (timestamp, info) => {
+  receiveVideoFrame = (timestamp, info) => {
     this.receiveVideoFrametimes(timestamp, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
-    // this.scheduleRequestVideoFrame() // Requesting? as soon as possible to prevent many 1 frame delayed ambient frames on low fps displays
-    await this.onNextFrame()
+    wrapErrorHandler(async () => await this.onNextFrame(), true)()
   }
 
   receiveVideoFrametimes = (timestamp, info) => {
