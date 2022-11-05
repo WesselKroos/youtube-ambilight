@@ -55,6 +55,7 @@
     "chrome_style": false
   },
   "permissions": [
-    "storage"
+    "storage",
+    "contextMenus"
   ]
 }
