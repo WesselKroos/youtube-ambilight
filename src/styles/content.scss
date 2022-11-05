@@ -448,10 +448,10 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Clarify box info panel */
 
   ytd-info-panel-content-renderer {
-    background: rgba(255,255,255,.1) !important;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] ytd-info-panel-content-renderer {
-    background: rgba(0,0,0,.1) !important;
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
   ytd-info-panel-content-renderer .content {
     background: none !important;
@@ -460,29 +460,29 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Merch shelf */
 
   ytd-merch-shelf-renderer {
-    background: rgba(0,0,0,.1) !important;
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] ytd-merch-shelf-renderer {
-    background: rgba(255,255,255,.1) !important;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Movie offer */ 
 
   $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, ytd-tvfilm-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
   #{$movie-offer} {
-    background: rgba(0,0,0,.1) !important;
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] #{$movie-offer} {
-    background: rgba(255,255,255,.1) !important;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: rgba(255,255,255,.1) !important;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] ytd-rich-metadata-renderer {
-    background: rgba(0,0,0,.1) !important;
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Donation */
