@@ -494,7 +494,7 @@ const SettingsConfig = [
   },
   {
     experimental: true,
-    name: 'framesFading',
+    name: 'frameFading',
     label: 'Fade in duration',
     questionMark: {
       title: 'Fades the ambient frames in/out by a x amount of frames'
@@ -502,7 +502,7 @@ const SettingsConfig = [
     type: 'list',
     default: 0,
     min: 0,
-    max: 20,
+    max: 21.2, // 15 seconds
     step: .02,
     manualinput: false,
     advanced: false

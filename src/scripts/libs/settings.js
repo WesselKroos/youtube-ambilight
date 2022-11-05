@@ -41,7 +41,7 @@ export default class Settings {
         if([
           'webGL',
           'resolution',
-          'framesFading'
+          'frameFading'
         ].includes(setting.name)) {
           settingsToRemove.push(setting)
         }
@@ -414,7 +414,7 @@ export default class Settings {
           if(setting.valuePoints) {
             value = setting.valuePoints[value]
           }
-          if(setting.name === 'framesFading') {
+          if(setting.name === 'frameFading') {
             value = Math.round(Math.pow(value, 2))
           }
 
@@ -496,7 +496,7 @@ export default class Settings {
           }
 
           if ([
-            'framesFading',
+            'frameFading',
           ].some(name => name === setting.name)) {
             if(value > 0) {
               if(this['framerateLimit'] !== 30) {
@@ -515,9 +515,9 @@ export default class Settings {
           if ([
             'framerateLimit',
           ].some(name => name === setting.name)) {
-            const defaultValue = SettingsConfig.find(s => s.name === 'framesFading').default
-            if(this['framesFading'] !== defaultValue) {
-              this.set('framesFading', defaultValue, true)
+            const defaultValue = SettingsConfig.find(s => s.name === 'frameFading').default
+            if(this['frameFading'] !== defaultValue) {
+              this.set('frameFading', defaultValue, true)
               if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
             }
             this.updateVisibility()
@@ -684,6 +684,14 @@ export default class Settings {
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
   }
 
+  framesToDuration(frames) {
+    if(!frames) return 'Disabled'
+
+    const seconds = frames / 30
+    if (seconds < 1) return `${Math.round(seconds * 1000)} ms`
+    return `${Math.round(seconds * 10) / 10} seconds`
+  }
+
   getSettingListDisplayText(setting) {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
@@ -696,8 +704,8 @@ export default class Settings {
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
-    if(setting.name === 'framesFading') {
-      return value > 0 ? `${value} frames` : 'Disabled'
+    if(setting.name === 'frameFading') {
+      return this.framesToDuration(value)
     }
     if(setting.name === 'theme' || setting.name === 'enableInViews') {
       const snapPoint = setting.snapPoints.find(point => point.value === value)
@@ -788,7 +796,7 @@ export default class Settings {
     },
     {
       name: 'framerateLimit',
-      controllerName: 'framesFading',
+      controllerName: 'frameFading',
       controller: 'Fade in duration'
     }
   ]
@@ -824,7 +832,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'framesFading' ],
+      names: [ 'frameFading' ],
       visible: () => this.webGL
     },
     {
@@ -900,7 +908,7 @@ export default class Settings {
 
   getInputRangeValue(name) {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
-    if(name === 'framesFading') {
+    if(name === 'frameFading') {
       return Math.round(5 * (Math.exp(Math.log(this[name]) / 2))) / 5
     } else if(setting.valuePoints){
       return setting.valuePoints.indexOf(this[name])

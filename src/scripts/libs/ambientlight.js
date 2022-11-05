@@ -1644,9 +1644,9 @@ export default class Ambientlight {
       return
     }
 
-    const framesFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
-    const realFramerateLimit = (this.settings.webGL && this.settings.framesFading > framesFadingMax)
-      ? Math.max(1, (framesFadingMax / (this.settings.framesFading || 1)) * this.settings.framerateLimit)
+    const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
+    const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
+      ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
       : this.settings.framerateLimit
     this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
   }
