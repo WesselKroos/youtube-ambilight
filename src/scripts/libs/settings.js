@@ -20,67 +20,10 @@ export default class Settings {
       this.menuElemParent = menuElemParent
 
       await this.getAll()
-      await this.initWebGLExperiment()
-
-      const settingsToRemove = []
-      for(const setting of SettingsConfig) {
-        if(setting.name === 'webGL' && !supportsWebGL()) {
-          this.webGL = undefined
-          settingsToRemove.push(setting)
-        }
-        if(setting.name === 'resolution' && !this.webGL) {
-          this.resolution = undefined
-          settingsToRemove.push(setting)
-        }
-      }
-      for(const setting of settingsToRemove) {
-        SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
-      }
-
-      try {
-        const enableInFullscreen = await contentScript.getStorageEntryOrEntries('setting-enableInFullscreen')
-        if(enableInFullscreen === false) {
-          this.enableInViews = 2
-          this.saveStorageEntry('enableInViews', 2)
-          this.saveStorageEntry('enableInFullscreen', null)
-        }
-      } catch(ex) {
-        SentryReporter.captureException(ex)
-      }
-
       this.initMenu()
       if(this.pendingWarning) this.pendingWarning()
       return this
     }.bind(this))()
-  }
-
-  async initWebGLExperiment() {
-    if(this.webGL || !supportsWebGL() || getBrowser() === 'Firefox') return
-
-    try {
-      this.webGLExperiment = await contentScript.getStorageEntryOrEntries('webGL-experiment')
-      if(this.webGLExperiment !== null) return
-    } catch(ex) {
-      SentryReporter.captureException(ex)
-      return
-    }
-
-    let newUser = false
-    try {
-      newUser = !Object.entries(localStorage).some(entry => entry[0].indexOf('ambilight-') === 0)
-    } catch {
-      newUser = true
-    }
-    this.webGLExperiment = (newUser || Math.random() > .8)
-    try {
-      await contentScript.setStorageEntry('webGL-experiment', this.webGLExperiment)
-    } catch(ex) {
-      SentryReporter.captureException(ex)
-      return
-    }
-    if(!this.webGLExperiment) return
-
-    this.set('webGL', true)
   }
 
   static getStoredSettingsCached = async () => {
@@ -88,21 +31,35 @@ export default class Settings {
       return Settings.storedSettingsCached
     }
 
+    const settingsToRemove = []
     for(const setting of SettingsConfig) {
-      if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
-        setting.default = true
+      if(supportsWebGL()) {
+        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
+          setting.default = 25
+        }
+      } else {
+        if([
+          'webGL',
+          'resolution',
+          'framesFading'
+        ].includes(setting.name)) {
+          settingsToRemove.push(setting)
+        }
       }
-      if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-        setting.default = 25
+      
+      if(HTMLVideoElement.prototype.requestVideoFrameCallback) {
+        if(setting.name === 'sectionQualityPerformanceCollapsed' && !supportsWebGL()) {
+          setting.advanced = true
+        }
+        if(setting.name === 'frameSync') {
+          setting.max = 2
+          setting.default = 2
+          setting.advanced = true
+        }
       }
-      if(setting.name === 'frameSync' && HTMLVideoElement.prototype.requestVideoFrameCallback) {
-        setting.max = 2
-        setting.default = 2
-        setting.advanced = true
-      }
-      if(setting.name === 'sectionQualityPerformanceCollapsed' && HTMLVideoElement.prototype.requestVideoFrameCallback && !supportsWebGL()) {
-        setting.advanced = true
-      }
+    }
+    for(const setting of settingsToRemove) {
+      SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
     }
 
     const names = []
@@ -868,6 +825,10 @@ export default class Settings {
     },
     {
       names: [ 'framesFading' ],
+      visible: () => this.webGL
+    },
+    {
+      names: [ 'resolution' ],
       visible: () => this.webGL
     }
   ]

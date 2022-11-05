@@ -58,20 +58,20 @@ const SettingsConfig = [
     min: 0,
     max: 60,
     step: 1,
-    advanced: false
+    advanced: true
   },
   {
     name: 'webGL',
     label: 'WebGL renderer (uses less power)',
-    description: 'Has the most impact on laptops',
+    // description: 'Reduces power usage',
     type: 'checkbox',
-    default: false,
+    default: true,
     experimental: true,
     advanced: false
   },
   {
     name: 'resolution',
-    label: 'WebGL resolution',
+    label: 'Resolution',
     type: 'list',
     default: 100,
     unit: '%',
