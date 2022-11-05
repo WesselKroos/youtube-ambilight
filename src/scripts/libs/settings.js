@@ -1106,7 +1106,7 @@ export default class Settings {
               }
             }
             this.updateVisibility()
-            this.ambientlight.projector.initCtx()
+            if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
           }
 
           if ([
@@ -1115,7 +1115,7 @@ export default class Settings {
             const defaultValue = Settings.config.find(s => s.name === 'framesFading').default
             if(this['framesFading'] !== defaultValue) {
               this.set('framesFading', defaultValue, true)
-              this.ambientlight.projector.initCtx()
+              if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
             }
             this.updateVisibility()
           }

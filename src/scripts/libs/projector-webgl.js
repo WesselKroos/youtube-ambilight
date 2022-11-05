@@ -418,8 +418,9 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
 
     this.projectorsTexture = []
-    const maxTextures = this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8
+    const maxTextures = Math.min(this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8, 16) // MAX_TEXTURE_IMAGE_UNITS can be more than 16 in software mode
     const maxProjectorTextures = maxTextures - 1
+    ProjectorWebGL.subProjectorDimensionMax = this.webGLVersion === 2 ? 3 : 2; // WebGL1 does not allow non-power-of-two textures
     this.subProjectorsCount = 1
     for(let i = 1; i < ProjectorWebGL.subProjectorDimensionMax && this.settings.framesFading + 1 > maxProjectorTextures * Math.pow(i, 2); i++) {
       this.subProjectorsCount = Math.pow(i + 1, 2);
@@ -554,9 +555,9 @@ export default class ProjectorWebGL {
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
-    // if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-    //   throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
-    // }
+    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
+    }
     this.ctx.attachShader(this.program, fragmentShader);
     // // Debug compiled fragment shader
     // const ext = this.ctx.getExtension('WEBGL_debug_shaders');
@@ -564,13 +565,13 @@ export default class ProjectorWebGL {
     
     // Program
     this.ctx.linkProgram(this.program);
-    // if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-    //   throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
-    // }
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
+    }
     this.ctx.validateProgram(this.program);
-    // if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
-    //   throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
-    // }
+    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
+    }
     this.ctx.useProgram(this.program);
 
     // Buffers
