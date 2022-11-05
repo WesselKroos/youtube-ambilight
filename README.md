@@ -1,8 +1,14 @@
+<a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
+  <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support Wessel Kroos by a donation via Ko-fi">
+</a>
+
 [![Ambient light for YouTube™](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
 
 Immersive yourself in YouTube videos with ambient light!
 
 ![Preview](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/readme/screenshot-1.jpg?raw=true)
+
+---
 
 # Ambient light for YouTube™
 
@@ -47,6 +53,10 @@ Feel free to
 - report bugs at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
 - request a feature at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
 - or ask a question at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
+
+
+## Support Wessel Kroos
+[![Support Wessel Kroos by a donation via Ko-fi™](https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true)](https://ko-fi.com/G2G59EK8L)
 
 
 ## Development
