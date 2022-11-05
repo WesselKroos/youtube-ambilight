@@ -43,6 +43,10 @@ export default class ProjectorWebGL {
   }
 
   handlePageVisibility = (isPageHidden) => {
+    if(this.handlePageVisibilityTimeout) {
+      clearTimeout(this.handlePageVisibilityTimeout)
+      this.handlePageVisibilityTimeout = undefined
+    }
     if(isPageHidden === undefined) {
       isPageHidden = document.visibilityState === 'hidden'
     }
@@ -56,8 +60,14 @@ export default class ProjectorWebGL {
 
     const ctxLost = this.ctx.isContextLost()
     if(this.isPageHidden && !ctxLost) {
-      this.isControlledLose = true
-      this.ctxLose.loseContext()
+      this.handlePageVisibilityTimeout = setTimeout(() => {
+        this.handlePageVisibilityTimeout = undefined
+
+        if(this.isPageHidden && this.ctx && !this.ctx.isContextLost()) {
+          this.isControlledLose = true
+          this.ctxLose.loseContext()
+        }
+      }, 3000)
     } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
       this.ctxLose.restoreContext()
     }
