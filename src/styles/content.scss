@@ -177,10 +177,9 @@ html[data-ambientlight-enabled="true"] {
       background: none !important;
     }
     #voice-search-button {
-      background: none;
-      transition: opacity .15s;
+      background: transparent !important;
       &:not(:hover):not(:focus-within) {
-        opacity: .4;
+        opacity: .6;
       }
     }
   }
@@ -199,6 +198,9 @@ html[data-ambientlight-enabled="true"] {
     }
     #masthead-container.ytd-app::after {
       display: none;
+    }
+    #masthead-container:not(.at-top) #voice-search-button {
+      transition: background-color .15s .15s, opacity .15s;
     }
   }
 
@@ -302,6 +304,7 @@ html[data-ambientlight-enabled="true"] {
 
   $account-btn: '.yt-spec-button-shape-next--outline';
   @mixin masthead-icon {
+    #voice-search-button yt-icon,
     #buttons.ytd-masthead ytd-topbar-menu-button-renderer button:not(:hover):not(:focus) yt-icon,
     #buttons.ytd-masthead ytd-notification-topbar-button-renderer button:not(:hover):not(:focus) yt-icon,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] button:not(:hover):not(:focus) yt-icon {
@@ -325,6 +328,7 @@ html[data-ambientlight-enabled="true"] {
     &.at-top {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
+        fill: currentColor !important;
       }
     }
 
@@ -346,7 +350,9 @@ html[data-ambientlight-enabled="true"] {
   &:not([dark]) #masthead-container.at-top {
     --yt-button-color: #000;
     #guide-icon.ytd-masthead,
-    yt-icon.ytd-topbar-logo-renderer {
+    yt-icon.ytd-topbar-logo-renderer, // old design
+    yt-icon.ytd-logo // new design
+    {
       color: #000;
     }
     #country-code.ytd-topbar-logo-renderer {
