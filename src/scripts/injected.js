@@ -258,12 +258,14 @@ const onLoad = () => requestIdleCallback(() => raf(async function onLoadIdleCall
   await loadAmbientlight()
 }), { timeout: 4000 })
 
-try {
-  if(document.readyState === 'complete') {
-    onLoad()
-  } else {
-    window.addEventListener('load', onLoad)
+;(function setup() {
+  try {
+    if(document.readyState === 'complete') {
+      onLoad()
+    } else {
+      window.addEventListener('load', onLoad)
+    }
+  } catch (ex) {
+    SentryReporter.captureException(ex)
   }
-} catch (ex) {
-  SentryReporter.captureException(ex)
-}
+})()

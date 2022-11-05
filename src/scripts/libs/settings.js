@@ -2,6 +2,7 @@ import { html, body, on, off, setTimeout, supportsWebGL } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
+import SettingsConfig from './settings-config'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -12,565 +13,8 @@ const feedbackFormLink = document.currentScript?.getAttribute('data-feedback-for
 export default class Settings {
   saveStorageEntryTimeout = {}
 
-  static config = [
-    {
-      type: 'section',
-      label: 'Settings',
-      name: 'sectionSettingsCollapsed',
-      default: true
-    },
-    {
-      name: 'advancedSettings',
-      label: 'Advanced',
-      type: 'checkbox',
-      default: false
-    },
-    {
-      type: 'section',
-      label: 'Quality',
-      name: 'sectionQualityPerformanceCollapsed',
-      default: true,
-      advanced: false
-    },
-    {
-      name: 'showFPS',
-      label: 'Framerate stats',
-      type: 'checkbox',
-      default: false,
-      advanced: true
-    },
-    {
-      name: 'showFrametimes',
-      label: 'Frametime stats',
-      description: 'More CPU usage',
-      questionMark: {
-        title: 'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
-      },
-      type: 'checkbox',
-      default: false,
-      advanced: true
-    },
-    {
-      name: 'frameSync',
-      label: 'Synchronization',
-      questionMark: {
-        title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
-      },
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 1,
-      step: 1,
-      manualinput: false,
-      advanced: false
-    },
-    {
-      name: 'framerateLimit',
-      label: 'Limit framerate (per second)',
-      type: 'list',
-      default: 30,
-      min: 0,
-      max: 60,
-      step: 1,
-      advanced: false
-    },
-    {
-      name: 'webGL',
-      label: 'WebGL renderer (uses less power)',
-      description: 'Has the most impact on laptops',
-      type: 'checkbox',
-      default: false,
-      experimental: true,
-      advanced: false
-    },
-    {
-      name: 'resolution',
-      label: 'WebGL resolution',
-      type: 'list',
-      default: 100,
-      unit: '%',
-      valuePoints: (() => {
-        const points = [6.25];
-        while(points[points.length - 1] < 400) {
-          points.push(points[points.length - 1] * 2);
-        }
-        return points;
-      })(),
-      manualinput: false,
-      advanced: false,
-      experimental: true
-    },
-    {
-      experimental: true,
-      name: 'videoOverlayEnabled',
-      label: 'Sync video with ambient light',
-      questionMark: {
-        title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
-      },
-      type: 'checkbox',
-      default: false,
-      advanced: true
-    },
-    {
-      experimental: true,
-      name: 'videoOverlaySyncThreshold',
-      label: 'Sync video disable threshold',
-      description: 'Disable when dropping % of frames',
-      type: 'list',
-      default: 5,
-      min: 1,
-      max: 100,
-      step: 1,
-      advanced: true
-    },
-    {
-      experimental: true,
-      name: 'frameBlending',
-      label: 'Smooth motion (frame blending)',
-      questionMark: {
-        title: 'Click for more information about Frame blending',
-        href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
-      },
-      description: 'More GPU usage. Works with "Sync video"',
-      type: 'checkbox',
-      default: false,
-      advanced: true
-    },
-    {
-      experimental: true,
-      name: 'frameBlendingSmoothness',
-      label: 'Smooth motion strength',
-      type: 'list',
-      default: 80,
-      min: 0,
-      max: 100,
-      step: 1,
-      advanced: true
-    },
-    {
-      type: 'section',
-      label: 'Page content',
-      name: 'sectionOtherPageContentCollapsed',
-      default: false
-    },
-    {
-      name: 'surroundingContentTextAndBtnOnly',
-      label: 'Shadow only on text and buttons',
-      description: 'Decreases scroll & video stutter',
-      type: 'checkbox',
-      advanced: true,
-      default: true
-    },
-    {
-      name: 'surroundingContentShadowSize',
-      label: 'Shadow size',
-      type: 'list',
-      default: 15,
-      min: 0,
-      max: 100,
-      step: .1
-    },
-    {
-      name: 'surroundingContentShadowOpacity',
-      label: 'Shadow opacity',
-      type: 'list',
-      default: 30,
-      min: 0,
-      max: 100,
-      step: .1
-    },
-    {
-      name: 'surroundingContentFillTransparency',
-      label: 'Fill transparency',
-      type: 'list',
-      default: 90,
-      min: 0,
-      max: 100,
-      step: 1,
-      advanced: false
-    },
-    {
-      name: 'surroundingContentImagesTransparency',
-      label: 'Images transparency',
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 100,
-      step: 1,
-      advanced: true
-    },
-    {
-      name: 'immersiveTheaterView',
-      label: 'Hide in theater mode',
-      type: 'checkbox',
-      default: false
-    },
-    {
-      name: 'hideScrollbar',
-      label: 'Hide scrollbar',
-      type: 'checkbox',
-      default: false
-    },
-    {
-      type: 'section',
-      label: 'Video',
-      name: 'sectionVideoResizingCollapsed',
-      default: true
-    },
-    {
-      name: 'videoScale',
-      label: 'Size',
-      type: 'list',
-      default: 100,
-      min: 25,
-      max: 200,
-      step: 0.1
-    },
-    {
-      name: 'videoShadowSize',
-      label: 'Shadow size',
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 100,
-      step: .1
-    },
-    {
-      name: 'videoShadowOpacity',
-      label: 'Shadow opacity',
-      type: 'list',
-      default: 50,
-      min: 0,
-      max: 100,
-      step: .1
-    },
-    {
-      type: 'section',
-      label: 'Black bars',
-      name: 'sectionHorizontalBarsCollapsed',
-      default: true
-    },
-    {
-      name: 'detectHorizontalBarSizeEnabled',
-      label: 'Remove black bars',
-      description: 'More CPU usage',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'B'
-    },
-    {
-      name: 'detectVerticalBarSizeEnabled',
-      label: 'Remove black sidebars',
-      description: 'More CPU usage',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'V'
-    },
-    {
-      name: 'detectColoredHorizontalBarSizeEnabled',
-      label: 'Also remove colored bars',
-      type: 'checkbox',
-      default: false
-    },
-    {
-      name: 'detectHorizontalBarSizeOffsetPercentage',
-      label: 'Black bar detection offset',
-      type: 'list',
-      default: 0,
-      min: -5,
-      max: 5,
-      step: 0.1,
-      advanced: true
-    },
-    {
-      name: 'horizontalBarsClipPercentage',
-      label: 'Black bars size',
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 40,
-      step: 0.1,
-      snapPoints: [
-        { value:  8.7, label:  8 },
-        { value: 12.3, label: 12, flip: true },
-        { value: 13.5, label: 13 }
-      ],
-      advanced: true
-    },
-    {
-      name: 'verticalBarsClipPercentage',
-      label: 'Black sidebars size',
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 40,
-      step: 0.1,
-      advanced: true
-    },
-    {
-      name: 'horizontalBarsClipPercentageReset',
-      label: 'Reset black bars next video',
-      type: 'checkbox',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'detectVideoFillScaleEnabled',
-      label: 'Fill video to screen',
-      type: 'checkbox',
-      default: false,
-      defaultKey: 'S'
-    },
-    {
-      type: 'section',
-      label: 'Filters',
-      name: 'sectionImageAdjustmentCollapsed',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'brightness',
-      label: 'Brightness',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: true
-    },
-    {
-      name: 'contrast',
-      label: 'Contrast',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: true
-    },
-    {
-      name: 'saturation',
-      label: 'Saturation',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: true
-    },
-    {
-      type: 'section',
-      label: 'HDR Filters',
-      name: 'sectionHdrImageAdjustmentCollapsed',
-      default: false,
-      advanced: false,
-      hdr: true
-    },
-    {
-      name: 'hdrBrightness',
-      label: 'Brightness',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: false,
-      hdr: true
-    },
-    {
-      name: 'hdrContrast',
-      label: 'Contrast',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: false,
-      hdr: true
-    },
-    {
-      name: 'hdrSaturation',
-      label: 'Saturation',
-      type: 'list',
-      default: 100,
-      min: 0,
-      max: 200,
-      step: 1,
-      advanced: false,
-      hdr: true
-    },
-    {
-      type: 'section',
-      label: 'Directions',
-      name: 'sectionDirectionsCollapsed',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'directionTopEnabled',
-      label: 'Top',
-      type: 'checkbox',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'directionRightEnabled',
-      label: 'Right',
-      type: 'checkbox',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'directionBottomEnabled',
-      label: 'Bottom',
-      type: 'checkbox',
-      default: true,
-      advanced: true
-    },
-    {
-      name: 'directionLeftEnabled',
-      label: 'Left',
-      type: 'checkbox',
-      default: true,
-      advanced: true
-    },
-    {
-      type: 'section',
-      label: 'Ambient light',
-      name: 'sectionAmbientlightCollapsed',
-      default: false
-    },
-    {
-      name: 'blur',
-      label: 'Blur',
-      description: 'More GPU memory',
-      type: 'list',
-      default: 30,
-      min: 0,
-      max: 100,
-      step: .1
-    },
-    {
-      name: 'spread',
-      label: 'Spread',
-      description: 'More GPU usage',
-      type: 'list',
-      default: 17,
-      min: 0,
-      max: 200,
-      step: .1
-    },
-    {
-      name: 'edge',
-      label: 'Edge size',
-      description: 'Less GPU usage. Tip: Turn blur down',
-      type: 'list',
-      default: 12,
-      min: 2,
-      max: 50,
-      step: .1,
-      advanced: true
-    },
-    {
-      name: 'bloom',
-      label: 'Fade out start',
-      type: 'list',
-      default: 15,
-      min: -50,
-      max: 100,
-      step: .1,
-      advanced: true
-    },
-    {
-      name: 'fadeOutEasing',
-      label: 'Fade out curve',
-      description: 'Tip: Turn blur all the way down',
-      type: 'list',
-      default: 35,
-      min: 1,
-      max: 100,
-      step: 1,
-      advanced: true
-    },
-    {
-      name: 'debandingStrength',
-      label: 'Debanding (noise)',
-      questionMark: {
-        title: 'Click for more information about Dithering',
-        href: 'https://www.lifewire.com/what-is-dithering-4686105'
-      },
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 100,
-      step: 1,
-      advanced: true
-    },
-    {
-      experimental: true,
-      name: 'framesFading',
-      label: 'Fade in duration',
-      questionMark: {
-        title: 'Fades the ambient frames in/out by a x amount of frames'
-      },
-      type: 'list',
-      default: 0,
-      min: 0,
-      max: 20,
-      step: .02,
-      manualinput: false,
-      advanced: false
-    },
-    {
-      type: 'section',
-      label: 'General',
-      name: 'sectionGeneralCollapsed',
-      default: false
-    },
-    {
-      name: 'theme',
-      label: 'Appearance (theme)',
-      type: 'list',
-      manualinput: false,
-      default: 1,
-      min: -1,
-      max: 1,
-      step: 1,
-      snapPoints: [
-        { value: -1, label: 'Light'   },
-        { value:  0, label: 'Default' },
-        { value:  1, label: 'Dark'    },
-      ]
-    },
-    {
-      name: 'enableInViews',
-      label: 'View mode(s)',
-      type: 'list',
-      manualinput: false,
-      default: 0,
-      min: 0,
-      max: 5,
-      step: 1,
-      snapPoints: [
-        { value:  0, label: 'All' },
-        { value:  1, label: 'Small' },
-        { value:  2, hiddenLabel: 'Small & Theater' },
-        { value:  3, label: 'Theater' },
-        { value:  4, hiddenLabel: 'Theater & Fullscreen' },
-        { value:  5, label: 'Fullscreen' },
-      ]
-    },
-    {
-      name: 'enabled',
-      label: 'Enabled',
-      type: 'checkbox',
-      default: true,
-      defaultKey: 'A'
-    },
-  ]
-
   constructor(ambientlight, menuBtnParent, menuElemParent) {
-    return (async () => {
+    return (async function settingsConstructor() {
       this.ambientlight = ambientlight
       this.menuBtnParent = menuBtnParent
       this.menuElemParent = menuElemParent
@@ -578,17 +22,20 @@ export default class Settings {
       await this.getAll()
       await this.initWebGLExperiment()
 
-      Settings.config = Settings.config.map(setting => {
+      const settingsToRemove = []
+      for(const setting of SettingsConfig) {
         if(setting.name === 'webGL' && !supportsWebGL()) {
           this.webGL = undefined
-          return undefined
+          settingsToRemove.push(setting)
         }
         if(setting.name === 'resolution' && !this.webGL) {
           this.resolution = undefined
-          return undefined
+          settingsToRemove.push(setting)
         }
-        return setting
-      }).filter(setting => setting)
+      }
+      for(const setting of settingsToRemove) {
+        SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
+      }
 
       try {
         const enableInFullscreen = await contentScript.getStorageEntryOrEntries('setting-enableInFullscreen')
@@ -604,7 +51,7 @@ export default class Settings {
       this.initMenu()
       if(this.pendingWarning) this.pendingWarning()
       return this
-    })()
+    }.bind(this))()
   }
 
   async initWebGLExperiment() {
@@ -641,7 +88,7 @@ export default class Settings {
       return Settings.storedSettingsCached
     }
 
-    Settings.config = Settings.config.map(setting => {
+    for(const setting of SettingsConfig) {
       if(setting.name === 'webGL' && getBrowser() === 'Firefox') {
         setting.default = true
       }
@@ -656,11 +103,10 @@ export default class Settings {
       if(setting.name === 'sectionQualityPerformanceCollapsed' && HTMLVideoElement.prototype.requestVideoFrameCallback && !supportsWebGL()) {
         setting.advanced = true
       }
-      return setting
-    })
+    }
 
     const names = []
-    for (const setting of Settings.config) {
+    for (const setting of SettingsConfig) {
       names.push(`setting-${setting.name}`)
 
       if(setting.defaultKey !== undefined) {
@@ -681,7 +127,7 @@ export default class Settings {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
 
-    for (const setting of Settings.config) {
+    for (const setting of SettingsConfig) {
       let value = storedSettings[`setting-${setting.name}`]
       value = (value === null || value === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(setting.name) : value
       this[setting.name] = this.processStorageEntry(setting.name, value)
@@ -766,7 +212,7 @@ export default class Settings {
             </div>
           </div>
           ${
-      Settings.config.map(setting => {
+      SettingsConfig.map(setting => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
         if(setting.hdr) classes += ' ytpa-menuitem--hdr'
@@ -883,7 +329,7 @@ export default class Settings {
       }
 
       // Reset keys
-      for (const setting of Settings.config.filter(setting => setting.key)) {
+      for (const setting of SettingsConfig.filter(setting => setting.key)) {
           const keyElem = this.menuElem.querySelector(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
           keyElem.dispatchEvent(new KeyboardEvent('keypress', {
             key: setting.defaultKey
@@ -932,7 +378,7 @@ export default class Settings {
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
 
-    for (const setting of Settings.config) {
+    for (const setting of SettingsConfig) {
       const settingElem = this.menuElem.querySelector(`#setting-${setting.name}`)
       if (!settingElem) continue
       
@@ -996,7 +442,7 @@ export default class Settings {
 
           let value = parseFloat(inputElem.value)
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            value = Settings.config.find(s => s.name === setting.name).default
+            value = SettingsConfig.find(s => s.name === setting.name).default
             if(setting.valuePoints) {
               value = setting.valuePoints.indexOf(value)
             }
@@ -1034,7 +480,7 @@ export default class Settings {
                   : (value / 2.5)
                 )
 
-              const edgeSetting = Settings.config.find(setting => setting.name === 'edge')
+              const edgeSetting = SettingsConfig.find(setting => setting.name === 'edge')
               const edgeInputElem = this.menuElem.querySelector(`#setting-${edgeSetting.name}-range`)
               edgeInputElem.value = edgeValue
               edgeInputElem.dispatchEvent(new Event('change', { bubbles: true }))
@@ -1100,7 +546,7 @@ export default class Settings {
                 this.set('framerateLimit', 30, true)
               }
             } else {
-              const defaultValue = Settings.config.find(s => s.name === 'framerateLimit').default
+              const defaultValue = SettingsConfig.find(s => s.name === 'framerateLimit').default
               if(this['framerateLimit'] !== defaultValue) {
                 this.set('framerateLimit', defaultValue, true)
               }
@@ -1112,7 +558,7 @@ export default class Settings {
           if ([
             'framerateLimit',
           ].some(name => name === setting.name)) {
-            const defaultValue = Settings.config.find(s => s.name === 'framesFading').default
+            const defaultValue = SettingsConfig.find(s => s.name === 'framesFading').default
             if(this['framesFading'] !== defaultValue) {
               this.set('framesFading', defaultValue, true)
               if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
@@ -1141,7 +587,7 @@ export default class Settings {
         on(settingElem, 'dblclick contextmenu click', (e) => {
           let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
-            value = Settings.config.find(s => s.name === setting.name).default
+            value = SettingsConfig.find(s => s.name === setting.name).default
             if(value === this[setting.name]) return
           }
 
@@ -1183,7 +629,7 @@ export default class Settings {
                 'detectVerticalBarSizeEnabled': 'verticalBarsClipPercentage',
                 'detectVideoFillScaleEnabled': 'videoScale'
               })[setting.name]
-              const percentageSetting = Settings.config.find(setting => setting.name === controlledSettingName)
+              const percentageSetting = SettingsConfig.find(setting => setting.name === controlledSettingName)
               const percentageInputElem = this.menuElem.querySelector(`#setting-${percentageSetting.name}-range`)
               if(percentageInputElem.value != percentageSetting.default) {
                 percentageInputElem.dontResetControllerSetting = true
@@ -1447,7 +893,7 @@ export default class Settings {
   }
 
   setKey(name, key) {
-    const setting = Settings.config.find(setting => setting.name === name) || {}
+    const setting = SettingsConfig.find(setting => setting.name === name) || {}
     setting.key = key
     this.saveStorageEntry(`${setting.name}-key`, key)
   }
@@ -1471,7 +917,7 @@ export default class Settings {
   }
 
   updateUI(name) {
-    const setting = Settings.config.find(setting => setting.name === name) || {}
+    const setting = SettingsConfig.find(setting => setting.name === name) || {}
     if (setting.type === 'checkbox') {
       const checkboxInput = this.menuElem.querySelector(`#setting-${name}`)
       if (checkboxInput) {
@@ -1492,7 +938,7 @@ export default class Settings {
   }
 
   getInputRangeValue(name) {
-    const setting = Settings.config.find(setting => setting.name === name) || {}
+    const setting = SettingsConfig.find(setting => setting.name === name) || {}
     if(name === 'framesFading') {
       return Math.round(5 * (Math.exp(Math.log(this[name]) / 2))) / 5
     } else if(setting.valuePoints){
@@ -1507,7 +953,7 @@ export default class Settings {
   }
 
   processStorageEntry(name, value) {
-    const setting = Settings.config.find(setting => setting.name === name) || {}
+    const setting = SettingsConfig.find(setting => setting.name === name) || {}
     if (value === null || value === undefined) {
       value = setting.default
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
@@ -1587,14 +1033,14 @@ export default class Settings {
   }
 
   getKeys = () => ({
-    enabled: Settings.config.find(setting => setting.name === 'enabled').key,
-    detectHorizontalBarSizeEnabled: Settings.config.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
-    detectVerticalBarSizeEnabled: Settings.config.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
-    detectVideoFillScaleEnabled: Settings.config.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
+    enabled: SettingsConfig.find(setting => setting.name === 'enabled').key,
+    detectHorizontalBarSizeEnabled: SettingsConfig.find(setting => setting.name === 'detectHorizontalBarSizeEnabled').key,
+    detectVerticalBarSizeEnabled: SettingsConfig.find(setting => setting.name === 'detectVerticalBarSizeEnabled').key,
+    detectVideoFillScaleEnabled: SettingsConfig.find(setting => setting.name === 'detectVideoFillScaleEnabled').key
   })
 
   displayBezelForSetting(name) {
-    const key = Settings.config.find(setting => setting.name === name).key
+    const key = SettingsConfig.find(setting => setting.name === name).key
     const strike = !this[name]
     this.displayBezel(key, strike)
   }
