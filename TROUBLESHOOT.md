@@ -1,3 +1,7 @@
+<a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
+  <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support Wessel Kroos by a donation via Ko-fi">
+</a>
+
 ### ⚠️ Known issues
 #### 1. YouTube's new "ambient mode" feature creates a black box around the video.
 YouTube has rolled out an "ambient mode" feature on the October 24th. Make sure to update the extension to version 2.36.33 to fix this problem.
