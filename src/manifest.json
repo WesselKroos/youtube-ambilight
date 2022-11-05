@@ -3,6 +3,7 @@
   "name": "Ambient light for YouTube™",
   "description": "Immersive yourself in YouTube™ videos with ambient light!",
   "version": "2.36.33",
+  "homepage_url": "https://github.com/WesselKroos/youtube-ambilight",
   "author": "Wessel Kroos",
   "icons": {
     "16": "images/icon-16.png",
