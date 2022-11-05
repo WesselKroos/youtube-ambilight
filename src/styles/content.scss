@@ -93,6 +93,7 @@
   resize: vertical;
 }
 .ambientlight__ambientlight-ft canvas {
+  height: 100%;
   border: 1px solid #000;
   transform: scaleY(-1);
   cursor: help;
