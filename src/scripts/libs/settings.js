@@ -1098,15 +1098,14 @@ export default class Settings {
             if(value > 0) {
               if(this['framerateLimit'] !== 30) {
                 this.set('framerateLimit', 30, true)
-                this.updateVisibility()
               }
             } else {
               const defaultValue = Settings.config.find(s => s.name === 'framerateLimit').default
               if(this['framerateLimit'] !== defaultValue) {
                 this.set('framerateLimit', defaultValue, true)
-                this.updateVisibility()
               }
             }
+            this.updateVisibility()
             this.ambientlight.projector.initCtx()
           }
 
@@ -1116,9 +1115,9 @@ export default class Settings {
             const defaultValue = Settings.config.find(s => s.name === 'framesFading').default
             if(this['framesFading'] !== defaultValue) {
               this.set('framesFading', defaultValue, true)
-              this.updateVisibility()
               this.ambientlight.projector.initCtx()
             }
+            this.updateVisibility()
           }
 
           if (
