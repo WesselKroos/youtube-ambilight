@@ -85,17 +85,21 @@ export default class Settings {
     }
 
     for (const setting of SettingsConfig) {
-      let value = storedSettings[`setting-${setting.name}`]
-      value = (value === null || value === undefined) ? await this.tryGetAndMigrateLocalStorageEntry(setting.name) : value
+      const value = storedSettings[`setting-${setting.name}`]
       this[setting.name] = this.processStorageEntry(setting.name, value)
 
       if(setting.defaultKey !== undefined) {
         let key = storedSettings[`setting-${setting.name}-key`]
-        if(key === null || key === undefined) key = await this.tryGetAndMigrateLocalStorageEntry(`${setting.name}-key`)
         if(key === null) key = setting.defaultKey
         setting.key = key
       }
     }
+
+    // Makes the new default framerateLimit of 30 backwards compatible with a previously enabled frameBlending
+    if(this.frameBlending && this.framerateLimit !== 0) {
+      this.set('framerateLimit', 0)
+    }
+
     await this.flushPendingStorageEntries() // Complete migrations
 
     if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
@@ -502,6 +506,9 @@ export default class Settings {
               if(this['framerateLimit'] !== 30) {
                 this.set('framerateLimit', 30, true)
               }
+              if(this['frameBlending']) {
+                this.set('frameBlending', false, true)
+              }
             } else {
               const defaultValue = SettingsConfig.find(s => s.name === 'framerateLimit').default
               if(this['framerateLimit'] !== defaultValue) {
@@ -515,6 +522,9 @@ export default class Settings {
           if ([
             'framerateLimit',
           ].some(name => name === setting.name)) {
+            if(this['frameBlending']) {
+              this.set('frameBlending', false, true)
+            }
             const defaultValue = SettingsConfig.find(s => s.name === 'frameFading').default
             if(this['frameFading'] !== defaultValue) {
               this.set('frameFading', defaultValue, true)
@@ -615,10 +625,24 @@ export default class Settings {
             this.ambientlight.updateImmersiveMode()
           }
           
-          if([
-            'frameBlending',
-            'videoOverlayEnabled'
-          ].some(name => name === setting.name)) {
+          if (setting.name === 'frameBlending') {
+            if(value) {
+              if(this['frameFading'] !== 0) {
+                this.set('frameFading', 0, true)
+              }
+              if(this['framerateLimit'] !== 0) {
+                this.set('framerateLimit', 0, true)
+              }
+            } else {
+              const defaultValue = SettingsConfig.find(s => s.name === 'framerateLimit').default
+              if(this['framerateLimit'] !== defaultValue) {
+                this.set('framerateLimit', defaultValue, true)
+              }
+            }
+            this.updateVisibility()
+          }
+          
+          if (setting.name === 'videoOverlayEnabled') {
             this.updateVisibility()
             this.ambientlight.sizesChanged = true
           }
@@ -644,6 +668,7 @@ export default class Settings {
             } else {
               this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--advanced')
             }
+            this.updateVisibility()
           }
 
           if(setting.name === 'showFPS' || setting.name === 'showFrametimes') {
@@ -685,7 +710,7 @@ export default class Settings {
   }
 
   framesToDuration(frames) {
-    if(!frames) return 'Disabled'
+    if(!frames) return 'Off'
 
     const seconds = frames / 30
     if (seconds < 1) return `${Math.round(seconds * 1000)} ms`
@@ -781,24 +806,28 @@ export default class Settings {
   controlledSettings = [
     {
       name: 'videoScale',
-      controllerName: 'detectVideoFillScaleEnabled',
-      controller: 'Fill video to screen'
+      controllers: ['detectVideoFillScaleEnabled']
     },
     {
       name: 'horizontalBarsClipPercentage',
-      controllerName: 'detectHorizontalBarSizeEnabled',
-      controller: 'Remove black bars'
+      controllers: ['detectHorizontalBarSizeEnabled']
     },
     {
       name: 'verticalBarsClipPercentage',
-      controllerName: 'detectVerticalBarSizeEnabled',
-      controller: 'Remove black sidebars size'
+      controllers: ['detectVerticalBarSizeEnabled']
     },
     {
       name: 'framerateLimit',
-      controllerName: 'frameFading',
-      controller: 'Fade in duration'
-    }
+      controllers: ['frameBlending', 'frameFading']
+    },
+    {
+      name: 'frameBlending',
+      controllers: ['frameFading']
+    },
+    {
+      name: 'frameFading',
+      controllers: ['frameBlending']
+    },
   ]
   optionalSettings = [
     {
@@ -842,10 +871,15 @@ export default class Settings {
   ]
   updateVisibility() {
     for(const setting of this.controlledSettings) {
-      const valueElem = this.menuElem.querySelector(`#setting-${setting.name}-value`)
-      if(this[setting.controllerName]) {
+      const valueElem = this.menuElem.querySelector(`#setting-${setting.name}.ytp-menuitem, #setting-${setting.name} .ytp-menuitem`)
+      const controlledByName = setting.controllers.find(name => this[name])
+      const controlledByLabel = SettingsConfig.find(setting => (
+        setting.name === controlledByName &&
+        (this.advancedSettings || !setting.advanced)
+      ))?.label
+      if(controlledByLabel) {
         valueElem.classList.add('is-controlled-by-setting')
-        valueElem.setAttribute('title', `Controlled by the "${setting.controller}" setting.\nManually adjusting this setting will turn off "${setting.controller}"`)
+        valueElem.setAttribute('title', `Controlled by the "${controlledByLabel}" setting.\nManually adjusting this setting will turn off "${controlledByLabel}"`)
       } else {
         valueElem.classList.remove('is-controlled-by-setting')
         valueElem.setAttribute('title', '')
@@ -948,27 +982,6 @@ export default class Settings {
     return value
   }
 
-  logLocalStorageWarningOnce(...args) {
-    if(this.loggedLocalStorageWarning) return
-
-    console.warn(...args)
-    this.loggedLocalStorageWarning = true
-  }
-
-  async tryGetAndMigrateLocalStorageEntry(name) {
-    let value = null
-    try {
-      value = localStorage.getItem(`ambilight-${name}`)
-      if(value !== null) {
-        localStorage.removeItem(`ambilight-${name}`)
-        this.saveStorageEntry(name, JSON.parse(value))
-      }
-    } catch (ex) {
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | ${ex.message}`)
-    }
-    return value
-  }
-
   pendingStorageEntries = {}
   saveStorageEntry(name, value) {
     this.pendingStorageEntries[name] = value
@@ -997,8 +1010,15 @@ export default class Settings {
         return
       }
       SentryReporter.captureException(ex)
-      this.logLocalStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
+      this.logStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
+  }
+
+  logStorageWarningOnce(...args) {
+    if(this.loggedStorageWarning) return
+
+    console.warn(...args)
+    this.loggedStorageWarning = true
   }
 
   getKeys = () => ({
