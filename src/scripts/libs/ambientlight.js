@@ -1826,13 +1826,16 @@ export default class Ambientlight {
     // Add new item
     let fps = 0
     if (list.length) {
-      const previous = list[0]
-      fps = Math.max(0,
-        (
+      if(count < list[0].count) {
+        // Clear list with invalid values
+        list.splice(0, list.length)
+      } else {
+        const previous = list[0]
+        fps = Math.max(0, (
           (count - previous.count) / 
           ((time - previous.time) / 1000)
-        )
-      )
+        ))
+      }
     }
     list.push({
       count,
@@ -1845,30 +1848,30 @@ export default class Ambientlight {
 
     // Todo: delay removal and calculations to idle callback?
 
-    // Remove old items
-    const thresholdTime = time - this.frameCountHistory
-    const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
-    if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
+      // Remove old items
+      const thresholdTime = time - this.frameCountHistory
+      const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
+      if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
-    // Calculate fps
-    const aligableList = list.filter(i => i.fps)
-    aligableList.sort((a, b) => a.fps - b.fps)
-    if(aligableList.length > 10) {
-      const bound = Math.floor(aligableList.length / 16)
-      aligableList.splice(0, bound)
-      aligableList.splice(aligableList.length - bound, bound)
-    }
+      // Calculate fps
+      const aligableList = list.filter(i => i.fps)
+        aligableList.sort((a, b) => a.fps - b.fps)
+        if(aligableList.length > 10) {
+          const bound = Math.floor(aligableList.length / 16)
+          aligableList.splice(0, bound)
+          aligableList.splice(aligableList.length - bound, bound)
+        }
 
-    const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
-    const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
-    if(deleteCount) {
-      aligableList.sort((a, b) => a.time - b.time)
-      aligableList.splice(0, deleteCount)
-    }
+        const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
+        const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
+        if(deleteCount) {
+          aligableList.sort((a, b) => a.time - b.time)
+          aligableList.splice(0, deleteCount)
+        }
 
-    const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+        const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
 
-    return average
+        return average
   }
 
   detectFrameRates() {
