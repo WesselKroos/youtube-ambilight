@@ -525,7 +525,7 @@ export default class Settings {
             if(this['frameBlending']) {
               this.set('frameBlending', false, true)
             }
-            const defaultValue = SettingsConfig.find(s => s.name === 'frameFading').default
+            const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
             if(this['frameFading'] !== defaultValue) {
               this.set('frameFading', defaultValue, true)
               if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
@@ -871,6 +871,8 @@ export default class Settings {
   ]
   updateVisibility() {
     for(const setting of this.controlledSettings) {
+      if(!SettingsConfig.find(settingConfig => settingConfig.name === setting.name)) continue // Skip removed settings
+
       const valueElem = this.menuElem.querySelector(`#setting-${setting.name}.ytp-menuitem, #setting-${setting.name} .ytp-menuitem`)
       const controlledByName = setting.controllers.find(name => this[name])
       const controlledByLabel = SettingsConfig.find(setting => (
