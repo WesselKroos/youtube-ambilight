@@ -9,6 +9,7 @@ export const FRAMESYNC_DISPLAYFRAMES = 1
 export const FRAMESYNC_VIDEOFRAMES = 2
 
 const feedbackFormLink = document.currentScript?.getAttribute('data-feedback-form-link') || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
+const baseUrl = document.currentScript?.getAttribute('data-base-url') || ''
 
 export default class Settings {
   saveStorageEntryTimeout = {}
@@ -154,7 +155,7 @@ export default class Settings {
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank">
+              <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank" rel="noopener">
                 <span class="ytpa-feedback-link__text">Troubleshoot performance problems</span>
               </a>
             </div>
@@ -167,8 +168,8 @@ export default class Settings {
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank">
-                <span class="ytpa-feedback-link__text">Give feedback or rate Ambient light</span>
+              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank" rel="noopener">
+                <span class="ytpa-feedback-link__text">Give feedback or rating</span>
               </a>
             </div>
           </div>

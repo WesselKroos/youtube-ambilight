@@ -66,7 +66,7 @@ const SettingsConfig = [
     // description: 'Reduces power usage',
     type: 'checkbox',
     default: true,
-    experimental: true,
+    new: true,
     advanced: false
   },
   {
@@ -83,11 +83,9 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    advanced: false,
-    experimental: true
+    advanced: false
   },
   {
-    experimental: true,
     name: 'videoOverlayEnabled',
     label: 'Sync video with ambient light',
     questionMark: {
@@ -98,7 +96,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    experimental: true,
     name: 'videoOverlaySyncThreshold',
     label: 'Sync video disable threshold',
     description: 'Disable when dropping % of frames',
@@ -110,7 +107,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    experimental: true,
     name: 'frameBlending',
     label: 'Smooth motion (frame blending)',
     questionMark: {
@@ -123,7 +119,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    experimental: true,
     name: 'frameBlendingSmoothness',
     label: 'Smooth motion strength',
     type: 'list',
@@ -437,16 +432,6 @@ const SettingsConfig = [
     step: .1
   },
   {
-    name: 'spread',
-    label: 'Spread',
-    description: 'More GPU usage',
-    type: 'list',
-    default: 17,
-    min: 0,
-    max: 200,
-    step: .1
-  },
-  {
     name: 'edge',
     label: 'Edge size',
     description: 'Less GPU usage. Tip: Turn blur down',
@@ -458,8 +443,18 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'spread',
+    label: 'Spread',
+    description: 'More GPU usage',
+    type: 'list',
+    default: 17,
+    min: 0,
+    max: 200,
+    step: .1
+  },
+  {
     name: 'bloom',
-    label: 'Fade out start',
+    label: 'Spread fade start',
     type: 'list',
     default: 15,
     min: -50,
@@ -469,7 +464,7 @@ const SettingsConfig = [
   },
   {
     name: 'fadeOutEasing',
-    label: 'Fade out curve',
+    label: 'Spread fade curve',
     description: 'Tip: Turn blur all the way down',
     type: 'list',
     default: 35,
@@ -493,11 +488,11 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    experimental: true,
+    new: true,
     name: 'frameFading',
     label: 'Fade in duration',
     questionMark: {
-      title: 'Fades the ambient frames in/out by a x amount of frames'
+      title: 'Slowly fades new colors into the ambient light\n(Also reduces flickering)'
     },
     type: 'list',
     default: 0,

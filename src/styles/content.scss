@@ -895,7 +895,7 @@ html[data-ambientlight-enabled="true"] {
     display: block;
     padding: 10px 15px;
     color: #008cff;
-    font-weight: normal;
+    font-weight: bold;
     font-size: 11px;
     &:hover {
       color: #5ebfff;
@@ -924,14 +924,14 @@ html[data-ambientlight-enabled="true"] {
     appearance: none;
     position: relative;
     display: block;
-    margin: 0;
+    margin: -2px 3px 0 0;
     border: 0;
     padding: 0;
     width: 14px;
     height: 14px;
     outline: none;
     border-radius: 50%;
-    border: 1px solid #ffffff55;
+    border: 1px solid #ffffff88;
     border-top-color: transparent;
     background: none;
     cursor: pointer;
@@ -955,7 +955,7 @@ html[data-ambientlight-enabled="true"] {
       width: 1px;
       height: 6px;
       margin: -6px 0 0 9px;
-      background: #ffffff55;
+      background: #ffffff99;
       .ytp-fullscreen & {
         width: 2px;
         height: 6px;
@@ -996,7 +996,7 @@ html[data-ambientlight-enabled="true"] {
       height: 0;
       margin-top: 8px;
       border-left: 5px solid #0000;
-      border-bottom: 5px solid #111;
+      border-bottom: 5px solid #888;
       border-right: 5px solid #0000;
       content: '';
 
@@ -1019,7 +1019,7 @@ html[data-ambientlight-enabled="true"] {
         position: absolute;
         right: 12px;
         margin-top: 9px;
-        border-top: 5px solid #111;
+        border-top: 5px solid #888;
         border-bottom: none;
         content: '';
         .ytp-fullscreen & {
@@ -1194,30 +1194,80 @@ html[data-ambientlight-enabled="true"] {
     height: auto !important;
     margin: 0;
     padding: 6px 0;
-    &.ytpa-menuitem--header {
-      cursor: default;
-      &:hover {
-        background: none;
-      }
-    }
 
     .ytp-fullscreen & {
       padding: 9px 0;
     }
+
+    &.ytpa-menuitem--header {
+      margin-top: 5px;
+      margin-bottom: -5px;
+      padding-top: 2px;
+      padding-bottom: 8px;
+      cursor: default;
+      &,
+      &:hover {
+        background: rgba(0,0,0,.4);
+      }
+
+      .ytp-fullscreen & {
+        padding: 6px 0 12px;
+      }
+
+      &:nth-child(2) {
+        margin-top: -8px;
+        padding-top: 15px;
+
+        .ytp-fullscreen & {
+          padding-top: 20px;
+        }
+      }
+    }
   }
 
   .ytpa-menuitem--warning {
-    margin-bottom: 5px;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    padding-top: 20px;
+    padding-bottom: 15px;
+    user-select: text;
     cursor: default !important;
     &,
     &:hover {
-      background: #f52 !important;
+      background: #e40 !important;
+    }
+
+    .ytp-fullscreen & {
+      padding-top: 25px;
+      padding-bottom: 20px;
+    }
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='100' width='100'%3E%3Cpolygon points='50,0 0,90 100,90' class='triangle' fill='%23884400ff' /%3E%3Cpolygon points='48.25,3 3,85 94,85' fill='%23f60' /%3E%3Ctext x='56' y='79' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%2300000000'%3E!%3C/text%3E%3Ctext x='50' y='65' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%23fff'%3E!%3C/text%3E%3C/svg%3E");
+      background-position: center;
+      background-size: contain;
+      background-repeat: no-repeat;
+      margin-left: 8px;
+      margin-right: -6px;
+      filter: drop-shadow(1.5px 1px 0px #fff8) drop-shadow(-.5px 1px 0px #fff8) drop-shadow(-.5px -.5px 0px #fffb) drop-shadow(1.5px -.5px 0px #fffb);
+      
+      .ytp-fullscreen & {
+        margin-top: 4px;
+        width: 21px;
+        height: 21px;
+      }
+    }
+
+    .ytp-menuitem-label {
+      flex-grow: 1;
     }
   }
   .ytpa-warning {
-    color: #000;
-    text-shadow: none;
-    font-weight: bold;
+    color: #fff;
     white-space: pre-line;
   }
 
@@ -1274,6 +1324,9 @@ html[data-ambientlight-enabled="true"] {
       padding-right: 22px;
     }
   }
+  .ytpa-menuitem--header .ytp-menuitem-content {
+    flex-grow: 1;
+  }
 
   .ytp-menuitem {
     &.is-controlled-by-setting {
@@ -1319,7 +1372,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     &:hover + .ytp-menuitem-value {
-      color: #007cc3;
+      color: #30acf3;
     }
 
     &:focus {
