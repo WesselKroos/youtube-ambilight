@@ -906,7 +906,7 @@ export default class Ambientlight {
   }
 
   initFrameBlending() {
-    const previousProjectorsBufferElem = new Canvas(1, 1, true) 
+    const previousProjectorsBufferElem = new Canvas(this.projectorBuffer.elem.width, this.projectorBuffer.elem.height, true) 
     if (previousProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
     }
@@ -915,7 +915,7 @@ export default class Ambientlight {
       ctx: previousProjectorsBufferElem.getContext('2d', ctxOptions)
     }
 
-    const blendedProjectorsBufferElem = new Canvas(1, 1, true) 
+    const blendedProjectorsBufferElem = new Canvas(this.projectorBuffer.elem.width, this.projectorBuffer.elem.height, true) 
     if (blendedProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(blendedProjectorsBufferElem)
     }
