@@ -980,6 +980,24 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  .ytpa-donate-link {
+    transition: filter .15s;
+    &:not(:hover) {
+      filter: grayscale(1);
+    }
+
+    &__image {
+      margin-top: -4px;
+      margin-bottom: -6px;
+
+      .ytp-fullscreen & {
+        margin-top: -8px;
+        margin-bottom: -8px;
+        height: 33px;
+      }
+    }
+  }
+
   .ytpa-section {
     display: flex;
     width: 100%;

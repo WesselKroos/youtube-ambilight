@@ -172,6 +172,11 @@ export default class Settings {
                 <span class="ytpa-feedback-link__text">Give feedback or rating</span>
               </a>
             </div>
+            <div class="ytp-menuitem-content">
+              <a class="ytpa-donate-link" href="https://ko-fi.com/G2G59EK8L" target="_blank" rel="noopener">
+                <img class="ytpa-donate-link__image" alt="Donate via Ko-fi" title="Donate via Ko-fi" height="23" src="${baseUrl}images/donate.svg" />
+              </a>
+            </div>
           </div>
           ${
       SettingsConfig.map(setting => {
