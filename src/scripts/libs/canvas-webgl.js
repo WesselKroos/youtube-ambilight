@@ -9,7 +9,7 @@ export class WebGLCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
-        this.canvas.ctx = new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -33,7 +33,7 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = new WebGLContext(this.canvas, type, options, this.setWarning);
+        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, this.setWarning);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -344,5 +344,9 @@ export class WebGLContext {
       console.warn(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid;
+  }
+
+  isContextLost = () => {
+    return !this.ctx || this.ctx.isContextLost();
   }
 }

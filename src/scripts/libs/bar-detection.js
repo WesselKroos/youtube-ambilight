@@ -342,23 +342,22 @@ export default class BarDetection {
         }
 
         this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
-      }
-      canvasInfo = this.worker.isFallbackWorker 
-        ? {
-          canvas: this.canvas,
-          ctx: this.ctx
-        }
-        : ((allowedToTransfer && buffer.transferToImageBitmap)
-          ? (!buffer.ctx?.lost
-            ? {
-              bitmap: buffer.transferToImageBitmap()
-            }
-            : null
-          )
+        canvasInfo = (this.worker.isFallbackWorker || !this.canvas.transferToImageBitmap)
+          ? {
+            canvas: this.canvas,
+            ctx: this.ctx
+          } 
           : {
             bitmap: this.canvas.transferToImageBitmap()
           }
-        )
+      } else {
+        const bufferCtx = buffer.getContext('2d')
+        if(!bufferCtx?.isContextLost || !bufferCtx.isContextLost()) {
+          canvasInfo = {
+            bitmap: buffer.transferToImageBitmap()
+          }
+        }
+      }
 
       if(!canvasInfo) {
         this.cancellable = true

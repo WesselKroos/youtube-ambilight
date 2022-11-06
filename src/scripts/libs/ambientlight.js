@@ -828,8 +828,6 @@ export default class Ambientlight {
       elem: projectorsBufferElem,
       ctx: projectorsBufferElem.getContext('2d', ctxOptions)
     }
-    if(this.settings.webGL)
-      this.projectorBuffer.ctx.options.antialiasing = true
 
     this.elem.appendChild(this.buffersWrapperElem)
   }
@@ -1817,9 +1815,10 @@ export default class Ambientlight {
   }
 
   // Todo:
-  // - Fix frame drops on 60hz monitors with a 50hz video playing:
+  // - Fix frame drops on 60hz monitors with a 50hz video playing?:
   //     Was caused by faulty NVidia 3050TI driver 
   //     and chromium video callback being sometimes 1 frame delayed
+  //     and requestVideoFrameCallback being executed at the end of the draw flow
   // - Do more complex logic at a later time
   detectFrameRate(list, count, currentFrameRate, update) {
     const time = performance.now()
