@@ -799,7 +799,7 @@ html[data-ambientlight-enabled="true"] {
   position: relative !important;
   overflow: initial !important;
   font-size: calc(100% / 1.09) !important;
-  contain: strict;
+  contain: size;
   &::after {
     content: '';
     position: absolute;
@@ -871,14 +871,14 @@ html[data-ambientlight-enabled="true"] {
 .ytp-ambientlight-settings-button-tooltip {
   white-space: nowrap;
   left: 50%;
-  top: -14px;
+  margin-top: -14px;
   transform: translateX(-50%) translateY(-100%) !important;
   opacity: 0 !important;
   transition: none !important;
   pointer-events: none;
 
   .ytp-big-mode & {
-    top: 0;
+    margin-top: -8px;
   }
 
   .ytp-ambientlight-settings-button:not([aria-expanded="true"]):hover & {
