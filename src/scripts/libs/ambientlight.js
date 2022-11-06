@@ -1826,7 +1826,7 @@ export default class Ambientlight {
     // Add new item
     let fps = 0
     if (list.length) {
-      const previous = list[Math.min(list.length - 1, 2)]
+      const previous = list[0]
       fps = Math.max(0,
         (
           (count - previous.count) / 
@@ -1851,13 +1851,24 @@ export default class Ambientlight {
     if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
     // Calculate fps
-    const aligableList = list.filter(i => i.fps).sort((a, b) => a - b)
+    const aligableList = list.filter(i => i.fps)
+    aligableList.sort((a, b) => a.fps - b.fps)
     if(aligableList.length > 10) {
-      const bound = Math.min(aligableList.length / 4)
+      const bound = Math.floor(aligableList.length / 16)
       aligableList.splice(0, bound)
       aligableList.splice(aligableList.length - bound, bound)
     }
-    return aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+
+    const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
+    const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
+    if(deleteCount) {
+      aligableList.sort((a, b) => a.time - b.time)
+      aligableList.splice(0, deleteCount)
+    }
+
+    const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+
+    return average
   }
 
   detectFrameRates() {
@@ -1978,10 +1989,11 @@ export default class Ambientlight {
       }
 
       // Ambientlight FPS
-      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
-      const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
+      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMIT: ${this.settings.framerateLimit}` : ''}` : ''}`
+      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.settings.framerateLimit) : this.videoFrameRate
+      const ambientlightFPSColor = (this.ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
-        : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+        : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.01) ? '#ff3' : '#7f7'
 
       // Ambientlight dropped frames
       const ambientlightDroppedFramesText = `AMBIENT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
