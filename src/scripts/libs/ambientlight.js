@@ -32,6 +32,7 @@ export default class Ambientlight {
   isOnVideoPage = true
   showedCompareWarning = false
   getImageDataAllowed = true
+  catchedErrors = []
 
   atTop = true
   p = null
@@ -1677,24 +1678,25 @@ export default class Ambientlight {
   getNow = () => Math.round(100 * performance.now()) / 100
 
   nextFrame = async () => {
-    const videoFrameTimes = this.settings.showFrametimes ? [...this.videoFrameTimes] : []
-    const frameTimes = this.settings.showFrametimes ? {
-      frameStart: this.getNow()
-    } : {}
-  
-    this.delayedUpdateSizesChanged = false
-    if(this.p && this.sizesInvalidated) {
-      this.updateSizesChanged()
-    }
-    if (!this.p || this.sizesChanged) {
-      //If was detected hidden by updateSizes, this.p won't be initialized yet
-      if(!await this.updateSizes()) return
-    } else {
-      this.delayedUpdateSizesChanged = true
-    }
-    
-    let results = {}
     try {
+      const videoFrameTimes = this.settings.showFrametimes ? [...this.videoFrameTimes] : []
+      const frameTimes = this.settings.showFrametimes ? {
+        frameStart: this.getNow()
+      } : {}
+    
+      this.delayedUpdateSizesChanged = false
+      if(this.p && this.sizesInvalidated) {
+        this.updateSizesChanged()
+      }
+      if (!this.p || this.sizesChanged) {
+        //If was detected hidden by updateSizes, this.p won't be initialized yet
+        if(!await this.updateSizes()) return
+      } else {
+        this.delayedUpdateSizesChanged = true
+      }
+      
+      let results = {}
+      throw new DOMException('Failed to execute custom', 'SecurityErrsor')
       if (this.settings.showFrametimes)
         frameTimes.drawStart = this.getNow()
 
@@ -1704,45 +1706,46 @@ export default class Ambientlight {
 
       if (this.settings.showFrametimes)
         frameTimes.drawEnd = this.getNow()
-    } catch (ex) {
-      if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
-        if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
-          this.catchedNS_ERROR_NOT_AVAILABLE = true
-          throw ex
-        }
-      } else if(ex.name == 'NS_ERROR_OUT_OF_MEMORY') {
-        if(!this.catchedNS_ERROR_OUT_OF_MEMORY) {
-          this.catchedNS_ERROR_OUT_OF_MEMORY = true
-          throw ex
-        }
-      } else {
-        throw ex
+
+      if(this.canScheduleNextFrame() && !this.isBuffering) {
+        this.scheduleNextFrame()
       }
+
+      if (results?.detectBarSize) {
+        this.scheduleBarSizeDetection()
+      }
+
+      this.nextFrametimes(videoFrameTimes, frameTimes, results)
+
+      if(
+        this.afterNextFrameIdleCallback ||
+        (
+          !this.settings.videoOverlayEnabled &&
+          !(
+            this.delayedUpdateSizesChanged &&
+            (performance.now() - this.lastUpdateSizesChanged) > 2000
+          ) &&
+          !((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval)
+        )
+      ) return
+      
+      this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
+    } catch (ex) {
+      const message = (ex.name === 'SecurityError')
+        ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
+        : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video.\n\nError: ${ex.name}\nReason: ${ex.message}`
+      this.settings.setWarning(`Failed to display the ambient light\n\n${message}`)
+      if(this.catchedErrors[ex.name]) return
+
+      this.catchedErrors[ex.name] = true
+      if([
+        'SecurityError',
+        'NS_ERROR_NOT_AVAILABLE',
+        'NS_ERROR_OUT_OF_MEMORY'
+      ].includes(ex.name)) return
+
+      throw ex
     }
-
-    if(this.canScheduleNextFrame() && !this.isBuffering) {
-      this.scheduleNextFrame()
-    }
-
-    if (results?.detectBarSize) {
-      this.scheduleBarSizeDetection()
-    }
-
-    this.nextFrametimes(videoFrameTimes, frameTimes, results)
-
-    if(
-      this.afterNextFrameIdleCallback ||
-      (
-        !this.settings.videoOverlayEnabled &&
-        !(
-          this.delayedUpdateSizesChanged &&
-          (performance.now() - this.lastUpdateSizesChanged) > 2000
-        ) &&
-        !((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval)
-      )
-    ) return
-    
-    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
   nextFrametimes = (videoFrameTimes, frameTimes, results) => {
@@ -1856,23 +1859,23 @@ export default class Ambientlight {
       const aligableList = list.filter(i => i.fps)
       if(!aligableList.length) return currentFrameRate
 
-        aligableList.sort((a, b) => a.fps - b.fps)
-        if(aligableList.length > 10) {
-          const bound = Math.floor(aligableList.length / 16)
-          aligableList.splice(0, bound)
-          aligableList.splice(aligableList.length - bound, bound)
-        }
+      aligableList.sort((a, b) => a.fps - b.fps)
+      if(aligableList.length > 10) {
+        const bound = Math.floor(aligableList.length / 16)
+        aligableList.splice(0, bound)
+        aligableList.splice(aligableList.length - bound, bound)
+      }
 
-        const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
-        const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
-        if(deleteCount) {
-          aligableList.sort((a, b) => a.time - b.time)
-          aligableList.splice(0, deleteCount)
-        }
+      const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
+      const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
+      if(deleteCount) {
+        aligableList.sort((a, b) => a.time - b.time)
+        aligableList.splice(0, deleteCount)
+      }
 
-        const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+      const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
 
-        return average
+      return average
   }
 
   detectFrameRates() {
@@ -2585,6 +2588,7 @@ GREY   | previous display frames`
 
     this.pendingStart = true
     if(this.shouldShow()) await this.show()
+    this.pendingStart = undefined
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
@@ -2592,8 +2596,6 @@ GREY   | previous display frames`
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
     }
-
-    this.pendingStart = undefined
   }
 
   scheduleRequestVideoFrame = () => {
