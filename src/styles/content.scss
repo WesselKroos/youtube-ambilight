@@ -467,10 +467,7 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Merch shelf */
 
   ytd-merch-shelf-renderer {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-merch-shelf-renderer {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+    background: none !important;
   }
 
   /* Cosmetics - Movie offer */ 
