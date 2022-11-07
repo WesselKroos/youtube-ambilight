@@ -697,6 +697,7 @@ export default class Ambientlight {
   }
 
   async toggleEnabled(enabled) {
+    if(this.pendingStart) return
     enabled = (enabled !== undefined) ? enabled : !this.settings.enabled
     if (enabled) {
       await this.enable()
@@ -2551,6 +2552,7 @@ GREY   | previous display frames`
   }
 
   async disable() {
+    if(this.pendingStart) return
     this.settings.set('enabled', false, true)
 
     await this.hide()
