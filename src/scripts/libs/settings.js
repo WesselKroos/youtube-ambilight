@@ -174,7 +174,7 @@ export default class Settings {
             </div>
             <div class="ytp-menuitem-content">
               <a class="ytpa-donate-link" href="https://ko-fi.com/G2G59EK8L" target="_blank" rel="noopener">
-                <img class="ytpa-donate-link__image" alt="Donate via Ko-fi" title="Donate via Ko-fi" height="23" src="${baseUrl}images/donate.svg" />
+                <img class="ytpa-donate-link__image" alt="Support me via a donation"" title="Support me via a donation"" height="23" src="${baseUrl}images/donate.svg" />
               </a>
             </div>
           </div>
