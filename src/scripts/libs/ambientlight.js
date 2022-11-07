@@ -1696,7 +1696,6 @@ export default class Ambientlight {
       }
       
       let results = {}
-      throw new DOMException('Failed to execute custom', 'SecurityErrsor')
       if (this.settings.showFrametimes)
         frameTimes.drawStart = this.getNow()
 
