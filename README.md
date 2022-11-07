@@ -1,5 +1,5 @@
 <a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
-  <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support Wessel Kroos by a donation via Ko-fi">
+  <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support me via a donation">
 </a>
 
 [![Ambient light for YouTube™](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
@@ -55,8 +55,8 @@ Feel free to
 - or ask a question at [/youtube-ambilight/issues](https://github.com/WesselKroos/youtube-ambilight/issues)
 
 
-## Support Wessel Kroos
-[![Support Wessel Kroos by a donation via Ko-fi™](https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true)](https://ko-fi.com/G2G59EK8L)
+## Support me
+[![Support me via a donation](https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true)](https://ko-fi.com/G2G59EK8L)
 
 
 ## Development
