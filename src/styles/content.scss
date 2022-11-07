@@ -924,7 +924,7 @@ html[data-ambientlight-enabled="true"] {
     appearance: none;
     position: relative;
     display: block;
-    margin: -2px 3px 0 0;
+    margin: -2px 3px 0 auto;
     border: 0;
     padding: 0;
     width: 14px;
@@ -935,7 +935,7 @@ html[data-ambientlight-enabled="true"] {
     border-top-color: transparent;
     background: none;
     cursor: pointer;
-    transition: transform .5s, border-color .5s;
+    transition: transform .5s;
     &:hover {
       transform: rotate(-180deg);
       border-color: #007cc3;
@@ -981,9 +981,8 @@ html[data-ambientlight-enabled="true"] {
   }
 
   .ytpa-donate-link {
-    transition: filter .15s;
     &:not(:hover) {
-      filter: grayscale(1);
+      filter: grayscale(1) brightness(0.75) contrast(2.5);
     }
 
     &__image {
@@ -1305,6 +1304,9 @@ html[data-ambientlight-enabled="true"] {
     a:hover:not([href="#"]) {
       color: #007cc3;
     }
+  }
+  .ytpa-menuitem--header .ytp-menuitem-label {
+    width: fit-content;
   }
 
   .ytpa-menuitem-key {
