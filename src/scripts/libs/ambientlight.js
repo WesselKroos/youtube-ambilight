@@ -1843,8 +1843,7 @@ export default class Ambientlight {
       fps
     })
 
-    if (list.length < 2) return 0
-    if (!update) return currentFrameRate
+    if (!update || list.length < 2) return currentFrameRate
 
     // Todo: delay removal and calculations to idle callback?
 
@@ -1855,6 +1854,8 @@ export default class Ambientlight {
 
       // Calculate fps
       const aligableList = list.filter(i => i.fps)
+      if(!aligableList.length) return currentFrameRate
+
         aligableList.sort((a, b) => a.fps - b.fps)
         if(aligableList.length > 10) {
           const bound = Math.floor(aligableList.length / 16)
