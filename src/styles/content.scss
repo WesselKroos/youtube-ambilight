@@ -118,8 +118,8 @@ html[data-ambientlight-enabled="true"] {
   /* General */
 
   body {
-    --yt-spec-text-secondary: rgba(20, 20, 20, 0.75);
-    --yt-spec-icon-inactive: rgba(20, 20, 20, 0.5);
+    --yt-spec-text-secondary: rgba(10, 10, 10, 0.8);
+    --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
   }
   &[dark] {
     // Make all card backgrounds transparent
@@ -131,8 +131,8 @@ html[data-ambientlight-enabled="true"] {
     // --yt-spec-general-background-c: none;
     // --yt-spec-snackbar-background: none;
     body {
-      --yt-spec-text-secondary: rgba(240, 240, 240, 0.65);
-      --yt-spec-icon-inactive: rgba(240, 240, 240, 0.65);
+      --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
+      --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
     }
   }
 
@@ -261,14 +261,22 @@ html[data-ambientlight-enabled="true"] {
     transform: var(--video-transform);
   }
 
-  /* Cosmetics - Chapters */
+  /* Cosmetics - Chapters & Side comments */
 
   #header.ytd-engagement-panel-title-header-renderer,
   #content.ytd-engagement-panel-section-list-renderer {
-    background: none;
+    @include scrollbar-dark-thin;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] #header.ytd-engagement-panel-title-header-renderer,
+  &[dark] #content.ytd-engagement-panel-section-list-renderer  {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
   #time.ytd-macro-markers-list-item-renderer {
     background: rgba(0, 0, 0, .15);
+  }
+  #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
+    overflow-x: hidden; // Prevents scrollbar caused by negative margins of the text-shadow workaround
   }
 
   /* Cosmetics - Search */
@@ -1752,6 +1760,16 @@ html[data-ambientlight-enabled="true"] {
     #description-inline-expander {
       overflow: initial !important;
       contain: initial !important;
+      
+      // Collapsed description text
+      .yt-formatted-string
+      {
+        &[style="color: rgb(170, 170, 170);"], // Dark theme
+        &[style="color: rgb(96, 96, 96);"]     // Light theme
+        {
+          color: var(--yt-spec-text-secondary) !important;
+        }
+      }
     }
     #info-container.ytd-watch-metadata,
     #snippet.ytd-text-inline-expander {
