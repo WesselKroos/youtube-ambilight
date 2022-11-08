@@ -145,7 +145,6 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.videoElem = videoElem
     this.requestVideoFrameCallbackId = undefined
-    this.applyChromiumBug1142112Workaround()
     if(initListeners) this.initVideoListeners()
   }
 
@@ -159,8 +158,9 @@ export default class Ambientlight {
     }
   }
 
-  // Chromium workaround: YouTube drops the video quality because the video is dropping frames 
-  // when requestVideoFrameCallback is used and the video is offscreen 
+  // Chromium workaround: YouTube drops the video quality because the video is dropping frames
+  // for about ~2 seconds when requestVideoFrameCallback is used and the video
+  // has been scrolled from onscreen to offscreen
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1142112
   detectChromiumBug1142112Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
@@ -174,49 +174,20 @@ export default class Ambientlight {
     if(!this.enableChromiumBug1142112Workaround) return;
 
     try {
-      if(this.videoObserver) {
-        this.videoObserver.disconnect()
-      }
+      if(this.videoElem.ambientlightGetVideoPlaybackQuality) return
 
-      this.videoIsHidden = false
-      if(!this.videoObserver) {
-        this.videoObserver = new IntersectionObserver(
-          wrapErrorHandler((entries, observer) => {
-            if(!window.ambientlight) return
-            if(window.ambientlight !== this) {
-              observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
-              return
-            }
-
-            for (const entry of entries) {
-              if(this.videoElem !== entry.target) {
-                this.videoObserver.unobserve(event.target) // video is detached and a new one was created
-                continue
-              }
-              this.videoIsHidden = (entry.intersectionRatio === 0)
-              this.videoVisibilityChangeTime = performance.now()
-              this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-            }
-          }, true),
-          {
-            threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
-          }
-        )
-      }
-
-      const videoElem = this.videoElem
-      this.videoObserver.observe(videoElem)
-      
-      if(videoElem.ambientlightGetVideoPlaybackQuality) return
-
-      const ambientlight = this
-      Object.defineProperty(videoElem, 'ambientlightGetVideoPlaybackQuality', {
-        value: videoElem.getVideoPlaybackQuality
+      Object.defineProperty(this.videoElem, 'ambientlightGetVideoPlaybackQuality', {
+        value: this.videoElem.getVideoPlaybackQuality
       })
+
       this.previousDroppedVideoFrames = 0
       this.droppedVideoFramesCorrection = 0
       let previousGetVideoPlaybackQualityTime = performance.now()
-      videoElem.getVideoPlaybackQuality = function() {
+      
+      const ambientlight = this
+      const videoElem = this.videoElem
+      this.videoElem.getVideoPlaybackQuality = function() {
+        // Use scoped properties instead of this from here on
         const original = videoElem.ambientlightGetVideoPlaybackQuality()
         let droppedVideoFrames = original.droppedVideoFrames
         if(droppedVideoFrames < ambientlight.previousDroppedVideoFrames) {
@@ -356,11 +327,43 @@ export default class Ambientlight {
       },
       click: this.settings.onCloseMenu
     }
-
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
       on(this.videoElem, name, this.videoListeners[name])
     }
+
+    if(this.videoObserver) {
+      this.videoObserver.disconnect()
+    }
+    this.videoIsHidden = false // IntersectionObserver is always executed at least once when the observation starts
+    if(!this.videoObserver) {
+      this.videoObserver = new IntersectionObserver(
+        wrapErrorHandler((entries, observer) => {
+          if(!window.ambientlight) return
+          if(window.ambientlight !== this) {
+            observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
+            return
+          }
+
+          for (const entry of entries) {
+            if(this.videoElem !== entry.target) {
+              this.videoObserver.unobserve(event.target) // video is detached and a new one was created
+              continue
+            }
+            this.videoIsHidden = (entry.intersectionRatio === 0)
+            this.videoVisibilityChangeTime = performance.now()
+            this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
+          }
+        }, true),
+        {
+          rootMargin: '-70px 0px 0px 0px', // masthead height (56px) + additional pixel to be safe
+          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+        }
+      )
+    }
+    this.videoObserver.observe(this.videoElem)
+
+    this.applyChromiumBug1142112Workaround()
   }
 
   handleVideoError = () => {
