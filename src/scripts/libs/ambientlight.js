@@ -1924,24 +1924,7 @@ export default class Ambientlight {
   getVideoDroppedFrameCount() {
     if (!this.videoElem) return 0
 
-    // Firefox
-    if(this.videoElem.mozDecodedFrames) {
-      let mozDroppedFrames = Math.max(0, (this.videoElem.mozPresentedFrames - this.videoElem.mozPaintedFrames))
-
-      // We need a cache becuase mozPresentedFrames is sometimes updated before mozPaintedFrames
-      const cache = this.videoMozDroppedFramesCache || []
-      cache.push(mozDroppedFrames)
-      if (cache.length > 30) cache.splice(0, 1)
-      this.videoMozDroppedFramesCache = cache
-      mozDroppedFrames = [...cache].sort((a, b) => a - b)[0]
-
-      return mozDroppedFrames
-    }
-
-    return (
-      this.videoElem.webkitDroppedFrameCount || // Chrome
-      0
-    )
+    return this.videoElem.getVideoPlaybackQuality().droppedVideoFrames
   }
 
   getVideoFrameCount() {
