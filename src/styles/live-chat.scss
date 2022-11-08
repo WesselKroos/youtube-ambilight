@@ -13,20 +13,20 @@
 @mixin scrollbar-dark {
   scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
   &::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, .15);
+    background-color: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, .2);
+    background-color: rgba(255, 255, 255, .2);
   }
 }
 
 @mixin scrollbar-light {
   scrollbar-color: rgba(0, 0, 0, .2) rgba(255, 255, 255, .15);
   &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, .15);
+    background-color: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, .2);
+    background-color: rgba(0, 0, 0, .2);
   }
 }
 
@@ -43,6 +43,10 @@ yt-live-chat-text-message-renderer,
 #menu.yt-live-chat-text-message-renderer,
 #container.yt-live-chat-restricted-participation-renderer {
   background: none !important;
+}
+
+yt-icon-button.yt-live-chat-header-renderer yt-icon.yt-live-chat-header-renderer {
+  color: var(--iron-icon-fill-color, currentcolor) !important;
 }
 
 yt-live-chat-item-list-renderer[allow-scroll] #item-scroller.yt-live-chat-item-list-renderer {

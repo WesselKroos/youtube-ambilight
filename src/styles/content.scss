@@ -13,14 +13,31 @@
   scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
 
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 16px;
   }
   &::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, .15);
+    background-color: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, .2);
-    border: 0;
+    border: 4px solid transparent;
+    background-clip: content-box;
+    background-color: rgba(255, 255, 255, .2);
+  }
+}
+@mixin scrollbar-light-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, .2) rgba(255, 255, 255, .15);
+
+  &::-webkit-scrollbar {
+    width: 16px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border: 4px solid transparent;
+    background-clip: content-box;
+    background-color: rgba(0, 0, 0, .2);
   }
 }
 
@@ -140,10 +157,9 @@ html[data-ambientlight-enabled="true"] {
   &[lang],
   &[style],
   body {
+    @include scrollbar-light-thin();
     background: #fff !important;
     background-color: #fff !important;
-
-    @include scrollbar-dark-thin();
 
     &[data-ambientlight-hide-scrollbar="true"],
     &[data-ambientlight-immersive="true"] {
@@ -159,6 +175,7 @@ html[data-ambientlight-enabled="true"] {
     &[lang],
     &[style],
     body {
+      @include scrollbar-dark-thin();
       background: #000 !important;
       background-color: #000 !important;
     }
@@ -261,22 +278,32 @@ html[data-ambientlight-enabled="true"] {
     transform: var(--video-transform);
   }
 
-  /* Cosmetics - Chapters & Side comments */
+  /* Cosmetics - Chapters & Transcriptions & Side comments */
 
   #header.ytd-engagement-panel-title-header-renderer,
   #content.ytd-engagement-panel-section-list-renderer {
-    @include scrollbar-dark-thin;
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] #header.ytd-engagement-panel-title-header-renderer,
   &[dark] #content.ytd-engagement-panel-section-list-renderer  {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  #time.ytd-macro-markers-list-item-renderer {
-    background: rgba(0, 0, 0, .15);
-  }
+
   #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
     overflow-x: hidden; // Prevents scrollbar caused by negative margins of the text-shadow workaround
+    @include scrollbar-light-thin();
+  }
+  &[dark] #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
+    @include scrollbar-dark-thin();
+  }
+
+  ytd-engagement-panel-section-list-renderer #time.ytd-macro-markers-list-item-renderer,
+  ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
+    background-color: rgba(255, 255, 255, .05) !important;
+  }
+  &[dark] ytd-engagement-panel-section-list-renderer #time.ytd-macro-markers-list-item-renderer,
+  &[dark] ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
+    background-color: rgba(0, 0, 0, .05) !important;
   }
 
   /* Cosmetics - Search */
@@ -507,6 +534,20 @@ html[data-ambientlight-enabled="true"] {
     background: none;
   }
 
+  /* Cosmetics - Transcription */
+
+  ytd-transcript-search-panel-renderer,
+  ytd-transcript-footer-renderer,
+  ytd-transcript-segment-list-renderer {
+    background: none;
+  }
+  ytd-transcript-segment-list-renderer {
+    @include scrollbar-light-thin();
+  }
+  &[dark] ytd-transcript-segment-list-renderer {
+    @include scrollbar-dark-thin();
+  }
+
   /* Cosmetics - Text visibility */
 
   $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
@@ -520,6 +561,10 @@ html[data-ambientlight-enabled="true"] {
     }
     ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
       border-top: 1px solid var(--yt-spec-10-percent-layer) !important;
+    }
+
+    .playlist-items.ytd-playlist-panel-renderer {
+      @include scrollbar-light-thin()
     }
 
     .header.ytd-playlist-panel-renderer,
@@ -608,6 +653,10 @@ html[data-ambientlight-enabled="true"] {
 
       yt-chip-cloud-chip-renderer:not([selected]) {
         background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+      }
+
+      .playlist-items.ytd-playlist-panel-renderer {
+        @include scrollbar-dark-thin()
       }
 
       #playlist #header-description a,
@@ -724,22 +773,19 @@ html[data-ambientlight-enabled="true"] {
         opacity: 0;
       }
     }
-  } 
-}
+  }
 
-/* Markers */
+  /* Markers */
 
-#contents.ytd-macro-markers-list-renderer {
-  @include scrollbar-dark-thin();
+  #contents.ytd-macro-markers-list-renderer {
+    @include scrollbar-light-thin();
+  }
+  &[dark] #contents.ytd-macro-markers-list-renderer {
+    @include scrollbar-dark-thin();
+  }
 }
 
 /* Settings */
-
-// Firefox scrollbars
-.ytp-settings-menu,
-.ytp-panel {
-  @include scrollbar-dark-thin();
-}
 
 .ytp-ambientlight-settings-shown .ytp-chrome-bottom {
   opacity: 1 !important;
@@ -750,6 +796,7 @@ html[data-ambientlight-enabled="true"] {
 }
 
 .ytpa-ambientlight-settings-menu {
+  @include scrollbar-dark-thin();
   contain: content;
   width: 320px;
   max-height: calc(100% - 70px);
