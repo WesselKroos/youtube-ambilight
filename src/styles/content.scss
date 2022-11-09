@@ -217,7 +217,7 @@ html[data-ambientlight-enabled="true"] {
       display: none;
     }
     #masthead-container:not(.at-top) #voice-search-button {
-      transition: background-color .15s .15s, opacity .15s;
+      transition: background-color .15s .05s, opacity .15s;
     }
   }
 
@@ -256,12 +256,6 @@ html[data-ambientlight-enabled="true"] {
   //Reduce theater mode flicker when switching between enabled and disabled
   ytd-app #player-theater-container {
     transition: background-color 0s .01s;
-  }
-
-  /* Live chat (Iframe styling in live-chat.css */
-
-  ytd-toggle-button-renderer {
-    background: none !important;
   }
 
   /* Video */
@@ -304,6 +298,15 @@ html[data-ambientlight-enabled="true"] {
   &[dark] ytd-engagement-panel-section-list-renderer #time.ytd-macro-markers-list-item-renderer,
   &[dark] ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
     background-color: rgba(0, 0, 0, .05) !important;
+  }
+
+  ytd-transcript-search-box-renderer {
+    background: none;
+  }
+
+  .input-container.ytd-transcript-search-box-renderer {
+    background: none;
+    border: 1px solid var(--yt-spec-10-percent-layer) !important;
   }
 
   /* Cosmetics - Search */
@@ -513,6 +516,18 @@ html[data-ambientlight-enabled="true"] {
   }
   &[dark] #{$movie-offer} {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+
+  /* Live chat (Iframe styling in live-chat.css */
+
+  ytd-live-chat-frame:not([collapsed]) {
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] ytd-live-chat-frame:not([collapsed]) {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(hover):not(:focus) {
+    background: none !important;
   }
 
   /* Cosmetics - Rich metadata */

@@ -169,7 +169,7 @@ export default class Settings {
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
               <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank" rel="noopener">
-                <span class="ytpa-feedback-link__text">Give feedback or rating</span>
+                <span class="ytpa-feedback-link__text">Give feedback or a rating</span>
               </a>
             </div>
             <div class="ytp-menuitem-content">

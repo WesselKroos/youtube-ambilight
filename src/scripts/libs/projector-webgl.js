@@ -675,14 +675,12 @@ export default class ProjectorWebGL {
     const fTextureOpacityChanged = this.projectorsCount > 1 && !(this.fTextureOpacity?.length === this.projectorsCount)
     if(fTextureOpacityChanged) {
       const easing = (x) => x * x;
-      const fTextureOpacity = new Array(this.projectorsCount).fill(undefined)
+      this.fTextureOpacity = new Array(this.projectorsCount).fill(undefined)
         .map((_, i) => easing((i + 1) / this.projectorsCount))
-        .map((opacity, i, list) => (i === 0)
-          ? opacity
-          : opacity - list[i - 1]
+        .map((e, i, list) => !i
+          ? e
+          : e - list[i - 1]
         )
-      fTextureOpacity[fTextureOpacity.length - 1] = fTextureOpacity[fTextureOpacity.length - 1] + (1 - fTextureOpacity.reduce((s, o) => s + o, 0)) // Makes sure to reach 100% opacity when summarized to get perfect brightness
-      this.fTextureOpacity = fTextureOpacity
     }
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
