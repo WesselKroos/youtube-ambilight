@@ -83,7 +83,8 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    advanced: false
+    advanced: false,
+    new: true
   },
   {
     name: 'videoOverlayEnabled',
@@ -168,7 +169,8 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 1,
-    advanced: false
+    advanced: false,
+    new: true
   },
   {
     name: 'surroundingContentImagesTransparency',

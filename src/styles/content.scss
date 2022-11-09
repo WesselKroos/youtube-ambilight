@@ -507,6 +507,9 @@ html[data-ambientlight-enabled="true"] {
   ytd-merch-shelf-renderer {
     background: none !important;
   }
+  a.ytd-merch-shelf-item-renderer:not(:hover):not(:focus) yt-img-shadow.ytd-merch-shelf-item-renderer {
+    opacity: var(--ambientlight-image-opacity) !important;
+  }
 
   /* Cosmetics - Movie offer */ 
 
