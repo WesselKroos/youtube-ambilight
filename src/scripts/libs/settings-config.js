@@ -16,7 +16,7 @@ const SettingsConfig = [
     label: 'Quality',
     name: 'sectionQualityPerformanceCollapsed',
     default: true,
-    advanced: false
+    advanced: true
   },
   {
     name: 'showFPS',
@@ -48,7 +48,7 @@ const SettingsConfig = [
     max: 1,
     step: 1,
     manualinput: false,
-    advanced: false
+    advanced: true
   },
   {
     name: 'framerateLimit',
@@ -67,7 +67,7 @@ const SettingsConfig = [
     type: 'checkbox',
     default: true,
     new: true,
-    advanced: false
+    advanced: true
   },
   {
     name: 'resolution',
@@ -83,7 +83,7 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    advanced: false,
+    advanced: true,
     new: true
   },
   {

@@ -49,13 +49,9 @@ export default class Settings {
       }
       
       if(HTMLVideoElement.prototype.requestVideoFrameCallback) {
-        if(setting.name === 'sectionQualityPerformanceCollapsed' && !supportsWebGL()) {
-          setting.advanced = true
-        }
         if(setting.name === 'frameSync') {
           setting.max = 2
           setting.default = 2
-          setting.advanced = true
         }
       }
     }
