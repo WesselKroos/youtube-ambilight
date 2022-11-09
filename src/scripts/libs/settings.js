@@ -71,6 +71,8 @@ export default class Settings {
         names.push(`setting-${setting.name}-key`)
       }
     }
+    names.push('setting-webGLCrashed')
+    names.push('setting-webGLCrashWarned')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
@@ -96,6 +98,8 @@ export default class Settings {
       }
     }
 
+    this.handleWebGLCrash(storedSettings)
+
     // Makes the new default framerateLimit of 30 backwards compatible with a previously enabled frameBlending
     if(this.frameBlending && this.framerateLimit !== 0) {
       this.set('framerateLimit', 0)
@@ -104,6 +108,27 @@ export default class Settings {
     await this.flushPendingStorageEntries() // Complete migrations
 
     if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
+  }
+
+  handleWebGLCrash(storedSettings) {
+    const webGLCrashed = storedSettings['setting-webGLCrashed']
+    const webGLCrashWarned = storedSettings['setting-webGLCrashWarned']
+    if(!this.webGL && webGLCrashed) {
+      const crashDate = new Date(storedSettings['setting-webGLCrashed'])
+      if(!webGLCrashWarned) {
+        this.setWarning('The WebGL renderer has been turned off because it crashed.\nAnother attempt will be made next week.')
+        this.set('webGLCrashWarned', true)
+      }
+
+      const weekAfterCrashDate = new Date(crashDate.setDate(crashDate.getDate() + 7))
+      if(weekAfterCrashDate < new Date()) {
+        this.set('webGL', true)
+      }
+    }
+    if(this.webGL && (webGLCrashed || webGLCrashWarned)) {
+      this.set('webGLCrashed', false)
+      this.set('webGLCrashWarned', false)
+    }
   }
   
   initMenu() {
@@ -695,12 +720,7 @@ export default class Settings {
             // setTimeout to allow processing of all settings in case the reset button was clicked
             setTimeout(async () => {
               await this.flushPendingStorageEntries()
-  
-              const search = new URLSearchParams(location.search)
-              const time = Math.max(0, Math.floor(this.ambientlight.videoElem?.currentTime || 0) - 2)
-              time ? search.set('t', time) : search.delete('t')
-              history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
-              location.reload()
+              setTimeout(() => this.reloadPage(), 1000)
             }, 1)
             return
           }
@@ -713,6 +733,14 @@ export default class Settings {
 
     this.updateVisibility()
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
+  }
+
+  reloadPage() {
+    const search = new URLSearchParams(location.search)
+    const time = Math.max(0, Math.floor(this.ambientlight.videoElem?.currentTime || 0) - 2)
+    time ? search.set('t', time) : search.delete('t')
+    history.replaceState(null, null, `${location.pathname}?${search.toString()}`)
+    location.reload()
   }
 
   framesToDuration(frames) {

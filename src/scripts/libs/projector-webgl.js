@@ -24,6 +24,13 @@ export default class ProjectorWebGL {
       this.setWebGLWarning('create', false)
       SentryReporter.captureException(ex)
       this.ctx = undefined
+
+      ;(async () => {
+        this.settings.set('webGL', false)
+        this.settings.set('webGLCrashed', +new Date())
+        await this.settings.flushPendingStorageEntries()
+        setTimeout(() => this.settings.reloadPage(), 1000)
+      })()
       return
     }
     this.handlePageVisibility()
