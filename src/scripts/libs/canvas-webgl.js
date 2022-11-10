@@ -56,6 +56,7 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
+      this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
       console.warn(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
       this.setWebGLWarning('restore')
     }.bind(this)), false);
@@ -99,6 +100,11 @@ export class WebGLContext {
 
   webglcontextcreationerrors = []
   initCtx = () => {
+    if(this.program && !this.ctxIsInvalid) {
+      this.ctx.deleteProgram(this.program) // Free GPU memory
+      this.program = undefined
+    }
+
     if(!this.ctx) {
       this.webglcontextcreationerrors = []
 
@@ -169,18 +175,18 @@ export class WebGLContext {
     }
 
     // Program
-    var program = this.ctx.createProgram();
-    this.ctx.attachShader(program, vertexShader);
-    this.ctx.attachShader(program, fragmentShader);
-    this.ctx.linkProgram(program);
-    if (!this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)) {
-      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
+    this.program = this.ctx.createProgram();
+    this.ctx.attachShader(this.program, vertexShader);
+    this.ctx.attachShader(this.program, fragmentShader);
+    this.ctx.linkProgram(this.program);
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
-    this.ctx.validateProgram(program);
-    if(!this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
+    this.ctx.validateProgram(this.program);
+    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
-    this.ctx.useProgram(program);
+    this.ctx.useProgram(this.program);
 
     // Buffers
     var vUVBuffer = this.ctx.createBuffer();
@@ -191,7 +197,7 @@ export class WebGLContext {
       1, 0, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    var vUVLoc = this.ctx.getAttribLocation(program, 'vUV');
+    var vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vUVLoc);
 
@@ -203,7 +209,7 @@ export class WebGLContext {
       1, -1, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    var vPositionLoc = this.ctx.getAttribLocation(program, 'vPosition'); 
+    var vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 

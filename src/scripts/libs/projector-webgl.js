@@ -288,6 +288,7 @@ export default class ProjectorWebGL {
       console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
     }
     this.setWebGLWarning('restore')
+    this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
     this.invalidateShaderCache()
     this.lost = true
     if(!this.isControlledLose) {
@@ -342,6 +343,12 @@ export default class ProjectorWebGL {
   }.bind(this))
 
   initCtx() {
+    if(this.program && !this.ctxIsInvalid) {
+      this.ctx.deleteProgram(this.program) // Free GPU memory
+      this.program = undefined
+    }
+
+    
     if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.canvas) {
       this.canvas.removeEventListener('contextlost', this.onCtxLost)
       this.canvas.removeEventListener('contextrestored', this.onCtxRestored)
