@@ -687,7 +687,13 @@ export default class Settings {
             this.updateVisibility()
           }
           
-          if (setting.name === 'videoOverlayEnabled') {
+          if ([
+            'videoOverlayEnabled',
+            'directionTopEnabled',
+            'directionRightEnabled',
+            'directionBottomEnabled',
+            'directionLeftEnabled'
+          ].includes(setting.name)) {
             this.updateVisibility()
             this.ambientlight.sizesChanged = true
           }
