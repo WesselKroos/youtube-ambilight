@@ -1364,14 +1364,14 @@ export default class Ambientlight {
 
   updateStyles() {
     // Fill transparency
-    const fillTransparency = this.settings.surroundingContentFillTransparency
-    const fillOpacity = (fillTransparency !== 90) ? (1 - (fillTransparency / 100)) : ''
+    let fillOpacity = this.settings.surroundingContentFillOpacity
+    fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
     
 
     // Images transparency
-    const ImagesTransparency = this.settings.surroundingContentImagesTransparency
-    const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''
+    let imageOpacity = this.settings.surroundingContentImagesOpacity
+    imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
 
 

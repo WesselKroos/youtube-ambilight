@@ -71,6 +71,7 @@ export default class Settings {
     names.push('setting-webGLCrashed')
     names.push('setting-webGLCrashWarned')
     names.push('setting-webGLCrashedAtVersion')
+    names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
@@ -95,7 +96,8 @@ export default class Settings {
         setting.key = key
       }
     }
-
+    
+    this.migrate(storedSettings)
     this.handleWebGLCrash(storedSettings)
 
     // Makes the new default framerateLimit of 30 backwards compatible with a previously enabled frameBlending
@@ -106,6 +108,18 @@ export default class Settings {
     await this.flushPendingStorageEntries() // Complete migrations
 
     if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
+  }
+
+  migrate(storedSettings) {
+    const surroundingContentImagesTransparency = storedSettings['setting-surroundingContentImagesTransparency']
+    if(surroundingContentImagesTransparency) {
+      const opacity = 100 - surroundingContentImagesTransparency
+      console.log('migrating', surroundingContentImagesTransparency, opacity)
+      this.set('surroundingContentImagesOpacity', opacity)
+      this['surroundingContentImagesOpacity'] = opacity
+
+      this.set('surroundingContentImagesTransparency', null)
+    }
   }
 
   handleWebGLCrash(storedSettings) {
@@ -520,8 +534,8 @@ export default class Settings {
           if ([
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
-            'surroundingContentFillTransparency',
-            'surroundingContentImagesTransparency',
+            'surroundingContentFillOpacity',
+            'surroundingContentImagesOpacity',
             'debandingStrength',
             'videoShadowSize',
             'videoShadowOpacity',

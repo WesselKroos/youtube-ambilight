@@ -133,7 +133,7 @@ const SettingsConfig = [
     type: 'section',
     label: 'Page content',
     name: 'sectionOtherPageContentCollapsed',
-    default: false
+    default: true
   },
   {
     name: 'surroundingContentTextAndBtnOnly',
@@ -162,10 +162,10 @@ const SettingsConfig = [
     step: .1
   },
   {
-    name: 'surroundingContentFillTransparency',
-    label: 'Fill transparency',
+    name: 'surroundingContentFillOpacity',
+    label: 'Fill opacity',
     type: 'list',
-    default: 90,
+    default: 10,
     min: 0,
     max: 100,
     step: 1,
@@ -173,14 +173,14 @@ const SettingsConfig = [
     new: true
   },
   {
-    name: 'surroundingContentImagesTransparency',
-    label: 'Images transparency',
+    name: 'surroundingContentImagesOpacity',
+    label: 'Image opacity',
     type: 'list',
-    default: 0,
+    default: 100,
     min: 0,
     max: 100,
     step: 1,
-    advanced: true
+    advanced: false
   },
   {
     name: 'immersiveTheaterView',
