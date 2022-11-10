@@ -10,6 +10,7 @@ export const FRAMESYNC_VIDEOFRAMES = 2
 
 const feedbackFormLink = document.currentScript?.getAttribute('data-feedback-form-link') || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 const baseUrl = document.currentScript?.getAttribute('data-base-url') || ''
+const version = document.currentScript?.getAttribute('data-version') || ''
 
 export default class Settings {
   saveStorageEntryTimeout = {}
@@ -69,6 +70,7 @@ export default class Settings {
     }
     names.push('setting-webGLCrashed')
     names.push('setting-webGLCrashWarned')
+    names.push('setting-webGLCrashedAtVersion')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
@@ -108,22 +110,24 @@ export default class Settings {
 
   handleWebGLCrash(storedSettings) {
     const webGLCrashed = storedSettings['setting-webGLCrashed']
+    const webGLCrashedAtVersion = storedSettings['setting-webGLCrashedAtVersion']
     const webGLCrashWarned = storedSettings['setting-webGLCrashWarned']
     if(!this.webGL && webGLCrashed) {
       const crashDate = new Date(storedSettings['setting-webGLCrashed'])
       if(!webGLCrashWarned) {
-        this.setWarning('The WebGL renderer has been turned off because it crashed.\nAnother attempt will be made next week.')
+        console.warn('Ambient light for YouTube™ | The WebGL renderer has been turned off because it crashed.\nAnother attempt will be made after an update.')
         this.set('webGLCrashWarned', true)
       }
 
       const weekAfterCrashDate = new Date(crashDate.setDate(crashDate.getDate() + 7))
-      if(weekAfterCrashDate < new Date()) {
+      if(version !== webGLCrashedAtVersion && weekAfterCrashDate < new Date()) {
         this.set('webGL', true)
       }
     }
     if(this.webGL && (webGLCrashed || webGLCrashWarned)) {
       this.set('webGLCrashed', false)
       this.set('webGLCrashWarned', false)
+      this.set('webGLCrashedAtVersion', false)
     }
   }
   

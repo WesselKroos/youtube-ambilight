@@ -3,6 +3,8 @@ import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
+const version = document.currentScript?.getAttribute('data-version') || ''
+
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
@@ -28,6 +30,7 @@ export default class ProjectorWebGL {
       ;(async () => {
         this.settings.set('webGL', false)
         this.settings.set('webGLCrashed', +new Date())
+        this.settings.set('webGLCrashedAtVersion', version)
         await this.settings.flushPendingStorageEntries()
         setTimeout(() => this.settings.reloadPage(), 1000)
       })()
@@ -626,7 +629,9 @@ export default class ProjectorWebGL {
   }
 
   rescale(scales, lastScale, projectorSize, crop, settings) {
-    this.shadow.rescale(lastScale, projectorSize, settings)
+    if(this.shadow) {
+      this.shadow.rescale(lastScale, projectorSize, settings)
+    }
 
     this.scaleStep = {
       x: scales[2]?.x - scales[1]?.x,
@@ -640,16 +645,21 @@ export default class ProjectorWebGL {
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
-    this.canvas.width = width
-    this.canvas.height = height
+    if(this.canvas) {
+      this.canvas.width = width
+      this.canvas.height = height
+    }
 
     const blurPx = settings.blur * (this.height / 512) * 1.275
     this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
-    this.blurCanvas.width = width + this.blurBound * 2
-    this.blurCanvas.height = height + this.blurBound * 2
-    this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
-    
-    this.blurCtx.filter = `blur(${blurPx}px)`
+    if(this.blurCanvas) {
+      this.blurCanvas.width = width + this.blurBound * 2
+      this.blurCanvas.height = height + this.blurBound * 2
+      this.blurCanvas.style.transform = `scale(${this.scale.x + ((this.blurBound * 2) / projectorSize.w)}, ${this.scale.y + ((this.blurBound * 2) / projectorSize.h)})`
+    }
+    if(this.blurCtx) {
+      this.blurCtx.filter = `blur(${blurPx}px)`
+    }
     
     this.updateCtx()
   }
