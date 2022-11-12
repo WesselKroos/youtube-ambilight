@@ -16,7 +16,7 @@ const SettingsConfig = [
     label: 'Quality',
     name: 'sectionQualityPerformanceCollapsed',
     default: true,
-    advanced: true
+    advanced: false
   },
   {
     name: 'showFPS',
@@ -58,7 +58,7 @@ const SettingsConfig = [
     min: 0,
     max: 60,
     step: 1,
-    advanced: true
+    advanced: false
   },
   {
     name: 'webGL',
@@ -83,7 +83,7 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    advanced: true,
+    advanced: false,
     new: true
   },
   {
