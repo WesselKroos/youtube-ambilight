@@ -1628,6 +1628,8 @@ export default class Ambientlight {
       await this.nextFrame()
       this.nextFrameTime = undefined
     }
+    
+    this.displayFrameCount++
   }.bind(this))
 
   onNextLimitedFrame = async () => {
@@ -1902,7 +1904,6 @@ export default class Ambientlight {
   displayFrameCounts = []
   displayFrameCount = 0
   detectDisplayFrameRate = (update) => {
-    this.displayFrameCount++
     this.displayFrameRate = this.detectFrameRate(
       this.displayFrameCounts,
       this.displayFrameCount,
