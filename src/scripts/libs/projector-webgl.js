@@ -154,9 +154,9 @@ export default class ProjectorWebGL {
       const textureIndex = Math.floor(this.drawIndex / this.subProjectorsCount)
       const previousTextureIndex = Math.floor((this.drawIndex - 1) / this.subProjectorsCount)
 
+      this.ctx.activeTexture(this.ctx[`TEXTURE${textureIndex + 1}`])
       const isNewTexture = textureIndex !== previousTextureIndex
       if(isNewTexture) {
-        this.ctx.activeTexture(this.ctx[`TEXTURE${textureIndex + 1}`])
         if(this.drawInitial)
           this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, textureSize.width, textureSize.height, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
       }
@@ -644,10 +644,8 @@ export default class ProjectorWebGL {
       x: scales[2]?.x - scales[1]?.x,
       y: scales[2]?.y - scales[1]?.y,
     }
-
     this.scale = lastScale
     this.scalesLength = scales.length
-
     this.crop = crop
 
     const width = Math.floor(projectorSize.w * this.scale.x)
