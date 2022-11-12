@@ -112,9 +112,8 @@ export default class Settings {
 
   migrate(storedSettings) {
     const surroundingContentImagesTransparency = storedSettings['setting-surroundingContentImagesTransparency']
-    if(surroundingContentImagesTransparency) {
+    if(typeof surroundingContentImagesTransparency === 'number') {
       const opacity = 100 - surroundingContentImagesTransparency
-      console.log('migrating', surroundingContentImagesTransparency, opacity)
       this.set('surroundingContentImagesOpacity', opacity)
       this['surroundingContentImagesOpacity'] = opacity
 

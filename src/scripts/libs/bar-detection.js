@@ -143,7 +143,7 @@ const workerCode = function () {
       const allowed = maxSize * (0.0125 * scale)
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = (0.4 * scale)
-      const maxPercentage = 32
+      const maxPercentage = 36
 
       let size = 0;
       if(!deviationAllowed) {
