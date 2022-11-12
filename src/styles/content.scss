@@ -322,12 +322,7 @@ html[data-ambientlight-enabled="true"] {
   ytd-searchbox {
     #container.ytd-searchbox,
     #search-icon-legacy {
-      transition: background-color .15s, border-color .15s, color .15s, fill .15s;
-    }
-    #container.ytd-searchbox {
-      // Fix short flicker from white on input focus
-      border-right: none !important;
-      box-shadow: none !important;
+      transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s, fill .15s;
     }
     #search,
     #search::-webkit-input-placeholder,
@@ -379,8 +374,15 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    &.at-top ytd-searchbox:not(:hover):not(:focus-within) .gsst_e {
-      opacity: .3;
+    ytd-searchbox:not([has-focus]) #container.ytd-searchbox {
+      // Fix short flicker from white on input focus
+      border-right: 0px solid transparent;
+    }
+
+    &.at-top ytd-searchbox:not(:hover):not(:focus-within) {
+      .gsst_e {
+        opacity: .3;
+      }
     }
   }
 
@@ -398,6 +400,9 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-searchbox:not(:hover):not(:focus-within) {
+      #container.ytd-searchbox {
+        box-shadow: none !important;
+      }
       #container.ytd-searchbox,
       #search-icon-legacy {
         background-color: transparent !important;
@@ -450,6 +455,9 @@ html[data-ambientlight-enabled="true"] {
   &[dark] #masthead-container.at-top {
     ytd-searchbox {
       &:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox {
+          box-shadow: none !important;
+        }
         #container.ytd-searchbox,
         #search-icon-legacy {
           background-color: transparent !important;
@@ -481,6 +489,17 @@ html[data-ambientlight-enabled="true"] {
         color: rgba(255,255,255,.4) !important;
       }
     }
+  }
+
+  /* Cosmetics - Old video info boxes */
+
+  ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
+  ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
+  &[dark] ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Clarify box (To prevent css filter shadow flickering) */
@@ -1742,6 +1761,7 @@ html[data-ambientlight-enabled="true"] {
     ytd-video-owner-renderer#{$not-hover} #avatar,
     ytd-comment-simplebox-renderer#{$not-hover} #author-thumbnail, // Form
     ytd-comment-renderer#{$not-hover} #author-thumbnail,
+    ytd-comment-replies-renderer .expander-header#{$not-hover} #creator-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
     .ytd-item-section-renderer#{$not-hover} #thumbnail,
