@@ -1906,8 +1906,7 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
-        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next__icon,
-        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) .yt-spec-button-shape-next--button-text-content,
+        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) > *,
         ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
