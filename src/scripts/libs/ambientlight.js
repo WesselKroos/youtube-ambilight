@@ -84,13 +84,13 @@ export default class Ambientlight {
       this.initBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
-      this.initLiveChat()
 
       this.initStyles()
       this.updateStyles()
 
       this.checkGetImageDataAllowed()
       this.initListeners()
+      this.initLiveChat() // Depends on this.originalTheme set in initListeners
 
       if (this.settings.enabled) {
         try {
@@ -2763,8 +2763,8 @@ GREY   | previous display frames`
       returnValue: true
     })
 
-        try {
-          this.ytdAppElem.dispatchEvent(event)
+    try {
+      this.ytdAppElem.dispatchEvent(event)
     } catch(ex) {
       SentryReporter.captureException(ex)
       return
