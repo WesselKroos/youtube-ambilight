@@ -548,8 +548,14 @@ html[data-ambientlight-enabled="true"] {
   &[dark] ytd-live-chat-frame:not([collapsed]) {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  ytd-live-chat-frame ytd-toggle-button-renderer:not(hover):not(:focus) {
+  ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
+  }
+  ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Rich metadata */
