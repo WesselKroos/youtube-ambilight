@@ -163,7 +163,7 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentFillOpacity',
-    label: 'Fill opacity',
+    label: 'Buttons & boxes background opacity',
     type: 'list',
     default: 10,
     min: 0,
@@ -174,7 +174,7 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentImagesOpacity',
-    label: 'Image opacity',
+    label: 'Images opacity',
     type: 'list',
     default: 100,
     min: 0,
