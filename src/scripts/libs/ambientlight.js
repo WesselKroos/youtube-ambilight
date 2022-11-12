@@ -1628,8 +1628,6 @@ export default class Ambientlight {
       await this.nextFrame()
       this.nextFrameTime = undefined
     }
-
-    this.detectFrameRates()
   }.bind(this))
 
   onNextLimitedFrame = async () => {
@@ -1777,6 +1775,8 @@ export default class Ambientlight {
     try {
       this.afterNextFrameIdleCallback = undefined
 
+      this.detectFrameRates()
+      
       if (this.settings.videoOverlayEnabled) {
         this.checkIfNeedToHideVideoOverlay()
       }
