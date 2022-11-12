@@ -931,7 +931,7 @@ export default class Ambientlight {
   }
 
   initVideoOverlayWithFrameBlending() {
-    const videoOverlayBufferElem = new Canvas(1, 1, true) 
+    const videoOverlayBufferElem = new Canvas(this.srcVideoOffset.width, this.srcVideoOffset.height, true) 
     if (videoOverlayBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(videoOverlayBufferElem)
     }
@@ -940,7 +940,7 @@ export default class Ambientlight {
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
     }
 
-    const previousVideoOverlayBufferElem = new Canvas(1, 1, true) 
+    const previousVideoOverlayBufferElem = new Canvas(this.srcVideoOffset.width, this.srcVideoOffset.height, true) 
     if (previousVideoOverlayBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(previousVideoOverlayBufferElem)
     }
@@ -2019,11 +2019,11 @@ export default class Ambientlight {
 
       this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
       this.displayFPSElem.style.color = displayFPSColor
-    } else {
+    } else if(this.displayFPSElem.childNodes[0].nodeValue !== '') {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    this.updateFrameTimesStats();
+    this.updateFrameTimesStats()
   }
 
   updateFrameTimesStats = () => {
