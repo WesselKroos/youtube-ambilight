@@ -5,14 +5,19 @@ class Storage {
     const stack = new Error().stack
     return await new Promise(function storageSet(resolve, reject) {
       try {
-        chrome.storage.local.set({ [name]: value }, function setCallback() {
+        function setCallback() {
           try {
             if (chrome.runtime.lastError) throw chrome.runtime.lastError
             resolve()
           } catch(ex) {
             reject(appendErrorStack(stack, ex))
           }
-        })
+        }
+        if(value === undefined) {
+          chrome.storage.local.remove([name], setCallback)
+        } else {
+          chrome.storage.local.set({ [name]: value }, setCallback)
+        }
       } catch(ex) {
         reject(appendErrorStack(stack, ex))
       }

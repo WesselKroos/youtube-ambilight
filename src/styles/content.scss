@@ -195,9 +195,6 @@ html[data-ambientlight-enabled="true"] {
     }
     #voice-search-button {
       background: transparent !important;
-      &:not(:hover):not(:focus-within) {
-        opacity: .6;
-      }
     }
   }
 
@@ -217,7 +214,7 @@ html[data-ambientlight-enabled="true"] {
       display: none;
     }
     #masthead-container:not(.at-top) #voice-search-button {
-      transition: background-color .15s .05s, opacity .15s;
+      transition: background-color .15s .05s;
     }
   }
 
@@ -337,10 +334,11 @@ html[data-ambientlight-enabled="true"] {
 
   $account-btn: '.yt-spec-button-shape-next--outline';
   @mixin masthead-icon {
-    #voice-search-button yt-icon,
-    #buttons.ytd-masthead ytd-topbar-menu-button-renderer button:not(:hover):not(:focus) yt-icon,
-    #buttons.ytd-masthead ytd-notification-topbar-button-renderer button:not(:hover):not(:focus) yt-icon,
-    #buttons.ytd-masthead .ytd-masthead[is-icon-button] button:not(:hover):not(:focus) yt-icon {
+    #search-button-narrow:not(:hover) button:not(:focus) yt-icon,
+    #voice-search-button:not(:hover) button:not(:focus) yt-icon,
+    #buttons.ytd-masthead ytd-topbar-menu-button-renderer:not(:hover) button:not(:focus) yt-icon,
+    #buttons.ytd-masthead ytd-notification-topbar-button-renderer:not(:hover) button:not(:focus) yt-icon,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button]:not(:hover) button:not(:focus) yt-icon {
       @content;
     }
   }

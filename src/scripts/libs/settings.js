@@ -74,7 +74,6 @@ export default class Settings {
     names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
-
     return Settings.storedSettingsCached;
   }
   
@@ -117,7 +116,7 @@ export default class Settings {
       this.set('surroundingContentImagesOpacity', opacity)
       this['surroundingContentImagesOpacity'] = opacity
 
-      this.set('surroundingContentImagesTransparency', null)
+      this.saveStorageEntry('surroundingContentImagesTransparency', undefined)
     }
   }
 
@@ -325,21 +324,19 @@ export default class Settings {
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
 
     const resetSettingsBtnElem = this.menuElem.querySelector('.ytpa-reset-settings-btn')
-    on(resetSettingsBtnElem, 'click', () => {
-      if(!confirm('Are you sure you want to reset ALL the settings?')) return
+    on(resetSettingsBtnElem, 'click', async () => {
+      if(!confirm('Are you sure you want to reset ALL the settings and reload the watch page?')) return
       
-      // Reset values
-      for (const input of this.menuElem.querySelectorAll('[role="menuitemcheckbox"], input[type="range"]')) {
-        input.dispatchEvent(new Event('contextmenu'))
-      }
 
-      // Reset keys
-      for (const setting of SettingsConfig.filter(setting => setting.key)) {
-          const keyElem = this.menuElem.querySelector(`#setting-${setting.name}`).querySelector('.ytpa-menuitem-key')
-          keyElem.dispatchEvent(new KeyboardEvent('keypress', {
-            key: setting.defaultKey
-          }))
+      for(const setting of SettingsConfig) {
+        this.saveStorageEntry(setting.name, undefined)
+        if(setting.defaultKey) {
+          this.saveStorageEntry(`${setting.name}-key`, undefined)
         }
+      }
+      await this.flushPendingStorageEntries()
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      this.reloadPage()
     })
     for (const label of this.menuElem.querySelectorAll('.setting-range-datalist__label')) {
       on(label, 'click', (e) => {
@@ -952,11 +949,19 @@ export default class Settings {
 
   setKey(name, key) {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
+    const clear = (key === undefined)
+    if(clear)
+      key = setting.defaultKey
+
     setting.key = key
-    this.saveStorageEntry(`${setting.name}-key`, key)
+    this.saveStorageEntry(`${setting.name}-key`, clear ? undefined : key)
   }
 
   set(name, value, updateUI) {
+    const clear = (value === undefined)
+    if(clear)
+      value = SettingsConfig.find(setting => setting.name === name)?.defaultValue
+
     const changed = this[name] !== value
     this[name] = value
 
@@ -965,8 +970,8 @@ export default class Settings {
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
-    if(changed) {
-      this.saveStorageEntry(name, value)
+    if(clear || changed) {
+      this.saveStorageEntry(name, clear ? undefined : value)
     }
 
     if (updateUI) {
