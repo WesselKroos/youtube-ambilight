@@ -69,7 +69,6 @@ export default class Settings {
       }
     }
     names.push('setting-webGLCrashed')
-    names.push('setting-webGLCrashWarned')
     names.push('setting-webGLCrashedAtVersion')
     names.push('setting-surroundingContentImagesTransparency')
 
@@ -85,6 +84,8 @@ export default class Settings {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
 
+    this.handleWebGLCrash(storedSettings)
+
     for (const setting of SettingsConfig) {
       const value = storedSettings[`setting-${setting.name}`]
       this[setting.name] = this.processStorageEntry(setting.name, value)
@@ -97,7 +98,6 @@ export default class Settings {
     }
     
     this.migrate(storedSettings)
-    this.handleWebGLCrash(storedSettings)
 
     // Makes the new default framerateLimit of 30 backwards compatible with a previously enabled frameBlending
     if(this.frameBlending && this.framerateLimit !== 0) {
@@ -122,25 +122,30 @@ export default class Settings {
 
   handleWebGLCrash(storedSettings) {
     const webGLCrashed = storedSettings['setting-webGLCrashed']
-    const webGLCrashedAtVersion = storedSettings['setting-webGLCrashedAtVersion']
-    const webGLCrashWarned = storedSettings['setting-webGLCrashWarned']
-    if(!this.webGL && webGLCrashed) {
-      const crashDate = new Date(storedSettings['setting-webGLCrashed'])
-      if(!webGLCrashWarned) {
-        console.warn('Ambient light for YouTube™ | The WebGL renderer has been turned off because it crashed.\nAnother attempt will be made after an update.')
-        this.set('webGLCrashWarned', true)
-      }
+    if(!webGLCrashed) return
 
-      const weekAfterCrashDate = new Date(crashDate.setDate(crashDate.getDate() + 7))
-      if(version !== webGLCrashedAtVersion && weekAfterCrashDate < new Date()) {
-        this.set('webGL', true)
-      }
+    const webGL = storedSettings['setting-webGL']
+    if(webGL === false) return
+
+    if(webGL) {
+      this.saveStorageEntry('webGLCrashed', undefined)
+      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
+      return
     }
-    if(this.webGL && (webGLCrashed || webGLCrashWarned)) {
-      this.set('webGLCrashed', false)
-      this.set('webGLCrashWarned', false)
-      this.set('webGLCrashedAtVersion', false)
+
+    this.webGLCrashDate = new Date(webGLCrashed)
+    const weekAfterCrashDate = new Date(this.webGLCrashDate.setDate(this.webGLCrashDate.getDate() + 7))
+    const retryAfterUpdateAndAWeekLater = (
+      version !== storedSettings['setting-webGLCrashedAtVersion'] &&
+      weekAfterCrashDate < new Date()
+    )
+    if(retryAfterUpdateAndAWeekLater) {
+      this.saveStorageEntry('webGLCrashed', undefined)
+      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
+      return
     }
+
+    SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
   }
   
   initMenu() {
@@ -222,6 +227,7 @@ export default class Settings {
         if(setting.hdr) classes += ' ytpa-menuitem--hdr'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
+        const description = (setting.name === 'webGL' && this.webGLCrashDate) ? `<span style="color: #fa0">Crashed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}<br/>Re-enabling this setting might result in a crash after which it will be disabled again</span>` : setting.description
         
         const label = `${setting.label}
           ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
@@ -234,7 +240,7 @@ export default class Settings {
             </a>`
             : ''
           }
-          ${setting.description ? `<br/><span class="ytpa-menuitem-description">${setting.description}</span>` : ''}
+          ${description ? `<br/><span class="ytpa-menuitem-description">${description}</span>` : ''}
         `
         const value = this[setting.name];
         

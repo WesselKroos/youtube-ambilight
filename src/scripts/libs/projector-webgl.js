@@ -28,11 +28,11 @@ export default class ProjectorWebGL {
       this.ctx = undefined
 
       ;(async () => {
-        this.settings.set('webGL', false)
-        this.settings.set('webGLCrashed', +new Date())
-        this.settings.set('webGLCrashedAtVersion', version)
+        this.settings.saveStorageEntry('webGLCrashed', +new Date())
+        this.settings.saveStorageEntry('webGLCrashedAtVersion', version)
+        this.settings.saveStorageEntry('webGL', undefined)
         await this.settings.flushPendingStorageEntries()
-        setTimeout(() => this.settings.reloadPage(), 1000)
+        setTimeout(() => this.settings.reloadPage(), 2000)
       })()
       return
     }
