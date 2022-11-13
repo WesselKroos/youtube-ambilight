@@ -145,7 +145,7 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentShadowSize',
-    label: 'Shadow size',
+    label: 'Texts shadow size',
     type: 'list',
     default: 15,
     min: 0,
@@ -154,7 +154,7 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentShadowOpacity',
-    label: 'Shadow opacity',
+    label: 'Texts shadow opacity',
     type: 'list',
     default: 30,
     min: 0,
@@ -184,7 +184,7 @@ const SettingsConfig = [
   },
   {
     name: 'immersiveTheaterView',
-    label: 'Hide in theater mode',
+    label: 'Hide everything in theater mode',
     type: 'checkbox',
     default: false
   },

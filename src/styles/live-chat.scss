@@ -41,7 +41,8 @@ yt-live-chat-ticker-renderer,
 yt-live-chat-text-message-renderer,
 #card.yt-live-chat-viewer-engagement-message-renderer,
 #menu.yt-live-chat-text-message-renderer,
-#container.yt-live-chat-restricted-participation-renderer {
+#container.yt-live-chat-restricted-participation-renderer,
+yt-live-chat-renderer[has-action-panel-renderer] #action-panel.yt-live-chat-renderer {
   background: none !important;
 }
 
