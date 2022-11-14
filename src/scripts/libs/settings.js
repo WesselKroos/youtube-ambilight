@@ -23,6 +23,7 @@ export default class Settings {
 
       await this.getAll()
       this.initMenu()
+      if(this.webGLCrashDate) this.showWebGLCrashDescription()
       if(this.pendingWarning) this.pendingWarning()
       return this
     }.bind(this))()
@@ -84,7 +85,7 @@ export default class Settings {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
 
-    this.handleWebGLCrash(storedSettings)
+    this.migrateWebGLCrash(storedSettings)
 
     for (const setting of SettingsConfig) {
       const value = storedSettings[`setting-${setting.name}`]
@@ -120,7 +121,7 @@ export default class Settings {
     }
   }
 
-  handleWebGLCrash(storedSettings) {
+  migrateWebGLCrash(storedSettings) {
     const webGLCrashed = storedSettings['setting-webGLCrashed']
     if(!webGLCrashed) return
 
@@ -133,10 +134,11 @@ export default class Settings {
       return
     }
 
-    this.webGLCrashDate = new Date(webGLCrashed)
-    const weekAfterCrashDate = new Date(this.webGLCrashDate.setDate(this.webGLCrashDate.getDate() + 7))
+    const webGLCrashDate = new Date(webGLCrashed)
+    // const weekAfterCrashDate = new Date(this.webGLCrashDate.setDate(this.webGLCrashDate.getDate() + 7))
+    const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
     const retryAfterUpdateAndAWeekLater = (
-      version !== storedSettings['setting-webGLCrashedAtVersion'] &&
+      // version !== storedSettings['setting-webGLCrashedAtVersion'] &&
       weekAfterCrashDate < new Date()
     )
     if(retryAfterUpdateAndAWeekLater) {
@@ -145,7 +147,32 @@ export default class Settings {
       return
     }
 
+    this.webGLCrashDate = webGLCrashDate
     SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
+  }
+
+  handleWebGLCrash = async () => {
+    this.webGLCrashDate = new Date()
+    this.saveStorageEntry('webGLCrashed', +this.webGLCrashDate)
+    this.saveStorageEntry('webGLCrashedAtVersion', version)
+    this.set('webGL', false, true)
+    this.saveStorageEntry('webGL', undefined) // Override false
+    await this.flushPendingStorageEntries()
+    
+    this.showWebGLCrashDescription()
+  }
+
+  showWebGLCrashDescription = () => {
+    const labelElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label')
+    labelElem.appendChild(document.createElement('br'))
+
+    const descriptionElem = document.createElement('span')
+    descriptionElem.classList.add('ytpa-menuitem-description')
+    descriptionElem.style.color = '#fa0'
+    descriptionElem.appendChild(document.createTextNode(`Crashed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
+    descriptionElem.appendChild(document.createElement('br'))
+    descriptionElem.appendChild(document.createTextNode('Re-enabling this setting might result in a crash after which it will be disabled again'))
+    labelElem.appendChild(descriptionElem)
   }
   
   initMenu() {
@@ -227,7 +254,6 @@ export default class Settings {
         if(setting.hdr) classes += ' ytpa-menuitem--hdr'
         if(setting.new) classes += ' ytpa-menuitem--new'
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
-        const description = (setting.name === 'webGL' && this.webGLCrashDate) ? `<span style="color: #fa0">Crashed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}<br/>Re-enabling this setting might result in a crash after which it will be disabled again</span>` : setting.description
         
         const label = `${setting.label}
           ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
@@ -240,7 +266,7 @@ export default class Settings {
             </a>`
             : ''
           }
-          ${description ? `<br/><span class="ytpa-menuitem-description">${description}</span>` : ''}
+          ${setting.description ? `<br/><span class="ytpa-menuitem-description">${setting.description}</span>` : ''}
         `
         const value = this[setting.name];
         
@@ -739,12 +765,15 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
-            // setTimeout to allow processing of all settings in case the reset button was clicked
-            setTimeout(async () => {
-              await this.flushPendingStorageEntries()
-              setTimeout(() => this.reloadPage(), 1000)
-            }, 1)
-            return
+            this.updateVisibility()
+            if(!this.webGLCrashDate || this.webGL) {
+              // setTimeout to allow processing of all settings in case the reset button was clicked
+              setTimeout(async () => {
+                await this.flushPendingStorageEntries()
+                setTimeout(() => this.reloadPage(), 1000)
+              }, 1)
+              return
+            }
           }
 
           this.ambientlight.sizesInvalidated = true

@@ -3,8 +3,6 @@ import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
-const version = document.currentScript?.getAttribute('data-version') || ''
-
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
@@ -20,22 +18,7 @@ export default class ProjectorWebGL {
 
     this.initShadow()
     this.initBlurCtx()
-    try {
-      this.initCtx()
-    } catch(ex) {
-      this.setWebGLWarning('create', false)
-      SentryReporter.captureException(ex)
-      this.ctx = undefined
-
-      ;(async () => {
-        this.settings.saveStorageEntry('webGLCrashed', +new Date())
-        this.settings.saveStorageEntry('webGLCrashedAtVersion', version)
-        this.settings.saveStorageEntry('webGL', undefined)
-        await this.settings.flushPendingStorageEntries()
-        setTimeout(() => this.settings.reloadPage(), 2000)
-      })()
-      return
-    }
+    this.initCtx()
     this.handlePageVisibility()
   }
 

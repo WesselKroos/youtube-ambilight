@@ -20,8 +20,7 @@ export class WebGLCanvas {
 }
 
 export class WebGLOffscreenCanvas {
-  constructor(width, height, setWarning) {
-    this.setWarning = setWarning
+  constructor(width, height, settings) {
     if(typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -33,7 +32,7 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, this.setWarning);
+        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -46,8 +45,9 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   lostCount = 0
 
-  constructor(canvas, type, options, setWarning) {
-    this.setWarning = setWarning;
+  constructor(canvas, type, options, settings) {
+    this.settings = settings;
+    this.setWarning = settings.setWarning;
     this.canvas = canvas;
     this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
       event.preventDefault();
@@ -85,13 +85,7 @@ export class WebGLContext {
     }.bind(this)), false);
 
     this.options = options;
-    try {
-      this.initCtx(options);
-    } catch(ex) {
-      this.setWebGLWarning('create', false)
-      SentryReporter.captureException(ex)
-      this.ctx = undefined
-    }
+    this.initCtx(options);
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {

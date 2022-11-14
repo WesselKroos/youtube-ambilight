@@ -81,7 +81,8 @@ export default class Ambientlight {
       this.detectChromiumBug1123708Workaround()
 
       this.initAmbientlightElems()
-      this.initBuffers()
+      this.initBuffersWrapper()
+      this.initProjectorBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
 
@@ -788,10 +789,22 @@ export default class Ambientlight {
     this.projectorListElem.classList.add('ambientlight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
-      : new Projector2d(this.projectorListElem, this.initProjectorListeners)
+    this.initProjector()
+  }
 
+  initProjector = () => {
+    if(this.settings.webGL) {
+      try {
+        this.projector = new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
+      } catch(ex) {
+        SentryReporter.captureException(ex)
+        this.settings.handleWebGLCrash()
+      }
+    }
+
+    if(!this.projector) {
+      this.projector = new Projector2d(this.projectorListElem, this.initProjectorListeners)
+    }
     this.initProjectorListeners()
   }
 
@@ -819,22 +832,36 @@ export default class Ambientlight {
     this.ambientlightObserver.observe(this.projector.boundaryElem)
   }
 
-  initBuffers() {
+  initBuffersWrapper() {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambientlight__buffers-wrapper')
+    this.elem.appendChild(this.buffersWrapperElem)
+  }
 
-    const projectorsBufferElem =  this.settings.webGL
-      ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
-      : new SafeOffscreenCanvas(1, 1, true)
+  initProjectorBuffers() {
+    let projectorsBufferElem;
+    let projectorsBufferCtx;
+    if(this.settings.webGL) {
+      try {
+        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
+        projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
+      } catch(ex) {
+        SentryReporter.captureException(ex)
+        this.settings.handleWebGLCrash()
+      }
+    }
+    if(!projectorsBufferCtx) {
+      projectorsBufferElem = new SafeOffscreenCanvas(1, 1, true)
+      projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
+    }
+
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
     this.projectorBuffer = {
       elem: projectorsBufferElem,
-      ctx: projectorsBufferElem.getContext('2d', ctxOptions)
+      ctx: projectorsBufferCtx
     }
-
-    this.elem.appendChild(this.buffersWrapperElem)
   }
 
   async initSettings() {
