@@ -147,7 +147,7 @@ const workerCode = function () {
 
       let size = 0;
       if(!deviationAllowed) {
-        let lowestSize = Math.min(...closestSizes)
+        let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
           return
