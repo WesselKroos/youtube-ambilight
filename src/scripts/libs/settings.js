@@ -157,6 +157,8 @@ export default class Settings {
     this.saveStorageEntry('webGLCrashedAtVersion', version)
     this.set('webGL', false, true)
     this.saveStorageEntry('webGL', undefined) // Override false
+    this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
+    this.saveStorageEntry('resolution', undefined) // Override potential crash reason
     await this.flushPendingStorageEntries()
     
     this.showWebGLCrashDescription()
