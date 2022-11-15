@@ -135,10 +135,10 @@ export default class Settings {
     }
 
     const webGLCrashDate = new Date(webGLCrashed)
-    // const weekAfterCrashDate = new Date(this.webGLCrashDate.setDate(this.webGLCrashDate.getDate() + 7))
-    const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
+    const weekAfterCrashDate = new Date(webGLCrashDate.setDate(webGLCrashDate.getDate() + 7))
+    // const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
     const retryAfterUpdateAndAWeekLater = (
-      // version !== storedSettings['setting-webGLCrashedAtVersion'] &&
+      version !== storedSettings['setting-webGLCrashedAtVersion'] &&
       weekAfterCrashDate < new Date()
     )
     if(retryAfterUpdateAndAWeekLater) {
@@ -155,12 +155,15 @@ export default class Settings {
     this.webGLCrashDate = new Date()
     this.saveStorageEntry('webGLCrashed', +this.webGLCrashDate)
     this.saveStorageEntry('webGLCrashedAtVersion', version)
+    
     this.set('webGL', false, true)
+    this.updateVisibility()
+
     this.saveStorageEntry('webGL', undefined) // Override false
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
+
     await this.flushPendingStorageEntries()
-    
     this.showWebGLCrashDescription()
   }
 
@@ -626,7 +629,7 @@ export default class Settings {
           this.ambientlight.optionalFrame()
         })
       } else if (setting.type === 'checkbox') {
-        on(settingElem, 'dblclick contextmenu click', (e) => {
+        on(settingElem, 'dblclick contextmenu click', async (e) => {
           let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = SettingsConfig.find(s => s.name === setting.name).default
@@ -767,13 +770,10 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
-            this.updateVisibility()
             if(!this.webGLCrashDate || this.webGL) {
-              // setTimeout to allow processing of all settings in case the reset button was clicked
-              setTimeout(async () => {
-                await this.flushPendingStorageEntries()
-                setTimeout(() => this.reloadPage(), 1000)
-              }, 1)
+              await this.flushPendingStorageEntries()
+              await new Promise(resolve => setTimeout(resolve, 1000))
+              this.reloadPage()
               return
             }
           }
