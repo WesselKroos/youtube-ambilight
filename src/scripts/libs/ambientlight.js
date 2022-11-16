@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -2572,9 +2572,10 @@ GREY   | previous display frames`
       if(!enabled) return
 
       document.querySelector('.ytp-settings-button')?.click() // Open settings
-      await new Promise(resolve => setTimeout(resolve, 1))
 
       const ambientModeIcon = 'path[d="M21 7v10H3V7h18m1-1H2v12h20V6zM11.5 2v3h1V2h-1zm1 17h-1v3h1v-3zM3.79 3 6 5.21l.71-.71L4.5 2.29 3.79 3zm2.92 16.5L6 18.79 3.79 21l.71.71 2.21-2.21zM19.5 2.29 17.29 4.5l.71.71L20.21 3l-.71-.71zm0 19.42.71-.71L18 18.79l-.71.71 2.21 2.21z"]'
+      await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'))
+
       const ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
       if(!ambientModeCheckbox) throw new Error('Cannot find Ambient Mode checkbox')
 

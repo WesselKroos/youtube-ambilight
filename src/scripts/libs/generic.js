@@ -4,6 +4,23 @@ export const uuidv4 = () => {
   );
 }
 
+export const waitForDomElement = (check, container) => new Promise(resolve => {
+  if (check()) {
+    resolve()
+  } else {
+    const observer = new MutationObserver((mutationsList, observer) => {
+      if (!check()) return
+      observer.disconnect()
+      resolve()
+    })
+    observer.observe(container, {
+      childList: true,
+      subtree: true
+    })
+    return observer
+  }
+})
+
 let errorHandler = (ex) => {
   console.error(`Ambient light for YouTube™ |`, ex)
 }
