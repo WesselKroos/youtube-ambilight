@@ -2019,3 +2019,9 @@ html[data-ambientlight-enabled="true"] {
     opacity: 1;
   }
 }
+
+
+// override via extra &.ytp-settings-menu selector
+.ytp-popup.ytp-settings-menu.disable-youtube-ambient-mode-workaround {
+  visibility: hidden !important;
+}

@@ -2582,7 +2582,9 @@ GREY   | previous display frames`
       const settingsBtn = document.querySelector('.ytp-settings-button')
       const settingsPopupId = settingsBtn?.getAttribute('aria-controls')
       const settingsPopup = document.querySelector(`.ytp-popup[id="${settingsPopupId}"]`)
-      settingsPopup.style.visibility = 'hidden'
+      settingsPopup.classList.add('disable-youtube-ambient-mode-workaround')
+      await new Promise(resolve => raf(resolve)) // Await rendering
+      const wasActiveElement = document.activeElement
       settingsBtn?.click() // Open settings
 
       await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'))
@@ -2594,9 +2596,20 @@ GREY   | previous display frames`
         }
       }
 
-      document.querySelector('.ytp-settings-button')?.click() // Close settings
+      settingsBtn?.click() // Close settings
+      await new Promise(resolve => raf(resolve)) // Await rendering
+
+      if(document.activeElement == settingsBtn && wasActiveElement !== settingsBtn) {
+        if(wasActiveElement) {
+          wasActiveElement.focus()
+        } else {
+          settingsBtn.blur()
+        }
+      }
+
       await new Promise(resolve => setTimeout(resolve, 500)) // Await close animation
-      settingsPopup.style.visibility = ''
+      await new Promise(resolve => raf(resolve)) // Await rendering
+      settingsPopup.classList.remove('disable-youtube-ambient-mode-workaround')
     } catch(ex) {
       console.warn('Ambient light for YouTube™ | Failed to automatically disable YouTube\'s own Ambient Mode')
       console.warn(ex)
