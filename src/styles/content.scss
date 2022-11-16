@@ -1840,10 +1840,6 @@ html[data-ambientlight-enabled="true"] {
 
     // new video info
     h1.ytd-watch-metadata,
-    #upload-info.ytd-video-owner-renderer,
-    #container.ytd-channel-name,
-    #container.ytd-channel-name .yt-simple-endpoint,
-    #owner-sub-count.ytd-video-owner-renderer,
 
     // New comment
     #author-text.yt-simple-endpoint.ytd-comment-renderer,
@@ -1907,6 +1903,7 @@ html[data-ambientlight-enabled="true"] {
         $chapters-header: '#header.ytd-engagement-panel-section-list-renderer';
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
 
+        #upload-info.ytd-video-owner-renderer,
         #{$info} ytd-toggle-button-renderer,
         #{$info} ytd-button-renderer,
         #{$info} yt-icon.ytd-menu-renderer,
