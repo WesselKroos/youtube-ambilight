@@ -2587,13 +2587,19 @@ GREY   | previous display frames`
       const wasActiveElement = document.activeElement
       settingsBtn?.click() // Open settings
 
-      await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'))
+      try {
+        await new Promise(resolve => raf(resolve)) // Await rendering
+        await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'), 1000)
       ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
       if(ambientModeCheckbox) {
         const enabled = ambientModeCheckbox.getAttribute('aria-checked') === 'true'
         if(enabled) {
           ambientModeCheckbox.click()
         }
+      }
+      } catch(ex) {
+        console.warn('Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode')
+        console.warn(ex)
       }
 
       settingsBtn?.click() // Close settings

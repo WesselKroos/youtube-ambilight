@@ -4,15 +4,24 @@ export const uuidv4 = () => {
   );
 }
 
-export const waitForDomElement = (check, container) => new Promise(resolve => {
+export const waitForDomElement = (check, container, timeout) => new Promise((resolve, reject) => {
   if (check()) {
     resolve()
   } else {
+    let timeoutId;
     const observer = new MutationObserver((mutationsList, observer) => {
       if (!check()) return
+
+      if(timeoutId) clearTimeout(timeoutId)
       observer.disconnect()
       resolve()
     })
+    if(timeout) {
+      timeoutId = setTimeout(() => {
+        observer.disconnect()
+        reject(`Element not found after ${timeout}ms`)
+      })
+    }
     observer.observe(container, {
       childList: true,
       subtree: true
