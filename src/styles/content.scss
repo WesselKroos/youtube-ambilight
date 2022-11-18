@@ -1920,6 +1920,8 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} .publisher,
         #{$playlist-header} .index-message-wrapper,
         #{$playlist-header} yt-icon-button,
+        #{$playlist-header} ytd-playlist-loop-button-renderer,
+        #{$playlist-header} ytd-toggle-button-renderer,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
         ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
