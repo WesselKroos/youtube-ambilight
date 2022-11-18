@@ -373,6 +373,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-searchbox:not([has-focus]) #container.ytd-searchbox {
+      background: none !important;
       // Fix short flicker from white on input focus
       border-right: 0px solid transparent;
     }
