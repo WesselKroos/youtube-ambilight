@@ -549,11 +549,17 @@ html[data-ambientlight-enabled="true"] {
   ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
   }
+  ytd-live-chat-frame ytd-toggle-button-renderer button {
+    text-shadow: inherit !important;
+  }
   ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
   &[dark] ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
+    width: 100%; // Fixes shadow clipping
   }
 
   /* Cosmetics - Rich metadata */
@@ -1776,11 +1782,6 @@ html[data-ambientlight-enabled="true"] {
   
 
   // All shadows
-  &:not([dark]) {
-    ytd-masthead {
-      filter: var(--ambientlight-filter-shadow) !important;
-    }
-  }
   
   @mixin filter-and-text-shadow-selectors {
     ytd-app #top > #container > *,

@@ -2777,11 +2777,7 @@ GREY   | previous display frames`
   }
 
   updateAtTop = () => {
-    if (this.atTop) {
-      this.mastheadElem.classList.add('at-top')
-    } else {
-      this.mastheadElem.classList.remove('at-top')
-    }
+    this.mastheadElem.classList.toggle('at-top', this.atTop)
   }
 
   isDarkTheme = () => (html.getAttribute('dark') !== null)
