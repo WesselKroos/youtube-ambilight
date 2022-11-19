@@ -348,7 +348,24 @@ html[data-ambientlight-enabled="true"] {
       color: var(--yt-spec-icon-active-other);
       
       .yt-spec-icon-badge-shape,
-      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon {
+      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon
+      {
+        color: inherit;
+      }
+    }
+
+    #search-button-narrow {
+      color: var(--yt-spec-icon-active-other);
+
+      .yt-icon-button {
+        color: inherit;
+      }
+    }
+
+    #voice-search-button {
+      color: var(--yt-spec-icon-active-other);
+
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text {
         color: inherit;
       }
     }
@@ -419,8 +436,14 @@ html[data-ambientlight-enabled="true"] {
 
     ytd-topbar-menu-button-renderer,
     ytd-notification-topbar-button-renderer,
+    #search-button-narrow,
+    #voice-search-button,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
       color: rgba(0,0,0,.4) !important;
+      &:hover,
+      &:focus-within {
+        color: rgba(0,0,0,1) !important;
+      }
     }
 
     #{$account-btn} {
