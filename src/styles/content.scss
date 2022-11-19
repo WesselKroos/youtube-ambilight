@@ -344,29 +344,23 @@ html[data-ambientlight-enabled="true"] {
   }
 
   #masthead-container {
+    #search-button-narrow,
     ytd-notification-topbar-button-renderer {
       color: var(--yt-spec-icon-active-other);
       
+      .yt-icon-button,
       .yt-spec-icon-badge-shape,
-      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon
+      .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon,
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text
       {
         color: inherit;
       }
     }
-
-    #search-button-narrow {
-      color: var(--yt-spec-icon-active-other);
-
-      .yt-icon-button {
-        color: inherit;
-      }
-    }
-
     #voice-search-button {
-      color: var(--yt-spec-icon-active-other);
-
-      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text {
-        color: inherit;
+      color: rgba(255,255,255,.1) !important;
+      &:hover,
+      &:focus-within {
+        color: rgba(255,255,255,1) !important;
       }
     }
 
@@ -399,7 +393,7 @@ html[data-ambientlight-enabled="true"] {
 
     &.at-top ytd-searchbox:not(:hover):not(:focus-within) {
       .gsst_e {
-        opacity: .3;
+        opacity: .4;
       }
     }
   }
@@ -414,7 +408,7 @@ html[data-ambientlight-enabled="true"] {
       color: #000;
     }
     #country-code.ytd-topbar-logo-renderer {
-      color: rgba(20, 20, 20, 0.75);
+      color: rgba(20, 20, 20, .4);
     }
 
     ytd-searchbox:not(:hover):not(:focus-within) {
@@ -424,12 +418,14 @@ html[data-ambientlight-enabled="true"] {
       #container.ytd-searchbox,
       #search-icon-legacy {
         background-color: transparent !important;
-        border-color: rgba(0,0,0,.2) !important;
+        border-color: rgba(0,0,0,.1) !important;
       }
       #search,
-      #search::-webkit-input-placeholder,
       #search-clear-button yt-icon,
       #search-icon-legacy yt-icon {
+        color: rgba(0,0,0,.4) !important;
+      }
+      #search::-webkit-input-placeholder {
         color: rgba(0,0,0,.4) !important;
       }
     }
@@ -437,7 +433,6 @@ html[data-ambientlight-enabled="true"] {
     ytd-topbar-menu-button-renderer,
     ytd-notification-topbar-button-renderer,
     #search-button-narrow,
-    #voice-search-button,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
       color: rgba(0,0,0,.4) !important;
       &:hover,
@@ -445,15 +440,26 @@ html[data-ambientlight-enabled="true"] {
         color: rgba(0,0,0,1) !important;
       }
     }
+    #voice-search-button {
+      color: rgba(0,0,0,.1) !important;
+      &:hover,
+      &:focus-within {
+        color: rgba(0,0,0,1) !important;
+      }
+    }
 
     #{$account-btn} {
-      border-color: rgba(0,0,0,.2) !important;
+      border-color: rgba(0,0,0,.4) !important;
       &:not(.yt-spec-button-shape-next--call-to-action) {
         color: rgba(0,0,0,.4) !important;
       }
     }
 
     ytd-masthead[dark] {
+      #country-code.ytd-topbar-logo-renderer {
+        color: rgba(245, 245, 245, .4);
+      }
+
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
       }
@@ -477,6 +483,10 @@ html[data-ambientlight-enabled="true"] {
   }
 
   &[dark] #masthead-container.at-top {
+    #country-code.ytd-topbar-logo-renderer {
+      color: rgba(245, 245, 245, .4);
+    }
+
     ytd-searchbox {
       &:not(:hover):not(:focus-within) {
         #container.ytd-searchbox {
@@ -485,12 +495,14 @@ html[data-ambientlight-enabled="true"] {
         #container.ytd-searchbox,
         #search-icon-legacy {
           background-color: transparent !important;
-          border-color: rgba(255,255,255,.2) !important;
+          border-color: rgba(255,255,255,.1) !important;
         }
         #search,
-        #search::-webkit-input-placeholder,
         #search-clear-button yt-icon,
         #search-icon-legacy yt-icon {
+          color: rgba(255,255,255,.4) !important;
+        }
+        #search::-webkit-input-placeholder {
           color: rgba(255,255,255,.4) !important;
         }
       }
@@ -505,6 +517,14 @@ html[data-ambientlight-enabled="true"] {
     
     @include masthead-icon {
       color: rgba(255,255,255,.4) !important;
+    }
+
+    #voice-search-button {
+      color: rgba(255,255,255,.1) !important;
+      &:hover,
+      &:focus-within {
+        color: rgba(255,255,255,1) !important;
+      }
     }
 
     #{$account-btn} {
