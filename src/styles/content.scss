@@ -383,15 +383,15 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-searchbox:not([has-focus]):not(:hover) #container.ytd-searchbox {
+    ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) #container.ytd-searchbox {
       background: none !important;
     }
-    ytd-searchbox:not([has-focus]) #container.ytd-searchbox {
+    ytd-searchbox:not([has-focus]):not(:focus-within) #container.ytd-searchbox {
       // Fix short flicker from white on input focus
       border-right: 0px solid transparent;
     }
 
-    &.at-top ytd-searchbox:not(:hover):not(:focus-within) {
+    &.at-top ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
       .gsst_e {
         opacity: .4;
       }
