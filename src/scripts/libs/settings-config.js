@@ -136,16 +136,8 @@ const SettingsConfig = [
     default: true
   },
   {
-    name: 'surroundingContentTextAndBtnOnly',
-    label: 'Shadow only on text and buttons',
-    description: 'Decreases scroll & video stutter',
-    type: 'checkbox',
-    advanced: true,
-    default: true
-  },
-  {
     name: 'surroundingContentShadowSize',
-    label: 'Texts shadow size',
+    label: 'Shadows size',
     type: 'list',
     default: 15,
     min: 0,
@@ -154,12 +146,27 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentShadowOpacity',
-    label: 'Texts shadow opacity',
+    label: 'Shadows opacity',
     type: 'list',
     default: 30,
     min: 0,
     max: 100,
     step: .1
+  },
+  {
+    name: 'headerShadowEnabled',
+    label: 'Shadows on header',
+    type: 'checkbox',
+    default: false,
+    new: true
+  },
+  {
+    name: 'surroundingContentTextAndBtnOnly',
+    label: 'Shadows on texts and buttons only',
+    description: 'Decreases scroll & video stutter',
+    type: 'checkbox',
+    advanced: true,
+    default: true
   },
   {
     name: 'surroundingContentFillOpacity',

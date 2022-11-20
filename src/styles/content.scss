@@ -1829,7 +1829,11 @@ html[data-ambientlight-enabled="true"] {
 
   // All shadows
   
+  > body:not([style*="--ambientlight-text-shadow:"]) #masthead-container.at-top.yta-ambientlight-header-shadow {
+    transition: filter .15s;
+  }
   @mixin filter-and-text-shadow-selectors {
+    #masthead-container.at-top.yta-ambientlight-header-shadow,
     ytd-app #top > #container > *,
     ytd-app #primary-inner > *:not(#player),
     ytd-app #secondary,
@@ -1978,6 +1982,26 @@ html[data-ambientlight-enabled="true"] {
         #chatframe,
         paper-menu-button,
         yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button {
+          @content;
+          text-shadow: none !important;
+        }
+      }
+
+      #masthead-container.yta-ambientlight-header-shadow {
+        ytd-searchbox {
+          transition: filter .15s;
+        }
+      }
+      #masthead-container.at-top.yta-ambientlight-header-shadow {
+        yt-icon.ytd-logo svg {
+          overflow: visible;
+        }
+        yt-icon.guide-icon,
+        yt-icon.ytd-logo svg,
+        ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
+        ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
+        yt-icon-button,
+        ytd-button-renderer {
           @content;
           text-shadow: none !important;
         }

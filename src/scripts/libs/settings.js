@@ -620,6 +620,7 @@ export default class Settings {
 
           if([
             'surroundingContentShadowSize',
+            'surroundingContentShadowOpacity',
             'videoShadowSize'
           ].some(name => name === setting.name)) {
             this.updateVisibility()
@@ -643,6 +644,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'surroundingContentTextAndBtnOnly',
+            'headerShadowEnabled',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
@@ -755,7 +757,10 @@ export default class Settings {
             this.updateVisibility()
           }
 
-          if(setting.name === 'showFPS' || setting.name === 'showFrametimes') {
+          if([
+            'showFPS',
+            'showFrametimes'
+          ].some(name => name === setting.name)) {
             if(value) {
               this.ambientlight.updateStats()
             } else {
@@ -764,7 +769,10 @@ export default class Settings {
             return
           }
 
-          if(setting.name === 'surroundingContentTextAndBtnOnly') {
+          if([
+            'surroundingContentTextAndBtnOnly',
+            'headerShadowEnabled'
+          ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
             return
           }
@@ -942,6 +950,13 @@ export default class Settings {
     {
       names: [ 'surroundingContentShadowOpacity' ],
       visible: () => this.surroundingContentShadowSize
+    },
+    {
+      names: [
+        'headerShadowEnabled',
+        'surroundingContentTextAndBtnOnly'
+      ],
+      visible: () => this.surroundingContentShadowSize && this.surroundingContentShadowOpacity
     },
     {
       names: [ 'videoShadowOpacity' ],

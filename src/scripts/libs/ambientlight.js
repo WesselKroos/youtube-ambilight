@@ -1390,6 +1390,8 @@ export default class Ambientlight {
   }
 
   updateStyles() {
+    this.mastheadElem.classList.toggle('yta-ambientlight-header-shadow', this.settings.headerShadowEnabled)
+
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
     fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
@@ -2590,13 +2592,13 @@ GREY   | previous display frames`
       try {
         await new Promise(resolve => raf(resolve)) // Await rendering
         await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'), 1000)
-      ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
-      if(ambientModeCheckbox) {
-        const enabled = ambientModeCheckbox.getAttribute('aria-checked') === 'true'
-        if(enabled) {
-          ambientModeCheckbox.click()
+        ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
+        if(ambientModeCheckbox) {
+          const enabled = ambientModeCheckbox.getAttribute('aria-checked') === 'true'
+          if(enabled) {
+            ambientModeCheckbox.click()
+          }
         }
-      }
       } catch(ex) {
         console.warn('Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode')
         console.warn(ex)
