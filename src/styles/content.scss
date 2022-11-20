@@ -334,12 +334,16 @@ html[data-ambientlight-enabled="true"] {
 
   $account-btn: '.yt-spec-button-shape-next--outline';
   @mixin masthead-icon {
-    #search-button-narrow:not(:hover) button:not(:focus) yt-icon,
-    #voice-search-button:not(:hover) button:not(:focus) yt-icon,
-    #buttons.ytd-masthead ytd-topbar-menu-button-renderer:not(:hover) button:not(:focus) yt-icon,
-    #buttons.ytd-masthead ytd-notification-topbar-button-renderer:not(:hover) button:not(:focus) yt-icon,
-    #buttons.ytd-masthead .ytd-masthead[is-icon-button]:not(:hover) button:not(:focus) yt-icon {
-      @content;
+    #guide-button,
+    #back-button,
+    #search-button-narrow,
+    #voice-search-button,
+    #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
+    #buttons.ytd-masthead ytd-notification-topbar-button-renderer,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
+      &:not(:hover) button:not(:focus) yt-icon {
+        @content;
+      }
     }
   }
 
@@ -356,6 +360,7 @@ html[data-ambientlight-enabled="true"] {
         color: inherit;
       }
     }
+
     #voice-search-button {
       color: rgba(255,255,255,.1) !important;
       &:hover,
@@ -440,6 +445,7 @@ html[data-ambientlight-enabled="true"] {
         color: rgba(0,0,0,1) !important;
       }
     }
+
     #voice-search-button {
       color: rgba(0,0,0,.1) !important;
       &:hover,
@@ -465,7 +471,15 @@ html[data-ambientlight-enabled="true"] {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
       }
-      
+
+      #guide-button,
+      #back-button {
+        &:hover,
+        &:focus-within {
+          color: rgba(0,0,0,1) !important;
+        }
+      }
+
       #voice-search-button {
         color: rgba(0,0,0,.1) !important;
         &:hover,
