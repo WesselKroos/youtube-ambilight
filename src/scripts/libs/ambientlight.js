@@ -2570,6 +2570,11 @@ GREY   | previous display frames`
 
   async disableYouTubeAmbientMode() {
     try {
+      if(
+        !ytcfg?.data_?.WEB_PLAYER_CONTEXT_CONFIGS.WEB_PLAYER_CONTEXT_CONFIG_ID_KEVLAR_WATCH?.cinematicSettingsAvailable ||
+        !ytcfg?.data_?.EXPERIMENT_FLAGS?.kevlar_watch_cinematics
+      ) return
+
       const ambientModeIcon = 'path[d="M21 7v10H3V7h18m1-1H2v12h20V6zM11.5 2v3h1V2h-1zm1 17h-1v3h1v-3zM3.79 3 6 5.21l.71-.71L4.5 2.29 3.79 3zm2.92 16.5L6 18.79 3.79 21l.71.71 2.21-2.21zM19.5 2.29 17.29 4.5l.71.71L20.21 3l-.71-.71zm0 19.42.71-.71L18 18.79l-.71.71 2.21 2.21z"]'
       let ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
       
@@ -2600,8 +2605,7 @@ GREY   | previous display frames`
           }
         }
       } catch(ex) {
-        console.warn('Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode')
-        console.warn(ex)
+        console.log(`Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode: ${ex?.message}`)
       }
 
       settingsBtn?.click() // Close settings
@@ -2619,8 +2623,7 @@ GREY   | previous display frames`
       await new Promise(resolve => raf(resolve)) // Await rendering
       settingsPopup.classList.remove('disable-youtube-ambient-mode-workaround')
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Failed to automatically disable YouTube\'s own Ambient Mode')
-      console.warn(ex)
+      console.log(`Ambient light for YouTube™ | Failed to automatically disable YouTube\'s own Ambient Mode: ${ex?.message}`)
     }
   }
 

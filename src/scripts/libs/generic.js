@@ -19,7 +19,7 @@ export const waitForDomElement = (check, container, timeout) => new Promise((res
     if(timeout) {
       timeoutId = setTimeout(() => {
         observer.disconnect()
-        reject(`Element not found after ${timeout}ms`)
+        reject(new Error(`Element not found after ${timeout}ms`))
       })
     }
     observer.observe(container, {
