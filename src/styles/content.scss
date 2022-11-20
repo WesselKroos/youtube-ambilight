@@ -310,9 +310,23 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-app #masthead-container {
     #guide-icon.ytd-masthead,
+    yt-icon.ytd-logo,
     yt-icon.ytd-topbar-logo-renderer,
     #country-code.ytd-topbar-logo-renderer {
       transition: color .15s;
+    }
+
+    #logo.ytd-topbar-logo-renderer,
+    #buttons.ytd-masthead ytd-topbar-menu-button-renderer {
+      transition: opacity .15s;
+    }
+    &.at-top {
+      #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
+      #logo.ytd-topbar-logo-renderer {
+        &:not(:hover):not(:focus-within) {
+          opacity: var(--ambientlight-image-opacity) !important;
+        }
+      }
     }
   }
 
