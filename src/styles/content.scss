@@ -444,7 +444,9 @@ html[data-ambientlight-enabled="true"] {
       color: rgba(0,0,0,.1) !important;
       &:hover,
       &:focus-within {
-        color: rgba(0,0,0,1) !important;
+        button {
+          color: rgba(0,0,0,1) !important;
+        }
       }
     }
 
@@ -457,11 +459,21 @@ html[data-ambientlight-enabled="true"] {
 
     ytd-masthead[dark] {
       #country-code.ytd-topbar-logo-renderer {
-        color: rgba(245, 245, 245, .4);
+        color: rgba(0, 0, 0, .4);
       }
 
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
+      }
+      
+      #voice-search-button {
+        color: rgba(0,0,0,.1) !important;
+        &:hover,
+        &:focus-within {
+          button {
+            color: rgba(0,0,0,1) !important;
+          }
+        }
       }
 
       ytd-searchbox {
