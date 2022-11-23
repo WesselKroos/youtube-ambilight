@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { raf, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
@@ -18,8 +18,13 @@ export default class ProjectorWebGL {
 
     this.initShadow()
     this.initBlurCtx()
-    this.initCtx()
-    this.handlePageVisibility()
+    ;(async () => {
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
+      }
+      this.initCtx()
+      this.handlePageVisibility()
+    })()
   }
 
   invalidateShaderCache() {

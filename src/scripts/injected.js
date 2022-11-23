@@ -88,8 +88,7 @@ const detectDetachedVideo = (ytdAppElem) => {
 
 let initializingAmbientlight = false
 const tryInitAmbientlight = async () => {
-  const isPageHidden = document.visibilityState === 'hidden' // Prevents lost WebGLContext on pageload in a background tab
-  if (isPageHidden || !isWatchPageUrl()) return
+  if (!isWatchPageUrl()) return
 
   const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
@@ -188,7 +187,7 @@ const loadAmbientlight = async () => {
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(function getAppElems(elem) {
-        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP')
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP' && ! elem.tagName !== 'YTLR-APP')
       })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
@@ -252,19 +251,15 @@ const loadAmbientlight = async () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(() => raf(async function onLoadIdleCallback() {
+const onLoad = wrapErrorHandler(async function onLoadCallback() {
   if(window.ambientlight) return
 
   await loadAmbientlight()
-}), { timeout: 4000 })
+})
 
 ;(function setup() {
   try {
-    if(document.readyState === 'complete') {
-      onLoad()
-    } else {
-      window.addEventListener('load', onLoad)
-    }
+    onLoad()
   } catch (ex) {
     SentryReporter.captureException(ex)
   }

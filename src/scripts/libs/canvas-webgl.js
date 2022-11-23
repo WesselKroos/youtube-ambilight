@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { wrapErrorHandler } from './generic';
+import { raf, wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
   constructor(width, height) {
@@ -85,7 +85,13 @@ export class WebGLContext {
     }.bind(this)), false);
 
     this.options = options;
-    this.initCtx(options);
+    
+    ;(async () => {
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
+      }
+      this.initCtx()
+    })()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {

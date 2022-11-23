@@ -123,6 +123,11 @@ export default class Ambientlight {
     return this._ytdWatchFlexyElem
   }
 
+  get thumbnailOverlayElem() {
+    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = this.ytdWatchFlexyElem?.querySelector('.ytp-cued-thumbnail-overlay')
+    return this._thumbnailOverlayElem
+  }
+
   initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
     if(!this.videoPlayerElem) {
@@ -551,9 +556,14 @@ export default class Ambientlight {
   
     videoPlayerObserver.observe(this.videoPlayerElem, {
       attributes: true,
-      attributeOldValue: true,
       attributeFilter: ['class']
     })
+    if(this.thumbnailOverlayElem) {
+      videoPlayerObserver.observe(this.thumbnailOverlayElem, {
+        attributes: true,
+        attributeFilter: ['style']
+      })
+    }
 
     // When the video moves between the small and theater views
     const playerContainersObserver = new MutationObserver(wrapErrorHandler(async (mutationsList) => {
@@ -579,8 +589,8 @@ export default class Ambientlight {
   updateIsVideoHiddenOnWatchPage = () => {
     const classList = this.videoPlayerElem.classList;
     const hidden = (
-      classList.contains('ended-mode') || 
-      classList.contains('unstarted-mode') // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
+      classList.contains('ended-mode') ||
+      (classList.contains('unstarted-mode') && !(this.thumbnailOverlayElem?.style?.display !== '')) // Auto-play disabled and Thumbnail poster overlays the video
     )
     if(this.isVideoHiddenOnWatchPage === hidden) return false
 
@@ -2561,11 +2571,11 @@ GREY   | previous display frames`
   }
 
   async enable(initial = false) {
-    if (initial) await new Promise(resolve => raf(resolve))
-    if (!initial) this.settings.set('enabled', true, true)
-    // this.disableYouTubeAmbientMode()
+    if (!initial) {
+      this.settings.set('enabled', true, true)
+    }
     
-    await this.start()
+    await this.start(initial)
   }
 
   // async disableYouTubeAmbientMode() {
@@ -2642,7 +2652,7 @@ GREY   | previous display frames`
     }
   }
 
-  start = async () => {
+  start = async (initial = false) => {
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     this.showedCompareWarning = false
@@ -2665,6 +2675,11 @@ GREY   | previous display frames`
 
     this.pendingStart = true
     if(this.shouldShow()) await this.show()
+    if(initial) {
+      await new Promise(resolve => raf(resolve))
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
+      await new Promise(resolve => raf(resolve))
+    }
     this.pendingStart = undefined
 
     // Continue only if still enabled after await
@@ -2672,17 +2687,18 @@ GREY   | previous display frames`
       // Prevent incorrect stats from showing
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
+      // this.disableYouTubeAmbientMode()
     }
   }
 
   scheduleRequestVideoFrame = () => {
     if (
-      !this.canScheduleNextFrame() ||
       // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
       this.requestVideoFrameCallbackId ||
       this.settings.frameSync != FRAMESYNC_VIDEOFRAMES ||
 
-      this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
+      this.videoIsHidden || // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
+      !this.canScheduleNextFrame()
     ) return
 
     const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(wrapErrorHandler(function requestVideoFrameCallback(timestamp, info) {
