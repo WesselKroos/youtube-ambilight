@@ -191,7 +191,7 @@ export default class ProjectorWebGL {
     this.lost = true
     this.lostCount++
     this.invalidateShaderCache()
-    console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
     this.setWebGLWarning('restore')
   }.bind(this))
 

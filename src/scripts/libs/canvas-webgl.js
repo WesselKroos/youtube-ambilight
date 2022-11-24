@@ -57,7 +57,7 @@ export class WebGLContext {
       this.scaleX = undefined
       this.scaleY = undefined
       this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
-      console.warn(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
+      console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
       this.setWebGLWarning('restore')
     }.bind(this)), false);
     this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(function canvasWebGLContextRestored() {
