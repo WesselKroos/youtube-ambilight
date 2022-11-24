@@ -33,8 +33,13 @@ export default class ProjectorShadow {
     const fadeOutMinW = -(video.w / 2 / edge.w)
     fadeOutFrom = Math.max(fadeOutFrom, fadeOutMinH, fadeOutMinW)
 
-    this.drawGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest, false)
-    this.drawGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest, true)
+    try {
+      this.drawGradient(video.h, edge.h, keyframes, fadeOutFrom, darkest, false)
+      this.drawGradient(video.w, edge.w, keyframes, fadeOutFrom, darkest, true)
+    } catch(ex) {
+      ex.details = { ...ex.details, scale: {...scale}, projectorSize: {...projectorSize}, easing}
+      throw ex
+    }
 
     // Directions
     const scaleW = this.elem.width / (video.w + edge.w + edge.w)
@@ -121,34 +126,36 @@ export default class ProjectorShadow {
     ]
 
     const pointMax = (points[points.length - 1])
-    const gradient = this.ctx.createLinearGradient(
-      0,
-      0,
-      horizontal ? this.elem.width : 0,
-      !horizontal ? this.elem.height : 0
-    )
 
     let gradientStops = []
     gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
     for (const i in keyframes) {
       const e = keyframes[i]
-      gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`])
+      gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
     gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     keyframes.reverse()
     for (const i in keyframes) {
       const e = keyframes[i]
-      gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`])
+      gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
     gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
-    gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1]])
-    for (const gs of gradientStops) {
+    gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1], args[2], args[3]?.p, args[3]?.o])
+
+    const gradient = this.ctx.createLinearGradient(
+      0,
+      0,
+      horizontal ? this.elem.width : 0,
+      !horizontal ? this.elem.height : 0
+    )
+    for (let i = 0; i < gradientStops.length; i++) {
+      const gs = gradientStops[i];
       try {
         gradient.addColorStop(...gs)
       } catch(ex) {
-        ex.details = { size, edge, keyframes, fadeOutFrom, darkest, horizontal, gs }
+        ex.details = { i, gs, size, edge, ΩgradientStops: JSON.parse(JSON.stringify(gradientStops)), fadeOutFrom, darkest, horizontal }
         throw ex
       }
     }

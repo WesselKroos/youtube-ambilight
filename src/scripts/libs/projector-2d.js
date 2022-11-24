@@ -3,6 +3,9 @@ import ProjectorShadow from './projector-shadow'
 
 export default class Projector2d {
   type = 'Projector2d'
+  width = 1
+  height = 1
+
   constructor(containerElem) {
     this.containerElem = containerElem
 
@@ -32,7 +35,7 @@ export default class Projector2d {
     })
 
     for (let i = this.projectors.length; i < levels; i++) {
-      const projectorElem = new Canvas(1, 1)
+      const projectorElem = new Canvas(this.width, this.height)
       projectorElem.classList.add('ambientlight__projector')
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
@@ -48,6 +51,9 @@ export default class Projector2d {
   handlePageVisibility = () => {}
 
   resize(width, height) {
+    this.width = width
+    this.height = height
+
     for (const projector of this.projectors) {
       if (projector.elem.width !== width)
         projector.elem.width = width

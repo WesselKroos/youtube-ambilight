@@ -143,11 +143,11 @@ const workerCode = function () {
       const allowed = maxSize * (0.0125 * scale)
       const deviationAllowed = (maxDeviation <= allowed)
       const baseOffsetPercentage = (0.4 * scale)
-      const maxPercentage = 32
+      const maxPercentage = 36
 
       let size = 0;
       if(!deviationAllowed) {
-        let lowestSize = Math.min(...closestSizes)
+        let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
           return
@@ -342,23 +342,22 @@ export default class BarDetection {
         }
 
         this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height)
-      }
-      canvasInfo = this.worker.isFallbackWorker 
-        ? {
-          canvas: this.canvas,
-          ctx: this.ctx
-        }
-        : ((allowedToTransfer && buffer.transferToImageBitmap)
-          ? (!buffer.ctx?.lost
-            ? {
-              bitmap: buffer.transferToImageBitmap()
-            }
-            : null
-          )
+        canvasInfo = (this.worker.isFallbackWorker || !this.canvas.transferToImageBitmap)
+          ? {
+            canvas: this.canvas,
+            ctx: this.ctx
+          } 
           : {
             bitmap: this.canvas.transferToImageBitmap()
           }
-        )
+      } else {
+        const bufferCtx = buffer.getContext('2d')
+        if(!bufferCtx?.isContextLost || !bufferCtx.isContextLost()) {
+          canvasInfo = {
+            bitmap: buffer.transferToImageBitmap()
+          }
+        }
+      }
 
       if(!canvasInfo) {
         this.cancellable = true

@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { wrapErrorHandler } from './generic';
+import { raf, wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
   constructor(width, height) {
@@ -9,7 +9,7 @@ export class WebGLCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
-        this.canvas.ctx = new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -20,8 +20,7 @@ export class WebGLCanvas {
 }
 
 export class WebGLOffscreenCanvas {
-  constructor(width, height, setWarning) {
-    this.setWarning = setWarning
+  constructor(width, height, settings) {
     if(typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -33,7 +32,7 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = new WebGLContext(this.canvas, type, options, this.setWarning);
+        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
       } else {
         this.canvas.ctx = this.canvas._getContext(type, options);
       }
@@ -46,8 +45,9 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   lostCount = 0
 
-  constructor(canvas, type, options, setWarning) {
-    this.setWarning = setWarning;
+  constructor(canvas, type, options, settings) {
+    this.settings = settings;
+    this.setWarning = settings.setWarning;
     this.canvas = canvas;
     this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
       event.preventDefault();
@@ -56,7 +56,8 @@ export class WebGLContext {
       this.viewport = undefined
       this.scaleX = undefined
       this.scaleY = undefined
-      console.warn(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
+      this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
+      console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
       this.setWebGLWarning('restore')
     }.bind(this)), false);
     this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(function canvasWebGLContextRestored() {
@@ -84,13 +85,13 @@ export class WebGLContext {
     }.bind(this)), false);
 
     this.options = options;
-    try {
-      this.initCtx(options);
-    } catch(ex) {
-      this.setWebGLWarning('create', false)
-      SentryReporter.captureException(ex)
-      this.ctx = undefined
-    }
+    
+    ;(async () => {
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
+      }
+      this.initCtx()
+    })()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
@@ -99,6 +100,11 @@ export class WebGLContext {
 
   webglcontextcreationerrors = []
   initCtx = () => {
+    if(this.program && !this.ctxIsInvalid) {
+      this.ctx.deleteProgram(this.program) // Free GPU memory
+      this.program = undefined
+    }
+
     if(!this.ctx) {
       this.webglcontextcreationerrors = []
 
@@ -169,18 +175,18 @@ export class WebGLContext {
     }
 
     // Program
-    var program = this.ctx.createProgram();
-    this.ctx.attachShader(program, vertexShader);
-    this.ctx.attachShader(program, fragmentShader);
-    this.ctx.linkProgram(program);
-    if (!this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)) {
-      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
+    this.program = this.ctx.createProgram();
+    this.ctx.attachShader(this.program, vertexShader);
+    this.ctx.attachShader(this.program, fragmentShader);
+    this.ctx.linkProgram(this.program);
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
-    this.ctx.validateProgram(program);
-    if(!this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(program)}`)
+    this.ctx.validateProgram(this.program);
+    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
-    this.ctx.useProgram(program);
+    this.ctx.useProgram(this.program);
 
     // Buffers
     var vUVBuffer = this.ctx.createBuffer();
@@ -191,7 +197,7 @@ export class WebGLContext {
       1, 0, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    var vUVLoc = this.ctx.getAttribLocation(program, 'vUV');
+    var vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vUVLoc);
 
@@ -203,7 +209,7 @@ export class WebGLContext {
       1, -1, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    var vPositionLoc = this.ctx.getAttribLocation(program, 'vPosition'); 
+    var vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
@@ -344,5 +350,9 @@ export class WebGLContext {
       console.warn(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid;
+  }
+
+  isContextLost = () => {
+    return !this.ctx || this.ctx.isContextLost();
   }
 }

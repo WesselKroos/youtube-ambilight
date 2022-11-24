@@ -7,8 +7,10 @@ import Settings from './libs/settings'
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
 wrapErrorHandler(function initVersionAndCrashOptions() {
-  setVersion(document.currentScript.getAttribute('data-version') || '')
-  setCrashOptions(JSON.parse(document.currentScript.getAttribute('data-crash-options')))
+  const version = document.currentScript?.getAttribute('data-version') || ''
+  setVersion(version)
+  const options = JSON.parse(document.currentScript?.getAttribute('data-crash-options'))
+  setCrashOptions(options)
   contentScript.addMessageListener('crashOptions', newCrashOptions => {
     setCrashOptions(newCrashOptions)
   }, true)
@@ -86,8 +88,7 @@ const detectDetachedVideo = (ytdAppElem) => {
 
 let initializingAmbientlight = false
 const tryInitAmbientlight = async () => {
-  const isPageHidden = document.visibilityState === 'hidden' // Prevents lost WebGLContext on pageload in a background tab
-  if (isPageHidden || !isWatchPageUrl()) return
+  if (!isWatchPageUrl()) return
 
   const ytdAppElem = $.s('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
@@ -186,7 +187,7 @@ const loadAmbientlight = async () => {
   if(!ytdAppElem) {
     const appElems = [...$.sa('body > *')]
       .filter(function getAppElems(elem) {
-        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP')
+        return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP' && ! elem.tagName !== 'YTLR-APP')
       })
     if(appElems.length) {
       const selectorTree = getSelectorTreeString(appElems.map(elem => elem.tagName).join(','))
@@ -250,18 +251,16 @@ const loadAmbientlight = async () => {
   })
 }
 
-const onLoad = () => requestIdleCallback(() => raf(async function onLoadIdleCallback() {
+const onLoad = wrapErrorHandler(async function onLoadCallback() {
   if(window.ambientlight) return
 
   await loadAmbientlight()
-}), { timeout: 4000 })
+})
 
-try {
-  if(document.readyState === 'complete') {
+;(function setup() {
+  try {
     onLoad()
-  } else {
-    window.addEventListener('load', onLoad)
+  } catch (ex) {
+    SentryReporter.captureException(ex)
   }
-} catch (ex) {
-  SentryReporter.captureException(ex)
-}
+})()

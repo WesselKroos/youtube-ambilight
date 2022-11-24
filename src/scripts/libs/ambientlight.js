@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -18,7 +18,7 @@ const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
 const THEME_DARK = 1
 
-const baseUrl = document.currentScript.getAttribute('data-base-url') || ''
+const baseUrl = document.currentScript?.getAttribute('data-base-url') || ''
 
 export default class Ambientlight {
   barDetection = new BarDetection()
@@ -32,6 +32,7 @@ export default class Ambientlight {
   isOnVideoPage = true
   showedCompareWarning = false
   getImageDataAllowed = true
+  catchedErrors = []
 
   atTop = true
   p = null
@@ -80,16 +81,17 @@ export default class Ambientlight {
       this.detectChromiumBug1123708Workaround()
 
       this.initAmbientlightElems()
-      this.initBuffers()
+      this.initBuffersWrapper()
+      this.initProjectorBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
-      this.initLiveChat()
 
       this.initStyles()
       this.updateStyles()
 
       this.checkGetImageDataAllowed()
       this.initListeners()
+      this.initLiveChat() // Depends on this.originalTheme set in initListeners
 
       if (this.settings.enabled) {
         try {
@@ -121,6 +123,11 @@ export default class Ambientlight {
     return this._ytdWatchFlexyElem
   }
 
+  get thumbnailOverlayElem() {
+    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = this.ytdWatchFlexyElem?.querySelector('.ytp-cued-thumbnail-overlay')
+    return this._thumbnailOverlayElem
+  }
+
   initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player')
     if(!this.videoPlayerElem) {
@@ -144,7 +151,6 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.videoElem = videoElem
     this.requestVideoFrameCallbackId = undefined
-    this.applyChromiumBug1142112Workaround()
     if(initListeners) this.initVideoListeners()
   }
 
@@ -158,8 +164,9 @@ export default class Ambientlight {
     }
   }
 
-  // Chromium workaround: YouTube drops the video quality because the video is dropping frames 
-  // when requestVideoFrameCallback is used and the video is offscreen 
+  // Chromium workaround: YouTube drops the video quality because the video is dropping frames
+  // for about ~2 seconds when requestVideoFrameCallback is used and the video
+  // has been scrolled from onscreen to offscreen
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1142112
   detectChromiumBug1142112Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
@@ -173,49 +180,20 @@ export default class Ambientlight {
     if(!this.enableChromiumBug1142112Workaround) return;
 
     try {
-      if(this.videoObserver) {
-        this.videoObserver.disconnect()
-      }
+      if(this.videoElem.ambientlightGetVideoPlaybackQuality) return
 
-      this.videoIsHidden = false
-      if(!this.videoObserver) {
-        this.videoObserver = new IntersectionObserver(
-          wrapErrorHandler((entries, observer) => {
-            if(!window.ambientlight) return
-            if(window.ambientlight !== this) {
-              observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
-              return
-            }
-
-            for (const entry of entries) {
-              if(this.videoElem !== entry.target) {
-                this.videoObserver.unobserve(event.target) // video is detached and a new one was created
-                continue
-              }
-              this.videoIsHidden = (entry.intersectionRatio === 0)
-              this.videoVisibilityChangeTime = performance.now()
-              this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
-            }
-          }, true),
-          {
-            threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
-          }
-        )
-      }
-
-      const videoElem = this.videoElem
-      this.videoObserver.observe(videoElem)
-      
-      if(videoElem.ambientlightGetVideoPlaybackQuality) return
-
-      const ambientlight = this
-      Object.defineProperty(videoElem, 'ambientlightGetVideoPlaybackQuality', {
-        value: videoElem.getVideoPlaybackQuality
+      Object.defineProperty(this.videoElem, 'ambientlightGetVideoPlaybackQuality', {
+        value: this.videoElem.getVideoPlaybackQuality
       })
+
       this.previousDroppedVideoFrames = 0
       this.droppedVideoFramesCorrection = 0
       let previousGetVideoPlaybackQualityTime = performance.now()
-      videoElem.getVideoPlaybackQuality = function() {
+      
+      const ambientlight = this
+      const videoElem = this.videoElem
+      this.videoElem.getVideoPlaybackQuality = function() {
+        // Use scoped properties instead of this from here on
         const original = videoElem.ambientlightGetVideoPlaybackQuality()
         let droppedVideoFrames = original.droppedVideoFrames
         if(droppedVideoFrames < ambientlight.previousDroppedVideoFrames) {
@@ -315,7 +293,7 @@ export default class Ambientlight {
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
   
-        this.buffersCleared = true // Always prevent old frame from being drawn
+        this.clear() // Always prevent old frame from being drawn
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
         // this.frameTimes = []
@@ -355,11 +333,43 @@ export default class Ambientlight {
       },
       click: this.settings.onCloseMenu
     }
-
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
       on(this.videoElem, name, this.videoListeners[name])
     }
+
+    if(this.videoObserver) {
+      this.videoObserver.disconnect()
+    }
+    this.videoIsHidden = false // IntersectionObserver is always executed at least once when the observation starts
+    if(!this.videoObserver) {
+      this.videoObserver = new IntersectionObserver(
+        wrapErrorHandler((entries, observer) => {
+          if(!window.ambientlight) return
+          if(window.ambientlight !== this) {
+            observer.disconnect() // Disconnect, because ambientlight crashed on initialization and created a new instance
+            return
+          }
+
+          for (const entry of entries) {
+            if(this.videoElem !== entry.target) {
+              this.videoObserver.unobserve(event.target) // video is detached and a new one was created
+              continue
+            }
+            this.videoIsHidden = (entry.intersectionRatio === 0)
+            this.videoVisibilityChangeTime = performance.now()
+            this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
+          }
+        }, true),
+        {
+          rootMargin: '-70px 0px 0px 0px', // masthead height (56px) + additional pixel to be safe
+          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+        }
+      )
+    }
+    this.videoObserver.observe(this.videoElem)
+
+    this.applyChromiumBug1142112Workaround()
   }
 
   handleVideoError = () => {
@@ -546,9 +556,14 @@ export default class Ambientlight {
   
     videoPlayerObserver.observe(this.videoPlayerElem, {
       attributes: true,
-      attributeOldValue: true,
       attributeFilter: ['class']
     })
+    if(this.thumbnailOverlayElem) {
+      videoPlayerObserver.observe(this.thumbnailOverlayElem, {
+        attributes: true,
+        attributeFilter: ['style']
+      })
+    }
 
     // When the video moves between the small and theater views
     const playerContainersObserver = new MutationObserver(wrapErrorHandler(async (mutationsList) => {
@@ -574,8 +589,8 @@ export default class Ambientlight {
   updateIsVideoHiddenOnWatchPage = () => {
     const classList = this.videoPlayerElem.classList;
     const hidden = (
-      classList.contains('ended-mode') || 
-      classList.contains('unstarted-mode') // Autoplay disabled / Scheduled premiere - Initial render without ambientlight
+      classList.contains('ended-mode') ||
+      (classList.contains('unstarted-mode') && !(this.thumbnailOverlayElem?.style?.display !== '')) // Auto-play disabled and Thumbnail poster overlays the video
     )
     if(this.isVideoHiddenOnWatchPage === hidden) return false
 
@@ -696,6 +711,7 @@ export default class Ambientlight {
   }
 
   async toggleEnabled(enabled) {
+    if(this.pendingStart) return
     enabled = (enabled !== undefined) ? enabled : !this.settings.enabled
     if (enabled) {
       await this.enable()
@@ -783,10 +799,22 @@ export default class Ambientlight {
     this.projectorListElem.classList.add('ambientlight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    this.projector = this.settings.webGL
-      ? new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
-      : new Projector2d(this.projectorListElem, this.initProjectorListeners)
+    this.initProjector()
+  }
 
+  initProjector = () => {
+    if(this.settings.webGL) {
+      try {
+        this.projector = new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
+      } catch(ex) {
+        SentryReporter.captureException(ex)
+        this.settings.handleWebGLCrash()
+      }
+    }
+
+    if(!this.projector) {
+      this.projector = new Projector2d(this.projectorListElem, this.initProjectorListeners)
+    }
     this.initProjectorListeners()
   }
 
@@ -814,24 +842,36 @@ export default class Ambientlight {
     this.ambientlightObserver.observe(this.projector.boundaryElem)
   }
 
-  initBuffers() {
+  initBuffersWrapper() {
     this.buffersWrapperElem = document.createElement('div')
     this.buffersWrapperElem.classList.add('ambientlight__buffers-wrapper')
+    this.elem.appendChild(this.buffersWrapperElem)
+  }
 
-    const projectorsBufferElem =  this.settings.webGL
-      ? new WebGLOffscreenCanvas(1, 1, this.settings.setWarning)
-      : new SafeOffscreenCanvas(1, 1, true)
+  initProjectorBuffers() {
+    let projectorsBufferElem;
+    let projectorsBufferCtx;
+    if(this.settings.webGL) {
+      try {
+        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
+        projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
+      } catch(ex) {
+        SentryReporter.captureException(ex)
+        this.settings.handleWebGLCrash()
+      }
+    }
+    if(!projectorsBufferCtx) {
+      projectorsBufferElem = new SafeOffscreenCanvas(1, 1, true)
+      projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
+    }
+
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
     this.projectorBuffer = {
       elem: projectorsBufferElem,
-      ctx: projectorsBufferElem.getContext('2d', ctxOptions)
+      ctx: projectorsBufferCtx
     }
-    if(this.settings.webGL)
-      this.projectorBuffer.ctx.options.antialiasing = true
-
-    this.elem.appendChild(this.buffersWrapperElem)
   }
 
   async initSettings() {
@@ -908,7 +948,7 @@ export default class Ambientlight {
   }
 
   initFrameBlending() {
-    const previousProjectorsBufferElem = new Canvas(1, 1, true) 
+    const previousProjectorsBufferElem = new Canvas(this.projectorBuffer.elem.width, this.projectorBuffer.elem.height, true) 
     if (previousProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(previousProjectorsBufferElem)
     }
@@ -917,7 +957,7 @@ export default class Ambientlight {
       ctx: previousProjectorsBufferElem.getContext('2d', ctxOptions)
     }
 
-    const blendedProjectorsBufferElem = new Canvas(1, 1, true) 
+    const blendedProjectorsBufferElem = new Canvas(this.projectorBuffer.elem.width, this.projectorBuffer.elem.height, true) 
     if (blendedProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(blendedProjectorsBufferElem)
     }
@@ -928,7 +968,7 @@ export default class Ambientlight {
   }
 
   initVideoOverlayWithFrameBlending() {
-    const videoOverlayBufferElem = new Canvas(1, 1, true) 
+    const videoOverlayBufferElem = new Canvas(this.srcVideoOffset.width, this.srcVideoOffset.height, true) 
     if (videoOverlayBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(videoOverlayBufferElem)
     }
@@ -937,7 +977,7 @@ export default class Ambientlight {
       ctx: videoOverlayBufferElem.getContext('2d', ctxOptions)
     }
 
-    const previousVideoOverlayBufferElem = new Canvas(1, 1, true) 
+    const previousVideoOverlayBufferElem = new Canvas(this.srcVideoOffset.width, this.srcVideoOffset.height, true) 
     if (previousVideoOverlayBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(previousVideoOverlayBufferElem)
     }
@@ -1012,6 +1052,11 @@ export default class Ambientlight {
       } else {
         canvas.elem.width = 1;
       }
+    }
+
+    // ProjectorWebGL
+    if(this.projector?.clearRect) {
+      this.projector.clearRect()
     }
 
     this.buffersCleared = true
@@ -1355,15 +1400,17 @@ export default class Ambientlight {
   }
 
   updateStyles() {
+    this.mastheadElem.classList.toggle('yta-ambientlight-header-shadow', this.settings.headerShadowEnabled)
+
     // Fill transparency
-    const fillTransparency = this.settings.surroundingContentFillTransparency
-    const fillOpacity = (fillTransparency !== 90) ? (1 - (fillTransparency / 100)) : ''
+    let fillOpacity = this.settings.surroundingContentFillOpacity
+    fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
     
 
     // Images transparency
-    const ImagesTransparency = this.settings.surroundingContentImagesTransparency
-    const imageOpacity = (ImagesTransparency) ? (1 - (ImagesTransparency / 100)) : ''
+    let imageOpacity = this.settings.surroundingContentImagesOpacity
+    imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
 
 
@@ -1620,8 +1667,8 @@ export default class Ambientlight {
       await this.nextFrame()
       this.nextFrameTime = undefined
     }
-
-    this.detectFrameRates()
+    
+    this.displayFrameCount++
   }.bind(this))
 
   onNextLimitedFrame = async () => {
@@ -1639,7 +1686,11 @@ export default class Ambientlight {
       return
     }
 
-    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / this.settings.framerateLimit), time)
+    const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
+    const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
+      ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
+      : this.settings.framerateLimit
+    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
   }
 
   canScheduleNextFrame = () => (!(
@@ -1670,24 +1721,24 @@ export default class Ambientlight {
   getNow = () => Math.round(100 * performance.now()) / 100
 
   nextFrame = async () => {
-    const videoFrameTimes = this.settings.showFrametimes ? [...this.videoFrameTimes] : []
-    const frameTimes = this.settings.showFrametimes ? {
-      frameStart: this.getNow()
-    } : {}
-  
-    this.delayedUpdateSizesChanged = false
-    if(this.p && this.sizesInvalidated) {
-      this.updateSizesChanged()
-    }
-    if (!this.p || this.sizesChanged) {
-      //If was detected hidden by updateSizes, this.p won't be initialized yet
-      if(!await this.updateSizes()) return
-    } else {
-      this.delayedUpdateSizesChanged = true
-    }
-    
-    let results = {}
     try {
+      const videoFrameTimes = this.settings.showFrametimes ? [...this.videoFrameTimes] : []
+      const frameTimes = this.settings.showFrametimes ? {
+        frameStart: this.getNow()
+      } : {}
+    
+      this.delayedUpdateSizesChanged = false
+      if(this.p && this.sizesInvalidated) {
+        this.updateSizesChanged()
+      }
+      if (!this.p || this.sizesChanged) {
+        //If was detected hidden by updateSizes, this.p won't be initialized yet
+        if(!await this.updateSizes()) return
+      } else {
+        this.delayedUpdateSizesChanged = true
+      }
+      
+      let results = {}
       if (this.settings.showFrametimes)
         frameTimes.drawStart = this.getNow()
 
@@ -1697,45 +1748,46 @@ export default class Ambientlight {
 
       if (this.settings.showFrametimes)
         frameTimes.drawEnd = this.getNow()
-    } catch (ex) {
-      if(ex.name == 'NS_ERROR_NOT_AVAILABLE') {
-        if(!this.catchedNS_ERROR_NOT_AVAILABLE) {
-          this.catchedNS_ERROR_NOT_AVAILABLE = true
-          throw ex
-        }
-      } else if(ex.name == 'NS_ERROR_OUT_OF_MEMORY') {
-        if(!this.catchedNS_ERROR_OUT_OF_MEMORY) {
-          this.catchedNS_ERROR_OUT_OF_MEMORY = true
-          throw ex
-        }
-      } else {
-        throw ex
+
+      if(this.canScheduleNextFrame() && !this.isBuffering) {
+        this.scheduleNextFrame()
       }
+
+      if (results?.detectBarSize) {
+        this.scheduleBarSizeDetection()
+      }
+
+      this.nextFrametimes(videoFrameTimes, frameTimes, results)
+
+      if(
+        this.afterNextFrameIdleCallback ||
+        (
+          !this.settings.videoOverlayEnabled &&
+          !(
+            this.delayedUpdateSizesChanged &&
+            (performance.now() - this.lastUpdateSizesChanged) > 2000
+          ) &&
+          !((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval)
+        )
+      ) return
+      
+      this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
+    } catch (ex) {
+      const message = (ex.name === 'SecurityError')
+        ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
+        : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video.\n\nError: ${ex.name}\nReason: ${ex.message}`
+      this.settings.setWarning(`Failed to display the ambient light\n\n${message}`)
+      if(this.catchedErrors[ex.name]) return
+
+      this.catchedErrors[ex.name] = true
+      if([
+        'SecurityError',
+        'NS_ERROR_NOT_AVAILABLE',
+        'NS_ERROR_OUT_OF_MEMORY'
+      ].includes(ex.name)) return
+
+      throw ex
     }
-
-    if(this.canScheduleNextFrame() && !this.isBuffering) {
-      this.scheduleNextFrame()
-    }
-
-    if (results?.detectBarSize) {
-      this.scheduleBarSizeDetection()
-    }
-
-    this.nextFrametimes(videoFrameTimes, frameTimes, results)
-
-    if(
-      this.afterNextFrameIdleCallback ||
-      (
-        !this.settings.videoOverlayEnabled &&
-        !(
-          this.delayedUpdateSizesChanged &&
-          (performance.now() - this.lastUpdateSizesChanged) > 2000
-        ) &&
-        !((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval)
-      )
-    ) return
-    
-    this.afterNextFrameIdleCallback = requestIdleCallback(this.afterNextFrame, { timeout: 1000/30 })
   }
 
   nextFrametimes = (videoFrameTimes, frameTimes, results) => {
@@ -1764,6 +1816,8 @@ export default class Ambientlight {
     try {
       this.afterNextFrameIdleCallback = undefined
 
+      this.detectFrameRates()
+      
       if (this.settings.videoOverlayEnabled) {
         this.checkIfNeedToHideVideoOverlay()
       }
@@ -1808,9 +1862,10 @@ export default class Ambientlight {
   }
 
   // Todo:
-  // - Fix frame drops on 60hz monitors with a 50hz video playing:
+  // - Fix frame drops on 60hz monitors with a 50hz video playing?:
   //     Was caused by faulty NVidia 3050TI driver 
   //     and chromium video callback being sometimes 1 frame delayed
+  //     and requestVideoFrameCallback being executed at the end of the draw flow
   // - Do more complex logic at a later time
   detectFrameRate(list, count, currentFrameRate, update) {
     const time = performance.now()
@@ -1818,13 +1873,16 @@ export default class Ambientlight {
     // Add new item
     let fps = 0
     if (list.length) {
-      const previous = list[Math.min(list.length - 1, 2)]
-      fps = Math.max(0,
-        (
+      if(count < list[0].count) {
+        // Clear list with invalid values
+        list.splice(0, list.length)
+      } else {
+        const previous = list[0]
+        fps = Math.max(0, (
           (count - previous.count) / 
           ((time - previous.time) / 1000)
-        )
-      )
+        ))
+      }
     }
     list.push({
       count,
@@ -1832,24 +1890,36 @@ export default class Ambientlight {
       fps
     })
 
-    if (list.length < 2) return 0
-    if (!update) return currentFrameRate
+    if (!update || list.length < 2) return currentFrameRate
 
     // Todo: delay removal and calculations to idle callback?
 
-    // Remove old items
-    const thresholdTime = time - this.frameCountHistory
-    const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
-    if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
+      // Remove old items
+      const thresholdTime = time - this.frameCountHistory
+      const thresholdIndex = list.findIndex(i => i.time >= thresholdTime)
+      if(thresholdIndex > 0) list.splice(0, thresholdIndex - 1)
 
-    // Calculate fps
-    const aligableList = list.filter(i => i.fps).sort((a, b) => a - b)
-    if(aligableList.length > 10) {
-      const bound = Math.min(aligableList.length / 4)
-      aligableList.splice(0, bound)
-      aligableList.splice(aligableList.length - bound, bound)
-    }
-    return aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+      // Calculate fps
+      const aligableList = list.filter(i => i.fps)
+      if(!aligableList.length) return currentFrameRate
+
+      aligableList.sort((a, b) => a.fps - b.fps)
+      if(aligableList.length > 10) {
+        const bound = Math.floor(aligableList.length / 16)
+        aligableList.splice(0, bound)
+        aligableList.splice(aligableList.length - bound, bound)
+      }
+
+      const difference = Math.min(5, aligableList[aligableList.length - 1].fps - aligableList[0].fps)
+      const deleteCount = Math.min(aligableList.length - 2, Math.max(0, Math.floor(aligableList.length * (difference / 5) - 2)))
+      if(deleteCount) {
+        aligableList.sort((a, b) => a.time - b.time)
+        aligableList.splice(0, deleteCount)
+      }
+
+      const average = aligableList.reduce((sum, i) => sum + i.fps, 0) / aligableList.length
+
+      return average
   }
 
   detectFrameRates() {
@@ -1873,7 +1943,6 @@ export default class Ambientlight {
   displayFrameCounts = []
   displayFrameCount = 0
   detectDisplayFrameRate = (update) => {
-    this.displayFrameCount++
     this.displayFrameRate = this.detectFrameRate(
       this.displayFrameCounts,
       this.displayFrameCount,
@@ -1895,24 +1964,7 @@ export default class Ambientlight {
   getVideoDroppedFrameCount() {
     if (!this.videoElem) return 0
 
-    // Firefox
-    if(this.videoElem.mozDecodedFrames) {
-      let mozDroppedFrames = Math.max(0, (this.videoElem.mozPresentedFrames - this.videoElem.mozPaintedFrames))
-
-      // We need a cache becuase mozPresentedFrames is sometimes updated before mozPaintedFrames
-      const cache = this.videoMozDroppedFramesCache || []
-      cache.push(mozDroppedFrames)
-      if (cache.length > 30) cache.splice(0, 1)
-      this.videoMozDroppedFramesCache = cache
-      mozDroppedFrames = [...cache].sort((a, b) => a - b)[0]
-
-      return mozDroppedFrames
-    }
-
-    return (
-      this.videoElem.webkitDroppedFrameCount || // Chrome
-      0
-    )
+    return this.videoElem.getVideoPlaybackQuality().droppedVideoFrames
   }
 
   getVideoFrameCount() {
@@ -1970,10 +2022,11 @@ export default class Ambientlight {
       }
 
       // Ambientlight FPS
-      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)` : ''}`
-      const ambientlightFPSColor = (this.ambientlightFrameRate < this.videoFrameRate * .9)
+      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMIT: ${this.settings.framerateLimit}` : ''}` : ''}`
+      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.settings.framerateLimit) : this.videoFrameRate
+      const ambientlightFPSColor = (this.ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
-        : (this.ambientlightFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+        : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.01) ? '#ff3' : '#7f7'
 
       // Ambientlight dropped frames
       const ambientlightDroppedFramesText = `AMBIENT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
@@ -2005,11 +2058,11 @@ export default class Ambientlight {
 
       this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
       this.displayFPSElem.style.color = displayFPSColor
-    } else {
+    } else if(this.displayFPSElem.childNodes[0].nodeValue !== '') {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    this.updateFrameTimesStats();
+    this.updateFrameTimesStats()
   }
 
   updateFrameTimesStats = () => {
@@ -2518,13 +2571,74 @@ GREY   | previous display frames`
   }
 
   async enable(initial = false) {
-    if (initial) await new Promise(resolve => raf(resolve))
-    if (!initial) this.settings.set('enabled', true, true)
+    if (!initial) {
+      this.settings.set('enabled', true, true)
+    }
     
-    await this.start()
+    await this.start(initial)
   }
 
+  // async disableYouTubeAmbientMode() {
+  //   try {
+  //     if(
+  //       !ytcfg?.data_?.WEB_PLAYER_CONTEXT_CONFIGS.WEB_PLAYER_CONTEXT_CONFIG_ID_KEVLAR_WATCH?.cinematicSettingsAvailable ||
+  //       !ytcfg?.data_?.EXPERIMENT_FLAGS?.kevlar_watch_cinematics
+  //     ) return
+
+  //     const ambientModeIcon = 'path[d="M21 7v10H3V7h18m1-1H2v12h20V6zM11.5 2v3h1V2h-1zm1 17h-1v3h1v-3zM3.79 3 6 5.21l.71-.71L4.5 2.29 3.79 3zm2.92 16.5L6 18.79 3.79 21l.71.71 2.21-2.21zM19.5 2.29 17.29 4.5l.71.71L20.21 3l-.71-.71zm0 19.42.71-.71L18 18.79l-.71.71 2.21 2.21z"]'
+  //     let ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
+      
+  //     if(ambientModeCheckbox) {
+  //       const enabled = ambientModeCheckbox.getAttribute('aria-checked') === 'true'
+  //       if(enabled) {
+  //         ambientModeCheckbox.click()
+  //       }
+  //       return
+  //     }
+
+  //     const settingsBtn = document.querySelector('.ytp-settings-button')
+  //     const settingsPopupId = settingsBtn?.getAttribute('aria-controls')
+  //     const settingsPopup = document.querySelector(`.ytp-popup[id="${settingsPopupId}"]`)
+  //     settingsPopup.classList.add('disable-youtube-ambient-mode-workaround')
+  //     await new Promise(resolve => raf(resolve)) // Await rendering
+  //     const wasActiveElement = document.activeElement
+  //     settingsBtn?.click() // Open settings
+
+  //     try {
+  //       await new Promise(resolve => raf(resolve)) // Await rendering
+  //       await waitForDomElement(() => document.querySelector(`.ytp-menuitem ${ambientModeIcon}`), document.querySelector('.html5-video-player'), 1000)
+  //       ambientModeCheckbox = document.querySelector(`.ytp-menuitem ${ambientModeIcon}`)?.closest('.ytp-menuitem')
+  //       if(ambientModeCheckbox) {
+  //         const enabled = ambientModeCheckbox.getAttribute('aria-checked') === 'true'
+  //         if(enabled) {
+  //           ambientModeCheckbox.click()
+  //         }
+  //       }
+  //     } catch(ex) {
+  //       console.log(`Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode: ${ex?.message}`)
+  //     }
+
+  //     settingsBtn?.click() // Close settings
+  //     await new Promise(resolve => raf(resolve)) // Await rendering
+
+  //     if(document.activeElement == settingsBtn && wasActiveElement !== settingsBtn) {
+  //       if(wasActiveElement) {
+  //         wasActiveElement.focus()
+  //       } else {
+  //         settingsBtn.blur()
+  //       }
+  //     }
+
+  //     await new Promise(resolve => setTimeout(resolve, 500)) // Await close animation
+  //     await new Promise(resolve => raf(resolve)) // Await rendering
+  //     settingsPopup.classList.remove('disable-youtube-ambient-mode-workaround')
+  //   } catch(ex) {
+  //     console.log(`Ambient light for YouTube™ | Failed to automatically disable YouTube\'s own Ambient Mode: ${ex?.message}`)
+  //   }
+  // }
+
   async disable() {
+    if(this.pendingStart) return
     this.settings.set('enabled', false, true)
 
     await this.hide()
@@ -2538,7 +2652,7 @@ GREY   | previous display frames`
     }
   }
 
-  start = async () => {
+  start = async (initial = false) => {
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     this.showedCompareWarning = false
@@ -2561,45 +2675,50 @@ GREY   | previous display frames`
 
     this.pendingStart = true
     if(this.shouldShow()) await this.show()
+    if(initial) {
+      await new Promise(resolve => raf(resolve))
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
+      await new Promise(resolve => raf(resolve))
+    }
+    this.pendingStart = undefined
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
       // Prevent incorrect stats from showing
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
+      // this.disableYouTubeAmbientMode()
     }
-
-    this.pendingStart = undefined
   }
 
   scheduleRequestVideoFrame = () => {
     if (
-      !this.canScheduleNextFrame() ||
       // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
       this.requestVideoFrameCallbackId ||
       this.settings.frameSync != FRAMESYNC_VIDEOFRAMES ||
 
-      this.videoIsHidden // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
+      this.videoIsHidden || // Partial solution for https://bugs.chromium.org/p/chromium/issues/detail?id=1142112#c9
+      !this.canScheduleNextFrame()
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(async function videoFrameCallback(timestamp, info) {
+    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(wrapErrorHandler(function requestVideoFrameCallback(timestamp, info) {
+      this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
       if (this.requestVideoFrameCallbackId !== id) {
         console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
         return
       }
-      await this.receiveVideoFrame(timestamp, info)
-    }.bind(this))
+      this.receiveVideoFrame(timestamp, info)
+    }.bind(this)))
   }
 
-  receiveVideoFrame = async (timestamp, info) => {
+  receiveVideoFrame = (timestamp, info) => {
     this.receiveVideoFrametimes(timestamp, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
-    // this.scheduleRequestVideoFrame() // Requesting? as soon as possible to prevent many 1 frame delayed ambient frames on low fps displays
-    await this.onNextFrame()
+    wrapErrorHandler(async () => await this.onNextFrame(), true)()
   }
 
   receiveVideoFrametimes = (timestamp, info) => {
@@ -2679,11 +2798,7 @@ GREY   | previous display frames`
   }
 
   updateAtTop = () => {
-    if (this.atTop) {
-      this.mastheadElem.classList.add('at-top')
-    } else {
-      this.mastheadElem.classList.remove('at-top')
-    }
+    this.mastheadElem.classList.toggle('at-top', this.atTop)
   }
 
   isDarkTheme = () => (html.getAttribute('dark') !== null)
@@ -2750,8 +2865,8 @@ GREY   | previous display frames`
       returnValue: true
     })
 
-        try {
-          this.ytdAppElem.dispatchEvent(event)
+    try {
+      this.ytdAppElem.dispatchEvent(event)
     } catch(ex) {
       SentryReporter.captureException(ex)
       return
