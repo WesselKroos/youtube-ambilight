@@ -2681,7 +2681,9 @@ GREY   | previous display frames`
     if(initial) {
       await new Promise(resolve => raf(resolve))
       await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
-      await new Promise(resolve => raf(resolve))
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve))
+      }
     }
     this.pendingStart = undefined
 
