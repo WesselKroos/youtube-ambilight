@@ -80,6 +80,9 @@ export default class Ambientlight {
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
 
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
+      }
       this.initAmbientlightElems()
       this.initBuffersWrapper()
       this.initProjectorBuffers()

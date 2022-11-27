@@ -18,13 +18,8 @@ export default class ProjectorWebGL {
 
     this.initShadow()
     this.initBlurCtx()
-    ;(async () => {
-      if(document.visibilityState === 'hidden') {
-        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
-      }
-      this.initCtx()
-      this.handlePageVisibility()
-    })()
+    this.initCtx()
+    this.handlePageVisibility()
   }
 
   invalidateShaderCache() {
