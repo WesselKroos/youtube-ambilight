@@ -362,7 +362,7 @@ export default class SentryReporter {
             if (!setting.key) return
             settingsExtra[`${setting.name}-key`] = setting.key
           })
-          settingsExtra.webGLExperiment = settings.webGLExperiment
+          settingsExtra.webGLCrashDate = settings.webGLCrashDate
           setExtra('Settings', settingsExtra)
         }
       } catch (ex) { 
