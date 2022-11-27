@@ -80,6 +80,9 @@ export default class Ambientlight {
       await this.initSettings()
       this.detectChromiumBug1123708Workaround()
 
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
+      }
       this.initAmbientlightElems()
       this.initBuffersWrapper()
       this.initProjectorBuffers()
@@ -2676,9 +2679,13 @@ GREY   | previous display frames`
     this.pendingStart = true
     if(this.shouldShow()) await this.show()
     if(initial) {
-      await new Promise(resolve => raf(resolve))
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve))
+      }
       await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
-      await new Promise(resolve => raf(resolve))
+      if(document.visibilityState === 'hidden') {
+        await new Promise(resolve => raf(resolve))
+      }
     }
     this.pendingStart = undefined
 

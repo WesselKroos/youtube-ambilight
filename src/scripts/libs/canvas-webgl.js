@@ -85,13 +85,7 @@ export class WebGLContext {
     }.bind(this)), false);
 
     this.options = options;
-    
-    ;(async () => {
-      if(document.visibilityState === 'hidden') {
-        await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
-      }
-      this.initCtx()
-    })()
+    this.initCtx()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
