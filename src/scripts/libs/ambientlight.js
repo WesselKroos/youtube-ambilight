@@ -1403,7 +1403,8 @@ export default class Ambientlight {
   }
 
   updateStyles() {
-    this.mastheadElem.classList.toggle('yta-ambientlight-header-shadow', this.settings.headerShadowEnabled)
+    this.mastheadElem.classList.toggle('yta-header-shadow', this.settings.headerShadowEnabled)
+    this.mastheadElem.classList.toggle('yta-header-transparent', this.settings.headerTransparentEnabled)
 
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity

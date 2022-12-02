@@ -645,6 +645,7 @@ export default class Settings {
             'showFrametimes',
             'surroundingContentTextAndBtnOnly',
             'headerShadowEnabled',
+            'headerTransparentEnabled',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
@@ -771,9 +772,11 @@ export default class Settings {
 
           if([
             'surroundingContentTextAndBtnOnly',
-            'headerShadowEnabled'
+            'headerShadowEnabled',
+            'headerTransparentEnabled'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
+            this.ambientlight.optionalFrame()
             return
           }
 

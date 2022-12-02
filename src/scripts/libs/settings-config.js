@@ -161,6 +161,13 @@ const SettingsConfig = [
     new: true
   },
   {
+    name: 'headerTransparentEnabled',
+    label: 'Transparent header',
+    type: 'checkbox',
+    default: false,
+    new: true
+  },
+  {
     name: 'surroundingContentTextAndBtnOnly',
     label: 'Shadows on texts and buttons only',
     description: 'Decreases scroll & video stutter',

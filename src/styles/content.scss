@@ -189,12 +189,33 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Transparent elements */
 
-  body ytd-app #masthead-container.at-top {
-    ytd-masthead {
-      background: none !important;
+  body ytd-app #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      ytd-masthead {
+        background: none !important;
+      }
+      #voice-search-button {
+        background: transparent !important;
+      }
     }
-    #voice-search-button {
-      background: transparent !important;
+    &.yta-header-transparent {
+      ytd-masthead {
+        box-shadow: transparent 0 1px 0 0;
+      }
+      &:not(.at-top) {
+        ytd-masthead {
+          background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+          backdrop-filter: blur(30px);
+          box-shadow: rgba(0,0,0,.1) 0 1px 0 0;
+        }
+      }
+    }
+  }
+  &[dark] body ytd-app #masthead-container.yta-header-transparent:not(.at-top) {
+    ytd-masthead {
+      background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+      box-shadow: rgba(255,255,255,.1) 0 1px 0 0;
     }
   }
 
@@ -210,10 +231,13 @@ html[data-ambientlight-enabled="true"] {
     ytd-masthead {
       transition: background-color .15s;
     }
+    #masthead-container.yta-header-transparent ytd-masthead {
+      transition: background-color .15s, box-shadow .15s;
+    }
     #masthead-container.ytd-app::after {
       display: none;
     }
-    #masthead-container:not(.at-top) #voice-search-button {
+    #masthead-container:not(.yta-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
   }
@@ -320,6 +344,7 @@ html[data-ambientlight-enabled="true"] {
     #buttons.ytd-masthead ytd-topbar-menu-button-renderer {
       transition: opacity .15s;
     }
+    &.yta-header-transparent,
     &.at-top {
       #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
       #logo.ytd-topbar-logo-renderer {
@@ -386,6 +411,7 @@ html[data-ambientlight-enabled="true"] {
     @include masthead-icon {
       transition: color .15s;
     }
+    &.yta-header-transparent,
     &.at-top {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
@@ -396,6 +422,7 @@ html[data-ambientlight-enabled="true"] {
     #{$account-btn} {
       transition: border-color .15s, color .15s;
     }
+    &.yta-header-transparent,
     &.at-top {
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
         color: inherit;
@@ -410,84 +437,55 @@ html[data-ambientlight-enabled="true"] {
       border-right: 0px solid transparent;
     }
 
-    &.at-top ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
-      .gsst_e {
-        opacity: .4;
+    &.yta-header-transparent,
+    &.at-top {
+      ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
+        .gsst_e {
+          opacity: .4;
+        }
       }
     }
   }
 
   // Body light & search light & at top
-  &:not([dark]) #masthead-container.at-top {
-    --yt-button-color: #000;
-    #guide-icon.ytd-masthead,
-    yt-icon.ytd-topbar-logo-renderer, // old design
-    yt-icon.ytd-logo // new design
-    {
-      color: #000;
-    }
-    #country-code.ytd-topbar-logo-renderer {
-      color: rgba(20, 20, 20, .4);
-    }
+  &:not([dark]) #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      --yt-button-color: #000;
+      #guide-icon.ytd-masthead,
+      yt-icon.ytd-topbar-logo-renderer, // old design
+      yt-icon.ytd-logo // new design
+      {
+        color: #000;
+      }
+      #country-code.ytd-topbar-logo-renderer {
+        color: rgba(20, 20, 20, .4);
+      }
 
-    ytd-searchbox:not(:hover):not(:focus-within) {
-      #container.ytd-searchbox {
-        box-shadow: none !important;
-      }
-      #container.ytd-searchbox,
-      #search-icon-legacy {
-        background-color: transparent !important;
-        border-color: rgba(0,0,0,.1) !important;
-      }
-      #search,
-      #search-clear-button yt-icon,
-      #search-icon-legacy yt-icon {
-        color: rgba(0,0,0,.4) !important;
-      }
-      #search::-webkit-input-placeholder {
-        color: rgba(0,0,0,.4) !important;
-      }
-    }
-
-    ytd-topbar-menu-button-renderer,
-    ytd-notification-topbar-button-renderer,
-    #search-button-narrow,
-    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
-      color: rgba(0,0,0,.4) !important;
-      &:hover,
-      &:focus-within {
-        color: rgba(0,0,0,1) !important;
-      }
-    }
-
-    #voice-search-button {
-      color: rgba(0,0,0,.1) !important;
-      &:hover,
-      &:focus-within {
-        button {
-          color: rgba(0,0,0,1) !important;
+      ytd-searchbox:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox {
+          box-shadow: none !important;
+        }
+        #container.ytd-searchbox,
+        #search-icon-legacy {
+          background-color: transparent !important;
+          border-color: rgba(0,0,0,.1) !important;
+        }
+        #search,
+        #search-clear-button yt-icon,
+        #search-icon-legacy yt-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+        #search::-webkit-input-placeholder {
+          color: rgba(0,0,0,.4) !important;
         }
       }
-    }
 
-    #{$account-btn} {
-      border-color: rgba(0,0,0,.4) !important;
-      &:not(.yt-spec-button-shape-next--call-to-action) {
+      ytd-topbar-menu-button-renderer,
+      ytd-notification-topbar-button-renderer,
+      #search-button-narrow,
+      #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
         color: rgba(0,0,0,.4) !important;
-      }
-    }
-
-    ytd-masthead[dark] {
-      #country-code.ytd-topbar-logo-renderer {
-        color: rgba(0, 0, 0, .4);
-      }
-
-      @include masthead-icon {
-        color: rgba(0,0,0,.4) !important;
-      }
-
-      #guide-button,
-      #back-button {
         &:hover,
         &:focus-within {
           color: rgba(0,0,0,1) !important;
@@ -504,9 +502,84 @@ html[data-ambientlight-enabled="true"] {
         }
       }
 
+      #{$account-btn} {
+        border-color: rgba(0,0,0,.4) !important;
+        &:not(.yt-spec-button-shape-next--call-to-action) {
+          color: rgba(0,0,0,.4) !important;
+        }
+      }
+
+      ytd-masthead[dark] {
+        #country-code.ytd-topbar-logo-renderer {
+          color: rgba(0, 0, 0, .4);
+        }
+
+        @include masthead-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+
+        #guide-button,
+        #back-button {
+          &:hover,
+          &:focus-within {
+            color: rgba(0,0,0,1) !important;
+          }
+        }
+
+        #voice-search-button {
+          color: rgba(0,0,0,.1) !important;
+          &:hover,
+          &:focus-within {
+            button {
+              color: rgba(0,0,0,1) !important;
+            }
+          }
+        }
+
+        ytd-searchbox {
+          &:not(:hover):not(:focus-within) .gsst_e {
+            filter: none;
+          }
+          
+          &:hover,
+          &:focus-within {
+            #search-icon-legacy {
+              background-color: rgb(44,44,44) !important;
+            }
+            #search-clear-button yt-icon {
+              color: rgba(255,255,255) !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &[dark] #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      #country-code.ytd-topbar-logo-renderer {
+        color: rgba(245, 245, 245, .4);
+      }
+
       ytd-searchbox {
-        &:not(:hover):not(:focus-within) .gsst_e {
-          filter: none;
+        &:not(:hover):not(:focus-within) {
+          #container.ytd-searchbox {
+            box-shadow: none !important;
+          }
+          #container.ytd-searchbox,
+          #search-icon-legacy {
+            background-color: transparent !important;
+            border-color: rgba(255,255,255,.1) !important;
+          }
+          #search,
+          #search-clear-button yt-icon,
+          #search-icon-legacy yt-icon {
+            color: rgba(255,255,255,.4) !important;
+          }
+          #search::-webkit-input-placeholder {
+            color: rgba(255,255,255,.4) !important;
+          }
         }
         
         &:hover,
@@ -514,63 +587,26 @@ html[data-ambientlight-enabled="true"] {
           #search-icon-legacy {
             background-color: rgb(44,44,44) !important;
           }
-          #search-clear-button yt-icon {
-            color: rgba(255,255,255) !important;
-          }
-        }
-      }
-    }
-  }
-
-  &[dark] #masthead-container.at-top {
-    #country-code.ytd-topbar-logo-renderer {
-      color: rgba(245, 245, 245, .4);
-    }
-
-    ytd-searchbox {
-      &:not(:hover):not(:focus-within) {
-        #container.ytd-searchbox {
-          box-shadow: none !important;
-        }
-        #container.ytd-searchbox,
-        #search-icon-legacy {
-          background-color: transparent !important;
-          border-color: rgba(255,255,255,.1) !important;
-        }
-        #search,
-        #search-clear-button yt-icon,
-        #search-icon-legacy yt-icon {
-          color: rgba(255,255,255,.4) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(255,255,255,.4) !important;
         }
       }
       
-      &:hover,
-      &:focus-within {
-        #search-icon-legacy {
-          background-color: rgb(44,44,44) !important;
+      @include masthead-icon {
+        color: rgba(255,255,255,.4) !important;
+      }
+
+      #voice-search-button {
+        color: rgba(255,255,255,.1) !important;
+        &:hover,
+        &:focus-within {
+          color: rgba(255,255,255,1) !important;
         }
       }
-    }
-    
-    @include masthead-icon {
-      color: rgba(255,255,255,.4) !important;
-    }
 
-    #voice-search-button {
-      color: rgba(255,255,255,.1) !important;
-      &:hover,
-      &:focus-within {
-        color: rgba(255,255,255,1) !important;
-      }
-    }
-
-    #{$account-btn} {
-      border-color: rgba(255,255,255,.2) !important;
-      &:not(.yt-spec-button-shape-next--call-to-action) {
-        color: rgba(255,255,255,.4) !important;
+      #{$account-btn} {
+        border-color: rgba(255,255,255,.2) !important;
+        &:not(.yt-spec-button-shape-next--call-to-action) {
+          color: rgba(255,255,255,.4) !important;
+        }
       }
     }
   }
@@ -907,7 +943,9 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-app #masthead-container {
-      will-change: opacity;
+      &:not(.yta-header-transparent) {
+        will-change: opacity; // conflicts with backdrop-filter
+      }
       
       &.at-top:not(:hover):not(:focus-within) {
         transition: opacity .15s ease-out;
@@ -1869,11 +1907,15 @@ html[data-ambientlight-enabled="true"] {
 
   // All shadows
   
-  > body:not([style*="--ambientlight-text-shadow:"]) #masthead-container.at-top.yta-ambientlight-header-shadow {
-    transition: filter .15s;
+  > body:not([style*="--ambientlight-text-shadow:"]) #masthead-container.yta-header-shadow {
+    &.yta-header-transparent,
+    &.at-top {
+      transition: filter .15s;
+    }
   }
   @mixin filter-and-text-shadow-selectors {
-    #masthead-container.at-top.yta-ambientlight-header-shadow,
+    #masthead-container.yta-header-transparent.yta-header-shadow,
+    #masthead-container.at-top.yta-header-shadow,
     ytd-app #top > #container > *,
     ytd-app #primary-inner > *:not(#player),
     ytd-app #secondary,
@@ -2027,23 +2069,26 @@ html[data-ambientlight-enabled="true"] {
         }
       }
 
-      #masthead-container.yta-ambientlight-header-shadow {
+      #masthead-container.yta-header-shadow {
         ytd-searchbox {
           transition: filter .15s;
         }
       }
-      #masthead-container.at-top.yta-ambientlight-header-shadow {
-        yt-icon.ytd-logo svg {
-          overflow: visible;
-        }
-        yt-icon.guide-icon,
-        yt-icon.ytd-logo svg,
-        ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
-        ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
-        yt-icon-button,
-        ytd-button-renderer {
-          @content;
-          text-shadow: none !important;
+      #masthead-container.yta-header-shadow {
+        &.yta-header-transparent,
+        &.at-top {
+          yt-icon.ytd-logo svg {
+            overflow: visible;
+          }
+          yt-icon.guide-icon,
+          yt-icon.ytd-logo svg,
+          ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
+          ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
+          yt-icon-button,
+          ytd-button-renderer {
+            @content;
+            text-shadow: none !important;
+          }
         }
       }
     }
