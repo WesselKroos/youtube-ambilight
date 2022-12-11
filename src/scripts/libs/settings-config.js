@@ -158,14 +158,16 @@ const SettingsConfig = [
     label: 'Shadows on header',
     type: 'checkbox',
     default: false,
+    advanced: true,
     new: true
   },
   {
     name: 'headerTransparentEnabled',
-    label: 'Transparent header',
+    label: 'Always transparent header',
     type: 'checkbox',
     default: false,
-    new: true
+    advanced: true,
+    experimental: true
   },
   {
     name: 'surroundingContentTextAndBtnOnly',
