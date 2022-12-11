@@ -626,19 +626,19 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-clarification-renderer {
     margin-top: 24px;
-    background: none;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] ytd-clarification-renderer {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Clarify box info panel */
 
   ytd-info-panel-content-renderer {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-info-panel-content-renderer {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  ytd-info-panel-content-renderer .content {
-    background: none !important;
+    &,
+    .content {
+      background: none !important;
+    }
   }
 
   /* Cosmetics - Merch shelf */
@@ -652,7 +652,10 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Movie offer */ 
 
-  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, ytd-tvfilm-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
+  ytd-tvfilm-offer-module-renderer {
+    background: none !important;
+  }
+  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
   #{$movie-offer} {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }

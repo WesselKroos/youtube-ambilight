@@ -1973,6 +1973,12 @@ export default class Ambientlight {
 
   getVideoFrameCount() {
     if (!this.videoElem) return 0
+
+    if(this.videoElem.getVideoPlaybackQuality) {
+      const totalVideoFrames = this.videoElem.getVideoPlaybackQuality()?.totalVideoFrames
+      if(totalVideoFrames !== undefined) return totalVideoFrames
+    }
+
     return (
       this.videoElem.mozPaintedFrames || // Firefox
       (this.videoElem.webkitDecodedFrameCount - this.videoElem.webkitDroppedFrameCount) || // Chrome
