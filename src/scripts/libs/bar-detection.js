@@ -18,9 +18,10 @@ const workerCode = function () {
   let catchedWorkerCreationError = false
   let canvas;
   let ctx;
+  const partSizeBorderMultiplier = 1
   let imageLines = []
+  let partSize;
   let imageLinesIndex = 0
-  let partSize = 1
   let getLineImageDataStack;
   let getLineImageDataResolve;
   let getLineImageDataReject;
@@ -54,9 +55,9 @@ const workerCode = function () {
 
   try {
     const workerDetectBarSize = async (xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
-      partSize = Math.floor(canvas[xLength] / 5)
+      partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
       imageLines = []
-      for (imageLinesIndex = Math.ceil(partSize / 2) - 1; imageLinesIndex < canvas[xLength]; imageLinesIndex += partSize) {
+      for (imageLinesIndex = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); imageLinesIndex < canvas[xLength] - (partSizeBorderMultiplier * partSize); imageLinesIndex += partSize) {
         if(!getLineImageDataStack) {
           getLineImageDataStack = new Error().stack
         }
