@@ -320,6 +320,7 @@ export default class Ambientlight {
       ended: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         this.clear()
+        this.hideStats()
         this.scheduledNextFrame = false
         this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
       },
@@ -1987,7 +1988,7 @@ export default class Ambientlight {
   }
 
   hideStats() {
-    if(this.isHidden || !this.settings.showFPS) {
+    if(this.isHidden || this.videoElem?.ended || !this.settings.showFPS) {
       this.videoFPSElem.childNodes[0].nodeValue = ''
       this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
       this.videoSyncedElem.childNodes[0].nodeValue = ''
@@ -1995,11 +1996,11 @@ export default class Ambientlight {
       this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
     }
 
-    if(this.isHidden || !this.settings.showFPS || !this.settings.showFrametimes) {
+    if(this.isHidden || this.videoElem?.ended || !this.settings.showFPS || !this.settings.showFrametimes) {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    if((this.isHidden || !this.settings.showFrametimes) && this.frameTimesCanvas?.parentNode) {
+    if((this.isHidden || this.videoElem?.ended || !this.settings.showFrametimes) && this.frameTimesCanvas?.parentNode) {
       this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
       this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
       this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
