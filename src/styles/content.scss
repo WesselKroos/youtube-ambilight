@@ -1962,9 +1962,10 @@ html[data-ambientlight-enabled="true"] {
     .product-item-button.ytd-merch-shelf-item-renderer,
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
     #action, // Ad button: More info
-    #action-button,
+    #action-button, // Ad button: Visite website
     .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
-    ytd-author-comment-badge-renderer { // Ad button: Visite website
+    ytd-author-comment-badge-renderer,
+    ytd-thumbnail-overlay-time-status-renderer {
       filter: none !important;
       text-shadow: none !important;
     }
