@@ -163,7 +163,8 @@ const SettingsConfig = [
   },
   {
     name: 'headerTransparentEnabled',
-    label: 'Always transparent header',
+    label: 'Transparent header',
+    description: 'While scrolled down',
     type: 'checkbox',
     default: false,
     advanced: true,
@@ -172,7 +173,7 @@ const SettingsConfig = [
   {
     name: 'surroundingContentTextAndBtnOnly',
     label: 'Shadows on texts and buttons only',
-    description: 'Decreases scroll & video stutter',
+    description: 'Decreases scrolling & video stutter',
     type: 'checkbox',
     advanced: true,
     default: true
@@ -452,7 +453,7 @@ const SettingsConfig = [
   {
     name: 'edge',
     label: 'Edge size',
-    description: 'Less GPU usage. Tip: Turn blur down',
+    description: 'To see what changed: Turn the blur to 0%',
     type: 'list',
     default: 12,
     min: 2,
@@ -483,7 +484,7 @@ const SettingsConfig = [
   {
     name: 'fadeOutEasing',
     label: 'Spread fade curve',
-    description: 'Tip: Turn blur all the way down',
+    description: 'To see what changed: Turn the blur to 0%',
     type: 'list',
     default: 35,
     min: 1,
