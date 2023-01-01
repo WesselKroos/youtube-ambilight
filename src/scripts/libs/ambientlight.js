@@ -152,8 +152,8 @@ export default class Ambientlight {
   }
 
   initVideoElem(videoElem, initListeners = true) {
+    this.cancelScheduledRequestVideoFrame()
     this.videoElem = videoElem
-    this.requestVideoFrameCallbackId = undefined
     if(initListeners) this.initVideoListeners()
   }
 
@@ -332,7 +332,7 @@ export default class Ambientlight {
       error: (ex) => {
         console.warn('Ambient light for YouTube™ | Video error:', ex)
         this.clear()
-        this.requestVideoFrameCallbackId = undefined
+        this.cancelScheduledRequestVideoFrame()
         setTimeout(this.handleVideoError, 1000)
       },
       click: this.settings.onCloseMenu
@@ -401,7 +401,7 @@ export default class Ambientlight {
         this.buffersCleared = true
         this.sizesChanged = true
         if(!isControlledLose) {
-          this.requestVideoFrameCallbackId = undefined
+          this.cancelScheduledRequestVideoFrame()
           this.videoElem.currentTime = this.videoElem.currentTime // Trigger video draw call
         }
         await this.optionalFrame()
@@ -1653,14 +1653,13 @@ export default class Ambientlight {
 
     this.scheduledNextFrame = true
     if(!this.videoIsHidden)
-      requestAnimationFrame(this.onNextFrame)
+      requestAnimationFrame(this.onNextFrameWrapped)
     else
       setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
-  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrame)
 
-  onNextFrame = wrapErrorHandler(async function wrappedOnNextFrame() {
+  onNextFrame = async function onNextFrame() {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
@@ -1674,7 +1673,9 @@ export default class Ambientlight {
     }
     
     this.displayFrameCount++
-  }.bind(this))
+  }.bind(this)
+  onNextFrameWrapped = wrapErrorHandler(this.onNextFrame)
+  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrameWrapped)
 
   onNextLimitedFrame = async () => {
     const time = performance.now()
@@ -2709,6 +2710,19 @@ GREY   | previous display frames`
     }
   }
 
+  cancelScheduledRequestVideoFrame = () => {
+    if(!this.requestVideoFrameCallbackId) return
+
+    if(this.videoElem?.cancelVideoFrameCallback) {
+      try {
+        this.videoElem.cancelVideoFrameCallback(this.requestVideoFrameCallbackId)
+      } catch(ex) {
+        console.warn(`Failed to cancel current requested videoFrameCallback: ${this.requestVideoFrameCallbackId}`)
+      }
+    }
+    this.requestVideoFrameCallbackId = undefined
+  }
+
   scheduleRequestVideoFrame = () => {
     if (
       // this.videoFrameCallbackReceived || // Doesn't matter because this can be true now but not when the new video frame is received
@@ -2719,25 +2733,24 @@ GREY   | previous display frames`
       !this.canScheduleNextFrame()
     ) return
 
-    const id = this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(wrapErrorHandler(function requestVideoFrameCallback(timestamp, info) {
-      this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
-      if (this.requestVideoFrameCallbackId !== id) {
-        console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId}, ${id}`)
-        return
-      }
-      this.receiveVideoFrame(timestamp, info)
-    }.bind(this)))
+    this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(this.onVideoFrame)
   }
 
-  receiveVideoFrame = (timestamp, info) => {
+  onVideoFrame = wrapErrorHandler(async function onVideoFrame(timestamp, info) {
+    if (!this.requestVideoFrameCallbackId) {
+      console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${timestamp} | ${info}`)
+      return
+    }
+    this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
     this.receiveVideoFrametimes(timestamp, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
-    wrapErrorHandler(async () => await this.onNextFrame(), true)()
-  }
+
+    this.onNextFrame()
+  }.bind(this), true)
 
   receiveVideoFrametimes = (timestamp, info) => {
     if (this.settings.showFrametimes) {
