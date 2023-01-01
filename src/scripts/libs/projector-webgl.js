@@ -95,6 +95,7 @@ export default class ProjectorWebGL {
     }
 
     this.updateCrop()
+    this.ambientlight.buffersCleared = true
     await this.ambientlight.optionalFrame()
   }
 
@@ -755,13 +756,18 @@ export default class ProjectorWebGL {
   }
 
   updateCrop() {
-    if(!this.ctx || this.ctxIsInvalid || !this.blurCanvas || !this.ambientlight?.videoElem) return
+    if(!this.ctx || this.ctxIsInvalid || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
     const canvasRect = this.blurCanvas.getBoundingClientRect()
-    if(canvasRect.width === 0 || canvasRect.height === 0) return
+    if(!canvasRect?.width || !canvasRect?.height) return
 
-    let videoRect = this.ambientlight.videoElem.getBoundingClientRect()
-    if(videoRect.width === 0 || videoRect.height === 0) return
+    const videoBoundingElem = this.ambientlight.shouldStyleVideoContainer
+      ? this.ambientlight.videoContainerElem
+      : this.ambientlight.videoElem
+    if(!videoBoundingElem) return
+
+    let videoRect = videoBoundingElem.getBoundingClientRect()
+    if(!videoRect?.width || !videoRect?.height) return
 
     const windowRect = {
       left: 0,
@@ -806,6 +812,7 @@ export default class ProjectorWebGL {
         ? (cropRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
         : 1
     }
+    
     const crop = {
       t: Math.max(0, cropPerc.top), 
       r: Math.max(0, cropPerc.right), 
@@ -826,14 +833,13 @@ export default class ProjectorWebGL {
       l: -Math.min(Math.max(0, cutPerc.left), -crop.l)
     }
     
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT);
     
     // Turn on stencil drawing
     this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.REPLACE);
 
     this.ctx.stencilFunc(this.ctx.ALWAYS, 1, 0xff);
     this.ctx.stencilMask(0xff);
-    this.ctx.depthMask(false);
     this.ctx.colorMask(false, false, false, false);
 
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vDrawingStencilBuffer);
@@ -868,7 +874,6 @@ export default class ProjectorWebGL {
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(stencilPoints), this.ctx.STATIC_DRAW);
 
     // Draw stencil mask
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.ctx.drawArrays(this.ctx.TRIANGLES, 0, stencilPoints.length / 2);
 
     // Restore position to full viewport
@@ -888,13 +893,12 @@ export default class ProjectorWebGL {
 
     this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff);
     this.ctx.stencilMask(0x00);
-    this.ctx.depthMask(true);
     this.ctx.colorMask(true, true, true, true);
   }
 
   clearRect() {
     if(!this.ctx || this.ctxIsInvalid) return
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.invalidateShaderCache()
   }
 

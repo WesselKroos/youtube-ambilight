@@ -1202,8 +1202,8 @@ export default class Ambientlight {
 
     this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
     this.clippedVideoScale = this.barsClip.map(clip => (1 - (clip * 2)))
-    const shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale && !this.isControlledByAnotherExtension
-    if (shouldStyleVideoContainer) {
+    this.shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale && !this.isControlledByAnotherExtension
+    if (this.shouldStyleVideoContainer) {
       const top = Math.max(0, parseInt(this.videoElem.style.top) || 0)
       const left = Math.max(0, parseInt(this.videoElem.style.left) || 0)
       const width = Math.max(0, parseInt(this.videoElem.style.width) || 0)
@@ -1393,6 +1393,7 @@ export default class Ambientlight {
   }
 
   resetVideoContainerStyle() {
+    this.shouldStyleVideoContainer = false
     const videoContainer = this.videoElem.parentElement
     if (videoContainer) {
       videoContainer.style.transform = ''
@@ -2657,14 +2658,7 @@ GREY   | previous display frames`
     this.settings.set('enabled', false, true)
 
     await this.hide()
-
-    const videoElemParentElem = this.videoElem.parentNode
-    if (videoElemParentElem) {
-      videoElemParentElem.style.overflow = ''
-      videoElemParentElem.style.transform = ''
-      videoElemParentElem.style.height = ''
-      videoElemParentElem.style.marginBottom = ''
-    }
+    this.resetVideoContainerStyle()
   }
 
   start = async (initial = false) => {
