@@ -9,8 +9,11 @@ export default class ProjectorWebGL {
   scales = [{ x: 1, y: 1 }]
   projectors = []
   static subProjectorDimensionMax = 3
+  atTop = true
 
-  constructor(containerElem, initProjectorListeners, settings) {
+  constructor(ambientlight, containerElem, initProjectorListeners, settings) {
+    this.ambientlight = ambientlight
+    this.atTop = ambientlight.atTop
     this.containerElem = containerElem
     this.initProjectorListeners = initProjectorListeners
     this.settings = settings
@@ -20,6 +23,7 @@ export default class ProjectorWebGL {
     this.initBlurCtx()
     this.initCtx()
     this.handlePageVisibility()
+    this.setWindowListeners()
   }
 
   invalidateShaderCache() {
@@ -35,7 +39,7 @@ export default class ProjectorWebGL {
     }
   }
 
-  handlePageVisibility = (isPageHidden) => {
+  handlePageVisibility = async (isPageHidden) => {
     if(this.handlePageVisibilityTimeout) {
       clearTimeout(this.handlePageVisibilityTimeout)
       this.handlePageVisibilityTimeout = undefined
@@ -63,7 +67,35 @@ export default class ProjectorWebGL {
       }, 3000)
     } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
       this.ctxLose.restoreContext()
+    } else if(this.shouldUpdateCropAfterPageVisible) {
+      this.shouldUpdateCropAfterPageVisible = false
+      this.updateCrop()
+      await this.ambientlight.optionalFrame()
     }
+  }
+
+  setWindowListeners() {
+    window.addEventListener('resize', async () => {
+      if(this.isPageHidden) {
+        this.shouldUpdateCropAfterPageVisible = true
+        return
+      }
+
+      this.updateCrop()
+      await this.ambientlight.optionalFrame()
+    }, false)
+  }
+
+  handleAtTopChange = async (atTop) => {
+    this.atTop = atTop
+
+    if(this.isPageHidden) {
+      this.shouldUpdateCropAfterPageVisible = true
+      return
+    }
+
+    this.updateCrop()
+    await this.ambientlight.optionalFrame()
   }
 
   remove() {
@@ -357,7 +389,8 @@ export default class ProjectorWebGL {
         alpha: true,
         depth: false,
         antialias: false,
-        desynchronized: true
+        desynchronized: true,
+        stencil: true // Todo: Migrate to optional if supported
       }
       this.webGLVersion = 2
       this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
@@ -403,6 +436,8 @@ export default class ProjectorWebGL {
       elem: this.canvas,
       ctx: this
     }
+    
+    this.ctx.enable(this.ctx.STENCIL_TEST);
 
     // Program
     this.program = this.ctx.createProgram();
@@ -455,11 +490,17 @@ export default class ProjectorWebGL {
     // Shaders
     const vertexShaderSrc = `
       precision lowp float;
+
+      attribute float vDrawingStencil;
+      varying float fDrawingStencil;
+
       attribute vec2 vPosition;
+
       attribute vec2 vUV;
       varying vec2 fUV;
       
       void main(void) {
+        fDrawingStencil = vDrawingStencil;
         fUV = vUV;
         gl_Position = vec4(vPosition, 0, 1);
       }
@@ -474,6 +515,7 @@ export default class ProjectorWebGL {
     
     const fragmentShaderSrc = `
       precision lowp float;
+      varying float fDrawingStencil;
       varying vec2 fUV;
       uniform float fTextureMipmapLevel;
       uniform vec2 fCropOffsetUV;
@@ -546,10 +588,12 @@ export default class ProjectorWebGL {
       }
 
       void main(void) {
-        vec4 ambientlight = multiTexture();
-        float shadowAlpha = texture2D(shadowSampler, fUV).a;
-        ambientlight[3] = 1. - shadowAlpha;
-        gl_FragColor = ambientlight;
+        if(fDrawingStencil < 0.5) {
+          vec4 ambientlight = multiTexture();
+          float shadowAlpha = texture2D(shadowSampler, fUV).a;
+          ambientlight[3] = 1. - shadowAlpha;
+          gl_FragColor = ambientlight;
+        }
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
@@ -575,6 +619,15 @@ export default class ProjectorWebGL {
     this.ctx.useProgram(this.program);
 
     // Buffers
+    this.vDrawingStencilBuffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vDrawingStencilBuffer);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+      0,
+    ]), this.ctx.STATIC_DRAW);
+    const vDrawingStencilLoc = this.ctx.getAttribLocation(this.program, 'vDrawingStencil');
+    this.ctx.vertexAttribPointer(vDrawingStencilLoc, 1, this.ctx.FLOAT, false, 0, 0);
+    this.ctx.enableVertexAttribArray(vDrawingStencilLoc);
+
     const vUVBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vUVBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
@@ -587,17 +640,17 @@ export default class ProjectorWebGL {
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vUVLoc);
 
-    const vPositionBuffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vPositionBuffer);
+    this.vPositionBuffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
       -1, 1, 
       -1, -1, 
       1, -1, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    const vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
-    this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
-    this.ctx.enableVertexAttribArray(vPositionLoc);
+    this.vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
+    this.ctx.vertexAttribPointer(this.vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
+    this.ctx.enableVertexAttribArray(this.vPositionLoc);
 
     const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, 'shadowSampler');
     this.ctx.uniform1i(shadowSamplerLoc, 0);
@@ -639,7 +692,8 @@ export default class ProjectorWebGL {
     }
 
     const blurPx = settings.blur * (this.height / 512) * 1.275
-    this.blurBound = Math.max(1, Math.ceil(blurPx * 2.64))
+    const blurRadius = 2.64
+    this.blurBound = Math.max(1, Math.ceil(blurPx * blurRadius))
     if(this.blurCanvas) {
       this.blurCanvas.width = width + this.blurBound * 2
       this.blurCanvas.height = height + this.blurBound * 2
@@ -696,11 +750,151 @@ export default class ProjectorWebGL {
       this.viewport = { width: this.ctx.drawingBufferWidth, height: this.ctx.drawingBufferHeight };
       this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
     }
+
+    this.updateCrop()
+  }
+
+  updateCrop() {
+    if(!this.ctx || this.ctxIsInvalid || !this.blurCanvas || !this.ambientlight?.videoElem) return
+
+    const canvasRect = this.blurCanvas.getBoundingClientRect()
+    if(canvasRect.width === 0 || canvasRect.height === 0) return
+
+    let videoRect = this.ambientlight.videoElem.getBoundingClientRect()
+    if(videoRect.width === 0 || videoRect.height === 0) return
+
+    const windowRect = {
+      left: 0,
+      top: -window.scrollY,
+      right: window.innerWidth,
+      bottom: window.innerHeight
+    }
+
+    const blurScaleRadiusExtra = 1 // 1.25 // Todo: The blurRadius is appearently incorrect?
+    const blurScale = (canvasRect.height / this.blurCanvas.height) * blurScaleRadiusExtra
+    const blurSize = this.blurBound * blurScale;
+
+    windowRect.left -= blurSize
+    windowRect.top -= blurSize
+    windowRect.right += blurSize
+    windowRect.bottom += blurSize
+
+    videoRect = {
+      left: videoRect.left + blurSize,
+      top: videoRect.top + blurSize,
+      right: videoRect.right - blurSize,
+      bottom: videoRect.bottom - blurSize
+    }
+
+    const cropRect = {
+      left: Math.max(canvasRect.left, windowRect.left),
+      top: Math.max(canvasRect.top, windowRect.top),
+      right: Math.min(canvasRect.right, windowRect.right),
+      bottom: Math.min(canvasRect.bottom, windowRect.bottom)
+    };
+
+    const canvasRectCenter = {
+      x: canvasRect.left + (canvasRect.width / 2),
+      y: canvasRect.top + (canvasRect.height / 2)
+    };
+
+    const cropPerc = {
+      left: (canvasRectCenter.x - cropRect.left) / (canvasRectCenter.x - canvasRect.left),
+      top: (canvasRectCenter.y - cropRect.top) / (canvasRectCenter.y - canvasRect.top),
+      right: (cropRect.right - canvasRectCenter.x) / (canvasRect.right - canvasRectCenter.x),
+      bottom: this.atTop
+        ? (cropRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
+        : 1
+    }
+    const crop = {
+      t: Math.max(0, cropPerc.top), 
+      r: Math.max(0, cropPerc.right), 
+      b: -Math.max(0, cropPerc.bottom), 
+      l: -Math.max(0, cropPerc.left)
+    }
+
+    const cutPerc = {
+      left: (canvasRectCenter.x - videoRect.left) / (canvasRectCenter.x - canvasRect.left),
+      top: (canvasRectCenter.y - videoRect.top) / (canvasRectCenter.y - canvasRect.top),
+      right: (videoRect.right - canvasRectCenter.x) / (canvasRect.right - canvasRectCenter.x),
+      bottom: (videoRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
+    }
+    const vcut = {
+      t: Math.min(Math.max(0, cutPerc.top), crop.t), 
+      r: Math.min(Math.max(0, cutPerc.right), crop.r), 
+      b: -Math.min(Math.max(0, cutPerc.bottom), -crop.b),  
+      l: -Math.min(Math.max(0, cutPerc.left), -crop.l)
+    }
+    
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+    
+    // Turn on stencil drawing
+    this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.REPLACE);
+
+    this.ctx.stencilFunc(this.ctx.ALWAYS, 1, 0xff);
+    this.ctx.stencilMask(0xff);
+    this.ctx.depthMask(false);
+    this.ctx.colorMask(false, false, false, false);
+
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vDrawingStencilBuffer);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+      1,
+    ]), this.ctx.STATIC_DRAW);
+
+    // Set buffers to crop to mask
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
+    // [p1x, p1y, p2x, p2y, p3x, p3y] = triangle points
+    const stencilPoints = [
+      // // Old points for TRIANGLE_FAN
+      // crop.l, crop.t,  crop.l, crop.b,  crop.r, crop.b, 
+      // crop.l, crop.t,  crop.r, crop.t,  crop.r, crop.b, 
+
+      // Top
+      crop.l, crop.t,  crop.r, crop.t,  vcut.r, vcut.t, 
+      crop.l, crop.t,  vcut.r, vcut.t,  vcut.l, vcut.t, 
+
+      // Right
+      crop.r, crop.t,  crop.r, crop.b,  vcut.r, vcut.t, 
+      crop.r, crop.b,  vcut.r, vcut.b,  vcut.r, vcut.t, 
+
+      // Bottom
+      crop.l, crop.b,  crop.r, crop.b,  vcut.r, vcut.b, 
+      crop.l, crop.b,  vcut.r, vcut.b,  vcut.l, vcut.b, 
+
+      // Left
+      crop.l, crop.t,  crop.l, crop.b,  vcut.l, vcut.t, 
+      crop.l, crop.b,  vcut.l, vcut.b,  vcut.l, vcut.t, 
+    ];
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(stencilPoints), this.ctx.STATIC_DRAW);
+
+    // Draw stencil mask
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+    this.ctx.drawArrays(this.ctx.TRIANGLES, 0, stencilPoints.length / 2);
+
+    // Restore position to full viewport
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+      -1,  1, 
+      -1, -1, 
+       1, -1, 
+       1,  1
+    ]), this.ctx.STATIC_DRAW);
+
+    // Turn off stencil drawing
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vDrawingStencilBuffer);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
+      0,
+    ]), this.ctx.STATIC_DRAW);
+
+    this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff);
+    this.ctx.stencilMask(0x00);
+    this.ctx.depthMask(true);
+    this.ctx.colorMask(true, true, true, true);
   }
 
   clearRect() {
     if(!this.ctx || this.ctxIsInvalid) return
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.invalidateShaderCache()
   }
 

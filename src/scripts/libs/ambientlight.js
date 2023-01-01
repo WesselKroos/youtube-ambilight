@@ -648,14 +648,14 @@ export default class Ambientlight {
     }, { timeout: 1000 })
   }
 
-  handleDocumentVisibilityChange = () => {
+  handleDocumentVisibilityChange = async () => {
     if (!this.settings.enabled || !this.isOnVideoPage) return
     const isPageHidden = document.visibilityState === 'hidden'
     if(this.isPageHidden === isPageHidden) return
 
     this.isPageHidden = isPageHidden
     if(this.settings.webGL) {
-      this.projector.handlePageVisibility(isPageHidden)
+      await this.projector.handlePageVisibility(isPageHidden)
     }
     if(document.visibilityState !== 'hidden') return
 
@@ -759,10 +759,10 @@ export default class Ambientlight {
     body.prepend(this.topElem)
     
     this.topElemObserver = new IntersectionObserver(
-      wrapErrorHandler((entries, observer) => {
+      wrapErrorHandler(async (entries, observer) => {
         for (const entry of entries) {
           this.atTop = (entry.intersectionRatio !== 0)
-          this.updateAtTop()
+          await this.updateAtTop()
 
           // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
           if(this.isFillingFullscreen && !this.atTop) {
@@ -809,7 +809,7 @@ export default class Ambientlight {
   initProjector = () => {
     if(this.settings.webGL) {
       try {
-        this.projector = new ProjectorWebGL(this.projectorListElem, this.initProjectorListeners, this.settings)
+        this.projector = new ProjectorWebGL(this, this.projectorListElem, this.initProjectorListeners, this.settings)
       } catch(ex) {
         SentryReporter.captureException(ex)
         this.settings.handleWebGLCrash()
@@ -2828,8 +2828,11 @@ GREY   | previous display frames`
     }))
   }
 
-  updateAtTop = () => {
+  updateAtTop = async () => {
     this.mastheadElem.classList.toggle('at-top', this.atTop)
+
+    if(this.projector.handleAtTopChange)
+      await this.projector.handleAtTopChange(this.atTop)
   }
 
   isDarkTheme = () => (html.getAttribute('dark') !== null)
