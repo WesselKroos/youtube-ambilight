@@ -307,7 +307,7 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    //// texSubImage2D is 80x slower than texImage2D in Chromium
+    //// Chromium bug 1074473: texSubImage2D from a video element is 80x slower than texImage2D
     // const textureSize = {
     //   width: srcWidth,
     //   height: srcHeight
