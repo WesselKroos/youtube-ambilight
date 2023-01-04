@@ -916,8 +916,8 @@ export default class Ambientlight {
     this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
     this.videoSyncedResolutionElem = appendFPSItem('ambientlight__video-synced-resolution')
     this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
-    this.projectorBufferResolution = appendFPSItem('ambientlight__projector-buffer-resolution')
-    this.projectorResolution = appendFPSItem('ambientlight__projector-resolution')
+    this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
+    this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
 
     this.videoPlayerElem?.prepend(this.FPSListElem)
   }
@@ -1979,10 +1979,10 @@ export default class Ambientlight {
   hideStats() {
     if(this.isHidden || this.videoElem?.ended || !this.settings.showResolutions) {
       this.videoResolutionElem.childNodes[0].nodeValue = ''
-      this.videoSyncedResolution.childNodes[0].nodeValue = ''
+      this.videoSyncedResolutionElem.childNodes[0].nodeValue = ''
       this.videoBufferResolutionElem.childNodes[0].nodeValue = ''
-      this.projectorBufferResolution.childNodes[0].nodeValue = ''
-      this.projectorResolution.childNodes[0].nodeValue = ''
+      this.projectorBufferResolutionElem.childNodes[0].nodeValue = ''
+      this.projectorResolutionElem.childNodes[0].nodeValue = ''
     }
 
     if(this.isHidden || this.videoElem?.ended || !this.settings.showFPS) {
@@ -2030,8 +2030,8 @@ export default class Ambientlight {
       this.videoResolutionElem.childNodes[0].nodeValue = videoResolution
       this.videoSyncedResolutionElem.childNodes[0].nodeValue = videoSyncedResolution
       this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
-      this.projectorBufferResolution.childNodes[0].nodeValue = projectorBufferResolution
-      this.projectorResolution.childNodes[0].nodeValue = projectorResolution
+      this.projectorBufferResolutionElem.childNodes[0].nodeValue = projectorBufferResolution
+      this.projectorResolutionElem.childNodes[0].nodeValue = projectorResolution
     }
 
     if(this.settings.showFPS) {
