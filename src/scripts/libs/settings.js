@@ -38,7 +38,7 @@ export default class Settings {
     for(const setting of SettingsConfig) {
       if(supportsWebGL()) {
         if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-          setting.default = 25
+          setting.default = 50
         }
       } else {
         if([

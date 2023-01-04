@@ -157,6 +157,14 @@ export default class Ambientlight {
     if(initListeners) this.initVideoListeners()
   }
 
+  // FireFox workaround: WebGLParent::RecvReadPixels is slow (performance scales linear with the amount of pixels to be read)
+  detectMozillaBugReadPixelsWorkaround() {
+    const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
+    if(version) {
+      this.enableMozillaBugReadPixelsWorkaround = true
+    }
+  }
+
   // FireFox workaround: Force to rerender the outer blur of the canvasses
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
@@ -1299,13 +1307,15 @@ export default class Ambientlight {
 
     if(this.settings.webGL) {
       if(this.projector.webGLVersion === 1) {
-        const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+        const pbSize = Math.min(this.detectMozillaBugReadPixelsWorkaround ? 256 : 512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
         const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
         const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : ((this.settings.resolution || 25) / 100)
-        const pbMinSize = resolutionScale * 512
+        const pbMinSize = this.detectMozillaBugReadPixelsWorkaround
+          ? Math.min(256, resolutionScale * 512)
+          : resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
         this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
