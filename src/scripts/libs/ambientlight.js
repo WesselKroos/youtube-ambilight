@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, requestIdleCallback, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -625,7 +625,7 @@ export default class Ambientlight {
       this.sizesInvalidated = true
       const start = performance.now()
       this.optionalFrame()
-      this.measureResizeDuration(start)
+      requestIdleCallback(() => this.measureResizeDuration(start), { timeout: 1000 })
     }
 
     // Do not resize untill the next animation frame
@@ -638,15 +638,13 @@ export default class Ambientlight {
     })
   })
 
-  measureResizeDuration(start) {
-    requestIdleCallback(() => {
-      const duration = Math.min(1000, performance.now() - start)
-      this.resizeDurations.push(duration)
-      if(this.resizeDurations.length > 4) this.resizeDurations.splice(0, 1)
-      const averageDuration = this.resizeDurations.reduce((a, b) => a + b) / this.resizeDurations.length
-      this.delayResizes = averageDuration >= this.resizeDurationThreshold
-    }, { timeout: 1000 })
-  }
+  measureResizeDuration = wrapErrorHandler(function measureResizeDuration(start) {
+    const duration = Math.min(1000, performance.now() - start)
+    this.resizeDurations.push(duration)
+    if(this.resizeDurations.length > 4) this.resizeDurations.splice(0, 1)
+    const averageDuration = this.resizeDurations.reduce((a, b) => a + b) / this.resizeDurations.length
+    this.delayResizes = averageDuration >= this.resizeDurationThreshold
+  }.bind(this))
 
   handleDocumentVisibilityChange = async () => {
     if (!this.settings.enabled || !this.isOnVideoPage) return
