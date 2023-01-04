@@ -897,41 +897,26 @@ export default class Ambientlight {
     this.ambientlightFTElem.append(this.ambientlightFTLegendElem)
     this.FPSListElem.append(this.ambientlightFTElem)
 
-    this.displayFPSElem = document.createElement('div')
-    this.displayFPSElem.classList.add('ambientlight__display-fps')
-    const displayFPSElemNode = document.createTextNode('')
-    this.displayFPSElem.appendChild(displayFPSElemNode)
-    this.FPSListElem.append(this.displayFPSElem)
+    const appendFPSItem = (className) => {
+      const elem = document.createElement('div')
+      elem.classList.add(className)
+      const textNode = document.createTextNode('')
+      elem.appendChild(textNode)
+      this.FPSListElem.append(elem)
+      return elem
+    }
 
-    this.videoFPSElem = document.createElement('div')
-    this.videoFPSElem.classList.add('ambientlight__video-fps')
-    const videoFPSElemNode = document.createTextNode('')
-    this.videoFPSElem.appendChild(videoFPSElemNode)
-    this.FPSListElem.append(this.videoFPSElem)
+    this.displayFPSElem = appendFPSItem('ambientlight__display-fps')
+    this.videoFPSElem = appendFPSItem('ambientlight__video-fps')
+    this.videoDroppedFramesElem = appendFPSItem('ambientlight__video-dropped-frames')
+    this.videoSyncedElem = appendFPSItem('ambientlight__video-synced')
+    this.ambientlightFPSElem = appendFPSItem('ambientlight__ambientlight-fps')
+    this.ambientlightDroppedFramesElem = appendFPSItem('ambientlight__ambientlight-dropped-frames')
 
-    this.videoDroppedFramesElem = document.createElement('div')
-    this.videoDroppedFramesElem.classList.add('ambientlight__video-dropped-frames')
-    const videoDroppedFramesElemNode = document.createTextNode('')
-    this.videoDroppedFramesElem.appendChild(videoDroppedFramesElemNode)
-    this.FPSListElem.append(this.videoDroppedFramesElem)
-
-    this.videoSyncedElem = document.createElement('div')
-    this.videoSyncedElem.classList.add('ambientlight__video-synced')
-    const videoSyncedElemNode = document.createTextNode('')
-    this.videoSyncedElem.appendChild(videoSyncedElemNode)
-    this.FPSListElem.append(this.videoSyncedElem)
-
-    this.ambientlightFPSElem = document.createElement('div')
-    this.ambientlightFPSElem.classList.add('ambientlight__ambientlight-fps')
-    const ambientlightFPSElemNode = document.createTextNode('')
-    this.ambientlightFPSElem.appendChild(ambientlightFPSElemNode)
-    this.FPSListElem.append(this.ambientlightFPSElem)
-
-    this.ambientlightDroppedFramesElem = document.createElement('div')
-    this.ambientlightDroppedFramesElem.classList.add('ambientlight__ambientlight-dropped-frames')
-    const ambientlightDroppedFramesElemNode = document.createTextNode('')
-    this.ambientlightDroppedFramesElem.appendChild(ambientlightDroppedFramesElemNode)
-    this.FPSListElem.append(this.ambientlightDroppedFramesElem)
+    this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
+    this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
+    this.projectorBufferResolution = appendFPSItem('ambientlight__projector-buffer-resolution')
+    this.projectorResolution = appendFPSItem('ambientlight__projector-resolution')
 
     this.videoPlayerElem?.prepend(this.FPSListElem)
   }
@@ -1991,6 +1976,13 @@ export default class Ambientlight {
   }
 
   hideStats() {
+    if(this.isHidden || this.videoElem?.ended || !this.settings.showResolutions) {
+      this.videoResolutionElem.childNodes[0].nodeValue = ''
+      this.videoBufferResolutionElem.childNodes[0].nodeValue = ''
+      this.projectorBufferResolution.childNodes[0].nodeValue = ''
+      this.projectorResolution.childNodes[0].nodeValue = ''
+    }
+
     if(this.isHidden || this.videoElem?.ended || !this.settings.showFPS) {
       this.videoFPSElem.childNodes[0].nodeValue = ''
       this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
@@ -2016,6 +2008,25 @@ export default class Ambientlight {
 
   updateStats() {
     if (this.isHidden) return;
+
+    if(this.settings.showResolutions) {
+      const videoResolution = `VIDEO: ${this.videoElem?.videoWidth ?? '?'}x${this.videoElem?.videoHeight ?? '?'}`
+      const videoBufferResolution = `VIDEO BUFFER: ${this.projectorBuffer?.elem?.width ?? '?'}x${this.projectorBuffer?.elem?.height ?? '?'}`
+      const projectorBufferResolution = this.settings.webGL
+        ? `AMBIENT BUFFER: ${this.projector?.canvas?.width ?? '?'}x${this.projector?.canvas?.height ?? '?'}`
+        : '';
+      const projectorResolution = `AMBIENT: ${this.settings.webGL
+        ? `${this.projector?.blurCanvas?.width ?? '?'}x${this.projector?.blurCanvas?.height ?? '?'}`
+        : this.projector?.projectors?.length
+          ? `${this.projector?.projectors[0]?.elem?.width ?? '?'}x${this.projector?.projectors[0]?.elem?.height ?? '?'}`
+          : `?x?`
+      }`
+      
+      this.videoResolutionElem.childNodes[0].nodeValue = videoResolution
+      this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
+      this.projectorBufferResolution.childNodes[0].nodeValue = projectorBufferResolution
+      this.projectorResolution.childNodes[0].nodeValue = projectorResolution
+    }
 
     if(this.settings.showFPS) {
       // Video FPS

@@ -37,6 +37,13 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'showResolutions',
+    label: 'Resolution stats',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
     name: 'frameSync',
     label: 'Synchronization',
     questionMark: {

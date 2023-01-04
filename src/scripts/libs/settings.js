@@ -643,6 +643,7 @@ export default class Settings {
             'frameBlending',
             'showFPS',
             'showFrametimes',
+            'showResolutions',
             'surroundingContentTextAndBtnOnly',
             'headerShadowEnabled',
             'headerTransparentEnabled',
@@ -760,7 +761,8 @@ export default class Settings {
 
           if([
             'showFPS',
-            'showFrametimes'
+            'showFrametimes',
+            'showResolutions'
           ].some(name => name === setting.name)) {
             if(value) {
               this.ambientlight.updateStats()
