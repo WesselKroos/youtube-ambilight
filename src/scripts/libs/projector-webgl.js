@@ -122,6 +122,10 @@ export default class ProjectorWebGL {
   draw = (src) => {
     if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
 
+    const internalFormat = this.ctx.RGBA;
+    const format = this.ctx.RGBA;
+    const formatType = this.ctx.UNSIGNED_BYTE;
+
     const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.fTextureMipmapLevel = textureMipmapLevel
@@ -174,7 +178,7 @@ export default class ProjectorWebGL {
       const isNewTexture = textureIndex !== previousTextureIndex
       if(isNewTexture) {
         if(this.drawInitial)
-          this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, textureSize.width, textureSize.height, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
+          this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
       }
 
       const subIndex = this.drawIndex % this.subProjectorsCount
@@ -182,7 +186,7 @@ export default class ProjectorWebGL {
       const yIndex = Math.floor(subIndex / subProjectorsDimensionMultiplier) % subProjectorsDimensionMultiplier
       const x = (src.width + this.drawBorder) * xIndex
       const y = (src.height + this.drawBorder) * yIndex
-      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, x, y, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, x, y, format, formatType, src)
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
 
       if(this.drawInitial) {
@@ -192,10 +196,10 @@ export default class ProjectorWebGL {
       }
     } else {
       if(updateTextureSize) {
-        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, textureSize.width, textureSize.height, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
       }
 
-      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     

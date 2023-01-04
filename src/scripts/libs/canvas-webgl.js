@@ -266,12 +266,16 @@ export class WebGLContext {
     return this._cachedScale
   }
 
-  drawTextureSize = {
-    width: 0,
-    height: 0
-  }
+  // drawTextureSize = {
+  //   width: 0,
+  //   height: 0
+  // }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctxIsInvalid) return
+
+    const internalFormat = this.ctx.RGBA;
+    const format = this.ctx.RGBA;
+    const formatType = this.ctx.UNSIGNED_BYTE;
 
     if(destX === undefined) {
       destX = srcX
@@ -303,17 +307,18 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    const textureSize = {
-      width: srcWidth,
-      height: srcHeight
-    }
-    const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
-    if(updateTextureSize) {
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-      this.drawTextureSize = textureSize
-    } else {
-      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
-    }
+    //// texSubImage2D is 80x slower than texImage2D in Chromium
+    // const textureSize = {
+    //   width: srcWidth,
+    //   height: srcHeight
+    // }
+    // const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
+    // if(updateTextureSize) {
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
+    //   this.drawTextureSize = textureSize
+    // } else {
+    //   this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
+    // }
 
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
