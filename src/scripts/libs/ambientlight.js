@@ -914,6 +914,7 @@ export default class Ambientlight {
     this.ambientlightDroppedFramesElem = appendFPSItem('ambientlight__ambientlight-dropped-frames')
 
     this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
+    this.videoSyncedResolutionElem = appendFPSItem('ambientlight__video-synced-resolution')
     this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolution = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolution = appendFPSItem('ambientlight__projector-resolution')
@@ -1978,6 +1979,7 @@ export default class Ambientlight {
   hideStats() {
     if(this.isHidden || this.videoElem?.ended || !this.settings.showResolutions) {
       this.videoResolutionElem.childNodes[0].nodeValue = ''
+      this.videoSyncedResolution.childNodes[0].nodeValue = ''
       this.videoBufferResolutionElem.childNodes[0].nodeValue = ''
       this.projectorBufferResolution.childNodes[0].nodeValue = ''
       this.projectorResolution.childNodes[0].nodeValue = ''
@@ -2011,6 +2013,9 @@ export default class Ambientlight {
 
     if(this.settings.showResolutions) {
       const videoResolution = `VIDEO: ${this.videoElem?.videoWidth ?? '?'}x${this.videoElem?.videoHeight ?? '?'}`
+      const videoSyncedResolution = this.settings.videoOverlayEnabled
+        ? `VIDEO SYNCED: ${this.videoOverlay?.elem?.width ?? '?'}x${this.videoOverlay?.elem?.height ?? '?'}`
+        : '';
       const videoBufferResolution = `VIDEO BUFFER: ${this.projectorBuffer?.elem?.width ?? '?'}x${this.projectorBuffer?.elem?.height ?? '?'}`
       const projectorBufferResolution = this.settings.webGL
         ? `AMBIENT BUFFER: ${this.projector?.canvas?.width ?? '?'}x${this.projector?.canvas?.height ?? '?'}`
@@ -2023,6 +2028,7 @@ export default class Ambientlight {
       }`
       
       this.videoResolutionElem.childNodes[0].nodeValue = videoResolution
+      this.videoSyncedResolutionElem.childNodes[0].nodeValue = videoSyncedResolution
       this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
       this.projectorBufferResolution.childNodes[0].nodeValue = projectorBufferResolution
       this.projectorResolution.childNodes[0].nodeValue = projectorResolution
