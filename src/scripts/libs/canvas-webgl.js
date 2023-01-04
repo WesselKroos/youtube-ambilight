@@ -266,6 +266,10 @@ export class WebGLContext {
     return this._cachedScale
   }
 
+  drawTextureSize = {
+    width: 0,
+    height: 0
+  }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctxIsInvalid) return
 
@@ -299,13 +303,23 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    const textureSize = {
+      width: srcWidth,
+      height: srcHeight
+    }
+    const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
+    if(updateTextureSize) {
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+      this.drawTextureSize = textureSize
+    } else {
+      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    }
+
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
 
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
   }
 
   getImageDataBuffers = []
