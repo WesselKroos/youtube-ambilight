@@ -332,7 +332,7 @@ export default class BarDetection {
     try {
       const start = performance.now()
 
-      if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap) {
+      if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
           this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
           this.ctx = this.canvas.getContext('2d', {

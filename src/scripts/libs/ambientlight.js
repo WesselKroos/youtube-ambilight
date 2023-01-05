@@ -75,6 +75,7 @@ export default class Ambientlight {
       this.detectChromiumBug1142112Workaround()
       this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
+      this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
       this.detectChromiumBug1092080Workaround()
 
       await this.initSettings()
@@ -157,10 +158,11 @@ export default class Ambientlight {
     if(initListeners) this.initVideoListeners()
   }
 
-  // FireFox workaround: WebGLParent::RecvReadPixels is slow (performance scales linear with the amount of pixels to be read)
-  detectMozillaBugReadPixelsWorkaround() {
+  // FireFox workaround: WebGLParent::RecvReadPixels is slow when reading from a HtmlCanvasElement/OffscreenCanvas (performance scales linear with the amount of pixels to be read)
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1719154
+  detectMozillaBugSlowCanvas2DReadPixelsWorkaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
-    if(version) {
+    if(match) {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
   }
@@ -1307,15 +1309,13 @@ export default class Ambientlight {
 
     if(this.settings.webGL) {
       if(this.projector.webGLVersion === 1) {
-        const pbSize = Math.min(this.detectMozillaBugReadPixelsWorkaround ? 256 : 512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+        const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
         const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
         const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : ((this.settings.resolution || 25) / 100)
-        const pbMinSize = this.detectMozillaBugReadPixelsWorkaround
-          ? Math.min(256, resolutionScale * 512)
-          : resolutionScale * 512
+        const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
         this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
@@ -2481,11 +2481,17 @@ GREY   | previous display frames`
       }
 
       if (!dontDrawBuffer) {
+        if(!this.enableMozillaBugReadPixelsWorkaround) {
         this.projectorBuffer.ctx.drawImage(this.videoElem,
           0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+        }
 
         if (!dontDrawAmbientlight) {
-          this.projector.draw(this.projectorBuffer.elem)
+          if(this.enableMozillaBugReadPixelsWorkaround) {
+            this.projector.draw(this.videoElem)
+          } else {
+            this.projector.draw(this.projectorBuffer.elem)
+          }
         }
       }
     }
@@ -2513,7 +2519,7 @@ GREY   | previous display frames`
         this.getImageDataAllowed
       ) {
         this.barDetection.detect(
-          this.projectorBuffer.elem,
+          (!this.enableMozillaBugReadPixelsWorkaround) ? this.projectorBuffer.elem : this.videoElem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.detectHorizontalBarSizeEnabled,

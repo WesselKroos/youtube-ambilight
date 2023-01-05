@@ -125,8 +125,10 @@ export default class ProjectorWebGL {
     const internalFormat = this.ctx.RGBA;
     const format = this.ctx.RGBA;
     const formatType = this.ctx.UNSIGNED_BYTE;
+    const srcWidth = src.videoWidth || src.width
+    const srcHeight = src.videoHeight || src.height
 
-    const textureMipmapLevel = Math.max(0, Math.round(Math.log(src.height / this.height) / Math.log(2)))
+    const textureMipmapLevel = Math.max(0, Math.round(Math.log(srcHeight / this.height) / Math.log(2)))
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
       this.fTextureMipmapLevel = textureMipmapLevel
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
@@ -135,12 +137,12 @@ export default class ProjectorWebGL {
     const subProjectorsDimensionMultiplier = Math.sqrt(this.subProjectorsCount)
     const textureSize = (this.projectorsCount > 1)
     ? {
-      width: (src.width + this.drawBorder) * subProjectorsDimensionMultiplier,
-      height: (src.height + this.drawBorder) * subProjectorsDimensionMultiplier
+      width: (srcWidth + this.drawBorder) * subProjectorsDimensionMultiplier,
+      height: (srcHeight + this.drawBorder) * subProjectorsDimensionMultiplier
     }
     : {
-      width: src.width,
-      height: src.height
+      width: srcWidth,
+      height: srcHeight
     }
     const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
 
@@ -184,8 +186,8 @@ export default class ProjectorWebGL {
       const subIndex = this.drawIndex % this.subProjectorsCount
       const xIndex = subIndex % subProjectorsDimensionMultiplier
       const yIndex = Math.floor(subIndex / subProjectorsDimensionMultiplier) % subProjectorsDimensionMultiplier
-      const x = (src.width + this.drawBorder) * xIndex
-      const y = (src.height + this.drawBorder) * yIndex
+      const x = (srcWidth + this.drawBorder) * xIndex
+      const y = (srcHeight + this.drawBorder) * yIndex
       this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, x, y, format, formatType, src)
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
 
@@ -395,7 +397,7 @@ export default class ProjectorWebGL {
         alpha: true,
         depth: false,
         antialias: false,
-        desynchronized: true,
+        desynchronized: false,
         stencil: true // Todo: Migrate to optional if supported
       }
       this.webGLVersion = 2
