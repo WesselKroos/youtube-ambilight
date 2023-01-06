@@ -925,7 +925,8 @@ export default class Ambientlight {
 
     this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
     this.videoSyncedResolutionElem = appendFPSItem('ambientlight__video-synced-resolution')
-    this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
+    if(!this.enableMozillaBugReadPixelsWorkaround)
+      this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
 
@@ -1990,7 +1991,8 @@ export default class Ambientlight {
     if(this.isHidden || this.videoElem?.ended || !this.settings.showResolutions) {
       this.videoResolutionElem.childNodes[0].nodeValue = ''
       this.videoSyncedResolutionElem.childNodes[0].nodeValue = ''
-      this.videoBufferResolutionElem.childNodes[0].nodeValue = ''
+      if(this.videoBufferResolutionElem)
+        this.videoBufferResolutionElem.childNodes[0].nodeValue = ''
       this.projectorBufferResolutionElem.childNodes[0].nodeValue = ''
       this.projectorResolutionElem.childNodes[0].nodeValue = ''
     }
@@ -2026,12 +2028,15 @@ export default class Ambientlight {
       const videoSyncedResolution = this.settings.videoOverlayEnabled
         ? `VIDEO SYNCED: ${this.videoOverlay?.elem?.width ?? '?'}x${this.videoOverlay?.elem?.height ?? '?'}`
         : '';
-      const videoBufferResolution = `VIDEO BUFFER: ${this.projectorBuffer?.elem?.width ?? '?'}x${this.projectorBuffer?.elem?.height ?? '?'}`
       const projectorBufferResolution = this.settings.webGL
-        ? `AMBIENT BUFFER: ${this.projector?.canvas?.width ?? '?'}x${this.projector?.canvas?.height ?? '?'}`
+        ? `AMBIENT BUFFER: ${this.projector?.canvas?.width ?? '?'}x${this.projector?.canvas?.height ?? '?'} 
+         [ load: ${(this.projector?.loadTime ?? 0).toFixed(1)}ms
+          | draw: ${(this.projector?.drawTime ?? 0).toFixed(1)}ms]`
         : '';
       const projectorResolution = `AMBIENT: ${this.settings.webGL
-        ? `${this.projector?.blurCanvas?.width ?? '?'}x${this.projector?.blurCanvas?.height ?? '?'}`
+        ? `${this.projector?.blurCanvas?.width ?? '?'}x${this.projector?.blurCanvas?.height ?? '?'} 
+          [ clear: ${(this.projector?.blurClearTime ?? 0).toFixed(1)}ms
+          | draw: ${(this.projector?.blurDrawTime ?? 0).toFixed(1)}ms]`
         : this.projector?.projectors?.length
           ? `${this.projector?.projectors[0]?.elem?.width ?? '?'}x${this.projector?.projectors[0]?.elem?.height ?? '?'}`
           : `?x?`
@@ -2039,9 +2044,16 @@ export default class Ambientlight {
       
       this.videoResolutionElem.childNodes[0].nodeValue = videoResolution
       this.videoSyncedResolutionElem.childNodes[0].nodeValue = videoSyncedResolution
-      this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
       this.projectorBufferResolutionElem.childNodes[0].nodeValue = projectorBufferResolution
       this.projectorResolutionElem.childNodes[0].nodeValue = projectorResolution
+
+      if(this.videoBufferResolutionElem) {
+        const videoBufferResolution = `
+          VIDEO BUFFER: ${this.projectorBuffer?.elem?.width ?? '?'}x${this.projectorBuffer?.elem?.height ?? '?'} 
+          [ load: ${(this.projectorBuffer?.ctx?.loadTime ?? 0).toFixed(1)}ms
+          | draw: ${(this.projectorBuffer?.ctx?.drawTime ?? 0).toFixed(1)}ms]`
+        this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
+      }
     }
 
     if(this.settings.showFPS) {
@@ -2482,8 +2494,8 @@ GREY   | previous display frames`
 
       if (!dontDrawBuffer) {
         if(!this.enableMozillaBugReadPixelsWorkaround) {
-        this.projectorBuffer.ctx.drawImage(this.videoElem,
-          0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+          this.projectorBuffer.ctx.drawImage(this.videoElem,
+            0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
         }
 
         if (!dontDrawAmbientlight) {

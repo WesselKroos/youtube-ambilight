@@ -1,5 +1,5 @@
-import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { raf, wrapErrorHandler } from './generic';
+import { AmbientlightError } from './sentry-reporter';
+import { wrapErrorHandler } from './generic';
 
 export class WebGLCanvas {
   constructor(width, height) {
@@ -9,11 +9,11 @@ export class WebGLCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options) => {
       if(type === '2d') {
-        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options);
+        this.canvas.ctx = this.ctx = this.ctx || new WebGLContext(this.canvas, type, options);
       } else {
-        this.canvas.ctx = this.canvas._getContext(type, options);
+        this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
-      return this.canvas.ctx;
+      return this.ctx;
     }
     return this.canvas;
   }
@@ -32,11 +32,11 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
+        this.canvas.ctx = this.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
       } else {
-        this.canvas.ctx = this.canvas._getContext(type, options);
+        this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
-      return this.canvas.ctx;
+      return this.ctx;
     }
     return this.canvas;
   }
@@ -307,6 +307,7 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
+    let start = performance.now()
     //// Chromium bug 1074473: texSubImage2D from a video element is 80x slower than texImage2D
     // const textureSize = {
     //   width: srcWidth,
@@ -323,8 +324,11 @@ export class WebGLContext {
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-
+    this.loadTime = performance.now() - start
+    
+    start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    this.drawTime = performance.now() - start
   }
 
   getImageDataBuffers = []

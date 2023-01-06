@@ -38,7 +38,7 @@ const SettingsConfig = [
   },
   {
     name: 'showResolutions',
-    label: 'Resolution stats',
+    label: 'Resolution & draw time stats',
     type: 'checkbox',
     default: false,
     advanced: true
