@@ -1289,13 +1289,14 @@ export default class Ambientlight {
 
     let pScale;
     if(this.settings.webGL) {
-      const pMinSize = ((this.settings.resolution || 25) / 100) * ((this.settings.blur >= 20)
+      const relativeBlur = (this.settings.resolution / 100) * this.settings.blur
+      const pMinSize = (this.settings.resolution / 100) * (relativeBlur >= 20
         ? 128
-        : ((this.settings.blur >= 10)
+        : (relativeBlur >= 10
           ? 192
           : 256
         ))
-      pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height))
+      pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height), Math.min(1920 / this.srcVideoOffset.width, 1080 / this.srcVideoOffset.height))
     } else {
       // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps
       // A CanvasContext2D size of > 256 is required to enable GPU acceleration in Chrome
@@ -1315,7 +1316,7 @@ export default class Ambientlight {
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : ((this.settings.resolution || 25) / 100)
+        const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : (this.settings.resolution / 100)
         const pbMinSize = resolutionScale * 512
         const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
