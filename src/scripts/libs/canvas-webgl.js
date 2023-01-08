@@ -310,7 +310,7 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    const mipmapLevel = Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 0)
+    const mipmapLevel = 1 // Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 2)
     if(mipmapLevel !== this.fMipmapLevel) {
       // console.log('video', mipmapLevel, `${srcHeight} -> ${destHeight}`)
       this.fMipmapLevel = mipmapLevel
