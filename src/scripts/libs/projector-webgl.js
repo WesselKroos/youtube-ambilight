@@ -128,9 +128,9 @@ export default class ProjectorWebGL {
     const srcWidth = src.videoWidth || src.width
     const srcHeight = src.videoHeight || src.height
 
-    const textureMipmapLevel = Math.max(0, (Math.log(srcHeight / this.height) / Math.log(2)) - 1)
+    const textureMipmapLevel = Math.max(0, (Math.log(srcHeight / this.height) / Math.log(2)) - 0)
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
-      console.log('ambient', textureMipmapLevel, `${srcHeight} / ${this.height}`)
+      // console.log('ambient', textureMipmapLevel, `${srcHeight} -> ${this.height}`)
       this.fTextureMipmapLevel = textureMipmapLevel
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
@@ -499,7 +499,7 @@ export default class ProjectorWebGL {
         this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
       );
       if(tfaExt) {
-        let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 0;
+        let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
     }

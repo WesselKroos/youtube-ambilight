@@ -925,7 +925,7 @@ export default class Ambientlight {
 
     this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
     this.videoSyncedResolutionElem = appendFPSItem('ambientlight__video-synced-resolution')
-    if(!this.enableMozillaBugReadPixelsWorkaround)
+    if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1)
       this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
@@ -1296,32 +1296,41 @@ export default class Ambientlight {
           ? 192
           : 256
         ))
-      pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height), Math.min(1920 / this.srcVideoOffset.width, 1080 / this.srcVideoOffset.height))
-      console.log(pScale)
+      pScale = Math.min(.5, 
+        Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height),
+        Math.min(1024 / this.srcVideoOffset.width, 1024 / this.srcVideoOffset.height))
     } else {
       // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps
       // A CanvasContext2D size of > 256 is required to enable GPU acceleration in Chrome
       const pMinSize = Math.max(257, Math.min(512, this.srcVideoOffset.width, this.srcVideoOffset.height))
       pScale = Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height)
     }
-    this.p = {
+    const p = {
       w: Math.ceil(this.srcVideoOffset.width * pScale),
       h: Math.ceil(this.srcVideoOffset.height * pScale)
+    }
+    if(this.p?.w !== p.w || this.p?.h !== p.h) {
+      // console.log(`projector: ${this.srcVideoOffset.height} * ${pScale} = ${p.h}`)
+      this.p = p
     }
     this.projector.resize(this.p.w, this.p.h)
 
     if(this.settings.webGL) {
       if(this.projector.webGLVersion === 1) {
         const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
-        const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation
+        const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation in projector
         this.projectorBuffer.elem.width = pbSizePowerOf2
         this.projectorBuffer.elem.height = pbSizePowerOf2
       } else {
-        const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : (this.settings.resolution / 100)
-        const pbMinSize = resolutionScale * 512
-        const pbScale = Math.min(.5, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
-        this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
-        this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
+        const projectorBufferWidth = this.p.w * 2
+        const projectorBufferHeight = this.p.h * 2
+        if(this.projectorBuffer.elem.width !== projectorBufferWidth ||
+          this.projectorBuffer.elem.height !== projectorBufferHeight)
+        {
+          // console.log(`projectorBuffer: ${this.p.h} * 2 = ${projectorBufferHeight}`)
+          this.projectorBuffer.elem.width = projectorBufferWidth
+          this.projectorBuffer.elem.height = projectorBufferHeight
+        }
       }
     } else {
       this.projectorBuffer.elem.width = this.p.w
@@ -2495,16 +2504,16 @@ GREY   | previous display frames`
       }
 
       if (!dontDrawBuffer) {
-        if(!this.enableMozillaBugReadPixelsWorkaround) {
+        if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1) {
           this.projectorBuffer.ctx.drawImage(this.videoElem,
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
         }
 
         if (!dontDrawAmbientlight) {
-          if(this.enableMozillaBugReadPixelsWorkaround) {
-            this.projector.draw(this.videoElem)
-          } else {
+          if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1) {
             this.projector.draw(this.projectorBuffer.elem)
+          } else {
+            this.projector.draw(this.videoElem)
           }
         }
       }

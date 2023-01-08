@@ -153,7 +153,7 @@ export class WebGLContext {
       uniform float fMipmapLevel;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV, fMipmapLevel);
+        gl_FragColor = texture2D(sampler, fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -231,7 +231,7 @@ export class WebGLContext {
       this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
     );
     if(tfaExt) {
-      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
   }
@@ -310,9 +310,9 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    const mipmapLevel = Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 1)
+    const mipmapLevel = Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 0)
     if(mipmapLevel !== this.fMipmapLevel) {
-      console.log('video', mipmapLevel, `${srcHeight} / ${destHeight}`)
+      // console.log('video', mipmapLevel, `${srcHeight} -> ${destHeight}`)
       this.fMipmapLevel = mipmapLevel
       this.ctx.uniform1f(this.fMipmapLevelLoc, mipmapLevel);
     }
@@ -331,6 +331,7 @@ export class WebGLContext {
     //   this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
     // }
 
+    // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
