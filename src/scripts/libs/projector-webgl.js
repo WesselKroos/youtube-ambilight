@@ -128,8 +128,9 @@ export default class ProjectorWebGL {
     const srcWidth = src.videoWidth || src.width
     const srcHeight = src.videoHeight || src.height
 
-    const textureMipmapLevel = Math.max(0, Math.round(Math.log(srcHeight / this.height) / Math.log(2)))
+    const textureMipmapLevel = Math.max(0, (Math.log(srcHeight / this.height) / Math.log(2)) - 1)
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
+      console.log('ambient', textureMipmapLevel, `${srcHeight} / ${this.height}`)
       this.fTextureMipmapLevel = textureMipmapLevel
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
@@ -528,12 +529,12 @@ export default class ProjectorWebGL {
     const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
-      uniform float fDrawingStencil;
+      uniform sampler2D textureSampler[${this.projectorsTexture.length}];
       uniform float fTextureMipmapLevel;
+      uniform float fTextureOpacity[${this.projectorsCount}];
+      uniform float fDrawingStencil;
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
-      uniform sampler2D textureSampler[${this.projectorsTexture.length}];
-      uniform float fTextureOpacity[${this.projectorsCount}];
       uniform sampler2D shadowSampler;
       uniform vec2 fScale;
       uniform vec2 fScaleStep;

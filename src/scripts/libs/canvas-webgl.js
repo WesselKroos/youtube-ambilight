@@ -150,9 +150,10 @@ export class WebGLContext {
       precision lowp float;
       varying vec2 fUV;
       uniform sampler2D sampler;
+      uniform float fMipmapLevel;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV);
+        gl_FragColor = texture2D(sampler, fUV, fMipmapLevel);
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -181,6 +182,8 @@ export class WebGLContext {
       throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
     this.ctx.useProgram(this.program);
+
+    this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
 
     // Buffers
     var vUVBuffer = this.ctx.createBuffer();
@@ -305,6 +308,13 @@ export class WebGLContext {
     if (!this.viewport || this.viewport.width !== destWidth || this.viewport.height !== destHeight) {
       this.ctx.viewport(0, 0, destWidth, destHeight);
       this.viewport = { width: destWidth, height: destHeight };
+    }
+    
+    const mipmapLevel = Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 1)
+    if(mipmapLevel !== this.fMipmapLevel) {
+      console.log('video', mipmapLevel, `${srcHeight} / ${destHeight}`)
+      this.fMipmapLevel = mipmapLevel
+      this.ctx.uniform1f(this.fMipmapLevelLoc, mipmapLevel);
     }
     
     let start = performance.now()

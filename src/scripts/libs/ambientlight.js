@@ -1297,6 +1297,7 @@ export default class Ambientlight {
           : 256
         ))
       pScale = Math.min(1, Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height), Math.min(1920 / this.srcVideoOffset.width, 1080 / this.srcVideoOffset.height))
+      console.log(pScale)
     } else {
       // A size of 512 videoWidth/videoHeight is required to prevent pixel flickering because CanvasContext2D uses no mipmaps
       // A CanvasContext2D size of > 256 is required to enable GPU acceleration in Chrome
@@ -1318,7 +1319,7 @@ export default class Ambientlight {
       } else {
         const resolutionScale = (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) ? 1 : (this.settings.resolution / 100)
         const pbMinSize = resolutionScale * 512
-        const pbScale = Math.min(1, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
+        const pbScale = Math.min(.5, Math.max(pbMinSize / this.srcVideoOffset.width, pbMinSize / this.srcVideoOffset.height))
         this.projectorBuffer.elem.width = this.srcVideoOffset.width * pbScale
         this.projectorBuffer.elem.height = this.srcVideoOffset.height * pbScale
       }
