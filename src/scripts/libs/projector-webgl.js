@@ -12,18 +12,21 @@ export default class ProjectorWebGL {
   atTop = true
 
   constructor(ambientlight, containerElem, initProjectorListeners, settings) {
-    this.ambientlight = ambientlight
-    this.atTop = ambientlight.atTop
-    this.containerElem = containerElem
-    this.initProjectorListeners = initProjectorListeners
-    this.settings = settings
-    this.setWarning = settings.setWarning
+    return (async function ProjectorWebGLConstructor() {
+      this.ambientlight = ambientlight
+      this.atTop = ambientlight.atTop
+      this.containerElem = containerElem
+      this.initProjectorListeners = initProjectorListeners
+      this.settings = settings
+      this.setWarning = settings.setWarning
 
-    this.initShadow()
-    this.initBlurCtx()
-    this.initCtx()
-    this.handlePageVisibility()
-    this.setWindowListeners()
+      this.initShadow()
+      this.initBlurCtx()
+      await this.initCtx()
+      this.handlePageVisibility()
+
+      return this
+    }.bind(this))()
   }
 
   invalidateShaderCache() {
@@ -74,16 +77,14 @@ export default class ProjectorWebGL {
     }
   }
 
-  setWindowListeners() {
-    window.addEventListener('resize', async () => {
-      if(this.isPageHidden) {
-        this.shouldUpdateCropAfterPageVisible = true
-        return
-      }
+  handleWindowResize = async () => {
+    if(this.isPageHidden) {
+      this.shouldUpdateCropAfterPageVisible = true
+      return
+    }
 
-      this.updateCrop()
-      await this.ambientlight.optionalFrame()
-    }, false)
+    this.updateCrop()
+    await this.ambientlight.optionalFrame()
   }
 
   handleAtTopChange = async (atTop) => {
@@ -120,7 +121,7 @@ export default class ProjectorWebGL {
     height: 0
   }
   draw = (src) => {
-    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid || this.lost) return
 
     const internalFormat = this.ctx.RGBA;
     const format = this.ctx.RGBA;
@@ -331,13 +332,13 @@ export default class ProjectorWebGL {
     }
   }.bind(this))
 
-  onCtxRestored = wrapErrorHandler(function onCtxRestored() {
+  onCtxRestored = wrapErrorHandler(async function onCtxRestored() {
     if(!this.isControlledLose && this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | ProjectorWebGL context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
       return
     }
-    this.initCtx()
+    await this.initCtx()
     if(!this.isControlledLose) {
       this.initShadow()
       this.initBlurCtx()
@@ -374,7 +375,7 @@ export default class ProjectorWebGL {
     })
   }.bind(this))
 
-  initCtx() {
+  async initCtx() {
     if(this.program && !this.ctxIsInvalid) {
       this.ctx.deleteProgram(this.program) // Free GPU memory
       this.program = undefined
@@ -631,6 +632,16 @@ export default class ProjectorWebGL {
     if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
       throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
     }
+
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    if(parallelShaderCompileExt) {
+      await new Promise(resolve => {
+        const checkCompletion = () => this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
+          ? resolve()
+          : requestAnimationFrame(checkCompletion);
+        requestAnimationFrame(checkCompletion);
+      })
+    }
     this.ctx.useProgram(this.program);
 
     // Buffers
@@ -724,7 +735,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(!this.ctx || this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid || this.lost) return
 
     const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
     if(fScaleChanged) {
@@ -772,7 +783,7 @@ export default class ProjectorWebGL {
   }
 
   updateCrop() {
-    if(!this.ctx || this.ctxIsInvalid || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
+    if(!this.ctx || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
     const canvasRect = this.blurCanvas.getBoundingClientRect()
     if(!canvasRect?.width || !canvasRect?.height) return
@@ -901,7 +912,7 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
-    if(!this.ctx || this.ctxIsInvalid) return
+    if(!this.ctx || this.ctxIsInvalid || this.lost) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.invalidateShaderCache()
   }

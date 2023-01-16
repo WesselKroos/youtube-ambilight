@@ -65,7 +65,7 @@ export default class Ambientlight {
   enableChromiumBug1092080Workaround = false
 
   constructor(ytdAppElem, videoElem) {
-    return (async function ambientlightConstructor() {
+    return (async function AmbientlightConstructor() {
       this.ytdAppElem = ytdAppElem
       this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
       if(!this.mastheadElem) {
@@ -84,9 +84,9 @@ export default class Ambientlight {
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
       }
-      this.initAmbientlightElems()
+      await this.initAmbientlightElems()
       this.initBuffersWrapper()
-      this.initProjectorBuffers()
+      await this.initProjectorBuffers()
       this.recreateProjectors()
       this.initFPSListElem()
 
@@ -425,6 +425,30 @@ export default class Ambientlight {
 
     on(document, 'keydown', this.handleKeyDown)
 
+    if(this.topElem) {
+      this.topElemObserver = new IntersectionObserver(
+        wrapErrorHandler(async (entries, observer) => {
+          for (const entry of entries) {
+            this.atTop = (entry.intersectionRatio !== 0)
+            await this.updateAtTop()
+
+            // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
+            if(this.isFillingFullscreen && !this.atTop) {
+              this.buffersCleared = true
+              this.optionalFrame()
+            }
+          }
+        }, true),
+        {
+          threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
+        }
+      )
+      this.topElemObserver.observe(this.topElem)
+    }
+
+    if(this.settings.webGL)
+      window.addEventListener('resize', this.projector.handleWindowResize, false)
+
     const resizeTooSmall = (pRect, rect) => (
       Math.abs(rect.x - (pRect?.x || 0)) <= 2 &&
       Math.abs(rect.y - (pRect?.y || 0)) <= 2 &&
@@ -541,16 +565,6 @@ export default class Ambientlight {
       attributeOldValue: true,
       attributeFilter: ['dark']
     })
-
-    // More reliable way to detect the end screen and other modes in which the video is invisible.
-    // Because when seeking to the end the ended event is not fired from the videoElem
-    on(this.videoPlayerElem, 'onStateChange', (state) => {
-      this.isBuffering = (state === 3)
-
-      if(!this.isBuffering && this.settings.enabled && this.isOnVideoPage)
-        this.scheduleNextFrame()
-    })
-    this.isBuffering = (this.videoPlayerElem.getPlayerState() === 3)
 
     const videoPlayerObserver = new MutationObserver(wrapErrorHandler(async () => {
       const viewChanged = await this.updateView()
@@ -757,7 +771,7 @@ export default class Ambientlight {
     this.settings.updateVisibility()
   }
 
-  initAmbientlightElems() {
+  async initAmbientlightElems() {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
     body.prepend(this.elem)
@@ -765,25 +779,6 @@ export default class Ambientlight {
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambientlight__top')
     body.prepend(this.topElem)
-    
-    this.topElemObserver = new IntersectionObserver(
-      wrapErrorHandler(async (entries, observer) => {
-        for (const entry of entries) {
-          this.atTop = (entry.intersectionRatio !== 0)
-          await this.updateAtTop()
-
-          // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
-          if(this.isFillingFullscreen && !this.atTop) {
-            this.buffersCleared = true
-            this.optionalFrame()
-          }
-        }
-      }, true),
-      {
-        threshold: 0.0001 // Because sometimes a pixel in not visible on screen but the intersectionRatio is already 0
-      }
-    )
-    this.topElemObserver.observe(this.topElem)
 
     this.videoShadowElem = document.createElement('div')
     this.videoShadowElem.classList.add('ambientlight__video-shadow')
@@ -811,13 +806,13 @@ export default class Ambientlight {
     this.projectorListElem.classList.add('ambientlight__projector-list')
     this.projectorsElem.prepend(this.projectorListElem)
 
-    this.initProjector()
+    await this.initProjector()
   }
 
-  initProjector = () => {
+  initProjector = async () => {
     if(this.settings.webGL) {
       try {
-        this.projector = new ProjectorWebGL(this, this.projectorListElem, this.initProjectorListeners, this.settings)
+        this.projector = await new ProjectorWebGL(this, this.projectorListElem, this.initProjectorListeners, this.settings)
       } catch(ex) {
         SentryReporter.captureException(ex)
         this.settings.handleWebGLCrash()
@@ -860,13 +855,13 @@ export default class Ambientlight {
     this.elem.appendChild(this.buffersWrapperElem)
   }
 
-  initProjectorBuffers() {
+  async initProjectorBuffers() {
     let projectorsBufferElem;
     let projectorsBufferCtx;
     if(this.settings.webGL) {
       try {
         projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
-        projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
+        projectorsBufferCtx = await projectorsBufferElem.getContext('2d', ctxOptions)
       } catch(ex) {
         SentryReporter.captureException(ex)
         this.settings.handleWebGLCrash()
@@ -1716,7 +1711,6 @@ export default class Ambientlight {
     this.videoElem.ended ||
     this.videoElem.paused ||
     this.videoElem.seeking ||
-    // this.isBuffering || // Delays requestVideoFrameCallback when going to a unloaded timestamp
     this.isVideoHiddenOnWatchPage ||
     this.isAmbientlightHiddenOnWatchPage
   ))
@@ -1765,9 +1759,7 @@ export default class Ambientlight {
       if (this.settings.showFrametimes)
         frameTimes.drawEnd = this.getNow()
 
-      if(this.canScheduleNextFrame() && !this.isBuffering) {
-        this.scheduleNextFrame()
-      }
+      this.scheduleNextFrame()
 
       if (results?.detectBarSize) {
         this.scheduleBarSizeDetection()
@@ -1800,7 +1792,11 @@ export default class Ambientlight {
         'SecurityError',
         'NS_ERROR_NOT_AVAILABLE',
         'NS_ERROR_OUT_OF_MEMORY'
-      ].includes(ex.name)) return
+      ].includes(ex.name)) {
+        console.warn('Ambient light for YouTube™ | Failed to display the ambient light')
+        console.error(ex);
+        return
+      }
 
       throw ex
     }
@@ -2276,7 +2272,7 @@ GREY   | previous display frames`
         if (nextTimestamp) {
           rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
         }
-      } else {
+      } else if(!this.settings.framerateLimit) {
         rects.push(['#f00', x, 0, scaleX, height])
       }
     }
@@ -2606,7 +2602,7 @@ GREY   | previous display frames`
     framesInfo = framesInfo.filter(info => info.time > frameDropTimeLimit)
     this.hideVideoOverlayCache.framesInfo = framesInfo
 
-    let hide = this.isBuffering || this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden
+    let hide = this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden
     const syncThreshold = this.settings.videoOverlaySyncThreshold
     if(!hide && syncThreshold !== 100) {
       if(
@@ -2879,7 +2875,7 @@ GREY   | previous display frames`
   updateAtTop = async () => {
     this.mastheadElem.classList.toggle('at-top', this.atTop)
 
-    if(this.projector.handleAtTopChange)
+    if(this.settings.webGL)
       await this.projector.handleAtTopChange(this.atTop)
   }
 

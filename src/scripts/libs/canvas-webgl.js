@@ -1,23 +1,23 @@
 import { AmbientlightError } from './sentry-reporter';
 import { wrapErrorHandler } from './generic';
 
-export class WebGLCanvas {
-  constructor(width, height) {
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.canvas._getContext = this.canvas.getContext;
-    this.canvas.getContext = (type, options) => {
-      if(type === '2d') {
-        this.canvas.ctx = this.ctx = this.ctx || new WebGLContext(this.canvas, type, options);
-      } else {
-        this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
-      }
-      return this.ctx;
-    }
-    return this.canvas;
-  }
-}
+// export class WebGLCanvas {
+//   constructor(width, height) {
+//     this.canvas = document.createElement('canvas');
+//     this.canvas.width = width;
+//     this.canvas.height = height;
+//     this.canvas._getContext = this.canvas.getContext;
+//     this.canvas.getContext = async (type, options) => {
+//       if(type === '2d') {
+//         this.canvas.ctx = this.ctx = this.ctx || await new WebGLContext(this.canvas, type, options);
+//       } else {
+//         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
+//       }
+//       return this.ctx;
+//     }
+//     return this.canvas;
+//   }
+// }
 
 export class WebGLOffscreenCanvas {
   constructor(width, height, settings) {
@@ -30,9 +30,9 @@ export class WebGLOffscreenCanvas {
     }
     
     this.canvas._getContext = this.canvas.getContext;
-    this.canvas.getContext = (type, options = {}) => {
+    this.canvas.getContext = async (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
+        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, settings);
       } else {
         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
@@ -46,46 +46,50 @@ export class WebGLContext {
   lostCount = 0
 
   constructor(canvas, type, options, settings) {
-    this.settings = settings;
-    this.setWarning = settings.setWarning;
-    this.canvas = canvas;
-    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
-      event.preventDefault();
-      this.lost = true
-      this.lostCount++
-      this.viewport = undefined
-      this.scaleX = undefined
-      this.scaleY = undefined
-      this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
-      console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
-      this.setWebGLWarning('restore')
-    }.bind(this)), false);
-    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(function canvasWebGLContextRestored() {
-      if(this.lostCount >= 3) {
-        console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
-        this.setWebGLWarning('3 times restore')
-        return
-      }
-      this.initCtx()
-      if(this.ctx && !this.ctx.isContextLost()) {
-        this.lost = false
-        this.lostCount = 0
-        this.setWarning('')
-      } else {
-        console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+    return (async function WebGLContextConstructor() {
+      this.settings = settings;
+      this.setWarning = settings.setWarning;
+      this.canvas = canvas;
+      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
+        event.preventDefault();
+        this.lost = true
+        this.lostCount++
+        this.viewport = undefined
+        this.scaleX = undefined
+        this.scaleY = undefined
+        this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
+        console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
         this.setWebGLWarning('restore')
-      }
-    }.bind(this)), false);
-    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
-      this.webglcontextcreationerrors.push({
-        message: e.statusMessage || '?',
-        time: performance.now(),
-        webGLVersion: this.webGLVersion
-      })
-    }.bind(this)), false);
+      }.bind(this)), false);
+      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function canvasWebGLContextRestored() {
+        if(this.lostCount >= 3) {
+          console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
+          this.setWebGLWarning('3 times restore')
+          return
+        }
+        await this.initCtx()
+        if(this.ctx && !this.ctx.isContextLost()) {
+          this.lost = false
+          this.lostCount = 0
+          this.setWarning('')
+        } else {
+          console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+          this.setWebGLWarning('restore')
+        }
+      }.bind(this)), false);
+      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
+        this.webglcontextcreationerrors.push({
+          message: e.statusMessage || '?',
+          time: performance.now(),
+          webGLVersion: this.webGLVersion
+        })
+      }.bind(this)), false);
 
-    this.options = options;
-    this.initCtx()
+      this.options = options;
+      await this.initCtx()
+
+      return this
+    }.bind(this))()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
@@ -93,7 +97,7 @@ export class WebGLContext {
   }
 
   webglcontextcreationerrors = []
-  initCtx = () => {
+  async initCtx() {
     if(this.program && !this.ctxIsInvalid) {
       this.ctx.deleteProgram(this.program) // Free GPU memory
       this.program = undefined
@@ -112,10 +116,10 @@ export class WebGLContext {
         ...this.options
       }
       this.webGLVersion = 2
-      this.ctx = this.canvas.getContext('webgl2', ctxOptions)
+      this.ctx = await this.canvas.getContext('webgl2', ctxOptions)
       if(!this.ctx) {
         this.webGLVersion = 1
-        this.ctx = this.canvas.getContext('webgl', ctxOptions)
+        this.ctx = await this.canvas.getContext('webgl', ctxOptions)
         if(!this.ctx) {
           this.webGLVersion = undefined
 
@@ -181,6 +185,16 @@ export class WebGLContext {
     if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
       throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
+    
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    if(parallelShaderCompileExt) {
+      await new Promise(resolve => {
+        const checkCompletion = () => this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
+          ? resolve()
+          : requestAnimationFrame(checkCompletion);
+        requestAnimationFrame(checkCompletion);
+      })
+    }
     this.ctx.useProgram(this.program);
 
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
@@ -237,7 +251,7 @@ export class WebGLContext {
   }
 
   clearRect = (x, y, width, height) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
@@ -274,7 +288,7 @@ export class WebGLContext {
   //   height: 0
   // }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
 
     const internalFormat = this.ctx.RGBA;
     const format = this.ctx.RGBA;
@@ -345,7 +359,7 @@ export class WebGLContext {
   getImageDataBuffers = []
   getImageDataBuffersIndex = 0
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
 
     // Enough for 10 ImageData objects for the blackbar detection
     if(this.getImageDataBuffersIndex > 9) {
