@@ -31,6 +31,7 @@ export default class ProjectorWebGL {
 
   invalidateShaderCache() {
     this.viewport = undefined
+    this.stencil = undefined
     this.fScale = undefined
     this.fScaleStep = undefined
     this.fScalesLength = undefined
@@ -122,6 +123,8 @@ export default class ProjectorWebGL {
   }
   draw = (src) => {
     if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid || this.lost) return
+
+    if(!this.stencil) this.updateCrop()
 
     const internalFormat = this.ctx.RGBA;
     const format = this.ctx.RGBA;
@@ -909,6 +912,8 @@ export default class ProjectorWebGL {
     this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff);
     this.ctx.stencilMask(0x00);
     this.ctx.colorMask(true, true, true, true);
+
+    this.stencil = true
   }
 
   clearRect() {
