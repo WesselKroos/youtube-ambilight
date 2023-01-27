@@ -1048,11 +1048,6 @@ export default class Ambientlight {
       }
     }
 
-    // ProjectorWebGL
-    if(this.projector?.clearRect) {
-      this.projector.clearRect()
-    }
-
     this.buffersCleared = true
     this.checkIfNeedToHideVideoOverlay()
     this.scheduleNextFrame()
