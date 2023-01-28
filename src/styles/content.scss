@@ -668,23 +668,22 @@ html[data-ambientlight-enabled="true"] {
 
   /* Live chat (Iframe styling in live-chat.css */
 
-  ytd-live-chat-frame:not([collapsed]) {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-live-chat-frame:not([collapsed]) {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
+  ytd-live-chat-frame,
   ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer button {
     text-shadow: inherit !important;
   }
-  ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  &[dark] ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer button {
+    border-radius: 0 !important;
+    box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
     width: 100%; // Fixes shadow clipping
@@ -731,18 +730,20 @@ html[data-ambientlight-enabled="true"] {
       z-index: 2;
     }
 
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+    .header.ytd-playlist-panel-renderer {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
     }
+    
     ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
-      border-top: 1px solid var(--yt-spec-10-percent-layer) !important;
+      box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
     }
 
     .playlist-items.ytd-playlist-panel-renderer {
       @include scrollbar-light-thin()
     }
 
-    .header.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
     yt-chip-cloud-renderer {
       background: none !important;
@@ -783,7 +784,7 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-video-renderer {
       &[selected],
       &:hover:not(.dragging) {
-        background-color: rgba(0, 0, 0, 0.1) !important;
+        background-color: rgba(255, 255, 255, 0.1) !important;
       }
       &[selected] {
         #index.ytd-playlist-panel-video-renderer,
@@ -839,7 +840,7 @@ html[data-ambientlight-enabled="true"] {
   }
   &[dark] {
     ytd-app {
-      ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+      .header.ytd-playlist-panel-renderer {
         background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
       }
 
@@ -864,7 +865,7 @@ html[data-ambientlight-enabled="true"] {
       ytd-playlist-panel-video-renderer {
         &[selected],
         &:hover:not(.dragging) {
-          background-color: rgba(255, 255, 255, 0.1) !important;
+          background-color: rgba(0, 0, 0, 0.1) !important;
         }
         &[selected] {
           #video-title.ytd-playlist-panel-video-renderer {
@@ -1982,10 +1983,10 @@ html[data-ambientlight-enabled="true"] {
       text-shadow: inherit !important;
     }
 
-    #subscribe-button ytd-button-renderer:not([subscribed]),
+    #subscribe-button ytd-button-renderer:not([subscribed]) button,
     tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
     yt-chip-cloud-chip-renderer[selected],
-    ytd-button-renderer.style-primary[is-paper-button],
+    ytd-button-renderer.style-primary[is-paper-button] button,
     .product-item-button.ytd-merch-shelf-item-renderer,
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
     #action, // Ad button: More info
@@ -2001,7 +2002,7 @@ html[data-ambientlight-enabled="true"] {
     // old video info
     .title.ytd-video-primary-info-renderer,
     #info-text.ytd-video-primary-info-renderer,
-    yt-formatted-string.ytd-button-renderer,
+    yt-formatted-string.ytd-button-renderer button,
     ytd-video-secondary-info-renderer .ytd-channel-name,
     #byline-container.ytd-video-meta-block,
 
@@ -2071,8 +2072,8 @@ html[data-ambientlight-enabled="true"] {
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
 
         #upload-info.ytd-video-owner-renderer,
-        #{$info} ytd-toggle-button-renderer,
-        #{$info} ytd-button-renderer,
+        #{$info} ytd-toggle-button-renderer button,
+        #{$info} ytd-button-renderer button,
         #{$info} yt-icon.ytd-menu-renderer,
         ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) > *,
         ytd-subscription-notification-toggle-button-renderer,
@@ -2086,7 +2087,7 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} .index-message-wrapper,
         #{$playlist-header} yt-icon-button,
         #{$playlist-header} ytd-playlist-loop-button-renderer,
-        #{$playlist-header} ytd-toggle-button-renderer,
+        #{$playlist-header} ytd-toggle-button-renderer button,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
         ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
@@ -2100,6 +2101,10 @@ html[data-ambientlight-enabled="true"] {
         yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button {
           @content;
           text-shadow: none !important;
+        }
+
+        tp-yt-paper-tooltip {
+          text-shadow: none !important; // Tooltips
         }
       }
 
@@ -2119,7 +2124,7 @@ html[data-ambientlight-enabled="true"] {
           ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
           ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
           yt-icon-button,
-          ytd-button-renderer {
+          ytd-button-renderer button {
             @content;
             text-shadow: none !important;
           }
