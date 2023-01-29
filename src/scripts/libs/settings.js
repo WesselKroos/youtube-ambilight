@@ -137,11 +137,11 @@ export default class Settings {
     const webGLCrashDate = new Date(webGLCrashed)
     const weekAfterCrashDate = new Date(webGLCrashDate.setDate(webGLCrashDate.getDate() + 7))
     // const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
-    const retryAfterUpdateAndAWeekLater = (
-      version !== storedSettings['setting-webGLCrashedAtVersion'] &&
+    const retryAfterUpdateOrAWeekLater = (
+      version !== storedSettings['setting-webGLCrashedAtVersion'] ||
       weekAfterCrashDate < new Date()
     )
-    if(retryAfterUpdateAndAWeekLater) {
+    if(retryAfterUpdateOrAWeekLater) {
       this.saveStorageEntry('webGLCrashed', undefined)
       this.saveStorageEntry('webGLCrashedAtVersion', undefined)
       return
@@ -1127,7 +1127,7 @@ export default class Settings {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
-      
+
       if(ex?.message !== 'An unexpected error occurred')
         SentryReporter.captureException(ex)
 
