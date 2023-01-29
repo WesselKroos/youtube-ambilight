@@ -842,7 +842,7 @@ export default class ProjectorWebGL {
       left: Math.max(canvasRect.left, windowRect.left),
       top: Math.max(canvasRect.top, windowRect.top),
       right: Math.min(canvasRect.right, windowRect.right),
-      bottom: Math.min(canvasRect.bottom, windowRect.bottom)
+      bottom: Math.min(canvasRect.bottom, windowRect.bottom + 100) // 100 = a single scroll step
     };
 
     const canvasRectCenter = {
