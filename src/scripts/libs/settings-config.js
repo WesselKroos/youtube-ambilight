@@ -70,7 +70,6 @@ const SettingsConfig = [
   {
     name: 'webGL',
     label: 'WebGL renderer (uses less power)',
-    // description: 'Reduces power usage',
     type: 'checkbox',
     default: true,
     new: true,
@@ -138,6 +137,52 @@ const SettingsConfig = [
   },
   {
     type: 'section',
+    label: 'Page header',
+    name: 'sectionOtherPageHeaderCollapsed',
+    default: true
+  },
+  {
+    name: 'headerShadowSize',
+    label: 'Shadows size',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: .1
+  },
+  {
+    name: 'headerShadowOpacity',
+    label: 'Shadows opacity',
+    type: 'list',
+    default: 30,
+    min: 0,
+    max: 100,
+    step: .1
+  },
+  {
+    name: 'headerImagesOpacity',
+    label: 'Images opacity',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  {
+    name: 'headerFillOpacity',
+    label: 'Background opacity',
+    description: 'While scrolled down',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true,
+    experimental: true
+  },
+
+  {
+    type: 'section',
     label: 'Page content',
     name: 'sectionOtherPageContentCollapsed',
     default: true
@@ -161,29 +206,22 @@ const SettingsConfig = [
     step: .1
   },
   {
-    name: 'headerShadowEnabled',
-    label: 'Shadows on header',
-    type: 'checkbox',
-    default: false,
-    advanced: true,
-    new: true
-  },
-  {
-    name: 'headerTransparentEnabled',
-    label: 'Transparent header',
-    description: 'While scrolled down',
-    type: 'checkbox',
-    default: false,
-    advanced: true,
-    experimental: true
-  },
-  {
     name: 'surroundingContentTextAndBtnOnly',
     label: 'Shadows on texts and buttons only',
     description: 'Decreases scrolling & video stutter',
     type: 'checkbox',
     advanced: true,
     default: true
+  },
+  {
+    name: 'surroundingContentImagesOpacity',
+    label: 'Images opacity',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: false
   },
   {
     name: 'surroundingContentFillOpacity',
@@ -195,16 +233,6 @@ const SettingsConfig = [
     step: 1,
     advanced: false,
     new: true
-  },
-  {
-    name: 'surroundingContentImagesOpacity',
-    label: 'Images opacity',
-    type: 'list',
-    default: 100,
-    min: 0,
-    max: 100,
-    step: 1,
-    advanced: false
   },
   {
     name: 'immersiveTheaterView',

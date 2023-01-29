@@ -565,6 +565,10 @@ export default class Settings {
           }
 
           if ([
+            'headerShadowSize',
+            'headerShadowOpacity',
+            'headerFillOpacity',
+            'headerImagesOpacity',
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
             'surroundingContentFillOpacity',
@@ -619,6 +623,8 @@ export default class Settings {
           }
 
           if([
+            'headerShadowSize',
+            'headerShadowOpacity',
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
             'videoShadowSize'
@@ -645,7 +651,6 @@ export default class Settings {
             'showFrametimes',
             'showResolutions',
             'surroundingContentTextAndBtnOnly',
-            'headerShadowEnabled',
             'headerTransparentEnabled',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
@@ -774,9 +779,7 @@ export default class Settings {
           }
 
           if([
-            'surroundingContentTextAndBtnOnly',
-            'headerShadowEnabled',
-            'headerTransparentEnabled'
+            'surroundingContentTextAndBtnOnly'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
             this.ambientlight.optionalFrame()
@@ -954,15 +957,16 @@ export default class Settings {
       visible: () => this.videoOverlayEnabled
     },
     {
+      names: [ 'headerShadowOpacity' ],
+      visible: () => this.headerShadowSize
+    },
+    {
       names: [ 'surroundingContentShadowOpacity' ],
       visible: () => this.surroundingContentShadowSize
     },
     {
-      names: [
-        'headerShadowEnabled',
-        'surroundingContentTextAndBtnOnly'
-      ],
-      visible: () => this.surroundingContentShadowSize && this.surroundingContentShadowOpacity
+      names: [ 'surroundingContentTextAndBtnOnly' ],
+      visible: () => (this.surroundingContentShadowSize && this.surroundingContentShadowOpacity) || (this.headerShadowSize && this.headerShadowOpacity)
     },
     {
       names: [ 'videoShadowOpacity' ],

@@ -1415,13 +1415,16 @@ export default class Ambientlight {
   }
 
   updateStyles() {
-    this.mastheadElem.classList.toggle('yta-header-shadow', this.settings.headerShadowEnabled)
-    this.mastheadElem.classList.toggle('yta-header-transparent', this.settings.headerTransparentEnabled)
-
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
     fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
+
+    // Header transparency
+    let headerFillOpacity = this.settings.headerFillOpacity
+    headerFillOpacity = (headerFillOpacity !== 100) ? (headerFillOpacity / 100) : ''
+    this.mastheadElem.style.setProperty('--ambientlight-fill-opacity', headerFillOpacity)
+    this.mastheadElem.classList.toggle('yta-header-transparent', headerFillOpacity !== '')
     
 
     // Images transparency
@@ -1429,37 +1432,66 @@ export default class Ambientlight {
     imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
     document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
 
+    // Header transparency
+    let headerImageOpacity = this.settings.headerImagesOpacity
+    headerImageOpacity = (imageOpacity !== 100) ? (headerImageOpacity / 100) : ''
+    this.mastheadElem.style.setProperty('--ambientlight-image-opacity', headerImageOpacity)
 
-    // Content shadow
+    
+    // Shadows
     const textAndBtnOnly = this.settings.surroundingContentTextAndBtnOnly
-    const shadowSize = this.settings.surroundingContentShadowSize / 5
-    const shadowOpacity = this.settings.surroundingContentShadowOpacity / 100
-
-    // All
-    const getFilterShadow = (color) => (shadowSize && shadowOpacity) 
+    const getFilterShadow = (color, size, opacity) => (size && opacity) 
       ? (
-        (shadowOpacity > .5) 
+        (opacity > .5) 
         ? `
-          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity})) 
-          drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity}))
+          drop-shadow(0 0 ${size}px rgba(${color},${opacity})) 
+          drop-shadow(0 0 ${size}px rgba(${color},${opacity}))
         `
-        : `drop-shadow(0 0 ${shadowSize}px rgba(${color},${shadowOpacity * 2}))`
+        : `drop-shadow(0 0 ${size}px rgba(${color},${opacity * 2}))`
       )
       : ''
-    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
-    
-    // Text and buttons only
-    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getFilterShadow('255,255,255') : ''))
-    const getTextShadow = (color) => (shadowSize && shadowOpacity) 
+    const getTextShadow = (color, size, opacity) => (size && opacity) 
       ? `
-        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px,
-        rgba(${color},${shadowOpacity}) 0 0 ${shadowSize * 2}px
+        rgba(${color},${opacity}) 0 0 ${size * 2}px,
+        rgba(${color},${opacity}) 0 0 ${size * 2}px
       `
       : ''
-    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getTextShadow('0,0,0') : ''))
-    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getTextShadow('255,255,255') : ''))
+
+    // Header shadow
+    const headerShadowSize = this.settings.headerShadowSize / 5
+    const headerShadowOpacity = this.settings.headerShadowOpacity / 100
+    this.mastheadElem.classList.toggle('yta-header-shadow', headerShadowSize && headerShadowOpacity)
+
+    const getHeaderFilterShadow = (color) => getFilterShadow(color, headerShadowSize, headerShadowOpacity)
+    const getHeaderTextShadow = (color) => getTextShadow(color, headerShadowSize, headerShadowOpacity)
+
+    // Header !textAndBtnOnly
+    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+    
+    // Header textAndBtnOnly
+    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+
+    this.mastheadElem.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+
+    // Content shadow
+    const contentShadowSize = this.settings.surroundingContentShadowSize / 5
+    const contentShadowOpacity = this.settings.surroundingContentShadowOpacity / 100
+    const getContentFilterShadow = (color) => getFilterShadow(color, contentShadowSize, contentShadowOpacity)
+    const getContentTextShadow = (color) => getTextShadow(color, contentShadowSize, contentShadowOpacity)
+
+    // Content !textAndBtnOnly
+    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+    
+    // Content textAndBtnOnly
+    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+
+    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
 
 
     // Video shadow
