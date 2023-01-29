@@ -38,7 +38,7 @@ export default class Settings {
     for(const setting of SettingsConfig) {
       if(supportsWebGL()) {
         if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-          setting.default = 25
+          setting.default = 50
         }
       } else {
         if([
@@ -137,11 +137,11 @@ export default class Settings {
     const webGLCrashDate = new Date(webGLCrashed)
     const weekAfterCrashDate = new Date(webGLCrashDate.setDate(webGLCrashDate.getDate() + 7))
     // const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
-    const retryAfterUpdateAndAWeekLater = (
-      version !== storedSettings['setting-webGLCrashedAtVersion'] &&
+    const retryAfterUpdateOrAWeekLater = (
+      version !== storedSettings['setting-webGLCrashedAtVersion'] ||
       weekAfterCrashDate < new Date()
     )
-    if(retryAfterUpdateAndAWeekLater) {
+    if(retryAfterUpdateOrAWeekLater) {
       this.saveStorageEntry('webGLCrashed', undefined)
       this.saveStorageEntry('webGLCrashedAtVersion', undefined)
       return
@@ -565,6 +565,10 @@ export default class Settings {
           }
 
           if ([
+            'headerShadowSize',
+            'headerShadowOpacity',
+            'headerFillOpacity',
+            'headerImagesOpacity',
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
             'surroundingContentFillOpacity',
@@ -619,6 +623,8 @@ export default class Settings {
           }
 
           if([
+            'headerShadowSize',
+            'headerShadowOpacity',
             'surroundingContentShadowSize',
             'surroundingContentShadowOpacity',
             'videoShadowSize'
@@ -643,8 +649,9 @@ export default class Settings {
             'frameBlending',
             'showFPS',
             'showFrametimes',
+            'showResolutions',
             'surroundingContentTextAndBtnOnly',
-            'headerShadowEnabled',
+            'headerTransparentEnabled',
             'horizontalBarsClipPercentageReset',
             'detectHorizontalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
@@ -719,6 +726,7 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
+            this.ambientlight.sizesChanged = true
             this.updateVisibility()
           }
           
@@ -759,7 +767,8 @@ export default class Settings {
 
           if([
             'showFPS',
-            'showFrametimes'
+            'showFrametimes',
+            'showResolutions'
           ].some(name => name === setting.name)) {
             if(value) {
               this.ambientlight.updateStats()
@@ -770,10 +779,10 @@ export default class Settings {
           }
 
           if([
-            'surroundingContentTextAndBtnOnly',
-            'headerShadowEnabled'
+            'surroundingContentTextAndBtnOnly'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
+            this.ambientlight.optionalFrame()
             return
           }
 
@@ -948,15 +957,16 @@ export default class Settings {
       visible: () => this.videoOverlayEnabled
     },
     {
+      names: [ 'headerShadowOpacity' ],
+      visible: () => this.headerShadowSize
+    },
+    {
       names: [ 'surroundingContentShadowOpacity' ],
       visible: () => this.surroundingContentShadowSize
     },
     {
-      names: [
-        'headerShadowEnabled',
-        'surroundingContentTextAndBtnOnly'
-      ],
-      visible: () => this.surroundingContentShadowSize && this.surroundingContentShadowOpacity
+      names: [ 'surroundingContentTextAndBtnOnly' ],
+      visible: () => (this.surroundingContentShadowSize && this.surroundingContentShadowOpacity) || (this.headerShadowSize && this.headerShadowOpacity)
     },
     {
       names: [ 'videoShadowOpacity' ],
@@ -1121,7 +1131,10 @@ export default class Settings {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
-      SentryReporter.captureException(ex)
+
+      if(ex?.message !== 'An unexpected error occurred')
+        SentryReporter.captureException(ex)
+
       this.logStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }

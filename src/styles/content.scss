@@ -93,6 +93,9 @@
   overflow: hidden;
   contain: strict;
 }
+.ambientlight__video-resolution {
+  margin-top: 10px;
+}
 .ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
 .ambientlight__ambientlight-ft-legend {
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
@@ -189,12 +192,33 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Transparent elements */
 
-  body ytd-app #masthead-container.at-top {
-    ytd-masthead {
-      background: none !important;
+  body ytd-app #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      ytd-masthead {
+        background: none !important;
+      }
+      #voice-search-button {
+        background: transparent !important;
+      }
     }
-    #voice-search-button {
-      background: transparent !important;
+    &.yta-header-transparent {
+      ytd-masthead {
+        box-shadow: transparent 0 1px 0 0;
+      }
+      &:not(.at-top) {
+        ytd-masthead {
+          background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+          backdrop-filter: blur(30px);
+          box-shadow: rgba(0,0,0,.1) 0 1px 0 0;
+        }
+      }
+    }
+  }
+  &[dark] body ytd-app #masthead-container.yta-header-transparent:not(.at-top) {
+    ytd-masthead {
+      background: rgba(15,15,15,var(--ambientlight-fill-opacity, .1)) !important;
+      box-shadow: rgba(255,255,255,.1) 0 1px 0 0;
     }
   }
 
@@ -210,10 +234,13 @@ html[data-ambientlight-enabled="true"] {
     ytd-masthead {
       transition: background-color .15s;
     }
+    #masthead-container.yta-header-transparent ytd-masthead {
+      transition: background-color .15s, box-shadow .15s;
+    }
     #masthead-container.ytd-app::after {
       display: none;
     }
-    #masthead-container:not(.at-top) #voice-search-button {
+    #masthead-container:not(.yta-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
   }
@@ -263,6 +290,15 @@ html[data-ambientlight-enabled="true"] {
   .html5-main-video {
     transform-origin: center center;
     transform: var(--video-transform);
+
+    // Disable direct composition video overlay that causes chromium bugs:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1335391
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1411030
+    // .html5-video-container[style*="--video-transform"] {
+    &.ambientlight__chromium-bug-direct-video-overlay-workaround {
+      opacity: .9989999;
+    }
   }
   .ambientlight__video-overlay {
     transform-origin: center center;
@@ -345,6 +381,12 @@ html[data-ambientlight-enabled="true"] {
       transition: opacity .15s, filter .15s;
     }
   }
+  #masthead-container.at-top ytd-searchbox {
+    #container.ytd-searchbox,
+    #search-icon-legacy {
+      transition: color .15s, fill .15s;
+    }
+  }
 
   $account-btn: '.yt-spec-button-shape-next--outline';
   @mixin masthead-icon {
@@ -379,13 +421,14 @@ html[data-ambientlight-enabled="true"] {
       color: rgba(255,255,255,.1) !important;
       &:hover,
       &:focus-within {
-        color: rgba(255,255,255,1) !important;
+        color: inherit !important;
       }
     }
 
     @include masthead-icon {
       transition: color .15s;
     }
+    &.yta-header-transparent,
     &.at-top {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
@@ -396,7 +439,9 @@ html[data-ambientlight-enabled="true"] {
     #{$account-btn} {
       transition: border-color .15s, color .15s;
     }
+    &.yta-header-transparent,
     &.at-top {
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
         color: inherit;
       }
@@ -410,84 +455,70 @@ html[data-ambientlight-enabled="true"] {
       border-right: 0px solid transparent;
     }
 
-    &.at-top ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
-      .gsst_e {
-        opacity: .4;
+    &.at-top {
+      ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
+        .gsst_e {
+          opacity: .4;
+        }
       }
     }
   }
 
-  // Body light & search light & at top
-  &:not([dark]) #masthead-container.at-top {
-    --yt-button-color: #000;
-    #guide-icon.ytd-masthead,
-    yt-icon.ytd-topbar-logo-renderer, // old design
-    yt-icon.ytd-logo // new design
-    {
-      color: #000;
-    }
-    #country-code.ytd-topbar-logo-renderer {
-      color: rgba(20, 20, 20, .4);
-    }
+  // Header at top
+  &:not([dark]) #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      --yt-button-color: #000;
+      #search-button-narrow,
+      ytd-notification-topbar-button-renderer {
+        color: inherit;
+      }
 
-    ytd-searchbox:not(:hover):not(:focus-within) {
-      #container.ytd-searchbox {
-        box-shadow: none !important;
+      #guide-icon.ytd-masthead,
+      yt-icon.ytd-topbar-logo-renderer, // old design
+      yt-icon.ytd-logo // new design
+      {
+        color: #000;
       }
-      #container.ytd-searchbox,
-      #search-icon-legacy {
-        background-color: transparent !important;
-        border-color: rgba(0,0,0,.1) !important;
-      }
-      #search,
-      #search-clear-button yt-icon,
-      #search-icon-legacy yt-icon {
-        color: rgba(0,0,0,.4) !important;
-      }
-      #search::-webkit-input-placeholder {
-        color: rgba(0,0,0,.4) !important;
-      }
-    }
-
-    ytd-topbar-menu-button-renderer,
-    ytd-notification-topbar-button-renderer,
-    #search-button-narrow,
-    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
-      color: rgba(0,0,0,.4) !important;
-      &:hover,
-      &:focus-within {
-        color: rgba(0,0,0,1) !important;
-      }
-    }
-
-    #voice-search-button {
-      color: rgba(0,0,0,.1) !important;
-      &:hover,
-      &:focus-within {
-        button {
-          color: rgba(0,0,0,1) !important;
-        }
-      }
-    }
-
-    #{$account-btn} {
-      border-color: rgba(0,0,0,.4) !important;
-      &:not(.yt-spec-button-shape-next--call-to-action) {
-        color: rgba(0,0,0,.4) !important;
-      }
-    }
-
-    ytd-masthead[dark] {
       #country-code.ytd-topbar-logo-renderer {
-        color: rgba(0, 0, 0, .4);
+        color: rgba(20, 20, 20);
       }
 
       @include masthead-icon {
-        color: rgba(0,0,0,.4) !important;
+        color: rgba(0,0,0) !important;
       }
 
       #guide-button,
       #back-button {
+        &:hover,
+        &:focus-within {
+          color: rgba(0,0,0) !important;
+        }
+      }
+
+      #voice-search-button {
+        color: rgba(0,0,0,.4) !important;
+        &:not(:hover) button:not(:focus) yt-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+        &:hover,
+        &:focus-within {
+          button {
+            color: var(--yt-button-color) !important;
+          }
+        }
+      }
+    }
+
+    &.at-top {
+      #country-code.ytd-topbar-logo-renderer {
+        color: rgba(20, 20, 20, .4);
+      }
+
+      ytd-topbar-menu-button-renderer,
+      ytd-notification-topbar-button-renderer,
+      #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
+        color: rgba(0,0,0,.4) !important;
         &:hover,
         &:focus-within {
           color: rgba(0,0,0,1) !important;
@@ -495,18 +526,153 @@ html[data-ambientlight-enabled="true"] {
       }
 
       #voice-search-button {
-        color: rgba(0,0,0,.1) !important;
+        color: rgba(var(--yt-button-color),.1) !important;
         &:hover,
         &:focus-within {
           button {
-            color: rgba(0,0,0,1) !important;
+            color: rgba(var(--yt-button-color),1) !important;
           }
         }
       }
 
+      #{$account-btn} {
+        border-color: rgba(0,0,0,.4) !important;
+        &:not(.yt-spec-button-shape-next--call-to-action) {
+          color: rgba(0,0,0,.4) !important;
+        }
+      }
+
+      ytd-masthead[dark] {
+        #country-code.ytd-topbar-logo-renderer {
+          color: rgba(0, 0, 0, .4);
+        }
+
+        @include masthead-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+
+        #guide-button,
+        #back-button {
+          &:hover,
+          &:focus-within {
+            color: rgba(0,0,0,1) !important;
+          }
+        }
+
+        #voice-search-button {
+          color: rgba(0,0,0,.1) !important;
+          &:hover,
+          &:focus-within {
+            button {
+              color: rgba(0,0,0,1) !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &[dark] #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      #country-code.ytd-topbar-logo-renderer {
+        color: rgba(245, 245, 245, .4);
+      }
+      
+      @include masthead-icon {
+        color: rgba(255,255,255,.4) !important;
+      }
+
+      #voice-search-button {
+        color: rgba(255,255,255,.1) !important;
+        &:hover,
+        &:focus-within {
+          color: rgba(255,255,255,1) !important;
+        }
+      }
+
+      #{$account-btn} {
+        border-color: rgba(255,255,255,.2) !important;
+        &:not(.yt-spec-button-shape-next--call-to-action) {
+          color: rgba(255,255,255,.4) !important;
+        }
+      }
+    }
+  }
+
+  /* Header searchbar at top or transparent*/
+
+  &:not([dark]) #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
+      ytd-searchbox:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox {
+          box-shadow: none !important;
+        }
+        #container.ytd-searchbox,
+        #search-icon-legacy {
+          background-color: transparent !important;
+          border-color: rgba(0,0,0,.1) !important;
+        }
+        #search,
+        #search-clear-button yt-icon,
+        #search-icon-legacy yt-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+        #search::-webkit-input-placeholder {
+          color: rgba(0,0,0,.4) !important;
+        }
+      }
+
+      #search-button-narrow {
+        color: rgba(0,0,0,.4) !important;
+        &:hover,
+        &:focus-within {
+          color: rgba(0,0,0,1) !important;
+        }
+      }
+
+      ytd-masthead[dark] {
+        ytd-searchbox {
+          &:not(:hover):not(:focus-within) .gsst_e {
+            filter: none;
+          }
+          
+          &:hover,
+          &:focus-within {
+            #search-icon-legacy {
+              background-color: rgb(44,44,44) !important;
+            }
+            #search-clear-button yt-icon {
+              color: rgba(255,255,255) !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &[dark] #masthead-container {
+    &.yta-header-transparent,
+    &.at-top {
       ytd-searchbox {
-        &:not(:hover):not(:focus-within) .gsst_e {
-          filter: none;
+        &:not(:hover):not(:focus-within) {
+          #container.ytd-searchbox {
+            box-shadow: none !important;
+          }
+          #container.ytd-searchbox,
+          #search-icon-legacy {
+            background-color: transparent !important;
+            border-color: rgba(255,255,255,.1) !important;
+          }
+          #search,
+          #search-clear-button yt-icon,
+          #search-icon-legacy yt-icon {
+            color: rgba(255,255,255,.4) !important;
+          }
+          #search::-webkit-input-placeholder {
+            color: rgba(255,255,255,.4) !important;
+          }
         }
         
         &:hover,
@@ -514,66 +680,11 @@ html[data-ambientlight-enabled="true"] {
           #search-icon-legacy {
             background-color: rgb(44,44,44) !important;
           }
-          #search-clear-button yt-icon {
-            color: rgba(255,255,255) !important;
-          }
         }
       }
     }
   }
 
-  &[dark] #masthead-container.at-top {
-    #country-code.ytd-topbar-logo-renderer {
-      color: rgba(245, 245, 245, .4);
-    }
-
-    ytd-searchbox {
-      &:not(:hover):not(:focus-within) {
-        #container.ytd-searchbox {
-          box-shadow: none !important;
-        }
-        #container.ytd-searchbox,
-        #search-icon-legacy {
-          background-color: transparent !important;
-          border-color: rgba(255,255,255,.1) !important;
-        }
-        #search,
-        #search-clear-button yt-icon,
-        #search-icon-legacy yt-icon {
-          color: rgba(255,255,255,.4) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(255,255,255,.4) !important;
-        }
-      }
-      
-      &:hover,
-      &:focus-within {
-        #search-icon-legacy {
-          background-color: rgb(44,44,44) !important;
-        }
-      }
-    }
-    
-    @include masthead-icon {
-      color: rgba(255,255,255,.4) !important;
-    }
-
-    #voice-search-button {
-      color: rgba(255,255,255,.1) !important;
-      &:hover,
-      &:focus-within {
-        color: rgba(255,255,255,1) !important;
-      }
-    }
-
-    #{$account-btn} {
-      border-color: rgba(255,255,255,.2) !important;
-      &:not(.yt-spec-button-shape-next--call-to-action) {
-        color: rgba(255,255,255,.4) !important;
-      }
-    }
-  }
 
   /* Cosmetics - Old video info boxes */
 
@@ -590,19 +701,19 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-clarification-renderer {
     margin-top: 24px;
-    background: none;
+    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  &[dark] ytd-clarification-renderer {
+    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
 
   /* Cosmetics - Clarify box info panel */
 
   ytd-info-panel-content-renderer {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-info-panel-content-renderer {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  ytd-info-panel-content-renderer .content {
-    background: none !important;
+    &,
+    .content {
+      background: none !important;
+    }
   }
 
   /* Cosmetics - Merch shelf */
@@ -616,7 +727,10 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Movie offer */ 
 
-  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, ytd-tvfilm-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
+  ytd-tvfilm-offer-module-renderer {
+    background: none !important;
+  }
+  $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
   #{$movie-offer} {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
@@ -626,23 +740,22 @@ html[data-ambientlight-enabled="true"] {
 
   /* Live chat (Iframe styling in live-chat.css */
 
-  ytd-live-chat-frame:not([collapsed]) {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-live-chat-frame:not([collapsed]) {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
+  ytd-live-chat-frame,
   ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer button {
     text-shadow: inherit !important;
   }
-  ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  &[dark] ytd-live-chat-frame[collapsed] ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  }
+  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer button {
+    border-radius: 0 !important;
+    box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
     width: 100%; // Fixes shadow clipping
@@ -689,18 +802,20 @@ html[data-ambientlight-enabled="true"] {
       z-index: 2;
     }
 
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+    .header.ytd-playlist-panel-renderer {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
     }
+    
     ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
-      border-top: 1px solid var(--yt-spec-10-percent-layer) !important;
+      box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
     }
 
     .playlist-items.ytd-playlist-panel-renderer {
       @include scrollbar-light-thin()
     }
 
-    .header.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
     yt-chip-cloud-renderer {
       background: none !important;
@@ -738,8 +853,21 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-playlist-panel-video-renderer:hover:not(.dragging) {
-      background-color: rgba(20,20,20,.15);
+    ytd-playlist-panel-video-renderer {
+      &[selected],
+      &:hover:not(.dragging) {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+      }
+      &[selected] {
+        #index.ytd-playlist-panel-video-renderer,
+        #byline.ytd-playlist-panel-video-renderer,
+        #video-info.ytd-playlist-panel-video-renderer {
+          color: rgba(var(--yt-spec-text-secondary), .8) !important;
+        }
+        #video-title.ytd-playlist-panel-video-renderer {
+          color: rgb(0, 0, 0) !important;
+        }
+      }
     }
 
     yt-chip-cloud-chip-renderer:not([selected]) {
@@ -784,7 +912,7 @@ html[data-ambientlight-enabled="true"] {
   }
   &[dark] {
     ytd-app {
-      ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer {
+      .header.ytd-playlist-panel-renderer {
         background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
       }
 
@@ -805,7 +933,18 @@ html[data-ambientlight-enabled="true"] {
       span.yt-view-count-renderer {
         color: rgba(255, 255, 255, 0.882) !important;
       }
-      
+    
+      ytd-playlist-panel-video-renderer {
+        &[selected],
+        &:hover:not(.dragging) {
+          background-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        &[selected] {
+          #video-title.ytd-playlist-panel-video-renderer {
+            color: rgb(255,255,255) !important;
+          }
+        }
+      }
     
       ytd-watch-metadata[modern-metapanel] {
         #description.ytd-watch-metadata {
@@ -884,10 +1023,16 @@ html[data-ambientlight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
-    // Prevent Firefox from stopping the video rendering
-    // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
-    opacity: 0.9899999;
     transition: opacity .25s .25s;//, margin-top .2s ease-out;
+
+    // Prevent Firefox from stopping the video rendering
+    opacity: .9899999; // Firefox
+
+    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
+      // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
+      opacity: .9989999; // Chromium
+    }
+
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
       transition: opacity .001s;//, margin-top .2s ease-out;
@@ -907,7 +1052,9 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-app #masthead-container {
-      will-change: opacity;
+      &:not(.yta-header-transparent) {
+        will-change: opacity; // conflicts with backdrop-filter
+      }
       
       &.at-top:not(:hover):not(:focus-within) {
         transition: opacity .15s ease-out;
@@ -1289,7 +1436,7 @@ html[data-ambientlight-enabled="true"] {
 
   .ytpa-menuitem--experimental,
   .ytpa-menuitem--new {
-    & .ytp-menuitem-label {
+    .ytp-menuitem-label {
       position: relative;
       &::before {
         content: 'N';
@@ -1304,13 +1451,14 @@ html[data-ambientlight-enabled="true"] {
         border-radius: 6px;
         display: block;
         line-height: 12px;
-        background: #fd0;
+        background: #1f7;
         color: #000;
         font-weight: 600;
         font-size: 7px;
         text-shadow: none;
         text-align: center;
         line-height: 11px;
+        opacity: .25;
         transition: transform .25s .25s ease-out;
 
         .ytp-fullscreen & {
@@ -1336,7 +1484,7 @@ html[data-ambientlight-enabled="true"] {
         padding: 0 4px;
         border-radius: 6px;
         display: block;
-        background: #fd0;
+        background: #1f7;
         color: #000;
         line-height: 12px;
         font-size: 10px;
@@ -1358,8 +1506,9 @@ html[data-ambientlight-enabled="true"] {
     }
     &:hover .ytp-menuitem-label {
       &::before {
+        opacity: .67;
         transform: translateY(-14px);
-        transition: transform .25s .75s ease-in;
+        transition: transform .35s .625s ease-in-out;
 
         .ytp-fullscreen & {
           transform: translateY(-18px);
@@ -1369,7 +1518,7 @@ html[data-ambientlight-enabled="true"] {
         visibility: visible;
         opacity: 1;
         max-width: 28px;
-        transition: visibility 0s .75s, opacity .125s .9s ease-out, max-width .5s 1s ease;
+        transition: visibility 0s .75s, opacity .125s .9s ease-out, max-width .5s 1s ease-out;
         .ytp-fullscreen & {
           max-width: 34px;
         }
@@ -1380,11 +1529,11 @@ html[data-ambientlight-enabled="true"] {
     .ytp-menuitem-label {
       &::before {
         content: 'E';
-        background: #f00;
+        background: #fa0;
       }
       &::after {
         content: 'Experimental';
-        background: #f00;
+        background: #fa0;
       }
     }
     
@@ -1869,11 +2018,15 @@ html[data-ambientlight-enabled="true"] {
 
   // All shadows
   
-  > body:not([style*="--ambientlight-text-shadow:"]) #masthead-container.at-top.yta-ambientlight-header-shadow {
-    transition: filter .15s;
+  #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]) #container.ytd-masthead {
+    &.yta-header-transparent,
+    &.at-top {
+      transition: filter .15s;
+    }
   }
   @mixin filter-and-text-shadow-selectors {
-    #masthead-container.at-top.yta-ambientlight-header-shadow,
+    #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]).yta-header-transparent #container.ytd-masthead,
+    #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]).at-top #container.ytd-masthead,
     ytd-app #top > #container > *,
     ytd-app #primary-inner > *:not(#player),
     ytd-app #secondary,
@@ -1908,15 +2061,17 @@ html[data-ambientlight-enabled="true"] {
       text-shadow: inherit !important;
     }
 
-    #subscribe-button ytd-button-renderer:not([subscribed]),
+    #subscribe-button ytd-button-renderer:not([subscribed]) button,
     tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
     yt-chip-cloud-chip-renderer[selected],
-    ytd-button-renderer.style-primary[is-paper-button],
+    ytd-button-renderer.style-primary[is-paper-button] button,
+    .product-item-button.ytd-merch-shelf-item-renderer,
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
     #action, // Ad button: More info
-    #action-button,
+    #action-button, // Ad button: Visite website
     .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
-    ytd-author-comment-badge-renderer { // Ad button: Visite website
+    ytd-author-comment-badge-renderer,
+    ytd-thumbnail-overlay-time-status-renderer {
       filter: none !important;
       text-shadow: none !important;
     }
@@ -1925,7 +2080,7 @@ html[data-ambientlight-enabled="true"] {
     // old video info
     .title.ytd-video-primary-info-renderer,
     #info-text.ytd-video-primary-info-renderer,
-    yt-formatted-string.ytd-button-renderer,
+    yt-formatted-string.ytd-button-renderer button,
     ytd-video-secondary-info-renderer .ytd-channel-name,
     #byline-container.ytd-video-meta-block,
 
@@ -1995,8 +2150,8 @@ html[data-ambientlight-enabled="true"] {
         $playlist-header: '#header-contents.ytd-playlist-panel-renderer';
 
         #upload-info.ytd-video-owner-renderer,
-        #{$info} ytd-toggle-button-renderer,
-        #{$info} ytd-button-renderer,
+        #{$info} ytd-toggle-button-renderer button,
+        #{$info} ytd-button-renderer button,
         #{$info} yt-icon.ytd-menu-renderer,
         ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) > *,
         ytd-subscription-notification-toggle-button-renderer,
@@ -2010,7 +2165,7 @@ html[data-ambientlight-enabled="true"] {
         #{$playlist-header} .index-message-wrapper,
         #{$playlist-header} yt-icon-button,
         #{$playlist-header} ytd-playlist-loop-button-renderer,
-        #{$playlist-header} ytd-toggle-button-renderer,
+        #{$playlist-header} ytd-toggle-button-renderer button,
         ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
 
         ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
@@ -2025,14 +2180,20 @@ html[data-ambientlight-enabled="true"] {
           @content;
           text-shadow: none !important;
         }
-      }
 
-      #masthead-container.yta-ambientlight-header-shadow {
-        ytd-searchbox {
-          transition: filter .15s;
+        tp-yt-paper-tooltip {
+          text-shadow: none !important; // Tooltips
         }
       }
-      #masthead-container.at-top.yta-ambientlight-header-shadow {
+    }
+    
+    #masthead-container.yta-header-shadow[style*="--ambientlight-text-shadow:"] {
+      ytd-searchbox {
+        transition: filter .15s;
+      }
+      
+      &.yta-header-transparent,
+      &.at-top {
         yt-icon.ytd-logo svg {
           overflow: visible;
         }
@@ -2041,7 +2202,7 @@ html[data-ambientlight-enabled="true"] {
         ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
         ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
         yt-icon-button,
-        ytd-button-renderer {
+        ytd-button-renderer button {
           @content;
           text-shadow: none !important;
         }

@@ -86,8 +86,8 @@ const detectDetachedVideo = (ytdAppElem) => {
   })
 }
 
-let initializingAmbientlight = false
 const tryInitAmbientlight = async () => {
+  if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
 
   const ytdAppElem = $.s('ytd-app')
@@ -227,7 +227,7 @@ const loadAmbientlight = async () => {
           // Initialized
           observer.disconnect()
         } else {
-          while(tryAgain) {
+          while(tryAgain && !window.ambientlight) {
             tryAgain = false
             if(await tryInitAmbientlight()) {
               // Initialized

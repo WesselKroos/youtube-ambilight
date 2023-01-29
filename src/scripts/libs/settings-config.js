@@ -9,7 +9,7 @@ const SettingsConfig = [
     name: 'advancedSettings',
     label: 'Advanced',
     type: 'checkbox',
-    default: false
+    default: true
   },
   {
     type: 'section',
@@ -37,6 +37,13 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'showResolutions',
+    label: 'Resolution & draw time stats',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
     name: 'frameSync',
     label: 'Synchronization',
     questionMark: {
@@ -54,7 +61,7 @@ const SettingsConfig = [
     name: 'framerateLimit',
     label: 'Limit framerate (per second)',
     type: 'list',
-    default: 30,
+    default: 0,
     min: 0,
     max: 60,
     step: 1,
@@ -63,7 +70,6 @@ const SettingsConfig = [
   {
     name: 'webGL',
     label: 'WebGL renderer (uses less power)',
-    // description: 'Reduces power usage',
     type: 'checkbox',
     default: true,
     new: true,
@@ -131,6 +137,52 @@ const SettingsConfig = [
   },
   {
     type: 'section',
+    label: 'Page header',
+    name: 'sectionOtherPageHeaderCollapsed',
+    default: true
+  },
+  {
+    name: 'headerShadowSize',
+    label: 'Shadows size',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: .1
+  },
+  {
+    name: 'headerShadowOpacity',
+    label: 'Shadows opacity',
+    type: 'list',
+    default: 30,
+    min: 0,
+    max: 100,
+    step: .1
+  },
+  {
+    name: 'headerImagesOpacity',
+    label: 'Images opacity',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  {
+    name: 'headerFillOpacity',
+    label: 'Background opacity',
+    description: 'While scrolled down',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true,
+    experimental: true
+  },
+
+  {
+    type: 'section',
     label: 'Page content',
     name: 'sectionOtherPageContentCollapsed',
     default: true
@@ -154,19 +206,22 @@ const SettingsConfig = [
     step: .1
   },
   {
-    name: 'headerShadowEnabled',
-    label: 'Shadows on header',
-    type: 'checkbox',
-    default: false,
-    new: true
-  },
-  {
     name: 'surroundingContentTextAndBtnOnly',
     label: 'Shadows on texts and buttons only',
-    description: 'Decreases scroll & video stutter',
+    description: 'Decreases scrolling & video stutter',
     type: 'checkbox',
     advanced: true,
     default: true
+  },
+  {
+    name: 'surroundingContentImagesOpacity',
+    label: 'Images opacity',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: false
   },
   {
     name: 'surroundingContentFillOpacity',
@@ -180,16 +235,6 @@ const SettingsConfig = [
     new: true
   },
   {
-    name: 'surroundingContentImagesOpacity',
-    label: 'Images opacity',
-    type: 'list',
-    default: 100,
-    min: 0,
-    max: 100,
-    step: 1,
-    advanced: false
-  },
-  {
     name: 'immersiveTheaterView',
     label: 'Hide everything in theater mode',
     type: 'checkbox',
@@ -199,7 +244,7 @@ const SettingsConfig = [
     name: 'hideScrollbar',
     label: 'Hide scrollbar',
     type: 'checkbox',
-    default: false
+    default: true
   },
   {
     type: 'section',
@@ -443,7 +488,7 @@ const SettingsConfig = [
   {
     name: 'edge',
     label: 'Edge size',
-    description: 'Less GPU usage. Tip: Turn blur down',
+    description: 'To see what changed: Turn the blur to 0%',
     type: 'list',
     default: 12,
     min: 2,
@@ -474,7 +519,7 @@ const SettingsConfig = [
   {
     name: 'fadeOutEasing',
     label: 'Spread fade curve',
-    description: 'Tip: Turn blur all the way down',
+    description: 'To see what changed: Turn the blur to 0%',
     type: 'list',
     default: 35,
     min: 1,

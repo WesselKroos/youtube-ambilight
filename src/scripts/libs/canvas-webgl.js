@@ -1,23 +1,23 @@
-import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { raf, wrapErrorHandler } from './generic';
+import { AmbientlightError } from './sentry-reporter';
+import { wrapErrorHandler } from './generic';
 
-export class WebGLCanvas {
-  constructor(width, height) {
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.canvas._getContext = this.canvas.getContext;
-    this.canvas.getContext = (type, options) => {
-      if(type === '2d') {
-        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options);
-      } else {
-        this.canvas.ctx = this.canvas._getContext(type, options);
-      }
-      return this.canvas.ctx;
-    }
-    return this.canvas;
-  }
-}
+// export class WebGLCanvas {
+//   constructor(width, height) {
+//     this.canvas = document.createElement('canvas');
+//     this.canvas.width = width;
+//     this.canvas.height = height;
+//     this.canvas._getContext = this.canvas.getContext;
+//     this.canvas.getContext = async (type, options) => {
+//       if(type === '2d') {
+//         this.canvas.ctx = this.ctx = this.ctx || await new WebGLContext(this.canvas, type, options);
+//       } else {
+//         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
+//       }
+//       return this.ctx;
+//     }
+//     return this.canvas;
+//   }
+// }
 
 export class WebGLOffscreenCanvas {
   constructor(width, height, settings) {
@@ -30,13 +30,13 @@ export class WebGLOffscreenCanvas {
     }
     
     this.canvas._getContext = this.canvas.getContext;
-    this.canvas.getContext = (type, options = {}) => {
+    this.canvas.getContext = async (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.canvas.ctx || new WebGLContext(this.canvas, type, options, settings);
+        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, settings);
       } else {
-        this.canvas.ctx = this.canvas._getContext(type, options);
+        this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
-      return this.canvas.ctx;
+      return this.ctx;
     }
     return this.canvas;
   }
@@ -46,46 +46,50 @@ export class WebGLContext {
   lostCount = 0
 
   constructor(canvas, type, options, settings) {
-    this.settings = settings;
-    this.setWarning = settings.setWarning;
-    this.canvas = canvas;
-    this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
-      event.preventDefault();
-      this.lost = true
-      this.lostCount++
-      this.viewport = undefined
-      this.scaleX = undefined
-      this.scaleY = undefined
-      this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
-      console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
-      this.setWebGLWarning('restore')
-    }.bind(this)), false);
-    this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(function canvasWebGLContextRestored() {
-      if(this.lostCount >= 3) {
-        console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
-        this.setWebGLWarning('3 times restore')
-        return
-      }
-      this.initCtx()
-      if(this.ctx && !this.ctx.isContextLost()) {
-        this.lost = false
-        this.lostCount = 0
-        this.setWarning('')
-      } else {
-        console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+    return (async function WebGLContextConstructor() {
+      this.settings = settings;
+      this.setWarning = settings.setWarning;
+      this.canvas = canvas;
+      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
+        event.preventDefault();
+        this.lost = true
+        this.lostCount++
+        this.viewport = undefined
+        this.scaleX = undefined
+        this.scaleY = undefined
+        this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
+        console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
         this.setWebGLWarning('restore')
-      }
-    }.bind(this)), false);
-    this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
-      this.webglcontextcreationerrors.push({
-        message: e.statusMessage || '?',
-        time: performance.now(),
-        webGLVersion: this.webGLVersion
-      })
-    }.bind(this)), false);
+      }.bind(this)), false);
+      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function canvasWebGLContextRestored() {
+        if(this.lostCount >= 3) {
+          console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
+          this.setWebGLWarning('3 times restore')
+          return
+        }
+        await this.initCtx()
+        if(this.ctx && !this.ctx.isContextLost()) {
+          this.lost = false
+          this.lostCount = 0
+          this.setWarning('')
+        } else {
+          console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+          this.setWebGLWarning('restore')
+        }
+      }.bind(this)), false);
+      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
+        this.webglcontextcreationerrors.push({
+          message: e.statusMessage || '?',
+          time: performance.now(),
+          webGLVersion: this.webGLVersion
+        })
+      }.bind(this)), false);
 
-    this.options = options;
-    this.initCtx()
+      this.options = options;
+      await this.initCtx()
+
+      return this
+    }.bind(this))()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
@@ -93,7 +97,7 @@ export class WebGLContext {
   }
 
   webglcontextcreationerrors = []
-  initCtx = () => {
+  async initCtx() {
     if(this.program && !this.ctxIsInvalid) {
       this.ctx.deleteProgram(this.program) // Free GPU memory
       this.program = undefined
@@ -112,10 +116,10 @@ export class WebGLContext {
         ...this.options
       }
       this.webGLVersion = 2
-      this.ctx = this.canvas.getContext('webgl2', ctxOptions)
+      this.ctx = await this.canvas.getContext('webgl2', ctxOptions)
       if(!this.ctx) {
         this.webGLVersion = 1
-        this.ctx = this.canvas.getContext('webgl', ctxOptions)
+        this.ctx = await this.canvas.getContext('webgl', ctxOptions)
         if(!this.ctx) {
           this.webGLVersion = undefined
 
@@ -150,9 +154,10 @@ export class WebGLContext {
       precision lowp float;
       varying vec2 fUV;
       uniform sampler2D sampler;
+      uniform float fMipmapLevel;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV);
+        gl_FragColor = texture2D(sampler, fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -180,7 +185,19 @@ export class WebGLContext {
     if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
       throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
     }
+    
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    if(parallelShaderCompileExt) {
+      await new Promise(resolve => {
+        const checkCompletion = () => this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
+          ? resolve()
+          : requestAnimationFrame(checkCompletion);
+        requestAnimationFrame(checkCompletion);
+      })
+    }
     this.ctx.useProgram(this.program);
+
+    this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
 
     // Buffers
     var vUVBuffer = this.ctx.createBuffer();
@@ -228,13 +245,13 @@ export class WebGLContext {
       this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
     );
     if(tfaExt) {
-      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
   }
 
   clearRect = (x, y, width, height) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
@@ -266,8 +283,16 @@ export class WebGLContext {
     return this._cachedScale
   }
 
+  // drawTextureSize = {
+  //   width: 0,
+  //   height: 0
+  // }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
+
+    const internalFormat = this.ctx.RGBA;
+    const format = this.ctx.RGBA;
+    const formatType = this.ctx.UNSIGNED_BYTE;
 
     if(destX === undefined) {
       destX = srcX
@@ -299,19 +324,42 @@ export class WebGLContext {
       this.viewport = { width: destWidth, height: destHeight };
     }
     
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, src)
+    const mipmapLevel = 1 // Math.max(0, (Math.log(srcHeight / destHeight) / Math.log(2)) - 2)
+    if(mipmapLevel !== this.fMipmapLevel) {
+      // console.log('video', mipmapLevel, `${srcHeight} -> ${destHeight}`)
+      this.fMipmapLevel = mipmapLevel
+      this.ctx.uniform1f(this.fMipmapLevelLoc, mipmapLevel);
+    }
+    
+    let start = performance.now()
+    //// Chromium bug 1074473: texSubImage2D from a video element is 80x slower than texImage2D
+    // const textureSize = {
+    //   width: srcWidth,
+    //   height: srcHeight
+    // }
+    // const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
+    // if(updateTextureSize) {
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
+    //   this.drawTextureSize = textureSize
+    // } else {
+    //   this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
+    // }
+
+    // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-
+    this.loadTime = performance.now() - start
+    
+    start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null);
+    this.drawTime = performance.now() - start
   }
 
   getImageDataBuffers = []
   getImageDataBuffersIndex = 0
   getImageData = (x = 0, y = 0, width = this.ctx.drawingBufferWidth, height = this.ctx.drawingBufferHeight) => {
-    if(this.ctxIsInvalid) return
+    if(this.ctxIsInvalid || this.lost) return
 
     // Enough for 10 ImageData objects for the blackbar detection
     if(this.getImageDataBuffersIndex > 9) {

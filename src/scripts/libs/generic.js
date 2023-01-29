@@ -80,9 +80,9 @@ export function on(elem, eventNames, callback, options, getListenerCallback, rep
   const callbacksName = `on_${eventNames.split(' ').join('_')}`
   let reported = [];
   const namedCallbacks = {
-    [callbacksName]: (...args) => {
+    [callbacksName]: async (...args) => {
       try {
-        callback(...args)
+        await callback(...args)
       } catch(ex) {
         if(reportOnce) {
           if(reported.includes(ex.message)) return

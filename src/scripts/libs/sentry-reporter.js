@@ -310,7 +310,6 @@ export default class SentryReporter {
               'videoIsHidden',
               'isAmbientlightHiddenOnWatchPage',
               'isVideoHiddenOnWatchPage',
-              'isBuffering',
               'isVR',
               'srcVideoOffset.top',
               'srcVideoOffset.width',

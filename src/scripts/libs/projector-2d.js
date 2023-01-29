@@ -72,12 +72,16 @@ export default class Projector2d {
   }
 
   draw(src) {
-    const srcX = src.width * this.crop[0]
-    const srcY = src.height * this.crop[1]
-    const srcWidth = src.width * (1 - this.crop[0] * 2)
-    const srcHeight = src.height * (1 - this.crop[1] * 2)
+    const srcWidth = src.videoWidth || src.width
+    const srcHeight = src.videoHeight || src.height
+
+    const croppedSrcX = srcWidth * this.crop[0]
+    const croppedSrcY = srcHeight * this.crop[1]
+    const croppedSrcWidth = srcWidth * (1 - this.crop[0] * 2)
+    const croppedSrcHeight = srcHeight * (1 - this.crop[1] * 2)
+    
     for(const projector of this.projectors) {
-      projector.ctx.drawImage(src, srcX, srcY, srcWidth, srcHeight, 0, 0, projector.elem.width, projector.elem.height)
+      projector.ctx.drawImage(src, croppedSrcX, croppedSrcY, croppedSrcWidth, croppedSrcHeight, 0, 0, projector.elem.width, projector.elem.height)
     }
   }
 }
