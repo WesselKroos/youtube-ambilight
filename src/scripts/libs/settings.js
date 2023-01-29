@@ -1127,7 +1127,10 @@ export default class Settings {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
-      SentryReporter.captureException(ex)
+      
+      if(ex?.message !== 'An unexpected error occurred')
+        SentryReporter.captureException(ex)
+
       this.logStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
