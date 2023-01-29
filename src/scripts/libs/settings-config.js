@@ -9,7 +9,7 @@ const SettingsConfig = [
     name: 'advancedSettings',
     label: 'Advanced',
     type: 'checkbox',
-    default: false
+    default: true
   },
   {
     type: 'section',
@@ -61,7 +61,7 @@ const SettingsConfig = [
     name: 'framerateLimit',
     label: 'Limit framerate (per second)',
     type: 'list',
-    default: 30,
+    default: 0,
     min: 0,
     max: 60,
     step: 1,
@@ -216,7 +216,7 @@ const SettingsConfig = [
     name: 'hideScrollbar',
     label: 'Hide scrollbar',
     type: 'checkbox',
-    default: false
+    default: true
   },
   {
     type: 'section',

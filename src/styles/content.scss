@@ -290,6 +290,15 @@ html[data-ambientlight-enabled="true"] {
   .html5-main-video {
     transform-origin: center center;
     transform: var(--video-transform);
+
+    // Disable direct composition video overlay that causes chromium bugs:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1335391
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1411030
+    // .html5-video-container[style*="--video-transform"] {
+    &.ambientlight__chromium-bug-direct-video-overlay-workaround {
+      opacity: .9989999;
+    }
   }
   .ambientlight__video-overlay {
     transform-origin: center center;
@@ -951,10 +960,16 @@ html[data-ambientlight-enabled="true"] {
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
-    // Prevent Firefox from stopping the video rendering
-    // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
-    opacity: 0.9899999;
     transition: opacity .25s .25s;//, margin-top .2s ease-out;
+
+    // Prevent Firefox from stopping the video rendering
+    opacity: .9899999; // Firefox
+
+    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
+      // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
+      opacity: .9989999; // Chromium
+    }
+
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
       transition: opacity .001s;//, margin-top .2s ease-out;

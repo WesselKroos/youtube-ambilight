@@ -63,6 +63,7 @@ export default class Ambientlight {
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
   enableChromiumBug1092080Workaround = false
+  enableChromiumBugDirectVideoOverlayWorkaround = false
 
   constructor(ytdAppElem, videoElem) {
     return (async function AmbientlightConstructor() {
@@ -73,6 +74,7 @@ export default class Ambientlight {
       }
 
       this.detectChromiumBug1142112Workaround()
+      this.detectChromiumBugDirectVideoOverlayWorkaround()
       this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
@@ -155,6 +157,9 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.cancelScheduledRequestVideoFrame()
     this.videoElem = videoElem
+    if(this.enableChromiumBugDirectVideoOverlayWorkaround) {
+      this.videoElem.classList.add('ambientlight__chromium-bug-direct-video-overlay-workaround')
+    }
     if(initListeners) this.initVideoListeners()
   }
 
@@ -253,6 +258,14 @@ export default class Ambientlight {
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version && version >= 82 && version < 88) {
       this.enableChromiumBug1092080Workaround = true
+    }
+  }
+
+  detectChromiumBugDirectVideoOverlayWorkaround() {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && version >= 59) {
+      this.enableChromiumBugDirectVideoOverlayWorkaround = true
     }
   }
 
