@@ -421,19 +421,14 @@ html[data-ambientlight-enabled="true"] {
       color: rgba(255,255,255,.1) !important;
       &:hover,
       &:focus-within {
-        color: rgba(255,255,255,1) !important;
+        color: inherit !important;
       }
     }
 
     @include masthead-icon {
       transition: color .15s;
     }
-    &.yta-header-transparent {
-      @include masthead-icon {
-        color: rgba(255,255,255,1) !important;
-        fill: currentColor !important;
-      }
-    }
+    &.yta-header-transparent,
     &.at-top {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
@@ -446,6 +441,7 @@ html[data-ambientlight-enabled="true"] {
     }
     &.yta-header-transparent,
     &.at-top {
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
         color: inherit;
       }
@@ -468,12 +464,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  // Todo: Fix light theme scrolled down transparent buttons opacity
   // Header at top
   &:not([dark]) #masthead-container {
     &.yta-header-transparent,
     &.at-top {
       --yt-button-color: #000;
+      #search-button-narrow,
+      ytd-notification-topbar-button-renderer {
+        color: inherit;
+      }
 
       #guide-icon.ytd-masthead,
       yt-icon.ytd-topbar-logo-renderer, // old design
@@ -483,6 +482,31 @@ html[data-ambientlight-enabled="true"] {
       }
       #country-code.ytd-topbar-logo-renderer {
         color: rgba(20, 20, 20);
+      }
+
+      @include masthead-icon {
+        color: rgba(0,0,0) !important;
+      }
+
+      #guide-button,
+      #back-button {
+        &:hover,
+        &:focus-within {
+          color: rgba(0,0,0) !important;
+        }
+      }
+
+      #voice-search-button {
+        color: rgba(0,0,0,.4) !important;
+        &:not(:hover) button:not(:focus) yt-icon {
+          color: rgba(0,0,0,.4) !important;
+        }
+        &:hover,
+        &:focus-within {
+          button {
+            color: var(--yt-button-color) !important;
+          }
+        }
       }
     }
 
@@ -549,6 +573,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   &[dark] #masthead-container {
+    &.yta-header-transparent,
     &.at-top {
       #country-code.ytd-topbar-logo-renderer {
         color: rgba(245, 245, 245, .4);
