@@ -96,7 +96,7 @@ export default class Ambientlight {
       this.updateStyles()
 
       this.checkGetImageDataAllowed()
-      this.initListeners()
+      await this.initListeners()
       this.initLiveChat() // Depends on this.originalTheme set in initListeners
 
       if (this.settings.enabled) {
@@ -417,7 +417,7 @@ export default class Ambientlight {
     }
   }
 
-  initListeners() {
+  async initListeners() {
     this.initVideoListeners()
 
     if(this.settings.webGL) {
@@ -442,15 +442,19 @@ export default class Ambientlight {
     if(this.topElem) {
       this.topElemObserver = new IntersectionObserver(
         wrapErrorHandler(async (entries, observer) => {
+          let atTop = true
           for (const entry of entries) {
-            this.atTop = (entry.intersectionRatio !== 0)
-            await this.updateAtTop()
+            atTop = (entry.intersectionRatio !== 0)
+          }
+          if(this.atTop === atTop) return
 
-            // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
-            if(this.isFillingFullscreen && !this.atTop) {
-              this.buffersCleared = true
-              this.optionalFrame()
-            }
+          this.atTop = atTop
+          await this.updateAtTop()
+
+          // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
+          if(this.isFillingFullscreen && !this.atTop) {
+            this.buffersCleared = true
+            this.optionalFrame()
           }
         }, true),
         {
@@ -458,6 +462,7 @@ export default class Ambientlight {
         }
       )
       this.topElemObserver.observe(this.topElem)
+      await this.updateAtTop()
     }
 
     if(this.settings.webGL)
