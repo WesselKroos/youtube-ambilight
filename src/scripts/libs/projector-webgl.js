@@ -411,40 +411,53 @@ export default class ProjectorWebGL {
         depth: false,
         antialias: false,
         desynchronized: false,
-        stencil: true // Todo: Migrate to optional if supported
+        stencil: true
       }
       this.webGLVersion = 2
       this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
       if(this.ctx) {
         this.noMajorPerformanceCaveatDetected()
       } else {
-        this.webGLVersion = 1
-        this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+        this.ctxOptions.stencil = false
+        this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
         if(this.ctx) {
           this.noMajorPerformanceCaveatDetected()
         } else {
-          this.ctxOptions.failIfMajorPerformanceCaveat = false
-          this.webGLVersion = 2
-          this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+          this.webGLVersion = 1
+          this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
           if(this.ctx) {
-            this.majorPerformanceCaveatDetected()
+            this.noMajorPerformanceCaveatDetected()
           } else {
-            this.webGLVersion = 1
-            this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+            this.ctxOptions.failIfMajorPerformanceCaveat = false
+            this.ctxOptions.stencil = true
+            this.webGLVersion = 2
+            this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
             if(this.ctx) {
               this.majorPerformanceCaveatDetected()
             } else {
-              this.webGLVersion = undefined
+              this.ctxOptions.stencil = false
+              this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+              if(this.ctx) {
+                this.noMajorPerformanceCaveatDetected()
+              } else {
+                this.webGLVersion = 1
+                this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+                if(this.ctx) {
+                  this.majorPerformanceCaveatDetected()
+                } else {
+                  this.webGLVersion = undefined
 
-              const errors = this.webglcontextcreationerrors
-              let lastErrorMessage;
-              for(const i in errors) {
-                const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
-                lastErrorMessage = errors[i].message
-                if(duplicate) errors[i].message = '"'
+                  const errors = this.webglcontextcreationerrors
+                  let lastErrorMessage;
+                  for(const i in errors) {
+                    const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
+                    lastErrorMessage = errors[i].message
+                    if(duplicate) errors[i].message = '"'
+                  }
+
+                  throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
+                }
               }
-
-              throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
             }
           }
         }
@@ -458,7 +471,8 @@ export default class ProjectorWebGL {
       ctx: this
     }
     
-    this.ctx.enable(this.ctx.STENCIL_TEST);
+    if(this.ctxOptions.stencil)
+      this.ctx.enable(this.ctx.STENCIL_TEST);
 
     // Program
     this.program = this.ctx.createProgram();
@@ -682,8 +696,10 @@ export default class ProjectorWebGL {
     const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
     this.ctx.uniform1iv(textureSamplerLoc, this.projectorsTexture.map((_, i) => 1 + i));
     
-    this.fDrawingStencilLoc = this.ctx.getUniformLocation(this.program, 'fDrawingStencil');
-    this.ctx.uniform1f(this.fDrawingStencilLoc, 0);
+    if(this.ctxOptions.stencil) {
+      this.fDrawingStencilLoc = this.ctx.getUniformLocation(this.program, 'fDrawingStencil');
+      this.ctx.uniform1f(this.fDrawingStencilLoc, 0);
+    }
 
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
@@ -786,7 +802,7 @@ export default class ProjectorWebGL {
   }
 
   updateCrop() {
-    if(!this.ctx || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
+    if(!this.ctxOptions.stencil || !this.ctx || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
     const canvasRect = this.blurCanvas.getBoundingClientRect()
     if(!canvasRect?.width || !canvasRect?.height) return

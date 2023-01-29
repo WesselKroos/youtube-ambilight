@@ -171,6 +171,7 @@ export default class Ambientlight {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
   }
+  shouldDrawDirectlyFromVideoElem = () => this.projector.webGLVersion === 2 && this.enableMozillaBugReadPixelsWorkaround
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
@@ -933,7 +934,7 @@ export default class Ambientlight {
 
     this.videoResolutionElem = appendFPSItem('ambientlight__video-resolution')
     this.videoSyncedResolutionElem = appendFPSItem('ambientlight__video-synced-resolution')
-    if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1)
+    if(!this.shouldDrawDirectlyFromVideoElem())
       this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
@@ -2507,14 +2508,15 @@ GREY   | previous display frames`
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
       }
 
+      const shouldDrawDirectlyFromVideoElem = this.shouldDrawDirectlyFromVideoElem()
       if (!dontDrawBuffer) {
-        if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1) {
+        if(!shouldDrawDirectlyFromVideoElem) {
           this.projectorBuffer.ctx.drawImage(this.videoElem,
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
         }
 
         if (!dontDrawAmbientlight) {
-          if(!this.enableMozillaBugReadPixelsWorkaround || this.projector.webGLVersion === 1) {
+          if(!shouldDrawDirectlyFromVideoElem) {
             this.projector.draw(this.projectorBuffer.elem)
           } else {
             this.projector.draw(this.videoElem)
@@ -2546,7 +2548,7 @@ GREY   | previous display frames`
         this.getImageDataAllowed
       ) {
         this.barDetection.detect(
-          (!this.enableMozillaBugReadPixelsWorkaround) ? this.projectorBuffer.elem : this.videoElem,
+          (!this.shouldDrawDirectlyFromVideoElem()) ? this.projectorBuffer.elem : this.videoElem,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.detectHorizontalBarSizeEnabled,

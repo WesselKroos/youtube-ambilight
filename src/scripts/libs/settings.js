@@ -721,6 +721,7 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
+            this.ambientlight.sizesChanged = true
             this.updateVisibility()
           }
           
