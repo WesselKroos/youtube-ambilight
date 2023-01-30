@@ -2247,8 +2247,24 @@ html[data-ambientlight-enabled="true"] {
     background: linear-gradient(0deg, #000f 0px, #000e 25px, #000c 50px, #0008 100px, #0003 150px, #0001 175px, #0000 200px);
   }
 
- .html5-video-player {
+  .html5-video-player {
     overflow: var(--ambientlight-html5-video-player-overflow, hidden);
+  }
+  #primary .ytp-gradient-bottom {
+    -webkit-mask-image: linear-gradient(to right, 
+      transparent 0%, 
+      rgb(0, 0, 0, .3) 25px, 
+      rgb(0, 0, 0, .55) 50px, 
+      rgb(0, 0, 0, .7) 75px, 
+      rgb(0, 0, 0, .8) 100px, 
+      rgb(0, 0, 0) 200px,
+
+      rgb(0, 0, 0) calc(100% - 200px),
+      rgb(0, 0, 0, .8) calc(100% - 100px), 
+      rgb(0, 0, 0, .7) calc(100% - 75px), 
+      rgb(0, 0, 0, .55) calc(100% - 50px), 
+      rgb(0, 0, 0, .3) calc(100% - 25px), 
+      transparent 100%);
   }
 }
 

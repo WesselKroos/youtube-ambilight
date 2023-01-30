@@ -599,9 +599,6 @@ export default class ProjectorWebGL {
           })()}
           return ${(() => {
             if(this.projectorsCount > 1) {
-              const subProjectorsDimensionMultiplier = Math.sqrt(this.subProjectorsCount)
-              const croppedUvScale = (1 / subProjectorsDimensionMultiplier).toString().padEnd(2, '.')
-
               return `${
                 new Array(this.projectorsCount).fill(undefined).map((_, i) => {
                   const projectorIndex = Math.floor(i / this.subProjectorsCount)

@@ -476,7 +476,7 @@ export default class Settings {
           })
         }
 
-        on(inputElem, 'change mousemove dblclick contextmenu touchmove', (e) => {
+        on(inputElem, 'change mousemove dblclick contextmenu touchmove', async (e) => {
           if(e.type === 'mousemove' && e.buttons === 0) return
 
           let value = parseFloat(inputElem.value)
@@ -598,7 +598,7 @@ export default class Settings {
               }
             }
             this.updateVisibility()
-            if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
+            if(this.ambientlight.projector?.initCtx) await this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
           }
 
           if ([
@@ -610,7 +610,7 @@ export default class Settings {
             const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
             if(this['frameFading'] !== defaultValue) {
               this.set('frameFading', defaultValue, true)
-              if(this.ambientlight.projector?.initCtx) this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
+              if(this.ambientlight.projector?.initCtx) await this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
             }
             this.updateVisibility()
           }
