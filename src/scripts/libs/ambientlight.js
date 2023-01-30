@@ -320,7 +320,7 @@ export default class Ambientlight {
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
   
-        this.clear() // Always prevent old frame from being drawn
+        this.buffersCleared = true // Always prevent old frame from being drawn
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
         // this.frameTimes = []
