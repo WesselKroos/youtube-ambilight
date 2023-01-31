@@ -177,9 +177,12 @@ export default class Settings {
     const descriptionElem = document.createElement('span')
     descriptionElem.classList.add('ytpa-menuitem-description')
     descriptionElem.style.color = '#fa0'
-    descriptionElem.appendChild(document.createTextNode(`Crashed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
+    descriptionElem.appendChild(document.createTextNode(`Failed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
     descriptionElem.appendChild(document.createElement('br'))
-    descriptionElem.appendChild(document.createTextNode('Re-enabling this setting might result in a crash after which it will be disabled again'))
+    descriptionElem.appendChild(document.createTextNode(`Check if WebGL is enabled in your browser`))
+    descriptionElem.appendChild(document.createElement('br'))
+    descriptionElem.appendChild(document.createElement('br'))
+    descriptionElem.appendChild(document.createTextNode('Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.'))
     labelElem.appendChild(descriptionElem)
   }
   
