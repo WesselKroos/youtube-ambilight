@@ -37,6 +37,7 @@ export default class ProjectorWebGL {
     this.fScalesLength = undefined
     this.fCrop = undefined
     this.fTextureMipmapLevel = undefined
+    this.fTextureOpacity = undefined
     this.drawTextureSize = {
       width: 0,
       height: 0
@@ -123,6 +124,9 @@ export default class ProjectorWebGL {
   }
   draw = (src) => {
     if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid || this.lost) return
+
+    // ctx is being initialized but not ready yet
+    if(this.projectorsCount > 1 && this.projectorsCount !== this.fTextureOpacity?.length) return
 
     if(!this.stencil) this.updateCrop()
 
