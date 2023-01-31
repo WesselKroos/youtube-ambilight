@@ -148,7 +148,10 @@ export default class Settings {
     }
 
     this.webGLCrashDate = webGLCrashDate
-    SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
+    const webGLSetting = SettingsConfig.find(setting => setting.name === 'webGL')
+    if(!webGLSetting) return // Can be removed
+
+    webGLSetting.default = false // Disable by default
   }
 
   handleWebGLCrash = async () => {
