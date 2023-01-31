@@ -3033,7 +3033,7 @@ GREY   | previous display frames`
   }
 
   initLiveChatElem = () => {
-    const liveChat = this.ytdWatchFlexyElem.querySelector('ytd-live-chat-frame')
+    const liveChat = document.querySelector('ytd-watch-flexy ytd-live-chat-frame')
     if(!liveChat || this.liveChat === liveChat) return
     
     this.liveChat = liveChat
