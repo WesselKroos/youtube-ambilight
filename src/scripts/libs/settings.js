@@ -149,7 +149,7 @@ export default class Settings {
 
     this.webGLCrashDate = webGLCrashDate
     const webGLSetting = SettingsConfig.find(setting => setting.name === 'webGL')
-    if(!webGLSetting) return // Can be removed
+    if(!webGLSetting) return // Could be already removed
 
     webGLSetting.default = false // Disable by default
   }
