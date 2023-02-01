@@ -36,7 +36,7 @@ class ContentScript {
 
   getStorageEntriesId = 0
   async getStorageEntryOrEntries(nameOrNames, throwOnUninstalled) {
-    this.getStorageEntriesId++;
+    const currentId = this.getStorageEntriesId++;
     let listener;
     const removeListener = function removeGetStorageEntryOrEntriesMessageListener() {
       this.removeMessageListener(listener)
@@ -48,7 +48,7 @@ class ContentScript {
         listener = this.addMessageListener('get-storage-entries',
           function getStorageEntryOrEntriesMessageListener({ id, valueOrValues, error }) {
             try {
-              if(id !== this.getStorageEntriesId) return
+              if(id !== currentId) return
 
               removeListener()
               if(error &&
@@ -65,13 +65,13 @@ class ContentScript {
       }
     }.bind(this))
 
-    this.postMessage('get-storage-entries', { id: this.getStorageEntriesId, nameOrNames })
+    this.postMessage('get-storage-entries', { id: currentId, nameOrNames })
     return await getStorageEntriesPromise
   }
 
   setStorageEntryId = 0
   async setStorageEntry(name, value, throwOnUninstalled) {
-    this.setStorageEntryId++;
+    const currentId = this.setStorageEntryId++;
     let listener;
     const removeListener = function removeSetStorageEntryMessageListener() {
       this.removeMessageListener(listener)
@@ -83,7 +83,7 @@ class ContentScript {
         listener = this.addMessageListener('set-storage-entry', 
           function setStorageEntryMessageListener({ id, error }) {
             try {
-              if(id !== this.setStorageEntryId) return
+              if(id !== currentId) return
 
               removeListener()
               if(error &&
@@ -100,7 +100,7 @@ class ContentScript {
       }
     }.bind(this))
 
-    this.postMessage('set-storage-entry', { id: this.setStorageEntryId, name, value })
+    this.postMessage('set-storage-entry', { id: currentId, name, value })
     return await setStorageEntryPromise
   }
 }
