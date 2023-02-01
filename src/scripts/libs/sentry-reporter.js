@@ -120,7 +120,7 @@ function initClient() {
     release: version || 'pending',
     attachStacktrace: true,
     maxValueLength: 500,
-    normalizeDepth: 4,
+    normalizeDepth: 5,
     beforeSend: (event) => {
       try {
         event.request = {}

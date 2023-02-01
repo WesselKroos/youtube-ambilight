@@ -1,4 +1,5 @@
 import { Canvas, ctxOptions, SafeOffscreenCanvas } from './generic'
+import SentryReporter from './sentry-reporter'
 
 export default class ProjectorShadow {
   constructor(offscreen = true) {
@@ -142,8 +143,20 @@ export default class ProjectorShadow {
     }
     gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
-    gradientStops = gradientStops.map(args => [(Math.round(args[0] * 10000)/ 10000), args[1], args[2], args[3]?.p, args[3]?.o])
+    if(gradientStops.filter(args => isNaN(args[0])).length) {
+      const ex = new Error('Detected and filtered out NaN in gradient stops')
+      ex.details = {
+        itemsWithNaN: gradientStops.filter(args => isNaN(args[0])),
+        keyframes,
+        ΩgradientStops: JSON.parse(JSON.stringify(gradientStops))
+      }
+      SentryReporter.captureException(ex)
+    }
 
+    gradientStops = gradientStops
+      .filter(args => !isNaN(args[0])) // Can contain NaN when a property on the array is also being iterated over for some reason
+      .map(args => [(Math.round(args[0] * 10000)/ 10000), args[1], args[2], args[3]?.p, args[3]?.o])
+    
     const gradient = this.ctx.createLinearGradient(
       0,
       0,
