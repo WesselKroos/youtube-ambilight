@@ -1763,6 +1763,12 @@ html[data-ambientlight-enabled="true"] {
   .ytp-menuitem[aria-checked="true"] .ytp-menuitem-toggle-checkbox {
     background-color: #007cc3;
   }
+  .ytp-menuitem[aria-disabled="true"] .ytp-menuitem-toggle-checkbox {
+    background-color: #333;
+    &::after {
+      background-color: #333;
+    }
+  }
 
 
   /* Settings - sliders */

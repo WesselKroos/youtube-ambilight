@@ -554,7 +554,7 @@ export default class ProjectorWebGL {
       uniform sampler2D textureSampler[${this.projectorsTexture.length}];
       uniform float fTextureMipmapLevel;
       uniform float fTextureOpacity[${this.projectorsCount}];
-      uniform float fDrawingStencil;
+      ${this.ctxOptions.stencil ? 'uniform float fDrawingStencil;' : ''}
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
       uniform sampler2D shadowSampler;
@@ -620,14 +620,18 @@ export default class ProjectorWebGL {
       }
 
       void main(void) {
-        if(fDrawingStencil < 0.5) {
+    ${this.ctxOptions.stencil ? `
+        if(fDrawingStencil < 0.5) {`
+    : ''}
           vec4 ambientlight = multiTexture();
           float shadowAlpha = texture2D(shadowSampler, fUV).a;
           ambientlight[3] = 1. - shadowAlpha;
           gl_FragColor = ambientlight;
+    ${this.ctxOptions.stencil ? `
         } else {
           gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
+    ` : ''}
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
