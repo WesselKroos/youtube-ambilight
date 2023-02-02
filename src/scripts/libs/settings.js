@@ -42,11 +42,15 @@ export default class Settings {
         }
       } else {
         if([
-          'webGL',
           'resolution',
           'frameFading'
         ].includes(setting.name)) {
           settingsToRemove.push(setting)
+        }
+        if([
+          'webGL'
+        ].includes(setting.name)) {
+          setting.disabled = 'WebGL is disabled in your browser'
         }
       }
       
@@ -148,10 +152,7 @@ export default class Settings {
     }
 
     this.webGLCrashDate = webGLCrashDate
-    const webGLSetting = SettingsConfig.find(setting => setting.name === 'webGL')
-    if(!webGLSetting) return // Could be already removed
-
-    webGLSetting.default = false // Disable by default
+    SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
   }
 
   handleWebGLCrash = async () => {
@@ -172,19 +173,23 @@ export default class Settings {
 
   showWebGLCrashDescription = () => {
     const labelElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label')
-    if(!labelElem) return // has disabled WebGL/Angle in the browser after a WebGL crash
-
     labelElem.appendChild(document.createElement('br'))
 
+    const webGLAvailable = SettingsConfig.find(setting => setting.name === 'webGL').disabled === undefined
     const descriptionElem = document.createElement('span')
     descriptionElem.classList.add('ytpa-menuitem-description')
     descriptionElem.style.color = '#fa0'
-    descriptionElem.appendChild(document.createTextNode(`Failed at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
-    descriptionElem.appendChild(document.createElement('br'))
-    descriptionElem.appendChild(document.createTextNode(`Check if WebGL is enabled in your browser`))
-    descriptionElem.appendChild(document.createElement('br'))
-    descriptionElem.appendChild(document.createElement('br'))
-    descriptionElem.appendChild(document.createTextNode('Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.'))
+    descriptionElem.appendChild(document.createTextNode(`${webGLAvailable ? 'Failed' : 'and failed'} to load at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
+    
+    if(webGLAvailable) {
+      descriptionElem.appendChild(document.createElement('br'))
+      descriptionElem.appendChild(document.createElement('br'))
+      descriptionElem.appendChild(document.createTextNode(`Check your browsers Hardware acceleration and  WebGL settings or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`))
+      descriptionElem.appendChild(document.createElement('br'))
+      descriptionElem.appendChild(document.createElement('br'))
+      descriptionElem.appendChild(document.createTextNode('Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.'))
+    }
+
     labelElem.appendChild(descriptionElem)
   }
   
@@ -286,12 +291,12 @@ export default class Settings {
         if (setting.type === 'checkbox') {
           return `
             <div id="setting-${setting.name}" 
-            class="${classes}" 
-            role="menuitemcheckbox" 
-            aria-checked="${value ? 'true' : 'false'}" 
-            tabindex="0"
-            title="Right click to reset">
-              <div class="ytp-menuitem-label">${label}</div>
+              class="${classes}" 
+              role="menuitemcheckbox" 
+              aria-checked="${value ? 'true' : 'false'}" 
+              ${setting.disabled ? 'aria-disabled="true" title="This setting is unavailable"' : 'title="Right click to reset" tabindex="0"'}
+            >
+              <div class="ytp-menuitem-label">${label}${setting.disabled ? `<span class="ytpa-menuitem-description" style="color: #fa0">${setting.disabled}</span>` :''}</div>
               <div class="ytp-menuitem-content">
                 <div class="ytp-menuitem-toggle-checkbox"></div>
               </div>
@@ -645,6 +650,12 @@ export default class Settings {
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', async (e) => {
+          if(setting.disabled) {
+            e.stopPropagation()
+            e.preventDefault()
+            return
+          }
+          
           let value = !this[setting.name];
           if (e.type === 'dblclick' || e.type === 'contextmenu') {
             value = SettingsConfig.find(s => s.name === setting.name).default
