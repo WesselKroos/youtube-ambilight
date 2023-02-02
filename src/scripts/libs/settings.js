@@ -172,6 +172,8 @@ export default class Settings {
 
   showWebGLCrashDescription = () => {
     const labelElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label')
+    if(!labelElem) return // has disabled WebGL/Angle in the browser after a WebGL crash
+
     labelElem.appendChild(document.createElement('br'))
 
     const descriptionElem = document.createElement('span')
