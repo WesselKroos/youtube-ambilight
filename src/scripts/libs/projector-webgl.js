@@ -570,6 +570,7 @@ export default class ProjectorWebGL {
           int i = ${(this.webGLVersion === 1) ? 'impreciseI' : 'preciseI'};
           vec2 scaledUV = (fUV - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
           vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
+          
           ${(() => {
             if(this.projectorsCount > 1) {
               const subProjectorsDimensionMultiplier = Math.sqrt(this.subProjectorsCount)
@@ -601,6 +602,7 @@ export default class ProjectorWebGL {
               return ``
             }
           })()}
+
           return ${(() => {
             if(this.projectorsCount > 1) {
               return `${
@@ -617,6 +619,7 @@ export default class ProjectorWebGL {
             }
           })()}
         }
+        return vec4(0.0, 0.0, 1.0, 1.0);
       }
 
       void main(void) {
