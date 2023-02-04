@@ -453,10 +453,10 @@ export default class ProjectorWebGL {
 
                   const errors = this.webglcontextcreationerrors
                   let lastErrorMessage;
-                  for(const i in errors) {
-                    const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
-                    lastErrorMessage = errors[i].message
-                    if(duplicate) errors[i].message = '"'
+                  for(const error of errors) {
+                    const duplicate = error.message === lastErrorMessage
+                    lastErrorMessage = error.message
+                    if(duplicate) error.message = '"'
                   }
 
                   throw new AmbientlightError('ProjectorWebGL context creation failed', errors)

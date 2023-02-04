@@ -130,14 +130,14 @@ export default class ProjectorShadow {
 
     let gradientStops = []
     gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
-    for (const i in keyframes) {
+    for(let i = 0, l = keyframes.length; i < l; i++) {
       const e = keyframes[i]
       gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
     gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     keyframes.reverse()
-    for (const i in keyframes) {
+    for(let i = 0, l = keyframes.length; i < l; i++) {
       const e = keyframes[i]
       gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
