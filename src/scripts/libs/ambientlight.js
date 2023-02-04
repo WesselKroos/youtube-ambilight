@@ -2284,7 +2284,7 @@ GREY   | previous display frames`
     }
 
     const rects = []
-    for (let i = 0, length = frameTimes.length; i < length; i++ ) {
+    for (let i = 0; i < frameTimes.length; i++) {
       const ft = frameTimes[i];
       const videoSubmit = ft.video.timestamp
       const videoDisplay = ft.video.expectedDisplayTime - videoSubmit // Todo: Fix frametimes relative to the displayTime instead of the video timestamp

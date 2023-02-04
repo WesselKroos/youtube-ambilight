@@ -64,7 +64,7 @@ export default class Projector2d {
 
   rescale(scales, lastScale, projectorSize, crop, settings) {
     this.crop = crop
-    for(let i = 0, l = scales.length; i < l; i++) {
+    for(let i = 0; i < scales.length; i++) {
       this.projectors[i].elem.style.transform = `scale(${scales[i].x}, ${scales[i].y})`
     }
 
