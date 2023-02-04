@@ -453,10 +453,10 @@ export default class ProjectorWebGL {
 
                   const errors = this.webglcontextcreationerrors
                   let lastErrorMessage;
-                  for(const i in errors) {
-                    const duplicate = (i > 0 && errors[i].message === lastErrorMessage)
-                    lastErrorMessage = errors[i].message
-                    if(duplicate) errors[i].message = '"'
+                  for(const error of errors) {
+                    const duplicate = error.message === lastErrorMessage
+                    lastErrorMessage = error.message
+                    if(duplicate) error.message = '"'
                   }
 
                   throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
@@ -570,6 +570,7 @@ export default class ProjectorWebGL {
           int i = ${(this.webGLVersion === 1) ? 'impreciseI' : 'preciseI'};
           vec2 scaledUV = (fUV - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
           vec2 croppedUV = fCropOffsetUV + (scaledUV / fCropScaleUV);
+          
           ${(() => {
             if(this.projectorsCount > 1) {
               const subProjectorsDimensionMultiplier = Math.sqrt(this.subProjectorsCount)
@@ -601,6 +602,7 @@ export default class ProjectorWebGL {
               return ``
             }
           })()}
+
           return ${(() => {
             if(this.projectorsCount > 1) {
               return `${
@@ -617,6 +619,7 @@ export default class ProjectorWebGL {
             }
           })()}
         }
+        return vec4(0.0, 0.0, 0.0, 1.0);
       }
 
       void main(void) {

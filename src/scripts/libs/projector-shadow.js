@@ -130,31 +130,20 @@ export default class ProjectorShadow {
 
     let gradientStops = []
     gradientStops.push([Math.min(1, points[0] / pointMax), `rgba(0,0,0,${darkest})`])
-    for (const i in keyframes) {
+    for(let i = 0; i < keyframes.length; i++) {
       const e = keyframes[i]
       gradientStops.push([Math.min(1, points[0 + keyframes.length - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
     gradientStops.push([Math.min(1, points[1 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     gradientStops.push([Math.min(1, points[2 + keyframes.length] / pointMax), `rgba(0,0,0,0)`])
     keyframes.reverse()
-    for (const i in keyframes) {
+    for(let i = 0; i < keyframes.length; i++) {
       const e = keyframes[i]
       gradientStops.push([Math.min(1, points[2 + (keyframes.length * 2) - i] / pointMax), `rgba(0,0,0,${e.o})`, i, e])
     }
     gradientStops.push([Math.min(1, points[3 + (keyframes.length * 2)] / pointMax), `rgba(0,0,0,${darkest})`])
 
-    if(gradientStops.filter(args => isNaN(args[0])).length) {
-      const ex = new Error('Detected and filtered out NaN in gradient stops')
-      ex.details = {
-        itemsWithNaN: gradientStops.filter(args => isNaN(args[0])),
-        keyframes,
-        ΩgradientStops: JSON.parse(JSON.stringify(gradientStops))
-      }
-      SentryReporter.captureException(ex)
-    }
-
     gradientStops = gradientStops
-      .filter(args => !isNaN(args[0])) // Can contain NaN when a property on the array is also being iterated over for some reason
       .map(args => [(Math.round(args[0] * 10000)/ 10000), args[1], args[2], args[3]?.p, args[3]?.o])
     
     const gradient = this.ctx.createLinearGradient(
@@ -168,7 +157,7 @@ export default class ProjectorShadow {
       try {
         gradient.addColorStop(...gs)
       } catch(ex) {
-        ex.details = { i, gs, size, edge, ΩgradientStops: JSON.parse(JSON.stringify(gradientStops)), fadeOutFrom, darkest, horizontal }
+        ex.details = { i, gs, size, edge, fadeOutFrom, darkest, horizontal, Ωpoints: JSON.parse(JSON.stringify(points)), Ωkeyframes: JSON.parse(JSON.stringify(keyframes)), ΩgradientStops: JSON.parse(JSON.stringify(gradientStops)) }
         throw ex
       }
     }
