@@ -48,10 +48,11 @@ const detectDetachedVideo = (ytdAppElem) => {
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
       const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
+      const ytdInlinePreviewPlayerVideoElem = document.querySelector('#inline-preview-player video.html5-main-video')
       const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
       const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
       const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
-      if(ytPlayerManagerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem || outsideYtdAppVideoElem) {
+      if(ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem || outsideYtdAppVideoElem) {
         return
       }
 
@@ -60,7 +61,7 @@ const detectDetachedVideo = (ytdAppElem) => {
         'ambientlight.videoElem': getNodeTreeString(ambientlight.videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
-      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', details)
+      errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #inline-preview-player, #player-api or outside ytd-app', details)
       return
     }
 
@@ -98,6 +99,11 @@ const tryInitAmbientlight = async () => {
       // errorEvents.add('tryInit | video in yt-player-manager')
       return false
     }
+    const ytdInlinePreviewPlayerVideoElem = document.querySelector('#inline-preview-player video.html5-main-video')
+    if(ytdInlinePreviewPlayerVideoElem) {
+      // errorEvents.add('tryInitAmbientlight | video in #inline-preview-player')
+      return false
+    }
     const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
       // errorEvents.add('tryInitAmbientlight | video in ytd-miniplayer')
@@ -114,7 +120,7 @@ const tryInitAmbientlight = async () => {
       return false
     }
       
-    errorEvents.add('tryInitAmbientlight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #player-api or outside ytd-app', {
+    errorEvents.add('tryInitAmbientlight | no video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #inline-preview-player, #player-api or outside ytd-app', {
       tree: getSelectorTreeString('video,#player-container')
     })
     return false
