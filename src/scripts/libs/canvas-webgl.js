@@ -210,10 +210,10 @@ export class WebGLContext {
     var vUVBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vUVBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
-      0, 1, 
       0, 0, 
-      1, 0, 
-      1, 1
+      0, 1, 
+      1, 1, 
+      1, 0
     ]), this.ctx.STATIC_DRAW);
     var vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
@@ -233,7 +233,6 @@ export class WebGLContext {
 
     this.texture = this.ctx.createTexture();
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
-    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     if (this.webGLVersion == 1) {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);

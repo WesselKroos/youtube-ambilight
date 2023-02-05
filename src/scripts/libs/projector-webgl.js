@@ -489,7 +489,6 @@ export default class ProjectorWebGL {
     this.shadowTexture = this.ctx.createTexture();
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.shadowTexture);
-    this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
@@ -511,7 +510,6 @@ export default class ProjectorWebGL {
       this.projectorsTexture[i] = this.ctx.createTexture();
       this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`]);
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture[i]);
-      this.ctx.pixelStorei(this.ctx.UNPACK_FLIP_Y_WEBGL, true);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
       this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
@@ -687,10 +685,10 @@ export default class ProjectorWebGL {
     const vUVBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vUVBuffer);
     const vUV = [
-      0, 1, 
       0, 0, 
-      1, 0, 
-      1, 1,
+      0, 1, 
+      1, 1, 
+      1, 0,
     ];
     // vUVBuffer must at least be filled to stencilPoints.length (48) for Firefox. In updateCrop() -> drawArrays(..., ..., stencilPoints.length)
     const vUVFilled = vUV.concat(Array(48 - vUV.length).fill(0));
