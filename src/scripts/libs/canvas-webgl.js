@@ -1,4 +1,4 @@
-import { AmbientlightError } from './sentry-reporter';
+import SentryReporter, { AmbientlightError } from './sentry-reporter';
 import { wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
@@ -189,9 +189,16 @@ export class WebGLContext {
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt) {
       await new Promise(resolve => {
-        const checkCompletion = () => this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-          ? resolve()
-          : requestAnimationFrame(checkCompletion);
+        const checkCompletion = () => {
+          try {
+            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
+            if(completed === false) requestAnimationFrame(checkCompletion);
+            else resolve() // COMPLETION_STATUS_KHR can be null because of webgl-lint
+          } catch(ex) {
+            SentryReporter.captureException(ex)
+            resolve()
+          }
+        };
         requestAnimationFrame(checkCompletion);
       })
     }
@@ -245,7 +252,7 @@ export class WebGLContext {
       this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
     );
     if(tfaExt) {
-      let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
+      const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
   }

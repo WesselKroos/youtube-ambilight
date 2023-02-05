@@ -522,7 +522,7 @@ export default class ProjectorWebGL {
         this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
       );
       if(tfaExt) {
-        let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
+        const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
@@ -663,10 +663,17 @@ export default class ProjectorWebGL {
 
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt) {
-      await new Promise(resolve => {
-        const checkCompletion = () => this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-          ? resolve()
-          : requestAnimationFrame(checkCompletion);
+      await new Promise((resolve, reject) => {
+        const checkCompletion = () => {
+          try {
+            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+            if(completed === false) requestAnimationFrame(checkCompletion);
+            else resolve() // COMPLETION_STATUS_KHR can be null because of webgl-lint
+          } catch(ex) {
+            SentryReporter.captureException(ex)
+            resolve()
+          }
+        };
         requestAnimationFrame(checkCompletion);
       })
     }
