@@ -55,6 +55,19 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
       }
     })
 
+  // const addWebGLLint = () => {
+  //   const s = document.createElement('script')
+  //   s.src = 'https://greggman.github.io/webgl-lint/webgl-lint.js'
+  //   s.setAttribute('data-gman-debug-helper', JSON.stringify({
+  //     throwOnError: false
+  //   }))
+  //   s.onerror = function injectScriptOnError(ex) {
+  //     console.error(ex)
+  //   }.bind(this)
+  //   document.body.appendChild(s)
+  // }
+  // addWebGLLint()
+
   const s = document.createElement('script')
   s.defer = true
   s.src = chrome.runtime.getURL('scripts/injected.js')

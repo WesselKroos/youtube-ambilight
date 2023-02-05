@@ -67,6 +67,10 @@ export default class ProjectorWebGL {
 
         if(this.isPageHidden && this.ctx && !this.ctx.isContextLost()) {
           this.isControlledLose = true
+
+          // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
+          // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
+
           this.ctxLose.loseContext()
         }
       }, 3000)
