@@ -192,9 +192,8 @@ export default class ProjectorWebGL {
 
       this.ctx.activeTexture(this.ctx[`TEXTURE${textureIndex + 1}`])
       const isNewTexture = textureIndex !== previousTextureIndex
-      if(isNewTexture) {
-        if(this.drawInitial)
-          this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
+      if(isNewTexture && this.drawInitial) {
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
       }
 
       const subIndex = this.drawIndex % this.subProjectorsCount
@@ -212,10 +211,10 @@ export default class ProjectorWebGL {
       }
     } else {
       if(updateTextureSize) {
-        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, src)
+      } else {
+        this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
       }
-
-      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     this.loadTime = performance.now() - start
