@@ -123,7 +123,7 @@ export default class ProjectorWebGL {
     height: 0
   }
   draw = (src) => {
-    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid || this.lost) return
+    if(!this.ctx || this.ctxIsInvalid || src.ctx?.ctxIsInvalid || this.lost || !this.viewport) return
 
     // ctx is being initialized but not ready yet
     if(this.projectorsCount > 1 && this.projectorsCount !== this.fTextureOpacity?.length) return
@@ -384,8 +384,8 @@ export default class ProjectorWebGL {
 
   async initCtx() {
     if(this.program && !this.ctxIsInvalid) {
+      this.invalidateShaderCache()
       this.ctx.deleteProgram(this.program) // Free GPU memory
-      this.program = undefined
     }
 
     
@@ -490,7 +490,8 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    
     this.projectorsTexture = []
     const maxTextures = Math.min(this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8, 16) // MAX_TEXTURE_IMAGE_UNITS can be more than 16 in software mode
     const maxProjectorTextures = maxTextures - 1
@@ -524,6 +525,8 @@ export default class ProjectorWebGL {
         let max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
 
     // Shaders
@@ -553,7 +556,7 @@ export default class ProjectorWebGL {
       varying vec2 fUV;
       uniform sampler2D textureSampler[${this.projectorsTexture.length}];
       uniform float fTextureMipmapLevel;
-      uniform float fTextureOpacity[${this.projectorsCount}];
+      ${this.projectorsCount > 1 ? `uniform float fTextureOpacity[${this.projectorsCount}];` : ''}
       ${this.ctxOptions.stencil ? 'uniform float fDrawingStencil;' : ''}
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
@@ -679,7 +682,7 @@ export default class ProjectorWebGL {
       1, 1,
     ];
     // vUVBuffer must at least be filled to stencilPoints.length (48) for Firefox. In updateCrop() -> drawArrays(..., ..., stencilPoints.length)
-    const vUVFilled = vUV.concat(Array(48 - vUV.length));
+    const vUVFilled = vUV.concat(Array(48 - vUV.length).fill(0));
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(vUVFilled), this.ctx.STATIC_DRAW);
     const vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
@@ -710,12 +713,24 @@ export default class ProjectorWebGL {
     }
 
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
+    this.ctx.uniform1f(this.fTextureMipmapLevelLoc, 0);
+
     this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
+    this.ctx.uniform2fv(this.fScaleLoc, new Float32Array([1, 1]));
+
     this.fScaleStepLoc = this.ctx.getUniformLocation(this.program, 'fScaleStep');
+    this.ctx.uniform2fv(this.fScaleStepLoc, new Float32Array([1, 1]));
+
     this.fCropOffsetUVLoc = this.ctx.getUniformLocation(this.program, 'fCropOffsetUV');
+    this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array([0, 0]));
+
     this.fCropScaleUVLoc = this.ctx.getUniformLocation(this.program, 'fCropScaleUV');
-    this.fTextureOpacityLoc = this.ctx.getUniformLocation(this.program, 'fTextureOpacity');
-    this.fTextureOpacityOffsetLoc = this.ctx.getUniformLocation(this.program, 'fTextureOpacityOffset');
+    this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array([0, 0]));
+
+    if(this.projectorsCount > 1) {
+      this.fTextureOpacityLoc = this.ctx.getUniformLocation(this.program, 'fTextureOpacity');
+      this.ctx.uniform1fv(this.fTextureOpacityLoc, new Float32Array(Array(this.projectorsCount).fill(0)));
+    }
 
     this.invalidateShaderCache()
 
@@ -785,16 +800,18 @@ export default class ProjectorWebGL {
       this.ctx.uniform2fv(this.fCropOffsetUVLoc, new Float32Array(fCropOffsetUV))
       this.ctx.uniform2fv(this.fCropScaleUVLoc, new Float32Array(fCropScaleUV))
     }
-    
-    const fTextureOpacityChanged = this.projectorsCount > 1 && !(this.fTextureOpacity?.length === this.projectorsCount)
-    if(fTextureOpacityChanged) {
-      const easing = (x) => x * x;
-      this.fTextureOpacity = new Array(this.projectorsCount).fill(undefined)
-        .map((_, i) => easing((i + 1) / this.projectorsCount))
-        .map((e, i, list) => !i
-          ? e
-          : e - list[i - 1]
-        )
+
+    if(this.projectorsCount > 1) {
+      const fTextureOpacityChanged = this.projectorsCount > 1 && !(this.fTextureOpacity?.length === this.projectorsCount)
+      if(fTextureOpacityChanged) {
+        const easing = (x) => x * x;
+        this.fTextureOpacity = new Array(this.projectorsCount).fill(undefined)
+          .map((_, i) => easing((i + 1) / this.projectorsCount))
+          .map((e, i, list) => !i
+            ? e
+            : e - list[i - 1]
+          )
+      }
     }
 
     this.ctx.activeTexture(this.ctx.TEXTURE0);
