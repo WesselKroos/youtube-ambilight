@@ -174,7 +174,7 @@ export class WebGLContext {
     this.ctx.linkProgram(this.program);
     
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
-    if(parallelShaderCompileExt) {
+    if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       await new Promise(resolve => {
         const checkCompletion = () => {
           try {

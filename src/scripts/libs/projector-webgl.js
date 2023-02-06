@@ -665,7 +665,7 @@ export default class ProjectorWebGL {
     this.ctx.linkProgram(this.program);
 
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
-    if(parallelShaderCompileExt) {
+    if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       this.awaitingProgramCompletion = new Promise((resolve, reject) => {
         const checkCompletion = () => {
           try {
