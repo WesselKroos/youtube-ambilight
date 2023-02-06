@@ -611,7 +611,14 @@ export default class Settings {
               }
             }
             this.updateVisibility()
-            if(this.ambientlight.projector?.initCtx) await this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
+            if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
+              try {
+                if(!(await this.ambientlight.projector.initCtx())) return
+              } catch(ex) {
+                this.ambientlight.projector.setWebGLWarning('change')
+                throw ex
+              }
+            }
           }
 
           if ([
@@ -623,7 +630,14 @@ export default class Settings {
             const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
             if(this['frameFading'] !== defaultValue) {
               this.set('frameFading', defaultValue, true)
-              if(this.ambientlight.projector?.initCtx) await this.ambientlight.projector.initCtx() // Can be undefined when migrating from previous settings
+              if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
+                try {
+                  if(!(await this.ambientlight.projector.initCtx())) return
+                } catch(ex) {
+                  this.ambientlight.projector.setWebGLWarning('change')
+                  throw ex
+                }
+              }
             }
             this.updateVisibility()
           }
