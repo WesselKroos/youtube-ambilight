@@ -707,7 +707,8 @@ export default class Settings {
             'advancedSettings',
             'hideScrollbar',
             'immersiveTheaterView',
-            'webGL'
+            'webGL',
+            'prioritizePageLoadSpeed'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)

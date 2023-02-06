@@ -671,9 +671,9 @@ export default class ProjectorWebGL {
       this.awaitingProgramCompletion = new Promise(resolve => {
         const checkCompletion = () => {
           try {
-            if(!this.program) {
-              resolve(false) // cancel
-            }
+            if(!this.program)
+              return resolve(false) // cancel
+
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
               requestAnimationFrame(checkCompletion);
