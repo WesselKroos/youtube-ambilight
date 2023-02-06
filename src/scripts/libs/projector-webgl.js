@@ -142,7 +142,6 @@ export default class ProjectorWebGL {
 
     const textureMipmapLevel = Math.max(0, (Math.log(srcHeight / this.height) / Math.log(2)) - 0)
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
-      // console.log('ambient', textureMipmapLevel, `${srcHeight} -> ${this.height}`)
       this.fTextureMipmapLevel = textureMipmapLevel
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
@@ -211,7 +210,7 @@ export default class ProjectorWebGL {
       }
     } else {
       if(updateTextureSize) {
-        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, src)
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src);
       } else {
         this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
       }
@@ -238,7 +237,7 @@ export default class ProjectorWebGL {
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting`)
   }
 
   onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
@@ -310,7 +309,7 @@ export default class ProjectorWebGL {
     const detected = await this.getMajorPerformanceCaveatDetected()
     if(detected) return
     
-    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
+    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)';
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
@@ -348,7 +347,13 @@ export default class ProjectorWebGL {
       this.setWebGLWarning('3 times restore')
       return
     }
-    await this.initCtx()
+    try {
+      if(!(await this.initCtx())) return
+    } catch(ex) {
+      this.setWebGLWarning()
+      throw ex
+    }
+
     if(!this.isControlledLose) {
       this.initShadow()
       this.initBlurCtx()
@@ -386,11 +391,21 @@ export default class ProjectorWebGL {
   }.bind(this))
 
   async initCtx() {
-    if(this.program && !this.ctxIsInvalid) {
-      this.invalidateShaderCache()
-      this.ctx.deleteProgram(this.program) // Free GPU memory
+    if(this.discardProgram) return false
+    if(this.awaitingProgramCompletion) {
+      this.discardProgram = true
+      await this.awaitingProgramCompletion;
+      this.discardProgram = undefined
     }
 
+    if(this.program) {
+      if(!this.ctxIsInvalid) {
+        this.ctx.deleteProgram(this.program) // Free GPU memory
+      }
+
+      this.program = undefined
+      this.invalidateShaderCache()
+    }
     
     if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.canvas) {
       this.canvas.removeEventListener('contextlost', this.onCtxLost)
@@ -547,9 +562,6 @@ export default class ProjectorWebGL {
     const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
     this.ctx.shaderSource(vertexShader, vertexShaderSrc);
     this.ctx.compileShader(vertexShader);
-    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`);
-    }
     this.ctx.attachShader(this.program, vertexShader);
     
     const fragmentShaderSrc = `
@@ -644,9 +656,6 @@ export default class ProjectorWebGL {
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
-    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
-    }
     this.ctx.attachShader(this.program, fragmentShader);
     // // Debug compiled fragment shader
     // const ext = this.ctx.getExtension('WEBGL_debug_shaders');
@@ -654,6 +663,41 @@ export default class ProjectorWebGL {
     
     // Program
     this.ctx.linkProgram(this.program);
+
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
+      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
+        const checkCompletion = () => {
+          try {
+            if(!this.program) {
+              resolve(false) // cancel
+            }
+            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+            if(completed === false) {
+              requestAnimationFrame(checkCompletion);
+            } else {
+              resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
+            }
+          } catch(ex) {
+            SentryReporter.captureException(ex)
+            resolve(false)
+          }
+        };
+        requestAnimationFrame(checkCompletion);
+      })
+      const completed = await this.awaitingProgramCompletion;
+      this.awaitingProgramCompletion = undefined
+
+      if(this.discardProgram || !completed) return false
+    }
+
+    // Validate these parameters after program compilation to prevent render blocking validation
+    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`);
+    }
+    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`);
+    }
     if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
       throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
     }
@@ -662,22 +706,6 @@ export default class ProjectorWebGL {
       throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`);
     }
 
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
-    if(parallelShaderCompileExt) {
-      await new Promise((resolve, reject) => {
-        const checkCompletion = () => {
-          try {
-            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
-            if(completed === false) requestAnimationFrame(checkCompletion);
-            else resolve() // COMPLETION_STATUS_KHR can be null because of webgl-lint
-          } catch(ex) {
-            SentryReporter.captureException(ex)
-            resolve()
-          }
-        };
-        requestAnimationFrame(checkCompletion);
-      })
-    }
     this.ctx.useProgram(this.program);
 
     // Buffers
@@ -743,6 +771,7 @@ export default class ProjectorWebGL {
     this.invalidateShaderCache()
 
     this.updateCtx()
+    return true
   }
 
   rescale(scales, lastScale, projectorSize, crop, settings) {

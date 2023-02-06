@@ -166,28 +166,15 @@ export class WebGLContext {
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(vertexShader);
     this.ctx.compileShader(fragmentShader);
-    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
-    }
-    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
-    }
 
     // Program
     this.program = this.ctx.createProgram();
     this.ctx.attachShader(this.program, vertexShader);
     this.ctx.attachShader(this.program, fragmentShader);
     this.ctx.linkProgram(this.program);
-    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
-    }
-    this.ctx.validateProgram(this.program);
-    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
-    }
     
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
-    if(parallelShaderCompileExt) {
+    if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       await new Promise(resolve => {
         const checkCompletion = () => {
           try {
@@ -202,6 +189,22 @@ export class WebGLContext {
         requestAnimationFrame(checkCompletion);
       })
     }
+    
+    // Validate these parameters after program compilation to prevent render blocking validation
+    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
+    }
+    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
+    }
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
+    }
+    this.ctx.validateProgram(this.program);
+    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
+    }
+
     this.ctx.useProgram(this.program);
 
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
@@ -338,18 +341,8 @@ export class WebGLContext {
     }
     
     let start = performance.now()
-    //// Chromium bug 1074473: texSubImage2D from a video element is 80x slower than texImage2D
-    // const textureSize = {
-    //   width: srcWidth,
-    //   height: srcHeight
-    // }
-    // const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
-    // if(updateTextureSize) {
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
-    //   this.drawTextureSize = textureSize
-    // } else {
-    //   this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
-    // }
+    // Chromium bug 1074473: Using texImage2D because texSubImage2D from a video element is 80x slower than texImage2D
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
 
     // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
     if(this.webGLVersion !== 1) {
