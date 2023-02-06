@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { raf, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { appendErrorStack, raf, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
@@ -22,7 +22,8 @@ export default class ProjectorWebGL {
 
       this.initShadow()
       this.initBlurCtx()
-      await this.initCtx()
+      const initialized = await this.initCtx()
+      if(!initialized) this.setWebGLWarning('create')
       this.handlePageVisibility()
 
       return this
@@ -666,7 +667,8 @@ export default class ProjectorWebGL {
 
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
+      const stack = new Error().stack
+      this.awaitingProgramCompletion = new Promise(resolve => {
         const checkCompletion = () => {
           try {
             if(!this.program) {
@@ -679,6 +681,10 @@ export default class ProjectorWebGL {
               resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
             }
           } catch(ex) {
+            ex.details = {
+              program: this.program?.toString()
+            }
+            appendErrorStack(stack, ex)
             SentryReporter.captureException(ex)
             resolve(false)
           }
@@ -688,7 +694,10 @@ export default class ProjectorWebGL {
       const completed = await this.awaitingProgramCompletion;
       this.awaitingProgramCompletion = undefined
 
-      if(this.discardProgram || !completed) return false
+      if(this.discardProgram || !completed) {
+        this.program = undefined
+        return false
+      }
     }
 
     // Validate these parameters after program compilation to prevent render blocking validation
@@ -1001,7 +1010,7 @@ export default class ProjectorWebGL {
   }
 
   get ctxIsInvalid() {
-    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
+    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
     if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned) {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
