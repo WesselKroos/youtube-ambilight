@@ -50,6 +50,7 @@ export default class Settings {
         if([
           'webGL'
         ].includes(setting.name)) {
+          setting.default = false
           setting.disabled = 'WebGL is disabled in your browser'
         }
       }
@@ -78,6 +79,12 @@ export default class Settings {
     names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+
+    // Disable enabled WebGL setting if not supported anymore
+    if(Settings.storedSettingsCached['setting-webGL'] && !supportsWebGL()) {
+      Settings.storedSettingsCached['setting-webGL'] = null
+    }
+
     return Settings.storedSettingsCached;
   }
   
@@ -1162,7 +1169,7 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      if(ex.name === 'QuotaExceededError') {
+      if(ex.message.includes('QuotaExceededError')) {
         this.setWarning('The changes cannot be saved because the settings have changed too often.\nWait a few seconds...')
         return
       }

@@ -207,6 +207,9 @@ export default class SentryReporter {
       } catch (ex) { console.warn(ex) }
 
       console.error('Ambient light for YouTube™ | ', ex)
+      if(ex.details) {
+        console.error(ex.details)
+      }
 
       if(this.overflowProtection === 3) {
         console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')

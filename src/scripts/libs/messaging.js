@@ -52,7 +52,7 @@ class ContentScript {
 
               removeListener()
               if(error &&
-                (throwOnUninstalled || !(error.message === 'uninstalled' || error.name === 'QuotaExceededError'))
+                (throwOnUninstalled || !(error.message === 'uninstalled' || error.message.includes('QuotaExceededError')))
               ) throw error
 
               resolve(valueOrValues)
@@ -87,7 +87,7 @@ class ContentScript {
 
               removeListener()
               if(error &&
-                (throwOnUninstalled || !(error.message === 'uninstalled' || error.name === 'QuotaExceededError'))
+                (throwOnUninstalled || !(error.message === 'uninstalled' || error.message.includes('QuotaExceededError')))
               ) throw error
 
               resolve()
