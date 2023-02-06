@@ -338,18 +338,8 @@ export class WebGLContext {
     }
     
     let start = performance.now()
-    //// Chromium bug 1074473: texSubImage2D from a video element is 80x slower than texImage2D
-    // const textureSize = {
-    //   width: srcWidth,
-    //   height: srcHeight
-    // }
-    // const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
-    // if(updateTextureSize) {
-      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
-    //   this.drawTextureSize = textureSize
-    // } else {
-    //   this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
-    // }
+    // Chromium bug 1074473: Using texImage2D because texSubImage2D from a video element is 80x slower than texImage2D
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
 
     // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
     if(this.webGLVersion !== 1) {

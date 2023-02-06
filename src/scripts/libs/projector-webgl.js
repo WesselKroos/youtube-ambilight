@@ -142,7 +142,6 @@ export default class ProjectorWebGL {
 
     const textureMipmapLevel = Math.max(0, (Math.log(srcHeight / this.height) / Math.log(2)) - 0)
     if(textureMipmapLevel !== this.fTextureMipmapLevel) {
-      // console.log('ambient', textureMipmapLevel, `${srcHeight} -> ${this.height}`)
       this.fTextureMipmapLevel = textureMipmapLevel
       this.ctx.uniform1f(this.fTextureMipmapLevelLoc, textureMipmapLevel);
     }
