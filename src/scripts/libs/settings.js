@@ -50,6 +50,7 @@ export default class Settings {
         if([
           'webGL'
         ].includes(setting.name)) {
+          setting.default = false
           setting.disabled = 'WebGL is disabled in your browser'
         }
       }
@@ -78,6 +79,12 @@ export default class Settings {
     names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+
+    // Disable enabled WebGL setting if not supported anymore
+    if(Settings.storedSettingsCached['setting-webGL'] && !supportsWebGL()) {
+      Settings.storedSettingsCached['setting-webGL'] = null
+    }
+
     return Settings.storedSettingsCached;
   }
   
