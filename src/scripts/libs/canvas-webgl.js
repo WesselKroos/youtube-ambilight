@@ -166,25 +166,12 @@ export class WebGLContext {
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(vertexShader);
     this.ctx.compileShader(fragmentShader);
-    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
-    }
-    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
-    }
 
     // Program
     this.program = this.ctx.createProgram();
     this.ctx.attachShader(this.program, vertexShader);
     this.ctx.attachShader(this.program, fragmentShader);
     this.ctx.linkProgram(this.program);
-    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
-    }
-    this.ctx.validateProgram(this.program);
-    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
-    }
     
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt) {
@@ -202,6 +189,22 @@ export class WebGLContext {
         requestAnimationFrame(checkCompletion);
       })
     }
+    
+    // Validate these parameters after program compilation to prevent render blocking validation
+    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
+    }
+    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
+      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
+    }
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
+    }
+    this.ctx.validateProgram(this.program);
+    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
+      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
+    }
+
     this.ctx.useProgram(this.program);
 
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
