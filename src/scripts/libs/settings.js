@@ -1162,12 +1162,17 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      if(ex?.message === 'uninstalled') {
+      if(ex.name === 'QuotaExceededError') {
+        this.setWarning('The changes cannot be saved because the settings have changed too often.\nWait a few seconds...')
+        return
+      }
+
+      if(ex.message === 'uninstalled') {
         this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
         return
       }
 
-      if(ex?.message !== 'An unexpected error occurred')
+      if(ex.message !== 'An unexpected error occurred')
         SentryReporter.captureException(ex)
 
       this.logStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
