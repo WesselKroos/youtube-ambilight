@@ -614,6 +614,7 @@ export default class Settings {
             if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
               try {
                 if(!(await this.ambientlight.projector.initCtx())) return
+                this.setWarning('')
               } catch(ex) {
                 this.ambientlight.projector.setWebGLWarning('change')
                 throw ex
@@ -633,6 +634,7 @@ export default class Settings {
               if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
                 try {
                   if(!(await this.ambientlight.projector.initCtx())) return
+                  this.setWarning('')
                 } catch(ex) {
                   this.ambientlight.projector.setWebGLWarning('change')
                   throw ex
