@@ -1324,22 +1324,20 @@ export default class Ambientlight {
     }
     this.projector.resize(this.p.w, this.p.h)
 
-    if(this.settings.webGL) {
-      if(this.projector.webGLVersion === 1) {
-        const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
-        const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation in projector
-        this.projectorBuffer.elem.width = pbSizePowerOf2
-        this.projectorBuffer.elem.height = pbSizePowerOf2
-      } else {
-        const projectorBufferWidth = this.p.w * 2
-        const projectorBufferHeight = this.p.h * 2
-        if(this.projectorBuffer.elem.width !== projectorBufferWidth ||
-          this.projectorBuffer.elem.height !== projectorBufferHeight)
-        {
-          // console.log(`projectorBuffer: ${this.p.h} * 2 = ${projectorBufferHeight}`)
-          this.projectorBuffer.elem.width = projectorBufferWidth
-          this.projectorBuffer.elem.height = projectorBufferHeight
-        }
+    if(this.projector.webGLVersion === 1) {
+      const pbSize = Math.min(512, Math.max(this.srcVideoOffset.width, this.srcVideoOffset.height))
+      const pbSizePowerOf2 = Math.pow(2, 1 + Math.ceil(Math.log(pbSize / 2) / Math.log(2))) // projectorBuffer size must always be a power of 2 for WebGL1 mipmap generation in projector
+      this.projectorBuffer.elem.width = pbSizePowerOf2
+      this.projectorBuffer.elem.height = pbSizePowerOf2
+    } else if(this.projector.webGLVersion === 2) {
+      const projectorBufferWidth = this.p.w * 2
+      const projectorBufferHeight = this.p.h * 2
+      if(this.projectorBuffer.elem.width !== projectorBufferWidth ||
+        this.projectorBuffer.elem.height !== projectorBufferHeight)
+      {
+        // console.log(`projectorBuffer: ${this.p.h} * 2 = ${projectorBufferHeight}`)
+        this.projectorBuffer.elem.width = projectorBufferWidth
+        this.projectorBuffer.elem.height = projectorBufferHeight
       }
     } else {
       this.projectorBuffer.elem.width = this.p.w
