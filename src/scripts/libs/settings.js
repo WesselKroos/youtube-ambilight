@@ -1162,7 +1162,7 @@ export default class Settings {
         delete this.pendingStorageEntries[name]
       }
     } catch (ex) {
-      if(ex.name === 'QuotaExceededError') {
+      if(ex.message.includes('QuotaExceededError')) {
         this.setWarning('The changes cannot be saved because the settings have changed too often.\nWait a few seconds...')
         return
       }
