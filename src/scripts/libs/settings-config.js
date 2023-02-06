@@ -93,6 +93,14 @@ const SettingsConfig = [
     new: true
   },
   {
+    name: 'prioritizePageLoadSpeed',
+    label: 'Prioritize page load speed',
+    description: 'Show ambient light after the page has loaded',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
     name: 'videoOverlayEnabled',
     label: 'Sync video with ambient light',
     questionMark: {
