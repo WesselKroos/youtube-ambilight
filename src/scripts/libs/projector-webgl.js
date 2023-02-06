@@ -309,7 +309,7 @@ export default class ProjectorWebGL {
     const detected = await this.getMajorPerformanceCaveatDetected()
     if(detected) return
     
-    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The WebGL resolution setting has been turned down to 25% for better performance)';
+    const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)';
     console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
