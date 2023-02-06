@@ -211,7 +211,7 @@ export default class ProjectorWebGL {
       }
     } else {
       if(updateTextureSize) {
-        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, src)
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src);
       } else {
         this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, 0, 0, format, formatType, src)
       }
