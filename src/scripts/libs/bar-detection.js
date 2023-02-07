@@ -333,6 +333,10 @@ export default class BarDetection {
       if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
           this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+          this.ctx = undefined
+        }
+
+        if(!this.ctx || (this.ctx?.isContextLost && this.ctx.isContextLost())) {
           this.ctx = this.canvas.getContext('2d', {
             alpha: false,
             desynchronized: true
@@ -436,7 +440,7 @@ export default class BarDetection {
 
       this.catchedDetectBarSizeError = true
       if (ex.message === 'DataCloneError') return // canvas element was removed from the document before we could read it
-      
+
       throw ex
     }
   }.bind(this), true)
