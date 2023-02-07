@@ -313,9 +313,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(function verticalBarDetectionIdleCallback() {
-      return this.idleHandler(run)
-    }.bind(this), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
   }
 
   idleHandler = wrapErrorHandler(async function idleHandler(run) {
@@ -335,6 +333,10 @@ export default class BarDetection {
       if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
           this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+          this.ctx = undefined
+        }
+
+        if(!this.ctx || (this.ctx?.isContextLost && this.ctx.isContextLost())) {
           this.ctx = this.canvas.getContext('2d', {
             alpha: false,
             desynchronized: true
@@ -434,10 +436,12 @@ export default class BarDetection {
       }
       this.cancellable = true
       this.run = null
-      if (!this.catchedDetectBarSizeError) {
-        this.catchedDetectBarSizeError = true
-        throw ex
-      }
+      if (this.catchedDetectBarSizeError) return
+
+      this.catchedDetectBarSizeError = true
+      if (ex.message === 'DataCloneError') return // canvas element was removed from the document before we could read it
+
+      throw ex
     }
   }.bind(this), true)
 }

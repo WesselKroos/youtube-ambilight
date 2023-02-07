@@ -1,4 +1,4 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
+import { on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -47,12 +47,13 @@ const detectDetachedVideo = (ytdAppElem) => {
 
     const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
     if (!videoElem) {
+      const ytdAppPlayerVideoElem = document.querySelector('ytd-app > #container.ytd-player video.html5-main-video')
+      const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
       const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
       const ytdInlinePreviewPlayerVideoElem = document.querySelector('#inline-preview-player video.html5-main-video')
       const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
-      const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
       const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
-      if(ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || playerApiVideoElem || outsideYtdAppVideoElem) {
+      if(ytdAppPlayerVideoElem || playerApiVideoElem || ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || outsideYtdAppVideoElem) {
         return
       }
 
@@ -91,9 +92,19 @@ const tryInitAmbientlight = async () => {
   if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
 
-  const ytdAppElem = $.s('ytd-app')
+  const ytdAppElem = document.querySelector('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
+    const ytdAppPlayerVideoElem = document.querySelector('ytd-app > #container.ytd-player video.html5-main-video')
+    if(ytdAppPlayerVideoElem) {
+      // errorEvents.add('tryInitAmbientlight | video in ytd-app > #container.ytd-player')
+      return false
+    }
+    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
+    if(playerApiVideoElem) {
+      // errorEvents.add('tryInitAmbientlight | video in #player-api')
+      return false
+    }
     const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
     if(ytPlayerManagerVideoElem) {
       // errorEvents.add('tryInit | video in yt-player-manager')
@@ -107,11 +118,6 @@ const tryInitAmbientlight = async () => {
     const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
     if(ytdMiniplayerVideoElem) {
       // errorEvents.add('tryInitAmbientlight | video in ytd-miniplayer')
-      return false
-    }
-    const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
-    if(playerApiVideoElem) {
-      // errorEvents.add('tryInitAmbientlight | video in #player-api')
       return false
     }
     const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
@@ -189,9 +195,9 @@ const detectPageTransitions = (ytdAppElem) => {
 
 const loadAmbientlight = async () => {
   // Validate YouTube desktop web app
-  const ytdAppElem = $.s('ytd-app')
+  const ytdAppElem = document.querySelector('ytd-app')
   if(!ytdAppElem) {
-    const appElems = [...$.sa('body > *')]
+    const appElems = [...document.querySelectorAll('body > *')]
       .filter(function getAppElems(elem) {
         return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP' && ! elem.tagName !== 'YTLR-APP')
       })

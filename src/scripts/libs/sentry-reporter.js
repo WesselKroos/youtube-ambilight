@@ -1,4 +1,4 @@
-import { $, html, on, uuidv4 } from './generic';
+import { html, on, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
@@ -49,7 +49,7 @@ const entryToString = (entry) => {
   return lines.join('\n')
 }
 export const getSelectorTreeString = (selector) => {
-  const trees = [...$.sa(selector)]
+  const trees = [...document.querySelectorAll(selector)]
     .map(elem => getNodeTree(elem))
 
   const documentTrees = []
@@ -385,7 +385,7 @@ export default class SentryReporter {
             dark: !!html?.attributes?.dark,
             loggedIn: (window.yt)
               ? !!window.yt?.config_?.LOGGED_IN
-              : ($.s('ytd-topbar-menu-button-renderer') ? !!$.s('#avatar-btn') : undefined)
+              : (document.querySelector('ytd-topbar-menu-button-renderer') ? !!document.querySelector('#avatar-btn') : undefined)
           })
         } catch (ex) {
           setExtra('YouTube (exception)', ex)
@@ -398,14 +398,14 @@ export default class SentryReporter {
           setExtra('Page .isVideo (exception)', ex)
         }
         try {
-          pageExtra.isYtdApp = !!$.s('ytd-app')
+          pageExtra.isYtdApp = !!document.querySelector('ytd-app')
         } catch (ex) { 
           setExtra('Page .isYtdApp (exception)', ex)
         }
         setExtra('Page', pageExtra)
 
         try {
-          setExtra('Video elements', $.sa('video').length)
+          setExtra('Video elements', document.querySelectorAll('video').length)
         } catch (ex) { 
           setExtra('Video elements (exception)', ex)
         }
@@ -438,7 +438,7 @@ export default class SentryReporter {
         }
 
         try {
-          const videoPlayerElem = $.s('#movie_player, .html5-video-player')
+          const videoPlayerElem = document.querySelector('#movie_player, .html5-video-player')
           if (videoPlayerElem?.getStatsForNerds) {
             const stats = videoPlayerElem.getStatsForNerds()
             const relevantStats = ['codecs', 'color', 'dims_and_frames', 'drm', 'resolution']
@@ -455,7 +455,7 @@ export default class SentryReporter {
 
       if(navigator.doNotTrack !== '1' && crashOptions?.video) {
         try {
-          const ytdWatchFlexyElem = $.s('ytd-watch-flexy, .ytd-page-manager')
+          const ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy, .ytd-page-manager')
           if (ytdWatchFlexyElem) {
             const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
             setExtra('ytd-watch-flexy[video-id]', videoId)
