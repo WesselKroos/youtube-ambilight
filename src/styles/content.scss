@@ -195,7 +195,8 @@ html[data-ambientlight-enabled="true"] {
   body ytd-app #masthead-container {
     &.yta-header-transparent,
     &.at-top {
-      ytd-masthead {
+      ytd-masthead,
+      ytd-masthead #background.ytd-masthead {
         background: none !important;
       }
       #voice-search-button {
@@ -231,7 +232,8 @@ html[data-ambientlight-enabled="true"] {
       background: none !important;
     }
 
-    ytd-masthead {
+    ytd-masthead,
+    ytd-masthead #background.ytd-masthead {
       transition: background-color .15s;
     }
     #masthead-container.yta-header-transparent ytd-masthead {
