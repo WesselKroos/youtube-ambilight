@@ -1,4 +1,4 @@
-import { $, on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
+import { on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -91,7 +91,7 @@ const tryInitAmbientlight = async () => {
   if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
 
-  const ytdAppElem = $.s('ytd-app')
+  const ytdAppElem = document.querySelector('ytd-app')
   const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
     const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
@@ -189,9 +189,9 @@ const detectPageTransitions = (ytdAppElem) => {
 
 const loadAmbientlight = async () => {
   // Validate YouTube desktop web app
-  const ytdAppElem = $.s('ytd-app')
+  const ytdAppElem = document.querySelector('ytd-app')
   if(!ytdAppElem) {
-    const appElems = [...$.sa('body > *')]
+    const appElems = [...document.querySelectorAll('body > *')]
       .filter(function getAppElems(elem) {
         return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP' && ! elem.tagName !== 'YTLR-APP')
       })
