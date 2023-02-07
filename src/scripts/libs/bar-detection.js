@@ -313,9 +313,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(function verticalBarDetectionIdleCallback() {
-      return this.idleHandler(run)
-    }.bind(this), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
   }
 
   idleHandler = wrapErrorHandler(async function idleHandler(run) {
@@ -434,10 +432,12 @@ export default class BarDetection {
       }
       this.cancellable = true
       this.run = null
-      if (!this.catchedDetectBarSizeError) {
-        this.catchedDetectBarSizeError = true
-        throw ex
-      }
+      if (this.catchedDetectBarSizeError) return
+
+      this.catchedDetectBarSizeError = true
+      if (ex.message === 'DataCloneError') return // canvas element was removed from the document before we could read it
+      
+      throw ex
     }
   }.bind(this), true)
 }
