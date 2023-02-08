@@ -18,13 +18,17 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
 
 const errorEvents = new ErrorEvents()
 
-const detectDetachedVideo = (ytdAppElem) => {
+const detectDetachedVideo = () => {
   const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
     if (!isWatchPageUrl()) return
 
+    const videoElem = ambientlight.videoElem
+    const ytdAppElem = ambientlight.ytdAppElem
+
     const isDetached = (
-      !ambientlight.videoElem ||
-      !ytdAppElem?.contains(ambientlight.videoElem)
+      !videoElem ||
+      !ytdAppElem?.contains(videoElem) ||
+      !document.contains(ytdAppElem)
     )
     if (!isDetached) {
       if(errorEvents.list.length) {
@@ -33,20 +37,8 @@ const detectDetachedVideo = (ytdAppElem) => {
       return
     }
 
-    const newYtdAppElem = document.querySelector('ytd-app') 
-    if(newYtdAppElem !== ytdAppElem) {
-      const details = {
-        newYtdAppElemContainsAmbientlightVideoElem: newYtdAppElem?.contains(ambientlight.videoElem),
-        oldYtdAppElemContainsAmbientlightVideoElem: ytdAppElem?.contains(ambientlight.videoElem),
-        'ambientlight.videoElem': getNodeTreeString(ambientlight.videoElem),
-        tree: getSelectorTreeString('video,#player-container')
-      }
-      errorEvents.add('detectDetachedVideo | ytd-app element changed', details)
-      return
-    }
-
-    const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
-    if (!videoElem) {
+    const newVideoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
+    if (!newVideoElem) {
       const ytdAppPlayerVideoElem = document.querySelector('ytd-app > #container.ytd-player video.html5-main-video')
       const playerApiVideoElem = document.querySelector('#player-api video.html5-main-video')
       const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
@@ -58,16 +50,29 @@ const detectDetachedVideo = (ytdAppElem) => {
       }
 
       const details = {
-        documentContainsAmbientlightVideoElem: document.contains(ambientlight.videoElem),
-        'ambientlight.videoElem': getNodeTreeString(ambientlight.videoElem),
+        documentContainsOldVideoElem: document.contains(videoElem),
+        'ambientlight.videoElem': getNodeTreeString(videoElem),
         tree: getSelectorTreeString('video,#player-container')
       }
       errorEvents.add('detectDetachedVideo | video detached and found no new video in ytd-watch-flexy, yt-player-manager, ytd-miniplayer, #inline-preview-player, #player-api or outside ytd-app', details)
       return
     }
+    
+    const newYtdAppElem = newVideoElem.closest('ytd-app')
+    if(newYtdAppElem !== ytdAppElem) {
+      const details = {
+        newYtdAppElemContainsOldVideoElem: newYtdAppElem?.contains(videoElem),
+        oldYtdAppElemContainsOldVideoElem: ytdAppElem?.contains(videoElem),
+        'ambientlight.videoElem': getNodeTreeString(videoElem),
+        tree: getSelectorTreeString('video,#player-container')
+      }
+      errorEvents.add('detectDetachedVideo | ytd-app element changed', details)
+      return // We do not support this, because if we do we have to move or re-create the settings menu, canvasses and other elements as well
+    }
 
-    if(ambientlight.videoElem !== videoElem) {
-      ambientlight.initVideoElem(videoElem)
+
+    if(videoElem !== newVideoElem) {
+      ambientlight.initVideoElem(newVideoElem)
       ambientlight.initVideoListeners()
     }
     
@@ -92,8 +97,7 @@ const tryInitAmbientlight = async () => {
   if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
 
-  const ytdAppElem = document.querySelector('ytd-app')
-  const videoElem = ytdAppElem.querySelector('ytd-watch-flexy video.html5-main-video')
+  const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
     const ytdAppPlayerVideoElem = document.querySelector('ytd-app > #container.ytd-player video.html5-main-video')
     if(ytdAppPlayerVideoElem) {
@@ -131,11 +135,12 @@ const tryInitAmbientlight = async () => {
     })
     return false
   }
-  
+
+  const ytdAppElem = videoElem.closest('ytd-app')
   window.ambientlight = await new Ambientlight(ytdAppElem, videoElem)
 
   errorEvents.list = []
-  detectDetachedVideo(ytdAppElem)
+  detectDetachedVideo()
   detectPageTransitions(ytdAppElem)
   if(!window.ambientlight.isOnVideoPage) {
     detectWatchPageVideo(ytdAppElem);
