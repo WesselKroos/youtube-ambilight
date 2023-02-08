@@ -346,6 +346,7 @@ export default class Ambientlight {
         this.clear()
         this.hideStats()
         this.scheduledNextFrame = false
+        this.sizesChanged = true
         this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
       },
       emptied: () => {
@@ -593,6 +594,7 @@ export default class Ambientlight {
       if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
         this.clear()
         this.resetVideoContainerStyle()
+        this.sizesChanged = true
         return
       }
 
@@ -1415,7 +1417,6 @@ export default class Ambientlight {
       videoContainer.style.marginBottom = ''
       videoContainer.style.setProperty('--video-transform', '')
     }
-    this.sizesChanged = true
   }
 
   updateStyles() {
@@ -2754,7 +2755,6 @@ GREY   | previous display frames`
     this.settings.set('enabled', false, true)
 
     await this.hide()
-    this.resetVideoContainerStyle()
   }
 
   start = async (initial = false) => {
