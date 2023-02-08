@@ -1415,6 +1415,7 @@ export default class Ambientlight {
       videoContainer.style.marginBottom = ''
       videoContainer.style.setProperty('--video-transform', '')
     }
+    this.sizesChanged = true
   }
 
   updateStyles() {
