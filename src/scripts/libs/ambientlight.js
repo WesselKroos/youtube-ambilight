@@ -319,7 +319,7 @@ export default class Ambientlight {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
-  
+
         this.buffersCleared = true // Always prevent old frame from being drawn
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
@@ -332,6 +332,9 @@ export default class Ambientlight {
       },
       loadeddata: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
+
+        this.sizesChanged = true
+        this.buffersCleared = true
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
         this.initVideoIfSrcChanged()
