@@ -451,6 +451,20 @@ export default class SentryReporter {
         } catch (ex) { 
           setExtra('Player (exception)', ex)
         }
+
+        try {
+          const ytdAppElem = document.querySelector('ytd-app')
+          if (ytdAppElem) {
+            const elementFunctionNames = ['querySelector', 'querySelectorAll', 'closest', 'prepend', 'append', 'appendChild', 'contains']
+            const componentFunctionsAreNative = elementFunctionNames.reduce((list, name) => {
+              list[name] = document.documentElement[name] === ytdAppElem[name]
+              return list
+            }, {})
+            setExtra('ComponentFunctionsAreNative', componentFunctionsAreNative)
+          }
+        } catch (ex) { 
+          setExtra('ComponentFunctionsAreNative (exception)', ex)
+        }
       }
 
       if(navigator.doNotTrack !== '1' && crashOptions?.video) {
