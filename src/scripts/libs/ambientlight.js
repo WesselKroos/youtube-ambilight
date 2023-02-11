@@ -68,7 +68,7 @@ export default class Ambientlight {
   constructor(ytdAppElem, videoElem) {
     return (async function AmbientlightConstructor() {
       this.ytdAppElem = ytdAppElem
-      this.mastheadElem = ytdAppElem.querySelector('#masthead-container')
+      this.mastheadElem = document.querySelector('#masthead-container')
       if(!this.mastheadElem) {
         throw new Error(`Cannot find mastheadElem: #masthead-container`)
       }
@@ -113,11 +113,11 @@ export default class Ambientlight {
   }
 
   get playerSmallContainerElem() {
-    return this.ytdAppElem.querySelector('#player-container-inner')
+    return document.querySelector('ytd-watch-flexy #player-container-inner')
   }
 
   get playerTheaterContainerElem() {
-    return this.ytdAppElem.querySelector('#player-theater-container')
+    return document.querySelector('ytd-watch-flexy #player-theater-container')
   }
 
   get playerTheaterContainerElemFromVideo() {
@@ -130,7 +130,7 @@ export default class Ambientlight {
   }
 
   get thumbnailOverlayElem() {
-    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = this.ytdWatchFlexyElem?.querySelector('.ytp-cued-thumbnail-overlay')
+    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = document.querySelector('ytd-watch-flexy .ytp-cued-thumbnail-overlay')
     return this._thumbnailOverlayElem
   }
 
@@ -146,7 +146,7 @@ export default class Ambientlight {
     //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
     // }
     
-    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
+    this.settingsMenuBtnParent = document.querySelector('ytd-watch-flexy .ytp-right-controls, ytd-watch-flexy .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
@@ -319,7 +319,7 @@ export default class Ambientlight {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
-  
+
         this.buffersCleared = true // Always prevent old frame from being drawn
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
@@ -332,6 +332,9 @@ export default class Ambientlight {
       },
       loadeddata: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
+
+        this.sizesChanged = true
+        this.buffersCleared = true
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
         this.initVideoIfSrcChanged()
@@ -346,6 +349,7 @@ export default class Ambientlight {
         this.clear()
         this.hideStats()
         this.scheduledNextFrame = false
+        this.sizesChanged = true
         this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
       },
       emptied: () => {
@@ -462,6 +466,7 @@ export default class Ambientlight {
         }
       )
       this.topElemObserver.observe(this.topElem)
+      this.atTop = window.scrollY === 0
       await this.updateAtTop()
     }
 
@@ -593,6 +598,7 @@ export default class Ambientlight {
       if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
         this.clear()
         this.resetVideoContainerStyle()
+        this.sizesChanged = true
         return
       }
 
@@ -2686,7 +2692,9 @@ GREY   | previous display frames`
       this.settings.set('enabled', true, true)
     }
     
+    this.mastheadElem.classList.add('no-animation')
     await this.start(initial)
+    this.mastheadElem.classList.remove('no-animation')
   }
 
   // async disableYouTubeAmbientMode() {
@@ -2753,7 +2761,6 @@ GREY   | previous display frames`
     this.settings.set('enabled', false, true)
 
     await this.hide()
-    this.resetVideoContainerStyle()
   }
 
   start = async (initial = false) => {
@@ -3045,7 +3052,7 @@ GREY   | previous display frames`
   }
 
   initLiveChatIframe = () => {
-    const iframe = this.liveChat.querySelector('iframe')
+    const iframe = document.querySelector('ytd-watch-flexy ytd-live-chat-frame iframe')
     if(!iframe || this.liveChatIframe === iframe) return
 
     this.liveChatIframe = iframe

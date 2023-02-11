@@ -523,9 +523,8 @@ export class ErrorEvents {
   }
 
   add = (type, details = {}) => {
-    if(!crashOptions?.technical) {
-      if(details['ambientlight.videoElem']) details['ambientlight.videoElem'] = undefined
-      if(details.tree) details.tree = undefined
+    if(!(crashOptions?.technical)) {
+      details = undefined
     }
     const time = Math.round(performance.now()) / 1000
   
