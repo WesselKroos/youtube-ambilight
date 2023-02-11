@@ -173,7 +173,7 @@ const startIfWatchPageHasVideo = (ytdAppElem) => {
     return
   }
 
-  const videoElem = ytdAppElem.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
+  const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
   if(!videoElem) return
 
   getWatchPageViewObserver().disconnect()
