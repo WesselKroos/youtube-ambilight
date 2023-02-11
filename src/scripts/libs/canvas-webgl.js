@@ -67,7 +67,7 @@ export class WebGLContext {
           this.setWebGLWarning('3 times restore')
           return
         }
-        await this.initCtx()
+        if(!(await this.initCtx())) return
         if(this.ctx && !this.ctx.isContextLost()) {
           this.lost = false
           this.lostCount = 0
@@ -175,19 +175,23 @@ export class WebGLContext {
     
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      await new Promise(resolve => {
+      const completed = await new Promise(resolve => {
         const checkCompletion = () => {
           try {
+            if(!this.program)
+              return resolve(false) // cancel
+
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
             if(completed === false) requestAnimationFrame(checkCompletion);
-            else resolve() // COMPLETION_STATUS_KHR can be null because of webgl-lint
+            else resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
           } catch(ex) {
             SentryReporter.captureException(ex)
-            resolve()
+            resolve(false)
           }
         };
         requestAnimationFrame(checkCompletion);
       })
+      if(!completed) return
     }
     
     // Validate these parameters after program compilation to prevent render blocking validation
@@ -257,6 +261,8 @@ export class WebGLContext {
       const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
     }
+
+    return true
   }
 
   clearRect = (x, y, width, height) => {
