@@ -466,6 +466,7 @@ export default class Ambientlight {
         }
       )
       this.topElemObserver.observe(this.topElem)
+      this.atTop = window.scrollY === 0
       await this.updateAtTop()
     }
 
@@ -2691,7 +2692,9 @@ GREY   | previous display frames`
       this.settings.set('enabled', true, true)
     }
     
+    this.mastheadElem.classList.add('no-animation')
     await this.start(initial)
+    this.mastheadElem.classList.remove('no-animation')
   }
 
   // async disableYouTubeAmbientMode() {
