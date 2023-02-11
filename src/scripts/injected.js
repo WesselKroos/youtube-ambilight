@@ -133,7 +133,7 @@ const tryInitAmbientlight = async () => {
   const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
     logErrorEventWithPageTrees('initialize')
-    return false
+    return
   }
 
   const ytdAppElem = videoElem.closest('ytd-app')
