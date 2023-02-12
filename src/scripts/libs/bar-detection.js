@@ -327,6 +327,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     } = this.idleHandlerArguments
     let canvasInfo;
+    let bufferCtx;
     try {
       const start = performance.now()
 
@@ -354,8 +355,9 @@ export default class BarDetection {
             bitmap: this.canvas.transferToImageBitmap()
           }
       } else {
-        const bufferCtx = buffer.getContext('2d')
-        if(!bufferCtx?.isContextLost || !bufferCtx.isContextLost()) {
+        bufferCtx = buffer.getContext('2d')
+        if(bufferCtx instanceof Promise) bufferCtx = await bufferCtx
+        if(bufferCtx && (!bufferCtx.isContextLost || !bufferCtx.isContextLost())) {
           canvasInfo = {
             bitmap: buffer.transferToImageBitmap()
           }
@@ -431,6 +433,37 @@ export default class BarDetection {
         this.run = null
       }, throttle)
     } catch(ex) {
+      ex.details = {
+        detectColored,
+        offsetPercentage,
+        detectHorizontal,
+        currentHorizontalPercentage,
+        detectVertical,
+        currentVerticalPercentage,
+        ratio, 
+        allowedToTransfer,
+        buffer: buffer ? {
+          width: buffer.width,
+          height: buffer.height,
+          ctx: buffer.ctx?.constructor?.name,
+          type: buffer.constructor?.name
+        } : undefined,
+        bufferCtx: bufferCtx?.constructor?.name,
+        canvasInfo: canvasInfo ? {
+          canvas: canvasInfo?.canvas ? {
+            width: canvasInfo.canvas.width,
+            height: canvasInfo.canvas.height,
+            type: canvasInfo.canvas.constructor?.name
+          } : undefined,
+          ctx: canvasInfo.ctx?.constructor?.name,
+          bitmap: canvasInfo?.bitmap ? {
+            width: canvasInfo.bitmap.width,
+            height: canvasInfo.bitmap.height,
+            type: canvasInfo.bitmap.constructor?.name
+          } : undefined
+        } : undefined
+      }
+
       if(canvasInfo?.bitmap) {
         canvasInfo.bitmap.close()
       }
