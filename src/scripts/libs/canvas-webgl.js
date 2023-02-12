@@ -195,18 +195,74 @@ export class WebGLContext {
     }
     
     // Validate these parameters after program compilation to prevent render blocking validation
-    if (!this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`VertexShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(vertexShader)}`)
+    const vertexShaderCompiled = this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)
+    const fragmentShaderCompiled = this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)
+    const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
+    if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
+      const programCompilationError = new Error('Program compilation failed')
+      programCompilationError.details = {}
+
+      try {
+        programCompilationError.details = {
+          vertexShaderCompiled,
+          vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
+          fragmentShaderCompiled,
+          fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
+          programLinked,
+          programInfoLog: this.ctx.getProgramInfoLog(this.program)
+        }
+      } catch(ex) {
+        programCompilationError.details.getCompiledAndLinkedInfoLogsError = ex
+      }
+
+      try {
+        this.ctx.validateProgram(this.program)
+        programCompilationError.details.programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(this.program)
+      } catch(ex) {
+        programCompilationError.details.validateProgramError = ex
+      }
+
+      try {
+        const ext = this.ctx.getExtension('WEBGL_debug_shaders');
+        programCompilationError.details.Ωsources = {
+          vertexShader: ext.getTranslatedShaderSource(vertexShader),
+          fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+        }
+      } catch(ex) {
+        programCompilationError.details.debugShadersError = ex
+      }
+
+      throw programCompilationError
     }
-    if (!this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)) {
-      throw new Error(`FragmentShader COMPILE_STATUS: ${this.ctx.getShaderInfoLog(fragmentShader)}`)
-    }
-    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-      throw new Error(`Program LINK_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
-    }
-    this.ctx.validateProgram(this.program);
-    if(!this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)) {
-      throw new Error(`Program VALIDATE_STATUS: ${this.ctx.getProgramInfoLog(this.program)}`)
+
+    this.ctx.validateProgram(this.program)
+    const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+    if(!programValidated) {
+      const programValidationError = new Error('Program validation failed')
+      programValidationError.details = {}
+
+      try {
+        programValidationError.details = {
+          vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
+          fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
+          programInfoLog: this.ctx.getProgramInfoLog(this.program)
+        }
+      } catch(ex) {
+        programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
+      }
+
+      try {
+        const ext = this.ctx.getExtension('WEBGL_debug_shaders');
+        programValidationError.details.Ωsources = {
+          vertexShader: ext.getTranslatedShaderSource(vertexShader),
+          fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+        }
+      } catch(ex) {
+        programValidationError.details.debugShadersError = ex
+      }
+
+      throw programValidationError
     }
 
     this.ctx.useProgram(this.program);
