@@ -385,7 +385,7 @@ export default class Ambientlight {
 
           for (const entry of entries) {
             if(this.videoElem !== entry.target) {
-              this.videoObserver.unobserve(event.target) // video is detached and a new one was created
+              this.videoObserver.unobserve(entry.target) // video is detached and a new one was created
               continue
             }
             this.videoIsHidden = (entry.intersectionRatio === 0)
