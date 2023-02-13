@@ -472,8 +472,6 @@ export default class BarDetection {
       if (this.catchedDetectBarSizeError) return
 
       this.catchedDetectBarSizeError = true
-      if (ex.message === 'DataCloneError') return // canvas element was removed from the document before we could read it
-
       throw ex
     }
   }.bind(this), true)
