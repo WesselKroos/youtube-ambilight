@@ -1036,15 +1036,20 @@ html[data-ambientlight-enabled="true"] {
     // Prevent Firefox from stopping the video rendering
     opacity: .9899999; // Firefox
 
-    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
-      // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
-      opacity: .9989999; // Chromium
-    }
-
     &--hide {
       opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
       transition: opacity .001s;//, margin-top .2s ease-out;
     }
+
+    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
+      // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
+      opacity: .9989999; // Chromium
+
+      &--hide {
+        opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
+      }
+    }
+
   }
 
   /* Immersive mode */
