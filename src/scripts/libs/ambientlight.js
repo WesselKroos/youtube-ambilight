@@ -52,8 +52,6 @@ export default class Ambientlight {
   videoFrameCount = 0
   displayFrameRate = 0
   videoFrameRate = 0
-  videoFrameRateMeasureStartTime = 0
-  videoFrameRateMeasureStartFrame = 0
   ambientlightFrameCount = 0
   ambientlightFrameRate = 0
   ambientlightVideoDroppedFrameCount = 0
@@ -325,6 +323,7 @@ export default class Ambientlight {
         // this.videoFrameTimes = []
         // this.frameTimes = []
         this.videoFrameCounts = []
+        this.videoPresentedFrames = 0
         this.displayFrameCounts = []
         this.ambientlightFrameCounts = []
         this.lastUpdateStatsTime = performance.now()
@@ -1877,10 +1876,9 @@ export default class Ambientlight {
   afterNextFrame = async () => {
     try {
       this.afterNextFrameIdleCallback = undefined
-
-      this.detectFrameRates()
       
       if (this.settings.videoOverlayEnabled) {
+        this.detectFrameRates()
         this.checkIfNeedToHideVideoOverlay()
       }
       
@@ -1893,6 +1891,9 @@ export default class Ambientlight {
           await this.optionalFrame()
         }
       } else if((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval) {
+        if (!this.settings.videoOverlayEnabled) {
+          this.detectFrameRates()
+        }
         this.updateStats()
         this.lastUpdateStatsTime = performance.now()
       }
@@ -1996,7 +1997,7 @@ export default class Ambientlight {
   detectVideoFrameRate(update) {
     this.videoFrameRate = this.detectFrameRate(
       this.videoFrameCounts,
-      this.getVideoFrameCount() + this.getVideoDroppedFrameCount(),
+      this.getVideoFrameCount(),
       this.videoFrameRate,
       update
     )
@@ -2026,22 +2027,18 @@ export default class Ambientlight {
   getVideoDroppedFrameCount() {
     if (!this.videoElem) return 0
 
-    return this.videoElem.getVideoPlaybackQuality().droppedVideoFrames
+    return this.videoElem.getVideoPlaybackQuality()?.droppedVideoFrames || 0
   }
 
   getVideoFrameCount() {
     if (!this.videoElem) return 0
 
-    if(this.videoElem.getVideoPlaybackQuality) {
-      const totalVideoFrames = this.videoElem.getVideoPlaybackQuality()?.totalVideoFrames
-      if(totalVideoFrames !== undefined) return totalVideoFrames
-    }
+    const videoPresentedFrames = (this.settings.frameSync === FRAMESYNC_VIDEOFRAMES && this.videoPresentedFrames)
+      ? this.videoPresentedFrames
+      : 0
 
-    return (
-      this.videoElem.mozPaintedFrames || // Firefox
-      (this.videoElem.webkitDecodedFrameCount - this.videoElem.webkitDroppedFrameCount) || // Chrome
-      0
-    )
+    const totalVideoFrames = this.videoElem.getVideoPlaybackQuality()?.totalVideoFrames || 0
+    return Math.max(videoPresentedFrames, totalVideoFrames)
   }
 
   hideStats() {
@@ -2136,7 +2133,7 @@ export default class Ambientlight {
       const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.settings.framerateLimit) : this.videoFrameRate
       const ambientlightFPSColor = (this.ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
-        : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.01) ? '#ff3' : '#7f7'
+        : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.2) ? '#ff3' : '#7f7'
 
       // Ambientlight dropped frames
       const ambientlightDroppedFramesText = `AMBIENT DROPPED: ${this.ambientlightVideoDroppedFrameCount}`
@@ -2164,7 +2161,7 @@ export default class Ambientlight {
       const displayFPSText = `DISPLAY: ${this.displayFrameRate.toFixed(2)} ${this.displayFrameRate ? `(${(1000/this.displayFrameRate).toFixed(2)}ms)` : ''}`
       const displayFPSColor = (this.displayFrameRate < this.videoFrameRate - 1)
         ? '#f55'
-        : (this.displayFrameRate < this.videoFrameRate - 0.01) ? '#ff3' : '#7f7'
+        : (this.displayFrameRate < this.videoFrameRate - 0.2) ? '#ff3' : '#7f7'
 
       this.displayFPSElem.childNodes[0].nodeValue = displayFPSText
       this.displayFPSElem.style.color = displayFPSColor
@@ -2769,8 +2766,6 @@ GREY   | previous display frames`
     this.showedCompareWarning = false
     this.showedDetectBarSizeWarning = false
     this.nextFrameTime = undefined
-    this.videoFrameRateMeasureStartFrame = 0
-    this.videoFrameRateMeasureStartTime = 0
     this.ambientlightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
 
@@ -2843,6 +2838,7 @@ GREY   | previous display frames`
     this.receiveVideoFrametimes(timestamp, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
+    this.videoPresentedFrames = info?.presentedFrames || 0
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
