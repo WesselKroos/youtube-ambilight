@@ -22,7 +22,8 @@ body:
    attributes:
      label: Steps to reproduce the behavior
      description: Feel free to define optional steps or multiple ways to reproduce the behavior
-     placeholder: 1. Go to '...'
+     placeholder: |
+       1. Go to '...'
        2. Click on '....'
        3. Scroll down to '....'
        4. See error
