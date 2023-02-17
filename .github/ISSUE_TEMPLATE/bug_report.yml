@@ -1,6 +1,6 @@
 name: Bug report
 description: File a bug report
-title: ""
+title: "A concise title for the bug"
 labels: ["S: Todo", "T: Bug"]
 assignees: 
   - WesselKroos
@@ -18,7 +18,7 @@ body:
    validations:
      required: true
  - type: textarea
-   id: description
+   id: reproduction-steps
    attributes:
      label: Steps to reproduce the behavior
      description: Feel free to define optional steps or multiple ways to reproduce the behavior
@@ -45,7 +45,7 @@ body:
        - Opera
        - Firefox
  - type: dropdown
-   id: os
+   id: operating-system
    attributes:
      label: Operating system
      multiple: true
@@ -62,7 +62,7 @@ body:
    validations:
      required: true
  - type: checkboxes
-   id: checks
+   id: conditions
    attributes:
      label: The bug still happens in these conditions
      description: Check the statements that match your findings
