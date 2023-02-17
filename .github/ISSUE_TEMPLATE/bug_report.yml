@@ -72,4 +72,6 @@ body:
    id: context
    attributes:
      label: Additional context and/or screenshots
-     placeholder: Add additional context in case it did not fit in any of the fields above. You can also add screenshots by pasting them into this field.
+     placeholder: |
+       Add additional context in case it did not fit in any of the fields above.
+       You can also add screenshots by pasting them into this field.
