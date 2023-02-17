@@ -44,6 +44,8 @@ body:
        - Microsoft Edge
        - Opera
        - Firefox
+   validations:
+     required: true
  - type: dropdown
    id: operating-system
    attributes:
@@ -54,6 +56,8 @@ body:
        - Apple macOS
        - Linux
        - Other
+   validations:
+     required: true
  - type: input
    id: extension-version
    attributes:
