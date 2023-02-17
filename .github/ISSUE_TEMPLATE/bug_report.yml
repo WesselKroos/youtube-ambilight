@@ -28,12 +28,6 @@ body:
        3. Scroll down to...
    validations:
      required: true
- - type: textarea
-   id: screenshots
-   attributes:
-     label: Screenshots
-     description: If applicable, add screenshots to help explain your problem.
-     placeholder: You can add screenshots by pasting them into this text field
  - type: dropdown
    id: browser
    attributes:
@@ -77,5 +71,5 @@ body:
  - type: textarea
    id: context
    attributes:
-     label: Additional context
-     placeholder: Add additional context in case it did not fit in any of the fields above
+     label: Additional context and/or screenshots
+     placeholder: Add additional context in case it did not fit in any of the fields above. You can also add screenshots by pasting them into this field.
