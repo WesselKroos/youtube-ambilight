@@ -652,10 +652,20 @@ export default class Settings {
           }
 
           if (
+            setting.name === 'vibrance' || 
             setting.name === 'spread' || 
             setting.name === 'edge'
           ) {
             this.ambientlight.canvassesInvalidated = true
+          }
+          if(setting.name === 'vibrance') {
+            try {
+            if(!(await this.ambientlight.projector.updateVibrance())) return
+              this.setWarning('')
+            } catch(ex) {
+              this.ambientlight.projector.setWebGLWarning('change')
+              throw ex
+            }
           }
 
           if([
@@ -1016,11 +1026,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'frameFading' ],
-      visible: () => this.webGL
-    },
-    {
-      names: [ 'resolution' ],
+      names: [ 'resolution', 'vibrance', 'frameFading' ],
       visible: () => this.webGL
     }
   ]

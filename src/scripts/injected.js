@@ -21,7 +21,7 @@ const errorEvents = new ErrorEvents()
 const getOtherUnknownAppElems = () => 
   [...document.querySelectorAll('body > *')]
     .filter(function getAppElems(elem) {
-      return (elem.tagName.endsWith('-APP') && elem.tagName !== 'YTD-APP' && elem.tagName !== 'YTVP-APP' && elem.tagName !== 'YTCP-APP' && ! elem.tagName !== 'YTLR-APP')
+      return (elem.tagName.endsWith('-APP') && !['YTD-APP', 'YTVP-APP', 'YTCP-APP', 'YTLR-APP', 'DAILY-COMPANION-APP'].includes(elem.tagName))
     });
 
 const logErrorEventWithPageTrees = (message, details = {}) => {

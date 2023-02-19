@@ -225,9 +225,11 @@ export class WebGLContext {
 
       try {
         const ext = this.ctx.getExtension('WEBGL_debug_shaders');
-        programCompilationError.details.Ωsources = {
-          vertexShader: ext.getTranslatedShaderSource(vertexShader),
-          fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+        if(ext) {
+          programCompilationError.details.Ωsources = {
+            vertexShader: ext.getTranslatedShaderSource(vertexShader),
+            fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+          }
         }
       } catch(ex) {
         programCompilationError.details.debugShadersError = ex
@@ -254,9 +256,11 @@ export class WebGLContext {
 
       try {
         const ext = this.ctx.getExtension('WEBGL_debug_shaders');
-        programValidationError.details.Ωsources = {
-          vertexShader: ext.getTranslatedShaderSource(vertexShader),
-          fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+        if(ext) {
+          programValidationError.details.Ωsources = {
+            vertexShader: ext.getTranslatedShaderSource(vertexShader),
+            fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+          }
         }
       } catch(ex) {
         programValidationError.details.debugShadersError = ex

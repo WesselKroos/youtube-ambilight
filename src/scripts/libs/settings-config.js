@@ -9,14 +9,13 @@ const SettingsConfig = [
     name: 'advancedSettings',
     label: 'Advanced',
     type: 'checkbox',
-    default: true
+    default: false
   },
   {
     type: 'section',
     label: 'Quality',
     name: 'sectionQualityPerformanceCollapsed',
-    default: true,
-    advanced: false
+    default: true
   },
   {
     name: 'showFPS',
@@ -64,8 +63,7 @@ const SettingsConfig = [
     default: 0,
     min: 0,
     max: 60,
-    step: 1,
-    advanced: false
+    step: 1
   },
   {
     name: 'webGL',
@@ -89,7 +87,6 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    advanced: false,
     new: true
   },
   {
@@ -228,8 +225,7 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 100,
-    step: 1,
-    advanced: false
+    step: 1
   },
   {
     name: 'surroundingContentFillOpacity',
@@ -239,7 +235,6 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 1,
-    advanced: false,
     new: true
   },
   {
@@ -368,8 +363,7 @@ const SettingsConfig = [
     type: 'section',
     label: 'Filters',
     name: 'sectionImageAdjustmentCollapsed',
-    default: true,
-    advanced: true
+    default: true
   },
   {
     name: 'brightness',
@@ -378,8 +372,7 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1,
-    advanced: true
+    step: 1
   },
   {
     name: 'contrast',
@@ -388,8 +381,17 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1,
-    advanced: true
+    step: 1
+  },
+  {
+    name: 'vibrance',
+    label: 'Vibrance',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 200,
+    step: 0.1,
+    new: true
   },
   {
     name: 'saturation',
@@ -398,15 +400,13 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1,
-    advanced: true
+    step: 1
   },
   {
     type: 'section',
     label: 'HDR Filters',
     name: 'sectionHdrImageAdjustmentCollapsed',
     default: false,
-    advanced: false,
     hdr: true
   },
   {
@@ -417,7 +417,6 @@ const SettingsConfig = [
     min: 0,
     max: 200,
     step: 1,
-    advanced: false,
     hdr: true
   },
   {
@@ -428,7 +427,6 @@ const SettingsConfig = [
     min: 0,
     max: 200,
     step: 1,
-    advanced: false,
     hdr: true
   },
   {
@@ -439,7 +437,6 @@ const SettingsConfig = [
     min: 0,
     max: 200,
     step: 1,
-    advanced: false,
     hdr: true
   },
   {
@@ -561,8 +558,7 @@ const SettingsConfig = [
     min: 0,
     max: 21.2, // 15 seconds
     step: .02,
-    manualinput: false,
-    advanced: false
+    manualinput: false
   },
   {
     type: 'section',

@@ -460,7 +460,7 @@ export default class SentryReporter {
               list[name] = document.documentElement[name] === ytdAppElem[name]
               return list
             }, {})
-            componentFunctionsAreNative.example = document.documentElement.closest.toString()
+            componentFunctionsAreNative.example = document.documentElement.closest?.toString()?.substring(0, 36)
             setExtra('ComponentFunctionsAreNative', componentFunctionsAreNative)
           }
         } catch (ex) { 

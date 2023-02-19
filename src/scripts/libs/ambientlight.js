@@ -1149,8 +1149,16 @@ export default class Ambientlight {
 
     if(this.isFullscreen) {
       if(this.elem.parentElement !== this.ytdAppElem) {
-        this.ytdAppElem.prepend(this.elem)
-        this.ytdAppElem.prepend(this.topElem)
+        // prepend is overriden by Shady DOM when:
+        //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
+        // This causes the elements to be removed from the document instead of being added to the ytdAppElem
+        if(this.ytdAppElem?.__shady_native_prepend) {
+          this.ytdAppElem.__shady_native_prepend(this.elem)
+          this.ytdAppElem.__shady_native_prepend(this.topElem)
+        } else {
+          this.ytdAppElem.prepend(this.elem)
+          this.ytdAppElem.prepend(this.topElem)
+        }
       }
     } else {
       if(this.elem.parentElement !== body) {
@@ -1699,6 +1707,7 @@ export default class Ambientlight {
       this.requestVideoFrameCallbackId &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
+      !this.settings.frameFading &&
       !this.settings.showFrametimes
     ) return
 
@@ -1746,11 +1755,16 @@ export default class Ambientlight {
       return
     }
 
+    const realFramerateLimit = this.getRealFramerateLimit()
+    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
+  }
+
+  getRealFramerateLimit() {
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
     const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
       ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
       : this.settings.framerateLimit
-    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
+    return realFramerateLimit
   }
 
   canScheduleNextFrame = () => (!(
@@ -2129,8 +2143,8 @@ export default class Ambientlight {
       }
 
       // Ambientlight FPS
-      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMIT: ${this.settings.framerateLimit}` : ''}` : ''}`
-      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.settings.framerateLimit) : this.videoFrameRate
+      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMITED: ${this.getRealFramerateLimit().toFixed(2)}` : ''}` : ''}`
+      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.getRealFramerateLimit()) : this.videoFrameRate
       const ambientlightFPSColor = (this.ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
         : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.2) ? '#ff3' : '#7f7'
@@ -2536,7 +2550,7 @@ GREY   | previous display frames`
         }
       }
     } else {
-      if (!hasNewFrame) return
+      if (!hasNewFrame && !this.settings.frameFading) return
 
       if (this.settings.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
         if(this.enableChromiumBug1092080Workaround) {
@@ -2994,7 +3008,14 @@ GREY   | previous display frames`
     })
 
     try {
-      this.ytdAppElem.dispatchEvent(event)
+      // dispatchEvent is overriden by Shady DOM when:
+      //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
+      // Todo: When this is enabled the theme is directly changing when the Windows Theme changes
+      if(this.ytdAppElem?.__shady_native_dispatchEvent) {
+        this.ytdAppElem.__shady_native_dispatchEvent(event)
+      } else {
+        this.ytdAppElem.dispatchEvent(event)
+      }
     } catch(ex) {
       SentryReporter.captureException(ex)
       return
