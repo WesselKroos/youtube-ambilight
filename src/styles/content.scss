@@ -190,6 +190,20 @@ html[data-ambientlight-enabled="true"] {
     overflow-y: visible;
   }
 
+  /* Prevent YouTube's horizontal scrollbar in fullscreen when the video is zoomed in */
+
+  ytd-app[scrolling] {
+    overflow-x: hidden !important;
+  }
+
+  /* Prevent YouTube's flickering scrollbar bug */
+
+  #page-manager.ytd-app {
+    overflow: visible !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+  }
+
   /* Cosmetics - Transparent elements */
 
   body ytd-app #masthead-container {
@@ -251,20 +265,6 @@ html[data-ambientlight-enabled="true"] {
     #masthead-container:not(.yta-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
-  }
-
-  /* Prevent YouTube's horizontal scrollbar in fullscreen when the video is zoomed in */
-
-  ytd-app[scrolling] {
-    overflow-x: hidden !important;
-  }
-
-  /* Prevent YouTube's flickering scrollbar bug */
-
-  #page-manager.ytd-app {
-    overflow: visible !important;
-    overflow-y: visible !important;
-    overflow-x: visible !important;
   }
 
   /* Prevent ambient light overlaying content */
