@@ -1707,6 +1707,7 @@ export default class Ambientlight {
       this.requestVideoFrameCallbackId &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
+      !this.settings.frameFading &&
       !this.settings.showFrametimes
     ) return
 
@@ -2544,7 +2545,7 @@ GREY   | previous display frames`
         }
       }
     } else {
-      if (!hasNewFrame) return
+      if (!hasNewFrame && !this.settings.frameFading) return
 
       if (this.settings.videoOverlayEnabled && this.videoOverlay && !this.videoOverlay.isHidden) {
         if(this.enableChromiumBug1092080Workaround) {
