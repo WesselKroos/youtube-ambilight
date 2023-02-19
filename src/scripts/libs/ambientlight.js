@@ -3003,7 +3003,14 @@ GREY   | previous display frames`
     })
 
     try {
-      this.ytdAppElem.dispatchEvent(event)
+      // dispatchEvent is overriden by Shady DOM when:
+      //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
+      // Todo: When this is enabled the theme is directly changing when the Windows Theme changes
+      if(this.ytdAppElem?.__shady_native_dispatchEvent) {
+        this.ytdAppElem.__shady_native_dispatchEvent(event)
+      } else {
+        this.ytdAppElem.dispatchEvent(event)
+      }
     } catch(ex) {
       SentryReporter.captureException(ex)
       return
