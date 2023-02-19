@@ -1755,11 +1755,16 @@ export default class Ambientlight {
       return
     }
 
+    const realFramerateLimit = this.getRealFramerateLimit()
+    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
+  }
+
+  getRealFramerateLimit() {
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
     const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
       ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
       : this.settings.framerateLimit
-    this.nextFrameTime = Math.max((this.nextFrameTime || time) + (1000 / realFramerateLimit), time)
+    return realFramerateLimit
   }
 
   canScheduleNextFrame = () => (!(
@@ -2138,8 +2143,8 @@ export default class Ambientlight {
       }
 
       // Ambientlight FPS
-      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMIT: ${this.settings.framerateLimit}` : ''}` : ''}`
-      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.settings.framerateLimit) : this.videoFrameRate
+      const ambientlightFPSText = `AMBIENT: ${this.ambientlightFrameRate.toFixed(2)} ${this.ambientlightFrameRate ? `(${(1000/this.ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit ? ` LIMITED: ${this.getRealFramerateLimit().toFixed(2)}` : ''}` : ''}`
+      const ambientlightFrameRateTarget = this.settings.framerateLimit ? Math.min(this.videoFrameRate, this.getRealFramerateLimit()) : this.videoFrameRate
       const ambientlightFPSColor = (this.ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
         : (this.ambientlightFrameRate < ambientlightFrameRateTarget - 0.2) ? '#ff3' : '#7f7'
