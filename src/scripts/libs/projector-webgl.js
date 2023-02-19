@@ -33,6 +33,7 @@ export default class ProjectorWebGL {
   invalidateShaderCache() {
     this.viewport = undefined
     this.stencil = undefined
+    this.fVibrance = undefined
     this.fScale = undefined
     this.fScaleStep = undefined
     this.fScalesLength = undefined
@@ -577,6 +578,7 @@ export default class ProjectorWebGL {
       uniform sampler2D shadowSampler;
       uniform vec2 fScale;
       uniform vec2 fScaleStep;
+      ${this.settings.vibrance !== 100 ? 'uniform float fVibrance;': ''}
 
       vec4 multiTexture() {
         vec2 direction = ceil(fUV * 2.) - 1.;
@@ -638,15 +640,59 @@ export default class ProjectorWebGL {
         }
         return vec4(0.0, 0.0, 0.0, 1.0);
       }
+      
+      ${this.settings.vibrance !== 100 ? `
+        vec3 rgb2hsv(vec3 c)
+        {
+            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+            float d = q.x - min(q.w, q.y);
+            float e = 1.0e-10;
+            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+        }
+
+        vec3 hsv2rgb(vec3 c)
+        {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+        }
+
+        float saturate(float c, float v) {
+          float x = c;
+          if(v < 0.) {
+            x = 1. - c;
+          }
+
+          float a = 1. + 5. * (1. - abs(v));
+          float y = a * a - x * ( (a * a - 1.) / (a * a) ) - (a - x / a) * (a - x / a);
+          float d = y - x;
+          y = min(1., x + d * 5.);
+
+          if(v >= 0.) {
+            return y;
+          } else {
+            return 1. - y;
+          }
+        }
+      ` :''}
 
       void main(void) {
     ${this.ctxOptions.stencil ? `
         if(fDrawingStencil < 0.5) {`
     : ''}
-          vec4 ambientlight = multiTexture();
+          vec3 ambientlight = multiTexture().rgb;
           float shadowAlpha = texture2D(shadowSampler, fUV).a;
-          ambientlight[3] = 1. - shadowAlpha;
-          gl_FragColor = ambientlight;
+          ${this.settings.vibrance !== 100 ? `
+            if(fVibrance != 0.) {
+              vec3 ambientlightHSV = rgb2hsv(ambientlight);
+              ambientlightHSV[1] = saturate(ambientlightHSV[1], fVibrance);
+              ambientlight = hsv2rgb(ambientlightHSV);
+            }
+          ` : ''}
+          gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
     ${this.ctxOptions.stencil ? `
         } else {
           gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -813,6 +859,11 @@ export default class ProjectorWebGL {
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.ctx.uniform1f(this.fTextureMipmapLevelLoc, 0);
 
+    if(this.settings.vibrance !== 100) {
+      this.fVibranceLoc = this.ctx.getUniformLocation(this.program, 'fVibrance');
+      this.ctx.uniform1f(this.fVibranceLoc, 0);
+    }
+
     this.fScaleLoc = this.ctx.getUniformLocation(this.program, 'fScale');
     this.ctx.uniform2fv(this.fScaleLoc, new Float32Array([1, 1]));
 
@@ -875,8 +926,26 @@ export default class ProjectorWebGL {
     this.updateCtx()
   }
 
+  async updateVibrance() {
+    const hadVibranceFilter = this.fVibrance !== undefined
+    const hasVibranceFilter = this.settings.vibrance !== 100
+    if(hasVibranceFilter === hadVibranceFilter) return true
+    
+    return await this.initCtx()
+  }
+
   updateCtx() {
     if(!this.ctx || this.ctxIsInvalid || this.lost) return
+
+    if(this.settings.vibrance !== 100) {
+      let vibrance = (this.settings.vibrance / 100) - 1
+      vibrance = (vibrance < 0 ? -1 : 1) * (1 - Math.pow(1 - Math.abs(vibrance), 3))
+      const fVibranceChanged = this.fVibrance !== vibrance
+      if(fVibranceChanged) {
+        this.fVibrance = vibrance
+        this.ctx.uniform1f(this.fVibranceLoc, this.fVibrance);
+      }
+    }
 
     const fScaleChanged = this.fScale?.x !== this.scale?.x || this.fScale?.y !== this.scale?.y
     if(fScaleChanged) {

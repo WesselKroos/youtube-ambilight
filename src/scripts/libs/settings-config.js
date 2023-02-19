@@ -381,7 +381,17 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1,
+    step: 1
+  },
+  {
+    name: 'vibrance',
+    label: 'Vibrance',
+    type: 'list',
+    default: 100,
+    min: 0,
+    max: 200,
+    step: 0.1,
+    new: true
   },
   {
     name: 'saturation',
