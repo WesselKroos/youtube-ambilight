@@ -502,6 +502,17 @@ export default class ProjectorWebGL {
     this.program = this.ctx.createProgram();
 
     // Textures
+    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+    const tfaExt = (
+      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+    );
+    const maxAnisotropy = tfaExt
+      ? Math.min(16, this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1)
+      : 0;
+
+    // Texture - Shadow
     this.shadowTexture = this.ctx.createTexture();
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.shadowTexture);
@@ -511,6 +522,7 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
     
+    // Texture - Projectors
     this.projectorsTexture = []
     const maxTextures = Math.min(this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8, 16) // MAX_TEXTURE_IMAGE_UNITS can be more than 16 in software mode
     const maxProjectorTextures = maxTextures - 1
@@ -521,27 +533,19 @@ export default class ProjectorWebGL {
     }
     this.projectorsCount = Math.min(this.settings.frameFading + 1, maxProjectorTextures * this.subProjectorsCount)
     const projectorsTextureCount = Math.ceil(this.projectorsCount / this.subProjectorsCount)
-
     for(let i = 0; i < projectorsTextureCount; i++) {
       this.projectorsTexture[i] = this.ctx.createTexture();
       this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`]);
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture[i]);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
       if(this.webGLVersion !== 1) {
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
       }
-      const tfaExt = (
-        this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-        this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-        this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
-      );
-      if(tfaExt) {
-        const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
-        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      if(maxAnisotropy) {
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
       }
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
@@ -787,37 +791,39 @@ export default class ProjectorWebGL {
       throw programCompilationError
     }
 
-    this.ctx.validateProgram(this.program)
-    const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-    if(!programValidated) {
-      const programValidationError = new Error('Program validation failed')
-      programValidationError.details = {}
+    //// Probably can be removed because we already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
+    // this.ctx.validateProgram(this.program)
+    // const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+    // if(!programValidated) {
+    //   const programValidationError = new Error('Program validation failed')
+    //   programValidationError.details = {}
 
-      try {
-        programValidationError.details = {
-          vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
-          fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
-        }
-      } catch(ex) {
-        programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
-      }
+    //   try {
+    //     programValidationError.details = {
+    //       vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
+    //       fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
+    //       programInfoLog: this.ctx.getProgramInfoLog(this.program)
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
+    //   }
 
-      try {
-        const ext = this.ctx.getExtension('WEBGL_debug_shaders');
-        if(ext) {
-          programValidationError.details.Ωsources = {
-            vertexShader: ext.getTranslatedShaderSource(vertexShader),
-            fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
-          }
-        }
-      } catch(ex) {
-        programValidationError.details.debugShadersError = ex
-      }
+    //   try {
+    //     const ext = this.ctx.getExtension('WEBGL_debug_shaders');
+    //     if(ext) {
+    //       programValidationError.details.Ωsources = {
+    //         vertexShader: ext.getTranslatedShaderSource(vertexShader),
+    //         fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+    //       }
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.debugShadersError = ex
+    //   }
 
-      throw programValidationError
-    }
+    //   throw programValidationError
+    // }
 
+    // console.log('awaitedProgramCompletion > useProgram')
     this.ctx.useProgram(this.program);
 
     // Buffers
