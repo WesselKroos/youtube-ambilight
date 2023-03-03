@@ -419,6 +419,25 @@ export default class Ambientlight {
       console.warn('Ambient light for YouTube™ | Failed to resize the video player')
     }
   }
+  
+  prefCookieToTheme = async (cookieValue) => {
+    if(!cookieValue) {
+      cookieValue = (await cookieStore.get('PREF')).value || ''
+    }
+    const f6 = new URLSearchParams(cookieValue)?.get('f6') || ''
+    switch(f6) {
+      case '40080080': // LIGHT
+        return THEME_LIGHT
+      case '40000480': // DARK
+        return THEME_DARK
+    }
+    // YouTube defaults to device theme
+    // There is a bug in YouTube which stops updating the PREF cookie after one theme switch
+    // so we always have to check the device theme ourselves
+    //  case '80': // DEVICE LIGHT
+    //  case '40000080': // DEVICE DARK
+    return matchMedia('(prefers-color-scheme: light)')?.matches ? THEME_LIGHT : THEME_DARK
+  }
 
   async initListeners() {
     this.initVideoListeners()
@@ -557,23 +576,40 @@ export default class Ambientlight {
 
     // Appearance (theme) changes initiated by the YouTube menu
     this.originalTheme = this.isDarkTheme() ? 1 : -1
-    on(document, 'yt-action', (e) => {
+    on(document, 'yt-action', async (e) => {
       if (!this.settings.enabled) return
       const name = e?.detail?.actionName
       if (name === 'yt-signal-action-toggle-dark-theme-off') {
-        this.originalTheme = THEME_LIGHT
+        this.originalTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-signal-action-toggle-dark-theme-on') {
-        this.originalTheme = THEME_DARK
+        this.originalTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-signal-action-toggle-dark-theme-device') {
-        this.originalTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? THEME_DARK : THEME_LIGHT
+        this.originalTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
         if (!this.isOnVideoPage) return
         this.updateLiveChatTheme()
       }
     }, undefined, undefined, true)
+
+    try {
+      cookieStore.addEventListener('change', wrapErrorHandler(async e => {
+        for(const change of e.changed) {
+          if(change.name !== 'PREF') continue
+
+          this.originalTheme = await this.prefCookieToTheme(change.value)
+          this.updateTheme()
+        }
+      }, true));
+      matchMedia('(prefers-color-scheme: light)').addEventListener('change', wrapErrorHandler((e) => {
+        this.originalTheme = e?.matches ? THEME_LIGHT : THEME_DARK
+        this.updateTheme()
+      }, true))
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
     
     let themeCorrections = 0
     this.themeObserver = new MutationObserver(wrapErrorHandler((a) => {
@@ -2959,7 +2995,12 @@ GREY   | previous display frames`
   }
 
   updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
+    if(this.updatingTheme) {
+      return
+    }
     if (!this.shouldToggleTheme()) return beforeToggleCallback()
+
+    this.updatingTheme = true
     
     if(this.themeToggleFailed !== false) {
       const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
@@ -2968,6 +3009,7 @@ GREY   | previous display frames`
         const withinThresshold = now - 10000 < lastFailedThemeToggle
         if(withinThresshold) {
           this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${this.isDarkTheme() ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
+          this.updatingTheme = false
           return beforeToggleCallback()
         }
         contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
@@ -2977,11 +3019,15 @@ GREY   | previous display frames`
         this.themeToggleFailed = false
       }
 
-      if (!this.shouldToggleTheme()) return beforeToggleCallback()
+      if (!this.shouldToggleTheme()) {
+        this.updatingTheme = false
+        return beforeToggleCallback()
+      }
     }
 
     beforeToggleCallback()
     await this.toggleDarkTheme()
+    this.updatingTheme = false
   }.bind(this), true)
 
   async toggleDarkTheme() {
@@ -3025,7 +3071,7 @@ GREY   | previous display frames`
     if (wasDark !== isDark) return
     
     this.themeToggleFailed = true
-    contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
+    await contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
     console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
   }
 
