@@ -474,35 +474,40 @@ export default class BarDetection {
         this.run = null
       }, throttle)
     } catch(ex) {
-      ex.details = {
-        detectColored,
-        offsetPercentage,
-        detectHorizontal,
-        currentHorizontalPercentage,
-        detectVertical,
-        currentVerticalPercentage,
-        ratio, 
-        allowedToTransfer,
-        buffer: buffer ? {
-          width: buffer.width,
-          height: buffer.height,
-          ctx: buffer.ctx?.constructor?.name,
-          type: buffer.constructor?.name
-        } : undefined,
-        bufferCtx: bufferCtx?.constructor?.name,
-        canvasInfo: canvasInfo ? {
-          canvas: canvasInfo?.canvas ? {
-            width: canvasInfo.canvas.width,
-            height: canvasInfo.canvas.height,
-            type: canvasInfo.canvas.constructor?.name
+      const isKnownError = (
+        ex.message?.includes('ImageBitmap construction failed') // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
+      )
+      if(!isKnownError) {
+        ex.details = {
+          detectColored,
+          offsetPercentage,
+          detectHorizontal,
+          currentHorizontalPercentage,
+          detectVertical,
+          currentVerticalPercentage,
+          ratio, 
+          allowedToTransfer,
+          buffer: buffer ? {
+            width: buffer.width,
+            height: buffer.height,
+            ctx: buffer.ctx?.constructor?.name,
+            type: buffer.constructor?.name
           } : undefined,
-          ctx: canvasInfo.ctx?.constructor?.name,
-          bitmap: canvasInfo?.bitmap ? {
-            width: canvasInfo.bitmap.width,
-            height: canvasInfo.bitmap.height,
-            type: canvasInfo.bitmap.constructor?.name
+          bufferCtx: bufferCtx?.constructor?.name,
+          canvasInfo: canvasInfo ? {
+            canvas: canvasInfo?.canvas ? {
+              width: canvasInfo.canvas.width,
+              height: canvasInfo.canvas.height,
+              type: canvasInfo.canvas.constructor?.name
+            } : undefined,
+            ctx: canvasInfo.ctx?.constructor?.name,
+            bitmap: canvasInfo?.bitmap ? {
+              width: canvasInfo.bitmap.width,
+              height: canvasInfo.bitmap.height,
+              type: canvasInfo.bitmap.constructor?.name
+            } : undefined
           } : undefined
-        } : undefined
+        }
       }
 
       if(canvasInfo?.bitmap) {
@@ -510,7 +515,7 @@ export default class BarDetection {
       }
       this.cancellable = true
       this.run = null
-      if (this.catchedDetectBarSizeError) return
+      if (this.catchedDetectBarSizeError || isKnownError) return
 
       this.catchedDetectBarSizeError = true
       throw ex
