@@ -864,7 +864,8 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-video-renderer {
       &[selected],
       &:hover:not(.dragging) {
-        background-color: rgba(0, 0, 0, .15) !important;
+        background-color: rgba(0, 0, 0, .1) !important;
+        backdrop-filter: saturate(1.5);
       }
       &[selected] {
         #index.ytd-playlist-panel-video-renderer,
@@ -945,7 +946,8 @@ html[data-ambientlight-enabled="true"] {
       ytd-playlist-panel-video-renderer {
         &[selected],
         &:hover:not(.dragging) {
-          background-color: rgba(255, 255, 255, .15) !important;
+          background-color: rgba(255, 255, 255, .1) !important;
+          backdrop-filter: saturate(1.5);
         }
         &[selected] {
           #video-title.ytd-playlist-panel-video-renderer {
