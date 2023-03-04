@@ -401,11 +401,14 @@ export default class ProjectorWebGL {
     }
 
     if(this.program) {
-      if(!this.ctxIsInvalid) {
-        this.ctx.deleteProgram(this.program) // Free GPU memory
+      const program = this.program
+      this.program = undefined
+      try {
+        this.ctx.deleteProgram(program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Failed to delete previous program', ex)
       }
 
-      this.program = undefined
       this.invalidateShaderCache()
     }
     
@@ -723,7 +726,7 @@ export default class ProjectorWebGL {
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
-              requestAnimationFrame(checkCompletion);
+              requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
             } else {
               resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
             }
@@ -736,13 +739,19 @@ export default class ProjectorWebGL {
             resolve(false)
           }
         };
-        requestAnimationFrame(checkCompletion);
+        requestIdleCallback(checkCompletion, { timeout: 200 })
       })
       const completed = await this.awaitingProgramCompletion;
       this.awaitingProgramCompletion = undefined
 
       if(this.discardProgram || !completed) {
+        const program = this.program
         this.program = undefined
+        try {
+          this.ctx.deleteProgram(program) // Free GPU memory
+        } catch(ex) {
+          console.warn('Failed to delete previous program', ex)
+        }
         return false
       }
     }

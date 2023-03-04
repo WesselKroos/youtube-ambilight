@@ -182,14 +182,14 @@ export class WebGLContext {
               return resolve(false) // cancel
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-            if(completed === false) requestAnimationFrame(checkCompletion);
+            if(completed === false) requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
             else resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
           } catch(ex) {
             SentryReporter.captureException(ex)
             resolve(false)
           }
         };
-        requestAnimationFrame(checkCompletion);
+        requestIdleCallback(checkCompletion, { timeout: 200 })
       })
       if(!completed) return
     }
