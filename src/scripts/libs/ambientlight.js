@@ -169,7 +169,10 @@ export default class Ambientlight {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
   }
-  shouldDrawDirectlyFromVideoElem = () => this.projector.webGLVersion === 2 && this.enableMozillaBugReadPixelsWorkaround
+  shouldDrawDirectlyFromVideoElem = () => (
+    this.enableMozillaBugReadPixelsWorkaround &&
+    this.projector.webGLVersion === 2
+  )
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
@@ -1348,12 +1351,17 @@ export default class Ambientlight {
     let pScale;
     if(this.settings.webGL) {
       const relativeBlur = (this.settings.resolution / 100) * this.settings.blur
-      const pMinSize = (this.settings.resolution / 100) * (relativeBlur >= 20
-        ? 128
-        : (relativeBlur >= 10
-          ? 192
-          : 256
-        ))
+      const pMinSize = (this.settings.resolution / 100) * 
+        ((this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
+        ? 256
+        : (relativeBlur >= 20
+            ? 128
+            : (relativeBlur >= 10
+              ? 192
+              : 256
+            )
+          )
+        )
       pScale = Math.min(.5, 
         Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height),
         Math.min(1024 / this.srcVideoOffset.width, 1024 / this.srcVideoOffset.height))
@@ -2636,7 +2644,15 @@ GREY   | previous display frames`
         this.getImageDataAllowed
       ) {
         this.barDetection.detect(
-          (!this.shouldDrawDirectlyFromVideoElem()) ? this.projectorBuffer.elem : this.videoElem,
+          (
+            this.shouldDrawDirectlyFromVideoElem() ||
+            (
+              (this.projectorBuffer.elem.height < 256 || this.projectorBuffer.elem.width < 256) &&
+              this.projectorBuffer.elem.height < this.videoElem.videoHeight
+            )
+          ) 
+            ? this.videoElem
+            : this.projectorBuffer.elem ,
           this.settings.detectColoredHorizontalBarSizeEnabled,
           this.settings.detectHorizontalBarSizeOffsetPercentage,
           this.settings.detectHorizontalBarSizeEnabled,

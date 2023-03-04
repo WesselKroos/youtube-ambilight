@@ -32,7 +32,7 @@ const workerCode = function () {
       const params = getLineImageDataYLength === 'height' 
         ? [imageLinesIndex, 0, 1, canvas.height]
         : [0, imageLinesIndex, canvas.width, 1]
-      const length = imageLines.push(ctx.getImageData(...params).data)
+      imageLines.push(ctx.getImageData(...params).data)
       getLineImageDataResolve()
     } catch(ex) {
       appendErrorStack(getLineImageDataStack, ex)
@@ -68,65 +68,62 @@ const workerCode = function () {
       getLineImageDataReject = undefined
     
       const channels = 4
-      let sizes = []
       const colorIndex = (channels * 4)
       let color = detectColored ?
         [imageLines[0][colorIndex], imageLines[0][colorIndex + 1], imageLines[0][colorIndex + 2]] :
         [2,2,2]
-      const maxColorDeviation = 8
+      const maxColorDeviation = 16
       const ignoreEdge = 2
       const lineLimit = (imageLines[0].length / 2)
       const largeStep = 20
+      const sizes = []
     
       for(const line of imageLines) {
         let step = largeStep
-        const iStart = (channels * ignoreEdge)
         // From the top down
-        for (let i = iStart; i < line.length; i += (channels * step)) {
+        for (let i = (channels * ignoreEdge); i < line.length; i += (channels * step)) {
           if(
             // Above the top limit
             i < lineLimit &&
             // Within the color deviation
-            Math.abs(line[i] - color[0]) <= maxColorDeviation && 
-            Math.abs(line[i+1] - color[1]) <= maxColorDeviation && 
-            Math.abs(line[i+2] - color[2]) <= maxColorDeviation
+            (Math.abs(line[i] - color[0]) + Math.abs(line[i+1] - color[1]) + Math.abs(line[i+2] - color[2])) <= maxColorDeviation
           ) continue;
+
           // Change the step from large to 1 pixel
           if(i !== 0 && step === largeStep) {
             i = Math.max(-channels, i - (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
+
           // Found the first video pixel, add to sizes
-          const size = i ? (i / channels) : 0
-          sizes.push(size)
+          sizes.push(i / channels)
           break;
         }
+
         step = largeStep
-        const iEnd = (line.length - 1 - (channels * ignoreEdge))
         // From the bottom up
-        for (let i = iEnd; i >= 0; i -= (channels * step)) {
+        for (let i = (line.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
           if(
             // Below the bottom limit
             i > lineLimit &&
             // Within the color deviation
-            Math.abs(line[i-3] - color[0]) <= maxColorDeviation && 
-            Math.abs(line[i-2] - color[1]) <= maxColorDeviation && 
-            Math.abs(line[i-1] - color[2]) <= maxColorDeviation
+            (Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])) <= maxColorDeviation
           ) continue;
+
           // Change the step from large to 1 pixel
           if(i !== line.length - 1 && step === largeStep) {
             i = Math.min((line.length - 1 + channels) , i + (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
+
           // Found the first video pixel, add to sizes
-          const j = (line.length - 1) - i;
-          const size = j ? (j / channels) : 0
-          sizes.push(size)
+          sizes.push(((line.length - 1) - i) / channels)
           break;
         }
       }
+
       const maxSize = (imageLines[0].length / channels)
       const minSize = maxSize * (0.012 * scale)
       imageLines.length = 0
@@ -151,7 +148,7 @@ const workerCode = function () {
         let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
-          return
+          return // Detected percentage is close to the current percentage, but the detected points deviate too much
         }
     
         size = lowestSize
@@ -183,15 +180,6 @@ const workerCode = function () {
       
       let percentage = Math.round((size / maxSize) * 10000) / 100
       percentage = Math.min(percentage, maxPercentage)
-
-      const adjustment = (percentage - currentPercentage)
-      if(adjustment > -1 && adjustment <= 0) {
-        return
-      }
-
-      if(percentage > maxPercentage) {
-        return maxPercentage
-      }
       return percentage
     }
     
@@ -274,15 +262,25 @@ export default class BarDetection {
   workerMessageId = 0
   cancellable = true
   run = null
+  cleared = true
   canvas;
   ctx;
   catchedDetectBarSizeError = false;
   lastChange;
+  history = {
+    horizontal: [],
+    vertical: []
+  }
 
   clear = () => {
-    if(!this.run || !this.cancellable) return
+    if(!this.cancellable) return
 
+    this.cleared = true
     this.run = null
+    this.history = {
+      horizontal: [],
+      vertical: []
+    }
   }
 
   detect = (buffer, detectColored, offsetPercentage,
@@ -292,6 +290,12 @@ export default class BarDetection {
     if(this.run) return
 
     const run = this.run = {}
+    const cleared = this.cleared
+    if(cleared) {
+      this.cleared = false
+      currentHorizontalPercentage = 0
+      currentVerticalPercentage = 0
+    }
 
     if(!this.worker) {
       this.worker = workerFromCode(workerCode)
@@ -313,7 +317,33 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: cleared ? 1 : 1000 })
+  }
+
+  averagePercentage(percentage, currentPercentage, history) {
+    if(percentage !== undefined) {
+      const detectedPercentage = percentage
+
+      // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
+      percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+
+      let adjustment = (percentage - currentPercentage)
+      if(adjustment > -1.5 && adjustment <= 0) {
+        // Ignore small adjustments
+        adjustment = (detectedPercentage - currentPercentage)
+        if(adjustment > -1.5 && adjustment <= 0) {
+          percentage = undefined
+        } else {
+          percentage = currentPercentage // Disable throttling
+        }
+      }
+      history.push(detectedPercentage)
+      if(history.length > 10) history.splice(0, 1)
+      return percentage
+    } else if(percentage === 0 && history.length) {
+      history.splice(0, history.length)
+      return percentage
+    }
   }
 
   idleHandler = wrapErrorHandler(async function idleHandler(run) {
@@ -326,6 +356,7 @@ export default class BarDetection {
       detectVertical, currentVerticalPercentage,
       ratio, allowedToTransfer, callback
     } = this.idleHandlerArguments
+
     let canvasInfo;
     let bufferCtx;
     try {
@@ -390,10 +421,20 @@ export default class BarDetection {
               appendErrorStack(stack, e.data.error)
               throw e.data.error
             }
-            if(e.data.horizontalPercentage !== undefined || e.data.verticalPercentage !== undefined) {
-              callback(e.data.horizontalPercentage, e.data.verticalPercentage)
+
+            const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal)
+            const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical)
+      
+            if(horizontalPercentage !== undefined || verticalPercentage !== undefined) {
+              if(
+                (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
+                (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
+              ) {
+                callback(horizontalPercentage, verticalPercentage)
+              }
               this.lastChange = performance.now()
             }
+
             resolve()
           } catch(ex) {
             reject(ex)
