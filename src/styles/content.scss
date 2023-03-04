@@ -865,7 +865,7 @@ html[data-ambientlight-enabled="true"] {
       &[selected],
       &:hover:not(.dragging) {
         background-color: rgba(0, 0, 0, .1) !important;
-        backdrop-filter: saturate(1.5);
+        backdrop-filter: saturate(1.1);
       }
       &[selected] {
         #index.ytd-playlist-panel-video-renderer,
