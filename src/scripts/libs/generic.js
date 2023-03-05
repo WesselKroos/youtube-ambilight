@@ -196,3 +196,16 @@ export const supportsWebGL = () => {
 }
 
 export const isWatchPageUrl = () => (location.pathname === '/watch')
+
+export const getCookie = async (name) => 
+  window.cookieStore
+    ? await cookieStore.get(name)
+    : document.cookie.split('; ')
+      .map(cookie => {
+        const nameValue = cookie.split(/=(.*)/s);
+        return {
+          name: nameValue[0],
+          value: nameValue[1]
+        }
+      })
+      .find(cookie => cookie.name === name)
