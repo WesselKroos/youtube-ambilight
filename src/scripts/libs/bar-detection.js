@@ -338,7 +338,7 @@ export default class BarDetection {
         }
       }
       history.push(detectedPercentage)
-      if(history.length > 10) history.splice(0, 1)
+      if(history.length > 4) history.splice(0, 1)
       return percentage
     } else if(percentage === 0 && history.length) {
       history.splice(0, history.length)
