@@ -290,8 +290,7 @@ export default class BarDetection {
     if(this.run) return
 
     const run = this.run = {}
-    const cleared = this.cleared
-    if(cleared) {
+    if(this.cleared) {
       this.cleared = false
       currentHorizontalPercentage = 0
       currentVerticalPercentage = 0
@@ -317,7 +316,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: cleared ? 1 : 1000 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 100 })
   }
 
   averagePercentage(percentage, currentPercentage, history) {
@@ -425,7 +424,11 @@ export default class BarDetection {
             const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal)
             const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical)
       
-            if(horizontalPercentage !== undefined || verticalPercentage !== undefined) {
+            if(
+              horizontalPercentage !== undefined || verticalPercentage !== undefined ||
+              (e.data.horizontalPercentage !== undefined && Math.abs(e.data.horizontalPercentage - currentHorizontalPercentage) > 0.5) || 
+              (e.data.verticalPercentage !== undefined && Math.abs(e.data.verticalPercentage - currentVerticalPercentage) > 0.5)
+            ) {
               if(
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
