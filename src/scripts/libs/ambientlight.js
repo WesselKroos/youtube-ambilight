@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement, getCookie } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -426,7 +426,7 @@ export default class Ambientlight {
   
   prefCookieToTheme = async (cookieValue) => {
     if(!cookieValue) {
-      cookieValue = (await cookieStore.get('PREF')).value || ''
+      cookieValue = (await getCookie('PREF'))?.value || ''
     }
     const f6 = new URLSearchParams(cookieValue)?.get('f6') || ''
     switch(f6) {
@@ -599,14 +599,17 @@ export default class Ambientlight {
     }, undefined, undefined, true)
 
     try {
-      cookieStore.addEventListener('change', wrapErrorHandler(async e => {
-        for(const change of e.changed) {
-          if(change.name !== 'PREF') continue
+      // Firefox does not support the cookieStore
+      if(window.cookieStore) {
+        cookieStore.addEventListener('change', wrapErrorHandler(async e => {
+          for(const change of e.changed) {
+            if(change.name !== 'PREF') continue
 
-          this.originalTheme = await this.prefCookieToTheme(change.value)
-          this.updateTheme()
-        }
-      }, true));
+            this.originalTheme = await this.prefCookieToTheme(change.value)
+            this.updateTheme()
+          }
+        }, true));
+      }
       matchMedia('(prefers-color-scheme: light)').addEventListener('change', wrapErrorHandler((e) => {
         this.originalTheme = e?.matches ? THEME_LIGHT : THEME_DARK
         this.updateTheme()
