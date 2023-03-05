@@ -718,7 +718,7 @@ export default class ProjectorWebGL {
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       const stack = new Error().stack
-      this.awaitingProgramCompletion = new Promise(resolve => {
+      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
         const checkCompletion = () => {
           try {
             if(!this.program)
@@ -731,12 +731,35 @@ export default class ProjectorWebGL {
               resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
             }
           } catch(ex) {
-            ex.details = {
-              program: this.program?.toString()
+            ex.details = {}
+
+            try {
+              ex.details = {
+                program: this.program?.toString(),
+                webGLVersion: this.webGLVersion,
+                majorPerformanceCaveat: this.majorPerformanceCaveat,
+                ctxOptions: this.ctxOptions
+              }
+            } catch(ex) {
+              ex.details = {
+                detailsException: ex
+              }
             }
+
+            try {
+              const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+              ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+                : 'unknown'
+              ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+                : 'unknown'
+            } catch(ex) {
+              ex.details.gpuError = ex
+            }
+
             appendErrorStack(stack, ex)
-            SentryReporter.captureException(ex)
-            resolve(false)
+            reject(ex)
           }
         };
         requestIdleCallback(checkCompletion, { timeout: 200 })
@@ -762,10 +785,14 @@ export default class ProjectorWebGL {
     const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
-      programCompilationError.details = {}
+      programCompilationError.details = {
+        webGLVersion: this.webGLVersion,
+        ctxOptions: this.ctxOptions
+      }
 
       try {
         programCompilationError.details = {
+          ...programCompilationError.details,
           vertexShaderCompiled,
           vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
           fragmentShaderCompiled,
@@ -795,6 +822,18 @@ export default class ProjectorWebGL {
         }
       } catch(ex) {
         programCompilationError.details.debugShadersError = ex
+      }
+
+      try {
+        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+          : 'unknown'
+        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+          : 'unknown'
+      } catch(ex) {
+        programCompilationError.details.gpuError = ex
       }
 
       throw programCompilationError
