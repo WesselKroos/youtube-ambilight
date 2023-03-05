@@ -600,7 +600,7 @@ export default class Ambientlight {
 
     try {
       // Firefox does not support the cookieStore
-      if(window.cookieStore) {
+      if(window.cookieStore?.addEventListener) {
         cookieStore.addEventListener('change', wrapErrorHandler(async e => {
           for(const change of e.changed) {
             if(change.name !== 'PREF') continue
