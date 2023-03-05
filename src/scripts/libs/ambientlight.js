@@ -322,6 +322,7 @@ export default class Ambientlight {
         if (this.initVideoIfSrcChanged()) return
 
         this.buffersCleared = true // Always prevent old frame from being drawn
+        this.barDetection.clear()
         this.previousPresentedFrames = 0
         // this.videoFrameTimes = []
         // this.frameTimes = []
