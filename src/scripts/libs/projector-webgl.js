@@ -401,11 +401,14 @@ export default class ProjectorWebGL {
     }
 
     if(this.program) {
-      if(!this.ctxIsInvalid) {
-        this.ctx.deleteProgram(this.program) // Free GPU memory
+      const program = this.program
+      this.program = undefined
+      try {
+        this.ctx.deleteProgram(program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Failed to delete previous program', ex)
       }
 
-      this.program = undefined
       this.invalidateShaderCache()
     }
     
@@ -502,6 +505,17 @@ export default class ProjectorWebGL {
     this.program = this.ctx.createProgram();
 
     // Textures
+    this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+    const tfaExt = (
+      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+    );
+    const maxAnisotropy = tfaExt
+      ? Math.min(16, this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1)
+      : 0;
+
+    // Texture - Shadow
     this.shadowTexture = this.ctx.createTexture();
     this.ctx.activeTexture(this.ctx.TEXTURE0);
     this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.shadowTexture);
@@ -511,6 +525,7 @@ export default class ProjectorWebGL {
     this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
     
+    // Texture - Projectors
     this.projectorsTexture = []
     const maxTextures = Math.min(this.ctx.getParameter(this.ctx.MAX_TEXTURE_IMAGE_UNITS) || 8, 16) // MAX_TEXTURE_IMAGE_UNITS can be more than 16 in software mode
     const maxProjectorTextures = maxTextures - 1
@@ -521,27 +536,19 @@ export default class ProjectorWebGL {
     }
     this.projectorsCount = Math.min(this.settings.frameFading + 1, maxProjectorTextures * this.subProjectorsCount)
     const projectorsTextureCount = Math.ceil(this.projectorsCount / this.subProjectorsCount)
-
     for(let i = 0; i < projectorsTextureCount; i++) {
       this.projectorsTexture[i] = this.ctx.createTexture();
       this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`]);
       this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.projectorsTexture[i]);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
       if(this.webGLVersion !== 1) {
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 16);
       }
-      const tfaExt = (
-        this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-        this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-        this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
-      );
-      if(tfaExt) {
-        const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
-        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      if(maxAnisotropy) {
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
       }
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
@@ -711,7 +718,7 @@ export default class ProjectorWebGL {
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       const stack = new Error().stack
-      this.awaitingProgramCompletion = new Promise(resolve => {
+      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
         const checkCompletion = () => {
           try {
             if(!this.program)
@@ -719,26 +726,55 @@ export default class ProjectorWebGL {
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
-              requestAnimationFrame(checkCompletion);
+              requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
             } else {
               resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
             }
           } catch(ex) {
-            ex.details = {
-              program: this.program?.toString()
+            ex.details = {}
+
+            try {
+              ex.details = {
+                program: this.program?.toString(),
+                webGLVersion: this.webGLVersion,
+                majorPerformanceCaveat: this.majorPerformanceCaveat,
+                ctxOptions: this.ctxOptions
+              }
+            } catch(ex) {
+              ex.details = {
+                detailsException: ex
+              }
             }
+
+            try {
+              const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+              ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+                : 'unknown'
+              ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+                : 'unknown'
+            } catch(ex) {
+              ex.details.gpuError = ex
+            }
+
             appendErrorStack(stack, ex)
-            SentryReporter.captureException(ex)
-            resolve(false)
+            reject(ex)
           }
         };
-        requestAnimationFrame(checkCompletion);
+        requestIdleCallback(checkCompletion, { timeout: 200 })
       })
       const completed = await this.awaitingProgramCompletion;
       this.awaitingProgramCompletion = undefined
 
       if(this.discardProgram || !completed) {
+        const program = this.program
         this.program = undefined
+        try {
+          this.ctx.deleteProgram(program) // Free GPU memory
+        } catch(ex) {
+          console.warn('Failed to delete previous program', ex)
+        }
         return false
       }
     }
@@ -749,10 +785,14 @@ export default class ProjectorWebGL {
     const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
-      programCompilationError.details = {}
+      programCompilationError.details = {
+        webGLVersion: this.webGLVersion,
+        ctxOptions: this.ctxOptions
+      }
 
       try {
         programCompilationError.details = {
+          ...programCompilationError.details,
           vertexShaderCompiled,
           vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
           fragmentShaderCompiled,
@@ -784,40 +824,54 @@ export default class ProjectorWebGL {
         programCompilationError.details.debugShadersError = ex
       }
 
+      try {
+        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+          : 'unknown'
+        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+          : 'unknown'
+      } catch(ex) {
+        programCompilationError.details.gpuError = ex
+      }
+
       throw programCompilationError
     }
 
-    this.ctx.validateProgram(this.program)
-    const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-    if(!programValidated) {
-      const programValidationError = new Error('Program validation failed')
-      programValidationError.details = {}
+    //// Probably can be removed because we already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
+    // this.ctx.validateProgram(this.program)
+    // const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+    // if(!programValidated) {
+    //   const programValidationError = new Error('Program validation failed')
+    //   programValidationError.details = {}
 
-      try {
-        programValidationError.details = {
-          vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
-          fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
-        }
-      } catch(ex) {
-        programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
-      }
+    //   try {
+    //     programValidationError.details = {
+    //       vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
+    //       fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
+    //       programInfoLog: this.ctx.getProgramInfoLog(this.program)
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
+    //   }
 
-      try {
-        const ext = this.ctx.getExtension('WEBGL_debug_shaders');
-        if(ext) {
-          programValidationError.details.Ωsources = {
-            vertexShader: ext.getTranslatedShaderSource(vertexShader),
-            fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
-          }
-        }
-      } catch(ex) {
-        programValidationError.details.debugShadersError = ex
-      }
+    //   try {
+    //     const ext = this.ctx.getExtension('WEBGL_debug_shaders');
+    //     if(ext) {
+    //       programValidationError.details.Ωsources = {
+    //         vertexShader: ext.getTranslatedShaderSource(vertexShader),
+    //         fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+    //       }
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.debugShadersError = ex
+    //   }
 
-      throw programValidationError
-    }
+    //   throw programValidationError
+    // }
 
+    // console.log('awaitedProgramCompletion > useProgram')
     this.ctx.useProgram(this.program);
 
     // Buffers

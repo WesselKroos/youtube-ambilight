@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { wrapErrorHandler } from './generic';
+import { appendErrorStack, wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {
@@ -106,7 +106,7 @@ export class WebGLContext {
     if(!this.ctx) {
       this.webglcontextcreationerrors = []
 
-      const ctxOptions = {
+      this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
         alpha: false,
@@ -116,10 +116,10 @@ export class WebGLContext {
         ...this.options
       }
       this.webGLVersion = 2
-      this.ctx = await this.canvas.getContext('webgl2', ctxOptions)
+      this.ctx = await this.canvas.getContext('webgl2', this.ctxOptions)
       if(!this.ctx) {
         this.webGLVersion = 1
-        this.ctx = await this.canvas.getContext('webgl', ctxOptions)
+        this.ctx = await this.canvas.getContext('webgl', this.ctxOptions)
         if(!this.ctx) {
           this.webGLVersion = undefined
 
@@ -175,21 +175,48 @@ export class WebGLContext {
     
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      const completed = await new Promise(resolve => {
+      const stack = new Error().stack
+      const completed = await new Promise((resolve, reject) => {
         const checkCompletion = () => {
           try {
             if(!this.program)
               return resolve(false) // cancel
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-            if(completed === false) requestAnimationFrame(checkCompletion);
+            if(completed === false) requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
             else resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
           } catch(ex) {
-            SentryReporter.captureException(ex)
-            resolve(false)
+            ex.details = {}
+
+            try {
+              ex.details = {
+                program: this.program?.toString(),
+                webGLVersion: this.webGLVersion,
+                ctxOptions: this.ctxOptions
+              }
+            } catch(ex) {
+              ex.details = {
+                detailsException: ex
+              }
+            }
+
+            try {
+              const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+              ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+                : 'unknown'
+              ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+                : 'unknown'
+            } catch(ex) {
+              ex.details.gpuError = ex
+            }
+
+            appendErrorStack(stack, ex)
+            reject(ex)
           }
         };
-        requestAnimationFrame(checkCompletion);
+        requestIdleCallback(checkCompletion, { timeout: 200 })
       })
       if(!completed) return
     }
@@ -200,10 +227,14 @@ export class WebGLContext {
     const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
-      programCompilationError.details = {}
+      programCompilationError.details = {
+        webGLVersion: this.webGLVersion,
+        ctxOptions: this.ctxOptions
+      }
 
       try {
         programCompilationError.details = {
+          ...programCompilationError.details,
           vertexShaderCompiled,
           vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
           fragmentShaderCompiled,
@@ -235,39 +266,52 @@ export class WebGLContext {
         programCompilationError.details.debugShadersError = ex
       }
 
+      try {
+        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+          : 'unknown'
+        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+          : 'unknown'
+      } catch(ex) {
+        programCompilationError.details.gpuError = ex
+      }
+
       throw programCompilationError
     }
 
-    this.ctx.validateProgram(this.program)
-    const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-    if(!programValidated) {
-      const programValidationError = new Error('Program validation failed')
-      programValidationError.details = {}
+    //// Probably can be removed because we already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
+    // this.ctx.validateProgram(this.program)
+    // const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+    // if(!programValidated) {
+    //   const programValidationError = new Error('Program validation failed')
+    //   programValidationError.details = {}
 
-      try {
-        programValidationError.details = {
-          vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
-          fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
-        }
-      } catch(ex) {
-        programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
-      }
+    //   try {
+    //     programValidationError.details = {
+    //       vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
+    //       fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
+    //       programInfoLog: this.ctx.getProgramInfoLog(this.program)
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
+    //   }
 
-      try {
-        const ext = this.ctx.getExtension('WEBGL_debug_shaders');
-        if(ext) {
-          programValidationError.details.Ωsources = {
-            vertexShader: ext.getTranslatedShaderSource(vertexShader),
-            fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
-          }
-        }
-      } catch(ex) {
-        programValidationError.details.debugShadersError = ex
-      }
+    //   try {
+    //     const ext = this.ctx.getExtension('WEBGL_debug_shaders');
+    //     if(ext) {
+    //       programValidationError.details.Ωsources = {
+    //         vertexShader: ext.getTranslatedShaderSource(vertexShader),
+    //         fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
+    //       }
+    //     }
+    //   } catch(ex) {
+    //     programValidationError.details.debugShadersError = ex
+    //   }
 
-      throw programValidationError
-    }
+    //   throw programValidationError
+    // }
 
     this.ctx.useProgram(this.program);
 
@@ -306,9 +350,9 @@ export class WebGLContext {
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
     } else {
+      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
       this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
     }
