@@ -477,8 +477,10 @@ export default class BarDetection {
         this.run = null
       }, throttle)
     } catch(ex) {
+       // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
       const isKnownError = (
-        ex.message?.includes('ImageBitmap construction failed') // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
+        ex.message?.includes('ImageBitmap construction failed') ||
+        ex.message?.includes('DataCloneError')
       )
       if(!isKnownError) {
         ex.details = {
