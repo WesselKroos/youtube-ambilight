@@ -769,6 +769,29 @@ html[data-ambientlight-enabled="true"] {
     width: 100%; // Fixes shadow clipping
   }
 
+  /* Like button icon (gets an incorrect theme after switching device themes 2 times) */
+  @mixin like-btn {
+    ytd-segmented-like-dislike-button-renderer lottie-component path {
+      &[fill="rgb(255,255,255)"],
+      &[stroke="rgb(255,255,255)"],
+      &[fill="rgb(0,0,0)"],
+      &[stroke="rgb(0,0,0)"]
+      {
+        @content;
+      }
+    }
+  }
+  @include like-btn() {
+    stroke: rgba(0,0,0);
+    fill: rgba(0,0,0);
+  }
+  &[dark] {
+    @include like-btn() {
+      stroke: rgba(255,255,255);
+      fill: rgba(255,255,255);
+    }
+  }
+
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
