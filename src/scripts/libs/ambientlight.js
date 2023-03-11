@@ -424,23 +424,28 @@ export default class Ambientlight {
     }
   }
   
+  ///// Cookie PREF.f6 theme index values:
+  // 0        Device: light
+  // 40000000 Device: dark
+  // 480      YouTube: dark
+  // 80080    YouTube: light
+  // 80       YouTube: device theme
   prefCookieToTheme = async (cookieValue) => {
     if(!cookieValue) {
       cookieValue = (await getCookie('PREF'))?.value || ''
     }
-    const f6 = new URLSearchParams(cookieValue)?.get('f6') || ''
-    switch(f6) {
-      case '40080080': // LIGHT
+    const f6 = parseInt(new URLSearchParams(cookieValue)?.get('f6') || '0', 10)
+    const youTubeThemeIndex = f6 % 40000000
+    switch(youTubeThemeIndex) {
+      case 80080:
         return THEME_LIGHT
-      case '40000480': // DARK
+      case 480:
         return THEME_DARK
+      default:
+        // There is a bug in YouTube which stops updating the PREF cookie after one theme switch
+        // so we always have to check the device theme ourselves
+        return matchMedia('(prefers-color-scheme: light)')?.matches ? THEME_LIGHT : THEME_DARK
     }
-    // YouTube defaults to device theme
-    // There is a bug in YouTube which stops updating the PREF cookie after one theme switch
-    // so we always have to check the device theme ourselves
-    //  case '80': // DEVICE LIGHT
-    //  case '40000080': // DEVICE DARK
-    return matchMedia('(prefers-color-scheme: light)')?.matches ? THEME_LIGHT : THEME_DARK
   }
 
   async initListeners() {
@@ -3015,10 +3020,8 @@ GREY   | previous display frames`
   }
 
   updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
-    if(this.updatingTheme) {
-      return
-    }
-    if (!this.shouldToggleTheme()) return beforeToggleCallback()
+    if(this.updatingTheme) return
+    if(!this.shouldToggleTheme()) return beforeToggleCallback()
 
     this.updatingTheme = true
     
