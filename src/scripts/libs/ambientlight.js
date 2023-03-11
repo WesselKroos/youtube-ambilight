@@ -599,11 +599,11 @@ export default class Ambientlight {
         this.updateTheme()
       } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
         // Let YouTube change the theme to an incorrect color in this process
-        requestIdleCallback(() => {
+        requestIdleCallback(wrapErrorHandler(function forwardReduxActionToLiveChatIframe() {
           // Fix the theme to the correct color after the process
           if (!this.isOnVideoPage) return
           this.updateLiveChatTheme()
-        }, { timeout: 1 })
+        }.bind(this)), { timeout: 1 })
       }
     }, undefined, undefined, true)
 

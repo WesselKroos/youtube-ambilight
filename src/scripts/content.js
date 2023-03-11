@@ -77,7 +77,7 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   s.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
   
   s.onload = wrapErrorHandler(function injectScriptOnLoad() {
-    s.parentNode.removeChild(s)
+    if(s.parentNode) s.parentNode.removeChild(s)
   }.bind(this))
   s.onerror = function injectScriptOnError(ex) {
     SentryReporter.captureException(ex)
