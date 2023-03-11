@@ -619,8 +619,8 @@ export default class Ambientlight {
           }
         }, true));
       }
-      matchMedia('(prefers-color-scheme: light)').addEventListener('change', wrapErrorHandler((e) => {
-        this.originalTheme = e?.matches ? THEME_LIGHT : THEME_DARK
+      matchMedia('(prefers-color-scheme: light)').addEventListener('change', wrapErrorHandler(async () => {
+        this.originalTheme = await this.prefCookieToTheme()
         this.updateTheme()
       }, true))
     } catch(ex) {
