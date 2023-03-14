@@ -612,7 +612,7 @@ export default class Ambientlight {
           }
         }, true));
       }
-      matchMedia('(prefers-color-scheme: light)').addEventListener('change', wrapErrorHandler(async () => {
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', wrapErrorHandler(async () => {
         this.originalTheme = await this.prefCookieToTheme()
         this.updateTheme()
       }, true))
