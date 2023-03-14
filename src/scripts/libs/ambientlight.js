@@ -424,28 +424,21 @@ export default class Ambientlight {
     }
   }
   
-  ///// Cookie PREF.f6 theme index values:
-  // 0        Device: light
-  // 40000000 Device: dark
-  // 480      YouTube: dark
-  // 80080    YouTube: light
-  // 80       YouTube: device theme
   prefCookieToTheme = async (cookieValue) => {
     if(!cookieValue) {
       cookieValue = (await getCookie('PREF'))?.value || ''
     }
-    const f6 = parseInt(new URLSearchParams(cookieValue)?.get('f6') || '0', 10)
-    const youTubeThemeIndex = f6 % 40000000
-    switch(youTubeThemeIndex) {
-      case 80080:
-        return THEME_LIGHT
-      case 480:
-        return THEME_DARK
-      default:
-        // There is a bug in YouTube which stops updating the PREF cookie after one theme switch
-        // so we always have to check the device theme ourselves
-        return matchMedia('(prefers-color-scheme: light)')?.matches ? THEME_LIGHT : THEME_DARK
+
+    let f6 = new URLSearchParams(cookieValue)?.get('f6') || null
+    if (f6 != null && /^[A-Fa-f0-9]+$/.test(f6)) {
+      f6 = parseInt(f6, 16)
     }
+    f6 = f6 || 0
+
+    if(!!(f6 & 1 << 165 % 31)) return THEME_DARK
+    if(!!(f6 & 1 << 174 % 31)) return THEME_LIGHT
+    if(window.matchMedia("(prefers-color-scheme: dark)").matches) return THEME_DARK
+    return THEME_LIGHT
   }
 
   async initListeners() {
