@@ -437,7 +437,7 @@ export default class Ambientlight {
 
     if(!!(f6 & 1 << 165 % 31)) return THEME_DARK
     if(!!(f6 & 1 << 174 % 31)) return THEME_LIGHT
-    if(window.matchMedia("(prefers-color-scheme: dark)").matches) return THEME_DARK
+    if(matchMedia('(prefers-color-scheme: dark)').matches) return THEME_DARK
     return THEME_LIGHT
   }
 
