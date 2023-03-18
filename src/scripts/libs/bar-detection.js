@@ -26,6 +26,7 @@ const workerCode = function () {
   let getLineImageDataResolve;
   let getLineImageDataReject;
   let getLineImageDataYLength;
+  let workerMessageId = 0;
 
   function getLineImageData() {
     try {
@@ -54,7 +55,7 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectBarSize = async (xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
+    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
       partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
       imageLines = []
       for (imageLinesIndex = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); imageLinesIndex < canvas[xLength] - (partSizeBorderMultiplier * partSize); imageLinesIndex += partSize) {
@@ -62,7 +63,9 @@ const workerCode = function () {
           getLineImageDataStack = new Error().stack
         }
         getLineImageDataYLength = yLength
+        if(id < workerMessageId) return
         await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+        if(id < workerMessageId) return
       }
       getLineImageDataResolve = undefined
       getLineImageDataReject = undefined
@@ -186,6 +189,11 @@ const workerCode = function () {
     this.onmessage = async (e) => {
       id = e.data.id
       try {
+        if(e.data.type === 'cancellation') {
+          workerMessageId = id
+          return
+        }
+
         const detectColored = e.data.detectColored
         const offsetPercentage = e.data.offsetPercentage
         const detectHorizontal = e.data.detectHorizontal
@@ -224,16 +232,20 @@ const workerCode = function () {
         
         const horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
-            'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
+              id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
           )
           : undefined
         const verticalPercentage = detectVertical
           ? await workerDetectBarSize(
-            'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
+              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
           )
           : undefined
         ctx.clearRect(0, 0, canvas.width, canvas.height)
       
+        if(id < workerMessageId) {
+          horizontalPercentage = undefined
+          verticalPercentage = undefined
+        }
         this.postMessage({ 
           id,
           horizontalPercentage,
@@ -260,7 +272,6 @@ const workerCode = function () {
 export default class BarDetection {
   worker
   workerMessageId = 0
-  cancellable = true
   run = null
   cleared = true
   canvas;
@@ -273,7 +284,13 @@ export default class BarDetection {
   }
 
   clear = () => {
-    if(!this.cancellable) return
+    this.workerMessageId++; // invalidate current worker processes
+    if(this.worker) {
+      this.worker.postMessage({
+        id: this.workerMessageId,
+        type: 'cancellation'
+      })
+    }
 
     this.cleared = true
     this.run = null
@@ -300,7 +317,7 @@ export default class BarDetection {
       this.worker = workerFromCode(workerCode)
       this.worker.onmessage = (e) => {
         if(e.data.id !== -1) {
-          console.warn('Ambient light for YouTube™ | Ignoring old worker message:', e.data)
+          // console.warn('Ambient light for YouTube™ | Ignoring old bar detection message:', e.data)
           return
         }
         if(e.data.error) {
@@ -316,7 +333,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: 100 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 500 })
   }
 
   averagePercentage(percentage, currentPercentage, history) {
@@ -347,7 +364,6 @@ export default class BarDetection {
 
   idleHandler = wrapErrorHandler(async function idleHandler(run) {
     if(this.run !== run) return
-    this.cancellable = false
 
     const {
       buffer, detectColored, offsetPercentage,
@@ -395,8 +411,14 @@ export default class BarDetection {
       }
 
       if(!canvasInfo) {
-        this.cancellable = true
         this.run = null
+        return
+      }
+      
+      if(this.run !== run) {
+        if(canvasInfo.bitmap) {
+          canvasInfo.bitmap.close()
+        }
         return
       }
 
@@ -410,8 +432,9 @@ export default class BarDetection {
               this.run !== run || 
               e.data.id !== this.workerMessageId
             ) {
-              console.warn('Ambient light for YouTube™ | Ignoring old percentage:', 
-                e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
+              // console.warn('Ambient light for YouTube™ | Ignoring old bar detection percentage:', 
+              //   this.workerMessageId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
+              resolve()
               return
             }
             if(e.data.error) {
@@ -461,7 +484,6 @@ export default class BarDetection {
       }
       if(this.run !== run) return
       
-      this.cancellable = true
       const now = performance.now()
       const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
         ? 1000
@@ -518,7 +540,6 @@ export default class BarDetection {
       if(canvasInfo?.bitmap) {
         canvasInfo.bitmap.close()
       }
-      this.cancellable = true
       this.run = null
       if (this.catchedDetectBarSizeError || isKnownError) return
 
