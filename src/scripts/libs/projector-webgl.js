@@ -726,7 +726,7 @@ export default class ProjectorWebGL {
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
-              requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
+              requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
             } else {
               resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
             }
@@ -763,7 +763,7 @@ export default class ProjectorWebGL {
             reject(ex)
           }
         };
-        requestIdleCallback(checkCompletion, { timeout: 200 })
+        requestAnimationFrame(checkCompletion)
       })
       const completed = await this.awaitingProgramCompletion;
       this.awaitingProgramCompletion = undefined
