@@ -6,6 +6,7 @@ import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
 import { contentScript } from './messaging'
+import { getAverageVideoFramesDifference } from './static-image-detection'
 
 const VIEW_DISABLED = 'DISABLED'
 const VIEW_DETACHED = 'DETACHED'
@@ -24,6 +25,7 @@ export default class Ambientlight {
   barDetection = new BarDetection()
   innerStrength = 2
   lastUpdateSizesChanged = 0
+  averageVideoFramesDifference = 1
 
   videoOffset = {}
   srcVideoOffset = {}
@@ -287,6 +289,27 @@ export default class Ambientlight {
     this.start()
 
     return true
+  }
+
+  resetAverageVideoFramesDifference = () => {
+    this.averageVideoFramesDifference = 1
+    this.settings.updateAverageVideoFramesDifferenceInfo()
+  }
+
+  calculateAverageVideoFramesDifference = async () => {
+    if(!this.settings.energySaver) return
+
+    try {
+      const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
+      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem);
+      if(difference === undefined) return
+
+      this.averageVideoFramesDifference = difference
+      this.settings.updateAverageVideoFramesDifferenceInfo()
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Video frames difference detection error:', videoId, ex)
+      alert('Video frames difference detection error')
+    }
   }
 
   initVideoListeners() {
@@ -598,6 +621,17 @@ export default class Ambientlight {
           this.updateLiveChatTheme()
         }.bind(this)), { timeout: 1 })
       }
+    }, undefined, undefined, true)
+
+    on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
+      if(this.averageVideoFramesDifference === 1) return
+
+      this.resetAverageVideoFramesDifference()
+    }, undefined, undefined, true)
+    on(document, 'yt-page-data-updated', () => {
+      if (!this.settings.enabled || !this.isOnVideoPage) return
+
+      this.calculateAverageVideoFramesDifference()
     }, undefined, undefined, true)
 
     try {
@@ -1775,7 +1809,7 @@ export default class Ambientlight {
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
 
-    if(this.settings.framerateLimit) {
+    if(this.settings.framerateLimit || this.averageVideoFramesDifference < .0175) {
       await this.onNextLimitedFrame()
     } else {
       await this.nextFrame()
@@ -1810,6 +1844,9 @@ export default class Ambientlight {
   }
 
   getRealFramerateLimit() {
+    if(this.averageVideoFramesDifference < .002) return .2 // 5 seconds
+    if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
+
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
     const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
       ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
@@ -1954,12 +1991,15 @@ export default class Ambientlight {
         if(this.sizesChanged) {
           await this.optionalFrame()
         }
-      } else if((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval) {
-        if (!this.settings.videoOverlayEnabled) {
-          this.detectFrameRates()
-        }
-        this.updateStats()
+      }
+      if((performance.now() - this.lastUpdateStatsTime) > this.updateStatsInterval) {
         this.lastUpdateStatsTime = performance.now()
+        requestIdleCallback(() => {
+          if (!this.settings.videoOverlayEnabled) {
+            this.detectFrameRates()
+          }
+          this.updateStats()
+        }, { timeout: 100 })
       }
     } catch (ex) {
       // Prevent recursive error reporting
@@ -2863,6 +2903,7 @@ GREY   | previous display frames`
           await new Promise(resolve => raf(resolve))
         }
       }
+      this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
 

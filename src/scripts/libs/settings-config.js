@@ -57,6 +57,17 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'energySaver',
+    label: 'Energy saver',
+    questionMark: {
+      title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
+    },
+    type: 'checkbox',
+    default: false,
+    advanced: false,
+    new: true
+  },
+  {
     name: 'framerateLimit',
     label: 'Limit framerate (per second)',
     type: 'list',

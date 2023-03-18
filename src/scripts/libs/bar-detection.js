@@ -14,7 +14,6 @@ const workerCode = function () {
     } catch(ex) { console.warn(ex) }
   }
 
-  let id;
   let catchedWorkerCreationError = false
   let canvas;
   let ctx;
@@ -187,7 +186,7 @@ const workerCode = function () {
     }
     
     this.onmessage = async (e) => {
-      id = e.data.id
+      const id = e.data.id
       try {
         if(e.data.type === 'cancellation') {
           workerMessageId = id

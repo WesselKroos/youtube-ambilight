@@ -1611,7 +1611,7 @@ html[data-ambientlight-enabled="true"] {
         padding: 6px 0 12px;
       }
 
-      &:nth-child(2) {
+      &:nth-child(3) {
         margin-top: -8px;
         padding-top: 15px;
 
@@ -1622,6 +1622,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  .ytpa-menuitem--info,
   .ytpa-menuitem--warning {
     margin-top: -8px;
     margin-bottom: 8px;
@@ -1663,6 +1664,17 @@ html[data-ambientlight-enabled="true"] {
       flex-grow: 1;
     }
   }
+  .ytpa-menuitem--info {
+    &,
+    &:hover {
+      background: #007cc3 !important;
+    }
+
+    &::before {
+      content: none;
+    }
+  }
+  .ytpa-info,
   .ytpa-warning {
     color: #fff;
     white-space: pre-line;
