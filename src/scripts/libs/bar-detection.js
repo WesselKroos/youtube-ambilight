@@ -333,7 +333,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: 500 })
+    requestIdleCallback(() => this.idleHandler(run), { timeout: 100 })
   }
 
   averagePercentage(percentage, currentPercentage, history) {
