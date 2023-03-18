@@ -247,6 +247,11 @@ export default class Settings {
               <span class="ytpa-warning"></span>
             </div>
           </div>
+          <div class="ytp-menuitem ytpa-menuitem--info" style="display: none">
+            <div class="ytp-menuitem-label" rowspan="2">
+              <span class="ytpa-info"></span>
+            </div>
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
             <div class="ytp-menuitem-label">
               <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank" rel="noopener">
@@ -379,6 +384,8 @@ export default class Settings {
 
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
+    this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info')
+    this.infoElem = this.infoItemElem.querySelector('.ytpa-info')
 
     const resetSettingsBtnElem = this.menuElem.querySelector('.ytpa-reset-settings-btn')
     on(resetSettingsBtnElem, 'click', async () => {
@@ -696,6 +703,7 @@ export default class Settings {
           }
 
           if ([
+            'energySaver',
             'videoOverlayEnabled',
             'frameSync',
             'frameBlending',
@@ -781,6 +789,15 @@ export default class Settings {
             }
             this.ambientlight.sizesChanged = true
             this.updateVisibility()
+          }
+          if ([
+            'energySaver',
+          ].includes(setting.name)) {
+            if(value) {
+              this.ambientlight.calculateAverageVideoFramesDifference()
+            } else {
+              this.ambientlight.resetAverageVideoFramesDifference()
+            }
           }
           
           if ([
@@ -1220,6 +1237,22 @@ export default class Settings {
       this.bezelElem.classList.remove('yta-bezel--no-animation')
       this.bezelTextElem.textContent = text
     }, 0);
+  }
+
+  updateAverageVideoFramesDifferenceInfo = () => {
+    if(!this.menuElem) return
+
+    let message = ''
+    if(this.energySaver) {
+      if(this.ambientlight.averageVideoFramesDifference < .002) {
+        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\n(Disable this via: Quality > Energy saver)'
+      } else if(this.ambientlight.averageVideoFramesDifference < .0175) {
+        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\n(Disable this via: Quality > Energy saver)'
+      }
+    }
+
+    this.infoElem.textContent = message
+    this.infoItemElem.style.display = message ? '' : 'none'
   }
 
   handleDocumentVisibilityChange = () => {

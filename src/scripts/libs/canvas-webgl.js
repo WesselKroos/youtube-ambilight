@@ -183,7 +183,7 @@ export class WebGLContext {
               return resolve(false) // cancel
 
             const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-            if(completed === false) requestAnimationFrame(() => requestIdleCallback(checkCompletion, { timeout: 200 }))
+            if(completed === false) requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
             else resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
           } catch(ex) {
             ex.details = {}
@@ -200,23 +200,24 @@ export class WebGLContext {
               }
             }
 
-            try {
-              const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-              ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-                : 'unknown'
-              ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-                : 'unknown'
-            } catch(ex) {
-              ex.details.gpuError = ex
-            }
+            // // Did not give any insights that could help to fix bugs
+            // try {
+            //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+            //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+            //     : 'unknown'
+            //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+            //     : 'unknown'
+            // } catch(ex) {
+            //   ex.details.gpuError = ex
+            // }
 
             appendErrorStack(stack, ex)
             reject(ex)
           }
         };
-        requestIdleCallback(checkCompletion, { timeout: 200 })
+        requestAnimationFrame(checkCompletion)
       })
       if(!completed) return
     }
@@ -266,17 +267,17 @@ export class WebGLContext {
         programCompilationError.details.debugShadersError = ex
       }
 
-      try {
-        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-          : 'unknown'
-        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-          : 'unknown'
-      } catch(ex) {
-        programCompilationError.details.gpuError = ex
-      }
+      // try {
+      //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+      //   programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+      //     : 'unknown'
+      //   programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+      //     : 'unknown'
+      // } catch(ex) {
+      //   programCompilationError.details.gpuError = ex
+      // }
 
       throw programCompilationError
     }
