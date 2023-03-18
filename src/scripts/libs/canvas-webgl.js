@@ -267,17 +267,17 @@ export class WebGLContext {
         programCompilationError.details.debugShadersError = ex
       }
 
-      try {
-        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-          : 'unknown'
-        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-          : 'unknown'
-      } catch(ex) {
-        programCompilationError.details.gpuError = ex
-      }
+      // try {
+      //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+      //   programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+      //     : 'unknown'
+      //   programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+      //     : 'unknown'
+      // } catch(ex) {
+      //   programCompilationError.details.gpuError = ex
+      // }
 
       throw programCompilationError
     }
