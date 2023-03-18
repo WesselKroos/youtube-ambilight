@@ -746,17 +746,18 @@ export default class ProjectorWebGL {
               }
             }
 
-            try {
-              const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-              ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-                : 'unknown'
-              ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-                ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-                : 'unknown'
-            } catch(ex) {
-              ex.details.gpuError = ex
-            }
+            // // Did not give any insights that could help to fix bugs
+            // try {
+            //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+            //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+            //     : 'unknown'
+            //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+            //     : 'unknown'
+            // } catch(ex) {
+            //   ex.details.gpuError = ex
+            // }
 
             appendErrorStack(stack, ex)
             reject(ex)
