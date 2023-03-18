@@ -307,8 +307,7 @@ export default class Ambientlight {
       this.averageVideoFramesDifference = difference
       this.settings.updateAverageVideoFramesDifferenceInfo()
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Video frames difference detection error:', videoId, ex)
-      alert('Video frames difference detection error')
+      SentryReporter.captureException(ex)
     }
   }
 
