@@ -124,8 +124,12 @@ export default class Ambientlight {
     return this.videoElem?.closest('#player-theater-container')
   }
 
+  get ytdWatchFlexyElemFromVideo() {
+    return this.videoElem?.closest('ytd-watch-flexy')
+  }
+
   get ytdWatchFlexyElem() {
-    if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = this.videoElem?.closest('ytd-watch-flexy, .ytd-page-manager')
+    if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy')
     return this._ytdWatchFlexyElem
   }
 
@@ -622,16 +626,20 @@ export default class Ambientlight {
       }
     }, undefined, undefined, true)
 
-    on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
-      if(this.averageVideoFramesDifference === 1) return
+    try {
+      on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
+        if(this.averageVideoFramesDifference === 1) return
 
-      this.resetAverageVideoFramesDifference()
-    }, undefined, undefined, true)
-    on(document, 'yt-page-data-updated', () => {
-      if (!this.settings.enabled || !this.isOnVideoPage) return
+        this.resetAverageVideoFramesDifference()
+      }, undefined, undefined, true)
+      on(document, 'yt-page-data-updated', () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
 
-      this.calculateAverageVideoFramesDifference()
-    }, undefined, undefined, true)
+        this.calculateAverageVideoFramesDifference()
+      }, undefined, undefined, true)
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
 
     try {
       // Firefox does not support the cookieStore
@@ -1202,8 +1210,8 @@ export default class Ambientlight {
       else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
         this.view = VIEW_POPUP
       else if(
-        this.ytdWatchFlexyElem
-          ? this.ytdWatchFlexyElem.getAttribute('theater') !== null
+        this.ytdWatchFlexyElemFromVideo
+          ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
           : this.playerTheaterContainerElemFromVideo
       )
         this.view = VIEW_THEATER
@@ -1766,7 +1774,7 @@ export default class Ambientlight {
 
   getElemRect(elem) {
     const scrollableRect = (this.isFullscreen)
-      ? (this.ytdWatchFlexyElem || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
+      ? (this.ytdWatchFlexyElemFromVideo || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
       : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
 
