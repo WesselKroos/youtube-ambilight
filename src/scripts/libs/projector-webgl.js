@@ -1059,7 +1059,7 @@ export default class ProjectorWebGL {
     const canvasRect = this.blurCanvas.getBoundingClientRect()
     if(!canvasRect?.width || !canvasRect?.height) return
 
-    const videoBoundingElem = this.ambientlight.shouldStyleVideoContainer
+    const videoBoundingElem = this.ambientlight.shouldStyleVideoParentElem
       ? this.ambientlight.videoContainerElem
       : this.ambientlight.videoElem
     if(!videoBoundingElem) return

@@ -379,7 +379,7 @@ export default class Ambientlight {
         this.hideStats()
         this.scheduledNextFrame = false
         this.sizesChanged = true
-        this.resetVideoContainerStyle() // Prevent visible video element above player because of the modified style attribute
+        this.resetVideoParentElemStyle() // Prevent visible video element above player because of the modified style attribute
       },
       emptied: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
@@ -682,7 +682,7 @@ export default class Ambientlight {
 
       if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
         this.clear()
-        this.resetVideoContainerStyle()
+        this.resetVideoParentElemStyle()
         this.sizesChanged = true
         return
       }
@@ -1285,17 +1285,17 @@ export default class Ambientlight {
     const videoScale = this.settings.videoScale
     const noClipOrScale = (this.settings.horizontalBarsClipPercentage == 0 && this.settings.verticalBarsClipPercentage == 0 && videoScale == 100)
 
-    const videoElemParentElem = this.videoElem.parentNode
+    const videoParentElem = this.videoElem.parentElement
 
     const notVisible = (
       !this.settings.enabled ||
       this.isVR ||
-      !videoElemParentElem ||
+      !videoParentElem ||
       !this.videoPlayerElem ||
       !this.isInEnabledView()
     )
     if (notVisible || noClipOrScale) {
-      this.resetVideoContainerStyle()
+      this.resetVideoParentElemStyle()
     }
     this.lastUpdateSizesChanged = performance.now()
     if (notVisible) {
@@ -1305,27 +1305,27 @@ export default class Ambientlight {
 
     this.barsClip = [this.settings.verticalBarsClipPercentage, this.settings.horizontalBarsClipPercentage].map(percentage => percentage / 100)
     this.clippedVideoScale = this.barsClip.map(clip => (1 - (clip * 2)))
-    this.shouldStyleVideoContainer = !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale && !this.isControlledByAnotherExtension
-    if (this.shouldStyleVideoContainer) {
+    this.shouldStyleVideoParentElem = this.isOnVideoPage && !this.isVideoHiddenOnWatchPage && !this.videoElem.ended && !noClipOrScale && !this.isControlledByAnotherExtension
+    if (this.shouldStyleVideoParentElem) {
       const top = Math.max(0, parseInt(this.videoElem.style.top) || 0)
       const left = Math.max(0, parseInt(this.videoElem.style.left) || 0)
       const width = Math.max(0, parseInt(this.videoElem.style.width) || 0)
-      videoElemParentElem.style.width = `${width}px`
-      videoElemParentElem.style.height = this.videoElem.style.height || '100%'
-      videoElemParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
-      videoElemParentElem.style.overflow = 'hidden'
-      videoElemParentElem.style.transform =  `
+      videoParentElem.style.width = `${width}px`
+      videoParentElem.style.height = this.videoElem.style.height || '100%'
+      videoParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`
+      videoParentElem.style.overflow = 'hidden'
+      videoParentElem.style.transform =  `
         translate(${left}px, ${top}px)
         scale(${(videoScale / 100)}) 
         scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `
       const VideoClipScale = this.clippedVideoScale.map(scale => Math.round(1000 * (1 / scale)) / 1000)
-      videoElemParentElem.style.setProperty('--video-transform', `
+      videoParentElem.style.setProperty('--video-transform', `
         translate(${-left}px, ${-top}px) 
         scale(${VideoClipScale[0]}, ${VideoClipScale[1]})
       `)
     } else {
-      this.resetVideoContainerStyle()
+      this.resetVideoParentElemStyle()
     }
 
     this.videoOffset = this.getElemRect(this.videoElem)
@@ -1509,15 +1509,15 @@ export default class Ambientlight {
     return true
   }
 
-  resetVideoContainerStyle() {
-    this.shouldStyleVideoContainer = false
-    const videoContainer = this.videoElem.parentElement
-    if (videoContainer) {
-      videoContainer.style.transform = ''
-      videoContainer.style.overflow = ''
-      videoContainer.style.height = ''
-      videoContainer.style.marginBottom = ''
-      videoContainer.style.setProperty('--video-transform', '')
+  resetVideoParentElemStyle() {
+    this.shouldStyleVideoParentElem = false
+    const videoParentElem = this.videoElem.parentElement
+    if (videoParentElem) {
+      videoParentElem.style.transform = ''
+      videoParentElem.style.overflow = ''
+      videoParentElem.style.height = ''
+      videoParentElem.style.marginBottom = ''
+      videoParentElem.style.setProperty('--video-transform', '')
     }
   }
 
@@ -1732,9 +1732,9 @@ export default class Ambientlight {
       this.settings.videoScale == 100
     )
     if(!noClipOrScale) {
-      const videoElemParentElem = this.videoElem.parentElement
-      if(videoElemParentElem) {
-        const videoTransform = videoElemParentElem.style.getPropertyValue('--video-transform')
+      const videoParentElem = this.videoElem.parentElement
+      if(videoParentElem) {
+        const videoTransform = videoParentElem.style.getPropertyValue('--video-transform')
         const left = Math.max(0, parseInt(this.videoElem.style.left) || 0)
         const top = Math.max(0, parseInt(this.videoElem.style.top) || 0)
         const scaleX = (Math.round(1000 * (1 / this.clippedVideoScale[0])) / 1000)
@@ -3001,7 +3001,7 @@ GREY   | previous display frames`
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
       this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
     }
-    this.resetVideoContainerStyle()
+    this.resetVideoParentElemStyle()
     this.clear()
     this.hideStats()
 
