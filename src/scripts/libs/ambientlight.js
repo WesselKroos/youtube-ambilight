@@ -2533,6 +2533,7 @@ export default class Ambientlight {
         if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
         html.style.background = ''
 
+        this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
         this.updateVideoPlayerSize()
         this.updateSizes()
         resolve()
