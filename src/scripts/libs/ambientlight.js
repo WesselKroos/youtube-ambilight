@@ -921,7 +921,7 @@ export default class Ambientlight {
   }
 
   initFPSListElem() {
-    if (this.videoSyncedElem && this.videoSyncedElem.isConnected) return
+    if (this.FPSListElem && this.FPSListElem.isConnected) return
 
     this.FPSListElem = document.createElement('div')
     this.FPSListElem.classList.add('ambientlight__fps-list')
@@ -1941,22 +1941,6 @@ export default class Ambientlight {
 
       throw ex
     }
-  }
-
-  isNewFrame(oldLines, newLines) {
-    if (!oldLines || oldLines.length !== newLines.length) {
-      return true
-    }
-
-    for (let i = 0; i < oldLines.length; i++) {
-      for (let xi = 0; xi < oldLines[i].length; xi+=10) {
-        if (oldLines[i][xi] !== newLines[i][xi]) {
-          return true
-        }
-      }
-    }
-
-    return false
   }
 
   // Todo:
