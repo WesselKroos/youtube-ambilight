@@ -841,9 +841,9 @@ export default class Settings {
             'showResolutions'
           ].some(name => name === setting.name)) {
             if(value) {
-              this.ambientlight.updateStats()
+              this.ambientlight.stats.update()
             } else {
-              this.ambientlight.hideStats()
+              this.ambientlight.stats.hide()
             }
             return
           }
