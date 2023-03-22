@@ -533,7 +533,7 @@ export default class Settings {
           valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
-            this.ambientlight.updateTheme()
+            this.ambientlight.theming.updateTheme()
             return
           }
 
