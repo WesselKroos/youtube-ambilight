@@ -287,7 +287,7 @@ export default class Settings {
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
         
         const label = `${setting.label}
-          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
+          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)">${setting.key}</span>]` : ''}
           ${setting.questionMark 
             ? `<a
             title="${setting.questionMark.title}" 
