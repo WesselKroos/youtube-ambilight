@@ -51,8 +51,8 @@ export default class Stats {
     this.ambientlight.videoPlayerElem?.prepend(this.FPSListElem)
   }
 
-  hide() {
-    if(this.ambientlight.isHidden || this.ambientlight.videoElem?.ended || !this.settings.showResolutions) {
+  hide(onlyDisabled = false) {
+    if(!onlyDisabled || !this.settings.showResolutions) {
       this.videoResolutionElem.childNodes[0].nodeValue = ''
       this.videoSyncedResolutionElem.childNodes[0].nodeValue = ''
       if(this.videoBufferResolutionElem)
@@ -61,7 +61,7 @@ export default class Stats {
       this.projectorResolutionElem.childNodes[0].nodeValue = ''
     }
 
-    if(this.ambientlight.isHidden || this.ambientlight.videoElem?.ended || !this.settings.showFPS) {
+    if(!onlyDisabled || !this.settings.showFPS) {
       this.videoFPSElem.childNodes[0].nodeValue = ''
       this.videoDroppedFramesElem.childNodes[0].nodeValue = ''
       this.videoSyncedElem.childNodes[0].nodeValue = ''
@@ -69,13 +69,15 @@ export default class Stats {
       this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
     }
 
-    if(this.ambientlight.isHidden || this.ambientlight.videoElem?.ended || !this.settings.showFPS || !this.settings.showFrametimes) {
+    if(!onlyDisabled || !this.settings.showFPS || !this.settings.showFrametimes) {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    if((this.ambientlight.isHidden || this.ambientlight.videoElem?.ended || !this.settings.showFrametimes) && this.frameTimesCanvas?.parentNode) {
+    if(!onlyDisabled || !this.settings.showFrametimes && this.frameTimesCanvas?.parentNode) {
       this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
-      this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
+      
+      if(this.frameTimesCtx)
+        this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
       this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
       this.ambientlightFTElem.style.display = 'none'
     }
@@ -85,7 +87,7 @@ export default class Stats {
   frameTimes = []
 
   update() {
-    if (this.ambientlight.isHidden) return;
+    if (this.ambientlight.isHidden) return
 
     if(this.settings.showResolutions) {
       const videoResolution = `VIDEO: ${this.ambientlight.videoElem?.videoWidth ?? '?'}x${this.ambientlight.videoElem?.videoHeight ?? '?'}`
@@ -194,12 +196,10 @@ export default class Stats {
     this.updateFrameTimes()
   }
 
-  getNow = () => Math.round(100 * performance.now()) / 100
-
   receiveVideoFrametimes = (timestamp, info) => {
     if (!this.settings.showFrametimes) return
 
-    const now = this.getNow()
+    const now = performance.now().toFixed(1)
     if (this.previousPresentedFrames) {
       const skippedFrames = info.presentedFrames - this.previousPresentedFrames - 1
       for (let i = 0; i < skippedFrames; i++) {
@@ -225,7 +225,7 @@ export default class Stats {
   addFrametimes = (frameTimes, results) => {
     if(!this.settings.showFrametimes || !results?.hasNewFrame) return
   
-    frameTimes.frameEnd = this.getNow()
+    frameTimes.frameEnd = performance.now().toFixed(1)
     const videoFrameTimes = [...this.videoFrameTimes]
     frameTimes.video = videoFrameTimes.pop() || 0
 
@@ -239,17 +239,18 @@ export default class Stats {
     this.frameTimes.push(frameTimes)
 
     requestIdleCallback(() => {
-      frameTimes.displayEnd = this.getNow()
+      frameTimes.displayEnd = performance.now().toFixed(1)
     }, { timeout: 1 })
     requestIdleCallback(() => {
-      frameTimes.busyEnd = this.getNow()
+      frameTimes.busyEnd = performance.now().toFixed(1)
     })
   }
 
   updateFrameTimes = () => {
-    if(!this.settings.showFrametimes || this.ambientlight.isHidden || !this.frameTimes.length) {
+    if(!this.settings.showFrametimes || !this.frameTimes.length) {
       if(this.frameTimesCanvas?.parentNode) {
-        this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
+        if(this.frameTimesCtx)
+          this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
         this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
         this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
         this.ambientlightFTElem.style.display = 'none'

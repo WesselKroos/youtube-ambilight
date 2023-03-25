@@ -340,7 +340,7 @@ export default class Ambientlight {
     //////
   
     this.videoListeners = this.videoListeners || {
-      seeked: async () => {
+      seeked: async (...args) => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
@@ -395,6 +395,14 @@ export default class Ambientlight {
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
       on(this.videoElem, name, this.videoListeners[name])
+    }
+    
+    this.playerListeners = this.playerListeners || {
+      'yt-autonav-pause-player-ended': this.videoListeners.ended
+    }
+    for (const name in this.playerListeners) {
+      off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+      on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
     }
 
     if(this.videoObserver) {
@@ -1768,12 +1776,10 @@ export default class Ambientlight {
     await this.nextFrame()
   }
 
-  getNow = () => Math.round(100 * performance.now()) / 100
-
   nextFrame = async () => {
     try {
       const frameTimes = this.settings.showFrametimes ? {
-        frameStart: this.getNow()
+        frameStart: performance.now().toFixed(1)
       } : {}
     
       this.delayedUpdateSizesChanged = false
@@ -1789,14 +1795,14 @@ export default class Ambientlight {
       
       let results = {}
       if (this.settings.showFrametimes)
-        frameTimes.drawStart = this.getNow()
+        frameTimes.drawStart = performance.now().toFixed(1)
 
       if(!this.settings.webGL || this.getImageDataAllowed) {
         results = this.drawAmbientlight() || {}
       }
 
       if (this.settings.showFrametimes)
-        frameTimes.drawEnd = this.getNow()
+        frameTimes.drawEnd = performance.now().toFixed(1)
 
       this.scheduleNextFrame()
 

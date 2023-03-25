@@ -154,8 +154,9 @@ export default class Theming {
       disableBroadcast: false,
       returnValue: []
     }
+    const ytdAppElem = this.ambientlight.ytdAppElem
     const event = new CustomEvent('yt-action', {
-      currentTarget: this.ambientlight.ytdAppElem,
+      currentTarget: ytdAppElem,
       bubbles: true,
       cancelable: false,
       composed: true,
@@ -167,10 +168,10 @@ export default class Theming {
       // dispatchEvent is overriden by Shady DOM when:
       //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
       // Todo: When this is enabled the theme is directly changing when the Windows Theme changes
-      if(this.ambientlight.ytdAppElem?.__shady_native_dispatchEvent) {
-        this.ambientlight.ytdAppElem.__shady_native_dispatchEvent(event)
+      if(ytdAppElem?.__shady_native_dispatchEvent) {
+        ytdAppElem.__shady_native_dispatchEvent(event)
       } else {
-        this.ambientlight.ytdAppElem.dispatchEvent(event)
+        ytdAppElem.dispatchEvent(event)
       }
     } catch(ex) {
       SentryReporter.captureException(ex)

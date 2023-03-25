@@ -844,7 +844,7 @@ export default class Settings {
             if(value) {
               this.ambientlight.stats.update()
             } else {
-              this.ambientlight.stats.hide()
+              this.ambientlight.stats.hide(true)
             }
             return
           }
