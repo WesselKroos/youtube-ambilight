@@ -73,13 +73,15 @@ export default class Stats {
       this.displayFPSElem.childNodes[0].nodeValue = ''
     }
 
-    if(!onlyDisabled || !this.settings.showFrametimes && this.frameTimesCanvas?.parentNode) {
+    if(!onlyDisabled || !this.settings.showFrametimes) {
       this.ambientlightFTLegendElem.childNodes[0].nodeValue = ''
       
-      if(this.frameTimesCtx)
-        this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
-      this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
-      this.ambientlightFTElem.style.display = 'none'
+      if(this.frameTimesCanvas?.parentNode) {
+        if(this.frameTimesCtx)
+          this.frameTimesCtx.clearRect(0, 0, this.frameTimesCanvas.width, this.frameTimesCanvas.height)
+        this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
+        this.ambientlightFTElem.style.display = 'none'
+      }
     }
   }
 

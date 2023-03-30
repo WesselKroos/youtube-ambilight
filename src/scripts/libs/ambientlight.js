@@ -1157,12 +1157,10 @@ export default class Ambientlight {
 
   isInEnabledView = () => {
     const enableInViews = this.settings.enableInViews
-    if(enableInViews === 0) return true
-
     const enabled = {
       SMALL: enableInViews <= 2,
-      THEATER: enableInViews >= 2 && enableInViews <= 4,
-      FULLSCREEN: enableInViews >= 4
+      THEATER: enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
+      FULLSCREEN: enableInViews === 0 || enableInViews >= 4
     }[this.view] || false
     return enabled
   }
