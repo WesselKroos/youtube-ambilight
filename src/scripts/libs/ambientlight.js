@@ -1,11 +1,10 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, isWatchPageUrl, appendErrorStack, waitForDomElement, getCookie } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
-import { contentScript } from './messaging'
 import { getAverageVideoFramesDifference } from './static-image-detection'
 import Theming from './theming'
 import Stats from './stats'
@@ -302,7 +301,7 @@ export default class Ambientlight {
     if(!this.settings.energySaver) return
 
     try {
-      const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
+      // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
       const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem);
       if(difference === undefined) return
 
@@ -340,7 +339,7 @@ export default class Ambientlight {
     //////
   
     this.videoListeners = this.videoListeners || {
-      seeked: async (...args) => {
+      seeked: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
@@ -465,7 +464,8 @@ export default class Ambientlight {
         this.sizesChanged = true
         if(!isControlledLose) {
           this.cancelScheduledRequestVideoFrame()
-          this.videoElem.currentTime = this.videoElem.currentTime // Trigger video draw call
+          // eslint-disable-next-line no-self-assign
+          this.videoElem.currentTime = this.videoElem.currentTime // Triggers video draw call
         }
         await this.optionalFrame()
       }
@@ -480,7 +480,7 @@ export default class Ambientlight {
 
     if(this.topElem) {
       this.topElemObserver = new IntersectionObserver(
-        wrapErrorHandler(async (entries, observer) => {
+        wrapErrorHandler(async (entries) => {
           let atTop = true
           for (const entry of entries) {
             atTop = (entry.intersectionRatio !== 0)
@@ -531,7 +531,7 @@ export default class Ambientlight {
     // and the styles are recalculated.
     // YouTube does this incorrect by calculating it before the styles are recalculated.
     let previousVideoPlayerRect;
-    this.videoPlayerResizeObserver = new ResizeObserver(async function videoPlayerResize(e) {
+    this.videoPlayerResizeObserver = new ResizeObserver(function videoPlayerResize(e) {
       if(!this.settings.enabled || !this.isOnVideoPage) {
         previousVideoPlayerRect = undefined
         return
@@ -608,8 +608,8 @@ export default class Ambientlight {
       SentryReporter.captureException(ex)
     }
 
-    const videoPlayerObserver = new MutationObserver(wrapErrorHandler(async () => {
-      const viewChanged = await this.updateView()
+    const videoPlayerObserver = new MutationObserver(wrapErrorHandler(() => {
+      const viewChanged = this.updateView()
       const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage()
       if(!viewChanged && !videoHiddenChanged) return
 
@@ -637,8 +637,8 @@ export default class Ambientlight {
     }
 
     // When the video moves between the small and theater views
-    const playerContainersObserver = new MutationObserver(wrapErrorHandler(async (mutationsList) => {
-      await this.updateView()
+    const playerContainersObserver = new MutationObserver(wrapErrorHandler(() => {
+      this.updateView()
       this.optionalFrame()
     }))
     const playerContainersObserverOptions = {
@@ -790,7 +790,7 @@ export default class Ambientlight {
     this.settings.displayBezelForSetting('enabled')
   }
 
-  checkGetImageDataAllowed(reportUnexpectedChange = false) {
+  checkGetImageDataAllowed() {
     const isSameOriginVideo = (!!this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
     const getImageDataAllowed = (!window.chrome || isSameOriginVideo || (!isSameOriginVideo && this.videoElem.crossOrigin))
 
@@ -876,7 +876,7 @@ export default class Ambientlight {
     }
     if(!this.ambientlightObserver) {
       this.ambientlightObserver = new IntersectionObserver(
-        wrapErrorHandler((entries, observer) => {
+        wrapErrorHandler((entries) => {
           for (const entry of entries) {
             this.isAmbientlightHiddenOnWatchPage = (entry.intersectionRatio === 0)
             if(this.isAmbientlightHiddenOnWatchPage) continue
@@ -1081,7 +1081,7 @@ export default class Ambientlight {
     this.settings.set('videoScale', videoScale, true)
   }
 
-  updateView = async () => {
+  updateView = () => {
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
@@ -1166,7 +1166,7 @@ export default class Ambientlight {
   }
 
   async updateSizes() {
-    await this.updateView()
+    this.updateView()
 
     if(this.settings.detectVideoFillScaleEnabled){
       this.detectVideoFillScale()
@@ -2224,7 +2224,7 @@ export default class Ambientlight {
       if(this.barDetection.run) return
 
       if(
-        (this.getImageDataAllowed && this.checkGetImageDataAllowed(true)) || 
+        (this.getImageDataAllowed && this.checkGetImageDataAllowed()) || 
         this.getImageDataAllowed
       ) {
         this.barDetection.detect(
@@ -2480,7 +2480,7 @@ export default class Ambientlight {
     this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(this.onVideoFrame)
   }
 
-  onVideoFrame = wrapErrorHandler(async function onVideoFrame(timestamp, info) {
+  onVideoFrame = wrapErrorHandler(function onVideoFrame(timestamp, info) {
     if (!this.requestVideoFrameCallbackId) {
       console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${timestamp} | ${info}`)
       return

@@ -1,4 +1,4 @@
-import SentryReporter, { AmbientlightError } from './sentry-reporter';
+import { AmbientlightError } from './sentry-reporter';
 import { appendErrorStack, wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
@@ -370,7 +370,7 @@ export class WebGLContext {
     return true
   }
 
-  clearRect = (x, y, width, height) => {
+  clearRect = () => {
     if(this.ctxIsInvalid || this.lost) return
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }

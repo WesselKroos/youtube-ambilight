@@ -60,7 +60,7 @@ const isVideoInKnownInvalidLocation = () => {
 }
 
 const detectDetachedVideo = () => {
-  const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
+  const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo() {
     if (!isWatchPageUrl()) return
 
     const videoElem = ambientlight.videoElem
@@ -150,24 +150,22 @@ const tryInitAmbientlight = async () => {
 
 const getWatchPageViewObserver = (function initGetWatchPageViewObserver() {
   let observer;
-  return function getWatchPageViewObserver(ytdAppElem) {
+  return function getWatchPageViewObserver() {
     if(!observer) {
-      observer = new MutationObserver(wrapErrorHandler(
-        function watchPageViewObserved(mutationsList, observer) {
-          startIfWatchPageHasVideo(ytdAppElem)
-        }
-      ))
+      observer = new MutationObserver(wrapErrorHandler(function watchPageViewObserved() {
+        startIfWatchPageHasVideo()
+      }))
     }
     return observer;
   }
 })();
 const detectWatchPageVideo = (ytdAppElem) => {
-  getWatchPageViewObserver(ytdAppElem).observe(ytdAppElem, {
+  getWatchPageViewObserver().observe(ytdAppElem, {
     childList: true,
     subtree: true
   })
 }
-const startIfWatchPageHasVideo = (ytdAppElem) => {
+const startIfWatchPageHasVideo = () => {
   if (!isWatchPageUrl() || window.ambientlight.isOnVideoPage) {
     getWatchPageViewObserver().disconnect()
     return
@@ -183,9 +181,9 @@ const startIfWatchPageHasVideo = (ytdAppElem) => {
 
 const detectPageTransitions = (ytdAppElem) => {
   on(document, 'yt-navigate-finish', async function onYtNavigateFinish() {
-    getWatchPageViewObserver(ytdAppElem).disconnect()
+    getWatchPageViewObserver().disconnect()
     if(isWatchPageUrl()) {
-      startIfWatchPageHasVideo(ytdAppElem)
+      startIfWatchPageHasVideo()
       if(!window.ambientlight.isOnVideoPage) {
         detectWatchPageVideo(ytdAppElem)
       }

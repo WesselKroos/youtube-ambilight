@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { appendErrorStack, raf, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 

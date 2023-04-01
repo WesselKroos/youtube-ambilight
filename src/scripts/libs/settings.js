@@ -347,7 +347,7 @@ export default class Settings {
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }, i) => {
+                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }) => {
                     return `
                       <option 
                         value="${value}" 
@@ -413,7 +413,7 @@ export default class Settings {
       })
     }
     for (const section of this.menuElem.querySelectorAll('.ytpa-section')) {
-      on(section, 'click', (e) => {
+      on(section, 'click', () => {
         const name = section.getAttribute('data-name')
         const value = !this[name]
         this.set(name, value)
@@ -451,12 +451,11 @@ export default class Settings {
       
       const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
       if (keyElem) {
-        const settingElem = this.menuElem.querySelector(`#setting-${setting.name}`)
         on(keyElem, 'click', (e) => {
           e.stopPropagation()
           e.preventDefault()
         })
-        on(keyElem, 'focus', (e) => {
+        on(keyElem, 'focus', () => {
           // Select all
           const range = document.createRange()
           range.selectNodeContents(keyElem)
@@ -475,7 +474,7 @@ export default class Settings {
           keyElem.textContent = key
           this.setKey(setting.name, key)
         })
-        on(keyElem, 'blur', (e) => {
+        on(keyElem, 'blur', () => {
           // Deselect all
           const sel = window.getSelection()
           sel.removeAllRanges()
@@ -491,13 +490,13 @@ export default class Settings {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
             e.stopPropagation()
           })
-          const onChange = (empty = false) => {
+          const onChange = () => {
             if(inputElem.value === manualInputElem.value) return
             inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))
           }
-          on(manualInputElem, 'change', (e) => onChange())
-          on(manualInputElem, 'blur', (e) => onChange())
+          on(manualInputElem, 'change', onChange)
+          on(manualInputElem, 'blur', onChange)
           on(manualInputElem, 'keypress', (e) => {
             if(e.key !== 'Enter') return
             manualInputElem.blur()
