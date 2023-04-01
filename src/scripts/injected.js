@@ -1,4 +1,4 @@
-import { on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -182,7 +182,7 @@ const startIfWatchPageHasVideo = (ytdAppElem) => {
 }
 
 const detectPageTransitions = (ytdAppElem) => {
-  on(document, 'yt-navigate-finish', function onYtNavigateFinish() {
+  on(document, 'yt-navigate-finish', async function onYtNavigateFinish() {
     getWatchPageViewObserver(ytdAppElem).disconnect()
     if(isWatchPageUrl()) {
       startIfWatchPageHasVideo(ytdAppElem)
@@ -192,7 +192,7 @@ const detectPageTransitions = (ytdAppElem) => {
     } else {
       if(window.ambientlight.isOnVideoPage) {
         window.ambientlight.isOnVideoPage = false
-        window.ambientlight.hide()
+        await window.ambientlight.hide()
       }
     }
   }, undefined, undefined, true);

@@ -1188,7 +1188,7 @@ export default class Ambientlight {
     }
     this.lastUpdateSizesChanged = performance.now()
     if (notVisible) {
-      this.hide()
+      await this.hide()
       return false
     }
 
@@ -1796,7 +1796,7 @@ export default class Ambientlight {
         frameTimes.drawStart = performance.now().toFixed(1)
 
       if(!this.settings.webGL || this.getImageDataAllowed) {
-        results = this.drawAmbientlight() || {}
+        results = (await this.drawAmbientlight()) || {}
       }
 
       if (this.settings.showFrametimes)
@@ -2005,15 +2005,15 @@ export default class Ambientlight {
     this.isInEnabledView()
   )
 
-  drawAmbientlight() {
+  async drawAmbientlight() {
     const shouldShow = this.shouldShow()
     if(!shouldShow) {
-      if (!this.isHidden) this.hide()
+      if (!this.isHidden) await this.hide()
       return
     }
 
     const drawTime = performance.now()
-    if (this.isHidden) this.show()
+    if (this.isHidden) await this.show()
 
     if (
       (
