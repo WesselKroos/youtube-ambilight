@@ -1177,6 +1177,7 @@ html[data-ambientlight-enabled="true"] {
   position: relative !important;
   overflow: initial !important;
   font-size: calc(100% / 1.09) !important;
+  line-height: normal !important;
   contain: size;
   &::after {
     content: '';
