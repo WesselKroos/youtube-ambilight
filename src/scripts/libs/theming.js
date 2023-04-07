@@ -1,4 +1,4 @@
-import { getCookie, html, on, wrapErrorHandler } from "./generic"
+import { getCookie, html, isWatchPageUrl, on, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
 
 const THEME_LIGHT = -1
