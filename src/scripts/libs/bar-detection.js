@@ -3,47 +3,25 @@ import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
 const workerCode = function () {
-  // Cannot access appendErrorStack in import from a worker
-  const appendErrorStack = (stack, ex) => {
-    try {
-      const stackToAppend = stack.substring(stack.indexOf('\n') + 1)
-      const alreadyContainsStack = ((ex.stack || ex.message).indexOf(stackToAppend) !== -1)
-      if(alreadyContainsStack) return
-  
-      ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
-    } catch(ex) { console.warn(ex) }
-  }
-
   let catchedWorkerCreationError = false
   let canvas;
   let ctx;
-  const partSizeBorderMultiplier = 1
-  let imageLines = []
-  let partSize;
-  let imageLinesIndex = 0
-  let getLineImageDataStack;
-  let getLineImageDataResolve;
-  let getLineImageDataReject;
-  let getLineImageDataYLength;
   let workerMessageId = 0;
 
-  function getLineImageData() {
-    try {
-      const params = getLineImageDataYLength === 'height' 
-        ? [imageLinesIndex, 0, 1, canvas.height]
-        : [0, imageLinesIndex, canvas.width, 1]
-      imageLines.push(ctx.getImageData(...params).data)
-      getLineImageDataResolve()
-    } catch(ex) {
-      appendErrorStack(getLineImageDataStack, ex)
-      getLineImageDataReject(ex)
-    }
-  }
+  async function getLineImageData(imageLines, yLength, index) {
+    const params = yLength === 'height' 
+      ? [index, 0, 1, canvas.height]
+      : [0, index, canvas.width, 1]
 
-  function getLineImageDataPromise(resolve, reject) {
-    getLineImageDataResolve = resolve
-    getLineImageDataReject = reject
-    getLineImageData()
+    const start = performance.now()
+    imageLines.push(ctx.getImageData(...params).data)
+    const duration = performance.now() - start
+
+    // Give the GPU cores breathing time to decode the video or prepaint other elements in between
+    // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+    await new Promise(resolve => {
+      setTimeout(resolve, duration < 1 ? 0 : Math.min(1000/24, duration / 2))
+    })
   }
 
   let averageSize = 0;
@@ -53,22 +31,17 @@ const workerCode = function () {
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
+  const partSizeBorderMultiplier = 1
   try {
     const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
-      partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
-      imageLines = []
-      for (imageLinesIndex = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); imageLinesIndex < canvas[xLength] - (partSizeBorderMultiplier * partSize); imageLinesIndex += partSize) {
-        if(!getLineImageDataStack) {
-          getLineImageDataStack = new Error().stack
-        }
-        getLineImageDataYLength = yLength
+      const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
+      const imageLines = []
+      for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
         if(id < workerMessageId) return
-        await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
-        if(id < workerMessageId) return
+        await getLineImageData(imageLines, yLength, index)
       }
-      getLineImageDataResolve = undefined
-      getLineImageDataReject = undefined
-    
+      if(id < workerMessageId) return
+
       const channels = 4
       const colorIndex = (channels * 4)
       let color = detectColored ?
