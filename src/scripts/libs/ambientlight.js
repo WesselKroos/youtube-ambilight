@@ -2577,3 +2577,74 @@ export default class Ambientlight {
     return true
   }
 }
+
+
+// Fixes video stuttering when display framerate > ambient framerate
+// Todo:
+// - Reproduce on PC
+// - Make isolated codepen examples
+//   1. Just the video (should stutter)
+//   2. Video with drawimage on requestvideoframecallback (should stutter the most)
+//   2.1 if it doesnt, it might have been caused by the blurred canvas or indirect drawimages
+//   3. Video with drawimage on requestanimationframe (should stutter)
+//   4. Video with drawimage on requestvideoframecallback & empty drawimage on requestanimationframe (should be smooth)
+//   5. Video with repeating css animation on top (might be smooth)
+//   6. Video with changing transform (or width or left property) on requestanimationframe (should be smooth)
+// - Report to chromium
+// - Code the workaround
+
+(async function() {
+  const createCanvasGetContext = (width, height) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    canvas.style.position = 'absolute'
+    canvas.style.zIndex = 2
+    canvas.style.width = '1px'
+    canvas.style.height = '1px'
+    canvas.style.background = 'transparent'
+    canvas.style.pointerEvents = 'none'
+    ambientlight.videoContainerElem.appendChild(canvas)
+
+    const ctx = canvas.getContext('2d', {
+      // desynchronized: true
+    })
+    return ctx;
+  };
+  const createEmptyBitmap = async (width, height) => {
+    const data = new Uint8ClampedArray(width * height * 4).fill(0);
+    const imageData = new ImageData(data, width, height);
+    const bitmap = await createImageBitmap(imageData);
+    return bitmap;
+  }
+  const transparentBitmap = await createEmptyBitmap(1, 1);
+
+  // let previousAmbientlightFrameCount = 0
+  let ctx;
+
+  const onAnimationFrame = () => {
+    if(
+      window.ambientlight &&
+      !ambientlight.videoElem.paused &&
+      !ambientlight.videoIsHidden &&
+      !ambientlight.isAmbientlightHiddenOnWatchPage // &&
+      // !ambientlight.isFillingFullscreen
+    ) {
+
+      if(!ctx) {
+        ctx = createCanvasGetContext(1, 1)
+      }
+      ctx.drawImage(transparentBitmap, 0, 0)
+
+      // if(ambientlight.ambientlightFrameCount === previousAmbientlightFrameCount) {
+        // No drawImage called while the video is playing
+        // ambientlight.projector.blurCtx.drawImage(transparentBitmap, 0, 0)
+      // }
+
+      // previousAmbientlightFrameCount = ambientlight.ambientlightFrameCount
+    }
+
+    window.webkitRequestAnimationFrame(onAnimationFrame);
+  };
+  window.webkitRequestAnimationFrame(onAnimationFrame)
+})()
