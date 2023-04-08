@@ -7,8 +7,9 @@ This is a performance guide that helps you get the best performance (and reduced
 The best way to debug troubleshoot problems is to first set the Ambient light extension settings to their optimal values and then start to optimize your browser settings.
 
 ## But first, check these things:
->  Make sure you are on a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
->  Because issues can suddenly appear when a browser has been updated to a new version or a graphics card has been updated to a new driver version, make sure that you aren't suffering from any known issues listed at: [Known issues and solutions](#known-issues-and-solutions)
+>  1. Make sure you are on a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
+
+>  2. Because issues can suddenly appear when a browser has been updated to a new version or a graphics card has been updated to a new driver version, make sure that you aren't suffering from any known issues listed at: [Known issues and solutions](#known-issues-and-solutions)
 
 ### Index
 - [Ambient light extension settings](#ambient-light-extension-settings)
