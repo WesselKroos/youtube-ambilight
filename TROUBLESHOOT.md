@@ -6,7 +6,9 @@
 This is a performance guide that helps you get the best performance (and reduced CPU and GPU usage) in your browser.
 The best way to debug troubleshoot problems is to first set the Ambient light extension settings to their optimal values and then start to optimize your browser settings.
 
->  Make sure you are running a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
+## But first, check these things:
+>  Make sure you are on a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
+>  Because issues can suddenly appear when a browser has been updated to a new version or a graphics card has been updated to a new driver version, make sure that you aren't suffering from any known issues listed at: [Known issues and solutions](#known-issues-and-solutions)
 
 ### Index
 - [Ambient light extension settings](#ambient-light-extension-settings)
@@ -172,15 +174,19 @@ If any of the values in step 2 and 3 are incorrect you can go to [about:config](
 1. Are you using a NVidia graphics card on Windows? Then you might have this issue:
    [Issue 1431590: Frame drops and jitter on 4k60fps videos when NVidia's Power management mode is set to Adaptive](https://bugs.chromium.org/p/chromium/issues/detail?id=1431590)
    
-   To workaround this issue follow these steps:
-   1. Make sure that the NVidia gpu is used for video decoding. Change your settings in Windows and/or the NVidia control panel if it is not yet used by Chrome. (To see if it is being used check the usage in the graph at: Windows Task Manager > Performance > GPU > Video Decode)
-   2. Then open the NVIDIA control panel and go to: 3D Settings > Manage 3D settings > Global settings (Or "Program settings > Google Chrome (chrome.exe)" if you have custom settings defined for Google Chrome)
+   __To workaround this issue follow these steps:__
+   1. Make sure that the NVidia gpu is used for video decoding. Change your settings in Windows and/or the NVidia control panel if it is not yet used by the browser. (To see if it is being used check the usage in the graph at: Windows Task Manager > Performance > GPU > Video Decode)
+   2. Then open the NVIDIA control panel and go to: 3D Settings > Manage 3D settings > Global settings (Or for example "Program settings > Google Chrome (chrome.exe)" if you have custom settings defined for Google Chrome. This can also be customized for other browsers)
    3. Change the setting: "Power management mode" to "Prefer maximum performance" and click on the Apply button.
    4. Restart your PC (Because sometimes changes in the NVIDIA control panel settings are not applied at runtime. This makes it impossible to fix this issue reliably without a restart.)
    5. Open the video url: https://www.youtube.com/watch?v=rqJDO3TWnac and set the video quality to 4K 60FPS
    6. Let the video play for at least 30 seconds to validate that there is no jitter and are no frame drops anymore.
 
-2. For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
+2. Are you using multiple graphics cards? (For example: The integrated AMD/Intel GPU of your CPU and a dedicated NVidia/AMD/Intel GPU) Then try them one by one to see which one works the best. You can select a GPU per application in the settings of the operating system.
+   > In Windows this setting can be found at __Settings > Graphics settings__, add the browser to the list, click on the __Options__ button, select a GPU and then restart the browser.
+
+3. For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
+
 
 ---
 
