@@ -2,19 +2,6 @@
   <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support me via a donation">
 </a>
 
-### ⚠️ Known issues
-#### 1. YouTube's new "ambient mode" feature creates a black box around the video.
-YouTube has rolled out an "ambient mode" feature on the October 24th. Make sure to update the extension to version 2.36.33 to fix this problem.
-(Or disable the feature in the video settings:
-
-<img src="https://user-images.githubusercontent.com/31220528/197637853-74e13f55-3ca2-4ba7-92e6-88bfcc08c5dc.png" height=200 />
-
-#### 2. Sometimes there are black lines at the bottom or right side of the video.
-This is a bug in the chromium browser. For a list of workarounds visit [issue #136](https://github.com/WesselKroos/youtube-ambilight/issues/136)
-
-#### 3. Parts of the ambient light or video has sometimes flickering black triangles or triangles that contain the previous video frame
-This is a bug in the chromium browser. For a list of workarounds visit [issue #97](https://github.com/WesselKroos/youtube-ambilight/issues/97)
-
 # Optimizing or troubleshooting performance problems
 This is a performance guide that helps you get the best performance (and reduced CPU and GPU usage) in your browser.
 The best way to debug troubleshoot problems is to first set the Ambient light extension settings to their optimal values and then start to optimize your browser settings.
@@ -180,11 +167,20 @@ If any of the values in step 2 and 3 are incorrect you can go to [about:config](
 
 # Known issues and solutions
 
-#### In Firefox the ambient light and video stutters when black bar detection is enabled
-Go to the url [about:config](), set `gfx.offscreencanvas.enabled` to `true` and refresh the YouTube website
-
 #### Video's in 4K and higher resolutions or 50/60fps are stuttering or dropping frames
-For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
+
+1. Are you using a NVidia graphics card on Windows? Then you might have this issue:
+   [Issue 1431590: Frame drops and jitter on 4k60fps videos when NVidia's Power management mode is set to Adaptive](https://bugs.chromium.org/p/chromium/issues/detail?id=1431590)
+   
+   To workaround this issue follow these steps:
+   1. Make sure that the NVidia gpu is used for video decoding. Change your settings in Windows and/or the NVidia control panel if it is not yet used by Chrome. (To see if it is being used check the usage in the graph at: Windows Task Manager > Performance > GPU > Video Decode)
+   2. Then open the NVIDIA control panel and go to: 3D Settings > Manage 3D settings > Global settings (Or "Program settings > Google Chrome (chrome.exe)" if you have custom settings defined for Google Chrome)
+   3. Change the setting: "Power management mode" to "Prefer maximum performance" and click on the Apply button.
+   4. Restart your PC (Because sometimes changes in the NVIDIA control panel settings are not applied at runtime. This makes it impossible to fix this issue reliably without a restart.)
+   5. Open the video url: https://www.youtube.com/watch?v=rqJDO3TWnac and set the video quality to 4K 60FPS
+   6. Let the video play for at least 30 seconds to validate that there is no jitter and are no frame drops anymore.
+
+2. For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
 
 ---
 
