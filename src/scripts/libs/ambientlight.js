@@ -2622,6 +2622,15 @@ export default class Ambientlight {
   // let previousAmbientlightFrameCount = 0
   let ctx;
 
+  const detectChromiumBugWorkaround = () => {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version) {
+      return true
+    }
+  }
+  if(!detectChromiumBugWorkaround()) return
+
   const onAnimationFrame = () => {
     if(
       window.ambientlight &&
@@ -2644,7 +2653,7 @@ export default class Ambientlight {
       // previousAmbientlightFrameCount = ambientlight.ambientlightFrameCount
     }
 
-    window.webkitRequestAnimationFrame(onAnimationFrame);
+    window.requestAnimationFrame(onAnimationFrame);
   };
-  window.webkitRequestAnimationFrame(onAnimationFrame)
+  window.requestAnimationFrame(onAnimationFrame)
 })()
