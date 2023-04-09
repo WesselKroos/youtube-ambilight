@@ -1912,7 +1912,7 @@ export default class Ambientlight {
   nextFrame = async () => {
     try {
       const frameTimes = this.settings.showFrametimes ? {
-        frameStart: performance.now().toFixed(1)
+        frameStart: parseFloat(performance.now().toFixed(1))
       } : {}
     
       this.delayedUpdateSizesChanged = false
@@ -1927,15 +1927,17 @@ export default class Ambientlight {
       }
       
       let results = {}
-      if (this.settings.showFrametimes)
-        frameTimes.drawStart = performance.now().toFixed(1)
+      if (this.settings.showFrametimes) {
+        this.stats.addVideoFrametimes(frameTimes)
+        frameTimes.drawStart = parseFloat(performance.now().toFixed(1))
+      }
 
       if(!this.settings.webGL || this.getImageDataAllowed) {
         results = (await this.drawAmbientlight()) || {}
       }
 
       if (this.settings.showFrametimes)
-        frameTimes.drawEnd = performance.now().toFixed(1)
+        frameTimes.drawEnd = parseFloat(performance.now().toFixed(1))
 
       this.scheduleNextFrame()
 
@@ -1943,7 +1945,7 @@ export default class Ambientlight {
         this.scheduleBarSizeDetection()
       }
 
-      this.stats.addFrametimes(frameTimes, results)
+      this.stats.addAmbientFrametimes(frameTimes, results)
 
       if(
         this.afterNextFrameIdleCallback ||

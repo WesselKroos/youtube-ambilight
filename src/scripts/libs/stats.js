@@ -198,42 +198,53 @@ export default class Stats {
     this.updateFrameTimes()
   }
 
-  receiveVideoFrametimes = (timestamp, info) => {
+  receiveVideoFrametimes = (compose, info) => {
     if (!this.settings.showFrametimes) return
 
-    const now = performance.now().toFixed(1)
+    const now = parseFloat(performance.now().toFixed(1))
     if (this.previousPresentedFrames) {
       const skippedFrames = info.presentedFrames - this.previousPresentedFrames - 1
       for (let i = 0; i < skippedFrames; i++) {
         this.videoFrameTimes.push({
-          processingDuration: info.processingDuration * 1000,
-          timestamp,
-          presentationTime: info.presentationTime - (0.1 * i),
-          received: now - (0.1 * i),
-          expectedDisplayTime: info.expectedDisplayTime - (0.1 * i)
+          decode: parseFloat((info.presentationTime - (info.processingDuration * 1000)).toFixed(1)) - (0.1 * i),
+          present: info.presentationTime - (0.1 * i),
+          display: info.expectedDisplayTime - (0.1 * i),
+          compose: compose - (0.1 * i),
+          receive: now - (0.1 * i)
         })
       }
     }
+    
+    // Flow of the rendering pipeline (with durations & timestamps)
+    //
+    // Media playback engine: ━━► decode [processingDuration] ━━► present to compositor [presentationTime] ━┳ (can be before or after compose)
+    // Compositor:                                      ━━► compose [timestamp] ━┻━ handle animation/videoFrameCallbacks ━━► handle other callbacks              ━ ━► display [expectedDisplayTime]
+    // Main thread:      ━━► requestVideoFrameCallback to compositor ━┻ (can before or after compose)     ┻━► receiveVideoFrameCallback [receive] ━━► draw ambient light ━┻ (can be before or after display) 
+
     this.videoFrameTimes.push({
-      processingDuration: info.processingDuration * 1000,
-      timestamp,
-      presentationTime: info.presentationTime,
-      received: now,
-      expectedDisplayTime: info.expectedDisplayTime
+      decode: parseFloat((info.presentationTime - (info.processingDuration * 1000)).toFixed(1)),
+      present: info.presentationTime,
+      compose,
+      receive: now,
+      display: info.expectedDisplayTime,
     })
     this.previousPresentedFrames = info.presentedFrames
   }
 
-  addFrametimes = (frameTimes, results) => {
+  addVideoFrametimes = (frameTimes) => {
+    frameTimes.video = this.videoFrameTimes[this.videoFrameTimes.length - 1] || 0
+  }
+
+  addAmbientFrametimes = (frameTimes, results) => {
     if(!this.settings.showFrametimes || !results?.hasNewFrame) return
   
-    frameTimes.frameEnd = performance.now().toFixed(1)
-    const videoFrameTimes = [...this.videoFrameTimes]
-    frameTimes.video = videoFrameTimes.pop() || 0
+    frameTimes.frameEnd = parseFloat(performance.now().toFixed(1))
+    // const videoFrameTimes = [...this.videoFrameTimes]
+    // frameTimes.video = videoFrameTimes.pop() || 0
 
-    this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(frameTimes.video), 1)
-    for (const video of videoFrameTimes) {
-      this.videoFrameTimes.splice(this.videoFrameTimes.indexOf(video), 1)
+    const droppedVideoFrameTimes = this.videoFrameTimes.splice(0, this.videoFrameTimes.indexOf(frameTimes.video) + 1) // Remove all historic video frametimes
+    droppedVideoFrameTimes.pop() // Remove the current video frametime
+    for (const video of droppedVideoFrameTimes) {
       this.frameTimes.push({
         video
       })
@@ -241,10 +252,10 @@ export default class Stats {
     this.frameTimes.push(frameTimes)
 
     requestIdleCallback(() => {
-      frameTimes.displayEnd = performance.now().toFixed(1)
+      frameTimes.display = parseFloat(performance.now().toFixed(1))
     }, { timeout: 1 })
     requestIdleCallback(() => {
-      frameTimes.busyEnd = performance.now().toFixed(1)
+      frameTimes.complete = parseFloat(performance.now().toFixed(1))
     })
   }
 
@@ -266,47 +277,56 @@ export default class Stats {
     frameTimes.pop()
     frameTimes = frameTimes.slice(-this.frametimesHistoryMax)
 
-    const displayFrameDuration = (1000 / (this.ambientlight.displayFrameRate || 1000))
-    const videoFrameDuration = (1000 / (this.ambientlight.videoFrameRate || 1000))
-    let lastVideoFrameTime = 0
+    // const dropped = frameTimes.filter(x => !x.video?.display).length
+    // const displayFrameTimes = frameTimes.filter(x => x.video?.display)
+    // const displayIntervals = displayFrameTimes.map((x, i) => (
+    //   i > 0 ? parseFloat((x.video?.display - displayFrameTimes[i-1].video?.display).toFixed(1)) : undefined
+    // )).filter(x => x !== undefined)
+    // const average = parseFloat((displayIntervals.reduce((p, c) => p + c, 0) / displayIntervals.length).toFixed(1));
+    // console.log(`[${Math.min(...displayIntervals)} | ${average} | ${Math.max(...displayIntervals)}] Dropped: ${dropped}\n`, 
+    //   displayIntervals.join('\n'));
+
+    const displayFrameDuration = (1000 / (Math.max(24, this.ambientlight.displayFrameRate) || 1000))
+    const videoFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.videoFrameRate, 60)) || 1000))
+    let lastVideoFrameTime = {}
     for (const ft of frameTimes) {
       if (!ft.video) {
         ft.video = (this.settings.frameSync === FRAMESYNC_VIDEOFRAMES)
           ? {
-            processingDuration: lastVideoFrameTime.processingDuration,
-            timestamp: lastVideoFrameTime.timestamp + videoFrameDuration,
-            presentationTime: lastVideoFrameTime.presentationTime + videoFrameDuration,
-            received: lastVideoFrameTime.received + videoFrameDuration,
-            expectedDisplayTime: lastVideoFrameTime.expectedDisplayTime + videoFrameDuration
+            decode: (lastVideoFrameTime.decode || 0) + videoFrameDuration,
+            present: (lastVideoFrameTime.present || 0) + videoFrameDuration,
+            compose: (lastVideoFrameTime.compose || 0) + videoFrameDuration,
+            receive: (lastVideoFrameTime.receive || 0) + videoFrameDuration,
+            display: (lastVideoFrameTime.display || 0) + videoFrameDuration
           }
           : {
-            processingDuration: 0,
-            timestamp: ft.frameStart,
-            presentationTime: ft.frameStart,
-            received: ft.frameStart,
-            expectedDisplayTime: ft.frameStart + displayFrameDuration
+            decode: ft.frameStart,
+            present: ft.frameStart,
+            compose: ft.frameStart,
+            receive: ft.frameStart,
+            display: ft.frameStart + displayFrameDuration
           }
       }
       lastVideoFrameTime = ft.video
-      if (!ft.displayEnd)
-        ft.displayEnd = ft.video.received + videoFrameDuration
-      if (!ft.busyEnd)
-        ft.busyEnd = ft.video.received + videoFrameDuration
+      if (!ft.display)
+        ft.display = ft.video.receive
+      if (!ft.complete)
+        ft.complete = ft.video.receive
     }
 
     const videoProcessingRange = this.getRange(
-      frameTimes.map(ft => ft.video.received - (ft.video.timestamp - ft.video.processingDuration))
+      frameTimes.map(ft => ft.video.present - ft.video.decode)
     );
     const ambientlightProcessingRange = this.getRange(
-      frameTimes.map(ft => ft.displayEnd - ft.video.received)
+      frameTimes.map(ft => ft.display - ft.video.receive).filter(x => x != 0)
     );
     const ambientlightBudgetRange = this.getRange(
-      frameTimes.map(ft => ft.video.expectedDisplayTime - ft.video.received)
+      frameTimes.map(ft => ft.video.display - ft.video.receive)
     );
     const otherBusyRange = this.getRange(
-      frameTimes.map(ft => ft.busyEnd - ft.displayEnd)
+      frameTimes.map(ft => ft.complete - ft.display).filter(x => x != 0)
     );
-    const delayedFrames = frameTimes.filter(ft => ft.displayEnd > ft.video.expectedDisplayTime).length
+    const delayedFrames = frameTimes.filter(ft => ft.display > ft.video.display).length
     const lostFrames = frameTimes.filter(ft => !ft.frameStart).length
 
     const legend = `         FRAMETIMES                 MIN        MAX
@@ -330,7 +350,7 @@ GREY   | previous display frames`
     const scaleX = 3
     const width = frameTimes.length * scaleX
     const height = 300
-    const rangeY = 1.65
+    const rangeY = 7.65
     const scaleY = height / (videoFrameDuration * (rangeY * 2)) // Math.min(500, (Math.max(videoFrameDuration, longestDuration) * 1.25))
 
     if(!this.frameTimesCanvas) {
@@ -362,58 +382,79 @@ GREY   | previous display frames`
     }
 
     const rects = []
+    console.log(frameTimes)
     for (let i = 0; i < frameTimes.length; i++) {
       const ft = frameTimes[i];
-      const videoSubmit = ft.video.timestamp
-      const videoDisplay = ft.video.expectedDisplayTime - videoSubmit // Todo: Fix frametimes relative to the displayTime instead of the video timestamp
       const x = i * scaleX
-      const y = Math.ceil(((videoFrameDuration * rangeY) - videoDisplay) * scaleY)
       if (ft.frameStart !== undefined) {
-        const nextTimestamp = (i === frameTimes.length - 1) ? null : (frameTimes[i+1].video.timestamp - videoSubmit)
-        const busyEnd = (ft.busyEnd - videoSubmit)
-        const displayEnd = (ft.displayEnd - videoSubmit)
-        const displayEnd2x = videoDisplay + displayFrameDuration
-        const drawEnd = (ft.drawEnd - videoSubmit)
-        const drawStart = (ft.drawStart - videoSubmit)
-        const received = (ft.video.received - videoSubmit)
-        const presented = (ft.video.presentationTime - videoSubmit)
-        const timestamp = ft.video.processingDuration
-        const previousBusyEnd = (i === 0) ? null : (frameTimes[i-1].busyEnd - videoSubmit)
-        const previousExpectedDisplayTime = (i === 0) ? null : (frameTimes[i-1].video.expectedDisplayTime - videoSubmit)
+        // const nextVideoDisplay = (i === frameTimes.length - 1) ? null : (frameTimes[i+1].video.display - ft.video.display)
+        // const display2x = (ft.display - ft.video.display) + displayFrameDuration
+        const videoDisplay2x = ft.video.display + displayFrameDuration
+        // const display = (ft.display - ft.video.display)
+        // const complete = (ft.complete - ft.video.display)
+        // const drawEnd = (ft.drawEnd - ft.video.display)
+        // const drawStart = (ft.drawStart - ft.video.display)
+        // const receive = (ft.video.receive - ft.video.display)
+        // const present = (ft.video.present - ft.video.display)
+        // const decode = ft.video.decode
+        // const previousVideoDisplay = (i === 0) ? null : (frameTimes[i-1].video.display - ft.video.display)
+        // const previousComplete = (i === 0) ? null : (frameTimes[i-1].complete - ft.video.display)
         
-        if (previousBusyEnd) {
-          rects.push(['#999', x, 0, scaleX, y + Math.ceil(previousBusyEnd * scaleY)])
-          rects.push(['#555', x, 0, scaleX, y + Math.ceil(previousExpectedDisplayTime * scaleY)])
+        const frameRects = []
+        // if (previousComplete) {
+        //   frameRects.push(['#999', 0, y + previousComplete])
+        // }
+        // if (previousVideoDisplay) {
+        //   frameRects.push(['#555', 0, y + previousVideoDisplay])
+        // }
+        // frameRects.push(['#999', ft.drawEnd, ft.complete])
+
+        // Idle
+        // frameRects.push(['#60b', y, ft.video.present])
+        
+        // Video decoding
+        // frameRects.push(['#06d', y + ft..video.present, -decode])
+        // frameRects.push(['#00f', y, receive])
+
+        // Ambient
+        const colorIndex = ft.display <= ft.video.display ? 0 : (ft.display <= videoDisplay2x ? 1 : 2)
+        // frameRects.push([['#0d0', '#ec0', '#ef5f00'][colorIndex], drawStart, drawEnd])
+        frameRects.push([['#0f0', '#ff0', '#ff7700'][colorIndex], ft.drawEnd, ft.display])
+        
+        // CPU
+        // frameRects.push(['#90d', y, drawStart])
+        
+        // frameRects.push(['#000', y, present])
+        // frameRects.push(['#f0f', y + ft.video.display, 3])
+        // if (nextVideoDisplay) {
+        //   frameRects.push(['#555', y + nextVideoDisplay, height - (y + nextVideoDisplay)])
+        // }
+
+        const displayY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
+        const offset = ft.video.display - displayY // Math.ceil(((videoFrameDuration * rangeY) - ft.video.display) * scaleY)
+        for(const frameRect of frameRects) {
+          const [color, pointA, pointB] = frameRect;
+          rects.push([color, x, Math.ceil(pointA * scaleY) - offset, 1 * scaleX, Math.ceil((pointB - pointA)  * scaleY) - offset])
         }
-        rects.push(['#999', x, y, scaleX, Math.ceil(busyEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#0f0' : (displayEnd <= displayEnd2x ? '#ff0' : '#f80')), x, y, scaleX, Math.ceil(displayEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#3e1' : (displayEnd <= displayEnd2x ? '#cc0' : '#e60')), x, y, scaleX, Math.ceil(drawEnd * scaleY)])
-        rects.push([(displayEnd <= videoDisplay ? '#8f4' : (displayEnd <= displayEnd2x ? '#990' : '#c50')), x, y, scaleX, Math.ceil(drawStart * scaleY)])
-        rects.push(['#06d', x, y + Math.ceil(presented * scaleY), scaleX, -Math.ceil(timestamp * scaleY)])
-        rects.push(['#00f', x, y, scaleX, Math.ceil(received * scaleY)])
-        // rects.push(['#000', x, y, scaleX, Math.ceil(presented * scaleY)])
-        // rects.push(['#f0f', x, y + Math.ceil(videoDisplay * scaleY) - 2, scaleX, 3])
-        if (nextTimestamp) {
-          rects.push(['#555', x, y + Math.ceil(nextTimestamp * scaleY), scaleX, height - (y + Math.ceil(nextTimestamp * scaleY))])
-        }
+        console.log(rects);
       } else if(!this.settings.framerateLimit) {
         rects.push(['#f00', x, 0, scaleX, height])
       }
     }
     
-    const displayEndY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
-    rects.push(['#00ff00aa', 0, displayEndY, width, 1])
-    const displayEndY2x = Math.ceil(displayEndY + (displayFrameDuration * scaleY))
-    rects.push(['#ffff0099', 0, displayEndY2x, width, 1])
+    const displayY = Math.ceil((videoFrameDuration * rangeY) * scaleY)
+    rects.push(['#00ff00aa', 0, displayY, width, 1])
+    const displayY2x = Math.ceil(displayY + (displayFrameDuration * scaleY))
+    rects.push(['#ffff0099', 0, displayY2x, width, 1])
     for(let i = 0; i < 50; i++) {
-      const displayEndYnx = Math.ceil(displayEndY + ((displayFrameDuration * (2 + i)) * scaleY))
-      if(displayEndYnx > height) break;
-      rects.push(['#ff880066', 0, displayEndYnx, width, 1])
+      const displayYnx = Math.ceil(displayY + ((displayFrameDuration * (2 + i)) * scaleY))
+      if(displayYnx > height) break;
+      rects.push(['#ff880066', 0, displayYnx, width, 1])
     }
     for(let i = 0; i < 50; i++) {
-      const displayEndYxn = Math.ceil(displayEndY - (displayFrameDuration * (1 + i) * scaleY))
-      if(displayEndYxn < 0) break;
-      rects.push(['#ffffff66', 0, displayEndYxn, width, 1])
+      const displayYxn = Math.ceil(displayY - (displayFrameDuration * (1 + i) * scaleY))
+      if(displayYxn < 0) break;
+      rects.push(['#ffffff66', 0, displayYxn, width, 1])
     }
 
     for (const rect of rects) {
