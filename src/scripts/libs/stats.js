@@ -285,29 +285,21 @@ export default class Stats {
     // console.log(`[${Math.min(...displayIntervals)} | ${average} | ${Math.max(...displayIntervals)}] Dropped: ${dropped}\n`, 
     //   displayIntervals.join('\n'));
 
-    const displayFrameDuration = (1000 / (Math.max(24, this.ambientlight.displayFrameRate) || 1000))
-    const videoFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.videoFrameRate, 60)) || 1000))
-    const ambientlightFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.ambientlightFrameRate, 500)) || 1000))
-    let lastVideoFrameTime = {}
+    // const displayFrameDuration = (1000 / (Math.max(24, this.ambientlight.displayFrameRate) || 1000))
+    // const videoFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.videoFrameRate, 60)) || 1000))
+    // let lastVideoFrameTime = {}
     for (const ft of frameTimes) {
       if (!ft.video) {
-        ft.video = (this.settings.frameSync === FRAMESYNC_VIDEOFRAMES)
-          ? {
-            decode: (lastVideoFrameTime.decode || 0) + videoFrameDuration,
-            present: (lastVideoFrameTime.present || 0) + videoFrameDuration,
-            compose: (lastVideoFrameTime.compose || 0) + videoFrameDuration,
-            receive: (lastVideoFrameTime.receive || 0) + videoFrameDuration,
-            display: (lastVideoFrameTime.display || 0) + videoFrameDuration
-          }
-          : {
-            decode: ft.frameStart,
-            present: ft.frameStart,
-            compose: ft.frameStart,
-            receive: ft.frameStart,
-            display: ft.frameStart + displayFrameDuration
-          }
+        // console.log(JSON.parse(JSON.stringify(ft)))
+        ft.video = {
+          decode: ft.frameStart,
+          present: ft.frameStart,
+          compose: ft.frameStart,
+          receive: ft.frameStart,
+          display: ft.drawEnd
+        }
       }
-      lastVideoFrameTime = ft.video
+      // lastVideoFrameTime = ft.video
       if (!ft.display)
         ft.display = ft.video.receive
       if (!ft.complete)
@@ -317,34 +309,33 @@ export default class Stats {
     const videoProcessingRange = this.getRange(
       frameTimes.map(ft => ft.video.present - ft.video.decode)
     );
-    const ambientlightProcessingRange = this.getRange(
+    const ambientProcessingRange = this.getRange(
       frameTimes.map(ft => ft.display - ft.video.receive).filter(x => x != 0)
+    );
+    const compositorProcessingRange = this.getRange(
+      frameTimes.map(ft => ft.complete - ft.display).filter(x => x != 0)
     );
     const ambientlightBudgetRange = this.getRange(
       frameTimes.map(ft => ft.video.display - ft.video.receive)
     );
-    const otherBusyRange = this.getRange(
-      frameTimes.map(ft => ft.complete - ft.display).filter(x => x != 0)
-    );
     const delayedFrames = frameTimes.filter(ft => ft.display > ft.video.display).length
     const lostFrames = frameTimes.filter(ft => !ft.video.decode === undefined).length
 
-    const legend = `         FRAMETIMES                 MIN        MAX
-BLUE   | video processing:   ${videoProcessingRange[0]       }ms ${videoProcessingRange[1]       }ms
-GREEN  | ambient processing: ${ambientlightProcessingRange[0]}ms ${ambientlightProcessingRange[1]}ms
-GRAY   | ambient budget:     ${ambientlightBudgetRange[0]    }ms ${ambientlightBudgetRange[1]    }ms
-PURPLE | other processing:   ${otherBusyRange[0]             }ms ${otherBusyRange[1]             }ms
+    const legend = `              VERTICAL BARS             MIN        MAX
+BLUE         | Video decoding:    ${videoProcessingRange[0]     }ms ${videoProcessingRange[1]     }ms
+GREEN/YELLOW | Ambient rendering: ${ambientProcessingRange[0]   }ms ${ambientProcessingRange[1]   }ms
+GRAY         | Compositing:       ${compositorProcessingRange[0]}ms ${compositorProcessingRange[1]}ms
 
-                 FRAMECOUNTERS
-GREEN          | on time:  ${frameTimes.length - delayedFrames - lostFrames}
-YELLOW/ORANGE  | delayed:  ${delayedFrames}
-RED            | dropped:  ${lostFrames}
+               DOTTED LINES
+GREEN        | when the video frame was displayed
+GRAY         | when the next frame started compositing
+RED          | when the next video frame was displayed
 
-         LINES
-GREEN  | when the video frame is rendered
-YELLOW | render delayed by 1 display frame
-ORANGE | delayed by more than 1 display frame
-GREY   | previous display frames`
+STATS
+Frames on time:   ${frameTimes.length - delayedFrames - lostFrames} frames
+Frames delayed:   ${delayedFrames} frames
+Frames dropped:   ${lostFrames} frames
+Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const xSize = 3
@@ -389,13 +380,17 @@ GREY   | previous display frames`
     // Main thread:    ━━► requestVideoFrameCallback ━┻ (can before or after compose)   ┻━► receive ━━► drawStart ━━► drawEnd ━━► display (present rendered canvasses to compositor) ━┻ complete (can be before or after display) 
 
     // console.log(frameTimes)
-    const startOffset = frameTimes.find(ft => ft.video.display !== undefined)?.video?.display
-    // const averageFrameTimesInterval = (frameTimes[frameTimes.length - 1].video.display - frameTimes[0].video.display) / (frameTimes.length - 1)
-    const frameTimeIntervals = frameTimes.map((ft, i) => i === 0 ? undefined : ft.video.display - frameTimes[i - 1].video.display).filter(x => x !== undefined)
-    const averageFrameTimesInterval = 1000 / Math.round(1000 / frameTimeIntervals.sort()[Math.floor(frameTimeIntervals.length / 2)])
-    // console.log(averageFrameTimesInterval, frameTimeIntervals)
+    // let averageFrameTimesInterval = (frameTimes[frameTimes.length - 1].video.display - frameTimes[0].video.display) / (frameTimes.length - 1)
+    const frameTimeIntervals = frameTimes.map((ft, i) => i === 0 ? undefined : ft.video.display - frameTimes[i - 1].video.display).filter(x => x);
+    let averageFrameTimesInterval = (frameTimeIntervals.sort())[Math.floor(frameTimeIntervals.length / 2)];
+    averageFrameTimesInterval = 1000 / parseFloat(Math.round((1000 / averageFrameTimesInterval))).toFixed(0)
+    // console.log(averageFrameTimesInterval, 1000 / averageFrameTimesInterval);
+
+    const middleVideoDisplay = frameTimes[Math.floor(frameTimes.length / 2)].video.display;
+    const startOffset = middleVideoDisplay - (averageFrameTimesInterval * Math.floor(frameTimes.length / 2))
     const offsettedFrameTimes = frameTimes.map((ft, i) => {
-      const offset = startOffset + (i * averageFrameTimesInterval); // ft.video.display;
+      // const offset = startOffset + (i * averageFrameTimesInterval); // To display frame variations
+      const offset = ft.video.display; // To display frame rendering durations
       return {
         video: {
           decode:  ft.video.decode  - offset,
@@ -407,7 +402,9 @@ GREY   | previous display frames`
         drawStart: ft.drawStart - offset,
         drawEnd: ft.drawEnd - offset,
         display: ft.display - offset,
-        complete: ft.complete - offset
+        complete: ft.complete - offset,
+        nextCompose: i < frameTimes.length - 1 ? frameTimes[i+1].video.compose - offset : undefined,
+        nextDisplay: i < frameTimes.length - 1 ? frameTimes[i+1].video.display - offset : undefined
       }
     })
 
@@ -418,36 +415,50 @@ GREY   | previous display frames`
       drawStartTodrawEnd: [ft.drawStart, ft.drawEnd - ft.drawStart],
       drawEndToDisplay: [ft.drawEnd, ft.display - ft.drawEnd], // Current task on the main thread
       displayToComplete: [ft.display, ft.complete - ft.display], // All tasks on main thread
-      videoDisplay: ft.video.display // All tasks on main thread
+      videoDisplay: ft.video.display, // All tasks on main thread
+      isDrawnBeforeVideoDisplay: isNaN(ft.video.display) || ft.drawEnd <= ft.video.display,
+      nextCompose: ft.nextCompose,
+      isDrawnBeforeNextCompose: isNaN(ft.nextCompose) || ft.drawEnd <= ft.nextCompose,
+      nextDisplay: ft.nextDisplay,
+      isDrawnBeforeNextDisplay: isNaN(ft.nextDisplay) || ft.drawEnd <= ft.nextDisplay,
     }))
     // console.log(frameDurations)
     
-    const yScale = 5;
+    let percentile90 = Math.floor(offsettedFrameTimes.length * .9)
+    let averageMinTimes = offsettedFrameTimes.map(ft => Math.min(ft.video.decode, ft.video.compose)).sort()
+    averageMinTimes = averageMinTimes.slice(Math.ceil((offsettedFrameTimes.length - percentile90) / 2), percentile90)
+    const min = Math.min(...averageMinTimes);
+    let averageMaxTimes = offsettedFrameTimes.map(ft => Math.max(ft.complete, ft.video.display, ft.nextCompose, ft.nextDisplay)).sort()
+    averageMaxTimes = averageMaxTimes.slice(Math.ceil((offsettedFrameTimes.length - percentile90) / 2), percentile90)
+    const max = Math.max(...averageMaxTimes);
+    const displayFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.displayFrameRate, 500)) || 1000))
+    const yScale = height / (max - min + displayFrameDuration);
+    // console.log(min, max);
+
     const yLine = 1 / yScale;
     const frameRects = frameDurations.map(fd => ([
       ['#06f', xSize, ...fd.decodeToPresent],
-      ['#a0a', xSize, ...fd.receiveToDrawStart],
-      ['#0f0', xSize, ...fd.drawStartTodrawEnd],
-      ['#444', 1, ...fd.displayToComplete],
-      ['#666', 1, ...fd.drawEndToDisplay],
       ['#666', 1, ...fd.composeToReceive],
-      ['#fff', xSize, fd.videoDisplay, yLine]
+      // [fd.drawnBeforeVideoDisplay ? '#0f0' : '#ff0', 1, ...fd.displayToComplete],
+      // ['#a0a', 1, ...fd.drawEndToDisplay],
+      [fd.isDrawnBeforeVideoDisplay ? '#0b0' : '#db0', xSize, ...fd.receiveToDrawStart],
+      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#ff0', xSize, ...fd.drawStartTodrawEnd],
+
+      [fd.isDrawnBeforeNextCompose  ? '#666' : '#666', 1, fd.nextCompose, yLine],
+      [fd.isDrawnBeforeNextDisplay  ? '#f00' : '#f00', 1, fd.nextDisplay, yLine],
+      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#0f0', 1, fd.videoDisplay, yLine],
     ]));
     // console.log(frameRects)
 
+    const offset = min - displayFrameDuration / 2
     let rects = [];
-
-    // const min = Math.min(...offsettedFrameTimes.map(ft => ([ft.video.decode, ft.video.compose])).flat());
-    // const max = Math.max(...offsettedFrameTimes.map(ft => ([ft.complete, ft.video.display])).flat());
-    // console.log(min, max);
-
-    const offset = 20;
     for (let i = 0; i < frameRects.length; i++) {
       const frameRectLines = frameRects[i];
       const x = i * xSize
       if (frameRectLines !== undefined) {
         for (const [color, xFrameSize, y, ySize] of frameRectLines) {
-          rects.push([color, x + Math.round(xSize / 2 - xFrameSize / 2), Math.round((y + offset) * yScale), xFrameSize, Math.round(ySize * yScale)])
+          if(isNaN(y) || isNaN(ySize)) continue;
+          rects.push([color, x + Math.round(xSize / 2 - xFrameSize / 2), Math.round((y - offset) * yScale), xFrameSize, Math.ceil(ySize * yScale)])
         }
         
         // // const nextVideoDisplay = (i === frameTimes.length - 1) ? null : (frameTimes[i+1].video.display - ft.video.display)
@@ -506,7 +517,7 @@ GREY   | previous display frames`
         // console.log(newrects)
         // rects = rects.concat(newrects);
       } else if(!this.settings.framerateLimit) {
-        rects.push(['#f00', x, 0, scaleX, height])
+        rects.push(['#f00', x, 0, xSize, height])
       }
     }
     // console.log('rects', rects);
