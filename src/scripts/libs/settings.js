@@ -710,6 +710,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'showResolutions',
+            'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
             'headerTransparentEnabled',
             'horizontalBarsClipPercentageReset',
@@ -730,6 +731,12 @@ export default class Settings {
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
+          }
+
+          if([
+            'chromiumBugVideoJitterWorkaround',
+          ].some(name => name === setting.name)) {
+            this.ambientlight.applyChromiumBugVideoJitterWorkaround()
           }
 
           if([
@@ -1021,6 +1028,10 @@ export default class Settings {
     {
       names: [ 'frameBlendingSmoothness' ],
       visible: () => this.frameBlending
+    },
+    {
+      names: [ 'chromiumBugVideoJitterWorkaround' ],
+      visible: () => this.ambientlight.enableChromiumBugVideoJitterWorkaround
     },
     {
       names: [ 'videoOverlaySyncThreshold' ],

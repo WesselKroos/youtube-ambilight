@@ -152,6 +152,18 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'chromiumBugVideoJitterWorkaround',
+    label: 'Video jitter workaround',
+    questionMark: {
+      title: 'Click for more information about this bug in Chromium browser',
+      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true,
+    experimental: true
+  },
+  {
     type: 'section',
     label: 'Page header',
     name: 'sectionOtherPageHeaderCollapsed',

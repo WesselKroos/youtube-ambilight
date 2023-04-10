@@ -74,6 +74,7 @@ export default class Ambientlight {
       this.detectMozillaBug1606251Workaround()
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
       this.detectChromiumBug1092080Workaround()
+      this.detectChromiumBugVideoJitterWorkaround()
 
       await this.initSettings()
       this.theming = new Theming(this)
@@ -274,6 +275,56 @@ export default class Ambientlight {
     }
   }
 
+  // Fixes video stuttering when display framerate > ambient framerate
+  detectChromiumBugVideoJitterWorkaround() {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version) {
+      this.enableChromiumBugVideoJitterWorkaround = true
+    }
+  }
+
+  async applyChromiumBugVideoJitterWorkaround() {
+    try {
+      if(!this.enableChromiumBugVideoJitterWorkaround) return
+      if(!this.settings.chromiumBugVideoJitterWorkaround) return
+      if(this.chromiumBugVideoJitterWorkaround) return
+
+      const canvas = document.createElement('canvas')
+      canvas.width = 1
+      canvas.height = 1
+      canvas.classList.add('ambientlight__chromium-bug-video-jitter-workaround')
+      this.videoContainerElem.after(canvas)
+
+      const ctx = canvas.getContext('2d')
+
+      const transparentBitmap = await createImageBitmap(new ImageData(new Uint8ClampedArray(1 * 1 * 4).fill(0), 1, 1));
+
+      const draw = () => {
+        if(
+          this.settings.chromiumBugVideoJitterWorkaround &&
+          !this.videoIsHidden &&
+          !this.isAmbientlightHiddenOnWatchPage &&
+          this.settings.frameSync !== FRAMESYNC_DISPLAYFRAMES &&
+          !(this.settings.frameBlending && this.settings.frameBlendingSmoothness === 100)
+        ) {
+          ctx.drawImage(transparentBitmap, 0, 0)
+        }
+      }
+
+      this.chromiumBugVideoJitterWorkaround = {
+        ctx,
+        canvas,
+        transparentBitmap,
+        draw
+      }
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
+      SentryReporter.captureException(ex)
+      this.chromiumBugVideoJitterWorkaround = {} // Prevent retry
+    }
+  }
+
   initStyles () {
     this.styleElem = document.createElement('style')
     this.styleElem.appendChild(document.createTextNode(''))
@@ -436,6 +487,7 @@ export default class Ambientlight {
     this.videoObserver.observe(this.videoElem)
 
     this.applyChromiumBug1142112Workaround()
+    this.applyChromiumBugVideoJitterWorkaround()
   }
 
   handleVideoError = () => {
@@ -1711,6 +1763,9 @@ export default class Ambientlight {
       await this.nextFrame()
       this.nextFrameTime = undefined
     }
+
+    if(this.chromiumBugVideoJitterWorkaround?.draw)
+      this.chromiumBugVideoJitterWorkaround.draw()
     
     this.displayFrameCount++
   }.bind(this)
@@ -2577,85 +2632,3 @@ export default class Ambientlight {
     return true
   }
 }
-
-
-// Fixes video stuttering when display framerate > ambient framerate
-// Todo:
-// - Reproduce on PC
-// - Make isolated codepen examples
-//   1. Just the video (should stutter)
-//   2. Video with drawimage on requestvideoframecallback (should stutter the most)
-//   2.1 if it doesnt, it might have been caused by the blurred canvas or indirect drawimages
-//   3. Video with drawimage on requestanimationframe (should stutter)
-//   4. Video with drawimage on requestvideoframecallback & empty drawimage on requestanimationframe (should be smooth)
-//   5. Video with repeating css animation on top (might be smooth)
-//   6. Video with changing transform (or width or left property) on requestanimationframe (should be smooth)
-// - Report to chromium
-// - Code the workaround
-
-(async function() {
-  const createCanvasGetContext = (width, height) => {
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    canvas.style.position = 'absolute'
-    canvas.style.zIndex = 2
-    canvas.style.width = '1px'
-    canvas.style.height = '1px'
-    canvas.style.left = '50%'
-    canvas.style.top = '50%'
-    canvas.style.background = 'transparent'
-    canvas.style.pointerEvents = 'none'
-    ambientlight.videoContainerElem.after(canvas)
-
-    const ctx = canvas.getContext('2d', {
-      // desynchronized: true
-    })
-    return ctx;
-  };
-  const createEmptyBitmap = async (width, height) => {
-    const data = new Uint8ClampedArray(width * height * 4).fill(0);
-    const imageData = new ImageData(data, width, height);
-    const bitmap = await createImageBitmap(imageData);
-    return bitmap;
-  }
-  const transparentBitmap = await createEmptyBitmap(1, 1);
-
-  // let previousAmbientlightFrameCount = 0
-  let ctx;
-
-  const detectChromiumBugWorkaround = () => {
-    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version) {
-      return true
-    }
-  }
-  if(!detectChromiumBugWorkaround()) return
-
-  const onAnimationFrame = () => {
-    if(
-      window.ambientlight &&
-      !ambientlight.videoElem.paused &&
-      !ambientlight.videoIsHidden &&
-      !ambientlight.isAmbientlightHiddenOnWatchPage // &&
-      // !ambientlight.isFillingFullscreen
-    ) {
-
-      if(!ctx) {
-        ctx = createCanvasGetContext(1, 1)
-      }
-      ctx.drawImage(transparentBitmap, 0, 0)
-
-      // if(ambientlight.ambientlightFrameCount === previousAmbientlightFrameCount) {
-        // No drawImage called while the video is playing
-        // ambientlight.projector.blurCtx.drawImage(transparentBitmap, 0, 0)
-      // }
-
-      // previousAmbientlightFrameCount = ambientlight.ambientlightFrameCount
-    }
-
-    window.requestAnimationFrame(onAnimationFrame);
-  };
-  window.requestAnimationFrame(onAnimationFrame)
-})()

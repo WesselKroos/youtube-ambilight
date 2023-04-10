@@ -2372,3 +2372,14 @@ html[data-ambientlight-enabled="true"] {
 // .ytp-popup.ytp-settings-menu.disable-youtube-ambient-mode-workaround {
 //   visibility: hidden !important;
 // }
+
+.ambientlight__chromium-bug-video-jitter-workaround {
+  position: absolute;
+  z-index: 2;
+  width: 1px;
+  height: 1px;
+  left: 50%;
+  bottom: 1px;
+  background: transparent;
+  pointer-events: none;
+}
