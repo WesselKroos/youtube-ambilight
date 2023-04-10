@@ -2602,9 +2602,11 @@ export default class Ambientlight {
     canvas.style.zIndex = 2
     canvas.style.width = '1px'
     canvas.style.height = '1px'
+    canvas.style.left = '50%'
+    canvas.style.top = '50%'
     canvas.style.background = 'transparent'
     canvas.style.pointerEvents = 'none'
-    ambientlight.videoContainerElem.appendChild(canvas)
+    ambientlight.videoContainerElem.after(canvas)
 
     const ctx = canvas.getContext('2d', {
       // desynchronized: true
