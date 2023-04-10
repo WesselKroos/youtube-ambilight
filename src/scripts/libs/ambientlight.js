@@ -1719,12 +1719,19 @@ export default class Ambientlight {
 
   onNextLimitedFrame = async () => {
     const time = performance.now()
-    if(this.nextFrameTime > time) {
-      if(this.videoFrameCallbackReceived) {
-        this.videoFrameCallbackReceived = false
+    if(this.nextFrameTime) {
+      if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES) {
+        if(this.nextFrameTime > time && this.videoFrameCallbackReceived) {
+          this.videoFrameCallbackReceived = false
+        }
+        if(!this.videoFrameCallbackReceived) {
+          this.scheduleNextFrame()
+          return
+        }
+      } else if(this.nextFrameTime > time) {
+        this.scheduleNextFrame()
+        return
       }
-      this.scheduleNextFrame()
-      return
     }
 
     const ambientlightFrameCount = this.ambientlightFrameCount
