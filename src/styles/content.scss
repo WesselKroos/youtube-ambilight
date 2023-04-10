@@ -2375,7 +2375,7 @@ html[data-ambientlight-enabled="true"] {
 
 .ambientlight__chromium-bug-video-jitter-workaround {
   position: absolute;
-  z-index: 2;
+  z-index: 1000000;
   width: 1px;
   height: 1px;
   left: 50%;

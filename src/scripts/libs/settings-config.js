@@ -155,8 +155,8 @@ const SettingsConfig = [
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
     questionMark: {
-      title: 'Click for more information about this bug in Chromium browser',
-      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+      title: 'Click for more information about this bug in Chromium browsers',
+      href: 'https://bugs.chromium.org/p/chromium/issues/detail?id=1431894'
     },
     type: 'checkbox',
     default: true,
