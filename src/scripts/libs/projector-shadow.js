@@ -1,5 +1,4 @@
 import { Canvas, ctxOptions, SafeOffscreenCanvas } from './generic'
-import SentryReporter from './sentry-reporter'
 
 export default class ProjectorShadow {
   constructor(offscreen = true) {

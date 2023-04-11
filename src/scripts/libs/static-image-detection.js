@@ -1,5 +1,4 @@
 import { appendErrorStack } from "./generic";
-import SentryReporter from "./sentry-reporter";
 import { workerFromCode } from "./worker";
 
 const workerCode = function () {

@@ -987,7 +987,7 @@ export default class Ambientlight {
     this.videoOverlay = {
       elem: videoOverlayElem,
       ctx: videoOverlayElem.getContext('2d', {
-        ctxOptions,
+        ...ctxOptions,
         alpha: true
       }),
       isHiddenChangeTimestamp: 0

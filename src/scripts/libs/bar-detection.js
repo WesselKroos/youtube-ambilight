@@ -202,12 +202,12 @@ const workerCode = function () {
           ctx = canvasInfo.ctx
         }
         
-        const horizontalPercentage = detectHorizontal
+        let horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
               id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
           )
           : undefined
-        const verticalPercentage = detectVertical
+          let verticalPercentage = detectVertical
           ? await workerDetectBarSize(
               id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
           )
