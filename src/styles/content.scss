@@ -2378,7 +2378,7 @@ html[data-ambientlight-enabled="true"] {
   width: 1px;
   height: 1px;
   left: calc(50vw - 1px);
-  top: calc(50vh - 1px);
+  top: calc(100vh - 10px);
   background: #00000001;
   display: none;
   contain: strict;
