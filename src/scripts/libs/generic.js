@@ -127,7 +127,7 @@ export function off(elem, eventNames, callback) {
 export const html = document.documentElement
 export const body = document.body
 
-export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
+export const raf = (callback) => (window.webkitRequestAnimationFrame || requestAnimationFrame)(wrapErrorHandler(callback))
 
 export const ctxOptions = {
   alpha: false,

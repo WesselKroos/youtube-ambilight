@@ -2375,11 +2375,25 @@ html[data-ambientlight-enabled="true"] {
 
 .ambientlight__chromium-bug-video-jitter-workaround {
   position: absolute;
-  z-index: 1000000;
   width: 1px;
   height: 1px;
-  left: 50%;
-  top: 200px;
-  background: transparent;
-  pointer-events: none;
+  left: calc(50vw - 1px);
+  top: calc(50vh - 1px);
+  background: #00000001;
+  display: none;
+  contain: strict;
+
+  html[data-ambientlight-enabled="true"] & {
+    display: block;
+    animation: ambientlight-chromium-bug-video-jitter-workaround linear 1s infinite;
+  }
+
+  @keyframes ambientlight-chromium-bug-video-jitter-workaround {
+    0% {
+      transform: rotate(0deg);
+    }
+    1% {
+      transform: rotate(360deg);
+    }
+  }
 }

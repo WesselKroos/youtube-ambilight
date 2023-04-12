@@ -284,44 +284,65 @@ export default class Ambientlight {
     }
   }
 
-  async applyChromiumBugVideoJitterWorkaround() {
+  applyChromiumBugVideoJitterWorkaround() {
     try {
       if(!this.enableChromiumBugVideoJitterWorkaround) return
-      if(!this.settings.chromiumBugVideoJitterWorkaround) return
+      if(!this.settings.chromiumBugVideoJitterWorkaround) {
+        if(this.chromiumBugVideoJitterWorkaround) {
+          const { elem, observer } = this.chromiumBugVideoJitterWorkaround
+          observer.disconnect()
+          if(elem.parentElement)
+            elem.parentElement.removeChild(elem)
+          this.chromiumBugVideoJitterWorkaround = undefined
+        }
+        return
+      }
       if(this.chromiumBugVideoJitterWorkaround) return
 
-      const canvas = document.createElement('canvas')
-      canvas.width = 1
-      canvas.height = 1
-      canvas.classList.add('ambientlight__chromium-bug-video-jitter-workaround')
-      this.videoContainerElem.after(canvas)
-
-      const ctx = canvas.getContext('2d')
-
-      const transparentBitmap = await createImageBitmap(new ImageData(new Uint8ClampedArray(1 * 1 * 4).fill(0), 1, 1));
-
-      const draw = () => {
-        if(
-          this.settings.chromiumBugVideoJitterWorkaround &&
-          !this.videoIsHidden &&
-          !this.isAmbientlightHiddenOnWatchPage &&
-          this.settings.frameSync !== FRAMESYNC_DISPLAYFRAMES &&
-          !(this.settings.frameBlending && this.settings.frameBlendingSmoothness === 100)
-        ) {
-          ctx.drawImage(transparentBitmap, 0, 0)
-        }
+      const elem = document.createElement('div')
+      elem.classList.add('ambientlight__chromium-bug-video-jitter-workaround')
+      if(this.videoPlayerElem.classList.contains('playing-mode')) {
+        this.elem.appendChild(elem)
       }
 
+      const update = wrapErrorHandler(function chromiumBugVideoJitterWorkaroundUpdate(isPlaying) {
+        if(!this.videoIsHidden && isPlaying === undefined) {
+          isPlaying = this.videoPlayerElem.classList.contains('playing-mode')
+        }
+
+        if(!this.videoIsHidden && isPlaying) {
+          this.elem.appendChild(elem)
+        } else if(elem.parentElement) {
+          elem.parentElement.removeChild(elem)
+        }
+      }.bind(this), true)
+
+      const observer = new MutationObserver(wrapErrorHandler(function chromiumBugVideoJitterWorkaroundMutation(mutations) {
+        if(!this.chromiumBugVideoJitterWorkaround) return;
+
+        for(const mutation of mutations) {
+          const wasPlaying = mutation.oldValue.split(' ').includes('playing-mode')
+          const isPlaying = mutation.target.classList.contains('playing-mode')
+          if(wasPlaying === isPlaying) continue
+
+          update(isPlaying)
+        }
+      }.bind(this), true))
+      observer.observe(this.videoPlayerElem, {
+        attributes: true,
+        attributeFilter: ['class'],
+        attributeOldValue: true
+      })
+
       this.chromiumBugVideoJitterWorkaround = {
-        ctx,
-        canvas,
-        transparentBitmap,
-        draw
+        elem,
+        observer,
+        update
       }
     } catch(ex) {
       console.warn('Ambient light for YouTube™ | applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
       SentryReporter.captureException(ex)
-      this.chromiumBugVideoJitterWorkaround = {} // Prevent retry
+      this.enableChromiumBugVideoJitterWorkaround = false // Prevent retries
     }
   }
 
@@ -476,6 +497,10 @@ export default class Ambientlight {
             this.videoIsHidden = (entry.intersectionRatio === 0)
             this.videoVisibilityChangeTime = performance.now()
             this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
+          }
+
+          if(this.chromiumBugVideoJitterWorkaround) {
+            this.chromiumBugVideoJitterWorkaround.update()
           }
         }, true),
         {
@@ -1745,7 +1770,7 @@ export default class Ambientlight {
 
     this.scheduledNextFrame = true
     if(!this.videoIsHidden)
-      requestAnimationFrame(this.onNextFrameWrapped)
+      (window.webkitRequestAnimationFrame || requestAnimationFrame)(this.onNextFrameWrapped)
     else
       setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
@@ -1763,14 +1788,11 @@ export default class Ambientlight {
       await this.nextFrame()
       this.nextFrameTime = undefined
     }
-
-    if(this.chromiumBugVideoJitterWorkaround?.draw)
-      this.chromiumBugVideoJitterWorkaround.draw()
     
     this.displayFrameCount++
   }.bind(this)
   onNextFrameWrapped = wrapErrorHandler(this.onNextFrame)
-  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrameWrapped)
+  scheduleNextFrameDelayed = () => (window.webkitRequestAnimationFrame || requestAnimationFrame)(this.onNextFrameWrapped)
 
   onNextLimitedFrame = async () => {
     const time = performance.now()
