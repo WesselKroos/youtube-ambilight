@@ -1031,7 +1031,7 @@ export default class Settings {
     },
     {
       names: [ 'chromiumBugVideoJitterWorkaround' ],
-      visible: () => this.ambientlight.enableChromiumBugVideoJitterWorkaround
+      visible: () => this.webGL && this.ambientlight.enableChromiumBugVideoJitterWorkaround
     },
     {
       names: [ 'videoOverlaySyncThreshold' ],

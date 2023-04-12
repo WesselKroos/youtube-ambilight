@@ -74,13 +74,13 @@ export default class Ambientlight {
       this.detectMozillaBug1606251Workaround()
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
       this.detectChromiumBug1092080Workaround()
-      this.detectChromiumBugVideoJitterWorkaround()
 
       await this.initSettings()
       this.theming = new Theming(this)
       this.stats = new Stats(this)
       this.barDetection = new BarDetection()
       this.detectChromiumBug1123708Workaround()
+      this.detectChromiumBugVideoJitterWorkaround()
 
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve)) // Prevents lost WebGLContext on pageload in a background tab
@@ -277,6 +277,8 @@ export default class Ambientlight {
 
   // Fixes video stuttering when display framerate > ambient framerate
   detectChromiumBugVideoJitterWorkaround() {
+    if(!this.settings.webGL) return // This has to much impact on the performance of the Canvas2D renderer
+
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version) {
