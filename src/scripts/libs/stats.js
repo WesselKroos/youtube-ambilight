@@ -397,17 +397,19 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
     }))
     // console.log(frameDurations)
     
-    let percentile90 = Math.floor(offsettedFrameTimes.length * .9)
-    let averageMinTimes = offsettedFrameTimes.map(ft => Math.min(ft.video.decode, ft.video.compose)).sort()
-    averageMinTimes = averageMinTimes.slice(Math.ceil((offsettedFrameTimes.length - percentile90) / 2), percentile90)
-    const min = Math.min(...averageMinTimes);
-    let averageMaxTimes = offsettedFrameTimes.map(ft => Math.max(ft.complete, ft.video.display, ft.nextCompose, ft.nextDisplay)).sort()
-    averageMaxTimes = averageMaxTimes.slice(Math.ceil((offsettedFrameTimes.length - percentile90) / 2), percentile90)
-    const max = Math.max(...averageMaxTimes);
     const displayFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.displayFrameRate, 500)) || 1000))
-    const yScale = height / (max - min + displayFrameDuration);
+    let percentile90 = Math.floor(offsettedFrameTimes.length * .9)
+
+    let averageMinTimes = offsettedFrameTimes.map(ft => Math.min(ft.video.decode, ft.video.compose)).sort((a, b) => a - b)
+    averageMinTimes = averageMinTimes.slice(offsettedFrameTimes.length - percentile90, percentile90)
+    const min = Math.round(Math.min(...averageMinTimes) / displayFrameDuration) * displayFrameDuration;
+
+    let averageMaxTimes = offsettedFrameTimes.map(ft => Math.max(ft.video.display, ft.nextCompose, ft.nextDisplay)).sort((a, b) => a - b)
+    averageMaxTimes = averageMaxTimes.slice(0, percentile90)
+    const max = Math.round(Math.max(...averageMaxTimes) / displayFrameDuration) * displayFrameDuration;
     // console.log(min, max);
 
+    const yScale = height / (max - min + displayFrameDuration);
     const yLine = 1 / yScale;
     const frameRects = frameDurations.map(fd => ([
       ['#06f', xSize, ...fd.decodeToPresent],
