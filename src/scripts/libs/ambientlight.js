@@ -283,6 +283,7 @@ export default class Ambientlight {
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
     if(version) {
       this.enableChromiumBugVideoJitterWorkaround = true
+      this.settings.updateVisibility()
     }
   }
 
