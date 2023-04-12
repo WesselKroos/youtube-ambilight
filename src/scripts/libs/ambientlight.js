@@ -312,8 +312,13 @@ export default class Ambientlight {
         if(!this.videoIsHidden && isPlaying === undefined) {
           isPlaying = this.videoPlayerElem.classList.contains('playing-mode')
         }
+        const enable = (
+          !this.videoIsHidden &&
+          isPlaying &&
+          !(this.averageVideoFramesDifference < .0175)
+        )
 
-        if(!this.videoIsHidden && isPlaying) {
+        if(enable) {
           this.elem.appendChild(elem)
         } else if(elem.parentElement) {
           elem.parentElement.removeChild(elem)
@@ -370,6 +375,9 @@ export default class Ambientlight {
   resetAverageVideoFramesDifference = () => {
     this.averageVideoFramesDifference = 1
     this.settings.updateAverageVideoFramesDifferenceInfo()
+
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
   }
 
   calculateAverageVideoFramesDifference = async () => {
@@ -382,6 +390,9 @@ export default class Ambientlight {
 
       this.averageVideoFramesDifference = difference
       this.settings.updateAverageVideoFramesDifferenceInfo()
+      
+      if(this.chromiumBugVideoJitterWorkaround?.update)
+        this.chromiumBugVideoJitterWorkaround.update()
     } catch(ex) {
       SentryReporter.captureException(ex)
     }
