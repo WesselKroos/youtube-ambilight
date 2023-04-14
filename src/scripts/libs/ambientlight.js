@@ -312,7 +312,7 @@ export default class Ambientlight {
       let previousDisplayFrameRate = -1
       let displayFrameRateHasBeenAbove60 = false
       const update = wrapErrorHandler(function chromiumBugVideoJitterWorkaroundUpdate(isPlaying) {
-        if(!this.videoIsHidden && isPlaying === undefined) {
+        if(isPlaying === undefined) {
           isPlaying = this.videoPlayerElem.classList.contains('playing-mode')
         }
 
