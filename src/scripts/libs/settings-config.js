@@ -154,6 +154,7 @@ const SettingsConfig = [
   {
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
+    description: 'Is only applied when the monitor is above 60Hz',
     questionMark: {
       title: 'Click for more information about this bug in Chromium browsers',
       href: 'https://bugs.chromium.org/p/chromium/issues/detail?id=1431894'

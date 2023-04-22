@@ -2382,18 +2382,19 @@ html[data-ambientlight-enabled="true"] {
   background: #00000001;
   display: none;
   contain: strict;
+  backface-visibility: hidden;
 
   html[data-ambientlight-enabled="true"] & {
     display: block;
-    animation: ambientlight-chromium-bug-video-jitter-workaround linear 1s infinite;
+    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
   }
 
   @keyframes ambientlight-chromium-bug-video-jitter-workaround {
-    0% {
-      transform: rotate(0deg);
+    0.001% {
+      opacity: 0.0000000001;
     }
-    1% {
-      transform: rotate(360deg);
+    100% {
+      opacity: 0.0000000002;
     }
   }
 }

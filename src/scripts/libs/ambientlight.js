@@ -308,17 +308,34 @@ export default class Ambientlight {
         this.elem.appendChild(elem)
       }
 
+      let previousDisplayFrameRateIsStableCount = 0
+      let previousDisplayFrameRate = -1
+      let displayFrameRateHasBeenAbove60 = false
       const update = wrapErrorHandler(function chromiumBugVideoJitterWorkaroundUpdate(isPlaying) {
         if(!this.videoIsHidden && isPlaying === undefined) {
           isPlaying = this.videoPlayerElem.classList.contains('playing-mode')
         }
+
+        if(this.chromiumBugVideoJitterWorkaround?.detectingDisplayFrameRate && previousDisplayFrameRate !== this.displayFrameRate) {
+          if(previousDisplayFrameRate > this.displayFrameRate - .5) {
+            previousDisplayFrameRateIsStableCount++;
+          }
+          if(this.displayFrameRate > 60 || previousDisplayFrameRateIsStableCount > 3) {
+            this.chromiumBugVideoJitterWorkaround.detectingDisplayFrameRate = false
+            displayFrameRateHasBeenAbove60 = this.displayFrameRate > 60
+          } else {
+            previousDisplayFrameRate = this.displayFrameRate
+          }
+        }
+
         const enable = (
           !this.videoIsHidden &&
           isPlaying &&
-          !(this.averageVideoFramesDifference < .0175)
+          displayFrameRateHasBeenAbove60 &&
+          this.averageVideoFramesDifference >= .0175
         )
 
-        if(enable) {
+        if(enable && !elem.parentElement) {
           this.elem.appendChild(elem)
         } else if(elem.parentElement) {
           elem.parentElement.removeChild(elem)
@@ -343,6 +360,7 @@ export default class Ambientlight {
       })
 
       this.chromiumBugVideoJitterWorkaround = {
+        detectingDisplayFrameRate: true,
         elem,
         observer,
         update
@@ -513,9 +531,8 @@ export default class Ambientlight {
             this.videoElem.getVideoPlaybackQuality() // Correct dropped frames
           }
 
-          if(this.chromiumBugVideoJitterWorkaround) {
+          if(this.chromiumBugVideoJitterWorkaround?.update)
             this.chromiumBugVideoJitterWorkaround.update()
-          }
         }, true),
         {
           rootMargin: '-70px 0px 0px 0px', // masthead height (56px) + additional pixel to be safe
@@ -1779,7 +1796,8 @@ export default class Ambientlight {
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
       !this.settings.frameFading &&
-      !this.settings.showFrametimes
+      !this.settings.showFrametimes &&
+      !this.chromiumBugVideoJitterWorkaround?.detectingDisplayFrameRate
     ) return
 
     this.scheduledNextFrame = true
@@ -2046,6 +2064,9 @@ export default class Ambientlight {
     this.detectDisplayFrameRate(update)
     this.detectAmbientlightFrameRate(update)
     this.detectVideoFrameRate(update)
+
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
   }
 
   videoFrameCounts = []

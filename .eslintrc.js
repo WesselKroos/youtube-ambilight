@@ -6,7 +6,8 @@ module.exports = {
     },
     "extends": "eslint:recommended",
     "globals": {
-        "ambientlight": true
+        "ambientlight": true,
+        "cookieStore": true
     },
     "overrides": [
     ],
