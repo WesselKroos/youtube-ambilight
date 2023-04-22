@@ -1486,15 +1486,25 @@ export default class Ambientlight {
 
     if (videoOverlayEnabled && videoOverlay) {
       videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
-      videoOverlay.elem.width = this.srcVideoOffset.width
-      videoOverlay.elem.height = this.srcVideoOffset.height
+      let videoOverlayWidth = this.srcVideoOffset.width
+      let videoOverlayHeight = this.srcVideoOffset.height
+      if(this.videoElem.style.width && this.videoElem.style.height) {
+        try {
+          videoOverlayWidth = Math.min(this.srcVideoOffset.width, Math.round(parseInt(this.videoElem.style.width) * window.devicePixelRatio) || this.videoElem.clientWidth)
+          videoOverlayHeight = Math.min(this.srcVideoOffset.height, Math.round(parseInt(this.videoElem.style.height) * window.devicePixelRatio) || this.videoElem.clientHeight)
+        // eslint-disable-next-line no-empty
+        } catch {}
+
+        this.videoOverlay.elem.width = videoOverlayWidth
+        this.videoOverlay.elem.height = videoOverlayHeight
+      }
 
       if (frameBlending) {
-        this.videoOverlayBuffer.elem.width = this.srcVideoOffset.width
-        this.videoOverlayBuffer.elem.height = this.srcVideoOffset.height
+        this.videoOverlayBuffer.elem.width = videoOverlayWidth
+        this.videoOverlayBuffer.elem.height = videoOverlayHeight
 
-        this.previousVideoOverlayBuffer.elem.width = this.srcVideoOffset.width
-        this.previousVideoOverlayBuffer.elem.height = this.srcVideoOffset.height
+        this.previousVideoOverlayBuffer.elem.width = videoOverlayWidth
+        this.previousVideoOverlayBuffer.elem.height = videoOverlayHeight
       }
     }
 
