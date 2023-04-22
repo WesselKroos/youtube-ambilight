@@ -390,6 +390,25 @@ export default class Ambientlight {
     return true
   }
 
+  initAverageVideoFramesDifferenceListeners() {
+    try {
+      if(this.ytdWatchFlexyElem) {
+        on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
+          if(this.averageVideoFramesDifference === 1) return
+
+          this.resetAverageVideoFramesDifference()
+        }, undefined, undefined, true)
+      }
+      on(document, 'yt-page-data-updated', () => {
+        if (!this.settings.enabled || !this.isOnVideoPage) return
+
+        this.calculateAverageVideoFramesDifference()
+      }, undefined, undefined, true)
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
+  }
+
   resetAverageVideoFramesDifference = () => {
     this.averageVideoFramesDifference = 1
     this.settings.updateAverageVideoFramesDifferenceInfo()
@@ -399,7 +418,7 @@ export default class Ambientlight {
   }
 
   calculateAverageVideoFramesDifference = async () => {
-    if(!this.settings.energySaver) return
+    if(!this.settings.energySaver || !this.ytdWatchFlexyElem) return
 
     try {
       // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
@@ -412,7 +431,8 @@ export default class Ambientlight {
       if(this.chromiumBugVideoJitterWorkaround?.update)
         this.chromiumBugVideoJitterWorkaround.update()
     } catch(ex) {
-      SentryReporter.captureException(ex)
+      if(ex?.message !== 'Failed to fetch')
+        SentryReporter.captureException(ex)
     }
   }
 
@@ -500,12 +520,14 @@ export default class Ambientlight {
       on(this.videoElem, name, this.videoListeners[name])
     }
     
-    this.playerListeners = this.playerListeners || {
-      'yt-autonav-pause-player-ended': this.videoListeners.ended
-    }
-    for (const name in this.playerListeners) {
-      off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
-      on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+    if(this.ytdWatchFlexyElem) {
+      this.playerListeners = this.playerListeners || {
+        'yt-autonav-pause-player-ended': this.videoListeners.ended
+      }
+      for (const name in this.playerListeners) {
+        off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+        on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+      }
     }
 
     if(this.videoObserver) {
@@ -701,20 +723,7 @@ export default class Ambientlight {
 
     this.theming.initListeners()
 
-    try {
-      on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
-        if(this.averageVideoFramesDifference === 1) return
-
-        this.resetAverageVideoFramesDifference()
-      }, undefined, undefined, true)
-      on(document, 'yt-page-data-updated', () => {
-        if (!this.settings.enabled || !this.isOnVideoPage) return
-
-        this.calculateAverageVideoFramesDifference()
-      }, undefined, undefined, true)
-    } catch(ex) {
-      SentryReporter.captureException(ex)
-    }
+    this.initAverageVideoFramesDifferenceListeners()
 
     const videoPlayerObserver = new MutationObserver(wrapErrorHandler(() => {
       const viewChanged = this.updateView()
