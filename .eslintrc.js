@@ -18,7 +18,8 @@ module.exports = {
     "rules": {
         "no-unused-vars": "warn",
         "no-irregular-whitespace": ["error", { skipTemplates: true } ],
-        "require-await": "error"
+        "require-await": "error",
+        "no-empty": "off"
     },
     "reportUnusedDisableDirectives": true
 }

@@ -475,14 +475,14 @@ export default class ProjectorWebGL {
                   this.webGLVersion = undefined
 
                   const errors = this.webglcontextcreationerrors
-                  let lastErrorMessage;
+                  let lastErrorMessage = ''
                   for(const error of errors) {
                     const duplicate = error.message === lastErrorMessage
                     lastErrorMessage = error.message
                     if(duplicate) error.message = '"'
                   }
 
-                  throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
+                  throw new AmbientlightError(`ProjectorWebGL context creation failed: ${lastErrorMessage}`, errors)
                 }
               }
             }
@@ -786,6 +786,7 @@ export default class ProjectorWebGL {
     const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
+      programCompilationError.name = 'WebGLError'
       programCompilationError.details = {
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions
@@ -836,6 +837,19 @@ export default class ProjectorWebGL {
       // } catch(ex) {
       //   programCompilationError.details.gpuError = ex
       // }
+
+      if(
+        programCompilationError.details.vertexShaderInfoLog ||
+        programCompilationError.details.fragmentShaderInfoLog ||
+        programCompilationError.details.getCompiledAndLinkedInfoLogsError ||
+        programCompilationError.details.programValidationInfoLog ||
+        programCompilationError.details.validateProgramError ||
+        programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.debugShadersError
+      ) {
+        programCompilationError.name = 'WebGLErrorWithInfoLog'
+      }
 
       throw programCompilationError
     }

@@ -124,14 +124,14 @@ export class WebGLContext {
           this.webGLVersion = undefined
 
           const errors = this.webglcontextcreationerrors
-          let lastErrorMessage;
+          let lastErrorMessage = ''
           for(const error of errors) {
             const duplicate = error.message === lastErrorMessage
             lastErrorMessage = error.message
             if(duplicate) error.message = '"'
           }
 
-          throw new AmbientlightError('WebGLContext creation failed', errors)
+          throw new AmbientlightError(`WebGLContext creation failed: ${lastErrorMessage}`, errors)
         }
       }
     }
@@ -228,6 +228,7 @@ export class WebGLContext {
     const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
+      programCompilationError.name = 'WebGLError'
       programCompilationError.details = {
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions
@@ -278,6 +279,19 @@ export class WebGLContext {
       // } catch(ex) {
       //   programCompilationError.details.gpuError = ex
       // }
+
+      if(
+        programCompilationError.details.vertexShaderInfoLog ||
+        programCompilationError.details.fragmentShaderInfoLog ||
+        programCompilationError.details.getCompiledAndLinkedInfoLogsError ||
+        programCompilationError.details.programValidationInfoLog ||
+        programCompilationError.details.validateProgramError ||
+        programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.debugShadersError
+      ) {
+        programCompilationError.name = 'WebGLErrorWithInfoLog'
+      }
 
       throw programCompilationError
     }

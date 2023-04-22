@@ -95,7 +95,6 @@ export const parseSettingsToSentry = (newSettings) => {
 export class AmbientlightError extends Error {
   constructor(message, details) {
     super(message)
-    this.name = 'AmbientlightError'
     this.details = details
   }
 }
