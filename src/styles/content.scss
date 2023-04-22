@@ -97,10 +97,12 @@
   margin-top: 10px;
 }
 .ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
-.ambientlight__ambientlight-ft-legend {
+.ambientlight__ambientlight-ft-legend,
+.ambientlight__ambientlight-ft-axis-legend {
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
 }
 .ambientlight__ambientlight-ft {
+  position: relative;
   pointer-events: auto;
   display: flex;
   width: fit-content;
@@ -132,6 +134,25 @@
 }
 .ambientlight__ambientlight-ft:not([legend]) .ambientlight__ambientlight-ft-legend {
   display: none;
+}
+.ambientlight__ambientlight-ft-axis-legends {
+  z-index: 2;
+  position: relative;
+  pointer-events: none;
+}
+.ambientlight__ambientlight-ft-axis-legend {
+  position: absolute;
+  left: 5px;
+  font-size: 13.5px;
+  line-height: 13.5px;
+  
+  &--top {
+    top: 4px;
+  }
+
+  &--bottom {
+    bottom: 3px;
+  }
 }
 
 html[data-ambientlight-enabled="true"] {

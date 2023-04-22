@@ -1826,12 +1826,27 @@ export default class Ambientlight {
       setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
-
-  onNextFrame = async function onNextFrame() {
+  onNextFrame = async function onNextFrame(timestamp) {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
+
+    // Convert webkitRequestAnimationFrame timestamp to a requestAnimationFrame timestamp
+    if(window.webkitRequestAnimationFrame) {
+      timestamp = timestamp - performance.timeOrigin
+    }
+
+    if (this.settings.showFrametimes && this.settings.frameSync !== FRAMESYNC_VIDEOFRAMES) {
+      const presentedFrames = this.getVideoFrameCount()
+      if(
+        this.settings.frameSync === FRAMESYNC_DISPLAYFRAMES || 
+        (this.settings.frameBlending || this.previousPresentedFrames !== presentedFrames)
+      ) {
+        this.stats.receiveAnimationFrametimes(timestamp, presentedFrames)
+      }
+      this.previousPresentedFrames = presentedFrames
+    }
 
     if(this.settings.framerateLimit || this.averageVideoFramesDifference < .0175) {
       await this.onNextLimitedFrame()
@@ -1944,8 +1959,10 @@ export default class Ambientlight {
       if (results?.detectBarSize) {
         this.scheduleBarSizeDetection()
       }
-
-      this.stats.addAmbientFrametimes(frameTimes, results)
+      
+      if(this.settings.frameSync === FRAMESYNC_DISPLAYFRAMES || results?.hasNewFrame || this.settings.frameBlending) {
+        this.stats.addAmbientFrametimes(frameTimes)
+      }
 
       if(
         this.afterNextFrameIdleCallback ||

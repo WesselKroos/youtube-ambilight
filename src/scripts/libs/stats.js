@@ -17,11 +17,30 @@ export default class Stats {
     this.ambientlightFTElem = document.createElement('div')
     this.ambientlightFTElem.classList.add('ambientlight__ambientlight-ft')
     this.ambientlightFTElem.style.display = 'none'
+
     this.ambientlightFTLegendElem = document.createElement('div')
     this.ambientlightFTLegendElem.classList.add('ambientlight__ambientlight-ft-legend')
     const ambientlightFTLegendElemNode = document.createTextNode('')
     this.ambientlightFTLegendElem.appendChild(ambientlightFTLegendElemNode)
     this.ambientlightFTElem.append(this.ambientlightFTLegendElem)
+    
+    this.ambientlightFTAxisLegendsElem = document.createElement('div')
+    this.ambientlightFTAxisLegendsElem.classList.add('ambientlight__ambientlight-ft-axis-legends')
+
+    this.ambientlightFTAxisLegendTopElem = document.createElement('div')
+    this.ambientlightFTAxisLegendTopElem.classList.add('ambientlight__ambientlight-ft-axis-legend', 'ambientlight__ambientlight-ft-axis-legend--top')
+    const ambientlightFTAxisLegendTopElemNode = document.createTextNode('')
+    this.ambientlightFTAxisLegendTopElem.appendChild(ambientlightFTAxisLegendTopElemNode)
+    this.ambientlightFTAxisLegendsElem.append(this.ambientlightFTAxisLegendTopElem)
+    
+    this.ambientlightFTAxisLegendBottomElem = document.createElement('div')
+    this.ambientlightFTAxisLegendBottomElem.classList.add('ambientlight__ambientlight-ft-axis-legend', 'ambientlight__ambientlight-ft-axis-legend--bottom')
+    const ambientlightFTAxisLegendBottomElemNode = document.createTextNode('')
+    this.ambientlightFTAxisLegendBottomElem.appendChild(ambientlightFTAxisLegendBottomElemNode)
+    this.ambientlightFTAxisLegendsElem.append(this.ambientlightFTAxisLegendBottomElem)
+
+    this.ambientlightFTElem.append(this.ambientlightFTAxisLegendsElem)
+
     this.FPSListElem.append(this.ambientlightFTElem)
 
     const appendFPSItem = (className) => {
@@ -128,7 +147,7 @@ export default class Stats {
     if(this.settings.showFPS) {
       // Video FPS
       const videoFrameRate = this.ambientlight.videoFrameRate
-      const videoFPSText = `VIDEO: ${videoFrameRate.toFixed(2)} ${videoFrameRate ? `(${(1000/videoFrameRate).toFixed(2)}ms)` : ''}`
+      const videoFPSText = `VIDEO: ${videoFrameRate.toFixed(2)} ${videoFrameRate ? `(${(1000/videoFrameRate).toFixed(1)}ms)` : ''}`
 
       // Video dropped frames
       const videoDroppedFrameCount = this.ambientlight.getVideoDroppedFrameCount()
@@ -147,7 +166,7 @@ export default class Stats {
       // Ambientlight FPS
       const ambientlightFrameRate = this.ambientlight.ambientlightFrameRate
       const ambientlightFPSText = `AMBIENT: ${ambientlightFrameRate.toFixed(2)} ${ambientlightFrameRate
-        ? `(${(1000/ambientlightFrameRate).toFixed(2)}ms)${this.settings.framerateLimit 
+        ? `(${(1000/ambientlightFrameRate).toFixed(1)}ms)${this.settings.framerateLimit 
           ? ` LIMITED: ${this.ambientlight.getRealFramerateLimit().toFixed(2)}` : ''
         }` : ''
       }`
@@ -181,9 +200,9 @@ export default class Stats {
 
     if(this.settings.showFrametimes && this.settings.showFPS) {
       // Display FPS
-      const displayFrameRate = this.ambientlight.displayFrameRate
+      const displayFrameRate = Math.max(24, this.ambientlight.displayFrameRate)
       const videoFrameRate = this.ambientlight.videoFrameRate
-      const displayFPSText = `DISPLAY: ${displayFrameRate.toFixed(2)} ${displayFrameRate ? `(${(1000/displayFrameRate).toFixed(2)}ms)` : ''}`
+      const displayFPSText = `DISPLAY: ${displayFrameRate.toFixed(2)} ${displayFrameRate ? `(${(1000/displayFrameRate).toFixed(1)}ms)` : ''}`
       const displayFPSColor = (displayFrameRate < videoFrameRate - 1)
         ? '#f55'
         : (displayFrameRate < videoFrameRate - 0.2) ? '#ff3' : '#7f7'
@@ -197,6 +216,16 @@ export default class Stats {
     this.updateFrameTimes()
   }
 
+  // Mimic received video frame stats
+  receiveAnimationFrametimes = (compose, presentedFrames) => {
+    this.receiveVideoFrametimes(compose, {
+      presentedFrames,
+      presentationTime: compose,
+      processingDuration: (this.previousPresentedFrames === presentedFrames) ? 0 : (.125 / Math.max(24, this.ambientlight.displayFrameRate)),
+      expectedDisplayTime: compose + (1000 / Math.max(24, this.ambientlight.displayFrameRate))
+    })
+  }
+
   // Flow of the browsers rendering pipeline (with durations & timestamps)
   //
   // Media playback engine: ━━► decode [processingDuration] ━━► present to compositor [presentationTime] ━┳ (can be before or after compose)
@@ -206,21 +235,23 @@ export default class Stats {
   receiveVideoFrametimes = (compose, info) => {
     if (!this.settings.showFrametimes) return
 
-    const now = parseFloat(performance.now().toFixed(1))
+    const now = performance.now()
     if (this.previousPresentedFrames) {
       const skippedFrames = info.presentedFrames - this.previousPresentedFrames - 1
+      // const videoFrameDuration = 1000 / Math.max(1, this.ambientlight.videoFrameRate)
       for (let i = 0; i < skippedFrames; i++) {
+        // const offset = (videoFrameDuration * i)
         this.videoFrameTimes.push({
-          decode: parseFloat((info.presentationTime - (info.processingDuration * 1000)).toFixed(1)) - (0.1 * i),
-          present: info.presentationTime - (0.1 * i),
-          display: info.expectedDisplayTime - (0.1 * i),
-          compose: compose - (0.1 * i),
-          receive: now - (0.1 * i)
+          // decode: (info.presentationTime - (info.processingDuration * 1000)) - offset,
+          // present: info.presentationTime - offset,
+          // display: info.expectedDisplayTime - offset,
+          // compose: compose - offset,
+          // receive: now - offset
         })
       }
     }
     this.videoFrameTimes.push({
-      decode: parseFloat((info.presentationTime - (info.processingDuration * 1000)).toFixed(1)),
+      decode: info.presentationTime - (info.processingDuration * 1000),
       present: info.presentationTime,
       compose,
       receive: now,
@@ -233,10 +264,10 @@ export default class Stats {
     frameTimes.video = this.videoFrameTimes[this.videoFrameTimes.length - 1] || 0
   }
 
-  addAmbientFrametimes = (frameTimes, results) => {
-    if(!this.settings.showFrametimes || !results?.hasNewFrame) return
+  addAmbientFrametimes = (frameTimes) => {
+    if(!this.settings.showFrametimes) return
   
-    frameTimes.frameEnd = parseFloat(performance.now().toFixed(1))
+    frameTimes.frameEnd = performance.now()
     const droppedVideoFrameTimes = this.videoFrameTimes.splice(0, this.videoFrameTimes.indexOf(frameTimes.video) + 1) // Remove all historic video frametimes
     droppedVideoFrameTimes.pop() // Remove the current video frametime
     for (const video of droppedVideoFrameTimes) {
@@ -247,10 +278,10 @@ export default class Stats {
     this.frameTimes.push(frameTimes)
 
     requestIdleCallback(() => {
-      frameTimes.display = parseFloat(performance.now().toFixed(1))
+      frameTimes.display = performance.now()
     }, { timeout: 1 })
     requestIdleCallback(() => {
-      frameTimes.complete = parseFloat(performance.now().toFixed(1))
+      frameTimes.complete = performance.now()
     })
   }
 
@@ -272,58 +303,60 @@ export default class Stats {
     frameTimes.pop()
     frameTimes = frameTimes.slice(-this.frametimesHistoryMax)
 
-    for (const ft of frameTimes) {
-      if (!ft.video) {
-        // console.log(JSON.parse(JSON.stringify(ft)))
-        ft.video = {
-          decode: ft.frameStart,
-          present: ft.frameStart,
-          compose: ft.frameStart,
-          receive: ft.frameStart,
-          display: ft.drawEnd
-        }
-      }
-      if (!ft.display)
-        ft.display = ft.video.receive
-      if (!ft.complete)
-        ft.complete = ft.video.receive
-    }
+    // for (const ft of frameTimes) {
+    //   if (!ft.video) {
+    //     // console.log(JSON.parse(JSON.stringify(ft)))
+    //     ft.video = {
+    //       decode: ft.frameStart,
+    //       present: ft.frameStart,
+    //       compose: ft.frameStart,
+    //       receive: ft.frameStart,
+    //       display: ft.drawEnd
+    //     }
+    //   }
+    //   if (!ft.display)
+    //     ft.display = ft.video.receive
+    //   if (!ft.complete)
+    //     ft.complete = ft.video.receive
+    // }
 
-    const videoProcessingRange = this.getRange(
-      frameTimes.map(ft => ft.video.present - ft.video.decode)
+    const videoProcessingRange = this.getRange(frameTimes.filter(ft => ft.video?.present && ft.video?.decode)
+      .map(ft => ft.video.present - ft.video.decode).filter(x => x != 0)
     );
-    const ambientProcessingRange = this.getRange(
-      frameTimes.map(ft => ft.display - ft.video.receive).filter(x => x != 0)
+    const ambientProcessingRange = this.getRange(frameTimes.filter(ft => ft.display && ft.video?.receive)
+      .map(ft => ft.display - ft.video.receive).filter(x => x != 0)
     );
-    const compositorProcessingRange = this.getRange(
-      frameTimes.map(ft => ft.complete - ft.display).filter(x => x != 0)
+    const compositorProcessingRange = this.getRange(frameTimes.filter(ft => ft.complete && ft.display)
+      .map(ft => ft.complete - ft.display).filter(x => x != 0)
     );
-    const ambientlightBudgetRange = this.getRange(
-      frameTimes.map(ft => ft.video.display - ft.video.receive)
+    const ambientlightBudgetRange = this.getRange(frameTimes.filter(ft => ft.video?.display && ft.video?.receive)
+      .map(ft => ft.video.display - ft.video.receive).filter(x => x != 0)
     );
-    const delayedFrames = frameTimes.filter(ft => ft.display > ft.video.display).length
-    const lostFrames = frameTimes.filter(ft => !ft.video.decode === undefined).length
+    const delayedFrames = frameTimes.filter(ft => ft.drawEnd && ft.video?.display && ft.drawEnd > ft.video.display).length
+    const skippedFrames = frameTimes.filter(ft => !ft.video?.decode || !ft.drawEnd).length
 
     const legend = `               VERTICAL BARS             MIN        MAX
 BLUE         | Video decoding:    ${videoProcessingRange[0]     }ms ${videoProcessingRange[1]     }ms
 GREEN/YELLOW | Ambient rendering: ${ambientProcessingRange[0]   }ms ${ambientProcessingRange[1]   }ms
 GRAY         | Compositing:       ${compositorProcessingRange[0]}ms ${compositorProcessingRange[1]}ms
+ORANGE       | Compositing delay 
+RED          | Skipped video frames
+ 𝘞𝘩𝘦𝘯 25% 𝘰𝘳 𝘮𝘰𝘳𝘦 𝘧𝘳𝘢𝘮𝘦𝘴 𝘩𝘢𝘷𝘦 𝘰𝘳𝘢𝘯𝘨𝘦 𝘤𝘰𝘮𝘱𝘰𝘴𝘪𝘵𝘪𝘯𝘨 𝘥𝘦𝘭𝘢𝘺𝘴
+ 𝘵𝘩𝘦 𝘴𝘦𝘵𝘵𝘪𝘯𝘨 "𝘘𝘶𝘢𝘭𝘪𝘵𝘺 > 𝘝𝘪𝘥𝘦𝘰 𝘫𝘪𝘵𝘵𝘦𝘳 𝘸𝘰𝘳𝘬𝘢𝘳𝘰𝘶𝘯𝘥" 𝘮𝘪𝘨𝘩𝘵 𝘧𝘪𝘹 𝘪𝘵.
 
                DOTTED LINES
-GREEN        | when the video frame was displayed
-GRAY         | when the next frame started compositing
-RED          | when the next video frame was displayed
+WHITE        | when the next video frame will be displayed
+GRAY         | when the next video frame will decoded
+GREEN        | when the video frame will be displayed
 
 STATS
-Frames on time:   ${frameTimes.length - delayedFrames - lostFrames} frames
-Frames delayed:   ${delayedFrames} frames
-Frames dropped:   ${lostFrames} frames
-Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
+Frames on time: ${(frameTimes.length - delayedFrames - skippedFrames).toString().padStart(3, ' ')} | Frames delayed: ${delayedFrames.toString().padStart(3, ' ')}
+Frames skipped: ${skippedFrames.toString().padStart(3, ' ')} | Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const xSize = 3
     const width = frameTimes.length * xSize
-    const height = 300
+    const height = 320
 
     if(!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height)
@@ -365,11 +398,11 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
       const offset = ft.video.display; // To display frame rendering durations
       return {
         video: {
-          decode:  ft.video.decode  - offset,
-          present: ft.video.present - offset,
-          compose: ft.video.compose - offset,
-          receive: ft.video.receive - offset,
-          display: ft.video.display - offset,
+          decode:  ft.video?.decode  - offset,
+          present: ft.video?.present - offset,
+          compose: ft.video?.compose - offset,
+          receive: ft.video?.receive - offset,
+          display: ft.video?.display - offset,
         },
         drawStart: ft.drawStart - offset,
         drawEnd: ft.drawEnd - offset,
@@ -379,11 +412,12 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
         nextDisplay: i < frameTimes.length - 1 ? frameTimes[i+1].video.display - offset : undefined
       }
     })
-    // console.log(offsettedFrameTimes)
+    // console.log('oft', offsettedFrameTimes)
 
     const frameDurations = offsettedFrameTimes.map(ft => ({
       decodeToPresent: [ft.video.decode, ft.video.present - ft.video.decode], // Media playback engine thread
       composeToReceive: [ft.video.compose, ft.video.receive - ft.video.compose], // Compositor thread
+      presentToCompose: [ft.video.present, Math.max(0, ft.video.compose - ft.video.present)], // Delayed video frame caused by desynchyronized compositor
       receiveToDrawStart: [ft.video.receive, ft.drawStart - ft.video.receive],
       drawStartTodrawEnd: [ft.drawStart, ft.drawEnd - ft.drawStart],
       drawEndToDisplay: [ft.drawEnd, ft.display - ft.drawEnd], // Current task on the main thread
@@ -394,35 +428,46 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
       isDrawnBeforeNextCompose: isNaN(ft.nextCompose) || ft.drawEnd <= ft.nextCompose,
       nextDisplay: ft.nextDisplay,
       isDrawnBeforeNextDisplay: isNaN(ft.nextDisplay) || ft.drawEnd <= ft.nextDisplay,
+      isDrawn: !isNaN(ft.drawEnd),
     }))
-    // console.log(frameDurations)
+    // console.log('fd', frameDurations)
     
-    const displayFrameDuration = (1000 / (Math.max(24, Math.min(this.ambientlight.displayFrameRate, 500)) || 1000))
+    const displayFrameDuration = 1000 / Math.max(24, this.ambientlight.displayFrameRate)
+    // console.log(displayFrameDuration)
     let percentile90 = Math.floor(offsettedFrameTimes.length * .9)
 
-    let averageMinTimes = offsettedFrameTimes.map(ft => Math.min(ft.video.decode, ft.video.compose)).sort((a, b) => a - b)
+    let averageMinTimes = offsettedFrameTimes.filter(ft => !isNaN(ft.video?.decode) && !isNaN(ft.video?.compose))
+      .map(ft => Math.min(ft.video.decode, ft.video.compose))
+      .sort((a, b) => a - b)
     averageMinTimes = averageMinTimes.slice(offsettedFrameTimes.length - percentile90, percentile90)
     const min = Math.round(Math.min(...averageMinTimes) / displayFrameDuration) * displayFrameDuration;
 
-    let averageMaxTimes = offsettedFrameTimes.map(ft => Math.max(ft.video.display, ft.nextCompose, ft.nextDisplay)).sort((a, b) => a - b)
+    let averageMaxTimes = offsettedFrameTimes.filter(ft => !isNaN(ft.video?.display) && !isNaN(ft.nextCompose) && !isNaN(ft.nextDisplay))
+      .map(ft => Math.max(ft.video.display, ft.nextCompose, ft.nextDisplay))
+      .sort((a, b) => a - b)
     averageMaxTimes = averageMaxTimes.slice(0, percentile90)
     const max = Math.round(Math.max(...averageMaxTimes) / displayFrameDuration) * displayFrameDuration;
-    // console.log(min, max);
+    // console.log(min, max, averageMinTimes, averageMaxTimes);
+    this.ambientlightFTAxisLegendTopElem.childNodes[0].nodeValue = `${max.toFixed(1)}ms`
+    this.ambientlightFTAxisLegendBottomElem.childNodes[0].nodeValue = `${min.toFixed(1)}ms`
 
-    const yScale = height / (max - min + displayFrameDuration);
-    const yLine = 1 / yScale;
+    const range = (max - min + displayFrameDuration)
+    const yScale = height / range
+    const yLine = 1 / yScale
     const frameRects = frameDurations.map(fd => ([
+      ...(fd.isDrawn ? [] : [['#800', xSize, min - displayFrameDuration / 2, range]]),
       ['#06f', xSize, ...fd.decodeToPresent],
       ['#666', 1, ...fd.composeToReceive],
+      ['#f80', 1, ...fd.presentToCompose],
       // [fd.drawnBeforeVideoDisplay ? '#0f0' : '#ff0', 1, ...fd.displayToComplete],
       // ['#a0a', 1, ...fd.drawEndToDisplay],
       [fd.isDrawnBeforeVideoDisplay ? '#0b0' : '#db0', xSize, ...fd.receiveToDrawStart],
       [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#ff0', xSize, ...fd.drawStartTodrawEnd],
 
       [fd.isDrawnBeforeNextCompose  ? '#666' : '#666', 1, fd.nextCompose, yLine],
-      [fd.isDrawnBeforeNextDisplay  ? '#f00' : '#f00', 1, fd.nextDisplay, yLine],
-      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#0f0', 1, fd.videoDisplay, yLine],
-    ]));
+      [fd.isDrawnBeforeNextDisplay  ? '#fff' : '#fff', 1, fd.nextDisplay, yLine],
+      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#0f0', 1, fd.videoDisplay, yLine]
+    ]))
     // console.log(frameRects)
 
     const offset = min - displayFrameDuration / 2
@@ -432,8 +477,8 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
       const x = i * xSize
       if (frameRectLines !== undefined) {
         for (const [color, xFrameSize, y, ySize] of frameRectLines) {
-          if(isNaN(y) || isNaN(ySize)) continue;
-          rects.push([color, x + Math.round(xSize / 2 - xFrameSize / 2), Math.round((y - offset) * yScale), xFrameSize, Math.ceil(ySize * yScale)])
+          if(isNaN(y) || isNaN(ySize) || ySize === 0) continue;
+          rects.push([color, x + Math.round(xSize / 2 - xFrameSize / 2), Math.round((y - offset) * yScale), xFrameSize, Math.max(1, Math.round(ySize * yScale))])
         }
         
       } else if(!this.settings.framerateLimit) {
@@ -454,7 +499,7 @@ Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(am
       .reduce((lowest, de, i) => (i === 0)
         ? [de]
         : (i === list.length - 1)
-          ? [lowest.toFixed(2)?.padStart(8, ' '), de.toFixed(2)?.padStart(8, ' ')]
+          ? [lowest.toFixed(1)?.padStart(8, ' '), de.toFixed(1)?.padStart(8, ' ')]
           : lowest
       )
     : ['?', '?'];
