@@ -341,8 +341,6 @@ GREEN/YELLOW | Ambient rendering: ${ambientProcessingRange[0]   }ms ${ambientPro
 GRAY         | Compositing:       ${compositorProcessingRange[0]}ms ${compositorProcessingRange[1]}ms
 ORANGE       | Compositing delay 
 RED          | Skipped video frames
- 𝘞𝘩𝘦𝘯 25% 𝘰𝘳 𝘮𝘰𝘳𝘦 𝘧𝘳𝘢𝘮𝘦𝘴 𝘩𝘢𝘷𝘦 𝘰𝘳𝘢𝘯𝘨𝘦 𝘤𝘰𝘮𝘱𝘰𝘴𝘪𝘵𝘪𝘯𝘨 𝘥𝘦𝘭𝘢𝘺𝘴
- 𝘵𝘩𝘦 𝘴𝘦𝘵𝘵𝘪𝘯𝘨 "𝘘𝘶𝘢𝘭𝘪𝘵𝘺 > 𝘝𝘪𝘥𝘦𝘰 𝘫𝘪𝘵𝘵𝘦𝘳 𝘸𝘰𝘳𝘬𝘢𝘳𝘰𝘶𝘯𝘥" 𝘮𝘪𝘨𝘩𝘵 𝘧𝘪𝘹 𝘪𝘵.
 
                DOTTED LINES
 WHITE        | when the next video frame will be displayed
@@ -350,13 +348,13 @@ GRAY         | when the next video frame will decoded
 GREEN        | when the video frame will be displayed
 
 STATS
-Frames on time: ${(frameTimes.length - delayedFrames - skippedFrames).toString().padStart(3, ' ')} | Frames delayed: ${delayedFrames.toString().padStart(3, ' ')}
-Frames skipped: ${skippedFrames.toString().padStart(3, ' ')} | Rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
+Frames on time: ${(frameTimes.length - delayedFrames - skippedFrames).toString().padStart(3, ' ')} | Delayed: ${delayedFrames.toString().padStart(3, ' ')} | Skipped: ${skippedFrames.toString().padStart(3, ' ')}
+Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const xSize = 3
     const width = frameTimes.length * xSize
-    const height = 320
+    const height = 270
 
     if(!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height)
