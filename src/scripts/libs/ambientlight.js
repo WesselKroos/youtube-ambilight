@@ -337,7 +337,7 @@ export default class Ambientlight {
 
         if(enable && !elem.parentElement) {
           this.elem.appendChild(elem)
-        } else if(elem.parentElement) {
+        } else if(!enable && elem.parentElement) {
           elem.parentElement.removeChild(elem)
         }
       }.bind(this), true)
