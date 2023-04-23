@@ -1820,10 +1820,13 @@ export default class Ambientlight {
     ) return
 
     this.scheduledNextFrame = true
-    if(!this.videoIsHidden)
-      (window.webkitRequestAnimationFrame || requestAnimationFrame)(this.onNextFrameWrapped)
-    else
-      setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
+    if(!this.videoIsHidden) {
+      requestAnimationFrame(this.onNextFrameWrapped)
+    } else {
+      const realFramerateLimit = this.getRealFramerateLimit()
+      const frameRate = Math.min(Math.max(this.videoFrameRate || 30), realFramerateLimit)
+      setTimeout(this.scheduleNextFrameDelayed, frameRate)
+    }
   }
 
   onNextFrame = async function onNextFrame(compose) {
@@ -1831,11 +1834,6 @@ export default class Ambientlight {
 
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
-
-    // Convert webkitRequestAnimationFrame timestamp to a requestAnimationFrame timestamp
-    if(window.webkitRequestAnimationFrame) {
-      timestamp = timestamp - performance.timeOrigin
-    }
 
     if (this.settings.showFrametimes && this.settings.frameSync !== FRAMESYNC_VIDEOFRAMES) {
       const presentedFrames = this.getVideoFrameCount()
@@ -1858,12 +1856,12 @@ export default class Ambientlight {
     this.displayFrameCount++
   }.bind(this)
   onNextFrameWrapped = wrapErrorHandler(this.onNextFrame)
-  scheduleNextFrameDelayed = () => (window.webkitRequestAnimationFrame || requestAnimationFrame)(this.onNextFrameWrapped)
+  scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrameWrapped)
 
   onNextLimitedFrame = async (compose) => {
     const time = performance.now()
     if(this.nextFrameTime) {
-      if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES) {
+      if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES && !this.videoIsHidden) {
         if(this.nextFrameTime > time && this.videoFrameCallbackReceived) {
           this.videoFrameCallbackReceived = false
         }
