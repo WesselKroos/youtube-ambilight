@@ -1826,7 +1826,7 @@ export default class Ambientlight {
       setTimeout(this.scheduleNextFrameDelayed, this.videoFrameRate ? (1000 / this.videoFrameRate) : 30)
   }
 
-  onNextFrame = async function onNextFrame(timestamp) {
+  onNextFrame = async function onNextFrame(compose) {
     if (!this.scheduledNextFrame) return
 
     this.scheduledNextFrame = false
@@ -1843,15 +1843,15 @@ export default class Ambientlight {
         this.settings.frameSync === FRAMESYNC_DISPLAYFRAMES || 
         (this.settings.frameBlending || this.previousPresentedFrames !== presentedFrames)
       ) {
-        this.stats.receiveAnimationFrametimes(timestamp, presentedFrames)
+        this.stats.receiveAnimationFrametimes(compose, presentedFrames)
       }
       this.previousPresentedFrames = presentedFrames
     }
 
     if(this.settings.framerateLimit || this.averageVideoFramesDifference < .0175) {
-      await this.onNextLimitedFrame()
+      await this.onNextLimitedFrame(compose)
     } else {
-      await this.nextFrame()
+      await this.nextFrame(compose)
       this.nextFrameTime = undefined
     }
     
@@ -1860,7 +1860,7 @@ export default class Ambientlight {
   onNextFrameWrapped = wrapErrorHandler(this.onNextFrame)
   scheduleNextFrameDelayed = () => (window.webkitRequestAnimationFrame || requestAnimationFrame)(this.onNextFrameWrapped)
 
-  onNextLimitedFrame = async () => {
+  onNextLimitedFrame = async (compose) => {
     const time = performance.now()
     if(this.nextFrameTime) {
       if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES) {
@@ -1878,7 +1878,7 @@ export default class Ambientlight {
     }
 
     const ambientlightFrameCount = this.ambientlightFrameCount
-    await this.nextFrame()
+    await this.nextFrame(compose)
     if(
       this.ambientlightFrameCount <= ambientlightFrameCount
     ) {
@@ -1924,10 +1924,10 @@ export default class Ambientlight {
     await this.nextFrame()
   }
 
-  nextFrame = async () => {
+  nextFrame = async (compose) => {
     try {
       const frameTimes = this.settings.showFrametimes ? {
-        frameStart: parseFloat(performance.now().toFixed(1))
+        frameStart: performance.now()
       } : {}
     
       this.delayedUpdateSizesChanged = false
@@ -1943,8 +1943,8 @@ export default class Ambientlight {
       
       let results = {}
       if (this.settings.showFrametimes) {
-        this.stats.addVideoFrametimes(frameTimes)
-        frameTimes.drawStart = parseFloat(performance.now().toFixed(1))
+        this.stats.addVideoFrametimes(frameTimes, compose)
+        frameTimes.drawStart = performance.now()
       }
 
       if(!this.settings.webGL || this.getImageDataAllowed) {
@@ -1952,7 +1952,7 @@ export default class Ambientlight {
       }
 
       if (this.settings.showFrametimes)
-        frameTimes.drawEnd = parseFloat(performance.now().toFixed(1))
+        frameTimes.drawEnd = performance.now()
 
       this.scheduleNextFrame()
 
@@ -2637,13 +2637,13 @@ export default class Ambientlight {
     this.requestVideoFrameCallbackId = this.videoElem.requestVideoFrameCallback(this.onVideoFrame)
   }
 
-  onVideoFrame = wrapErrorHandler(function onVideoFrame(timestamp, info) {
+  onVideoFrame = wrapErrorHandler(function onVideoFrame(compose, info) {
     if (!this.requestVideoFrameCallbackId) {
       console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${timestamp} | ${info}`)
       return
     }
     this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
-    this.stats.receiveVideoFrametimes(timestamp, info)
+    this.stats.receiveVideoFrametimes(compose, info)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     this.videoPresentedFrames = info?.presentedFrames || 0

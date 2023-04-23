@@ -260,8 +260,11 @@ export default class Stats {
     this.previousPresentedFrames = info.presentedFrames
   }
 
-  addVideoFrametimes = (frameTimes) => {
-    frameTimes.video = this.videoFrameTimes[this.videoFrameTimes.length - 1] || 0
+  addVideoFrametimes = (frameTimes, compose) => {
+    frameTimes.video = this.videoFrameTimes[this.videoFrameTimes.length - 1] || {
+      compose,
+      receive: performance.now(),
+    }
   }
 
   addAmbientFrametimes = (frameTimes) => {
@@ -391,59 +394,62 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
     // Main thread:    ━━► requestVideoFrameCallback ━┻ (can before or after compose)   ┻━► receive ━━► drawStart ━━► drawEnd ━━► display (present rendered canvasses to compositor) ━┻ complete (can be before or after display) 
 
     // console.log(frameTimes)
+    const displayFrameDuration = 1000 / Math.max(24, this.ambientlight.displayFrameRate)
     const offsettedFrameTimes = frameTimes.map((ft, i) => {
       // const offset = startOffset + (i * averageFrameTimesInterval); // To display frame variations
-      const offset = ft.video.display; // To display frame rendering durations
+      const offset = ft.video?.display ?? ft.video?.compose + displayFrameDuration; // To display frame rendering durations
       return {
-        video: {
+        video: ft.video ? {
           decode:  ft.video?.decode  - offset,
           present: ft.video?.present - offset,
           compose: ft.video?.compose - offset,
           receive: ft.video?.receive - offset,
           display: ft.video?.display - offset,
-        },
+        } : undefined,
         drawStart: ft.drawStart - offset,
         drawEnd: ft.drawEnd - offset,
         display: ft.display - offset,
         complete: ft.complete - offset,
-        nextCompose: i < frameTimes.length - 1 ? frameTimes[i+1].video.compose - offset : undefined,
-        nextDisplay: i < frameTimes.length - 1 ? frameTimes[i+1].video.display - offset : undefined
+        nextCompose: i < frameTimes.length - 1 ? frameTimes[i+1].video?.compose - offset : undefined,
+        nextDisplay: i < frameTimes.length - 1 ? frameTimes[i+1].video?.display - offset : undefined
       }
     })
     // console.log('oft', offsettedFrameTimes)
 
     const frameDurations = offsettedFrameTimes.map(ft => ({
-      decodeToPresent: [ft.video.decode, ft.video.present - ft.video.decode], // Media playback engine thread
-      composeToReceive: [ft.video.compose, ft.video.receive - ft.video.compose], // Compositor thread
-      presentToCompose: [ft.video.present, Math.max(0, ft.video.compose - ft.video.present)], // Delayed video frame caused by desynchyronized compositor
-      receiveToDrawStart: [ft.video.receive, ft.drawStart - ft.video.receive],
+      decodeToPresent: [ft.video?.decode, ft.video?.present - ft.video?.decode], // Media playback engine thread
+      composeToReceive: [ft.video?.compose, ft.video?.receive - ft.video?.compose], // Compositor thread
+      presentToCompose: [ft.video?.present, Math.max(0, ft.video?.compose - ft.video?.present)], // Delayed video frame caused by desynchyronized compositor
+      receiveToDrawStart: [ft.video?.receive, ft.drawStart - ft.video?.receive],
       drawStartTodrawEnd: [ft.drawStart, ft.drawEnd - ft.drawStart],
       drawEndToDisplay: [ft.drawEnd, ft.display - ft.drawEnd], // Current task on the main thread
       displayToComplete: [ft.display, ft.complete - ft.display], // All tasks on main thread
-      videoDisplay: ft.video.display, // All tasks on main thread
-      isDrawnBeforeVideoDisplay: isNaN(ft.video.display) || ft.drawEnd <= ft.video.display,
+      videoDisplay: ft.video?.display, // All tasks on main thread
+      isDrawnBeforeVideoDisplay: !isFinite(ft.video?.display) || ft.drawEnd <= ft.video?.display,
       nextCompose: ft.nextCompose,
-      isDrawnBeforeNextCompose: isNaN(ft.nextCompose) || ft.drawEnd <= ft.nextCompose,
+      isDrawnBeforeNextCompose: !isFinite(ft.nextCompose) || ft.drawEnd <= ft.nextCompose,
       nextDisplay: ft.nextDisplay,
-      isDrawnBeforeNextDisplay: isNaN(ft.nextDisplay) || ft.drawEnd <= ft.nextDisplay,
-      isDrawn: !isNaN(ft.drawEnd),
+      isDrawnBeforeNextDisplay: !isFinite(ft.nextDisplay) || ft.drawEnd <= ft.nextDisplay,
+      isDrawn: isFinite(ft.drawEnd),
     }))
     // console.log('fd', frameDurations)
     
-    const displayFrameDuration = 1000 / Math.max(24, this.ambientlight.displayFrameRate)
     // console.log(displayFrameDuration)
-    let percentile90 = Math.floor(offsettedFrameTimes.length * .9)
 
-    let averageMinTimes = offsettedFrameTimes.filter(ft => !isNaN(ft.video?.decode) && !isNaN(ft.video?.compose))
-      .map(ft => Math.min(ft.video.decode, ft.video.compose))
+    let averageMinTimes = offsettedFrameTimes
+      .map(ft => Math.min(...[ft.video?.decode, ft.video?.compose].filter(t => isFinite(t))))
+      .filter(t => isFinite(t))
       .sort((a, b) => a - b)
-    averageMinTimes = averageMinTimes.slice(offsettedFrameTimes.length - percentile90, percentile90)
+    const averageMinTimesPercentile90 = Math.floor(averageMinTimes.length * .9)
+    averageMinTimes = averageMinTimes.slice(offsettedFrameTimes.length - averageMinTimesPercentile90, averageMinTimesPercentile90)
     const min = Math.round(Math.min(...averageMinTimes) / displayFrameDuration) * displayFrameDuration;
 
-    let averageMaxTimes = offsettedFrameTimes.filter(ft => !isNaN(ft.video?.display) && !isNaN(ft.nextCompose) && !isNaN(ft.nextDisplay))
-      .map(ft => Math.max(ft.video.display, ft.nextCompose, ft.nextDisplay))
+    let averageMaxTimes = offsettedFrameTimes
+      .map(ft => Math.max(...[ft.video?.display, ft.nextCompose, ft.nextDisplay].filter(t => isFinite(t))))
+      .filter(t => isFinite(t))
       .sort((a, b) => a - b)
-    averageMaxTimes = averageMaxTimes.slice(0, percentile90)
+    const averageMaxTimesPercentile90 = Math.floor(averageMaxTimes.length * .9)
+    averageMaxTimes = averageMaxTimes.slice(0, averageMaxTimesPercentile90)
     const max = Math.round(Math.max(...averageMaxTimes) / displayFrameDuration) * displayFrameDuration;
     // console.log(min, max, averageMinTimes, averageMaxTimes);
     this.ambientlightFTAxisLegendTopElem.childNodes[0].nodeValue = `${max.toFixed(1)}ms`
@@ -453,7 +459,7 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
     const yScale = height / range
     const yLine = 1 / yScale
     const frameRects = frameDurations.map(fd => ([
-      ...(fd.isDrawn ? [] : [['#800', xSize, min - displayFrameDuration / 2, range]]),
+      ...(this.settings.framerateLimit || fd.isDrawn ? [] : [[this.settings.framerateLimit ? '#000' : '#800', xSize, min - displayFrameDuration / 2, range]]),
       ['#06f', xSize, ...fd.decodeToPresent],
       ['#666', 1, ...fd.composeToReceive],
       ['#f80', 1, ...fd.presentToCompose],
