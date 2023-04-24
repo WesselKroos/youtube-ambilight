@@ -2184,7 +2184,7 @@ export default class Ambientlight {
       // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
-      this.videoElem.readyState === 1    // HAVE_METADATA
+      (this.videoElem.readyState === 1 && !this.buffersCleared) // HAVE_METADATA can also happen while seeking. In that case draw the ambient light once if the projector is currently cleared
     ) return
 
     let newVideoFrameCount = this.getVideoFrameCount()
@@ -2637,7 +2637,7 @@ export default class Ambientlight {
 
   onVideoFrame = wrapErrorHandler(function onVideoFrame(compose, info) {
     if (!this.requestVideoFrameCallbackId) {
-      console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${timestamp} | ${info}`)
+      console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${compose} | ${info}`)
       return
     }
     this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
