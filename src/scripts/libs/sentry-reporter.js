@@ -1,4 +1,4 @@
-import { html, on, uuidv4 } from './generic';
+import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4 } from './generic';
 import { BrowserClient } from '@sentry/browser/esm/client';
 import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
@@ -410,6 +410,22 @@ export default class SentryReporter {
         }
 
         try {
+          const videoElem = window.ambientlight?.videoElem;
+          if(videoElem) {
+            setExtra('Video state', {
+              mediaError: videoElem.error ? {
+                code: mediaErrorToString(videoElem.error.code),
+                message: videoElem.error.message || 'Unknown'
+              } : undefined,
+              networkState: networkStateToString(videoElem?.networkState),
+              readyState: readyStateToString(videoElem?.readyState)
+            })
+          }
+        } catch (ex) { 
+          setExtra('Video state (exception)', ex)
+        }
+
+        try {
           setExtra('Window', {
             width: window.innerWidth,
             height: window.innerHeight,
@@ -481,7 +497,7 @@ export default class SentryReporter {
 
       const previousHub = getCurrentHub()
       makeMain(hub)
-      const response = client.captureException(ex, {}, scope)
+      client.captureException(ex, {}, scope)
       makeMain(previousHub)
       scope.clear()
     } catch (ex) {
@@ -556,7 +572,7 @@ export class ErrorEvents {
         lastType === type && 
         JSON.stringify(lastDetails) === JSON.stringify(details)
       ) {
-        last.count = last.count ? last.count + 1 : 2
+        last.count = lastCount ? lastCount + 1 : 2
         last.time = time
         last.firstTime = firstTime || lastTime
         return

@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack, readyStateToString, networkStateToString, mediaErrorToString } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -508,10 +508,17 @@ export default class Ambientlight {
         this.scheduledNextFrame = false
       },
       error: (ex) => {
-        console.warn('Ambient light for YouTube™ | Video error:', ex)
+        const videoElem = ex?.target;
+        const error = videoElem?.error;
+        console.warn(`Ambient light for YouTube™ | Restoring the ambient light after a video error...
+Video error: ${mediaErrorToString(error?.code)} ${error?.message ? `(${error?.message})` : ''}
+Video network state: ${networkStateToString(videoElem?.networkState)}
+Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.clear()
         this.cancelScheduledRequestVideoFrame()
-        setTimeout(this.handleVideoError, 1000)
+        if(this.handleVideoErrorTimeout) return
+
+        this.handleVideoErrorTimeout = setTimeout(this.handleVideoError, 1000)
       },
       click: this.settings.onCloseMenu
     }
@@ -569,6 +576,7 @@ export default class Ambientlight {
   }
 
   handleVideoError = () => {
+    this.handleVideoErrorTimeout = undefined
     this.initVideoListeners()
     if(!this.videoElem.paused) {
       this.videoListeners.playing()

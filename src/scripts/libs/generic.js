@@ -209,3 +209,25 @@ export const getCookie = async (name) =>
         }
       })
       .find(cookie => cookie.name === name)
+
+export const networkStateToString = (value) => (({
+  0: 'NETWORK_EMPTY',
+  1: 'NETWORK_IDLE',
+  2: 'NETWORK_LOADING',
+  3: 'NETWORK_NO_SOURCE'
+})[value] || value) ?? 'UNKNOWN'
+
+export const readyStateToString = (value) => (({
+  0: 'HAVE_NOTHING',
+  1: 'HAVE_METADATA',
+  2: 'HAVE_CURRENT_DATA',
+  3: 'HAVE_FUTURE_DATA',
+  4: 'HAVE_ENOUGH_DATA'
+})[value] || value) ?? 'UNKNOWN'
+
+export const mediaErrorToString = (value) => (({
+  1: 'MEDIA_ERR_ABORTED',
+  2: 'MEDIA_ERR_NETWORK',
+  3: 'MEDIA_ERR_DECODE',
+  4: 'MEDIA_ERR_SRC_NOT_SUPPORTED'
+})[value] || value) ?? 'UNKNOWN'

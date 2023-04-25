@@ -105,7 +105,6 @@ const detectDetachedVideo = () => {
 
     if(videoElem !== newVideoElem) {
       ambientlight.initVideoElem(newVideoElem)
-      ambientlight.initVideoListeners()
     }
     
     ambientlight.start()
