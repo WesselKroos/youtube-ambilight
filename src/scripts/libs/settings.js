@@ -624,16 +624,8 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
+            await this.updateWebGLCtx()
             this.updateVisibility()
-            if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
-              try {
-                if(!(await this.ambientlight.projector.initCtx())) return
-                this.setWarning('')
-              } catch(ex) {
-                this.ambientlight.projector.setWebGLWarning('change')
-                throw ex
-              }
-            }
           }
 
           if ([
@@ -642,19 +634,7 @@ export default class Settings {
             if(this['frameBlending']) {
               this.set('frameBlending', false, true)
             }
-            const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
-            if(this['frameFading'] !== defaultValue) {
-              this.set('frameFading', defaultValue, true)
-              if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
-                try {
-                  if(!(await this.ambientlight.projector.initCtx())) return
-                  this.setWarning('')
-                } catch(ex) {
-                  this.ambientlight.projector.setWebGLWarning('change')
-                  throw ex
-                }
-              }
-            }
+            this.resetFrameFading()
             this.updateVisibility()
           }
 
@@ -676,6 +656,7 @@ export default class Settings {
           }
 
           if([
+            'frameSync',
             'headerShadowSize',
             'headerShadowOpacity',
             'surroundingContentShadowSize',
@@ -705,7 +686,6 @@ export default class Settings {
           if ([
             'energySaver',
             'videoOverlayEnabled',
-            'frameSync',
             'frameBlending',
             'showFPS',
             'showFrametimes',
@@ -782,12 +762,10 @@ export default class Settings {
           
           if (setting.name === 'frameBlending') {
             if(value) {
-              if(this['frameFading'] !== 0) {
-                this.set('frameFading', 0, true)
-              }
               if(this['framerateLimit'] !== 0) {
                 this.set('framerateLimit', 0, true)
               }
+              this.resetFrameFading()
             } else {
               const defaultValue = SettingsConfig.find(s => s.name === 'framerateLimit').default
               if(this['framerateLimit'] !== defaultValue) {
@@ -880,6 +858,29 @@ export default class Settings {
 
     this.updateVisibility()
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
+  }
+
+  resetFrameFading() {
+    const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
+    if(this['frameFading'] === defaultValue) return
+
+    this.set('frameFading', defaultValue, true)
+    this.updateWebGLCtx()
+  }
+
+  async updateWebGLCtx() {
+    if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0)) // Await for update sizes
+      if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
+  
+      if(!(await this.ambientlight.projector.initCtx())) return
+      this.setWarning('')
+    } catch(ex) {
+      this.ambientlight.projector.setWebGLWarning('change')
+      throw ex
+    }
   }
 
   reloadPage() {
@@ -1026,8 +1027,12 @@ export default class Settings {
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },
     {
+      names: [ 'frameBlending' ],
+      visible: () => this.frameSync !== 1
+    },
+    {
       names: [ 'frameBlendingSmoothness' ],
-      visible: () => this.frameBlending
+      visible: () => this.frameBlending && this.frameSync !== 1
     },
     {
       names: [ 'chromiumBugVideoJitterWorkaround' ],

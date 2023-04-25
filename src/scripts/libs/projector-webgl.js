@@ -1205,8 +1205,8 @@ export default class ProjectorWebGL {
   }
 
   get ctxIsInvalid() {
-    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
-    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned) {
+    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || this.awaitingProgramCompletion || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
+    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned && !this.program && this.awaitingProgramCompletion) {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }

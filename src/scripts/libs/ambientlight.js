@@ -468,16 +468,26 @@ export default class Ambientlight {
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
 
-        this.buffersCleared = true // Always prevent old frame from being drawn
-        this.barDetection.clear()
         this.previousPresentedFrames = 0
-        // this.stats.videoFrameTimes = []
-        // this.stats.frameTimes = []
         this.videoFrameCounts = []
         this.videoPresentedFrames = 0
         this.displayFrameCounts = []
         this.ambientlightFrameCounts = []
         this.lastUpdateStatsTime = performance.now()
+        
+        this.barDetection.clear()
+
+        // Prevent any old frames from being drawn
+        this.buffersCleared = true
+
+        // Prevent WebGL frameFading/frameBlending from mixing old frames
+        if (this.settings.webGL && (this.settings.frameFading || this.settings.frameBlending)) {
+          this.projector.drawTextureSize = {
+            width: 0,
+            height: 0
+          }
+        }
+
         await this.optionalFrame()
       },
       loadeddata: () => {
@@ -492,6 +502,7 @@ export default class Ambientlight {
       playing: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
         if (this.videoElem.paused) return // When paused handled by [seeked]
+
         await this.optionalFrame()
       },
       ended: () => {
