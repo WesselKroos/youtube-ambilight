@@ -465,7 +465,7 @@ export class WebGLContext {
       this.ctx.uniform1f(this.fMipmapLevelLoc, mipmapLevel);
     }
     
-    let start = performance.now()
+    let start = this.settings.showResolutions ? performance.now() : undefined
     // Chromium bug 1074473: Using texImage2D because texSubImage2D from a video element is 80x slower than texImage2D
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
 
@@ -473,11 +473,11 @@ export class WebGLContext {
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-    this.loadTime = performance.now() - start
+    if(this.settings.showResolutions) this.loadTime = performance.now() - start
     
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-    this.drawTime = performance.now() - start
+    if(this.settings.showResolutions) this.drawTime = performance.now() - start
   }
 
   getImageDataBuffers = []

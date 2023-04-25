@@ -137,9 +137,9 @@ export default class Stats {
       if(this.videoBufferResolutionElem) {
         const projectorBuffer = this.ambientlight.projectorBuffer
         const videoBufferResolution = `
-          VIDEO BUFFER: ${projectorBuffer?.elem?.width ?? '?'}x${projectorBuffer?.elem?.height ?? '?'} 
+          VIDEO BUFFER: ${projectorBuffer?.elem?.width ?? '?'}x${projectorBuffer?.elem?.height ?? '?'}${projectorBuffer?.ctx?.loadTime === undefined ? '' : `
           [ load: ${(projectorBuffer?.ctx?.loadTime ?? 0).toFixed(1)}ms
-          | draw: ${(projectorBuffer?.ctx?.drawTime ?? 0).toFixed(1)}ms]`
+          | draw: ${(projectorBuffer?.ctx?.drawTime ?? 0).toFixed(1)}ms]`}`
         this.videoBufferResolutionElem.childNodes[0].nodeValue = videoBufferResolution
       }
     }

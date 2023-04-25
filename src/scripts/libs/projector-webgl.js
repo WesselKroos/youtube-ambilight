@@ -160,7 +160,7 @@ export default class ProjectorWebGL {
     }
     const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
 
-    let start = performance.now()
+    let start = this.settings.showResolutions ? performance.now() : undefined
     if(this.projectorsCount > 1) {
       if(updateTextureSize) {
         this.drawInitial = true
@@ -218,19 +218,19 @@ export default class ProjectorWebGL {
       }
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-    this.loadTime = performance.now() - start
+    if(this.settings.showResolutions) this.loadTime = performance.now() - start
     
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4)
-    this.drawTime = performance.now() - start
+    if(this.settings.showResolutions) this.drawTime = performance.now() - start
     
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height)
-    this.blurClearTime = performance.now() - start
+    if(this.settings.showResolutions) this.blurClearTime = performance.now() - start
     const blurCanvasBound = Math.floor(this.blurBound / this.blurCanvasScale)
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.blurCtx.drawImage(this.canvas, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
-    this.blurDrawTime = performance.now() - start
+    if(this.settings.showResolutions) this.blurDrawTime = performance.now() - start
 
     if(updateTextureSize) {
       this.drawTextureSize = textureSize
