@@ -25,7 +25,8 @@ const getOtherUnknownAppElems = () =>
     });
 
 const logErrorEventWithPageTrees = (message, details = {}) => {
-  if(isVideoInKnownInvalidLocation()) return
+  if (!isWatchPageUrl()) return
+  if (isVideoInKnownInvalidLocation()) return
 
   const allSelector = 'html, body, ytd-app, ytd-watch-flexy, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
   const otherAppElems = getOtherUnknownAppElems()
