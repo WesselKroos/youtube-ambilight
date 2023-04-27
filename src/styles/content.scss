@@ -718,11 +718,9 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Old video info boxes */
 
-  ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
   ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  &[dark] ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
   &[dark] ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
