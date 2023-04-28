@@ -162,6 +162,7 @@ html[data-ambientlight-enabled="true"] {
   body {
     --yt-spec-text-secondary: rgba(10, 10, 10, 0.8);
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
+    --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
   }
   &[dark] {
     // Make all card backgrounds transparent
@@ -175,6 +176,7 @@ html[data-ambientlight-enabled="true"] {
     body {
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
+      --yt-spec-10-percent-layer: rgba(255,255,255, .1);
     }
   }
 
