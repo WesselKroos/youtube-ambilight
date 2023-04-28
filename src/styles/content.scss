@@ -2268,12 +2268,11 @@ html[data-ambientlight-enabled="true"] {
         yt-icon.ytd-logo svg {
           overflow: visible;
         }
-        yt-icon.guide-icon,
         yt-icon.ytd-logo svg,
+        yt-icon-button yt-icon svg,
         ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
-        ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
-        yt-icon-button,
-        ytd-button-renderer button {
+        ytd-searchbox:not(:hover):not(:focus-within) yt-icon svg,
+        ytd-button-renderer yt-icon svg {
           @content;
           text-shadow: none !important;
         }
