@@ -715,16 +715,6 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-
-  /* Cosmetics - Old video info boxes */
-
-  ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-
   /* Cosmetics - Clarify box (To prevent css filter shadow flickering) */
 
   ytd-clarification-renderer {
@@ -857,7 +847,7 @@ html[data-ambientlight-enabled="true"] {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
     }
     
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
       box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
     }
 
@@ -865,8 +855,8 @@ html[data-ambientlight-enabled="true"] {
       @include scrollbar-light-thin()
     }
 
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
     yt-chip-cloud-renderer {
       background: none !important;
@@ -931,7 +921,7 @@ html[data-ambientlight-enabled="true"] {
       }
     }
     
-    ytd-watch-metadata[modern-metapanel] {
+    ytd-watch-metadata {
       #description.ytd-watch-metadata {
         background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
         border: 1px solid var(--yt-spec-10-percent-layer) !important;
@@ -999,7 +989,7 @@ html[data-ambientlight-enabled="true"] {
         }
       }
     
-      ytd-watch-metadata[modern-metapanel] {
+      ytd-watch-metadata {
         #description.ytd-watch-metadata {
           background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
         }
@@ -2127,6 +2117,12 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Comment on the side - Submit comment form
+  ytd-item-section-renderer[static-comments-header] #header.ytd-item-section-renderer {
+    background: none !important;
+  }
+    
+
   // Fix ellipsis after the views counter
   #info-text.ytd-video-primary-info-renderer {
     color: var(--yt-spec-text-secondary);
@@ -2155,19 +2151,23 @@ html[data-ambientlight-enabled="true"] {
 
     //// Remove shadow capping
     // old video info
-    .title.ytd-video-primary-info-renderer,
-    #info-text.ytd-video-primary-info-renderer,
-    yt-formatted-string.ytd-button-renderer button,
-    ytd-video-secondary-info-renderer .ytd-channel-name,
-    #byline-container.ytd-video-meta-block,
+    ytd-video-primary-info-renderer .title,
+    ytd-video-primary-info-renderer #info-text,
+    ytd-video-primary-info-renderer #info ytd-menu-renderer[has-flexible-items],
+    ytd-video-primary-info-renderer yt-formatted-string.ytd-button-renderer button,
+    ytd-video-secondary-info-renderer #container.ytd-channel-name,
 
     // new video info
     h1.ytd-watch-metadata,
+    ytd-watch-metadata ytd-menu-renderer[has-flexible-items],
+
+    // Related video - channel name
+    ytd-video-meta-block #byline-container,
 
     // New comment
     #author-text.yt-simple-endpoint.ytd-comment-renderer,
 
-    #metadata-line.ytd-video-meta-block,
+    // Collapsable comment
     #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
     }
@@ -2217,7 +2217,8 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-toggle-button-renderer button,
         #{$info} ytd-button-renderer button,
         #{$info} yt-icon.ytd-menu-renderer,
-        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) > *,
+        ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+        ytd-watch-metadata #description-inner,
         ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
@@ -2237,11 +2238,16 @@ html[data-ambientlight-enabled="true"] {
         #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
         #reply-button-end.ytd-comment-action-buttons-renderer, // Reply button
         #cancel-button.ytd-commentbox, // Reply form cancel button
+        #emoji-button.ytd-commentbox yt-icon, // Reply form emoticon button
+        ytd-comments-header-renderer #panel-button yt-icon, // Show comments on the side
+        ytd-comments-header-renderer #sort-menu #trigger tp-yt-paper-button,
+
         paper-toggle-button.ytd-compact-autoplay-renderer,
-        #chatframe,
         paper-menu-button,
-        yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button,
-        ytd-watch-metadata #description-inner {
+
+        #chatframe,
+
+        ytd-transcript-footer-renderer #trigger tp-yt-paper-button {
           @content;
           text-shadow: none !important;
         }
