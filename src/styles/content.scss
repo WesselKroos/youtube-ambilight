@@ -2173,25 +2173,12 @@ html[data-ambientlight-enabled="true"] {
     }
 
     // New video description
-    #description-inline-expander {
-      overflow: initial !important;
-      contain: initial !important;
-      
-      // Collapsed description text
-      .yt-formatted-string
+    ytd-watch-metadata #description-inner .yt-formatted-string {
+      &[style="color: rgb(170, 170, 170);"], // Dark theme
+      &[style="color: rgb(96, 96, 96);"]     // Light theme
       {
-        &[style="color: rgb(170, 170, 170);"], // Dark theme
-        &[style="color: rgb(96, 96, 96);"]     // Light theme
-        {
-          color: var(--yt-spec-text-secondary) !important;
-        }
+        color: var(--yt-spec-text-secondary) !important;
       }
-    }
-    #info-container.ytd-watch-metadata,
-    #snippet.ytd-text-inline-expander {
-      overflow: initial !important;
-      -webkit-mask-image: initial !important;
-      mask-image: initial !important;
     }
 
     // Remove a bit of the shadow capping from elements that cap lines as well
@@ -2253,7 +2240,8 @@ html[data-ambientlight-enabled="true"] {
         paper-toggle-button.ytd-compact-autoplay-renderer,
         #chatframe,
         paper-menu-button,
-        yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button {
+        yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button,
+        ytd-watch-metadata #description-inner {
           @content;
           text-shadow: none !important;
         }
