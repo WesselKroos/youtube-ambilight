@@ -399,18 +399,6 @@ export default class ProjectorWebGL {
       await this.awaitingProgramCompletion;
       this.discardProgram = undefined
     }
-
-    if(this.program) {
-      const program = this.program
-      this.program = undefined
-      try {
-        this.ctx.deleteProgram(program) // Free GPU memory
-      } catch(ex) {
-        console.warn('Failed to delete previous program', ex)
-      }
-
-      this.invalidateShaderCache()
-    }
     
     if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.canvas) {
       this.canvas.removeEventListener('contextlost', this.onCtxLost)
@@ -502,7 +490,7 @@ export default class ProjectorWebGL {
       this.ctx.enable(this.ctx.STENCIL_TEST);
 
     // Program
-    this.program = this.ctx.createProgram();
+    const program = this.ctx.createProgram();
 
     // Textures
     this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
@@ -571,7 +559,7 @@ export default class ProjectorWebGL {
     const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
     this.ctx.shaderSource(vertexShader, vertexShaderSrc);
     this.ctx.compileShader(vertexShader);
-    this.ctx.attachShader(this.program, vertexShader);
+    this.ctx.attachShader(program, vertexShader);
     
     const fragmentShaderSrc = `
       precision lowp float;
@@ -710,10 +698,10 @@ export default class ProjectorWebGL {
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
-    this.ctx.attachShader(this.program, fragmentShader);
+    this.ctx.attachShader(program, fragmentShader);
     
     // Program
-    this.ctx.linkProgram(this.program);
+    this.ctx.linkProgram(program);
 
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
@@ -721,10 +709,11 @@ export default class ProjectorWebGL {
       this.awaitingProgramCompletion = new Promise((resolve, reject) => {
         const checkCompletion = () => {
           try {
-            if(!this.program)
+            if(!program) {
               return resolve(false) // cancel
+            }
 
-            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+            const completed = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
               requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
             } else {
@@ -735,7 +724,7 @@ export default class ProjectorWebGL {
 
             try {
               ex.details = {
-                program: this.program?.toString(),
+                program: program?.toString(),
                 webGLVersion: this.webGLVersion,
                 majorPerformanceCaveat: this.majorPerformanceCaveat,
                 ctxOptions: this.ctxOptions
@@ -769,13 +758,23 @@ export default class ProjectorWebGL {
       this.awaitingProgramCompletion = undefined
 
       if(this.discardProgram || !completed) {
-        const program = this.program
-        this.program = undefined
         try {
           this.ctx.deleteProgram(program) // Free GPU memory
         } catch(ex) {
-          console.warn('Failed to delete previous program', ex)
+          console.warn('Failed to delete new program', ex)
         }
+
+        if(this.program) {
+          try {
+            this.ctx.finish() // Wait for any pending draw calls to finish
+            this.ctx.deleteProgram(this.program) // Free GPU memory
+          } catch(ex) {
+            console.warn('Failed to delete previous program', ex)
+          }
+          this.program = undefined
+          this.invalidateShaderCache()
+        }
+
         return false
       }
     }
@@ -783,7 +782,7 @@ export default class ProjectorWebGL {
     // Validate these parameters after program compilation to prevent render blocking validation
     const vertexShaderCompiled = this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)
     const fragmentShaderCompiled = this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)
-    const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
+    const programLinked = this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
       programCompilationError.name = 'WebGLError'
@@ -800,16 +799,16 @@ export default class ProjectorWebGL {
           fragmentShaderCompiled,
           fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
           programLinked,
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
+          programInfoLog: this.ctx.getProgramInfoLog(program)
         }
       } catch(ex) {
         programCompilationError.details.getCompiledAndLinkedInfoLogsError = ex
       }
 
       try {
-        this.ctx.validateProgram(this.program)
-        programCompilationError.details.programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(this.program)
+        this.ctx.validateProgram(program)
+        programCompilationError.details.programValidated = this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)
+        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(program)
       } catch(ex) {
         programCompilationError.details.validateProgramError = ex
       }
@@ -886,8 +885,20 @@ export default class ProjectorWebGL {
     //   throw programValidationError
     // }
 
-    // console.log('awaitedProgramCompletion > useProgram')
-    this.ctx.useProgram(this.program);
+    // Delete previous program
+    if(this.program) {
+      try {
+        this.ctx.finish() // Wait for any pending draw calls to finish
+        this.ctx.deleteProgram(this.program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Failed to delete previous program', ex)
+      }
+      this.program = undefined
+      this.invalidateShaderCache()
+    }
+    
+    this.ctx.useProgram(program)
+    this.program = program
 
     // Buffers
     const vUVBuffer = this.ctx.createBuffer();
@@ -1206,7 +1217,7 @@ export default class ProjectorWebGL {
 
   get ctxIsInvalid() {
     const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || this.awaitingProgramCompletion || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
-    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned && !this.program && this.awaitingProgramCompletion) {
+    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned && !this.program && !this.awaitingProgramCompletion) {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
