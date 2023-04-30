@@ -73,6 +73,10 @@ export default class ProjectorWebGL {
           // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
           // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
 
+          if(this.cancelCompilation === false) {
+            console.warn('Ambient light for YouTube™ | Marking pending program compilation for cancellation')
+            this.cancelCompilation = true
+          }
           this.ctxLose.loseContext()
         }
       }, 3000)
@@ -709,6 +713,7 @@ export default class ProjectorWebGL {
     // Program
     this.ctx.linkProgram(program);
 
+    this.cancelCompilation = false // context can change when it has been lost
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       const stack = new Error().stack
@@ -718,7 +723,10 @@ export default class ProjectorWebGL {
             if(!program) {
               return resolve(false) // cancel
             }
-
+            if(this.cancelCompilation) {
+              console.warn('context was lost, program likely not compiled')
+              return resolve(false) // context has been lost while waiting on completion
+            }
             const completed = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
             if(completed === false) {
               requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
@@ -755,6 +763,7 @@ export default class ProjectorWebGL {
             // }
 
             appendErrorStack(stack, ex)
+            this.cancelCompilation = undefined
             reject(ex)
           }
         };
@@ -763,22 +772,27 @@ export default class ProjectorWebGL {
       const completed = await this.awaitingProgramCompletion;
       this.awaitingProgramCompletion = undefined
 
-      if(this.discardProgram || !completed) {
-        try {
-          this.ctx.deleteProgram(program) // Free GPU memory
-        } catch(ex) {
-          console.warn('Failed to delete new program', ex)
-        }
+      const dontCleanup = this.cancelCompilation // If context was lost, cleanup isn't required anymore
+      this.cancelCompilation = undefined
 
-        if(this.program) {
+      if(this.discardProgram || !completed) {
+        if(!dontCleanup) {
           try {
-            this.ctx.finish() // Wait for any pending draw calls to finish
-            this.ctx.deleteProgram(this.program) // Free GPU memory
+            this.ctx.deleteProgram(program) // Free GPU memory
           } catch(ex) {
-            console.warn('Failed to delete previous program', ex)
+            console.warn('Failed to delete new program', ex)
           }
-          this.program = undefined
-          this.invalidateShaderCache()
+
+          if(this.program) {
+            try {
+              this.ctx.finish() // Wait for any pending draw calls to finish
+              this.ctx.deleteProgram(this.program) // Free GPU memory
+            } catch(ex) {
+              console.warn('Failed to delete previous program', ex)
+            }
+            this.program = undefined
+            this.invalidateShaderCache()
+          }
         }
 
         return false
