@@ -1,5 +1,5 @@
 import { AmbientlightError } from './sentry-reporter';
-import { appendErrorStack, wrapErrorHandler } from './generic';
+import { appendErrorStack, ctxOptions, wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {
@@ -137,6 +137,11 @@ export class WebGLContext {
     }
     
     if(this.ctxIsInvalid) return
+
+    if ('drawingBufferColorSpace' in this.ctx) {
+      this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace
+      this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
+    }
 
     // Shaders
     var vertexShaderSrc = `

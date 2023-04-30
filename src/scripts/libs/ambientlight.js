@@ -760,6 +760,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.optionalFrame()
       }
     }))
+    this.updateIsVideoHiddenOnWatchPage()
   
     videoPlayerObserver.observe(this.videoPlayerElem, {
       attributes: true,
@@ -1065,10 +1066,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.hdrProjectorBuffer) return
 
     const hdrProjectorsBufferElem = new SafeOffscreenCanvas(1, 1, true)
-    const hdrProjectorsBufferCtx = hdrProjectorsBufferElem.getContext('2d', {
-      ...ctxOptions,
-      colorSpace: 'display-p3'
-    })
+    const hdrProjectorsBufferCtx = hdrProjectorsBufferElem.getContext('2d', ctxOptions)
 
     if (hdrProjectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(hdrProjectorsBufferElem)

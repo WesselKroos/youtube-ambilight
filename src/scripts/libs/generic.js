@@ -129,11 +129,34 @@ export const body = document.body
 
 export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
+const colorSpace = (
+  // rec2020 in canvas is not yet supported 
+  // window.matchMedia('(color-gamut: rec2020)').matches
+  //   ? 'rec2020'
+  //   : (
+      window.matchMedia('(color-gamut: p3)').matches
+      ? 'display-p3'
+      : 'srgb'
+  //  )
+)
+
+const extendedColorSpace = (
+  // rec2020 in canvas is not yet supported 
+  window.matchMedia('(color-gamut: rec2020)').matches
+    ? 'rec2020'
+    : (
+      window.matchMedia('(color-gamut: p3)').matches
+      ? 'display-p3'
+      : 'srgb'
+  )
+)
+
 export const ctxOptions = {
   alpha: false,
   // desynchronized: true,
   imageSmoothingQuality: 'low',
-  // colorSpace: window.matchMedia('(color-gamut: p3)').matches ? 'display-p3' : 'srgb' // display-p3 colorspace on a srgb monitor decreases saturation when blurred
+  colorSpace,
+  extendedColorSpace
 }
 
 export class Canvas {
