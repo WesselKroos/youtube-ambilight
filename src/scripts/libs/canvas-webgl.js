@@ -140,7 +140,8 @@ export class WebGLContext {
 
     if ('drawingBufferColorSpace' in this.ctx) {
       this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace
-      this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
+      // unpacking to another color space is way to expensive on the GPU - dropped support for now
+      // this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
     }
 
     // Shaders
