@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { ctxOptions, appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
@@ -286,6 +286,7 @@ export default class ProjectorWebGL {
     this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost)
     this.blurCanvas.addEventListener('contextrestored', this.onBlurCtxRestored)
     this.blurCtx = this.blurCanvas.getContext('2d', {
+      ...ctxOptions,
       alpha: true,
       desynchronized: false // true: Does not work when canvas elements are not hardware accelerated
     })

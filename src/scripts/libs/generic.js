@@ -132,7 +132,8 @@ export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback
 export const ctxOptions = {
   alpha: false,
   // desynchronized: true,
-  imageSmoothingQuality: 'low'
+  imageSmoothingQuality: 'low',
+  // colorSpace: window.matchMedia('(color-gamut: p3)').matches ? 'display-p3' : 'srgb' // display-p3 colorspace on a srgb monitor decreases saturation when blurred
 }
 
 export class Canvas {

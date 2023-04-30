@@ -1054,9 +1054,28 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
-    this.projectorBuffer = {
+    this.nonHdrProjectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferCtx
+    }
+    this.projectorBuffer = this.nonHdrProjectorBuffer
+  }
+
+  initWebGLHdrProjectorBuffer() {
+    if(this.hdrProjectorBuffer) return
+
+    const hdrProjectorsBufferElem = new SafeOffscreenCanvas(1, 1, true)
+    const hdrProjectorsBufferCtx = hdrProjectorsBufferElem.getContext('2d', {
+      ...ctxOptions,
+      colorSpace: 'display-p3'
+    })
+
+    if (hdrProjectorsBufferElem.tagName === 'CANVAS') {
+      this.buffersWrapperElem.appendChild(hdrProjectorsBufferElem)
+    }
+    this.hdrProjectorBuffer = {
+      elem: hdrProjectorsBufferElem,
+      ctx: hdrProjectorsBufferCtx
     }
   }
 
@@ -1422,8 +1441,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     let pScale;
     if(this.settings.webGL) {
-      const relativeBlur = (this.settings.resolution / 100) * this.settings.blur
-      const pMinSize = (this.settings.resolution / 100) * 
+      const relativeBlur = (this.settings.resolution / 100) * (this.isHdr ? 0 : this.settings.blur)
+      const pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
         ((this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
         ? 256
         : (relativeBlur >= 20
@@ -1930,6 +1949,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   optionalFrame = async () => {
     if(
+      !this.initialized ||
       !this.settings.enabled ||
       !this.isOnVideoPage ||
       this.pendingStart ||
@@ -2587,17 +2607,27 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   start = async (initial = false) => {
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
+    try {
+      const isHdr = this.videoPlayerElem.getVideoData().isHdr
+      if(this.settings.webGL && this.isHdr !== isHdr) {
+        this.isHdr = isHdr
+        if(isHdr) {
+          this.initWebGLHdrProjectorBuffer()
+          this.projectorBuffer = this.hdrProjectorBuffer
+        } else if(this.hdrProjectorBuffer) {
+          this.projectorBuffer = this.nonHdrProjectorBuffer
+        }
+        this.sizesChanged = true
+      }
+    } catch(ex) {
+      console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
+    }
+
     this.showedCompareWarning = false
     this.showedDetectBarSizeWarning = false
     this.nextFrameTime = undefined
     this.ambientlightVideoDroppedFrameCount = 0
     this.buffersCleared = true // Prevent old frame from preventing the new frame from being drawn
-
-    try {
-      this.isHdr = this.videoPlayerElem.getVideoData().isHdr
-    } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
-    }
 
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
@@ -2618,6 +2648,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
+    this.initialized = performance.now()
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
