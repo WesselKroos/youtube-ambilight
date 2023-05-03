@@ -13,7 +13,13 @@ export default class ProjectorShadow {
       this.elem.style.transform = `scale(${scale.x + 0.01}, ${scale.y + 0.01})`
     }
     
-    this.ctx.clearRect(0, 0, this.elem.width, this.elem.height)
+    // When cleared because the page was hidden
+    if(this.elem.width !== 512 || this.elem.height !== 512) {
+      this.elem.width = 512
+      this.elem.height = 512
+    } else {
+      this.ctx.clearRect(0, 0, this.elem.width, this.elem.height)
+    }
 
     const edge = {
       w: ((projectorSize.w * scale.x) - projectorSize.w) / 2 / scale.x,

@@ -1,13 +1,17 @@
-import { Canvas, ctxOptions } from './generic'
+import { Canvas, ctxOptions, raf } from './generic'
 import ProjectorShadow from './projector-shadow'
 
 export default class Projector2d {
   type = 'Projector2d'
   width = 1
   height = 1
+  lostCount = 0
 
-  constructor(containerElem) {
+  constructor(ambientlight, containerElem, initProjectorListeners, settings) {
+    this.ambientlight = ambientlight
     this.containerElem = containerElem
+    this.initProjectorListeners = initProjectorListeners
+    this.settings = settings
 
     this.shadow = new ProjectorShadow(false)
     this.shadow.elem.classList.add('ambientlight__shadow')
@@ -18,6 +22,38 @@ export default class Projector2d {
 
   remove() {
     this.containerElem.remove(this.projectorListElem)
+  }
+
+  onProjectorCtxLost = () => {
+    console.log('Ambient light for YouTube™ | Lost 2d projector')
+    this.lostCount++
+    // event.preventDefault(); // Prevents restoration
+    this.settings.setWarning('Failed to restore the renderer.\nReload the page to try it again.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
+  }
+
+  onProjectorCtxRestored = (event) => {
+    if(this.lostCount  >= 3 * this.projectors.length) {
+      console.error('Ambient light for YouTube™ | Projector2D context restore failed 3 times')
+      this.settings.setWarning('Failed to 3 times restore the renderer.\nReload the page to try it again.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
+      return
+    }
+
+    console.log('Ambient light for YouTube™ | Restored 2d projector')
+    const projectorElem = event.currentTarget
+    projectorElem.width = 1 // Reset size
+    this.ambientlight.buffersCleared = true // Trigger resize before redraw
+    this.ambientlight.sizesChanged = true // Trigger resize before redraw
+
+    if(this.scheduledRedrawAfterRestoreId)
+      cancelAnimationFrame(this.scheduledRedrawAfterRestoreId)
+
+    this.scheduledRedrawAfterRestoreId = raf(async () => {
+      console.log('scheduledRedrawAfterRestore')
+      this.scheduledRedrawAfterRestoreId = undefined
+      await this.ambientlight.optionalFrame()
+      this.initProjectorListeners()
+      this.settings.setWarning('')
+    })
   }
 
   recreate(levels) {
@@ -37,6 +73,8 @@ export default class Projector2d {
     for (let i = this.projectors.length; i < levels; i++) {
       const projectorElem = new Canvas(this.width, this.height)
       projectorElem.classList.add('ambientlight__projector')
+      projectorElem.addEventListener('contextlost', this.onProjectorCtxLost)
+      projectorElem.addEventListener('contextrestored', this.onProjectorCtxRestored)
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions)
       this.containerElem.prepend(projectorElem)
@@ -47,8 +85,6 @@ export default class Projector2d {
       })
     }
   }
-
-  handlePageVisibility = () => {}
 
   resize(width, height) {
     this.width = width
@@ -82,6 +118,12 @@ export default class Projector2d {
     
     for(const projector of this.projectors) {
       projector.ctx.drawImage(src, croppedSrcX, croppedSrcY, croppedSrcWidth, croppedSrcHeight, 0, 0, projector.elem.width, projector.elem.height)
+    }
+  }
+
+  clearRect() {
+    for(const projector of this.projectors) {
+      projector.ctx.clearRect(0, 0, projector.elem.width, projector.elem.height)
     }
   }
 }

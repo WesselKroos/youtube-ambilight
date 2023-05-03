@@ -54,6 +54,7 @@ export default class Ambientlight {
   ambientlightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
+  lastClear = 0
 
   enableMozillaBug1606251Workaround = false
   enableChromiumBug1123708Workaround = false
@@ -507,15 +508,14 @@ export default class Ambientlight {
       },
       ended: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
-        this.clear()
+        if(this.lastClear < performance.now() - 500) this.clear()
         this.stats.hide()
         this.scheduledNextFrame = false
-        this.sizesChanged = true
         this.resetVideoParentElemStyle() // Prevent visible video element above player because of the modified style attribute
       },
       emptied: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
-        this.clear()
+        if(this.lastClear < performance.now() - 500) this.clear()
         this.scheduledNextFrame = false
       },
       error: (ex) => {
@@ -525,7 +525,7 @@ export default class Ambientlight {
 Video error: ${mediaErrorToString(error?.code)} ${error?.message ? `(${error?.message})` : ''}
 Video network state: ${networkStateToString(videoElem?.networkState)}
 Video ready state: ${readyStateToString(videoElem?.readyState)}`)
-        this.clear()
+        if(this.lastClear < performance.now() - 500) this.clear()
         this.cancelScheduledRequestVideoFrame()
         if(this.handleVideoErrorTimeout) return
 
@@ -608,14 +608,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.initVideoListeners()
 
     if(this.settings.webGL) {
-      this.projector.handleRestored = async (isControlledLose) => {
+      this.projector.handleRestored = async () => {
         this.buffersCleared = true
         this.sizesChanged = true
-        if(!isControlledLose) {
-          this.cancelScheduledRequestVideoFrame()
-          // eslint-disable-next-line no-self-assign
-          this.videoElem.currentTime = this.videoElem.currentTime // Triggers video draw call
-        }
+        
+        this.cancelScheduledRequestVideoFrame()
+        // eslint-disable-next-line no-self-assign
+        this.videoElem.currentTime = this.videoElem.currentTime // Triggers video draw call
+        
         await this.optionalFrame()
       }
     }
@@ -750,9 +750,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(!viewChanged && !videoHiddenChanged) return
 
       if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
-        this.clear()
+        if(this.lastClear < performance.now() - 500) this.clear()
         this.resetVideoParentElemStyle()
-        this.sizesChanged = true
         return
       }
 
@@ -851,18 +850,59 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }.bind(this))
 
   handleDocumentVisibilityChange = async () => {
+    if(this.handlePageVisibilityTimeout) {
+      clearTimeout(this.handlePageVisibilityTimeout)
+      this.handlePageVisibilityTimeout = undefined
+    }
+
     if (!this.settings.enabled || !this.isOnVideoPage) return
+
     const isPageHidden = document.visibilityState === 'hidden'
     if(this.isPageHidden === isPageHidden) return
-
     this.isPageHidden = isPageHidden
-    if(this.settings.webGL) {
-      await this.projector.handlePageVisibility(isPageHidden)
-    }
-    if(document.visibilityState !== 'hidden') return
+    
+    console.log('page hidden', isPageHidden)
 
-    this.buffersCleared = true
-    this.checkIfNeedToHideVideoOverlay()
+    if(isPageHidden) {
+      this.checkIfNeedToHideVideoOverlay()
+      this.buffersCleared = true
+      this.sizesChanged = true
+
+      this.handlePageVisibilityTimeout = setTimeout(() => {
+        this.handlePageVisibilityTimeout = undefined
+
+        // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
+        // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
+
+        // Set canvas sizes & textures to 1x1 to clear GPU memory
+        try {
+          console.log('clear after page hidden')
+          this.clear()
+          // if(this.projector?.ctx && !this.projector.ctx.isContextLost()) {
+          // this.projector.canvas.width = 1
+          // this.projector.canvas.height = 1
+          // if(this.projector.blurCanvas) {
+          //   this.projector.blurCanvas.width = 1
+          //   this.projector.blurCanvas.height = 1
+          // }
+          // this.projector.shadow.elem.width = 1
+          // this.projector.shadow.elem.height = 1
+          // this.buffersCleared = true
+          // this.sizesChanged = true
+
+          // this.projectorBuffer.elem.width = 1
+          // this.projectorBuffer.elem.height = 1
+
+          console.log('handlePageVisibility - Cleared GPU memory')
+        } catch(ex) {
+          console.error('handlePageVisibility - Failed to clear GPU memory:')
+          console.error(ex)
+        }
+      }, 3000)
+    } else {
+      await this.optionalFrame()
+      console.log('handlePageVisibility - Page visible')
+    }
   }
 
   handleKeyDown = async (e) => {
@@ -1000,7 +1040,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     if(!this.projector) {
-      this.projector = new Projector2d(this.projectorListElem, this.initProjectorListeners)
+      this.projector = new Projector2d(this, this.projectorListElem, this.initProjectorListeners, this.settings)
     }
     this.initProjectorListeners()
   }
@@ -1176,12 +1216,16 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   clear() {
+    this.lastClear = performance.now()
     this.barDetection.clear()
 
     // Clear canvasses
     const canvasses = []
-    if(this.projector?.projectors?.length) {
-      canvasses.push(...this.projector.projectors)
+    if(this.projector) {
+      canvasses.push({ ctx: this.projector })
+    }
+    if(this.projectorBuffer) {
+      canvasses.push(this.projectorBuffer)
     }
     if(this.previousProjectorBuffer) {
       canvasses.push(this.previousProjectorBuffer)
@@ -1196,13 +1240,25 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
     for (const canvas of canvasses) {
       if(canvas.ctx?.clearRect) {
-        canvas.ctx.clearRect(0, 0, canvas.elem.width, canvas.elem.height)
-      } else {
+        if(!canvas.ctx.isContextLost || !canvas.ctx.isContextLost()) {
+          if(canvas.elem) {
+            canvas.ctx.clearRect(0, 0, canvas.elem.width, canvas.elem.height)
+          } else {
+            canvas.ctx.clearRect()
+          }
+        } else {
+          console.log('skipped clearing lost canvas', canvas)
+        }
+      } else if(canvas.elem) {
+        console.log('canvas has no clearRect', canvas)
         canvas.elem.width = 1;
+      } else {
+        console.log('canvas has no elem', canvas)
       }
     }
 
     this.buffersCleared = true
+    this.sizesChanged = true
     this.checkIfNeedToHideVideoOverlay()
     this.scheduleNextFrame()
   }
@@ -2017,7 +2073,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
         : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video.\n\nError: ${ex.name}\nReason: ${ex.message}`
       this.settings.setWarning(`Failed to display the ambient light\n\n${message}`)
-      if(this.catchedErrors[ex.name]) return
+      if(this.catchedErrors[ex.name]) {
+        console.error(ex)
+        return
+      }
 
       this.catchedErrors[ex.name] = true
       if([
@@ -2026,7 +2085,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         'NS_ERROR_OUT_OF_MEMORY'
       ].includes(ex.name)) {
         console.warn('Ambient light for YouTube™ | Failed to display the ambient light')
-        console.error(ex);
+        console.error(ex)
         return
       }
 
@@ -2701,6 +2760,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }.bind(this), true)
 
   async hide() {
+    console.log('hide')
     if (this.isHidden) return
     this.isHidden = true
 

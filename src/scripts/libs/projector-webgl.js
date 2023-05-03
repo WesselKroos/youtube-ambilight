@@ -1,11 +1,12 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { ctxOptions, appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { ctxOptions, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
+  blurLostCount = 0
   scales = [{ x: 1, y: 1 }]
   projectors = []
   static subProjectorDimensionMax = 3
@@ -24,7 +25,6 @@ export default class ProjectorWebGL {
       this.initBlurCtx()
       const initialized = await this.initCtx()
       if(!initialized) this.setWebGLWarning('create')
-      this.handlePageVisibility()
 
       return this
     }.bind(this))()
@@ -46,54 +46,8 @@ export default class ProjectorWebGL {
     }
   }
 
-  handlePageVisibility = async (isPageHidden) => {
-    if(this.handlePageVisibilityTimeout) {
-      clearTimeout(this.handlePageVisibilityTimeout)
-      this.handlePageVisibilityTimeout = undefined
-    }
-    if(isPageHidden === undefined) {
-      isPageHidden = document.visibilityState === 'hidden'
-    }
-    this.isPageHidden = isPageHidden
-
-    if(!this.ctx) return
-
-    if(!this.ctxLose) {
-      this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
-    }
-
-    const ctxLost = this.ctx.isContextLost()
-    if(this.isPageHidden && !ctxLost) {
-      this.handlePageVisibilityTimeout = setTimeout(() => {
-        this.handlePageVisibilityTimeout = undefined
-
-        if(this.isPageHidden && this.ctx && !this.ctx.isContextLost()) {
-          this.isControlledLose = true
-
-          // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
-          // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
-
-          if(this.cancelCompilation === false) {
-            console.warn('Ambient light for YouTube™ | Marking pending program compilation for cancellation')
-            this.cancelCompilation = true
-          }
-          this.ctxLose.loseContext()
-        }
-      }, 3000)
-    } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
-      this.ctxLose.restoreContext()
-    } else if(this.shouldUpdateCropAfterPageVisible) {
-      this.shouldUpdateCropAfterPageVisible = false
-      this.updateCrop()
-      await this.ambientlight.optionalFrame()
-    }
-  }
-
   handleWindowResize = async () => {
-    if(this.isPageHidden) {
-      this.shouldUpdateCropAfterPageVisible = true
-      return
-    }
+    if(this.ambientlight.isPageHidden) return
 
     this.updateCrop()
     await this.ambientlight.optionalFrame()
@@ -101,11 +55,7 @@ export default class ProjectorWebGL {
 
   handleAtTopChange = async (atTop) => {
     this.atTop = atTop
-
-    if(this.isPageHidden) {
-      this.shouldUpdateCropAfterPageVisible = true
-      return
-    }
+    if(this.ambientlight.isPageHidden) return
 
     this.updateCrop()
     this.ambientlight.buffersCleared = true
@@ -113,7 +63,7 @@ export default class ProjectorWebGL {
   }
 
   remove() {
-    this.containerElem.remove(this.canvas)
+    this.containerElem.remove(this.elem)
   }
 
   // TODO: Cut off left, top and right canvas outside the browser + blur size
@@ -124,6 +74,10 @@ export default class ProjectorWebGL {
 
   initShadow() {
     this.shadow = new ProjectorShadow()
+    this.projectors[2] = {
+      elem: this.shadow.elem,
+      ctx: this.blurCtx
+    }
   }
 
   drawIndex = 0
@@ -233,7 +187,7 @@ export default class ProjectorWebGL {
     if(this.settings.showResolutions) this.blurClearTime = performance.now() - start
     const blurCanvasBound = Math.floor(this.blurBound / this.blurCanvasScale)
     if(this.settings.showResolutions) start = performance.now()
-    this.blurCtx.drawImage(this.canvas, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
+    this.blurCtx.drawImage(this.elem, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
     if(this.settings.showResolutions) this.blurDrawTime = performance.now() - start
 
     if(updateTextureSize) {
@@ -243,38 +197,41 @@ export default class ProjectorWebGL {
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting`)
   }
 
   onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
     event.preventDefault();
-    this.lost = true
-    this.lostCount++
+    this.blurLost = true
+    this.blurLostCount++
     this.invalidateShaderCache()
-    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.blurLostCount})`)
     this.setWebGLWarning('restore')
   }.bind(this))
 
-  onBlurCtxRestored = wrapErrorHandler(function wrappedOnBlurCtxRestored() {
-    if(this.lostCount >= 3) {
+  onBlurCtxRestored = wrapErrorHandler(async function wrappedOnBlurCtxRestored() {
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context restored (${this.blurLostCount})`)
+    if(this.blurLostCount >= 3) {
       console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
       return
     }
+    await new Promise(resolve => requestAnimationFrame(resolve))
     this.initBlurCtx()
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
       if(!this.ctxIsInvalid) {
         this.initProjectorListeners()
-        this.lost = false
-        this.setWarning('')
+        this.blurLost = false
+        if(!this.lost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
+      console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.blurLostCount})`)
       this.setWebGLWarning('restore')
     }
   }.bind(this))
 
   initBlurCtx() {
+    console.log('initBlurCtx')
     if(this.blurCanvas) {
       this.containerElem.removeChild(this.blurCanvas)
       if(this.blurCtx) {
@@ -333,62 +290,52 @@ export default class ProjectorWebGL {
 
   onCtxLost = wrapErrorHandler(function onCtxLost(event) {
     event.preventDefault();
-    if(!this.isControlledLose) {
-      console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
-    }
-    this.setWebGLWarning('restore')
+
+    this.lost = true
+    this.lostCount++
     this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
     this.invalidateShaderCache()
-    this.lost = true
-    if(!this.isControlledLose) {
-      this.lostCount++
-    }
-    if(!this.isPageHidden && this.isControlledLose) {
-      setTimeout(this.handlePageVisibility, 1)
-    }
+
+    console.warn(`Ambient light for YouTube™ | ProjectorWebGL context lost (${this.lostCount})`)
+    this.setWebGLWarning('restore')
   }.bind(this))
 
   onCtxRestored = wrapErrorHandler(async function onCtxRestored() {
-    if(!this.isControlledLose && this.lostCount >= 3) {
-      console.error('Ambient light for YouTube™ | ProjectorWebGL context restore failed 3 times')
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL restored (${this.lostCount})`)
+    if(this.lostCount >= 3) {
+      console.error('Ambient light for YouTube™ | ProjectorWebGL context restored failed 3 times')
       this.setWebGLWarning('3 times restore')
       return
     }
     try {
+      await new Promise(resolve => requestAnimationFrame(resolve))
       if(!(await this.initCtx())) return
     } catch(ex) {
+      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restored init error`, ex)
       this.setWebGLWarning()
       throw ex
     }
 
-    if(!this.isControlledLose) {
-      this.initShadow()
-      this.initBlurCtx()
-    }
-    if(
-      this.ctx && !this.ctx.isContextLost()
-    ) {
+    this.initShadow()
+    this.initBlurCtx()
+    if(this.ctx) {
       if(!this.ctxIsInvalid) {
         this.initProjectorListeners()
         this.lost = false
-        this.setWarning('')
-        this.lostCount = 0
+        if(!this.blurLost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      if(!this.isControlledLose) {
-        console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restore failed (${this.lostCount})`)
-        this.setWebGLWarning('restore')
-        return
-      }
+      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restored failed (${this.lostCount})`)
+      this.setWebGLWarning('restore')
+      return
     }
-    if(this.handleRestored) {
-      this.handleRestored(this.isControlledLose)
-    }
-    this.isControlledLose = false
+    
+    if(this.handleRestored) this.handleRestored()
   }.bind(this))
 
   webglcontextcreationerrors = []
   onCtxCreationError = wrapErrorHandler(function onCtxCreationError(e) {
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL creationerror (${this.lostCount})`)
     this.webglcontextcreationerrors.push({
       failIfMajorPerformanceCaveat: this.ctxOptions.failIfMajorPerformanceCaveat,
       message: e.statusMessage || '?',
@@ -398,26 +345,26 @@ export default class ProjectorWebGL {
   }.bind(this))
 
   async initCtx() {
-    if(this.discardProgram) return false
-    if(this.awaitingProgramCompletion) {
-      this.discardProgram = true
-      await this.awaitingProgramCompletion;
-      this.discardProgram = undefined
+    if(this.cancelCompilation) return false
+    if(this.compilationPromise) {
+      this.cancelCompilation = true
+      await this.compilationPromise;
+      this.cancelCompilation = undefined
     }
     
-    if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.canvas) {
-      this.canvas.removeEventListener('contextlost', this.onCtxLost)
-      this.canvas.removeEventListener('contextrestored', this.onCtxRestored)
-      this.canvas.removeEventListener('webglcontextcreationerror', this.onCtxCreationError)
-      this.canvas = undefined
+    if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.elem) {
+      this.elem.removeEventListener('contextlost', this.onCtxLost)
+      this.elem.removeEventListener('contextrestored', this.onCtxRestored)
+      this.elem.removeEventListener('webglcontextcreationerror', this.onCtxCreationError)
+      this.elem = undefined
       this.webGLVersion = undefined
     }
 
-    if(!this.canvas) {
-      this.canvas = new SafeOffscreenCanvas(1, 1)
-      this.canvas.addEventListener('webglcontextlost', this.onCtxLost, false)
-      this.canvas.addEventListener('webglcontextrestored', this.onCtxRestored, false)
-      this.canvas.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false)
+    if(!this.elem) {
+      this.elem = new SafeOffscreenCanvas(1, 1)
+      this.elem.addEventListener('webglcontextlost', this.onCtxLost, false)
+      this.elem.addEventListener('webglcontextrestored', this.onCtxRestored, false)
+      this.elem.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false)
     }
 
     if(!this.ctx) {
@@ -434,34 +381,34 @@ export default class ProjectorWebGL {
         stencil: true
       }
       this.webGLVersion = 2
-      this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+      this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
       if(this.ctx) {
         this.noMajorPerformanceCaveatDetected()
       } else {
         this.ctxOptions.stencil = false
-        this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+        this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
         if(this.ctx) {
           this.noMajorPerformanceCaveatDetected()
         } else {
           this.webGLVersion = 1
-          this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+          this.ctx = this.elem.getContext('webgl', this.ctxOptions)
           if(this.ctx) {
             this.noMajorPerformanceCaveatDetected()
           } else {
             this.ctxOptions.failIfMajorPerformanceCaveat = false
             this.ctxOptions.stencil = true
             this.webGLVersion = 2
-            this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+            this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
             if(this.ctx) {
               this.majorPerformanceCaveatDetected()
             } else {
               this.ctxOptions.stencil = false
-              this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+              this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
               if(this.ctx) {
                 this.noMajorPerformanceCaveatDetected()
               } else {
                 this.webGLVersion = 1
-                this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+                this.ctx = this.elem.getContext('webgl', this.ctxOptions)
                 if(this.ctx) {
                   this.majorPerformanceCaveatDetected()
                 } else {
@@ -492,7 +439,7 @@ export default class ProjectorWebGL {
     }
     
     this.projectors[1] = {
-      elem: this.canvas,
+      elem: this.elem,
       ctx: this
     }
     
@@ -710,92 +657,86 @@ export default class ProjectorWebGL {
     this.ctx.compileShader(fragmentShader);
     this.ctx.attachShader(program, fragmentShader);
     
+    // Delete previous program
+    if(this.program) {
+      try {
+        this.ctx.finish() // Wait for any pending draw calls to finish
+        this.ctx.deleteProgram(this.program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Failed to delete previous program', ex)
+      }
+      this.program = undefined
+      this.invalidateShaderCache()
+    }
+
     // Program
     this.ctx.linkProgram(program);
 
-    this.cancelCompilation = false // context can change when it has been lost
     const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      const stack = new Error().stack
-      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
-        const checkCompletion = () => {
-          try {
-            if(!program) {
-              return resolve(false) // cancel
-            }
-            if(this.cancelCompilation) {
-              console.warn('context was lost, program likely not compiled')
-              return resolve(false) // context has been lost while waiting on completion
-            }
-            const completed = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
-            if(completed === false) {
-              requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
-            } else {
-              resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
-            }
-          } catch(ex) {
-            ex.details = {}
 
-            try {
-              ex.details = {
-                program: program?.toString(),
-                webGLVersion: this.webGLVersion,
-                majorPerformanceCaveat: this.majorPerformanceCaveat,
-                ctxOptions: this.ctxOptions
-              }
-            } catch(ex) {
-              ex.details = {
-                detailsException: ex
-              }
-            }
-
-            // // Did not give any insights that could help to fix bugs
-            // try {
-            //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-            //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-            //     : 'unknown'
-            //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-            //     : 'unknown'
-            // } catch(ex) {
-            //   ex.details.gpuError = ex
-            // }
-
-            appendErrorStack(stack, ex)
-            this.cancelCompilation = undefined
-            reject(ex)
-          }
-        };
-        requestAnimationFrame(checkCompletion)
+      let resolveCompilationPromise
+      this.compilationPromise = new Promise(resolve => resolveCompilationPromise = async () => {
+        resolveCompilationPromise = undefined
+        await new Promise(resolve => setTimeout(resolve, 0)) // Make sure to finish the current task first
+        this.compilationPromise = undefined
+        resolve()
       })
-      const completed = await this.awaitingProgramCompletion;
-      this.awaitingProgramCompletion = undefined
 
-      const dontCleanup = this.cancelCompilation // If context was lost, cleanup isn't required anymore
-      this.cancelCompilation = undefined
+      await new Promise(resolve => requestAnimationFrame(resolve))
 
-      if(this.discardProgram || !completed) {
-        if(!dontCleanup) {
+      try {
+        let compiled = false
+        while(!compiled) {
+          const completionStatus = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+          // COMPLETION_STATUS_KHR can be null because of webgl-lint
+          if(completionStatus === false) {
+            await new Promise(resolve => requestIdleCallback(resolve, { timeout: 200 }))
+            await new Promise(resolve => requestAnimationFrame(resolve))
+          } else {
+            compiled = true
+          }
+        }
+
+        if(this.cancelCompilation && compiled) {
           try {
+            compiled = false
             this.ctx.deleteProgram(program) // Free GPU memory
           } catch(ex) {
             console.warn('Failed to delete new program', ex)
           }
-
-          if(this.program) {
-            try {
-              this.ctx.finish() // Wait for any pending draw calls to finish
-              this.ctx.deleteProgram(this.program) // Free GPU memory
-            } catch(ex) {
-              console.warn('Failed to delete previous program', ex)
-            }
-            this.program = undefined
-            this.invalidateShaderCache()
+        }
+  
+        resolveCompilationPromise()
+        if(!compiled) return false
+      } catch(ex) {
+        try {
+          ex.details = {
+            program: program?.toString(),
+            webGLVersion: this.webGLVersion,
+            majorPerformanceCaveat: this.majorPerformanceCaveat,
+            ctxOptions: this.ctxOptions
+          }
+        } catch(ex) {
+          ex.details = {
+            detailsException: ex
           }
         }
+        // // Did not give any insights that could help to fix bugs
+        // try {
+        //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+        //     : 'unknown'
+        //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+        //     : 'unknown'
+        // } catch(ex) {
+        //   ex.details.gpuError = ex
+        // }
 
-        return false
+        resolveCompilationPromise()
+        throw ex
       }
     }
 
@@ -904,18 +845,6 @@ export default class ProjectorWebGL {
 
     //   throw programValidationError
     // }
-
-    // Delete previous program
-    if(this.program) {
-      try {
-        this.ctx.finish() // Wait for any pending draw calls to finish
-        this.ctx.deleteProgram(this.program) // Free GPU memory
-      } catch(ex) {
-        console.warn('Failed to delete previous program', ex)
-      }
-      this.program = undefined
-      this.invalidateShaderCache()
-    }
     
     this.ctx.useProgram(program)
     this.program = program
@@ -1006,9 +935,9 @@ export default class ProjectorWebGL {
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
-    if(this.canvas) {
-      this.canvas.width = width
-      this.canvas.height = height
+    if(this.elem) {
+      this.elem.width = width
+      this.elem.height = height
     }
 
     this.blurCanvasScale = settings.blur > 1 ? 2 : 1
@@ -1039,7 +968,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(!this.ctx || this.ctxIsInvalid || this.lost) return
+    if(this.ctxIsInvalid || this.lost) return
 
     if(this.settings.vibrance !== 100) {
       let vibrance = (this.settings.vibrance / 100) - 1
@@ -1099,7 +1028,7 @@ export default class ProjectorWebGL {
   }
 
   updateCrop() {
-    if(!this.ctxOptions.stencil || !this.ctx || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
+    if(!this.ctxOptions.stencil || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
     const canvasRect = this.blurCanvas.getBoundingClientRect()
     if(!canvasRect?.width || !canvasRect?.height) return
@@ -1230,17 +1159,40 @@ export default class ProjectorWebGL {
   }
 
   clearRect() {
-    if(!this.ctx || this.ctxIsInvalid || this.lost) return
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.invalidateShaderCache()
+
+    if(this.shadow?.ctx && (!this.shadow.ctx.isContextLost || !this.shadow.ctx.isContextLost())) {
+      this.shadow.ctx.clearRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
+    }
+
+    if(this.ctx && !this.ctx.isContextLost() && this.program) {
+      // Shadow
+      this.ctx.activeTexture(this.ctx.TEXTURE0)
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.ALPHA, this.ctx.ALPHA, this.ctx.UNSIGNED_BYTE, null)
+
+      // Video textures
+      for(let i = 0; i < this.projectorsTexture.length; i++) {
+        this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`])
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+        this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+        // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
+      }
+
+      this.ctx.clear(this.ctx.COLOR_BUFFER_BIT)
+    }
+    
+    if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
+      this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height)
+    }
   }
 
   get ctxIsInvalid() {
-    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || this.awaitingProgramCompletion || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
-    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned && !this.program && !this.awaitingProgramCompletion) {
+    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program  || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
+    if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
       console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
-    return invalid;
+    return invalid
   }
 }
