@@ -64,8 +64,7 @@ const SettingsConfig = [
     },
     type: 'checkbox',
     default: false,
-    advanced: false,
-    new: true
+    advanced: true
   },
   {
     name: 'framerateLimit',
@@ -81,7 +80,6 @@ const SettingsConfig = [
     label: 'WebGL renderer (uses less power)',
     type: 'checkbox',
     default: true,
-    new: true,
     advanced: true
   },
   {
@@ -98,7 +96,7 @@ const SettingsConfig = [
       return points;
     })(),
     manualinput: false,
-    new: true
+    advanced: true
   },
   {
     name: 'prioritizePageLoadSpeed',
@@ -206,8 +204,7 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 1,
-    advanced: true,
-    experimental: true
+    advanced: true
   },
 
   {
@@ -258,8 +255,7 @@ const SettingsConfig = [
     default: 10,
     min: 0,
     max: 100,
-    step: 1,
-    new: true
+    step: 1
   },
   {
     name: 'immersiveTheaterView',
@@ -271,6 +267,7 @@ const SettingsConfig = [
     name: 'hideScrollbar',
     label: 'Hide scrollbar',
     type: 'checkbox',
+    advanced: true,
     default: true
   },
   {
@@ -396,7 +393,8 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1
+    step: 1,
+    advanced: true
   },
   {
     name: 'contrast',
@@ -405,17 +403,17 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1
+    step: 1,
+    advanced: true
   },
   {
     name: 'vibrance',
-    label: 'Vibrance',
+    label: 'Colors',
     type: 'list',
     default: 100,
     min: 0,
     max: 200,
-    step: 0.1,
-    new: true
+    step: 0.1
   },
   {
     name: 'saturation',
@@ -571,7 +569,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    new: true,
     name: 'frameFading',
     label: 'Fade in duration',
     questionMark: {

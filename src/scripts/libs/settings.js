@@ -81,8 +81,12 @@ export default class Settings {
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
     // Disable enabled WebGL setting if not supported anymore
-    if(Settings.storedSettingsCached['setting-webGL'] && !supportsWebGL()) {
-      Settings.storedSettingsCached['setting-webGL'] = null
+    if(Settings.storedSettingsCached['setting-webGL']) {
+      if(!supportsWebGL()) {
+        Settings.storedSettingsCached['setting-webGL'] = null
+      } else {
+        SettingsConfig.find(setting => setting.name === 'saturation').advanced = true
+      }
     }
 
     return Settings.storedSettingsCached;
@@ -1261,9 +1265,9 @@ export default class Settings {
     let message = ''
     if(this.energySaver) {
       if(this.ambientlight.averageVideoFramesDifference < .002) {
-        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\n(Disable this via: Quality > Energy saver)'
+        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nAdvanced setting: Quality > Energy saver'
       } else if(this.ambientlight.averageVideoFramesDifference < .0175) {
-        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\n(Disable this via: Quality > Energy saver)'
+        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nAdvanced setting: Quality > Energy saver'
       }
     }
 
