@@ -23,7 +23,7 @@ export default class Settings {
 
       await this.getAll()
       this.initMenu()
-      if(this.webGLCrashDate) this.showWebGLCrashDescription()
+      if(this.webGLCrashDate) this.updateWebGLCrashDescription()
       if(this.pendingWarning) this.pendingWarning()
       return this
     }.bind(this))()
@@ -51,7 +51,7 @@ export default class Settings {
           'webGL'
         ].includes(setting.name)) {
           setting.default = false
-          setting.disabled = 'WebGL is disabled in your browser'
+          setting.disabled = 'You have disabled WebGL in your browser.'
         }
       }
       
@@ -74,8 +74,8 @@ export default class Settings {
         names.push(`setting-${setting.name}-key`)
       }
     }
-    names.push('setting-webGLCrashed')
-    names.push('setting-webGLCrashedAtVersion')
+    names.push('setting-webGLCrash')
+    names.push('setting-webGLCrashVersion')
     names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
@@ -100,7 +100,12 @@ export default class Settings {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
 
-    this.migrateWebGLCrash(storedSettings)
+    const webGLCrash = storedSettings['setting-webGLCrash']
+    const webGLCrashVersion = storedSettings['setting-webGLCrashVersion']
+    if(webGLCrash && webGLCrashVersion === version) {
+      this.webGLCrashDate = new Date(webGLCrash)
+      this.webGLCrashVersion = webGLCrashVersion
+    }
 
     for (const setting of SettingsConfig) {
       const value = storedSettings[`setting-${setting.name}`]
@@ -136,72 +141,39 @@ export default class Settings {
     }
   }
 
-  migrateWebGLCrash(storedSettings) {
-    const webGLCrashed = storedSettings['setting-webGLCrashed']
-    if(!webGLCrashed) return
-
-    const webGL = storedSettings['setting-webGL']
-    if(webGL === false) return
-
-    if(webGL) {
-      this.saveStorageEntry('webGLCrashed', undefined)
-      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
-      return
-    }
-
-    const webGLCrashDate = new Date(webGLCrashed)
-    const weekAfterCrashDate = new Date(webGLCrashDate.setDate(webGLCrashDate.getDate() + 7))
-    // const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
-    const retryAfterUpdateOrAWeekLater = (
-      version !== storedSettings['setting-webGLCrashedAtVersion'] ||
-      weekAfterCrashDate < new Date()
-    )
-    if(retryAfterUpdateOrAWeekLater) {
-      this.saveStorageEntry('webGLCrashed', undefined)
-      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
-      return
-    }
-
-    this.webGLCrashDate = webGLCrashDate
-    SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
-  }
-
   handleWebGLCrash = async () => {
     this.webGLCrashDate = new Date()
-    this.saveStorageEntry('webGLCrashed', +this.webGLCrashDate)
-    this.saveStorageEntry('webGLCrashedAtVersion', version)
+    this.saveStorageEntry('webGLCrash', +this.webGLCrashDate)
+    this.saveStorageEntry('webGLCrashVersion', version)
     
-    this.set('webGL', false, true)
+    this.set('webGL', false, true, true)
     this.updateVisibility()
 
-    this.saveStorageEntry('webGL', undefined) // Override false
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
 
     await this.flushPendingStorageEntries()
-    this.showWebGLCrashDescription()
+    this.updateWebGLCrashDescription()
   }
 
-  showWebGLCrashDescription = () => {
+  updateWebGLCrashDescription = () => {
+    const disabledText = SettingsConfig.find(setting => setting.name === 'webGL').disabled || ''
     const labelElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label')
-    labelElem.appendChild(document.createElement('br'))
-
-    const webGLAvailable = SettingsConfig.find(setting => setting.name === 'webGL').disabled === undefined
-    const descriptionElem = document.createElement('span')
-    descriptionElem.classList.add('ytpa-menuitem-description')
-    descriptionElem.style.color = '#fa0'
-    descriptionElem.appendChild(document.createTextNode(`${webGLAvailable ? 'Failed' : 'and failed'} to load at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
-    
-    if(webGLAvailable) {
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createTextNode(`Check your browsers Hardware acceleration and  WebGL settings or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createTextNode('Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.'))
+    let descriptionElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label .ytpa-menuitem-description')
+    if(!descriptionElem) {
+      descriptionElem = document.createElement('span')
+      descriptionElem.classList.add('ytpa-menuitem-description')
+      labelElem.appendChild(descriptionElem)
     }
-
-    labelElem.appendChild(descriptionElem)
+    descriptionElem.style.color = '#fa0'
+    
+    let descriptionText = disabledText
+    if(this.webGLCrashDate) {
+      descriptionText += `${disabledText ? '\r\nAnd the WebGL renderer previously failed' : 'Failed to load'} at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`
+      descriptionText += `\r\n\r\nCheck the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`
+      if(!disabledText) descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.`
+    }
+    descriptionElem.textContent = descriptionText
   }
   
   initMenu() {
@@ -846,12 +818,10 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
-            if(!this.webGLCrashDate || this.webGL) {
-              await this.flushPendingStorageEntries()
-              await new Promise(resolve => setTimeout(resolve, 1000))
-              this.reloadPage()
-              return
-            }
+            await this.flushPendingStorageEntries()
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            this.reloadPage()
+            return
           }
 
           this.ambientlight.sizesInvalidated = true
@@ -1105,7 +1075,7 @@ export default class Settings {
     this.saveStorageEntry(`${setting.name}-key`, clear ? undefined : key)
   }
 
-  set(name, value, updateUI) {
+  set(name, value, updateUI, dontSave = false) {
     const clear = (value === undefined)
     if(clear)
       value = SettingsConfig.find(setting => setting.name === name)?.defaultValue
@@ -1118,7 +1088,7 @@ export default class Settings {
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
-    if(clear || changed) {
+    if(!dontSave && (clear || changed)) {
       this.saveStorageEntry(name, clear ? undefined : value)
     }
 

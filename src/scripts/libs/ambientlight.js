@@ -1034,7 +1034,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       try {
         this.projector = await new ProjectorWebGL(this, this.projectorListElem, this.initProjectorListeners, this.settings)
       } catch(ex) {
-        SentryReporter.captureException(ex)
+        this.projector = undefined
+        if(!this.settings.webGLCrashDate) {
+          SentryReporter.captureException(ex)
+        } else {
+          console.log('Ambient light for YouTube™ | ', ex)
+        }
         this.settings.handleWebGLCrash()
       }
     }
@@ -1082,8 +1087,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       try {
         projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
         projectorsBufferCtx = await projectorsBufferElem.getContext('2d', ctxOptions)
+
+        if(this.settings.webGLCrashDate) {
+          this.settings.webGLCrashDate = undefined
+          this.settings.webGLCrashVersion = undefined
+          this.settings.saveStorageEntry('webGLCrash', undefined)
+          this.settings.saveStorageEntry('webGLCrashVersion', undefined)
+          this.settings.updateWebGLCrashDescription()
+        }
       } catch(ex) {
-        SentryReporter.captureException(ex)
+        projectorsBufferCtx = undefined
+        if(!this.settings.webGLCrashDate) {
+          SentryReporter.captureException(ex)
+        } else {
+          console.log('Ambient light for YouTube™ | ', ex)
+        }
         this.settings.handleWebGLCrash()
       }
     }
