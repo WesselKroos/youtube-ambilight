@@ -767,15 +767,14 @@ html[data-ambientlight-enabled="true"] {
   ytd-live-chat-frame ytd-toggle-button-renderer button {
     text-shadow: inherit !important;
   }
-  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer button {
-    border-radius: 0 !important;
-    box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
+  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer:not(:hover):not(:focus-within) button:not(:active) {
+    background: none !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
     width: 100%; // Fixes shadow clipping

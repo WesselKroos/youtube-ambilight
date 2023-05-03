@@ -37,6 +37,7 @@
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
+      "exclude_matches": ["https://www.youtube.com/live_chat?is_popout=1*"],
       "css": [
         "styles/live-chat.css"
       ],
