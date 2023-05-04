@@ -683,7 +683,8 @@ export default class Settings {
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
-            'prioritizePageLoadSpeed'
+            'prioritizePageLoadSpeed',
+            'enableInPictureInPicture'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)

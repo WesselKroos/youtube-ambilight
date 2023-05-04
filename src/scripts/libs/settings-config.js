@@ -627,6 +627,13 @@ const SettingsConfig = [
     ]
   },
   {
+    name: 'enableInPictureInPicture',
+    label: 'Enable in Picture-in-picture mode',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
     name: 'enabled',
     label: 'Enabled',
     type: 'checkbox',

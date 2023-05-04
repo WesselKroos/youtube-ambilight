@@ -535,7 +535,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
         this.handleVideoErrorTimeout = setTimeout(this.handleVideoError, 1000)
       },
-      click: this.settings.onCloseMenu
+      click: this.settings.onCloseMenu,
+      enterpictureinpicture: async () => {
+        this.videoIsPictureInPicture = true
+        await this.optionalFrame()
+      },
+      leavepictureinpicture: async () => {
+        this.videoIsPictureInPicture = false
+        await this.optionalFrame()
+      }
     }
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name])
@@ -1396,12 +1404,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   isInEnabledView = () => {
     const enableInViews = this.settings.enableInViews
-    const enabled = {
+    const enabledInView = {
       SMALL: enableInViews <= 2,
       THEATER: enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
       FULLSCREEN: enableInViews === 0 || enableInViews >= 4
     }[this.view] || false
-    return enabled
+
+    const enabledInPictureInPicture = this.settings.enableInPictureInPicture || !this.videoIsPictureInPicture
+
+    return enabledInView && enabledInPictureInPicture
   }
 
   async updateSizes() {
