@@ -8,9 +8,9 @@
   &::-moz-range-thumb {@content}
 }
 
-@mixin scrollbar-dark-thin {
+@mixin scrollbar-dark-thin() {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
+  scrollbar-color: rgba(255, 255, 255, .2) transparent !important;
 
   &::-webkit-scrollbar {
     width: 16px;
@@ -24,9 +24,9 @@
     background-color: rgba(255, 255, 255, .2);
   }
 }
-@mixin scrollbar-light-thin {
+@mixin scrollbar-light-thin() {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, .2) rgba(255, 255, 255, .15);
+  scrollbar-color: rgba(0, 0, 0, .2) transparent !important;
 
   &::-webkit-scrollbar {
     width: 16px;
@@ -849,11 +849,11 @@ html[data-ambientlight-enabled="true"] {
     }
     
     ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
-      box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
+      box-shadow: var(--yt-spec-10-percent-layer) 0 1px inset !important;
     }
 
     .playlist-items.ytd-playlist-panel-renderer {
-      @include scrollbar-light-thin()
+      @include scrollbar-light-thin();
     }
 
     ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
@@ -915,7 +915,7 @@ html[data-ambientlight-enabled="true"] {
 
     yt-chip-cloud-chip-renderer:not([selected]) {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-      border: 1px solid var(--yt-spec-10-percent-layer) !important;
+      outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       
       &:hover {
         background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
@@ -925,21 +925,29 @@ html[data-ambientlight-enabled="true"] {
     ytd-watch-metadata {
       #description.ytd-watch-metadata {
         background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       }
       
       .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
         &.yt-spec-button-shape-next {
           &--segmented-start,
           &--segmented-end {
-            border-width: 1px 0 !important;
+            outline: 0 !important;
           }
           &--segmented-start {
-            border-left-width: 1px !important;
+            box-shadow: (
+              var(--yt-spec-10-percent-layer) -1px 0,
+              var(--yt-spec-10-percent-layer) 0 -1px,
+              var(--yt-spec-10-percent-layer) 0 1px
+            ) !important;
           }
           &--segmented-end {
-            border-right-width: 1px !important;
+            box-shadow: (
+              var(--yt-spec-10-percent-layer) 1px 0,
+              var(--yt-spec-10-percent-layer) 0 -1px,
+              var(--yt-spec-10-percent-layer) 0 1px
+            ) !important;
           }
         }
         
@@ -968,7 +976,7 @@ html[data-ambientlight-enabled="true"] {
       }
 
       .playlist-items.ytd-playlist-panel-renderer {
-        @include scrollbar-dark-thin()
+        @include scrollbar-dark-thin();
       }
 
       #playlist #header-description a,
@@ -2220,7 +2228,8 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-button-renderer button,
         #{$info} yt-icon.ytd-menu-renderer,
         ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
-        ytd-watch-metadata #description-inner,
+        ytd-watch-metadata #description-inner #info-container,
+        ytd-watch-metadata #description-inner #description-inline-expander,
         ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
