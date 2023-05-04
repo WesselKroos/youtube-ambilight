@@ -95,8 +95,7 @@ const SettingsConfig = [
       }
       return points;
     })(),
-    manualinput: false,
-    advanced: true
+    manualinput: false
   },
   {
     name: 'prioritizePageLoadSpeed',
