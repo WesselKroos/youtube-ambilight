@@ -13,9 +13,10 @@ const SettingsConfig = [
   },
   {
     type: 'section',
-    label: 'Quality',
-    name: 'sectionQualityPerformanceCollapsed',
-    default: true
+    label: 'Stats',
+    name: 'sectionStatsCollapsed',
+    default: true,
+    advanced: true
   },
   {
     name: 'showFPS',
@@ -43,37 +44,10 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'frameSync',
-    label: 'Synchronization',
-    questionMark: {
-      title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
-    },
-    type: 'list',
-    default: 0,
-    min: 0,
-    max: 1,
-    step: 1,
-    manualinput: false,
-    advanced: true
-  },
-  {
-    name: 'energySaver',
-    label: 'Energy saver',
-    questionMark: {
-      title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
-    },
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'framerateLimit',
-    label: 'Limit framerate (per second)',
-    type: 'list',
-    default: 0,
-    min: 0,
-    max: 60,
-    step: 1
+    type: 'section',
+    label: 'Quality',
+    name: 'sectionQualityPerformanceCollapsed',
+    default: true
   },
   {
     name: 'webGL',
@@ -98,11 +72,26 @@ const SettingsConfig = [
     manualinput: false
   },
   {
-    name: 'prioritizePageLoadSpeed',
-    label: 'Prioritize page load speed',
-    description: 'Show ambient light after the page has loaded',
-    type: 'checkbox',
-    default: true,
+    name: 'framerateLimit',
+    label: 'Limit framerate (per second)',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 60,
+    step: 1
+  },
+  {
+    name: 'frameSync',
+    label: 'Synchronization',
+    questionMark: {
+      title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 1,
+    step: 1,
+    manualinput: false,
     advanced: true
   },
   {
@@ -127,39 +116,35 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'frameBlending',
-    label: 'Smooth motion (frame blending)',
-    questionMark: {
-      title: 'Click for more information about Frame blending',
-      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
-    },
-    description: 'More GPU usage. Works with "Sync video"',
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'frameBlendingSmoothness',
-    label: 'Smooth motion strength',
-    type: 'list',
-    default: 80,
-    min: 0,
-    max: 100,
-    step: 1,
-    advanced: true
-  },
-  {
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
     description: 'Is only applied when the monitor is above 60Hz',
     questionMark: {
       title: 'Click for more information about this bug in Chromium browsers',
-      href: 'https://bugs.chromium.org/p/chromium/issues/detail?id=1431894'
+      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
     },
     type: 'checkbox',
     default: true,
     advanced: true,
     experimental: true
+  },
+  {
+    name: 'energySaver',
+    label: 'Energy saver',
+    questionMark: {
+      title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
+    },
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'prioritizePageLoadSpeed',
+    label: 'Prioritize page load speed',
+    description: 'Show ambient light after the page has loaded',
+    type: 'checkbox',
+    default: true,
+    advanced: true
   },
   {
     type: 'section',
@@ -579,6 +564,28 @@ const SettingsConfig = [
     max: 21.2, // 15 seconds
     step: .02,
     manualinput: false
+  },
+  {
+    name: 'frameBlending',
+    label: 'Smooth motion (frame blending)',
+    questionMark: {
+      title: 'Click for more information about Frame blending',
+      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+    },
+    description: 'More GPU usage. Works with "Sync video"',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'frameBlendingSmoothness',
+    label: 'Smooth motion strength',
+    type: 'list',
+    default: 80,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true
   },
   {
     type: 'section',
