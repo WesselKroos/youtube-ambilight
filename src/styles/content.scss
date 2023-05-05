@@ -163,6 +163,7 @@ html[data-ambientlight-enabled="true"] {
     --yt-spec-text-secondary: rgba(10, 10, 10, 0.8);
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
     --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
+    --yt-spec-outline: var(--yt-spec-10-percent-layer);
   }
   &[dark] {
     // Make all card backgrounds transparent
