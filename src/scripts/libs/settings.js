@@ -850,7 +850,7 @@ export default class Settings {
       await new Promise(resolve => setTimeout(resolve, 0)) // Await for update sizes
       if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
   
-      if(!(await this.ambientlight.projector.initCtx())) return
+      if(!(await this.ambientlight.projector.initCtx(true))) return
       this.setWarning('')
     } catch(ex) {
       this.ambientlight.projector.setWebGLWarning('change')
