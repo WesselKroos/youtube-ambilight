@@ -45,7 +45,7 @@ export default class Ambientlight {
 
   lastUpdateStatsTime = 0
   updateStatsInterval = 1000
-  frameCountHistory = 5000
+  frameCountHistory = 4000
   videoFrameCount = 0
   displayFrameRate = 0
   videoFrameRate = 0
@@ -321,7 +321,8 @@ export default class Ambientlight {
           if(previousDisplayFrameRate > this.displayFrameRate - .5) {
             previousDisplayFrameRateIsStableCount++;
           }
-          if(this.displayFrameRate > 60 || previousDisplayFrameRateIsStableCount > 3) {
+          
+          if(this.displayFrameRate > 70 || previousDisplayFrameRateIsStableCount > 3) {
             this.chromiumBugVideoJitterWorkaround.detectingDisplayFrameRate = false
             displayFrameRateHasBeenAbove60 = this.displayFrameRate > 60
           } else {
@@ -1956,6 +1957,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.scheduledNextFrame = false
     if(this.videoElem.ended) return
 
+    this.displayFrameTime = compose
+    this.displayFrameCount++
+
     if (this.settings.showFrametimes && this.settings.frameSync !== FRAMESYNC_VIDEOFRAMES) {
       const presentedFrames = this.getVideoFrameCount()
       if(
@@ -1973,8 +1977,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       await this.nextFrame(compose)
       this.nextFrameTime = undefined
     }
-    
-    this.displayFrameCount++
   }.bind(this)
   onNextFrameWrapped = wrapErrorHandler(this.onNextFrame)
   scheduleNextFrameDelayed = () => requestAnimationFrame(this.onNextFrameWrapped)
@@ -2068,7 +2070,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       }
 
       if(!this.settings.webGL || this.getImageDataAllowed) {
-        results = (await this.drawAmbientlight()) || {}
+        results = (await this.drawAmbientlight(compose)) || {}
       }
 
       if (this.settings.showFrametimes)
@@ -2166,8 +2168,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   //     and chromium video callback being sometimes 1 frame delayed
   //     and requestVideoFrameCallback being executed at the end of the draw flow
   // - Do more complex logic at a later time
-  detectFrameRate(list, count, currentFrameRate, update) {
-    const time = performance.now()
+  detectFrameRate(list, count, currentFrameRate, currentFrameTime, update) {
+    const time = currentFrameTime || performance.now()
 
     // Add new item
     let fps = 0
@@ -2236,6 +2238,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoFrameCounts,
       this.getVideoFrameCount(),
       this.videoFrameRate,
+      this.videoFrameTime,
       update
     )
   }
@@ -2247,6 +2250,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.displayFrameCounts,
       this.displayFrameCount,
       this.displayFrameRate,
+      this.displayFrameTime,
       update
     )
   }
@@ -2257,6 +2261,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.ambientlightFrameCounts,
       this.ambientlightFrameCount,
       this.ambientlightFrameRate,
+      this.ambientlightFrameTime,
       update
     )
   }
@@ -2285,7 +2290,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.isInEnabledView()
   )
 
-  async drawAmbientlight() {
+  async drawAmbientlight(compose) {
     const shouldShow = this.shouldShow()
     if(!shouldShow) {
       if (!this.isHidden) await this.hide()
@@ -2486,7 +2491,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     this.buffersCleared = false
-    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) this.ambientlightFrameCount++
+    if(!dontDrawBuffer || this.settings.videoOverlayEnabled) {
+      this.ambientlightFrameCount++
+      this.ambientlightFrameTime = compose
+    }
     this.previousDrawTime = drawTime
     if(hasNewFrame) {
       this.previousFrameTime = drawTime
@@ -2781,6 +2789,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.requestVideoFrameCallbackId = undefined
     this.videoFrameCallbackReceived = true
     this.videoPresentedFrames = info?.presentedFrames || 0
+    this.videoFrameTime = compose
     
     if(this.scheduledNextFrame) return
     this.scheduledNextFrame = true
