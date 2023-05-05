@@ -16,7 +16,10 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
   }, true)
 })()
 
-const errorEvents = new ErrorEvents()
+let errorEvents;
+wrapErrorHandler(function initErrorEvents() {
+  errorEvents = new ErrorEvents()
+})()
 
 const getOtherUnknownAppElems = () => 
   [...document.querySelectorAll('body > *')]

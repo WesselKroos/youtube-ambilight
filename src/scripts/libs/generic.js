@@ -76,52 +76,126 @@ export const setTimeout = (handler, timeout) => {
 }
 
 export function on(elem, eventNames, callback, options, getListenerCallback, reportOnce = false) {
-  const stack = new Error().stack
-  const callbacksName = `on_${eventNames.split(' ').join('_')}`
-  let reported = [];
-  const namedCallbacks = {
-    [callbacksName]: async (...args) => {
-      try {
-        await callback(...args)
-      } catch(ex) {
-        if(reportOnce) {
-          if(reported.includes(ex.message)) return
-          reported.push(ex.message)
-        }
-        const e = args[0]
-        let elem = {}
-        if(e && e.currentTarget) {
-          if(e.currentTarget.cloneNode) {
-            elem = e.currentTarget.cloneNode(false)
-          } else {
-            elem.nodeName = e.currentTarget.toString()
+  try {
+    const stack = new Error().stack
+    const callbacksName = `on_${eventNames.split(' ').join('_')}`
+    let reported = [];
+    const namedCallbacks = {
+      [callbacksName]: async (...args) => {
+        try {
+          await callback(...args)
+        } catch(ex) {
+          if(reportOnce) {
+            if(reported.includes(ex.message)) return
+            reported.push(ex.message)
           }
+          
+          const e = args.length ? args[0] : {}
+          const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+          ex.message = `${ex.message} \nOn event: ${type}`
+
+          try {
+            if(elem) {
+              ex.message = `${ex.message} \nElem: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+            }
+          } catch(elemEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              elemEx
+            }
+          }
+
+          try {
+            if(e?.target) {
+              ex.message = `${ex.message} \nTarget: ${e.target.toString()} ${e.target.nodeName || ''}#${e.target.id || ''}.${e.target.className || ''}`
+            }
+          } catch(targetEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              targetEx
+            }
+          }
+
+          try {
+            if(e?.currentTarget) {
+              ex.message = `${ex.message} \nCurrentTarget: ${e.currentTarget.toString()} ${e.currentTarget.nodeName || ''}#${e.currentTarget.id || ''}.${e.currentTarget.className || ''}`
+            }
+          } catch(currentTargetEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              currentTargetEx
+            }
+          }
+
+          ex.details = {
+            ...(ex.details || {}),
+            eventNames,
+            options,
+            reportOnce
+          }
+    
+          appendErrorStack(stack, ex)
+          if(errorHandler)
+            errorHandler(ex)
         }
-        const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
-        ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName || 'Unknown'}`
-  
-        appendErrorStack(stack, ex)
-        if(errorHandler)
-          errorHandler(ex)
       }
     }
+    const eventListenerCallback = namedCallbacks[callbacksName]
+
+    const list = eventNames.split(' ')
+    list.forEach(function eventNamesAddEventListener(eventName) {
+      elem.addEventListener(eventName, eventListenerCallback, options)
+    })
+
+    if(getListenerCallback)
+      getListenerCallback(eventListenerCallback)
+  } catch(ex) {
+    ex.details = {
+      eventNames,
+      options,
+      reportOnce
+    }
+
+    try {
+      if(elem) {
+        ex.message = `${ex.message} \nFor element: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+      }
+    } catch(elemEx) {
+      ex.details = {
+        ...(ex.details || {}),
+        elemEx
+      }
+    }
+    
+    console.log('catched', ex)
+    throw ex
   }
-  const eventListenerCallback = namedCallbacks[callbacksName]
-
-  const list = eventNames.split(' ')
-  list.forEach(function eventNamesAddEventListener(eventName) {
-    elem.addEventListener(eventName, eventListenerCallback, options)
-  })
-
-  if(getListenerCallback)
-    getListenerCallback(eventListenerCallback)
 }
 
 export function off(elem, eventNames, callback) {
-  const list = eventNames.split(' ')
-  list.forEach(function eventNamesRemoveEventListener(eventName) {
-    elem.removeEventListener(eventName, callback)
-  })
+  try {
+    const list = eventNames.split(' ')
+    list.forEach(function eventNamesRemoveEventListener(eventName) {
+      elem.removeEventListener(eventName, callback)
+    })
+  } catch(ex) {
+    ex.details = {
+      eventNames
+    }
+
+    try {
+      if(elem) {
+        ex.message = `${ex.message} \nFor element: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+      }
+    } catch(elemEx) {
+      ex.details = {
+        ...(ex.details || {}),
+        elemEx
+      }
+    }
+    
+    throw ex
+  }
 }
 
 export const html = document.documentElement
