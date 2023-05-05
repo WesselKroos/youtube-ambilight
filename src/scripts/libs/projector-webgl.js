@@ -344,7 +344,8 @@ export default class ProjectorWebGL {
     })
   }.bind(this))
 
-  async initCtx() {
+  // syncCompilation prevents black flickering while settings are changed
+  async initCtx(syncCompilation = false) {
     if(this.cancelCompilation) return false
     if(this.compilationPromise) {
       this.cancelCompilation = true
@@ -672,9 +673,8 @@ export default class ProjectorWebGL {
     // Program
     this.ctx.linkProgram(program);
 
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    const parallelShaderCompileExt = syncCompilation ? undefined : this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-
       let resolveCompilationPromise
       this.compilationPromise = new Promise(resolve => resolveCompilationPromise = async () => {
         resolveCompilationPromise = undefined
@@ -683,6 +683,8 @@ export default class ProjectorWebGL {
         resolve()
       })
 
+      // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
+      this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
       await new Promise(resolve => requestAnimationFrame(resolve))
 
       try {

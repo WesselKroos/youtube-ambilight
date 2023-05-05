@@ -186,8 +186,10 @@ export class WebGLContext {
     this.ctx.attachShader(program, fragmentShader);
     this.ctx.linkProgram(program);
     
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile')
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
+      // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
+      this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
       await new Promise(resolve => requestAnimationFrame(resolve))
 
       try {
@@ -195,7 +197,7 @@ export class WebGLContext {
         while(!compiled) {
           const completionStatus = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
           // COMPLETION_STATUS_KHR can be null because of webgl-lint
-          if(completionStatus !== false) {
+          if(completionStatus === false) {
             await new Promise(resolve => requestIdleCallback(resolve, { timeout: 200 }))
             await new Promise(resolve => requestAnimationFrame(resolve))
           } else {

@@ -88,9 +88,7 @@ export default class Ambientlight {
       }
       await this.initAmbientlightElems()
       this.initBuffersWrapper()
-      console.log('initProjectorBuffers')
       await this.initProjectorBuffers()
-      console.log('recreateProjectors')
       this.recreateProjectors()
       this.stats.initElems()
 
@@ -100,9 +98,7 @@ export default class Ambientlight {
       this.checkGetImageDataAllowed()
       await this.initListeners()
 
-      console.log('enable?')
       if (this.settings.enabled) {
-        console.log('enable')
         try {
           await this.enable(true)
         } catch(ex) {
@@ -1097,11 +1093,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     let projectorsBufferCtx;
     if(this.settings.webGL) {
       try {
-        console.log('initProjectorBuffers 1')
         projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
-        console.log('initProjectorBuffers 2')
         projectorsBufferCtx = await projectorsBufferElem.getContext('2d', ctxOptions)
-        console.log('initProjectorBuffers 3')
 
         if(this.settings.webGLCrashDate) {
           this.settings.webGLCrashDate = undefined
@@ -1120,24 +1113,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.settings.handleWebGLCrash()
       }
     }
-    console.log('initProjectorBuffers 4')
     if(!projectorsBufferCtx) {
       projectorsBufferElem = new SafeOffscreenCanvas(1, 1, true)
-      console.log('initProjectorBuffers 5')
       projectorsBufferCtx = projectorsBufferElem.getContext('2d', ctxOptions)
     }
-    console.log('initProjectorBuffers 6')
 
     if (projectorsBufferElem.tagName === 'CANVAS') {
       this.buffersWrapperElem.appendChild(projectorsBufferElem)
     }
-    console.log('initProjectorBuffers 7')
     this.nonHdrProjectorBuffer = {
       elem: projectorsBufferElem,
       ctx: projectorsBufferCtx
     }
     this.projectorBuffer = this.nonHdrProjectorBuffer
-    console.log('initProjectorBuffers 8 - complete')
   }
 
   initWebGLHdrProjectorBuffer() {
