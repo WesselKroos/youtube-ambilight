@@ -26,6 +26,7 @@ export default class ProjectorWebGL {
       const initialized = await this.initCtx()
       if(!initialized) this.setWebGLWarning('create')
 
+      this.initializedTime = performance.now()
       return this
     }.bind(this))()
   }
@@ -197,7 +198,7 @@ export default class ProjectorWebGL {
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting.`)
   }
 
   onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
@@ -225,13 +226,12 @@ export default class ProjectorWebGL {
         if(!this.lost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.blurLostCount})`)
+      console.error(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.blurLostCount})`)
       this.setWebGLWarning('restore')
     }
   }.bind(this))
 
   initBlurCtx() {
-    console.log('initBlurCtx')
     if(this.blurCanvas) {
       this.containerElem.removeChild(this.blurCanvas)
       if(this.blurCtx) {
@@ -274,7 +274,7 @@ export default class ProjectorWebGL {
     if(detected) return
     
     const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)';
-    console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
+    // console.warn(`Ambient light for YouTube™ | ProjectorWebGL: ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
     await contentScript.setStorageEntry('majorPerformanceCaveatDetected', true)
@@ -288,22 +288,22 @@ export default class ProjectorWebGL {
     await contentScript.setStorageEntry('majorPerformanceCaveatDetected', false)
   }
 
-  onCtxLost = wrapErrorHandler(function onCtxLost(event) {
-    event.preventDefault();
+  onCtxLost = wrapErrorHandler(function projectorCtxLost(event) {
+    event.preventDefault()
 
     this.lost = true
     this.lostCount++
     this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
     this.invalidateShaderCache()
 
-    console.warn(`Ambient light for YouTube™ | ProjectorWebGL context lost (${this.lostCount})`)
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL context lost (${this.lostCount})`)
     this.setWebGLWarning('restore')
   }.bind(this))
 
-  onCtxRestored = wrapErrorHandler(async function onCtxRestored() {
-    console.log(`Ambient light for YouTube™ | ProjectorWebGL restored (${this.lostCount})`)
+  onCtxRestored = wrapErrorHandler(async function projectorCtxRestored() {
+    // console.log(`Ambient light for YouTube™ | ProjectorWebGL restored (${this.lostCount})`)
     if(this.lostCount >= 3) {
-      console.error('Ambient light for YouTube™ | ProjectorWebGL context restored failed 3 times')
+      console.error('Ambient light for YouTube™ | ProjectorWebGL context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
       return
     }
@@ -311,7 +311,6 @@ export default class ProjectorWebGL {
       await new Promise(resolve => requestAnimationFrame(resolve))
       if(!(await this.initCtx())) return
     } catch(ex) {
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restored init error`, ex)
       this.setWebGLWarning()
       throw ex
     }
@@ -325,7 +324,7 @@ export default class ProjectorWebGL {
         if(!this.blurLost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restored failed (${this.lostCount})`)
+      console.error(`Ambient light for YouTube™ | ProjectorWebGL context restore failed (${this.lostCount})`)
       this.setWebGLWarning('restore')
       return
     }
@@ -334,8 +333,8 @@ export default class ProjectorWebGL {
   }.bind(this))
 
   webglcontextcreationerrors = []
-  onCtxCreationError = wrapErrorHandler(function onCtxCreationError(e) {
-    console.log(`Ambient light for YouTube™ | ProjectorWebGL creationerror (${this.lostCount})`)
+  onCtxCreationError = wrapErrorHandler(function projectorCtxCreationError(e) {
+    // console.warn(`Ambient light for YouTube™ | ProjectorWebGL creationerror: ${e.statusMessage}`)
     this.webglcontextcreationerrors.push({
       failIfMajorPerformanceCaveat: this.ctxOptions.failIfMajorPerformanceCaveat,
       message: e.statusMessage || '?',
@@ -369,8 +368,6 @@ export default class ProjectorWebGL {
     }
 
     if(!this.ctx) {
-      this.webglcontextcreationerrors = []
-
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: true,
         preserveDrawingBuffer: false,
@@ -416,6 +413,8 @@ export default class ProjectorWebGL {
                   this.webGLVersion = undefined
 
                   const errors = this.webglcontextcreationerrors
+                  this.webglcontextcreationerrors = []
+
                   let lastErrorMessage = ''
                   for(const error of errors) {
                     const duplicate = error.message === lastErrorMessage
@@ -664,7 +663,7 @@ export default class ProjectorWebGL {
         this.ctx.finish() // Wait for any pending draw calls to finish
         this.ctx.deleteProgram(this.program) // Free GPU memory
       } catch(ex) {
-        console.warn('Failed to delete previous program', ex)
+        console.warn('Ambient light for YouTube™ | Failed to delete previous ProjectorWebGL program', ex)
       }
       this.program = undefined
       this.invalidateShaderCache()
@@ -705,7 +704,7 @@ export default class ProjectorWebGL {
             compiled = false
             this.ctx.deleteProgram(program) // Free GPU memory
           } catch(ex) {
-            console.warn('Failed to delete new program', ex)
+            console.warn('Ambient light for YouTube™ | Failed to delete new ProjectorWebGL program', ex)
           }
         }
   
@@ -1193,7 +1192,7 @@ export default class ProjectorWebGL {
     const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program  || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.log(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid
   }

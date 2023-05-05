@@ -50,36 +50,41 @@ export class WebGLContext {
       this.settings = settings;
       this.setWarning = settings.setWarning;
       this.canvas = canvas;
-      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
-        event.preventDefault();
+      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function webGLContextLost(event) {
+        event.preventDefault()
+
         this.lost = true
         this.lostCount++
         this.viewport = undefined
         this.scaleX = undefined
         this.scaleY = undefined
         this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
+
         console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
         this.setWebGLWarning('restore')
       }.bind(this)), false);
-      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function canvasWebGLContextRestored() {
+      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function webGLContextRestored() {
         console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
         if(this.lostCount >= 3) {
           console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
           this.setWebGLWarning('3 times restore')
           return
         }
+
         await new Promise(resolve => requestAnimationFrame(resolve))
         if(!(await this.initCtx())) return
+
         if(this.ctx && !this.ctx.isContextLost()) {
           this.lost = false
-          if(!window.ambientlight.projector?.lost && !window.ambientlight.projector?.blurLost) this.setWarning('')
+          if(!window.ambientlight.projector?.lost && !window.ambientlight.projector?.blurLost)
+            this.setWarning('')
         } else {
           console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
           this.setWebGLWarning('restore')
         }
       }.bind(this)), false);
-      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
-        console.log(`Ambient light for YouTube™ | WebGLContext creationerror (${this.lostCount})`)
+      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function webGLContextCreationError(e) {
+        // console.warn(`Ambient light for YouTube™ | WebGLContext creationerror: ${e.statusMessage}`)
         this.webglcontextcreationerrors.push({
           message: e.statusMessage || '?',
           time: performance.now(),
@@ -89,13 +94,14 @@ export class WebGLContext {
 
       this.options = options;
       await this.initCtx()
+      this.initializedTime = performance.now()
 
       return this
     }.bind(this))()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
   }
 
   webglcontextcreationerrors = []
@@ -105,14 +111,12 @@ export class WebGLContext {
         this.ctx.finish() // Wait for any pending draw calls to finish
         this.ctx.deleteProgram(this.program) // Free GPU memory
       } catch(ex) {
-        console.warn('Failed to delete previous program', ex)
+        console.warn('Ambient light for YouTube™ | Failed to delete previous WebGLContext program', ex)
       }
       this.program = undefined
     }
 
     if(!this.ctx) {
-      this.webglcontextcreationerrors = []
-
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
@@ -131,6 +135,8 @@ export class WebGLContext {
           this.webGLVersion = undefined
 
           const errors = this.webglcontextcreationerrors
+          this.webglcontextcreationerrors = []
+
           let lastErrorMessage = ''
           for(const error of errors) {
             const duplicate = error.message === lastErrorMessage
@@ -531,7 +537,7 @@ export class WebGLContext {
     const invalid = this.isContextLost() || !this.program;
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.log(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
     }
     return invalid;
   }

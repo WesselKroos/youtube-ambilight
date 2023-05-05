@@ -54,12 +54,7 @@ export default class Ambientlight {
   ambientlightVideoDroppedFrameCount = 0
   previousFrameTime = 0
   previousDrawTime = 0
-  lastClear = 0
-
-  enableMozillaBug1606251Workaround = false
-  enableChromiumBug1123708Workaround = false
-  enableChromiumBug1092080Workaround = false
-  enableChromiumBugDirectVideoOverlayWorkaround = false
+  clearTime = 0
 
   constructor(ytdAppElem, videoElem) {
     return (async function AmbientlightConstructor() {
@@ -509,14 +504,14 @@ export default class Ambientlight {
       },
       ended: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
-        if(this.lastClear < performance.now() - 500) this.clear()
+        if(this.clearTime < performance.now() - 500) this.clear()
         this.stats.hide()
         this.scheduledNextFrame = false
         this.resetVideoParentElemStyle() // Prevent visible video element above player because of the modified style attribute
       },
       emptied: () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
-        if(this.lastClear < performance.now() - 500) this.clear()
+        if(this.clearTime < performance.now() - 500) this.clear()
         this.scheduledNextFrame = false
       },
       error: (ex) => {
@@ -526,7 +521,7 @@ export default class Ambientlight {
 Video error: ${mediaErrorToString(error?.code)} ${error?.message ? `(${error?.message})` : ''}
 Video network state: ${networkStateToString(videoElem?.networkState)}
 Video ready state: ${readyStateToString(videoElem?.readyState)}`)
-        if(this.lastClear < performance.now() - 500) this.clear()
+        if(this.clearTime < performance.now() - 500) this.clear()
         this.cancelScheduledRequestVideoFrame()
         if(this.handleVideoErrorTimeout) return
 
@@ -759,7 +754,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(!viewChanged && !videoHiddenChanged) return
 
       if(videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
-        if(this.lastClear < performance.now() - 500) this.clear()
+        if(this.clearTime < performance.now() - 500) this.clear()
         this.resetVideoParentElemStyle()
         return
       }
@@ -870,47 +865,26 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.isPageHidden === isPageHidden) return
     this.isPageHidden = isPageHidden
     
-    console.log('page hidden', isPageHidden)
 
     if(isPageHidden) {
+      this.pageHiddenTime = performance.now()
       this.checkIfNeedToHideVideoOverlay()
       this.buffersCleared = true
       this.sizesChanged = true
 
-      this.handlePageVisibilityTimeout = setTimeout(() => {
+      this.handlePageVisibilityTimeout = setTimeout(function handlePageVisibility() {
         this.handlePageVisibilityTimeout = undefined
+        this.pageHiddenClearTime = performance.now()
 
         // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
         // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
 
         // Set canvas sizes & textures to 1x1 to clear GPU memory
-        try {
-          console.log('clear after page hidden')
-          this.clear()
-          // if(this.projector?.ctx && !this.projector.ctx.isContextLost()) {
-          // this.projector.canvas.width = 1
-          // this.projector.canvas.height = 1
-          // if(this.projector.blurCanvas) {
-          //   this.projector.blurCanvas.width = 1
-          //   this.projector.blurCanvas.height = 1
-          // }
-          // this.projector.shadow.elem.width = 1
-          // this.projector.shadow.elem.height = 1
-          // this.buffersCleared = true
-          // this.sizesChanged = true
-
-          // this.projectorBuffer.elem.width = 1
-          // this.projectorBuffer.elem.height = 1
-
-          console.log('handlePageVisibility - Cleared GPU memory')
-        } catch(ex) {
-          console.error('handlePageVisibility - Failed to clear GPU memory:')
-          console.error(ex)
-        }
-      }, 3000)
+        this.clear()
+      }.bind(this), 3000)
     } else {
+      this.pageShownTime = performance.now()
       await this.optionalFrame()
-      console.log('handlePageVisibility - Page visible')
     }
   }
 
@@ -1243,7 +1217,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   clear() {
-    this.lastClear = performance.now()
+    this.clearTime = performance.now()
     this.barDetection.clear()
 
     // Clear canvasses
@@ -1273,14 +1247,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
           } else {
             canvas.ctx.clearRect()
           }
-        } else {
-          console.log('skipped clearing lost canvas', canvas)
         }
       } else if(canvas.elem) {
-        console.log('canvas has no clearRect', canvas)
-        canvas.elem.width = 1;
-      } else {
-        console.log('canvas has no elem', canvas)
+        canvas.elem.width = 1
       }
     }
 
@@ -2034,7 +2003,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   optionalFrame = async () => {
     if(
-      !this.initialized ||
+      !this.initializedTime ||
       !this.settings.enabled ||
       !this.isOnVideoPage ||
       this.pendingStart ||
@@ -2742,7 +2711,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
-    this.initialized = performance.now()
+    this.initializedTime = performance.now()
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
@@ -2798,7 +2767,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }.bind(this), true)
 
   async hide() {
-    console.log('hide')
     if (this.isHidden) return
     this.isHidden = true
 

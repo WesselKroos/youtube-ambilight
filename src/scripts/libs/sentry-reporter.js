@@ -34,13 +34,13 @@ const createNodeEntry = (node, level) => ({
   node,
   children: []
 })
-const findEntry = (node, entry) => {
-  if(entry.node === node) return entry
-  for (entry of entry.children) {
-    const foundEntry = findEntry(node, entry)
-    if(foundEntry) return foundEntry
-  }
-}
+// const findEntry = (node, entry) => {
+//   if(entry.node === node) return entry
+//   for (entry of entry.children) {
+//     const foundEntry = findEntry(node, entry)
+//     if(foundEntry) return foundEntry
+//   }
+// }
 const entryToString = (entry) => {
   let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`]
   entry.children.forEach(childEntry => {
@@ -285,13 +285,16 @@ export default class SentryReporter {
           if (ambientlightExtra.initialized) {
             ambientlightExtra.now = performance.now()
             const keys = [
+              'initializedTime',
               'ambientlightFrameCount',
+              'ambientlightFrameRate',
+              'displayFrameCount',
+              'displayFrameRate',
               'videoFrameCount',
+              'videoFrameRate',
               'ambientlightVideoDroppedFrameCount',
               'droppedVideoFramesCorrection',
-              'ambientlightFrameRate',
-              'videoFrameRate',
-              'displayFrameRate',
+              'averageVideoFramesDifference',
               'previousDrawTime',
               'previousFrameTime',
               'buffersCleared',
@@ -302,16 +305,20 @@ export default class SentryReporter {
               'requestVideoFrameCallbackId',
               'videoFrameCallbackReceived',
               'scheduledNextFrame',
-              'videoResizeHandled',
               'view',
               'isOnVideoPage',
               'atTop',
               'isFillingFullscreen',
               'isHidden',
-              'isPageHidden',
-              'videoIsHidden',
               'isAmbientlightHiddenOnWatchPage',
+              'videoIsHidden',
+              'videoIsPictureInPicture',
               'isVideoHiddenOnWatchPage',
+              'isPageHidden',
+              'pageHiddenTime',
+              'pageHiddenClearTime',
+              'pageShownTime',
+              'clearTime',
               'isVR',
               'srcVideoOffset.top',
               'srcVideoOffset.width',
@@ -323,22 +330,40 @@ export default class SentryReporter {
               'p.w',
               'p.h',
               'levels',
-              'enableChromiumBug1092080Workaround',
-              'enableChromiumBug1123708Workaround',
-              'enableChromiumBug1142112Workaround',
+              'enableMozillaBugReadPixelsWorkaround',
               'enableMozillaBug1606251Workaround',
+              'enableChromiumBug1142112Workaround',
+              'enableChromiumBug1123708Workaround',
+              'enableChromiumBug1092080Workaround',
+              'enableChromiumBugDirectVideoOverlayWorkaround',
+              'enableChromiumBugVideoJitterWorkaround',
               'getImageDataAllowed',
+              'projectorBuffer.elem.width',
+              'projectorBuffer.elem.height',
+              'projectorBuffer.ctx.initializedTime',
+              'projectorBuffer.ctx.lost',
+              'projectorBuffer.ctx.lostCount',
+              'projectorBuffer.ctx.webGLVersion',
+              'projectorBuffer.ctx.webglcontextcreationerrors',
+              'projectorBuffer.ctx.ctx.drawingBufferColorSpace',
+              'projectorBuffer.ctx.ctx.unpackColorSpace',
+              'projector.initializedTime',
               'projector.type',
               'projector.webGLVersion',
               'projector.width',
               'projector.height',
-              'projector.heightCrop',
               'projector.blurBound',
               'projector.projectors.length',
               'projector.scale.x',
               'projector.scale.y',
+              'projector.lost',
               'projector.lostCount',
-              'projector.majorPerformanceCaveat'
+              'projector.blurLost',
+              'projector.blurLostCount',
+              'projector.majorPerformanceCaveat',
+              'projector.webglcontextcreationerrors',
+              'projector.ctx.drawingBufferColorSpace',
+              'projector.ctx.unpackColorSpace'
             ]
             keys.forEach(key => {
               try {
@@ -364,6 +389,7 @@ export default class SentryReporter {
             settingsExtra[`${setting.name}-key`] = setting.key
           })
           settingsExtra.webGLCrashDate = settings.webGLCrashDate
+          settingsExtra.webGLCrashVersion = settings.webGLCrashVersion
           setExtra('Settings', settingsExtra)
         }
       } catch (ex) { 
