@@ -28,13 +28,14 @@ export default class Projector2d {
     console.log('Ambient light for YouTube™ | Lost 2d projector')
     this.lostCount++
     // event.preventDefault(); // Prevents restoration
-    this.settings.setWarning('Failed to restore the renderer.\nReload the page to try it again.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
+    this.settings.setWarning('Failed to restore the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
   }
 
   onProjectorCtxRestored = (event) => {
     if(this.lostCount  >= 3 * this.projectors.length) {
       console.error('Ambient light for YouTube™ | Projector2D context restore failed 3 times')
-      this.settings.setWarning('Failed to 3 times restore the renderer.\nReload the page to try it again.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
+                                
+      this.settings.setWarning('Failed to restore 3 times the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
       return
     }
 

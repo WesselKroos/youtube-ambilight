@@ -336,10 +336,11 @@ export default class ProjectorWebGL {
   onCtxCreationError = wrapErrorHandler(function projectorCtxCreationError(e) {
     // console.warn(`Ambient light for YouTube™ | ProjectorWebGL creationerror: ${e.statusMessage}`)
     this.webglcontextcreationerrors.push({
+      webGLVersion: this.webGLVersion,
       failIfMajorPerformanceCaveat: this.ctxOptions.failIfMajorPerformanceCaveat,
+      stencil: this.ctxOptions.stencil,
       message: e.statusMessage || '?',
       time: performance.now(),
-      webGLVersion: this.webGLVersion
     })
   }.bind(this))
 

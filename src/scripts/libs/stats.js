@@ -116,7 +116,7 @@ export default class Stats {
         : '';
       const projector = this.ambientlight.projector
       const projectorBufferResolution = this.settings.webGL
-        ? `AMBIENT BUFFER: ${projector?.canvas?.width ?? '?'}x${projector?.canvas?.height ?? '?'} 
+        ? `AMBIENT BUFFER: ${projector?.elem?.width ?? '?'}x${projector?.elem?.height ?? '?'} 
          [ load: ${(projector?.loadTime ?? 0).toFixed(1)}ms
           | draw: ${(projector?.drawTime ?? 0).toFixed(1)}ms]`
         : '';
