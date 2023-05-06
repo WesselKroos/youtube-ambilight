@@ -145,13 +145,13 @@ const tryInitAmbientlight = async () => {
     return
   }
 
-  const ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy')
+  const ytdWatchFlexyElem = document.querySelector('ytd-app ytd-watch-flexy')
   if(!ytdWatchFlexyElem) {
     logErrorEventWithPageTrees('initialize - not found yet: ytd-watch-flexy')
     return
   }
 
-  const mastheadElem = document.querySelector('#masthead-container')
+  const mastheadElem = document.querySelector('ytd-app #masthead-container')
   if(!mastheadElem) {
     logErrorEventWithPageTrees('initialize - not found yet: #masthead-container')
     return
