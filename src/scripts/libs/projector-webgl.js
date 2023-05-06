@@ -1088,10 +1088,10 @@ export default class ProjectorWebGL {
     }
     
     const crop = {
-      t: Math.max(0, cropPerc.top), 
-      r: Math.max(0, cropPerc.right), 
-      b: -Math.max(0, cropPerc.bottom), 
-      l: -Math.max(0, cropPerc.left)
+      t: Math.max(0, cropPerc.top.toFixed(2)), 
+      r: Math.max(0, cropPerc.right.toFixed(2)), 
+      b: -Math.max(0, cropPerc.bottom.toFixed(2)), 
+      l: -Math.max(0, cropPerc.left.toFixed(2))
     }
 
     const cutPerc = {
@@ -1101,30 +1101,23 @@ export default class ProjectorWebGL {
       bottom: (videoRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
     }
     const vcut = {
-      t: Math.min(Math.max(0, cutPerc.top), crop.t), 
-      r: Math.min(Math.max(0, cutPerc.right), crop.r), 
-      b: -Math.min(Math.max(0, cutPerc.bottom), -crop.b),  
-      l: -Math.min(Math.max(0, cutPerc.left), -crop.l)
+      t: Math.min(Math.max(0, cutPerc.top.toFixed(2)), crop.t), 
+      r: Math.min(Math.max(0, cutPerc.right.toFixed(2)), crop.r), 
+      b: -Math.min(Math.max(0, cutPerc.bottom.toFixed(2)), -crop.b),  
+      l: -Math.min(Math.max(0, cutPerc.left.toFixed(2)), -crop.l)
     }
     
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
-    
-    // Turn on stencil drawing
-    this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.REPLACE);
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.STENCIL_BUFFER_BIT); // Clear color and stencil buffers
 
-    this.ctx.stencilFunc(this.ctx.ALWAYS, 1, 0xff);
-    this.ctx.stencilMask(0xff);
-    this.ctx.colorMask(false, false, false, false);
+    this.ctx.colorMask(false, false, false, false); // Disable color buffer drawing
+    this.ctx.stencilFunc(this.ctx.ALWAYS, 1, 0xff); // Disable stencil test
+    this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.REPLACE); // Define what bits to draw in which cases to the stencil
 
     this.ctx.uniform1f(this.fDrawingStencilLoc, 1);
 
     // Set buffers to crop to mask
     // [p1x, p1y, p2x, p2y, p3x, p3y] = triangle points
     const stencilPoints = [
-      // // Old points for TRIANGLE_FAN
-      // crop.l, crop.t,  crop.l, crop.b,  crop.r, crop.b, 
-      // crop.l, crop.t,  crop.r, crop.t,  crop.r, crop.b, 
-
       // Top
       crop.l, crop.t,  crop.r, crop.t,  vcut.r, vcut.t, 
       crop.l, crop.t,  vcut.r, vcut.t,  vcut.l, vcut.t, 
@@ -1144,7 +1137,6 @@ export default class ProjectorWebGL {
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(stencilPoints), this.ctx.STATIC_DRAW);
 
     // Draw stencil mask
-    this.ctx.clear(this.ctx.STENCIL_BUFFER_BIT);
     this.ctx.drawArrays(this.ctx.TRIANGLES, 0, stencilPoints.length / 2);
 
     // Restore position to full viewport
@@ -1153,9 +1145,9 @@ export default class ProjectorWebGL {
     // Turn off stencil drawing
     this.ctx.uniform1f(this.fDrawingStencilLoc, 0);
 
-    this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff);
-    this.ctx.stencilMask(0x00);
-    this.ctx.colorMask(true, true, true, true);
+    this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.KEEP); // Define to always keep the current bits in the stencil
+    this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff); // Re-enable stencil test
+    this.ctx.colorMask(true, true, true, true); // Re-enable color buffer drawing
 
     this.stencil = true
   }
