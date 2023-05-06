@@ -135,12 +135,29 @@ const tryInitAmbientlight = async () => {
 
   const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
-    logErrorEventWithPageTrees('initialize')
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-flexy video.html5-main-video')
     return
   }
 
-  const ytdAppElem = videoElem.closest('ytd-app')
-  window.ambientlight = await new Ambientlight(ytdAppElem, videoElem)
+  const ytdAppElem = document.querySelector('ytd-app')
+  if(!ytdAppElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-app')
+    return
+  }
+
+  const ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy')
+  if(!ytdWatchFlexyElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-watch-flexy')
+    return
+  }
+
+  const mastheadElem = document.querySelector('#masthead-container')
+  if(!mastheadElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: #masthead-container')
+    return
+  }
+  
+  window.ambientlight = await new Ambientlight(ytdAppElem, ytdWatchFlexyElem, videoElem, mastheadElem)
 
   errorEvents.list = []
   detectDetachedVideo()

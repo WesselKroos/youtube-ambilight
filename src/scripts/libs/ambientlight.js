@@ -56,13 +56,11 @@ export default class Ambientlight {
   previousDrawTime = 0
   clearTime = 0
 
-  constructor(ytdAppElem, videoElem) {
+  constructor(ytdAppElem, ytdWatchFlexyElem, videoElem, mastheadElem) {
     return (async function AmbientlightConstructor() {
       this.ytdAppElem = ytdAppElem
-      this.mastheadElem = document.querySelector('#masthead-container')
-      if(!this.mastheadElem) {
-        throw new Error(`Cannot find mastheadElem: #masthead-container`)
-      }
+      this.ytdWatchFlexyElem = ytdWatchFlexyElem
+      this.mastheadElem = mastheadElem
 
       this.detectChromiumBug1142112Workaround()
       this.detectChromiumBugDirectVideoOverlayWorkaround()
@@ -120,11 +118,6 @@ export default class Ambientlight {
 
   get ytdWatchFlexyElemFromVideo() {
     return this.videoElem?.closest('ytd-watch-flexy')
-  }
-
-  get ytdWatchFlexyElem() {
-    if(!this._ytdWatchFlexyElem) this._ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy')
-    return this._ytdWatchFlexyElem
   }
 
   get thumbnailOverlayElem() {
@@ -389,13 +382,11 @@ export default class Ambientlight {
 
   initAverageVideoFramesDifferenceListeners() {
     try {
-      if(this.ytdWatchFlexyElem) {
-        on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
-          if(this.averageVideoFramesDifference === 1) return
+      on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
+        if(this.averageVideoFramesDifference === 1) return
 
-          this.resetAverageVideoFramesDifference()
-        }, undefined, undefined, true)
-      }
+        this.resetAverageVideoFramesDifference()
+      }, undefined, undefined, true)
       on(document, 'yt-page-data-updated', () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
 
@@ -415,7 +406,7 @@ export default class Ambientlight {
   }
 
   calculateAverageVideoFramesDifference = async () => {
-    if(!this.settings.energySaver || !this.ytdWatchFlexyElem) return
+    if(!this.settings.energySaver) return
 
     try {
       // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
@@ -542,14 +533,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       on(this.videoElem, name, this.videoListeners[name])
     }
     
-    if(this.ytdWatchFlexyElem) {
-      this.playerListeners = this.playerListeners || {
-        'yt-autonav-pause-player-ended': this.videoListeners.ended
-      }
-      for (const name in this.playerListeners) {
-        off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
-        on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
-      }
+    this.playerListeners = this.playerListeners || {
+      'yt-autonav-pause-player-ended': this.videoListeners.ended
+    }
+    for (const name in this.playerListeners) {
+      off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+      on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
     }
 
     if(this.videoObserver) {
