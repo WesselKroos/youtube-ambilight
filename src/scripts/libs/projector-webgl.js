@@ -421,7 +421,7 @@ export default class ProjectorWebGL {
 
     if(!this.ctx || this.ctx.isContextLost()) return
 
-    if ('drawingBufferColorSpace' in this.ctx) {
+    if ('drawingBufferColorSpace' in this.ctx && 'unpackColorSpace' in this.ctx) {
       this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace
       this.ctx.unpackColorSpace = ctxOptions.colorSpace
     }

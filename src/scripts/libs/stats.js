@@ -440,18 +440,18 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
       .map(ft => Math.min(...[ft.video?.decode, ft.video?.compose].filter(t => isFinite(t))))
       .filter(t => isFinite(t))
       .sort((a, b) => a - b)
-    const averageMinTimesPercentile90 = Math.floor(averageMinTimes.length * .9)
-    averageMinTimes = averageMinTimes.slice(offsettedFrameTimes.length - averageMinTimesPercentile90, averageMinTimesPercentile90)
-    const min = Math.round(Math.min(...averageMinTimes) / displayFrameDuration) * displayFrameDuration;
+    const minPercentile90Length = Math.floor(averageMinTimes.length * .9)
+    const averageMinTimesPercentile90 = averageMinTimes.slice(averageMinTimes.length - minPercentile90Length, minPercentile90Length)
+    const min = Math.round(Math.min(...averageMinTimesPercentile90) / displayFrameDuration) * displayFrameDuration;
 
     let averageMaxTimes = offsettedFrameTimes
-      .map(ft => Math.max(...[ft.video?.display, ft.nextCompose, ft.nextDisplay].filter(t => isFinite(t))))
+      .map(ft => Math.max(...[ft.video?.display, ft.drawEnd, ft.nextCompose, ft.nextDisplay].filter(t => isFinite(t))))
       .filter(t => isFinite(t))
       .sort((a, b) => a - b)
-    const averageMaxTimesPercentile90 = Math.floor(averageMaxTimes.length * .9)
-    averageMaxTimes = averageMaxTimes.slice(0, averageMaxTimesPercentile90)
-    const max = Math.round(Math.max(...averageMaxTimes) / displayFrameDuration) * displayFrameDuration;
-    // console.log(min, max, averageMinTimes, averageMaxTimes);
+    const maxPercentile90Length = Math.floor(averageMaxTimes.length * .9)
+    const averageMaxTimesPercentile90 = averageMaxTimes.slice(0, maxPercentile90Length)
+    const max = Math.round(Math.max(...averageMaxTimesPercentile90) / displayFrameDuration) * displayFrameDuration;
+
     this.ambientlightFTAxisLegendTopElem.childNodes[0].nodeValue = `${max.toFixed(1)}ms`
     this.ambientlightFTAxisLegendBottomElem.childNodes[0].nodeValue = `${min.toFixed(1)}ms`
 
