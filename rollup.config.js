@@ -1,24 +1,23 @@
 import resolve from '@rollup/plugin-node-resolve'
-import stripCode from "rollup-plugin-strip-code"
 import babel from '@rollup/plugin-babel'
 
 const common = {
   context: 'window',
   plugins: [
     resolve(),
-    stripCode({
-      pattern: /var script = global\.document\.createElement\('script'\);(.*?)appendChild\(script\);(.*?)\}/gs // Removes Sentry script injection
-    }),
-    stripCode({
-      pattern: /var sandbox = doc(.*?)\.createElement\('iframe'\);(.*?)removeChild\(sandbox\);/gs // Removes Sentry iframe injection
-    }),
     babel({
       babelHelpers: 'bundled',
       comments: false,
       sourceMaps: false,
       plugins: [
         ['@babel/plugin-proposal-class-properties', { loose: true }],
-        '@babel/plugin-proposal-optional-chaining'
+        '@babel/plugin-proposal-optional-chaining',
+        ['babel-plugin-transform-replace-expressions', {
+          replace: {
+            "instrumentFetch()": "window", // Removes Sentry iframe injection
+            "getNativeFetchImplementation()": "window.fetch", // Removes Sentry iframe injection
+          }
+        }]
       ],
     })
   ]

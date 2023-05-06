@@ -1,6 +1,9 @@
+import { BrowserClient, defaultStackParser, makeFetchTransport } from '@sentry/browser/esm';
+import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/dedupe";
+import { Hub, makeMain, getCurrentHub } from '@sentry/hub/esm/hub';
+import { Scope } from '@sentry/hub/esm/scope';
+
 import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4 } from './generic';
-import { BrowserClient } from '@sentry/browser/esm/client';
-import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
 import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
 
@@ -115,7 +118,9 @@ function initClient() {
   client = new BrowserClient({
     enabled: true,
     dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
-    defaultIntegrations: false,
+    transport: makeFetchTransport,
+    stackParser: defaultStackParser,
+    integrations: [new DedupeIntegration()],
     release: version || 'pending',
     attachStacktrace: true,
     maxValueLength: 500,
