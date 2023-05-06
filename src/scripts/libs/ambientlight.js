@@ -1460,6 +1460,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       scale(${(videoScale / 100)}) 
       scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
     `
+    if(this.settings.webGL)
+      this.projector.cropped = false
     
     if(this.settings.videoShadowOpacity != 0 && this.settings.videoShadowSize != 0) {
       this.videoShadowElem.style.display = 'block'

@@ -992,9 +992,6 @@ export default class ProjectorWebGL {
   updateCrop() {
     if(this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
-    const canvasRect = this.blurCanvas.getBoundingClientRect()
-    if(!canvasRect?.width || !canvasRect?.height) return
-
     const videoBoundingElem = this.ambientlight.shouldStyleVideoParentElem
       ? this.ambientlight.videoContainerElem
       : this.ambientlight.videoElem
@@ -1002,6 +999,9 @@ export default class ProjectorWebGL {
 
     let videoRect = videoBoundingElem.getBoundingClientRect()
     if(!videoRect?.width || !videoRect?.height) return
+
+    const canvasRect = this.blurCanvas.getBoundingClientRect()
+    if(!canvasRect?.width || !canvasRect?.height) return
 
     const blurScale = (canvasRect.height / this.blurCanvas.height) // Todo: The blurRadius is appearently incorrect?
     const blurSize = this.blurBound * blurScale
@@ -1085,8 +1085,11 @@ export default class ProjectorWebGL {
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vPosition), this.ctx.STATIC_DRAW);
     
-    // Convert positions coordinates to uv coördinates
-    this.vUV = this.vPosition.map(p => (p + 1) / 2)
+    // Convert positions coordinates to UV coördinates
+    this.vUV = this.vPosition.map((p, i) => 
+      (((i % 2 == 0) ? p : -p) // Flip the y-axis of UV coördinates
+      + 1) / 2
+    )
 
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vUVBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vUV), this.ctx.STATIC_DRAW);
