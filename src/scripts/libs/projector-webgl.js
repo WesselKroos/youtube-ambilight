@@ -1056,7 +1056,6 @@ export default class ProjectorWebGL {
       l: -Math.min(Math.max(0, cutPerc.left.toFixed(4)), -crop.l)
     }
 
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT)
     this.updatePositionAndUvCoordinates(crop, cut)
     this.cropped = true
   }
@@ -1064,7 +1063,7 @@ export default class ProjectorWebGL {
   updatePositionAndUvCoordinates(crop = { t: 1, r: 1, b: -1, l: -1  }, cut = { t: 0, r: 0, b: 0, l: 0 }) {
     // Convert cut and crop rectangles to position coordinates
     //   [p1x, p1y, p2x, p2y, p3x, p3y] = triangle points
-    this.vPosition = [
+    const vPosition = [
       // Bottom
       crop.l, crop.b,  crop.r, crop.b,  cut.r, cut.b,
       crop.l, crop.b,  cut.r, cut.b,  cut.l, cut.b,
@@ -1081,6 +1080,12 @@ export default class ProjectorWebGL {
       crop.l, crop.t,  crop.l, crop.b,  cut.l, cut.t,
       crop.l, crop.b,  cut.l, cut.b,  cut.l, cut.t,
     ];
+
+    if(JSON.stringify(this.vPosition) === JSON.stringify(vPosition)) return
+
+    this.vPosition = vPosition
+
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT)
 
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vPosition), this.ctx.STATIC_DRAW);
