@@ -1046,6 +1046,7 @@ html[data-ambientlight-enabled="true"] {
     top: 0;
     left: 0;
     contain: strict;
+    will-change: transform; // Improves resizing performance
   }
 
   .ambientlight__clip {
@@ -1153,7 +1154,7 @@ html[data-ambientlight-enabled="true"] {
   opacity: 0;
   cursor: default;
   transition: none;
-  will-change: width,height;
+  will-change: width,height,transform,opacity !important; // Improves scrolling performance
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
@@ -2407,7 +2408,7 @@ html[data-ambientlight-enabled="true"] {
   background: #00000001;
   display: none;
   contain: strict;
-  backface-visibility: hidden;
+  will-change: transform;
 
   html[data-ambientlight-enabled="true"] & {
     display: block;
