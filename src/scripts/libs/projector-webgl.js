@@ -198,7 +198,7 @@ export default class ProjectorWebGL {
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting.`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nAnother possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`)
   }
 
   onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
@@ -213,7 +213,7 @@ export default class ProjectorWebGL {
   onBlurCtxRestored = wrapErrorHandler(async function wrappedOnBlurCtxRestored() {
     console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context restored (${this.blurLostCount})`)
     if(this.blurLostCount >= 3) {
-      console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
+      console.error('Ambient light for YouTube™ | ProjectorWebGL blur context was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
       this.setWebGLWarning('3 times restore')
       return
     }
@@ -1192,7 +1192,7 @@ export default class ProjectorWebGL {
     const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program  || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.log(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.log(`Ambient light for YouTube™ | ProjectorWebGL context is lost`)
     }
     return invalid
   }
