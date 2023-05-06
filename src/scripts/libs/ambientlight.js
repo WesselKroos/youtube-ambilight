@@ -1594,7 +1594,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         try {
           videoOverlayWidth = Math.min(this.srcVideoOffset.width, Math.round(parseInt(this.videoElem.style.width) * window.devicePixelRatio) || this.videoElem.clientWidth)
           videoOverlayHeight = Math.min(this.srcVideoOffset.height, Math.round(parseInt(this.videoElem.style.height) * window.devicePixelRatio) || this.videoElem.clientHeight)
-        // eslint-disable-next-line no-empty
         } catch {}
 
         this.videoOverlay.elem.width = videoOverlayWidth

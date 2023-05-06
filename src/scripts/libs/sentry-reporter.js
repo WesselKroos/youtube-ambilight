@@ -536,14 +536,14 @@ export class ErrorEvents {
   list = []
   
   constructor() {
-    on(window, 'beforeunload', (e) => {
+    on(window, 'beforeunload', () => {
       if(!this.list.length) return
       
       this.add('tab beforeunload')
       this.send()
     }, false)
     
-    on(window, 'pagehide', (e) => {
+    on(window, 'pagehide', () => {
       if(!this.list.length) return
       
       this.add('tab pagehide')
