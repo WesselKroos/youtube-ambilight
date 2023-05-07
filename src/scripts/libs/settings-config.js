@@ -95,40 +95,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'videoOverlayEnabled',
-    label: 'Sync video with ambient light',
-    questionMark: {
-      title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
-    },
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'videoOverlaySyncThreshold',
-    label: 'Sync video disable threshold',
-    description: 'Disable when dropping % of frames',
-    type: 'list',
-    default: 5,
-    min: 1,
-    max: 100,
-    step: 1,
-    advanced: true
-  },
-  {
-    name: 'chromiumBugVideoJitterWorkaround',
-    label: 'Video jitter workaround',
-    description: 'Only required for monitors above 60Hz',
-    questionMark: {
-      title: 'Click for more information about this bug in Chromium browsers',
-      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
-    },
-    type: 'checkbox',
-    default: true,
-    advanced: true,
-    experimental: true
-  },
-  {
     name: 'energySaver',
     label: 'Save energy on static videos',
     questionMark: {
@@ -286,6 +252,40 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: .1
+  },
+  {
+    name: 'videoOverlayEnabled',
+    label: 'Sync video with ambient light',
+    questionMark: {
+      title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
+    },
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'videoOverlaySyncThreshold',
+    label: 'Sync video disable threshold',
+    description: 'Disable when dropping % of frames',
+    type: 'list',
+    default: 5,
+    min: 1,
+    max: 100,
+    step: 1,
+    advanced: true
+  },
+  {
+    name: 'chromiumBugVideoJitterWorkaround',
+    label: 'Video jitter workaround',
+    description: 'Only required for monitors above 60Hz',
+    questionMark: {
+      title: 'Click for more information about this bug in Chromium browsers',
+      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true,
+    experimental: true
   },
   {
     type: 'section',
@@ -499,7 +499,7 @@ const SettingsConfig = [
   {
     name: 'edge',
     label: 'Edge size',
-    description: 'To see what changed: Turn the blur to 0%',
+    description: 'To better see what changes: Turn the blur to 0%',
     type: 'list',
     default: 12,
     min: 2,
@@ -530,7 +530,7 @@ const SettingsConfig = [
   {
     name: 'fadeOutEasing',
     label: 'Spread fade curve',
-    description: 'To see what changed: Turn the blur to 0%',
+    description: 'To better see what changes: Turn the blur to 0%',
     type: 'list',
     default: 35,
     min: 1,
@@ -555,6 +555,7 @@ const SettingsConfig = [
   {
     name: 'frameFading',
     label: 'Fade in duration',
+    description: 'More GPU memory',
     questionMark: {
       title: 'Slowly fades new colors into the ambient light\n(Also reduces flickering)'
     },
@@ -572,7 +573,7 @@ const SettingsConfig = [
       title: 'Click for more information about Frame blending',
       href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
     },
-    description: 'More GPU usage. Works with "Sync video"',
+    description: 'More GPU usage. Also works with "Sync video" setting',
     type: 'checkbox',
     default: false,
     advanced: true
