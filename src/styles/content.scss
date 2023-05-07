@@ -1307,18 +1307,6 @@ html[data-ambientlight-enabled="true"] {
       font-size: 16px;
     }
   }
-
-  .html5-video-player {
-    & {
-      a {
-        color: #008cff;
-        &:hover {
-          color: #5ebfff;
-          text-decoration: underline;
-        }
-      }
-    }
-  }
   
   .ytpa-reset-settings-btn {
     appearance: none;
@@ -1476,6 +1464,7 @@ html[data-ambientlight-enabled="true"] {
       padding: 0px 14px;
       line-height: 21px;
       background: #444d;
+
       .ytp-fullscreen & {
         padding: 0px 20px;
         height: 30px;
@@ -1715,8 +1704,13 @@ html[data-ambientlight-enabled="true"] {
       padding: 0 !important;
     }
 
-    a:hover:not([href="#"]) {
-      color: #007cc3;
+    a {
+      color: #ffffff88;
+      
+      &:hover {
+        color: #008cff;
+        text-decoration: underline;
+      }
     }
   }
   .ytpa-menuitem--header .ytp-menuitem-label {
