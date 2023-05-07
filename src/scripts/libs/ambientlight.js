@@ -873,6 +873,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       }.bind(this), 3000)
     } else {
       this.pageShownTime = performance.now()
+      this.theming.updateTheme()
       await this.optionalFrame()
     }
   }
