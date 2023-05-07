@@ -8,9 +8,9 @@
   &::-moz-range-thumb {@content}
 }
 
-@mixin scrollbar-dark-thin {
+@mixin scrollbar-dark-thin() {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .15);
+  scrollbar-color: rgba(255, 255, 255, .2) transparent !important;
 
   &::-webkit-scrollbar {
     width: 16px;
@@ -24,9 +24,9 @@
     background-color: rgba(255, 255, 255, .2);
   }
 }
-@mixin scrollbar-light-thin {
+@mixin scrollbar-light-thin() {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, .2) rgba(255, 255, 255, .15);
+  scrollbar-color: rgba(0, 0, 0, .2) transparent !important;
 
   &::-webkit-scrollbar {
     width: 16px;
@@ -97,10 +97,12 @@
   margin-top: 10px;
 }
 .ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
-.ambientlight__ambientlight-ft-legend {
+.ambientlight__ambientlight-ft-legend,
+.ambientlight__ambientlight-ft-axis-legend {
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
 }
 .ambientlight__ambientlight-ft {
+  position: relative;
   pointer-events: auto;
   display: flex;
   width: fit-content;
@@ -124,14 +126,34 @@
 }
 .ambientlight__ambientlight-ft-legend {
   flex-shrink: 0;
-  padding: 10px;
+  padding: 8px 10px;
   font-family: monospace;
   font-size: 13.5px;
+  line-height: 17px;
   white-space: pre-wrap;
   letter-spacing: 0px;
 }
 .ambientlight__ambientlight-ft:not([legend]) .ambientlight__ambientlight-ft-legend {
   display: none;
+}
+.ambientlight__ambientlight-ft-axis-legends {
+  z-index: 2;
+  position: relative;
+  pointer-events: none;
+}
+.ambientlight__ambientlight-ft-axis-legend {
+  position: absolute;
+  left: 5px;
+  font-size: 13.5px;
+  line-height: 13.5px;
+  
+  &--top {
+    top: 4px;
+  }
+
+  &--bottom {
+    bottom: 3px;
+  }
 }
 
 html[data-ambientlight-enabled="true"] {
@@ -140,6 +162,8 @@ html[data-ambientlight-enabled="true"] {
   body {
     --yt-spec-text-secondary: rgba(10, 10, 10, 0.8);
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
+    --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
+    --yt-spec-outline: var(--yt-spec-10-percent-layer);
   }
   &[dark] {
     // Make all card backgrounds transparent
@@ -153,6 +177,7 @@ html[data-ambientlight-enabled="true"] {
     body {
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
+      --yt-spec-10-percent-layer: rgba(255,255,255, .1);
     }
   }
 
@@ -693,18 +718,6 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-
-  /* Cosmetics - Old video info boxes */
-
-  ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
-  ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-  &[dark] ytd-watch-metadata:not([modern-metapanel-order]) #owner.ytd-watch-metadata,
-  &[dark] ytd-comments-entry-point-header-renderer:not([modern-metapanel]) {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-  }
-
   /* Cosmetics - Clarify box (To prevent css filter shadow flickering) */
 
   ytd-clarification-renderer {
@@ -755,15 +768,14 @@ html[data-ambientlight-enabled="true"] {
   ytd-live-chat-frame ytd-toggle-button-renderer button {
     text-shadow: inherit !important;
   }
-  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
     background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus) button {
+  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
     background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
   }
-  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer button {
-    border-radius: 0 !important;
-    box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
+  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer:not(:hover):not(:focus-within) button:not(:active) {
+    background: none !important;
   }
   ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
     width: 100%; // Fixes shadow clipping
@@ -837,16 +849,16 @@ html[data-ambientlight-enabled="true"] {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
     }
     
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
-      box-shadow: var(--yt-spec-10-percent-layer) 0 -1px !important;
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
+      box-shadow: var(--yt-spec-10-percent-layer) 0 1px inset !important;
     }
 
     .playlist-items.ytd-playlist-panel-renderer {
-      @include scrollbar-light-thin()
+      @include scrollbar-light-thin();
     }
 
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
-    ytd-playlist-panel-renderer[modern-panels]:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
+    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
     yt-chip-cloud-renderer {
       background: none !important;
@@ -904,31 +916,39 @@ html[data-ambientlight-enabled="true"] {
 
     yt-chip-cloud-chip-renderer:not([selected]) {
       background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-      border: 1px solid var(--yt-spec-10-percent-layer) !important;
+      outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       
       &:hover {
         background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
       }
     }
     
-    ytd-watch-metadata[modern-metapanel] {
+    ytd-watch-metadata {
       #description.ytd-watch-metadata {
         background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       }
       
       .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-        border: 1px solid var(--yt-spec-10-percent-layer) !important;
+        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
         &.yt-spec-button-shape-next {
           &--segmented-start,
           &--segmented-end {
-            border-width: 1px 0 !important;
+            outline: 0 !important;
           }
           &--segmented-start {
-            border-left-width: 1px !important;
+            box-shadow: (
+              var(--yt-spec-10-percent-layer) -1px 0,
+              var(--yt-spec-10-percent-layer) 0 -1px,
+              var(--yt-spec-10-percent-layer) 0 1px
+            ) !important;
           }
           &--segmented-end {
-            border-right-width: 1px !important;
+            box-shadow: (
+              var(--yt-spec-10-percent-layer) 1px 0,
+              var(--yt-spec-10-percent-layer) 0 -1px,
+              var(--yt-spec-10-percent-layer) 0 1px
+            ) !important;
           }
         }
         
@@ -957,7 +977,7 @@ html[data-ambientlight-enabled="true"] {
       }
 
       .playlist-items.ytd-playlist-panel-renderer {
-        @include scrollbar-dark-thin()
+        @include scrollbar-dark-thin();
       }
 
       #playlist #header-description a,
@@ -979,7 +999,7 @@ html[data-ambientlight-enabled="true"] {
         }
       }
     
-      ytd-watch-metadata[modern-metapanel] {
+      ytd-watch-metadata {
         #description.ytd-watch-metadata {
           background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
         }
@@ -1026,6 +1046,7 @@ html[data-ambientlight-enabled="true"] {
     top: 0;
     left: 0;
     contain: strict;
+    will-change: transform; // Improves resizing performance
   }
 
   .ambientlight__clip {
@@ -1133,7 +1154,7 @@ html[data-ambientlight-enabled="true"] {
   opacity: 0;
   cursor: default;
   transition: none;
-  will-change: width,height;
+  will-change: width,height,transform,opacity !important; // Improves scrolling performance
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
@@ -1177,6 +1198,7 @@ html[data-ambientlight-enabled="true"] {
   position: relative !important;
   overflow: initial !important;
   font-size: calc(100% / 1.09) !important;
+  line-height: normal !important;
   contain: size;
   &::after {
     content: '';
@@ -1283,18 +1305,6 @@ html[data-ambientlight-enabled="true"] {
     .ytp-fullscreen & {
       padding: 15px 20px;
       font-size: 16px;
-    }
-  }
-
-  .html5-video-player {
-    & {
-      a {
-        color: #008cff;
-        &:hover {
-          color: #5ebfff;
-          text-decoration: underline;
-        }
-      }
     }
   }
   
@@ -1454,6 +1464,7 @@ html[data-ambientlight-enabled="true"] {
       padding: 0px 14px;
       line-height: 21px;
       background: #444d;
+
       .ytp-fullscreen & {
         padding: 0px 20px;
         height: 30px;
@@ -1693,8 +1704,13 @@ html[data-ambientlight-enabled="true"] {
       padding: 0 !important;
     }
 
-    a:hover:not([href="#"]) {
-      color: #007cc3;
+    a {
+      color: #ffffff88;
+      
+      &:hover {
+        color: #008cff;
+        text-decoration: underline;
+      }
     }
   }
   .ytpa-menuitem--header .ytp-menuitem-label {
@@ -1719,6 +1735,7 @@ html[data-ambientlight-enabled="true"] {
     line-height: 12px;
     font-size: 10px;
     color: #ffffff88;
+    white-space: pre-line;
 
     .ytp-fullscreen & {
       line-height: 15px;
@@ -2106,6 +2123,12 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Comment on the side - Submit comment form
+  ytd-item-section-renderer[static-comments-header] #header.ytd-item-section-renderer {
+    background: none !important;
+  }
+    
+
   // Fix ellipsis after the views counter
   #info-text.ytd-video-primary-info-renderer {
     color: var(--yt-spec-text-secondary);
@@ -2134,43 +2157,34 @@ html[data-ambientlight-enabled="true"] {
 
     //// Remove shadow capping
     // old video info
-    .title.ytd-video-primary-info-renderer,
-    #info-text.ytd-video-primary-info-renderer,
-    yt-formatted-string.ytd-button-renderer button,
-    ytd-video-secondary-info-renderer .ytd-channel-name,
-    #byline-container.ytd-video-meta-block,
+    ytd-video-primary-info-renderer .title,
+    ytd-video-primary-info-renderer #info-text,
+    ytd-video-primary-info-renderer #info ytd-menu-renderer[has-flexible-items],
+    ytd-video-primary-info-renderer yt-formatted-string.ytd-button-renderer button,
+    ytd-video-secondary-info-renderer #container.ytd-channel-name,
 
     // new video info
     h1.ytd-watch-metadata,
+    ytd-watch-metadata ytd-menu-renderer[has-flexible-items],
+
+    // Related video - channel name
+    ytd-video-meta-block #byline-container,
 
     // New comment
     #author-text.yt-simple-endpoint.ytd-comment-renderer,
 
-    #metadata-line.ytd-video-meta-block,
+    // Collapsable comment
     #expander[collapsed].ytd-comment-renderer {
       overflow: initial !important;
     }
 
     // New video description
-    #description-inline-expander {
-      overflow: initial !important;
-      contain: initial !important;
-      
-      // Collapsed description text
-      .yt-formatted-string
+    ytd-watch-metadata #description-inner .yt-formatted-string {
+      &[style="color: rgb(170, 170, 170);"], // Dark theme
+      &[style="color: rgb(96, 96, 96);"]     // Light theme
       {
-        &[style="color: rgb(170, 170, 170);"], // Dark theme
-        &[style="color: rgb(96, 96, 96);"]     // Light theme
-        {
-          color: var(--yt-spec-text-secondary) !important;
-        }
+        color: var(--yt-spec-text-secondary) !important;
       }
-    }
-    #info-container.ytd-watch-metadata,
-    #snippet.ytd-text-inline-expander {
-      overflow: initial !important;
-      -webkit-mask-image: initial !important;
-      mask-image: initial !important;
     }
 
     // Remove a bit of the shadow capping from elements that cap lines as well
@@ -2209,7 +2223,9 @@ html[data-ambientlight-enabled="true"] {
         #{$info} ytd-toggle-button-renderer button,
         #{$info} ytd-button-renderer button,
         #{$info} yt-icon.ytd-menu-renderer,
-        ytd-watch-metadata[modern-metapanel] button:not(.yt-spec-button-shape-next--filled) > *,
+        ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+        ytd-watch-metadata #description-inner #info-container,
+        ytd-watch-metadata #description-inner #description-inline-expander,
         ytd-subscription-notification-toggle-button-renderer,
 
         #{$chapters-header} yt-icon,
@@ -2229,10 +2245,16 @@ html[data-ambientlight-enabled="true"] {
         #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
         #reply-button-end.ytd-comment-action-buttons-renderer, // Reply button
         #cancel-button.ytd-commentbox, // Reply form cancel button
+        #emoji-button.ytd-commentbox yt-icon, // Reply form emoticon button
+        ytd-comments-header-renderer #panel-button yt-icon, // Show comments on the side
+        ytd-comments-header-renderer #sort-menu #trigger tp-yt-paper-button,
+
         paper-toggle-button.ytd-compact-autoplay-renderer,
-        #chatframe,
         paper-menu-button,
-        yt-sort-filter-sub-menu-renderer.ytd-comments-header-renderer tp-yt-paper-button {
+
+        #chatframe,
+
+        ytd-transcript-footer-renderer #trigger tp-yt-paper-button {
           @content;
           text-shadow: none !important;
         }
@@ -2253,12 +2275,11 @@ html[data-ambientlight-enabled="true"] {
         yt-icon.ytd-logo svg {
           overflow: visible;
         }
-        yt-icon.guide-icon,
         yt-icon.ytd-logo svg,
+        yt-icon-button yt-icon svg,
         ytd-searchbox:not(:hover):not(:focus-within) #search-input #search,
-        ytd-searchbox:not(:hover):not(:focus-within) yt-icon,
-        yt-icon-button,
-        ytd-button-renderer button {
+        ytd-searchbox:not(:hover):not(:focus-within) yt-icon svg,
+        ytd-button-renderer yt-icon svg {
           @content;
           text-shadow: none !important;
         }
@@ -2367,7 +2388,33 @@ html[data-ambientlight-enabled="true"] {
 }
 
 
-// override via extra &.ytp-settings-menu selector
-.ytp-popup.ytp-settings-menu.disable-youtube-ambient-mode-workaround {
-  visibility: hidden !important;
+// // override via extra &.ytp-settings-menu selector
+// .ytp-popup.ytp-settings-menu.disable-youtube-ambient-mode-workaround {
+//   visibility: hidden !important;
+// }
+
+.ambientlight__chromium-bug-video-jitter-workaround {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  left: calc(50vw - 1px);
+  top: calc(100vh - 10px);
+  background: #00000001;
+  display: none;
+  contain: strict;
+  will-change: transform;
+
+  html[data-ambientlight-enabled="true"] & {
+    display: block;
+    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
+  }
+
+  @keyframes ambientlight-chromium-bug-video-jitter-workaround {
+    0% {
+      opacity: .0000000001;
+    }
+    100% {
+      opacity: .0000000002;
+    }
+  }
 }

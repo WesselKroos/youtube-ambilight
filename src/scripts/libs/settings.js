@@ -23,7 +23,7 @@ export default class Settings {
 
       await this.getAll()
       this.initMenu()
-      if(this.webGLCrashDate) this.showWebGLCrashDescription()
+      if(this.webGLCrashDate) this.updateWebGLCrashDescription()
       if(this.pendingWarning) this.pendingWarning()
       return this
     }.bind(this))()
@@ -51,7 +51,7 @@ export default class Settings {
           'webGL'
         ].includes(setting.name)) {
           setting.default = false
-          setting.disabled = 'WebGL is disabled in your browser'
+          setting.disabled = 'You have disabled WebGL in your browser.'
         }
       }
       
@@ -74,15 +74,19 @@ export default class Settings {
         names.push(`setting-${setting.name}-key`)
       }
     }
-    names.push('setting-webGLCrashed')
-    names.push('setting-webGLCrashedAtVersion')
+    names.push('setting-webGLCrash')
+    names.push('setting-webGLCrashVersion')
     names.push('setting-surroundingContentImagesTransparency')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
     // Disable enabled WebGL setting if not supported anymore
-    if(Settings.storedSettingsCached['setting-webGL'] && !supportsWebGL()) {
-      Settings.storedSettingsCached['setting-webGL'] = null
+    if(Settings.storedSettingsCached['setting-webGL']) {
+      if(!supportsWebGL()) {
+        Settings.storedSettingsCached['setting-webGL'] = null
+      } else {
+        SettingsConfig.find(setting => setting.name === 'saturation').advanced = true
+      }
     }
 
     return Settings.storedSettingsCached;
@@ -96,7 +100,12 @@ export default class Settings {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }
 
-    this.migrateWebGLCrash(storedSettings)
+    const webGLCrash = storedSettings['setting-webGLCrash']
+    const webGLCrashVersion = storedSettings['setting-webGLCrashVersion']
+    if(webGLCrash && webGLCrashVersion === version) {
+      this.webGLCrashDate = new Date(webGLCrash)
+      this.webGLCrashVersion = webGLCrashVersion
+    }
 
     for (const setting of SettingsConfig) {
       const value = storedSettings[`setting-${setting.name}`]
@@ -132,91 +141,55 @@ export default class Settings {
     }
   }
 
-  migrateWebGLCrash(storedSettings) {
-    const webGLCrashed = storedSettings['setting-webGLCrashed']
-    if(!webGLCrashed) return
-
-    const webGL = storedSettings['setting-webGL']
-    if(webGL === false) return
-
-    if(webGL) {
-      this.saveStorageEntry('webGLCrashed', undefined)
-      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
-      return
-    }
-
-    const webGLCrashDate = new Date(webGLCrashed)
-    const weekAfterCrashDate = new Date(webGLCrashDate.setDate(webGLCrashDate.getDate() + 7))
-    // const weekAfterCrashDate = new Date(webGLCrashDate.setSeconds(webGLCrashDate.getSeconds() + 20))
-    const retryAfterUpdateOrAWeekLater = (
-      version !== storedSettings['setting-webGLCrashedAtVersion'] ||
-      weekAfterCrashDate < new Date()
-    )
-    if(retryAfterUpdateOrAWeekLater) {
-      this.saveStorageEntry('webGLCrashed', undefined)
-      this.saveStorageEntry('webGLCrashedAtVersion', undefined)
-      return
-    }
-
-    this.webGLCrashDate = webGLCrashDate
-    SettingsConfig.find(setting => setting.name === 'webGL').default = false // Disable by default
-  }
-
   handleWebGLCrash = async () => {
     this.webGLCrashDate = new Date()
-    this.saveStorageEntry('webGLCrashed', +this.webGLCrashDate)
-    this.saveStorageEntry('webGLCrashedAtVersion', version)
+    this.saveStorageEntry('webGLCrash', +this.webGLCrashDate)
+    this.saveStorageEntry('webGLCrashVersion', version)
     
-    this.set('webGL', false, true)
+    this.set('webGL', false, true, true)
     this.updateVisibility()
 
-    this.saveStorageEntry('webGL', undefined) // Override false
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
 
     await this.flushPendingStorageEntries()
-    this.showWebGLCrashDescription()
+    this.updateWebGLCrashDescription()
   }
 
-  showWebGLCrashDescription = () => {
+  updateWebGLCrashDescription = () => {
+    const disabledText = SettingsConfig.find(setting => setting.name === 'webGL').disabled || ''
     const labelElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label')
-    labelElem.appendChild(document.createElement('br'))
-
-    const webGLAvailable = SettingsConfig.find(setting => setting.name === 'webGL').disabled === undefined
-    const descriptionElem = document.createElement('span')
-    descriptionElem.classList.add('ytpa-menuitem-description')
-    descriptionElem.style.color = '#fa0'
-    descriptionElem.appendChild(document.createTextNode(`${webGLAvailable ? 'Failed' : 'and failed'} to load at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`))
-    
-    if(webGLAvailable) {
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createTextNode(`Check your browsers Hardware acceleration and  WebGL settings or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createElement('br'))
-      descriptionElem.appendChild(document.createTextNode('Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.'))
+    let descriptionElem = this.menuElem.querySelector('#setting-webGL .ytp-menuitem-label .ytpa-menuitem-description')
+    if(!descriptionElem) {
+      descriptionElem = document.createElement('span')
+      descriptionElem.className = 'ytpa-menuitem-description'
+      labelElem.appendChild(descriptionElem)
     }
-
-    labelElem.appendChild(descriptionElem)
+    descriptionElem.style.color = '#fa0'
+    
+    let descriptionText = disabledText
+    if(this.webGLCrashDate) {
+      descriptionText += `${disabledText ? '\r\nAnd the WebGL renderer previously failed' : 'Failed to load'} at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`
+      descriptionText += `\r\n\r\nCheck the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`
+      if(!disabledText) descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.`
+    }
+    descriptionElem.textContent = descriptionText
   }
   
   initMenu() {
-    this.menuBtn = document.createElement('button')
-    this.menuBtn.classList.add('ytp-button', 'ytp-ambientlight-settings-button')
-    this.menuBtn.setAttribute('aria-owns', 'ytp-id-190')
+    this.menuBtn = this.createMenuButton()
     on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
-    this.menuBtn.innerHTML = `<svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
-      <path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z" fill="#fff"></path>
-    </svg>`
 
     const settingsMenuBtnTooltip = document.createElement('div')
-    settingsMenuBtnTooltip.classList.add('ytp-tooltip', 'ytp-bottom', 'ytp-ambientlight-settings-button-tooltip')
+    settingsMenuBtnTooltip.className = 'ytp-tooltip ytp-bottom ytp-ambientlight-settings-button-tooltip'
     settingsMenuBtnTooltip.setAttribute('aria-live', 'polite')
+
     const settingsMenuBtnTooltipTextWrapper = document.createElement('div')
-    settingsMenuBtnTooltipTextWrapper.classList.add('ytp-tooltip-text-wrapper')
+    settingsMenuBtnTooltipTextWrapper.className = 'ytp-tooltip-text-wrapper'
     settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper)
+
     const settingsMenuBtnTooltipText = document.createElement('span')
-    settingsMenuBtnTooltipText.classList.add('ytp-tooltip-text', 'ytp-tooltip-text-no-title')
+    settingsMenuBtnTooltipText.className = 'ytp-tooltip-text ytp-tooltip-text-no-title'
     settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
     settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
 
@@ -229,16 +202,9 @@ export default class Settings {
     }
 
     this.menuElem = document.createElement('div')
-    this.menuElem.classList.add(
-      ...([
-        'ytp-popup',
-        'ytp-settings-menu',
-        'ytp-rounded-menu',
-        'ytpa-ambientlight-settings-menu', 
-        (this.advancedSettings) ? 'ytpa-ambientlight-settings-menu--advanced' : undefined
-      ].filter(c => c))
-    )
-    this.menuElem.setAttribute('id', 'ytp-id-190')
+    this.menuElem.className = `ytp-popup ytp-settings-menu ytp-rounded-menu ytpa-ambientlight-settings-menu ${
+      this.advancedSettings ? 'ytpa-ambientlight-settings-menu--advanced' : ''}`
+    this.menuElem.id ='ytp-id-190'
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
@@ -286,7 +252,7 @@ export default class Settings {
         if(setting.experimental) classes += ' ytpa-menuitem--experimental'
         
         const label = `${setting.label}
-          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey">${setting.key}</span>]` : ''}
+          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)">${setting.key}</span>]` : ''}
           ${setting.questionMark 
             ? `<a
             title="${setting.questionMark.title}" 
@@ -346,7 +312,7 @@ export default class Settings {
               </div>
               ${!setting.snapPoints ? '' : `
                 <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }, i) => {
+                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }) => {
                     return `
                       <option 
                         value="${value}" 
@@ -412,7 +378,7 @@ export default class Settings {
       })
     }
     for (const section of this.menuElem.querySelectorAll('.ytpa-section')) {
-      on(section, 'click', (e) => {
+      on(section, 'click', () => {
         const name = section.getAttribute('data-name')
         const value = !this[name]
         this.set(name, value)
@@ -429,15 +395,7 @@ export default class Settings {
 
     this.menuElemParent.prepend(this.menuElem)
 
-    this.bezelElem = document.createElement('div')
-    this.bezelElem.classList.add('yta-bezel', 'ytp-bezel', 'yta-bezel--no-animation')
-    this.bezelElem.setAttribute('role', 'status')
-    this.bezelElem.innerHTML = `
-      <div class="ytp-bezel-icon">
-        <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
-          <text class="ytp-svg-fill" x="50%" y="59%" dominant-baseline="middle" text-anchor="middle"></text>
-        </svg>
-      </div>`
+    this.bezelElem = this.createBezelElem()
     on(this.bezelElem, 'animationend', () => {
       this.bezelElem.classList.add('yta-bezel--no-animation')
     })
@@ -450,12 +408,11 @@ export default class Settings {
       
       const keyElem = settingElem.querySelector('.ytpa-menuitem-key')
       if (keyElem) {
-        const settingElem = this.menuElem.querySelector(`#setting-${setting.name}`)
         on(keyElem, 'click', (e) => {
           e.stopPropagation()
           e.preventDefault()
         })
-        on(keyElem, 'focus', (e) => {
+        on(keyElem, 'focus', () => {
           // Select all
           const range = document.createRange()
           range.selectNodeContents(keyElem)
@@ -474,7 +431,7 @@ export default class Settings {
           keyElem.textContent = key
           this.setKey(setting.name, key)
         })
-        on(keyElem, 'blur', (e) => {
+        on(keyElem, 'blur', () => {
           // Deselect all
           const sel = window.getSelection()
           sel.removeAllRanges()
@@ -490,13 +447,13 @@ export default class Settings {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
             e.stopPropagation()
           })
-          const onChange = (empty = false) => {
+          const onChange = () => {
             if(inputElem.value === manualInputElem.value) return
             inputElem.value = manualInputElem.value
             inputElem.dispatchEvent(new Event('change'))
           }
-          on(manualInputElem, 'change', (e) => onChange())
-          on(manualInputElem, 'blur', (e) => onChange())
+          on(manualInputElem, 'change', onChange)
+          on(manualInputElem, 'blur', onChange)
           on(manualInputElem, 'keypress', (e) => {
             if(e.key !== 'Enter') return
             manualInputElem.blur()
@@ -533,7 +490,7 @@ export default class Settings {
           valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
-            this.ambientlight.updateTheme()
+            this.ambientlight.theming.updateTheme()
             return
           }
 
@@ -624,16 +581,8 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
+            await this.updateWebGLCtx()
             this.updateVisibility()
-            if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
-              try {
-                if(!(await this.ambientlight.projector.initCtx())) return
-                this.setWarning('')
-              } catch(ex) {
-                this.ambientlight.projector.setWebGLWarning('change')
-                throw ex
-              }
-            }
           }
 
           if ([
@@ -642,19 +591,7 @@ export default class Settings {
             if(this['frameBlending']) {
               this.set('frameBlending', false, true)
             }
-            const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
-            if(this['frameFading'] !== defaultValue) {
-              this.set('frameFading', defaultValue, true)
-              if(this.ambientlight.projector?.initCtx) { // Can be undefined when migrating from previous settings
-                try {
-                  if(!(await this.ambientlight.projector.initCtx())) return
-                  this.setWarning('')
-                } catch(ex) {
-                  this.ambientlight.projector.setWebGLWarning('change')
-                  throw ex
-                }
-              }
-            }
+            this.resetFrameFading()
             this.updateVisibility()
           }
 
@@ -676,6 +613,7 @@ export default class Settings {
           }
 
           if([
+            'frameSync',
             'headerShadowSize',
             'headerShadowOpacity',
             'surroundingContentShadowSize',
@@ -705,11 +643,11 @@ export default class Settings {
           if ([
             'energySaver',
             'videoOverlayEnabled',
-            'frameSync',
             'frameBlending',
             'showFPS',
             'showFrametimes',
             'showResolutions',
+            'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
             'headerTransparentEnabled',
             'horizontalBarsClipPercentageReset',
@@ -726,10 +664,17 @@ export default class Settings {
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
-            'prioritizePageLoadSpeed'
+            'prioritizePageLoadSpeed',
+            'enableInPictureInPicture'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
+          }
+
+          if([
+            'chromiumBugVideoJitterWorkaround',
+          ].some(name => name === setting.name)) {
+            this.ambientlight.applyChromiumBugVideoJitterWorkaround()
           }
 
           if([
@@ -775,12 +720,10 @@ export default class Settings {
           
           if (setting.name === 'frameBlending') {
             if(value) {
-              if(this['frameFading'] !== 0) {
-                this.set('frameFading', 0, true)
-              }
               if(this['framerateLimit'] !== 0) {
                 this.set('framerateLimit', 0, true)
               }
+              this.resetFrameFading()
             } else {
               const defaultValue = SettingsConfig.find(s => s.name === 'framerateLimit').default
               if(this['framerateLimit'] !== defaultValue) {
@@ -841,9 +784,9 @@ export default class Settings {
             'showResolutions'
           ].some(name => name === setting.name)) {
             if(value) {
-              this.ambientlight.updateStats()
+              this.ambientlight.stats.update()
             } else {
-              this.ambientlight.hideStats()
+              this.ambientlight.stats.hide(true)
             }
             return
           }
@@ -857,12 +800,10 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
-            if(!this.webGLCrashDate || this.webGL) {
-              await this.flushPendingStorageEntries()
-              await new Promise(resolve => setTimeout(resolve, 1000))
-              this.reloadPage()
-              return
-            }
+            await this.flushPendingStorageEntries()
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            this.reloadPage()
+            return
           }
 
           this.ambientlight.sizesInvalidated = true
@@ -873,6 +814,88 @@ export default class Settings {
 
     this.updateVisibility()
     on(document, 'visibilitychange', this.handleDocumentVisibilityChange, false);
+  }
+
+  createBezelElem() {
+    const elem = document.createElement('div')
+    elem.className = 'yta-bezel ytp-bezel yta-bezel--no-animation'
+    elem.setAttribute('role', 'status')
+
+    const iconElem = document.createElement('div')
+    iconElem.className = 'ytp-bezel-icon'
+
+    const xmlns = "http://www.w3.org/2000/svg"
+
+    const svgElem = document.createElementNS(xmlns, 'svg')
+    svgElem.setAttributeNS(null, 'height', '100%')
+    svgElem.setAttributeNS(null, 'width', '100%')
+    svgElem.setAttributeNS(null, 'version', '1.1')
+    svgElem.setAttributeNS(null, 'viewBox', '0 0 36 36')
+
+    const textElem = document.createElementNS(xmlns, 'text')
+    textElem.setAttributeNS(null, 'class', 'ytp-svg-fill')
+    textElem.setAttributeNS(null, 'x', '50%')
+    textElem.setAttributeNS(null, 'y', '59%')
+    textElem.setAttributeNS(null, 'dominant-baseline', 'middle')
+    textElem.setAttributeNS(null, 'text-anchor', 'middle')
+
+    svgElem.appendChild(textElem)
+    iconElem.appendChild(svgElem)
+    elem.appendChild(iconElem)
+
+    return elem
+  }
+
+  createMenuButton() {
+    const elem = document.createElement('button')
+    elem.className = 'ytp-button ytp-ambientlight-settings-button'
+    elem.setAttribute('aria-owns', 'ytp-id-190')
+
+    const xmlns = "http://www.w3.org/2000/svg"
+
+    const svgElem = document.createElementNS(xmlns, 'svg')
+    svgElem.setAttributeNS(null, 'height', '100%')
+    svgElem.setAttributeNS(null, 'width', '100%')
+    svgElem.setAttributeNS(null, 'version', '1.1')
+    svgElem.setAttributeNS(null, 'viewBox', '0 0 36 36')
+
+    const useElem = document.createElementNS(xmlns, 'use')
+    useElem.setAttributeNS(null, 'class', 'ytp-svg-shadow')
+    useElem.setAttributeNS(null, 'href', '#ytp-ambientlight-btn-icon')
+
+    const pathElem = document.createElementNS(xmlns, 'path')
+    pathElem.setAttributeNS(null, 'id', 'ytp-ambientlight-btn-icon')
+    pathElem.setAttributeNS(null, 'fill', '#fff')
+    pathElem.setAttributeNS(null, 'd', 'm 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z')
+
+    svgElem.appendChild(useElem)
+    svgElem.appendChild(pathElem)
+    elem.appendChild(svgElem)
+
+    return elem
+  }
+
+  resetFrameFading() {
+    const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
+    if(this['frameFading'] === defaultValue) return
+
+    this.set('frameFading', defaultValue, true)
+    this.updateWebGLCtx()
+  }
+
+  async updateWebGLCtx() {
+    if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0)) // Await for update sizes
+      if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
+  
+      if(!(await this.ambientlight.projector.initCtx(true))) return
+      this.setWarning('')
+    } catch(ex) {
+      this.ambientlight.projector.setWebGLWarning('change')
+      throw ex
+    }
   }
 
   reloadPage() {
@@ -1019,8 +1042,16 @@ export default class Settings {
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },
     {
+      names: [ 'frameBlending' ],
+      visible: () => this.frameSync !== 1
+    },
+    {
       names: [ 'frameBlendingSmoothness' ],
-      visible: () => this.frameBlending
+      visible: () => this.frameBlending && this.frameSync !== 1
+    },
+    {
+      names: [ 'chromiumBugVideoJitterWorkaround' ],
+      visible: () => this.ambientlight.enableChromiumBugVideoJitterWorkaround && this.webGL
     },
     {
       names: [ 'videoOverlaySyncThreshold' ],
@@ -1085,7 +1116,7 @@ export default class Settings {
     this.saveStorageEntry(`${setting.name}-key`, clear ? undefined : key)
   }
 
-  set(name, value, updateUI) {
+  set(name, value, updateUI, dontSave = false) {
     const clear = (value === undefined)
     if(clear)
       value = SettingsConfig.find(setting => setting.name === name)?.defaultValue
@@ -1098,7 +1129,7 @@ export default class Settings {
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
-    if(clear || changed) {
+    if(!dontSave && (clear || changed)) {
       this.saveStorageEntry(name, clear ? undefined : value)
     }
 
@@ -1245,9 +1276,9 @@ export default class Settings {
     let message = ''
     if(this.energySaver) {
       if(this.ambientlight.averageVideoFramesDifference < .002) {
-        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\n(Disable this via: Quality > Energy saver)'
+        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
       } else if(this.ambientlight.averageVideoFramesDifference < .0175) {
-        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\n(Disable this via: Quality > Energy saver)'
+        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
       }
     }
 

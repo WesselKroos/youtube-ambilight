@@ -1,11 +1,12 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { appendErrorStack, raf, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { ctxOptions, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'
   lostCount = 0
+  blurLostCount = 0
   scales = [{ x: 1, y: 1 }]
   projectors = []
   static subProjectorDimensionMax = 3
@@ -24,16 +25,18 @@ export default class ProjectorWebGL {
       this.initBlurCtx()
       const initialized = await this.initCtx()
       if(!initialized) this.setWebGLWarning('create')
-      this.handlePageVisibility()
 
+      this.initializedTime = performance.now()
       return this
     }.bind(this))()
   }
 
   invalidateShaderCache() {
     this.viewport = undefined
-    this.stencil = undefined
     this.fVibrance = undefined
+    this.vPosition = undefined
+    this.vUV = undefined
+    this.cropped = undefined
     this.fScale = undefined
     this.fScaleStep = undefined
     this.fScalesLength = undefined
@@ -46,50 +49,8 @@ export default class ProjectorWebGL {
     }
   }
 
-  handlePageVisibility = async (isPageHidden) => {
-    if(this.handlePageVisibilityTimeout) {
-      clearTimeout(this.handlePageVisibilityTimeout)
-      this.handlePageVisibilityTimeout = undefined
-    }
-    if(isPageHidden === undefined) {
-      isPageHidden = document.visibilityState === 'hidden'
-    }
-    this.isPageHidden = isPageHidden
-
-    if(!this.ctx) return
-
-    if(!this.ctxLose) {
-      this.ctxLose = this.ctx.getExtension('WEBGL_lose_context')
-    }
-
-    const ctxLost = this.ctx.isContextLost()
-    if(this.isPageHidden && !ctxLost) {
-      this.handlePageVisibilityTimeout = setTimeout(() => {
-        this.handlePageVisibilityTimeout = undefined
-
-        if(this.isPageHidden && this.ctx && !this.ctx.isContextLost()) {
-          this.isControlledLose = true
-
-          // const lintExt = this.ctx.getExtension('GMAN_debug_helper');
-          // if(lintExt) lintExt.disable() // weblg-lint throws incorrect errors after the WebGL context has been lost once
-
-          this.ctxLose.loseContext()
-        }
-      }, 3000)
-    } else if(!this.isPageHidden && this.lost && ctxLost && this.isControlledLose) {
-      this.ctxLose.restoreContext()
-    } else if(this.shouldUpdateCropAfterPageVisible) {
-      this.shouldUpdateCropAfterPageVisible = false
-      this.updateCrop()
-      await this.ambientlight.optionalFrame()
-    }
-  }
-
   handleWindowResize = async () => {
-    if(this.isPageHidden) {
-      this.shouldUpdateCropAfterPageVisible = true
-      return
-    }
+    if(this.ambientlight.isPageHidden) return
 
     this.updateCrop()
     await this.ambientlight.optionalFrame()
@@ -97,11 +58,7 @@ export default class ProjectorWebGL {
 
   handleAtTopChange = async (atTop) => {
     this.atTop = atTop
-
-    if(this.isPageHidden) {
-      this.shouldUpdateCropAfterPageVisible = true
-      return
-    }
+    if(this.ambientlight.isPageHidden) return
 
     this.updateCrop()
     this.ambientlight.buffersCleared = true
@@ -109,7 +66,7 @@ export default class ProjectorWebGL {
   }
 
   remove() {
-    this.containerElem.remove(this.canvas)
+    this.containerElem.remove(this.elem)
   }
 
   // TODO: Cut off left, top and right canvas outside the browser + blur size
@@ -120,6 +77,10 @@ export default class ProjectorWebGL {
 
   initShadow() {
     this.shadow = new ProjectorShadow()
+    this.projectors[2] = {
+      elem: this.shadow.elem,
+      ctx: this.blurCtx
+    }
   }
 
   drawIndex = 0
@@ -134,7 +95,7 @@ export default class ProjectorWebGL {
     // ctx is being initialized but not ready yet
     if(this.projectorsCount > 1 && this.projectorsCount !== this.fTextureOpacity?.length) return
 
-    if(!this.stencil) this.updateCrop()
+    if(!this.cropped) this.updateCrop()
 
     const internalFormat = this.ctx.RGBA;
     const format = this.ctx.RGBA;
@@ -160,7 +121,7 @@ export default class ProjectorWebGL {
     }
     const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
 
-    let start = performance.now()
+    let start = this.settings.showResolutions ? performance.now() : undefined
     if(this.projectorsCount > 1) {
       if(updateTextureSize) {
         this.drawInitial = true
@@ -218,19 +179,19 @@ export default class ProjectorWebGL {
       }
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-    this.loadTime = performance.now() - start
+    if(this.settings.showResolutions) this.loadTime = performance.now() - start
     
-    start = performance.now()
-    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4)
-    this.drawTime = performance.now() - start
+    if(this.settings.showResolutions) start = performance.now()
+    this.ctx.drawArrays(this.ctx.TRIANGLES, 0, this.vPosition.length / 2);
+    if(this.settings.showResolutions) this.drawTime = performance.now() - start
     
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height)
-    this.blurClearTime = performance.now() - start
+    if(this.settings.showResolutions) this.blurClearTime = performance.now() - start
     const blurCanvasBound = Math.floor(this.blurBound / this.blurCanvasScale)
-    start = performance.now()
-    this.blurCtx.drawImage(this.canvas, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
-    this.blurDrawTime = performance.now() - start
+    if(this.settings.showResolutions) start = performance.now()
+    this.blurCtx.drawImage(this.elem, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
+    if(this.settings.showResolutions) this.blurDrawTime = performance.now() - start
 
     if(updateTextureSize) {
       this.drawTextureSize = textureSize
@@ -239,33 +200,35 @@ export default class ProjectorWebGL {
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nAnother possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nAnother possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`)
   }
 
   onBlurCtxLost = wrapErrorHandler(function wrappedOnBlurCtxLost(event) {
     event.preventDefault();
-    this.lost = true
-    this.lostCount++
+    this.blurLost = true
+    this.blurLostCount++
     this.invalidateShaderCache()
-    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.lostCount})`)
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context lost (${this.blurLostCount})`)
     this.setWebGLWarning('restore')
   }.bind(this))
 
-  onBlurCtxRestored = wrapErrorHandler(function wrappedOnBlurCtxRestored() {
-    if(this.lostCount >= 3) {
-      console.error('Ambient light for YouTube™ | ProjectorWebGL blur context restore failed 3 times')
+  onBlurCtxRestored = wrapErrorHandler(async function wrappedOnBlurCtxRestored() {
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL blur context restored (${this.blurLostCount})`)
+    if(this.blurLostCount >= 3) {
+      console.error('Ambient light for YouTube™ | ProjectorWebGL blur context was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
       this.setWebGLWarning('3 times restore')
       return
     }
+    await new Promise(resolve => requestAnimationFrame(resolve))
     this.initBlurCtx()
     if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
       if(!this.ctxIsInvalid) {
         this.initProjectorListeners()
-        this.lost = false
-        this.setWarning('')
+        this.blurLost = false
+        if(!this.lost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.lostCount})`)
+      console.error(`Ambient light for YouTube™ | ProjectorWebGL blur context restore failed (${this.blurLostCount})`)
       this.setWebGLWarning('restore')
     }
   }.bind(this))
@@ -286,6 +249,7 @@ export default class ProjectorWebGL {
     this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost)
     this.blurCanvas.addEventListener('contextrestored', this.onBlurCtxRestored)
     this.blurCtx = this.blurCanvas.getContext('2d', {
+      ...ctxOptions,
       alpha: true,
       desynchronized: false // true: Does not work when canvas elements are not hardware accelerated
     })
@@ -312,7 +276,7 @@ export default class ProjectorWebGL {
     if(detected) return
     
     const message = 'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)';
-    console.warn(`Ambient light for YouTube™ | ProjectorWebGL ${message}`)
+    // console.warn(`Ambient light for YouTube™ | ProjectorWebGL: ${message}`)
     this.setWarning(message, true)
     this.settings.set('resolution', 25, true)
     await contentScript.setStorageEntry('majorPerformanceCaveatDetected', true)
@@ -326,110 +290,86 @@ export default class ProjectorWebGL {
     await contentScript.setStorageEntry('majorPerformanceCaveatDetected', false)
   }
 
-  onCtxLost = wrapErrorHandler(function onCtxLost(event) {
-    event.preventDefault();
-    if(!this.isControlledLose) {
-      console.warn('Ambient light for YouTube™ | ProjectorWebGL context lost')
-    }
-    this.setWebGLWarning('restore')
+  onCtxLost = wrapErrorHandler(function projectorCtxLost(event) {
+    event.preventDefault()
+
+    this.lost = true
+    this.lostCount++
     this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
     this.invalidateShaderCache()
-    this.lost = true
-    if(!this.isControlledLose) {
-      this.lostCount++
-    }
-    if(!this.isPageHidden && this.isControlledLose) {
-      setTimeout(this.handlePageVisibility, 1)
-    }
+
+    console.log(`Ambient light for YouTube™ | ProjectorWebGL context lost (${this.lostCount})`)
+    this.setWebGLWarning('restore')
   }.bind(this))
 
-  onCtxRestored = wrapErrorHandler(async function onCtxRestored() {
-    if(!this.isControlledLose && this.lostCount >= 3) {
+  onCtxRestored = wrapErrorHandler(async function projectorCtxRestored() {
+    // console.log(`Ambient light for YouTube™ | ProjectorWebGL restored (${this.lostCount})`)
+    if(this.lostCount >= 3) {
       console.error('Ambient light for YouTube™ | ProjectorWebGL context restore failed 3 times')
       this.setWebGLWarning('3 times restore')
       return
     }
     try {
+      await new Promise(resolve => requestAnimationFrame(resolve))
       if(!(await this.initCtx())) return
     } catch(ex) {
       this.setWebGLWarning()
       throw ex
     }
 
-    if(!this.isControlledLose) {
-      this.initShadow()
-      this.initBlurCtx()
-    }
-    if(
-      this.ctx && !this.ctx.isContextLost()
-    ) {
+    this.initShadow()
+    this.initBlurCtx()
+    if(this.ctx) {
       if(!this.ctxIsInvalid) {
         this.initProjectorListeners()
         this.lost = false
-        this.setWarning('')
-        this.lostCount = 0
+        if(!this.blurLost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
       }
     } else {
-      if(!this.isControlledLose) {
-        console.warn(`Ambient light for YouTube™ | ProjectorWebGL context restore failed (${this.lostCount})`)
-        this.setWebGLWarning('restore')
-        return
-      }
+      console.error(`Ambient light for YouTube™ | ProjectorWebGL context restore failed (${this.lostCount})`)
+      this.setWebGLWarning('restore')
+      return
     }
-    if(this.handleRestored) {
-      this.handleRestored(this.isControlledLose)
-    }
-    this.isControlledLose = false
+    
+    if(this.handleRestored) this.handleRestored()
   }.bind(this))
 
   webglcontextcreationerrors = []
-  onCtxCreationError = wrapErrorHandler(function onCtxCreationError(e) {
+  onCtxCreationError = wrapErrorHandler(function projectorCtxCreationError(e) {
+    // console.warn(`Ambient light for YouTube™ | ProjectorWebGL creationerror: ${e.statusMessage}`)
     this.webglcontextcreationerrors.push({
+      webGLVersion: this.webGLVersion,
       failIfMajorPerformanceCaveat: this.ctxOptions.failIfMajorPerformanceCaveat,
       message: e.statusMessage || '?',
       time: performance.now(),
-      webGLVersion: this.webGLVersion
     })
   }.bind(this))
 
-  async initCtx() {
-    if(this.discardProgram) return false
-    if(this.awaitingProgramCompletion) {
-      this.discardProgram = true
-      await this.awaitingProgramCompletion;
-      this.discardProgram = undefined
-    }
-
-    if(this.program) {
-      const program = this.program
-      this.program = undefined
-      try {
-        this.ctx.deleteProgram(program) // Free GPU memory
-      } catch(ex) {
-        console.warn('Failed to delete previous program', ex)
-      }
-
-      this.invalidateShaderCache()
+  // syncCompilation prevents black flickering while settings are changed
+  async initCtx(syncCompilation = false) {
+    if(this.cancelCompilation) return false
+    if(this.compilationPromise) {
+      this.cancelCompilation = true
+      await this.compilationPromise;
+      this.cancelCompilation = undefined
     }
     
-    if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.canvas) {
-      this.canvas.removeEventListener('contextlost', this.onCtxLost)
-      this.canvas.removeEventListener('contextrestored', this.onCtxRestored)
-      this.canvas.removeEventListener('webglcontextcreationerror', this.onCtxCreationError)
-      this.canvas = undefined
+    if((this.webGLVersion === 2 || this.webGLVersion === 1) && !this.ctx && this.elem) {
+      this.elem.removeEventListener('contextlost', this.onCtxLost)
+      this.elem.removeEventListener('contextrestored', this.onCtxRestored)
+      this.elem.removeEventListener('webglcontextcreationerror', this.onCtxCreationError)
+      this.elem = undefined
       this.webGLVersion = undefined
     }
 
-    if(!this.canvas) {
-      this.canvas = new SafeOffscreenCanvas(1, 1)
-      this.canvas.addEventListener('webglcontextlost', this.onCtxLost, false)
-      this.canvas.addEventListener('webglcontextrestored', this.onCtxRestored, false)
-      this.canvas.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false)
+    if(!this.elem) {
+      this.elem = new SafeOffscreenCanvas(1, 1)
+      this.elem.addEventListener('webglcontextlost', this.onCtxLost, false)
+      this.elem.addEventListener('webglcontextrestored', this.onCtxRestored, false)
+      this.elem.addEventListener('webglcontextcreationerror', this.onCtxCreationError, false)
     }
 
     if(!this.ctx) {
-      this.webglcontextcreationerrors = []
-
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: true,
         preserveDrawingBuffer: false,
@@ -437,54 +377,42 @@ export default class ProjectorWebGL {
         alpha: true,
         depth: false,
         antialias: false,
-        desynchronized: false,
-        stencil: true
+        desynchronized: false
       }
       this.webGLVersion = 2
-      this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+      this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
       if(this.ctx) {
         this.noMajorPerformanceCaveatDetected()
       } else {
-        this.ctxOptions.stencil = false
-        this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+        this.webGLVersion = 1
+        this.ctx = this.elem.getContext('webgl', this.ctxOptions)
         if(this.ctx) {
           this.noMajorPerformanceCaveatDetected()
         } else {
-          this.webGLVersion = 1
-          this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
+          this.ctxOptions.failIfMajorPerformanceCaveat = false
+          this.webGLVersion = 2
+          this.ctx = this.elem.getContext('webgl2', this.ctxOptions)
           if(this.ctx) {
-            this.noMajorPerformanceCaveatDetected()
+            this.majorPerformanceCaveatDetected()
           } else {
-            this.ctxOptions.failIfMajorPerformanceCaveat = false
-            this.ctxOptions.stencil = true
-            this.webGLVersion = 2
-            this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
+            this.webGLVersion = 1
+            this.ctx = this.elem.getContext('webgl', this.ctxOptions)
             if(this.ctx) {
               this.majorPerformanceCaveatDetected()
             } else {
-              this.ctxOptions.stencil = false
-              this.ctx = this.canvas.getContext('webgl2', this.ctxOptions)
-              if(this.ctx) {
-                this.noMajorPerformanceCaveatDetected()
-              } else {
-                this.webGLVersion = 1
-                this.ctx = this.canvas.getContext('webgl', this.ctxOptions)
-                if(this.ctx) {
-                  this.majorPerformanceCaveatDetected()
-                } else {
-                  this.webGLVersion = undefined
+              this.webGLVersion = undefined
 
-                  const errors = this.webglcontextcreationerrors
-                  let lastErrorMessage;
-                  for(const error of errors) {
-                    const duplicate = error.message === lastErrorMessage
-                    lastErrorMessage = error.message
-                    if(duplicate) error.message = '"'
-                  }
+              const errors = this.webglcontextcreationerrors
+              this.webglcontextcreationerrors = []
 
-                  throw new AmbientlightError('ProjectorWebGL context creation failed', errors)
-                }
+              let lastErrorMessage = ''
+              for(const error of errors) {
+                const duplicate = error.message === lastErrorMessage
+                lastErrorMessage = error.message
+                if(duplicate) error.message = '"'
               }
+
+              throw new AmbientlightError(`ProjectorWebGL context creation failed: ${lastErrorMessage}`, errors)
             }
           }
         }
@@ -493,16 +421,18 @@ export default class ProjectorWebGL {
 
     if(!this.ctx || this.ctx.isContextLost()) return
 
-    this.projectors[1] = {
-      elem: this.canvas,
-      ctx: this
+    if ('drawingBufferColorSpace' in this.ctx && 'unpackColorSpace' in this.ctx) {
+      this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace
+      this.ctx.unpackColorSpace = ctxOptions.colorSpace
     }
     
-    if(this.ctxOptions.stencil)
-      this.ctx.enable(this.ctx.STENCIL_TEST);
+    this.projectors[1] = {
+      elem: this.elem,
+      ctx: this
+    }
 
     // Program
-    this.program = this.ctx.createProgram();
+    const program = this.ctx.createProgram();
 
     // Textures
     this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
@@ -571,7 +501,7 @@ export default class ProjectorWebGL {
     const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
     this.ctx.shaderSource(vertexShader, vertexShaderSrc);
     this.ctx.compileShader(vertexShader);
-    this.ctx.attachShader(this.program, vertexShader);
+    this.ctx.attachShader(program, vertexShader);
     
     const fragmentShaderSrc = `
       precision lowp float;
@@ -579,7 +509,6 @@ export default class ProjectorWebGL {
       uniform sampler2D textureSampler[${this.projectorsTexture.length}];
       uniform float fTextureMipmapLevel;
       ${this.projectorsCount > 1 ? `uniform float fTextureOpacity[${this.projectorsCount}];` : ''}
-      ${this.ctxOptions.stencil ? 'uniform float fDrawingStencil;' : ''}
       uniform vec2 fCropOffsetUV;
       uniform vec2 fCropScaleUV;
       uniform sampler2D shadowSampler;
@@ -687,105 +616,114 @@ export default class ProjectorWebGL {
       ` :''}
 
       void main(void) {
-    ${this.ctxOptions.stencil ? `
-        if(fDrawingStencil < 0.5) {`
-    : ''}
-          vec3 ambientlight = multiTexture().rgb;
-          float shadowAlpha = texture2D(shadowSampler, fUV).a;
-          ${this.settings.vibrance !== 100 ? `
-            if(fVibrance != 0.) {
-              vec3 ambientlightHSV = rgb2hsv(ambientlight);
-              ambientlightHSV[1] = saturate(ambientlightHSV[1], fVibrance);
-              ambientlight = hsv2rgb(ambientlightHSV);
-            }
-          ` : ''}
-          gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
-    ${this.ctxOptions.stencil ? `
-        } else {
-          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        }
-    ` : ''}
+        vec3 ambientlight = multiTexture().rgb;
+        float shadowAlpha = texture2D(shadowSampler, fUV).a;
+        ${this.settings.vibrance !== 100 ? `
+          if(fVibrance != 0.) {
+            vec3 ambientlightHSV = rgb2hsv(ambientlight);
+            ambientlightHSV[1] = saturate(ambientlightHSV[1], fVibrance);
+            ambientlight = hsv2rgb(ambientlightHSV);
+          }
+        ` : ''}
+        gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
-    this.ctx.attachShader(this.program, fragmentShader);
+    this.ctx.attachShader(program, fragmentShader);
     
+    // Delete previous program
+    if(this.program) {
+      try {
+        this.ctx.finish() // Wait for any pending draw calls to finish
+        this.ctx.deleteProgram(this.program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Ambient light for YouTube™ | Failed to delete previous ProjectorWebGL program', ex)
+      }
+      this.program = undefined
+      this.invalidateShaderCache()
+    }
+
     // Program
-    this.ctx.linkProgram(this.program);
+    this.ctx.linkProgram(program);
 
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    const parallelShaderCompileExt = syncCompilation ? undefined : this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      const stack = new Error().stack
-      this.awaitingProgramCompletion = new Promise((resolve, reject) => {
-        const checkCompletion = () => {
-          try {
-            if(!this.program)
-              return resolve(false) // cancel
-
-            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
-            if(completed === false) {
-              requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
-            } else {
-              resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
-            }
-          } catch(ex) {
-            ex.details = {}
-
-            try {
-              ex.details = {
-                program: this.program?.toString(),
-                webGLVersion: this.webGLVersion,
-                majorPerformanceCaveat: this.majorPerformanceCaveat,
-                ctxOptions: this.ctxOptions
-              }
-            } catch(ex) {
-              ex.details = {
-                detailsException: ex
-              }
-            }
-
-            // // Did not give any insights that could help to fix bugs
-            // try {
-            //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-            //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-            //     : 'unknown'
-            //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-            //     : 'unknown'
-            // } catch(ex) {
-            //   ex.details.gpuError = ex
-            // }
-
-            appendErrorStack(stack, ex)
-            reject(ex)
-          }
-        };
-        requestAnimationFrame(checkCompletion)
+      let resolveCompilationPromise
+      this.compilationPromise = new Promise(resolve => resolveCompilationPromise = async () => {
+        resolveCompilationPromise = undefined
+        await new Promise(resolve => setTimeout(resolve, 0)) // Make sure to finish the current task first
+        this.compilationPromise = undefined
+        resolve()
       })
-      const completed = await this.awaitingProgramCompletion;
-      this.awaitingProgramCompletion = undefined
 
-      if(this.discardProgram || !completed) {
-        const program = this.program
-        this.program = undefined
-        try {
-          this.ctx.deleteProgram(program) // Free GPU memory
-        } catch(ex) {
-          console.warn('Failed to delete previous program', ex)
+      // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
+      this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
+      await new Promise(resolve => requestAnimationFrame(resolve))
+
+      try {
+        let compiled = false
+        while(!compiled) {
+          const completionStatus = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+          // COMPLETION_STATUS_KHR can be null because of webgl-lint
+          if(completionStatus === false) {
+            await new Promise(resolve => requestIdleCallback(resolve, { timeout: 200 }))
+            await new Promise(resolve => requestAnimationFrame(resolve))
+          } else {
+            compiled = true
+          }
         }
-        return false
+
+        if(this.cancelCompilation && compiled) {
+          try {
+            compiled = false
+            this.ctx.deleteProgram(program) // Free GPU memory
+          } catch(ex) {
+            console.warn('Ambient light for YouTube™ | Failed to delete new ProjectorWebGL program', ex)
+          }
+        }
+  
+        resolveCompilationPromise()
+        if(!compiled) return false
+      } catch(ex) {
+        try {
+          ex.details = {
+            program: program?.toString(),
+            webGLVersion: this.webGLVersion,
+            majorPerformanceCaveat: this.majorPerformanceCaveat,
+            ctxOptions: this.ctxOptions
+          }
+        } catch(ex) {
+          ex.details = {
+            detailsException: ex
+          }
+        }
+        // // Did not give any insights that could help to fix bugs
+        // try {
+        //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+        //     : 'unknown'
+        //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+        //     : 'unknown'
+        // } catch(ex) {
+        //   ex.details.gpuError = ex
+        // }
+
+        resolveCompilationPromise()
+        throw ex
       }
     }
 
     // Validate these parameters after program compilation to prevent render blocking validation
     const vertexShaderCompiled = this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)
     const fragmentShaderCompiled = this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)
-    const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
+    const programLinked = this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
+      programCompilationError.name = 'WebGLError'
       programCompilationError.details = {
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions
@@ -799,16 +737,16 @@ export default class ProjectorWebGL {
           fragmentShaderCompiled,
           fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
           programLinked,
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
+          programInfoLog: this.ctx.getProgramInfoLog(program)
         }
       } catch(ex) {
         programCompilationError.details.getCompiledAndLinkedInfoLogsError = ex
       }
 
       try {
-        this.ctx.validateProgram(this.program)
-        programCompilationError.details.programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(this.program)
+        this.ctx.validateProgram(program)
+        programCompilationError.details.programValidated = this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)
+        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(program)
       } catch(ex) {
         programCompilationError.details.validateProgramError = ex
       }
@@ -836,6 +774,19 @@ export default class ProjectorWebGL {
       // } catch(ex) {
       //   programCompilationError.details.gpuError = ex
       // }
+
+      if(
+        programCompilationError.details.vertexShaderInfoLog ||
+        programCompilationError.details.fragmentShaderInfoLog ||
+        programCompilationError.details.getCompiledAndLinkedInfoLogsError ||
+        programCompilationError.details.programValidationInfoLog ||
+        programCompilationError.details.validateProgramError ||
+        programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.debugShadersError
+      ) {
+        programCompilationError.name = 'WebGLErrorWithInfoLog'
+      }
 
       throw programCompilationError
     }
@@ -871,49 +822,28 @@ export default class ProjectorWebGL {
 
     //   throw programValidationError
     // }
-
-    // console.log('awaitedProgramCompletion > useProgram')
-    this.ctx.useProgram(this.program);
+    
+    this.ctx.useProgram(program)
+    this.program = program
 
     // Buffers
-    const vUVBuffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vUVBuffer);
-    const vUV = [
-      0, 0, 
-      0, 1, 
-      1, 1, 
-      1, 0,
-    ];
-    // vUVBuffer must at least be filled to stencilPoints.length (48) for Firefox. In updateCrop() -> drawArrays(..., ..., stencilPoints.length)
-    const vUVFilled = vUV.concat(Array(48 - vUV.length).fill(0));
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(vUVFilled), this.ctx.STATIC_DRAW);
     const vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
+    this.vUVBuffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vUVBuffer);
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vUVLoc);
 
+    const vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
     this.vPositionBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
-    this.vPosition = [
-      -1,  1, 
-      -1, -1, 
-       1, -1, 
-       1,  1
-    ];
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vPosition), this.ctx.STATIC_DRAW);
-    this.vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
-    this.ctx.vertexAttribPointer(this.vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
-    this.ctx.enableVertexAttribArray(this.vPositionLoc);
+    this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
+    this.ctx.enableVertexAttribArray(vPositionLoc);
 
     const shadowSamplerLoc = this.ctx.getUniformLocation(this.program, 'shadowSampler');
     this.ctx.uniform1i(shadowSamplerLoc, 0);
 
     const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
     this.ctx.uniform1iv(textureSamplerLoc, this.projectorsTexture.map((_, i) => 1 + i));
-    
-    if(this.ctxOptions.stencil) {
-      this.fDrawingStencilLoc = this.ctx.getUniformLocation(this.program, 'fDrawingStencil');
-      this.ctx.uniform1f(this.fDrawingStencilLoc, 0);
-    }
 
     this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fTextureMipmapLevel');
     this.ctx.uniform1f(this.fTextureMipmapLevelLoc, 0);
@@ -961,9 +891,9 @@ export default class ProjectorWebGL {
 
     const width = Math.floor(projectorSize.w * this.scale.x)
     const height = Math.floor(projectorSize.h * this.scale.y)
-    if(this.canvas) {
-      this.canvas.width = width
-      this.canvas.height = height
+    if(this.elem) {
+      this.elem.width = width
+      this.elem.height = height
     }
 
     this.blurCanvasScale = settings.blur > 1 ? 2 : 1
@@ -994,7 +924,7 @@ export default class ProjectorWebGL {
   }
 
   updateCtx() {
-    if(!this.ctx || this.ctxIsInvalid || this.lost) return
+    if(this.ctxIsInvalid || this.lost) return
 
     if(this.settings.vibrance !== 100) {
       let vibrance = (this.settings.vibrance / 100) - 1
@@ -1050,16 +980,19 @@ export default class ProjectorWebGL {
       this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
     }
 
-    this.updateCrop()
+    if(!this.cropped) {
+      this.updateCrop()
+    }
+    
+    if(!this.vPosition || !this.vUV) {
+      this.updatePositionAndUvCoordinates()
+    }
   }
 
   updateCrop() {
-    if(!this.ctxOptions.stencil || !this.ctx || this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
+    if(this.ctxIsInvalid || this.lost || !this.blurCanvas || !this.ambientlight?.videoContainerElem) return
 
-    const canvasRect = this.blurCanvas.getBoundingClientRect()
-    if(!canvasRect?.width || !canvasRect?.height) return
-
-    const videoBoundingElem = this.ambientlight.shouldStyleVideoContainer
+    const videoBoundingElem = this.ambientlight.shouldStyleVideoParentElem
       ? this.ambientlight.videoContainerElem
       : this.ambientlight.videoElem
     if(!videoBoundingElem) return
@@ -1067,27 +1000,26 @@ export default class ProjectorWebGL {
     let videoRect = videoBoundingElem.getBoundingClientRect()
     if(!videoRect?.width || !videoRect?.height) return
 
+    const canvasRect = this.blurCanvas.getBoundingClientRect()
+    if(!canvasRect?.width || !canvasRect?.height) return
+
+    const blurScale = (canvasRect.height / this.blurCanvas.height) // Todo: The blurRadius is appearently incorrect?
+    const blurSize = this.blurBound * blurScale
     const windowRect = {
-      left: 0,
-      top: -window.scrollY,
-      right: window.innerWidth,
-      bottom: window.innerHeight
+      left: -blurSize,
+      top: -window.scrollY - blurSize,
+      right: window.innerWidth + blurSize,
+      bottom: window.innerHeight + blurSize
     }
-
-    const blurScaleRadiusExtra = 1 // 1.25 // Todo: The blurRadius is appearently incorrect?
-    const blurScale = (canvasRect.height / this.blurCanvas.height) * blurScaleRadiusExtra
-    const blurSize = this.blurBound * blurScale;
-
-    windowRect.left -= blurSize
-    windowRect.top -= blurSize
-    windowRect.right += blurSize
-    windowRect.bottom += blurSize
-
     videoRect = {
       left: videoRect.left + blurSize,
       top: videoRect.top + blurSize,
       right: videoRect.right - blurSize,
       bottom: videoRect.bottom - blurSize
+    }
+    const canvasRectCenter = {
+      x: canvasRect.left + (canvasRect.width / 2),
+      y: canvasRect.top + (canvasRect.height / 2)
     }
 
     const cropRect = {
@@ -1096,12 +1028,6 @@ export default class ProjectorWebGL {
       right: Math.min(canvasRect.right, windowRect.right),
       bottom: Math.min(canvasRect.bottom, windowRect.bottom + 100) // 100 = a single scroll step
     };
-
-    const canvasRectCenter = {
-      x: canvasRect.left + (canvasRect.width / 2),
-      y: canvasRect.top + (canvasRect.height / 2)
-    };
-
     const cropPerc = {
       left: (canvasRectCenter.x - cropRect.left) / (canvasRectCenter.x - canvasRect.left),
       top: (canvasRectCenter.y - cropRect.top) / (canvasRectCenter.y - canvasRect.top),
@@ -1110,12 +1036,11 @@ export default class ProjectorWebGL {
         ? (cropRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
         : 1
     }
-    
     const crop = {
-      t: Math.max(0, cropPerc.top), 
-      r: Math.max(0, cropPerc.right), 
-      b: -Math.max(0, cropPerc.bottom), 
-      l: -Math.max(0, cropPerc.left)
+      t: Math.max(0, cropPerc.top.toFixed(4)), 
+      r: Math.max(0, cropPerc.right.toFixed(4)), 
+      b: -Math.max(0, cropPerc.bottom.toFixed(4)), 
+      l: -Math.max(0, cropPerc.left.toFixed(4))
     }
 
     const cutPerc = {
@@ -1124,78 +1049,92 @@ export default class ProjectorWebGL {
       right: (videoRect.right - canvasRectCenter.x) / (canvasRect.right - canvasRectCenter.x),
       bottom: (videoRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
     }
-    const vcut = {
-      t: Math.min(Math.max(0, cutPerc.top), crop.t), 
-      r: Math.min(Math.max(0, cutPerc.right), crop.r), 
-      b: -Math.min(Math.max(0, cutPerc.bottom), -crop.b),  
-      l: -Math.min(Math.max(0, cutPerc.left), -crop.l)
+    const cut = {
+      t: Math.min(Math.max(0, cutPerc.top.toFixed(4)), crop.t), 
+      r: Math.min(Math.max(0, cutPerc.right.toFixed(4)), crop.r), 
+      b: -Math.min(Math.max(0, cutPerc.bottom.toFixed(4)), -crop.b),  
+      l: -Math.min(Math.max(0, cutPerc.left.toFixed(4)), -crop.l)
     }
-    
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
-    
-    // Turn on stencil drawing
-    this.ctx.stencilOp(this.ctx.KEEP, this.ctx.KEEP, this.ctx.REPLACE);
 
-    this.ctx.stencilFunc(this.ctx.ALWAYS, 1, 0xff);
-    this.ctx.stencilMask(0xff);
-    this.ctx.colorMask(false, false, false, false);
+    this.updatePositionAndUvCoordinates(crop, cut)
+    this.cropped = true
+  }
 
-    this.ctx.uniform1f(this.fDrawingStencilLoc, 1);
-
-    // Set buffers to crop to mask
-    // [p1x, p1y, p2x, p2y, p3x, p3y] = triangle points
-    const stencilPoints = [
-      // // Old points for TRIANGLE_FAN
-      // crop.l, crop.t,  crop.l, crop.b,  crop.r, crop.b, 
-      // crop.l, crop.t,  crop.r, crop.t,  crop.r, crop.b, 
-
-      // Top
-      crop.l, crop.t,  crop.r, crop.t,  vcut.r, vcut.t, 
-      crop.l, crop.t,  vcut.r, vcut.t,  vcut.l, vcut.t, 
+  updatePositionAndUvCoordinates(crop = { t: 1, r: 1, b: -1, l: -1  }, cut = { t: 0, r: 0, b: 0, l: 0 }) {
+    // Convert cut and crop rectangles to position coordinates
+    //   [p1x, p1y, p2x, p2y, p3x, p3y] = triangle points
+    const vPosition = [
+      // Bottom
+      crop.l, crop.b,  crop.r, crop.b,  cut.r, cut.b,
+      crop.l, crop.b,  cut.r, cut.b,  cut.l, cut.b,
 
       // Right
-      crop.r, crop.t,  crop.r, crop.b,  vcut.r, vcut.t, 
-      crop.r, crop.b,  vcut.r, vcut.b,  vcut.r, vcut.t, 
+      crop.r, crop.t,  crop.r, crop.b,  cut.r, cut.t,
+      crop.r, crop.b,  cut.r, cut.b,  cut.r, cut.t,
 
-      // Bottom
-      crop.l, crop.b,  crop.r, crop.b,  vcut.r, vcut.b, 
-      crop.l, crop.b,  vcut.r, vcut.b,  vcut.l, vcut.b, 
+      // Top
+      crop.l, crop.t,  cut.r, cut.t,  cut.l, cut.t,
+      crop.l, crop.t,  crop.r, crop.t,  cut.r, cut.t,
 
       // Left
-      crop.l, crop.t,  crop.l, crop.b,  vcut.l, vcut.t, 
-      crop.l, crop.b,  vcut.l, vcut.b,  vcut.l, vcut.t, 
+      crop.l, crop.t,  crop.l, crop.b,  cut.l, cut.t,
+      crop.l, crop.b,  cut.l, cut.b,  cut.l, cut.t,
     ];
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(stencilPoints), this.ctx.STATIC_DRAW);
 
-    // Draw stencil mask
-    this.ctx.clear(this.ctx.STENCIL_BUFFER_BIT);
-    this.ctx.drawArrays(this.ctx.TRIANGLES, 0, stencilPoints.length / 2);
+    if(JSON.stringify(this.vPosition) === JSON.stringify(vPosition)) return
 
-    // Restore position to full viewport
+    this.vPosition = vPosition
+
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT)
+
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vPositionBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vPosition), this.ctx.STATIC_DRAW);
+    
+    // Convert positions coordinates to UV coördinates
+    this.vUV = this.vPosition.map((p, i) => 
+      (((i % 2 == 0) ? p : -p) // Flip the y-axis of UV coördinates
+      + 1) / 2
+    )
 
-    // Turn off stencil drawing
-    this.ctx.uniform1f(this.fDrawingStencilLoc, 0);
-
-    this.ctx.stencilFunc(this.ctx.EQUAL, 1, 0xff);
-    this.ctx.stencilMask(0x00);
-    this.ctx.colorMask(true, true, true, true);
-
-    this.stencil = true
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, this.vUVBuffer);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array(this.vUV), this.ctx.STATIC_DRAW);
   }
 
   clearRect() {
-    if(!this.ctx || this.ctxIsInvalid || this.lost) return
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
     this.invalidateShaderCache()
+
+    if(this.shadow?.ctx && (!this.shadow.ctx.isContextLost || !this.shadow.ctx.isContextLost())) {
+      this.shadow.ctx.clearRect(0, 0, this.shadow.elem.width, this.shadow.elem.height)
+    }
+
+    if(this.ctx && !this.ctx.isContextLost() && this.program) {
+      // Shadow
+      this.ctx.activeTexture(this.ctx.TEXTURE0)
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.ALPHA, this.ctx.ALPHA, this.ctx.UNSIGNED_BYTE, null)
+
+      // Video textures
+      for(let i = 0; i < this.projectorsTexture.length; i++) {
+        this.ctx.activeTexture(this.ctx[`TEXTURE${i + 1}`])
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+        this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+        // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
+      }
+
+      this.ctx.clear(this.ctx.COLOR_BUFFER_BIT)
+    }
+    
+    if(this.blurCtx && (!this.blurCtx.isContextLost || !this.blurCtx.isContextLost())) {
+      this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height)
+    }
   }
 
   get ctxIsInvalid() {
-    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
-    if (invalid && !this.isControlledLose && !this.ctxIsInvalidWarned) {
+    const invalid = (!this.ctx || this.ctx.isContextLost() || !this.program  || !this.blurCtx || (this.blurCtx.isContextLost && this.blurCtx.isContextLost()))
+    if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | ProjectorWebGL context is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.log(`Ambient light for YouTube™ | ProjectorWebGL context is lost`)
     }
-    return invalid;
+    return invalid
   }
 }

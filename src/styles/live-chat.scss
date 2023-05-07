@@ -30,8 +30,17 @@
   }
 }
 
-body {
+body yt-live-chat-app {
   --yt-live-chat-action-panel-background-color: none;
+  --yt-spec-icon-inactive: rgba(0, 0, 0, .3);
+  --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
+  --yt-live-chat-header-bottom-border: 1px solid var(--yt-spec-10-percent-layer);
+  --yt-live-chat-panel-pages-border-color: var(--yt-spec-10-percent-layer);
+
+  html[dark] & {
+    --yt-spec-icon-inactive: rgba(255, 255, 255, .3);
+    --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
+  }
 }
 
 yt-live-chat-banner-manager,
@@ -75,4 +84,9 @@ html:not([dark]) {
 
 yt-live-chat-ninja-message-renderer {
   background: none !important;
+}
+
+yt-live-chat-renderer #panel-pages.yt-live-chat-renderer {
+  border-bottom: none !important;
+  box-shadow: var(--yt-spec-10-percent-layer) 0 -1px inset;
 }

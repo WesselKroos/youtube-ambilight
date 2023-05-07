@@ -76,63 +76,161 @@ export const setTimeout = (handler, timeout) => {
 }
 
 export function on(elem, eventNames, callback, options, getListenerCallback, reportOnce = false) {
-  const stack = new Error().stack
-  const callbacksName = `on_${eventNames.split(' ').join('_')}`
-  let reported = [];
-  const namedCallbacks = {
-    [callbacksName]: async (...args) => {
-      try {
-        await callback(...args)
-      } catch(ex) {
-        if(reportOnce) {
-          if(reported.includes(ex.message)) return
-          reported.push(ex.message)
-        }
-        const e = args[0]
-        let elem = {}
-        if(e && e.currentTarget) {
-          if(e.currentTarget.cloneNode) {
-            elem = e.currentTarget.cloneNode(false)
-          } else {
-            elem.nodeName = e.currentTarget.toString()
+  try {
+    const stack = new Error().stack
+    const callbacksName = `on_${eventNames.split(' ').join('_')}`
+    let reported = [];
+    const namedCallbacks = {
+      [callbacksName]: async (...args) => {
+        try {
+          await callback(...args)
+        } catch(ex) {
+          if(reportOnce) {
+            if(reported.includes(ex.message)) return
+            reported.push(ex.message)
           }
+          
+          const e = args.length ? args[0] : {}
+          const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+          ex.message = `${ex.message} \nOn event: ${type}`
+
+          try {
+            if(elem) {
+              ex.message = `${ex.message} \nElem: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+            }
+          } catch(elemEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              elemEx
+            }
+          }
+
+          try {
+            if(e?.target) {
+              ex.message = `${ex.message} \nTarget: ${e.target.toString()} ${e.target.nodeName || ''}#${e.target.id || ''}.${e.target.className || ''}`
+            }
+          } catch(targetEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              targetEx
+            }
+          }
+
+          try {
+            if(e?.currentTarget) {
+              ex.message = `${ex.message} \nCurrentTarget: ${e.currentTarget.toString()} ${e.currentTarget.nodeName || ''}#${e.currentTarget.id || ''}.${e.currentTarget.className || ''}`
+            }
+          } catch(currentTargetEx) {
+            ex.details = {
+              ...(ex.details || {}),
+              currentTargetEx
+            }
+          }
+
+          ex.details = {
+            ...(ex.details || {}),
+            eventNames,
+            options,
+            reportOnce
+          }
+    
+          appendErrorStack(stack, ex)
+          if(errorHandler)
+            errorHandler(ex)
         }
-        const type = (e.type === 'keydown') ? `${e.type} keyCode: ${e.keyCode}` : e.type;
-        ex.message = `${ex.message} \nOn event: ${type} \nAnd element: ${elem.outerHTML || elem.nodeName || 'Unknown'}`
-  
-        appendErrorStack(stack, ex)
-        if(errorHandler)
-          errorHandler(ex)
       }
     }
+    const eventListenerCallback = namedCallbacks[callbacksName]
+
+    const list = eventNames.split(' ')
+    list.forEach(function eventNamesAddEventListener(eventName) {
+      elem.addEventListener(eventName, eventListenerCallback, options)
+    })
+
+    if(getListenerCallback)
+      getListenerCallback(eventListenerCallback)
+  } catch(ex) {
+    ex.details = {
+      eventNames,
+      options,
+      reportOnce
+    }
+
+    try {
+      if(elem) {
+        ex.message = `${ex.message} \nFor element: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+      }
+    } catch(elemEx) {
+      ex.details = {
+        ...(ex.details || {}),
+        elemEx
+      }
+    }
+    
+    console.log('catched', ex)
+    throw ex
   }
-  const eventListenerCallback = namedCallbacks[callbacksName]
-
-  const list = eventNames.split(' ')
-  list.forEach(function eventNamesAddEventListener(eventName) {
-    elem.addEventListener(eventName, eventListenerCallback, options)
-  })
-
-  if(getListenerCallback)
-    getListenerCallback(eventListenerCallback)
 }
 
 export function off(elem, eventNames, callback) {
-  const list = eventNames.split(' ')
-  list.forEach(function eventNamesRemoveEventListener(eventName) {
-    elem.removeEventListener(eventName, callback)
-  })
+  try {
+    const list = eventNames.split(' ')
+    list.forEach(function eventNamesRemoveEventListener(eventName) {
+      elem.removeEventListener(eventName, callback)
+    })
+  } catch(ex) {
+    ex.details = {
+      eventNames
+    }
+
+    try {
+      if(elem) {
+        ex.message = `${ex.message} \nFor element: ${elem.toString()} ${elem.nodeName || ''}#${elem.id || ''}.${elem.className || ''}`
+      }
+    } catch(elemEx) {
+      ex.details = {
+        ...(ex.details || {}),
+        elemEx
+      }
+    }
+    
+    throw ex
+  }
 }
 
-export const html = document.querySelector('html')
+export const html = document.documentElement
 export const body = document.body
 
 export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
+const colorSpace = (
+  // rec2020 in canvas is not yet supported 
+  // window.matchMedia('(color-gamut: rec2020)').matches
+  //   ? 'rec2020'
+  //   : (
+      window.matchMedia('(color-gamut: p3)').matches
+      ? 'display-p3'
+      : 'srgb'
+  //  )
+)
+
+const extendedColorSpace = (
+  // rec2020 in canvas is not yet supported 
+  window.matchMedia('(color-gamut: rec2020)').matches
+    ? 'rec2020'
+    : (
+      window.matchMedia('(color-gamut: p3)').matches
+      ? 'display-p3'
+      : 'srgb'
+  )
+)
+
 export const ctxOptions = {
   alpha: false,
   // desynchronized: true,
-  imageSmoothingQuality: 'low'
+  imageSmoothingQuality: 'low',
+  colorSpace,
+  extendedColorSpace
 }
 
 export class Canvas {
@@ -209,3 +307,25 @@ export const getCookie = async (name) =>
         }
       })
       .find(cookie => cookie.name === name)
+
+export const networkStateToString = (value) => (({
+  0: 'NETWORK_EMPTY',
+  1: 'NETWORK_IDLE',
+  2: 'NETWORK_LOADING',
+  3: 'NETWORK_NO_SOURCE'
+})[value] || value) ?? 'UNKNOWN'
+
+export const readyStateToString = (value) => (({
+  0: 'HAVE_NOTHING',
+  1: 'HAVE_METADATA',
+  2: 'HAVE_CURRENT_DATA',
+  3: 'HAVE_FUTURE_DATA',
+  4: 'HAVE_ENOUGH_DATA'
+})[value] || value) ?? 'UNKNOWN'
+
+export const mediaErrorToString = (value) => (({
+  1: 'MEDIA_ERR_ABORTED',
+  2: 'MEDIA_ERR_NETWORK',
+  3: 'MEDIA_ERR_DECODE',
+  4: 'MEDIA_ERR_SRC_NOT_SUPPORTED'
+})[value] || value) ?? 'UNKNOWN'

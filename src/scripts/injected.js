@@ -1,4 +1,4 @@
-import { on, off, requestIdleCallback, wrapErrorHandler, isWatchPageUrl, setErrorHandler, raf } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -16,7 +16,10 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
   }, true)
 })()
 
-const errorEvents = new ErrorEvents()
+let errorEvents;
+wrapErrorHandler(function initErrorEvents() {
+  errorEvents = new ErrorEvents()
+})()
 
 const getOtherUnknownAppElems = () => 
   [...document.querySelectorAll('body > *')]
@@ -25,7 +28,8 @@ const getOtherUnknownAppElems = () =>
     });
 
 const logErrorEventWithPageTrees = (message, details = {}) => {
-  if(isVideoInKnownInvalidLocation()) return
+  if (!isWatchPageUrl()) return
+  if (isVideoInKnownInvalidLocation()) return
 
   const allSelector = 'html, body, ytd-app, ytd-watch-flexy, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
   const otherAppElems = getOtherUnknownAppElems()
@@ -60,7 +64,7 @@ const isVideoInKnownInvalidLocation = () => {
 }
 
 const detectDetachedVideo = () => {
-  const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo(mutationsList, observer) {
+  const observer = new MutationObserver(wrapErrorHandler(function detectDetachedVideo() {
     if (!isWatchPageUrl()) return
 
     const videoElem = ambientlight.videoElem
@@ -105,7 +109,6 @@ const detectDetachedVideo = () => {
 
     if(videoElem !== newVideoElem) {
       ambientlight.initVideoElem(newVideoElem)
-      ambientlight.initVideoListeners()
     }
     
     ambientlight.start()
@@ -132,12 +135,29 @@ const tryInitAmbientlight = async () => {
 
   const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
   if (!videoElem) {
-    logErrorEventWithPageTrees('initialize')
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-flexy video.html5-main-video')
     return
   }
 
-  const ytdAppElem = videoElem.closest('ytd-app')
-  window.ambientlight = await new Ambientlight(ytdAppElem, videoElem)
+  const ytdAppElem = document.querySelector('ytd-app')
+  if(!ytdAppElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-app')
+    return
+  }
+
+  const ytdWatchFlexyElem = document.querySelector('ytd-app ytd-watch-flexy')
+  if(!ytdWatchFlexyElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-watch-flexy')
+    return
+  }
+
+  const mastheadElem = document.querySelector('ytd-app #masthead-container')
+  if(!mastheadElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: #masthead-container')
+    return
+  }
+  
+  window.ambientlight = await new Ambientlight(ytdAppElem, ytdWatchFlexyElem, videoElem, mastheadElem)
 
   errorEvents.list = []
   detectDetachedVideo()
@@ -150,24 +170,22 @@ const tryInitAmbientlight = async () => {
 
 const getWatchPageViewObserver = (function initGetWatchPageViewObserver() {
   let observer;
-  return function getWatchPageViewObserver(ytdAppElem) {
+  return function getWatchPageViewObserver() {
     if(!observer) {
-      observer = new MutationObserver(wrapErrorHandler(
-        function watchPageViewObserved(mutationsList, observer) {
-          startIfWatchPageHasVideo(ytdAppElem)
-        }
-      ))
+      observer = new MutationObserver(wrapErrorHandler(function watchPageViewObserved() {
+        startIfWatchPageHasVideo()
+      }))
     }
     return observer;
   }
 })();
 const detectWatchPageVideo = (ytdAppElem) => {
-  getWatchPageViewObserver(ytdAppElem).observe(ytdAppElem, {
+  getWatchPageViewObserver().observe(ytdAppElem, {
     childList: true,
     subtree: true
   })
 }
-const startIfWatchPageHasVideo = (ytdAppElem) => {
+const startIfWatchPageHasVideo = () => {
   if (!isWatchPageUrl() || window.ambientlight.isOnVideoPage) {
     getWatchPageViewObserver().disconnect()
     return
@@ -182,17 +200,17 @@ const startIfWatchPageHasVideo = (ytdAppElem) => {
 }
 
 const detectPageTransitions = (ytdAppElem) => {
-  on(document, 'yt-navigate-finish', function onYtNavigateFinish() {
-    getWatchPageViewObserver(ytdAppElem).disconnect()
+  on(document, 'yt-navigate-finish', async function onYtNavigateFinish() {
+    getWatchPageViewObserver().disconnect()
     if(isWatchPageUrl()) {
-      startIfWatchPageHasVideo(ytdAppElem)
+      startIfWatchPageHasVideo()
       if(!window.ambientlight.isOnVideoPage) {
         detectWatchPageVideo(ytdAppElem)
       }
     } else {
       if(window.ambientlight.isOnVideoPage) {
         window.ambientlight.isOnVideoPage = false
-        window.ambientlight.hide()
+        await window.ambientlight.hide()
       }
     }
   }, undefined, undefined, true);

@@ -1,5 +1,4 @@
 import { appendErrorStack } from "./generic";
-import SentryReporter from "./sentry-reporter";
 import { workerFromCode } from "./worker";
 
 const workerCode = function () {
@@ -68,9 +67,9 @@ const workerCode = function () {
 
   // // On a scale from 0 till 1, luminance
   // // gamma = 2.2
-  const sRGBtoLin = (colorChannel) => (colorChannel <= 0.04045)
-    ? colorChannel / 12.92
-    : Math.pow(((colorChannel + 0.055) / 1.055), 2.4);
+  // const sRGBtoLin = (colorChannel) => (colorChannel <= 0.04045)
+  //   ? colorChannel / 12.92
+  //   : Math.pow(((colorChannel + 0.055) / 1.055), 2.4);
   // const rgbToLuminance = (r, g, b) => (0.2126 * sRGBtoLin(r) + 0.7152 * sRGBtoLin(g) + 0.0722 * sRGBtoLin(b));
   // const getImageDataDifference = (image1, image2) => {
   //   let diffSum = 0;

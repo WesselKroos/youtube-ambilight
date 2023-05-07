@@ -3,72 +3,44 @@ import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
 const workerCode = function () {
-  // Cannot access appendErrorStack in import from a worker
-  const appendErrorStack = (stack, ex) => {
-    try {
-      const stackToAppend = stack.substring(stack.indexOf('\n') + 1)
-      const alreadyContainsStack = ((ex.stack || ex.message).indexOf(stackToAppend) !== -1)
-      if(alreadyContainsStack) return
-  
-      ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`
-    } catch(ex) { console.warn(ex) }
-  }
-
   let catchedWorkerCreationError = false
   let canvas;
   let ctx;
-  const partSizeBorderMultiplier = 1
-  let imageLines = []
-  let partSize;
-  let imageLinesIndex = 0
-  let getLineImageDataStack;
-  let getLineImageDataResolve;
-  let getLineImageDataReject;
-  let getLineImageDataYLength;
   let workerMessageId = 0;
 
-  function getLineImageData() {
-    try {
-      const params = getLineImageDataYLength === 'height' 
-        ? [imageLinesIndex, 0, 1, canvas.height]
-        : [0, imageLinesIndex, canvas.width, 1]
-      imageLines.push(ctx.getImageData(...params).data)
-      getLineImageDataResolve()
-    } catch(ex) {
-      appendErrorStack(getLineImageDataStack, ex)
-      getLineImageDataReject(ex)
-    }
+  async function getLineImageData(imageLines, yLength, index) {
+    const params = yLength === 'height' 
+      ? [index, 0, 1, canvas.height]
+      : [0, index, canvas.width, 1]
+
+    const start = performance.now()
+    imageLines.push(ctx.getImageData(...params).data)
+    const duration = performance.now() - start
+
+    // Give the GPU cores breathing time to decode the video or prepaint other elements in between
+    // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+    await new Promise(resolve => {
+      setTimeout(resolve, duration < 1 ? 0 : Math.min(1000/24, duration / 2))
+    })
   }
 
-  function getLineImageDataPromise(resolve, reject) {
-    getLineImageDataResolve = resolve
-    getLineImageDataReject = reject
-    getLineImageData()
-  }
-
-  let averageSize = 0;
-  function sortSizes(a, b) {
+  function sortSizes(averageSize, a, b) {
     const aGap = Math.abs(averageSize - a)
     const bGap = Math.abs(averageSize - b)
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
+  const partSizeBorderMultiplier = 1
   try {
     const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
-      partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
-      imageLines = []
-      for (imageLinesIndex = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); imageLinesIndex < canvas[xLength] - (partSizeBorderMultiplier * partSize); imageLinesIndex += partSize) {
-        if(!getLineImageDataStack) {
-          getLineImageDataStack = new Error().stack
-        }
-        getLineImageDataYLength = yLength
+      const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
+      const imageLines = []
+      for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
         if(id < workerMessageId) return
-        await new Promise(getLineImageDataPromise) // throttle allows 4k60fps with frame blending + video overlay 80fps -> 144fps
-        if(id < workerMessageId) return
+        await getLineImageData(imageLines, yLength, index)
       }
-      getLineImageDataResolve = undefined
-      getLineImageDataReject = undefined
-    
+      if(id < workerMessageId) return
+
       const channels = 4
       const colorIndex = (channels * 4)
       let color = detectColored ?
@@ -78,7 +50,8 @@ const workerCode = function () {
       const ignoreEdge = 2
       const lineLimit = (imageLines[0].length / 2)
       const largeStep = 20
-      const sizes = []
+      const topSizes = []
+      const bottomSizes = []
     
       for(const line of imageLines) {
         let step = largeStep
@@ -98,8 +71,8 @@ const workerCode = function () {
             continue
           }
 
-          // Found the first video pixel, add to sizes
-          sizes.push(i / channels)
+          // Found the first video pixel, add to topSizes
+          topSizes.push(i / channels)
           break;
         }
 
@@ -120,33 +93,64 @@ const workerCode = function () {
             continue
           }
 
-          // Found the first video pixel, add to sizes
-          sizes.push(((line.length - 1) - i) / channels)
+          // Found the first video pixel, add to bottomSizes
+          bottomSizes.push(((line.length - 1) - i) / channels)
           break;
         }
       }
 
       const maxSize = (imageLines[0].length / channels)
-      const minSize = maxSize * (0.012 * scale)
       imageLines.length = 0
 
-      if(!sizes.length) {
+      if(!topSizes.length || !bottomSizes.length) {
         return
       }
 
-      let closestSizes = sizes
+      // Calculate averages and deviations
+
+      const maxAllowedDeviation = maxSize * (0.0125 * scale)
+      let closestSizes = sizes = [...topSizes, ...bottomSizes]
       while(closestSizes.length > 7) {
-        averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
-        closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
+        const averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
+        closestSizes = closestSizes.sort((a, b) => sortSizes(averageSize, a, b)).slice(0, closestSizes.length - 1)
       }
       const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
-      const allowed = maxSize * (0.0125 * scale)
-      const deviationAllowed = (maxDeviation <= allowed)
+      let deviationIsAllowed = (maxDeviation <= maxAllowedDeviation)
+
+      if(!deviationIsAllowed) {
+        const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
+
+        let closestTopSizes = topSizes
+        while(closestTopSizes.length > 4) {
+          const averageTopSize = (closestTopSizes.reduce((a, b) => a + b, 0) / closestTopSizes.length)
+          closestTopSizes = closestTopSizes.sort((a, b) => sortSizes(averageTopSize, a, b)).slice(0, closestTopSizes.length - 1)
+        }
+        const maxTopDeviation = Math.abs(Math.max(...closestTopSizes) - Math.min(...closestTopSizes))
+        const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
+
+        if(topDeviationIsAllowed) {
+          let closestBottomSizes = bottomSizes
+          while(closestBottomSizes.length > 4) {
+            const averageBottomSize = (closestBottomSizes.reduce((a, b) => a + b, 0) / closestBottomSizes.length)
+            closestBottomSizes = closestBottomSizes.sort((a, b) => sortSizes(averageBottomSize, a, b)).slice(0, closestBottomSizes.length - 1)
+          }
+          const maxBottomDeviation = Math.abs(Math.max(...closestBottomSizes) - Math.min(...closestBottomSizes))
+          const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
+
+          if(bottomDeviationIsAllowed) {
+            const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
+            deviationIsAllowed = (maxDeviation <= maxAllowedCombinedSidesDeviation)
+          }
+        }
+      }
+
+      // Check if calculated percentages are allowed
+
+      const minSize = maxSize * (0.012 * scale)
       const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
-      const maxPercentage = 36
 
       let size = 0;
-      if(!deviationAllowed) {
+      if(!deviationIsAllowed) {
         let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
@@ -181,6 +185,7 @@ const workerCode = function () {
       }
       
       let percentage = Math.round((size / maxSize) * 10000) / 100
+      const maxPercentage = 36
       percentage = Math.min(percentage, maxPercentage)
       return percentage
     }
@@ -229,12 +234,12 @@ const workerCode = function () {
           ctx = canvasInfo.ctx
         }
         
-        const horizontalPercentage = detectHorizontal
+        let horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
               id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
           )
           : undefined
-        const verticalPercentage = detectVertical
+          let verticalPercentage = detectVertical
           ? await workerDetectBarSize(
               id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
           )

@@ -1,6 +1,9 @@
-import { html, on, uuidv4 } from './generic';
-import { BrowserClient } from '@sentry/browser/esm/client';
-import { Scope, Hub, makeMain, getCurrentHub } from '@sentry/hub';
+import { BrowserClient, defaultStackParser, makeFetchTransport } from '@sentry/browser/esm';
+import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/dedupe";
+import { Hub, makeMain, getCurrentHub } from '@sentry/hub/esm/hub';
+import { Scope } from '@sentry/hub/esm/scope';
+
+import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4 } from './generic';
 import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
 
@@ -34,13 +37,13 @@ const createNodeEntry = (node, level) => ({
   node,
   children: []
 })
-const findEntry = (node, entry) => {
-  if(entry.node === node) return entry
-  for (entry of entry.children) {
-    const foundEntry = findEntry(node, entry)
-    if(foundEntry) return foundEntry
-  }
-}
+// const findEntry = (node, entry) => {
+//   if(entry.node === node) return entry
+//   for (entry of entry.children) {
+//     const foundEntry = findEntry(node, entry)
+//     if(foundEntry) return foundEntry
+//   }
+// }
 const entryToString = (entry) => {
   let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`]
   entry.children.forEach(childEntry => {
@@ -95,7 +98,6 @@ export const parseSettingsToSentry = (newSettings) => {
 export class AmbientlightError extends Error {
   constructor(message, details) {
     super(message)
-    this.name = 'AmbientlightError'
     this.details = details
   }
 }
@@ -116,7 +118,9 @@ function initClient() {
   client = new BrowserClient({
     enabled: true,
     dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
-    defaultIntegrations: false,
+    transport: makeFetchTransport,
+    stackParser: defaultStackParser,
+    integrations: [new DedupeIntegration()],
     release: version || 'pending',
     attachStacktrace: true,
     maxValueLength: 500,
@@ -286,13 +290,16 @@ export default class SentryReporter {
           if (ambientlightExtra.initialized) {
             ambientlightExtra.now = performance.now()
             const keys = [
+              'initializedTime',
               'ambientlightFrameCount',
+              'ambientlightFrameRate',
+              'displayFrameCount',
+              'displayFrameRate',
               'videoFrameCount',
+              'videoFrameRate',
               'ambientlightVideoDroppedFrameCount',
               'droppedVideoFramesCorrection',
-              'ambientlightFrameRate',
-              'videoFrameRate',
-              'displayFrameRate',
+              'averageVideoFramesDifference',
               'previousDrawTime',
               'previousFrameTime',
               'buffersCleared',
@@ -303,16 +310,20 @@ export default class SentryReporter {
               'requestVideoFrameCallbackId',
               'videoFrameCallbackReceived',
               'scheduledNextFrame',
-              'videoResizeHandled',
               'view',
               'isOnVideoPage',
               'atTop',
               'isFillingFullscreen',
               'isHidden',
-              'isPageHidden',
-              'videoIsHidden',
               'isAmbientlightHiddenOnWatchPage',
+              'videoIsHidden',
+              'videoIsPictureInPicture',
               'isVideoHiddenOnWatchPage',
+              'isPageHidden',
+              'pageHiddenTime',
+              'pageHiddenClearTime',
+              'pageShownTime',
+              'clearTime',
               'isVR',
               'srcVideoOffset.top',
               'srcVideoOffset.width',
@@ -324,22 +335,40 @@ export default class SentryReporter {
               'p.w',
               'p.h',
               'levels',
-              'enableChromiumBug1092080Workaround',
-              'enableChromiumBug1123708Workaround',
-              'enableChromiumBug1142112Workaround',
+              'enableMozillaBugReadPixelsWorkaround',
               'enableMozillaBug1606251Workaround',
+              'enableChromiumBug1142112Workaround',
+              'enableChromiumBug1123708Workaround',
+              'enableChromiumBug1092080Workaround',
+              'enableChromiumBugDirectVideoOverlayWorkaround',
+              'enableChromiumBugVideoJitterWorkaround',
               'getImageDataAllowed',
+              'projectorBuffer.elem.width',
+              'projectorBuffer.elem.height',
+              'projectorBuffer.ctx.initializedTime',
+              'projectorBuffer.ctx.lost',
+              'projectorBuffer.ctx.lostCount',
+              'projectorBuffer.ctx.webGLVersion',
+              'projectorBuffer.ctx.webglcontextcreationerrors',
+              'projectorBuffer.ctx.ctx.drawingBufferColorSpace',
+              'projectorBuffer.ctx.ctx.unpackColorSpace',
+              'projector.initializedTime',
               'projector.type',
               'projector.webGLVersion',
               'projector.width',
               'projector.height',
-              'projector.heightCrop',
               'projector.blurBound',
               'projector.projectors.length',
               'projector.scale.x',
               'projector.scale.y',
+              'projector.lost',
               'projector.lostCount',
-              'projector.majorPerformanceCaveat'
+              'projector.blurLost',
+              'projector.blurLostCount',
+              'projector.majorPerformanceCaveat',
+              'projector.webglcontextcreationerrors',
+              'projector.ctx.drawingBufferColorSpace',
+              'projector.ctx.unpackColorSpace'
             ]
             keys.forEach(key => {
               try {
@@ -365,6 +394,7 @@ export default class SentryReporter {
             settingsExtra[`${setting.name}-key`] = setting.key
           })
           settingsExtra.webGLCrashDate = settings.webGLCrashDate
+          settingsExtra.webGLCrashVersion = settings.webGLCrashVersion
           setExtra('Settings', settingsExtra)
         }
       } catch (ex) { 
@@ -408,6 +438,22 @@ export default class SentryReporter {
           setExtra('Video elements', document.querySelectorAll('video').length)
         } catch (ex) { 
           setExtra('Video elements (exception)', ex)
+        }
+
+        try {
+          const videoElem = window.ambientlight?.videoElem;
+          if(videoElem) {
+            setExtra('Video state', {
+              mediaError: videoElem.error ? {
+                code: mediaErrorToString(videoElem.error.code),
+                message: videoElem.error.message || 'Unknown'
+              } : undefined,
+              networkState: networkStateToString(videoElem?.networkState),
+              readyState: readyStateToString(videoElem?.readyState)
+            })
+          }
+        } catch (ex) { 
+          setExtra('Video state (exception)', ex)
         }
 
         try {
@@ -482,7 +528,7 @@ export default class SentryReporter {
 
       const previousHub = getCurrentHub()
       makeMain(hub)
-      const response = client.captureException(ex, {}, scope)
+      client.captureException(ex, {}, scope)
       makeMain(previousHub)
       scope.clear()
     } catch (ex) {
@@ -495,14 +541,14 @@ export class ErrorEvents {
   list = []
   
   constructor() {
-    on(window, 'beforeunload', (e) => {
+    on(window, 'beforeunload', () => {
       if(!this.list.length) return
       
       this.add('tab beforeunload')
       this.send()
     }, false)
     
-    on(window, 'pagehide', (e) => {
+    on(window, 'pagehide', () => {
       if(!this.list.length) return
       
       this.add('tab pagehide')
@@ -521,8 +567,8 @@ export class ErrorEvents {
     const lastEvent = this.list[this.list.length - 1]
     const lastTime = lastEvent.time
     const firstTime =  this.list[0].firstTime || this.list[0].time
-    if(lastTime - firstTime < 10) {
-      return // Give the site 10 seconds to load the watch page or move the video element
+    if(lastTime - firstTime < 5) {
+      return // Give the site 5 seconds to load the watch page or move the video element
     }
 
     const firstEvent = this.list.splice(0, 1)
@@ -557,7 +603,7 @@ export class ErrorEvents {
         lastType === type && 
         JSON.stringify(lastDetails) === JSON.stringify(details)
       ) {
-        last.count = last.count ? last.count + 1 : 2
+        last.count = lastCount ? lastCount + 1 : 2
         last.time = time
         last.firstTime = firstTime || lastTime
         return

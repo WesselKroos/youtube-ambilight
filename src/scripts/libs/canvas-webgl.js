@@ -1,5 +1,5 @@
-import SentryReporter, { AmbientlightError } from './sentry-reporter';
-import { appendErrorStack, wrapErrorHandler } from './generic';
+import { AmbientlightError } from './sentry-reporter';
+import { ctxOptions, wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {
@@ -50,34 +50,41 @@ export class WebGLContext {
       this.settings = settings;
       this.setWarning = settings.setWarning;
       this.canvas = canvas;
-      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function canvasWebGLContextLost(event) {
-        event.preventDefault();
+      this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function webGLContextLost(event) {
+        event.preventDefault()
+
         this.lost = true
         this.lostCount++
         this.viewport = undefined
         this.scaleX = undefined
         this.scaleY = undefined
         this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
+
         console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
         this.setWebGLWarning('restore')
       }.bind(this)), false);
-      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function canvasWebGLContextRestored() {
+      this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function webGLContextRestored() {
+        console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
         if(this.lostCount >= 3) {
-          console.error('Ambient light for YouTube™ | WebGLContext restore failed 3 times')
+          console.error('Ambient light for YouTube™ | WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
           this.setWebGLWarning('3 times restore')
           return
         }
+
+        await new Promise(resolve => requestAnimationFrame(resolve))
         if(!(await this.initCtx())) return
+
         if(this.ctx && !this.ctx.isContextLost()) {
           this.lost = false
-          this.lostCount = 0
-          this.setWarning('')
+          if(!window.ambientlight.projector?.lost && !window.ambientlight.projector?.blurLost)
+            this.setWarning('')
         } else {
           console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
           this.setWebGLWarning('restore')
         }
       }.bind(this)), false);
-      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function canvasWebGLContextCreationError(e) {
+      this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function webGLContextCreationError(e) {
+        // console.warn(`Ambient light for YouTube™ | WebGLContext creationerror: ${e.statusMessage}`)
         this.webglcontextcreationerrors.push({
           message: e.statusMessage || '?',
           time: performance.now(),
@@ -87,25 +94,29 @@ export class WebGLContext {
 
       this.options = options;
       await this.initCtx()
+      this.initializedTime = performance.now()
 
       return this
     }.bind(this))()
   }
 
   setWebGLWarning(action = 'restore', reloadTip = true) {
-    this.setWarning(`Failed to ${action} the WebGL renderer.${reloadTip ? '\nReload the page to try it again.' : ''}\nA possible workaround could be to turn off the "WebGL renderer" setting`)
+    this.setWarning(`Failed to ${action} the WebGL renderer from a GPU crash.${reloadTip ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.' : ''}\nA possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`)
   }
 
   webglcontextcreationerrors = []
   async initCtx() {
-    if(this.program && !this.ctxIsInvalid) {
-      this.ctx.deleteProgram(this.program) // Free GPU memory
+    if(this.program) {
+      try {
+        this.ctx.finish() // Wait for any pending draw calls to finish
+        this.ctx.deleteProgram(this.program) // Free GPU memory
+      } catch(ex) {
+        console.warn('Ambient light for YouTube™ | Failed to delete previous WebGLContext program', ex)
+      }
       this.program = undefined
     }
 
     if(!this.ctx) {
-      this.webglcontextcreationerrors = []
-
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
@@ -124,19 +135,27 @@ export class WebGLContext {
           this.webGLVersion = undefined
 
           const errors = this.webglcontextcreationerrors
-          let lastErrorMessage;
+          this.webglcontextcreationerrors = []
+
+          let lastErrorMessage = ''
           for(const error of errors) {
             const duplicate = error.message === lastErrorMessage
             lastErrorMessage = error.message
             if(duplicate) error.message = '"'
           }
 
-          throw new AmbientlightError('WebGLContext creation failed', errors)
+          throw new AmbientlightError(`WebGLContext creation failed: ${lastErrorMessage}`, errors)
         }
       }
     }
     
-    if(this.ctxIsInvalid) return
+    if(this.isContextLost()) return
+
+    if ('drawingBufferColorSpace' in this.ctx && 'unpackColorSpace' in this.ctx) {
+      this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace
+      // // unpacking to another color space seems to be way to expensive on the GPU - dropped support for now
+      // this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
+    }
 
     // Shaders
     var vertexShaderSrc = `
@@ -168,66 +187,69 @@ export class WebGLContext {
     this.ctx.compileShader(fragmentShader);
 
     // Program
-    this.program = this.ctx.createProgram();
-    this.ctx.attachShader(this.program, vertexShader);
-    this.ctx.attachShader(this.program, fragmentShader);
-    this.ctx.linkProgram(this.program);
+    const program = this.ctx.createProgram();
+    this.ctx.attachShader(program, vertexShader);
+    this.ctx.attachShader(program, fragmentShader);
+    this.ctx.linkProgram(program);
     
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile');
+    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile')
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
-      const stack = new Error().stack
-      const completed = await new Promise((resolve, reject) => {
-        const checkCompletion = () => {
-          try {
-            if(!this.program)
-              return resolve(false) // cancel
+      // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
+      this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
+      await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const completed = this.ctx.getProgramParameter(this.program, parallelShaderCompileExt.COMPLETION_STATUS_KHR) == true
-            if(completed === false) requestIdleCallback(() => requestAnimationFrame(checkCompletion), { timeout: 200 })
-            else resolve(true) // COMPLETION_STATUS_KHR can be null because of webgl-lint
-          } catch(ex) {
-            ex.details = {}
-
-            try {
-              ex.details = {
-                program: this.program?.toString(),
-                webGLVersion: this.webGLVersion,
-                ctxOptions: this.ctxOptions
-              }
-            } catch(ex) {
-              ex.details = {
-                detailsException: ex
-              }
-            }
-
-            // // Did not give any insights that could help to fix bugs
-            // try {
-            //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-            //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-            //     : 'unknown'
-            //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-            //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-            //     : 'unknown'
-            // } catch(ex) {
-            //   ex.details.gpuError = ex
-            // }
-
-            appendErrorStack(stack, ex)
-            reject(ex)
+      try {
+        let compiled = false
+        while(!compiled) {
+          const completionStatus = this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR);
+          // COMPLETION_STATUS_KHR can be null because of webgl-lint
+          if(completionStatus === false) {
+            await new Promise(resolve => requestIdleCallback(resolve, { timeout: 200 }))
+            await new Promise(resolve => requestAnimationFrame(resolve))
+          } else {
+            compiled = true
           }
-        };
-        requestAnimationFrame(checkCompletion)
-      })
-      if(!completed) return
+        }
+        if(!compiled) return
+      } catch(ex) {
+        ex.details = {}
+
+        try {
+          ex.details = {
+            program: program?.toString(),
+            webGLVersion: this.webGLVersion,
+            ctxOptions: this.ctxOptions
+          }
+        } catch(ex) {
+          ex.details = {
+            detailsException: ex
+          }
+        }
+
+        // // Did not give any insights that could help to fix bugs
+        // try {
+        //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        //   ex.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+        //     : 'unknown'
+        //   ex.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+        //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+        //     : 'unknown'
+        // } catch(ex) {
+        //   ex.details.gpuError = ex
+        // }
+
+        throw ex
+      }
     }
     
     // Validate these parameters after program compilation to prevent render blocking validation
     const vertexShaderCompiled = this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)
     const fragmentShaderCompiled = this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)
-    const programLinked = this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)
+    const programLinked = this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
+      programCompilationError.name = 'WebGLError'
       programCompilationError.details = {
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions
@@ -241,16 +263,16 @@ export class WebGLContext {
           fragmentShaderCompiled,
           fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
           programLinked,
-          programInfoLog: this.ctx.getProgramInfoLog(this.program)
+          programInfoLog: this.ctx.getProgramInfoLog(program)
         }
       } catch(ex) {
         programCompilationError.details.getCompiledAndLinkedInfoLogsError = ex
       }
 
       try {
-        this.ctx.validateProgram(this.program)
-        programCompilationError.details.programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
-        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(this.program)
+        this.ctx.validateProgram(program)
+        programCompilationError.details.programValidated = this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)
+        programCompilationError.details.programValidationInfoLog = this.ctx.getProgramInfoLog(program)
       } catch(ex) {
         programCompilationError.details.validateProgramError = ex
       }
@@ -279,12 +301,25 @@ export class WebGLContext {
       //   programCompilationError.details.gpuError = ex
       // }
 
+      if(
+        programCompilationError.details.vertexShaderInfoLog ||
+        programCompilationError.details.fragmentShaderInfoLog ||
+        programCompilationError.details.getCompiledAndLinkedInfoLogsError ||
+        programCompilationError.details.programValidationInfoLog ||
+        programCompilationError.details.validateProgramError ||
+        programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.debugShadersError
+      ) {
+        programCompilationError.name = 'WebGLErrorWithInfoLog'
+      }
+
       throw programCompilationError
     }
 
     //// Probably can be removed because we already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
-    // this.ctx.validateProgram(this.program)
-    // const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
+    // this.ctx.validateProgram(program)
+    // const programValidated = this.ctx.getProgramParameter(program, this.ctx.VALIDATE_STATUS)
     // if(!programValidated) {
     //   const programValidationError = new Error('Program validation failed')
     //   programValidationError.details = {}
@@ -293,7 +328,7 @@ export class WebGLContext {
     //     programValidationError.details = {
     //       vertexShaderInfoLog: this.ctx.getShaderInfoLog(vertexShader),
     //       fragmentShaderInfoLog: this.ctx.getShaderInfoLog(fragmentShader),
-    //       programInfoLog: this.ctx.getProgramInfoLog(this.program)
+    //       programInfoLog: this.ctx.getProgramInfoLog(program)
     //     }
     //   } catch(ex) {
     //     programValidationError.details.getCompiledAndLinkedInfoLogsError = ex
@@ -314,7 +349,8 @@ export class WebGLContext {
     //   throw programValidationError
     // }
 
-    this.ctx.useProgram(this.program);
+    this.ctx.useProgram(program);
+    this.program = program;
 
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
 
@@ -370,8 +406,10 @@ export class WebGLContext {
     return true
   }
 
-  clearRect = (x, y, width, height) => {
+  clearRect = () => {
     if(this.ctxIsInvalid || this.lost) return
+    
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
   }
 
@@ -451,7 +489,7 @@ export class WebGLContext {
       this.ctx.uniform1f(this.fMipmapLevelLoc, mipmapLevel);
     }
     
-    let start = performance.now()
+    let start = this.settings.showResolutions ? performance.now() : undefined
     // Chromium bug 1074473: Using texImage2D because texSubImage2D from a video element is 80x slower than texImage2D
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src)
 
@@ -459,11 +497,11 @@ export class WebGLContext {
     if(this.webGLVersion !== 1) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
-    this.loadTime = performance.now() - start
+    if(this.settings.showResolutions) this.loadTime = performance.now() - start
     
-    start = performance.now()
+    if(this.settings.showResolutions) start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
-    this.drawTime = performance.now() - start
+    if(this.settings.showResolutions) this.drawTime = performance.now() - start
   }
 
   getImageDataBuffers = []
@@ -496,10 +534,10 @@ export class WebGLContext {
   }
 
   get ctxIsInvalid() {
-    const invalid = !this.ctx || this.ctx.isContextLost();
-    if (invalid && !this.ctxIsInvalidWarned) {
+    const invalid = this.isContextLost() || !this.program;
+    if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.warn(`Ambient light for YouTube™ | WebGLContext is invalid: ${this.ctx ? 'Lost' : 'Is null'}`)
+      console.log(`Ambient light for YouTube™ | WebGLContext is lost`)
     }
     return invalid;
   }

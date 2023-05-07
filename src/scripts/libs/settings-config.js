@@ -13,9 +13,10 @@ const SettingsConfig = [
   },
   {
     type: 'section',
-    label: 'Quality',
-    name: 'sectionQualityPerformanceCollapsed',
-    default: true
+    label: 'Stats',
+    name: 'sectionStatsCollapsed',
+    default: true,
+    advanced: true
   },
   {
     name: 'showFPS',
@@ -43,45 +44,16 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'frameSync',
-    label: 'Synchronization',
-    questionMark: {
-      title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
-    },
-    type: 'list',
-    default: 0,
-    min: 0,
-    max: 1,
-    step: 1,
-    manualinput: false,
-    advanced: true
-  },
-  {
-    name: 'energySaver',
-    label: 'Energy saver',
-    questionMark: {
-      title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
-    },
-    type: 'checkbox',
-    default: false,
-    advanced: false,
-    new: true
-  },
-  {
-    name: 'framerateLimit',
-    label: 'Limit framerate (per second)',
-    type: 'list',
-    default: 0,
-    min: 0,
-    max: 60,
-    step: 1
+    type: 'section',
+    label: 'Quality',
+    name: 'sectionQualityPerformanceCollapsed',
+    default: true
   },
   {
     name: 'webGL',
     label: 'WebGL renderer (uses less power)',
     type: 'checkbox',
     default: true,
-    new: true,
     advanced: true
   },
   {
@@ -97,8 +69,40 @@ const SettingsConfig = [
       }
       return points;
     })(),
+    manualinput: false
+  },
+  {
+    name: 'framerateLimit',
+    label: 'Limit framerate (per second)',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 60,
+    step: 1
+  },
+  {
+    name: 'frameSync',
+    label: 'Synchronization',
+    questionMark: {
+      title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 1,
+    step: 1,
     manualinput: false,
-    new: true
+    advanced: true
+  },
+  {
+    name: 'energySaver',
+    label: 'Save energy on static videos',
+    questionMark: {
+      title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
+    },
+    type: 'checkbox',
+    default: false,
+    advanced: true
   },
   {
     name: 'prioritizePageLoadSpeed',
@@ -106,49 +110,6 @@ const SettingsConfig = [
     description: 'Show ambient light after the page has loaded',
     type: 'checkbox',
     default: true,
-    advanced: true
-  },
-  {
-    name: 'videoOverlayEnabled',
-    label: 'Sync video with ambient light',
-    questionMark: {
-      title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
-    },
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'videoOverlaySyncThreshold',
-    label: 'Sync video disable threshold',
-    description: 'Disable when dropping % of frames',
-    type: 'list',
-    default: 5,
-    min: 1,
-    max: 100,
-    step: 1,
-    advanced: true
-  },
-  {
-    name: 'frameBlending',
-    label: 'Smooth motion (frame blending)',
-    questionMark: {
-      title: 'Click for more information about Frame blending',
-      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
-    },
-    description: 'More GPU usage. Works with "Sync video"',
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'frameBlendingSmoothness',
-    label: 'Smooth motion strength',
-    type: 'list',
-    default: 80,
-    min: 0,
-    max: 100,
-    step: 1,
     advanced: true
   },
   {
@@ -193,8 +154,7 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 1,
-    advanced: true,
-    experimental: true
+    advanced: true
   },
 
   {
@@ -245,8 +205,7 @@ const SettingsConfig = [
     default: 10,
     min: 0,
     max: 100,
-    step: 1,
-    new: true
+    step: 1
   },
   {
     name: 'immersiveTheaterView',
@@ -258,6 +217,7 @@ const SettingsConfig = [
     name: 'hideScrollbar',
     label: 'Hide scrollbar',
     type: 'checkbox',
+    advanced: true,
     default: true
   },
   {
@@ -292,6 +252,40 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: .1
+  },
+  {
+    name: 'videoOverlayEnabled',
+    label: 'Sync video with ambient light',
+    questionMark: {
+      title: 'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
+    },
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'videoOverlaySyncThreshold',
+    label: 'Sync video disable threshold',
+    description: 'Disable when dropping % of frames',
+    type: 'list',
+    default: 5,
+    min: 1,
+    max: 100,
+    step: 1,
+    advanced: true
+  },
+  {
+    name: 'chromiumBugVideoJitterWorkaround',
+    label: 'Video jitter workaround',
+    description: 'Only required for monitors above 60Hz',
+    questionMark: {
+      title: 'Click for more information about this bug in Chromium browsers',
+      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true,
+    experimental: true
   },
   {
     type: 'section',
@@ -383,7 +377,8 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1
+    step: 1,
+    advanced: true
   },
   {
     name: 'contrast',
@@ -392,17 +387,17 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 200,
-    step: 1
+    step: 1,
+    advanced: true
   },
   {
     name: 'vibrance',
-    label: 'Vibrance',
+    label: 'Colors',
     type: 'list',
     default: 100,
     min: 0,
     max: 200,
-    step: 0.1,
-    new: true
+    step: 0.1
   },
   {
     name: 'saturation',
@@ -504,7 +499,7 @@ const SettingsConfig = [
   {
     name: 'edge',
     label: 'Edge size',
-    description: 'To see what changed: Turn the blur to 0%',
+    description: 'To better see what changes: Turn the blur to 0%',
     type: 'list',
     default: 12,
     min: 2,
@@ -535,7 +530,7 @@ const SettingsConfig = [
   {
     name: 'fadeOutEasing',
     label: 'Spread fade curve',
-    description: 'To see what changed: Turn the blur to 0%',
+    description: 'To better see what changes: Turn the blur to 0%',
     type: 'list',
     default: 35,
     min: 1,
@@ -558,9 +553,9 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    new: true,
     name: 'frameFading',
     label: 'Fade in duration',
+    description: 'More GPU memory',
     questionMark: {
       title: 'Slowly fades new colors into the ambient light\n(Also reduces flickering)'
     },
@@ -570,6 +565,28 @@ const SettingsConfig = [
     max: 21.2, // 15 seconds
     step: .02,
     manualinput: false
+  },
+  {
+    name: 'frameBlending',
+    label: 'Smooth motion (frame blending)',
+    questionMark: {
+      title: 'Click for more information about Frame blending',
+      href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
+    },
+    description: 'More GPU usage. Also works with "Sync video" setting',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'frameBlendingSmoothness',
+    label: 'Smooth motion strength',
+    type: 'list',
+    default: 80,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true
   },
   {
     type: 'section',
@@ -609,6 +626,13 @@ const SettingsConfig = [
       { value:  4, hiddenLabel: 'Theater & Fullscreen' },
       { value:  5, label: 'Fullscreen' },
     ]
+  },
+  {
+    name: 'enableInPictureInPicture',
+    label: 'Enable in Picture-in-picture mode',
+    type: 'checkbox',
+    default: false,
+    advanced: true
   },
   {
     name: 'enabled',
