@@ -24,8 +24,7 @@ const workerCode = function () {
     })
   }
 
-  let averageSize = 0;
-  function sortSizes(a, b) {
+  function sortSizes(averageSize, a, b) {
     const aGap = Math.abs(averageSize - a)
     const bGap = Math.abs(averageSize - b)
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
@@ -51,7 +50,8 @@ const workerCode = function () {
       const ignoreEdge = 2
       const lineLimit = (imageLines[0].length / 2)
       const largeStep = 20
-      const sizes = []
+      const topSizes = []
+      const bottomSizes = []
     
       for(const line of imageLines) {
         let step = largeStep
@@ -71,8 +71,8 @@ const workerCode = function () {
             continue
           }
 
-          // Found the first video pixel, add to sizes
-          sizes.push(i / channels)
+          // Found the first video pixel, add to topSizes
+          topSizes.push(i / channels)
           break;
         }
 
@@ -93,33 +93,64 @@ const workerCode = function () {
             continue
           }
 
-          // Found the first video pixel, add to sizes
-          sizes.push(((line.length - 1) - i) / channels)
+          // Found the first video pixel, add to bottomSizes
+          bottomSizes.push(((line.length - 1) - i) / channels)
           break;
         }
       }
 
       const maxSize = (imageLines[0].length / channels)
-      const minSize = maxSize * (0.012 * scale)
       imageLines.length = 0
 
-      if(!sizes.length) {
+      if(!topSizes.length || !bottomSizes.length) {
         return
       }
 
-      let closestSizes = sizes
+      // Calculate averages and deviations
+
+      const maxAllowedDeviation = maxSize * (0.0125 * scale)
+      let closestSizes = sizes = [...topSizes, ...bottomSizes]
       while(closestSizes.length > 7) {
-        averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
-        closestSizes = closestSizes.sort(sortSizes).slice(0, closestSizes.length - 1)
+        const averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
+        closestSizes = closestSizes.sort((a, b) => sortSizes(averageSize, a, b)).slice(0, closestSizes.length - 1)
       }
       const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
-      const allowed = maxSize * (0.0125 * scale)
-      const deviationAllowed = (maxDeviation <= allowed)
+      let deviationIsAllowed = (maxDeviation <= maxAllowedDeviation)
+
+      if(!deviationIsAllowed) {
+        const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
+
+        let closestTopSizes = topSizes
+        while(closestTopSizes.length > 4) {
+          const averageTopSize = (closestTopSizes.reduce((a, b) => a + b, 0) / closestTopSizes.length)
+          closestTopSizes = closestTopSizes.sort((a, b) => sortSizes(averageTopSize, a, b)).slice(0, closestTopSizes.length - 1)
+        }
+        const maxTopDeviation = Math.abs(Math.max(...closestTopSizes) - Math.min(...closestTopSizes))
+        const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
+
+        if(topDeviationIsAllowed) {
+          let closestBottomSizes = bottomSizes
+          while(closestBottomSizes.length > 4) {
+            const averageBottomSize = (closestBottomSizes.reduce((a, b) => a + b, 0) / closestBottomSizes.length)
+            closestBottomSizes = closestBottomSizes.sort((a, b) => sortSizes(averageBottomSize, a, b)).slice(0, closestBottomSizes.length - 1)
+          }
+          const maxBottomDeviation = Math.abs(Math.max(...closestBottomSizes) - Math.min(...closestBottomSizes))
+          const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
+
+          if(bottomDeviationIsAllowed) {
+            const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
+            deviationIsAllowed = (maxDeviation <= maxAllowedCombinedSidesDeviation)
+          }
+        }
+      }
+
+      // Check if calculated percentages are allowed
+
+      const minSize = maxSize * (0.012 * scale)
       const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
-      const maxPercentage = 36
 
       let size = 0;
-      if(!deviationAllowed) {
+      if(!deviationIsAllowed) {
         let lowestSize = Math.min(...sizes)
         let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
         if(lowestPercentage >= currentPercentage - 4) {
@@ -154,6 +185,7 @@ const workerCode = function () {
       }
       
       let percentage = Math.round((size / maxSize) * 10000) / 100
+      const maxPercentage = 36
       percentage = Math.min(percentage, maxPercentage)
       return percentage
     }
