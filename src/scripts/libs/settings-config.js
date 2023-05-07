@@ -130,7 +130,7 @@ const SettingsConfig = [
   },
   {
     name: 'energySaver',
-    label: 'Energy saver',
+    label: 'Save energy on static videos',
     questionMark: {
       title: 'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
     },

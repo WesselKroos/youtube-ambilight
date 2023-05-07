@@ -1276,9 +1276,9 @@ export default class Settings {
     let message = ''
     if(this.energySaver) {
       if(this.ambientlight.averageVideoFramesDifference < .002) {
-        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nAdvanced setting: Quality > Energy saver'
+        message = 'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
       } else if(this.ambientlight.averageVideoFramesDifference < .0175) {
-        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nAdvanced setting: Quality > Energy saver'
+        message = 'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
       }
     }
 
