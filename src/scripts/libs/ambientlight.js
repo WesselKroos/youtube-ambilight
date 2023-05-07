@@ -2151,7 +2151,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       fps
     })
 
-    if (!update || list.length < 2) return currentFrameRate
+    if (!update) return currentFrameRate
+    if (list.length < 2) return 0
 
     // Remove old items
     const thresholdTime = time - this.frameCountHistory
@@ -2160,7 +2161,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     // Calculate fps
     const aligableList = list.filter(i => i.fps)
-    if(!aligableList.length) return currentFrameRate
+    if(!aligableList.length) return 0
 
     aligableList.sort((a, b) => a.fps - b.fps)
     if(aligableList.length > 10) {
@@ -2201,6 +2202,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoFrameTime,
       update
     )
+    this.videoFrameTime = undefined
   }
 
   displayFrameCounts = []
@@ -2213,6 +2215,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.displayFrameTime,
       update
     )
+    this.displayFrameTime = undefined
   }
 
   ambientlightFrameCounts = []
@@ -2224,6 +2227,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.ambientlightFrameTime,
       update
     )
+    this.ambientlightFrameTime = undefined
   }
 
   getVideoDroppedFrameCount() {
@@ -2549,7 +2553,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     framesInfo = framesInfo.filter(info => info.time > frameDropTimeLimit)
     this.hideVideoOverlayCache.framesInfo = framesInfo
 
-    let hide = this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden
+    let hide = this.videoElem.paused || this.videoElem.seeking || this.videoIsHidden || 
+      (this.isFillingFullscreen && this.atTop && !this.settings.frameBlending)
     const syncThreshold = this.settings.videoOverlaySyncThreshold
     if(!hide && syncThreshold !== 100) {
       if(
