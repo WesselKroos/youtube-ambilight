@@ -2274,6 +2274,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoElem.ended || 
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       (this.videoElem.readyState === 1 && !this.buffersCleared) // HAVE_METADATA can also happen while seeking. In that case draw the ambient light once if the projector is currently cleared
+      // Todo: (this.videoElem.readyState === 1 && firstSrc) // Video knows the videoWidth and videoHeight, but has no frame data yet. When it also has no previous frame data yet this will cause multiple WebGL warnings on resizes: [.WebGL-0000772807FD7100] GL_INVALID_OPERATION: Texture format does not support mipmap generation.
     ) return
 
     let newVideoFrameCount = this.getVideoFrameCount()
