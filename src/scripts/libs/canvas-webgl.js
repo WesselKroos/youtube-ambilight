@@ -1,5 +1,5 @@
 import { AmbientlightError } from './sentry-reporter';
-import { ctxOptions, wrapErrorHandler } from './generic';
+import { ctxOptions, requestIdleCallback, wrapErrorHandler } from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {
@@ -133,6 +133,7 @@ export class WebGLContext {
         this.ctx = await this.canvas.getContext('webgl', this.ctxOptions)
         if(!this.ctx) {
           this.webGLVersion = undefined
+          await new Promise(resolve => setTimeout(resolve, 1000)) // Wait for any additional webglcontextcreationerrors to be captured
 
           const errors = this.webglcontextcreationerrors
           this.webglcontextcreationerrors = []

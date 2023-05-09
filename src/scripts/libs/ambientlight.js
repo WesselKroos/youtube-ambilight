@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack, readyStateToString, networkStateToString, mediaErrorToString } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -2787,31 +2787,28 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if (!this.isHidden) return
     this.isHidden = false
 
-    await this.theming.updateTheme(() => {
-      // Pre-style to prevent black/white flashes
-      if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = 'none'
-      html.style.setProperty('background', this.theming.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
-    })
+    await this.theming.updateTheme()
     
-    const stack = new Error().stack
-    await new Promise((resolve, reject) => raf(() => {
-      try {
-        html.setAttribute('data-ambientlight-enabled', true)
-        if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+    // Pre-style to prevent black/white flashes
+    this.ytdAppElem.style.setProperty('background', this.theming.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
+    if(this.playerTheaterContainerElem) {
+      this.playerTheaterContainerElem.style.setProperty('background', 'none', 'important')
+    }
 
-        // Reset
-        if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
-        html.style.background = ''
+    html.setAttribute('data-ambientlight-enabled', true)
+    if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+    
+    ;(async () => {
+      await new Promise(resolve => raf(resolve))
 
-        this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
-        this.updateVideoPlayerSize()
-        this.updateSizes()
-        resolve()
-      } catch(ex) {
-        appendErrorStack(stack, ex)
-        reject(ex)
-      }
-    }))
+      // Reset
+      if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
+      this.ytdAppElem.style.background = ''
+    })()
+
+    this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
+    this.updateVideoPlayerSize()
+    this.updateSizes()
   }
 
   updateAtTop = async () => {

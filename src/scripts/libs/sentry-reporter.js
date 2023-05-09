@@ -1,7 +1,7 @@
 import { BrowserClient, defaultStackParser, makeFetchTransport } from '@sentry/browser/esm';
 import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/dedupe";
-import { Hub, makeMain, getCurrentHub } from '@sentry/hub/esm/hub';
-import { Scope } from '@sentry/hub/esm/scope';
+import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
+import { Scope } from '@sentry/core/esm/scope';
 
 import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4 } from './generic';
 import { contentScript } from './messaging';

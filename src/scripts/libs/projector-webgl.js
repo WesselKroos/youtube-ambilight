@@ -1,5 +1,5 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
-import { ctxOptions, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { ctxOptions, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
 
@@ -401,6 +401,7 @@ export default class ProjectorWebGL {
               this.majorPerformanceCaveatDetected()
             } else {
               this.webGLVersion = undefined
+              await new Promise(resolve => setTimeout(resolve, 1000)) // Wait for any additional webglcontextcreationerrors to be captured
 
               const errors = this.webglcontextcreationerrors
               this.webglcontextcreationerrors = []
@@ -411,7 +412,7 @@ export default class ProjectorWebGL {
                 lastErrorMessage = error.message
                 if(duplicate) error.message = '"'
               }
-
+              
               throw new AmbientlightError(`ProjectorWebGL context creation failed: ${lastErrorMessage}`, errors)
             }
           }
