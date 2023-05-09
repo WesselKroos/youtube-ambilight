@@ -106,9 +106,9 @@ export default class Theming {
     )
   }
 
-  updateTheme = wrapErrorHandler(async function updateTheme(beforeToggleCallback = () => undefined) {
+  updateTheme = wrapErrorHandler(async function updateTheme() {
     if(this.updatingTheme) return
-    if(!this.shouldToggleTheme()) return beforeToggleCallback()
+    if(!this.shouldToggleTheme()) return
 
     this.updatingTheme = true
     
@@ -120,7 +120,7 @@ export default class Theming {
         if(withinThresshold) {
           this.settings.setWarning(`Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${this.isDarkTheme() ? 'light' : 'dark'} appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
           this.updatingTheme = false
-          return beforeToggleCallback()
+          return
         }
         contentScript.setStorageEntry('last-failed-theme-toggle', undefined)
       }
@@ -131,59 +131,26 @@ export default class Theming {
 
       if (!this.shouldToggleTheme()) {
         this.updatingTheme = false
-        return beforeToggleCallback()
+        return
       }
     }
 
-    beforeToggleCallback()
     await this.toggleDarkTheme()
     this.updatingTheme = false
   }.bind(this), true)
 
   async toggleDarkTheme() {
     const wasDark = this.isDarkTheme()
-    
-    try {
-      yt.config_.EXPERIMENT_FLAGS.kevlar_refresh_on_theme_change = false // Prevents the video page from refreshing every time
-    } catch { }
-    
-    const detail = {
-      actionName: 'yt-dark-mode-toggled-action',
-      optionalAction: false,
-      args: [ !wasDark ], // boolean for iframe live chat
-      disableBroadcast: false,
-      returnValue: []
-    }
-    const ytdAppElem = this.ambientlight.ytdAppElem
-    const event = new CustomEvent('yt-action', {
-      currentTarget: ytdAppElem,
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail,
-      returnValue: true
-    })
-
-    try {
-      // dispatchEvent is overriden by Shady DOM when:
-      //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
-      // Todo: When this is enabled the theme is directly changing when the Windows Theme changes
-      if(ytdAppElem?.__shady_native_dispatchEvent) {
-        ytdAppElem.__shady_native_dispatchEvent(event)
-      } else {
-        ytdAppElem.dispatchEvent(event)
-      }
-    } catch(ex) {
-      SentryReporter.captureException(ex)
-      return
-    }
+    document.documentElement.toggleAttribute('dark', !wasDark)
+    this.ambientlight.ytdAppElem.setMastheadTheme() // Required when we go: theater dark -> non-theater dark -> non-theater light
+    this.updateLiveChatTheme()
 
     const isDark = this.isDarkTheme()
     if (wasDark !== isDark) return
     
     this.themeToggleFailed = true
     await contentScript.setStorageEntry('last-failed-theme-toggle', new Date().getTime())
-    console.warn(`Ambient light for YouTube™ | Failed to toggle theme from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode`)
+    this.settings.setWarning(`Failed to toggle the page theme to from ${wasDark ? 'dark' : 'light'} to ${isDark ? 'dark' : 'light'} mode.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`)
   }
 
   initLiveChat = () => {

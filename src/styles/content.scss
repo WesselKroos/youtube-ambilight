@@ -242,23 +242,47 @@ html[data-ambientlight-enabled="true"] {
         background: transparent !important;
       }
     }
+    &:not(.at-top) {
+      ytd-masthead {
+        background: rgba(255,255,255) !important;
+      }
+    }
     &.yta-header-transparent {
       ytd-masthead {
         box-shadow: transparent 0 1px 0 0;
       }
       &:not(.at-top) {
         ytd-masthead {
-          background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-          backdrop-filter: blur(30px);
-          box-shadow: rgba(0,0,0,.1) 0 1px 0 0;
+          &,
+          &[dark] {
+            background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+            backdrop-filter: blur(30px);
+            box-shadow: rgba(0,0,0,.1) 0 1px 0 0;
+            --yt-spec-outline: rgba(0,0,0,.1);
+            --yt-spec-static-overlay-button-primary: rgba(0,0,0, .1);
+          }
         }
       }
     }
   }
-  &[dark] body ytd-app #masthead-container.yta-header-transparent:not(.at-top) {
-    ytd-masthead {
-      background: rgba(15,15,15,var(--ambientlight-fill-opacity, .1)) !important;
-      box-shadow: rgba(255,255,255,.1) 0 1px 0 0;
+  body ytd-app #masthead-container {
+    &:not(.at-top) {
+      ytd-masthead[dark]   {
+        background: rgba(15,15,15) !important;
+      }
+    }
+  }
+  &[dark] body ytd-app #masthead-container {
+    &:not(.at-top) {
+      ytd-masthead  {
+        background: rgba(15,15,15) !important;
+      }
+    }
+    &.yta-header-transparent:not(.at-top) {
+      ytd-masthead {
+        background: rgba(15,15,15,var(--ambientlight-fill-opacity, .1)) !important;
+        box-shadow: rgba(255,255,255,.1) 0 1px 0 0;
+      }
     }
   }
 
