@@ -261,8 +261,10 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export function requestIdleCallback(callback, options) {
-  return window.requestIdleCallback(wrapErrorHandler(callback), options)
+export function requestIdleCallback(callback, options, reportOnce = false) {
+  return window.requestIdleCallback
+    ? window.requestIdleCallback(wrapErrorHandler(callback, reportOnce), options)
+    : window.setTimeout(wrapErrorHandler(callback, reportOnce), 1) // Safari (not supported but there are users that try)
 }
 
 export const appendErrorStack = (stack, ex) => {

@@ -1,4 +1,4 @@
-import { Canvas, on } from './generic'
+import { Canvas, on, requestIdleCallback } from './generic'
 
 export default class Stats {
   frametimesHistoryMax = 120

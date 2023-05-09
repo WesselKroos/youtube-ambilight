@@ -1,4 +1,4 @@
-import { getCookie, html, isWatchPageUrl, on, wrapErrorHandler } from "./generic"
+import { getCookie, html, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
 
 const THEME_LIGHT = -1
@@ -28,11 +28,11 @@ export default class Theming {
         this.updateTheme()
       } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
         // Let YouTube change the theme to an incorrect color in this process
-        requestIdleCallback(wrapErrorHandler(function forwardReduxActionToLiveChatIframe() {
+        requestIdleCallback(function forwardReduxActionToLiveChatIframe() {
           // Fix the theme to the correct color after the process
           if (!this.ambientlight.isOnVideoPage) return
           this.updateLiveChatTheme()
-        }.bind(this)), { timeout: 1 })
+        }.bind(this), { timeout: 1 })
       }
     }, undefined, undefined, true)
 

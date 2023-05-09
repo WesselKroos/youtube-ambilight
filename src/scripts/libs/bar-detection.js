@@ -1,4 +1,4 @@
-import { appendErrorStack, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
@@ -337,7 +337,7 @@ export default class BarDetection {
       ratio, allowedToTransfer, callback
     }
 
-    requestIdleCallback(() => this.idleHandler(run), { timeout: 100 })
+    requestIdleCallback(async () => await this.idleHandler(run), { timeout: 100 }, true)
   }
 
   averagePercentage(percentage, currentPercentage, history) {
@@ -366,7 +366,7 @@ export default class BarDetection {
     }
   }
 
-  idleHandler = wrapErrorHandler(async function idleHandler(run) {
+  idleHandler = async (run) => {
     if(this.run !== run) return
 
     const {
@@ -550,5 +550,5 @@ export default class BarDetection {
       this.catchedDetectBarSizeError = true
       throw ex
     }
-  }.bind(this), true)
+  }
 }
