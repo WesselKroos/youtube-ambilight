@@ -319,10 +319,18 @@ export default class Ambientlight {
         }
 
         const enable = (
-          !this.videoIsHidden &&
-          isPlaying &&
           displayFrameRateHasBeenAbove60 &&
-          this.averageVideoFramesDifference >= .0175
+          this.averageVideoFramesDifference >= .0175 &&
+          isPlaying &&
+          !this.isHidden &&
+          !this.videoIsHidden &&
+          !(
+            this.atTop &&
+            this.isFillingFullscreen && 
+            !this.settings.detectHorizontalBarSizeEnabled &&
+            !this.settings.detectVerticalBarSizeEnabled &&
+            !this.settings.videoOverlayEnabled
+          )
         )
 
         if(enable && !elem.parentElement) {
@@ -2767,6 +2775,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if (this.isHidden) return
     this.isHidden = true
 
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
+
     await this.theming.updateTheme()
 
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
@@ -2809,6 +2820,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
     this.updateVideoPlayerSize()
     this.updateSizes()
+    
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
   }
 
   updateAtTop = async () => {

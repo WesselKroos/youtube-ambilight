@@ -1,5 +1,4 @@
-/* eslint-env node */
-module.exports = {
+{
     "env": {
         "browser": true,
         "es2021": true
@@ -18,7 +17,7 @@ module.exports = {
     },
     "rules": {
         "no-unused-vars": "warn",
-        "no-irregular-whitespace": ["error", { skipTemplates: true } ],
+        "no-irregular-whitespace": ["error", { "skipTemplates": true } ],
         "require-await": "error",
         "no-empty": "off"
     },
