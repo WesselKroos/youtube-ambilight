@@ -1067,7 +1067,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     let projectorsBufferCtx;
     if(this.settings.webGL) {
       try {
-        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
+        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this, this.settings)
         projectorsBufferCtx = await projectorsBufferElem.getContext('2d', ctxOptions)
 
         if(this.settings.webGLCrashDate) {

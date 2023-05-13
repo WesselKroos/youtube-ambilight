@@ -20,7 +20,7 @@ import { ctxOptions, requestIdleCallback, wrapErrorHandler } from './generic';
 // }
 
 export class WebGLOffscreenCanvas {
-  constructor(width, height, settings) {
+  constructor(width, height, ambientlight, settings) {
     if(typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -32,7 +32,7 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = async (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, settings);
+        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, ambientlight, settings);
       } else {
         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
@@ -45,11 +45,12 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   lostCount = 0
 
-  constructor(canvas, type, options, settings) {
+  constructor(canvas, type, options, ambientlight, settings) {
     return (async function WebGLContextConstructor() {
-      this.settings = settings;
-      this.setWarning = settings.setWarning;
-      this.canvas = canvas;
+      this.ambientlight = ambientlight
+      this.settings = settings
+      this.setWarning = settings.setWarning
+      this.canvas = canvas
       this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function webGLContextLost(event) {
         event.preventDefault()
 
@@ -64,7 +65,7 @@ export class WebGLContext {
         this.setWebGLWarning('restore')
       }.bind(this)), false);
       this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function webGLContextRestored() {
-        console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
+        // console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
         if(this.lostCount >= 3) {
           console.error('Ambient light for YouTube™ | WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
           this.setWebGLWarning('3 times restore')
@@ -76,7 +77,7 @@ export class WebGLContext {
 
         if(this.ctx && !this.ctx.isContextLost()) {
           this.lost = false
-          if(!window.ambientlight.projector?.lost && !window.ambientlight.projector?.blurLost)
+          if(!this.ambientlight.projector?.lost && !this.ambientlight.projector?.blurLost)
             this.setWarning('')
         } else {
           console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
