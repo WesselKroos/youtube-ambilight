@@ -1,4 +1,4 @@
-import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas } from './generic'
 import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
