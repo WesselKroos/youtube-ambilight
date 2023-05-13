@@ -39,7 +39,7 @@ const getBrowserVersion = () => {
     var browserName = getBrowser()
     var browserUA = browsersUAList.find(browser => browserName === browser.name).ua
     var ua = window.navigator.userAgent
-    var matches = ua.match(`${browserUA}\/([0-9.]+)`)
+    var matches = ua.match(`${browserUA}/([0-9.]+)`)
     return (matches.length === 2) ? matches[1] : ua
   } catch (ex) {
     return null

@@ -442,10 +442,6 @@ export class WebGLContext {
     return this._cachedScale
   }
 
-  // drawTextureSize = {
-  //   width: 0,
-  //   height: 0
-  // }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctxIsInvalid || this.lost) return
 

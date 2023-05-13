@@ -210,6 +210,7 @@ const getStoryboard = (ytdWatchFlexyElem) => {
   const spec = ytdWatchFlexyElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
   if(!spec) return
 
+  // eslint-disable-next-line no-unused-vars
   const [baseUrl, _1, _2, sb] = spec
     .split('|')
     .map(i => i?.split('#'));
@@ -275,6 +276,6 @@ export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
   return await onMessagePromise
 }
 
-export const cancelGetAverageVideoFramesDifference = async () => {
+export const cancelGetAverageVideoFramesDifference = () => {
   workerMessageId++;
 }

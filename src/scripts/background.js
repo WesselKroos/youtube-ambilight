@@ -12,6 +12,6 @@ chrome.runtime.onInstalled.addListener(function (details) {
   chrome.runtime.openOptionsPage()
 })
 
-chrome.browserAction.onClicked.addListener(function (tab) {
+chrome.browserAction.onClicked.addListener(function () {
   chrome.runtime.openOptionsPage()
 })

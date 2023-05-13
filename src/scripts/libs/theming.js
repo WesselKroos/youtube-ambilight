@@ -1,5 +1,6 @@
 import { getCookie, html, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
+import SentryReporter from "./sentry-reporter"
 
 const THEME_LIGHT = -1
 const THEME_DEFAULT = 0
@@ -58,7 +59,7 @@ export default class Theming {
     }
     
     let themeCorrections = 0
-    this.themeObserver = new MutationObserver(wrapErrorHandler((a) => {
+    this.themeObserver = new MutationObserver(wrapErrorHandler(() => {
       if(!this.shouldToggleTheme()) return
       
       themeCorrections++
@@ -85,8 +86,8 @@ export default class Theming {
     }
     f6 = f6 || 0
 
-    if(!!(f6 & 1 << 165 % 31)) return THEME_DARK
-    if(!!(f6 & 1 << 174 % 31)) return THEME_LIGHT
+    if(f6 & 1 << 165 % 31) return THEME_DARK
+    if(f6 & 1 << 174 % 31) return THEME_LIGHT
     if(matchMedia('(prefers-color-scheme: dark)').matches) return THEME_DARK
     return THEME_LIGHT
   }

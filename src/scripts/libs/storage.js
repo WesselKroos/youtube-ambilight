@@ -5,7 +5,7 @@ class Storage {
     const stack = new Error().stack
     return await new Promise(function storageSet(resolve, reject) {
       try {
-        function setCallback() {
+        const setCallback = () => {
           try {
             if (chrome.runtime.lastError) throw chrome.runtime.lastError
             resolve()
