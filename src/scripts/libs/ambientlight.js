@@ -5,7 +5,7 @@ import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_V
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
-import { getAverageVideoFramesDifference } from './static-image-detection'
+import { cancelGetAverageVideoFramesDifference, getAverageVideoFramesDifference } from './static-image-detection'
 import Theming from './theming'
 import Stats from './stats'
 
@@ -406,6 +406,7 @@ export default class Ambientlight {
   }
 
   resetAverageVideoFramesDifference = () => {
+    cancelGetAverageVideoFramesDifference()
     this.averageVideoFramesDifference = 1
     this.settings.updateAverageVideoFramesDifferenceInfo()
 
@@ -1939,7 +1940,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.previousPresentedFrames = presentedFrames
     }
 
-    if(this.settings.framerateLimit || this.averageVideoFramesDifference < .0175) {
+    if(this.settings.framerateLimit || this.limitFramerateToSaveEnergy()) {
       await this.onNextLimitedFrame(compose)
     } else {
       await this.nextFrame(compose)
@@ -1979,8 +1980,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   getRealFramerateLimit() {
-    if(this.averageVideoFramesDifference < .002) return .2 // 5 seconds
-    if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
+    if(this.limitFramerateToSaveEnergy()) {
+      if(this.averageVideoFramesDifference < .002) return .2 // 5 seconds
+      if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
+    }
 
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
     const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
@@ -1988,6 +1991,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       : this.settings.framerateLimit
     return realFramerateLimit
   }
+
+  
+  limitFramerateToSaveEnergy = () => (
+    this.averageVideoFramesDifference < .0175 &&
+    !this.sizesInvalidated &&
+    !this.buffersCleared &&
+    this.videoElem.currentTime > 2 && 
+    this.videoElem.currentTime < this.videoElem.duration - 2
+  )
 
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
