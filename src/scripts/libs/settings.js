@@ -602,6 +602,15 @@ export default class Settings {
           ) {
             this.ambientlight.canvassesInvalidated = true
           }
+
+          if (
+            setting.name === 'spread' || 
+            setting.name === 'blur'
+          ) {
+            if(this.ambientlight.chromiumBugVideoJitterWorkaround?.update)
+              this.ambientlight.chromiumBugVideoJitterWorkaround.update()
+          }
+
           if(setting.name === 'vibrance') {
             try {
             if(!(await this.ambientlight.projector.updateVibrance())) return

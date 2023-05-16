@@ -324,6 +324,7 @@ export default class Ambientlight {
           isPlaying &&
           !this.isHidden &&
           !this.videoIsHidden &&
+          !(this.settings.spread === 0 && this.settings.blur === 0) &&
           !(
             this.atTop &&
             this.isFillingFullscreen && 
@@ -2335,8 +2336,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoFrameCount = newVideoFrameCount
     }
 
-
-    // Horizontal bar detection
     const detectBarSize = (
       hasNewFrame &&
       !this.barDetection?.run && 
@@ -2344,8 +2343,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     )
 
     const dontDrawAmbientlight = (
-      this.atTop &&
-      this.isFillingFullscreen
+      (this.atTop && this.isFillingFullscreen) ||
+      (this.settings.spread === 0 && this.settings.blur === 0)
     )
 
     const dontDrawBuffer = (dontDrawAmbientlight && !detectBarSize)
