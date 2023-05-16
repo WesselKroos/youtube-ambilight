@@ -1631,7 +1631,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   updateStyles() {
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
-    fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
+    fillOpacity = (fillOpacity !== 10) ? ((fillOpacity + 100) / 200) : ''
     document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
 
     // Header transparency

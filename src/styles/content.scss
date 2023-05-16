@@ -164,6 +164,21 @@ html[data-ambientlight-enabled="true"] {
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
     --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
     --yt-spec-outline: var(--yt-spec-10-percent-layer);
+    --yta-background: rgba(0,0,0,.1); // fallback
+    --yta-background: rgba(0,0,0,calc((var(--ambientlight-fill-opacity, .55) - .5) * 2)); // fallback
+    --yta-background: rgba(
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)),
+      calc((max(var(--ambientlight-fill-opacity, .55), .5) * 2) - (min(var(--ambientlight-fill-opacity, .55), .5) * 2))
+    );
+    --yta-background-10-percent: rgba(0,0,0,.1); // fallback
+    --yta-background-10-percent: rgb(
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)),
+      .1
+    );
   }
   &[dark] {
     // Make all card backgrounds transparent
@@ -177,7 +192,22 @@ html[data-ambientlight-enabled="true"] {
     body {
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
-      --yt-spec-10-percent-layer: rgba(255,255,255, .1);
+      --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
+      --yta-background: rgba(255,255,255,.1); // fallback
+      --yta-background: rgba(255,255,255,calc((var(--ambientlight-fill-opacity, .55) - .5) * 2)); // fallback
+      --yta-background: rgba(
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)),
+        calc((max(var(--ambientlight-fill-opacity, .55), .5) * 2) - (min(var(--ambientlight-fill-opacity, .55), .5) * 2))
+      );
+      --yta-background-10-percent: rgba(255,255,255,.1); // fallback
+      --yta-background-10-percent: rgba(
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)),
+        .1
+      );
     }
   }
 
@@ -366,11 +396,11 @@ html[data-ambientlight-enabled="true"] {
 
   #header.ytd-engagement-panel-title-header-renderer,
   #content.ytd-engagement-panel-section-list-renderer {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
   &[dark] #header.ytd-engagement-panel-title-header-renderer,
   &[dark] #content.ytd-engagement-panel-section-list-renderer  {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
 
   #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
@@ -746,10 +776,10 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-clarification-renderer {
     margin-top: 24px;
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
   &[dark] ytd-clarification-renderer {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
 
   /* Cosmetics - Clarify box info panel */
@@ -777,10 +807,10 @@ html[data-ambientlight-enabled="true"] {
   }
   $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
   #{$movie-offer} {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
   &[dark] #{$movie-offer} {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
 
   /* Live chat (Iframe styling in live-chat.css */
@@ -789,20 +819,46 @@ html[data-ambientlight-enabled="true"] {
   ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
   }
-  ytd-live-chat-frame ytd-toggle-button-renderer button {
-    text-shadow: inherit !important;
+  ytd-live-chat-frame ytd-toggle-button-renderer {
+    button, a {
+      text-shadow: inherit !important;
+      &:not(.yt-spec-button-shape-next--size-m) {
+        border-radius: 12px;
+      }
+    }
+    .yt-spec-button-shape-next--button-text-content {
+      width: 100%; // Fixes shadow clipping
+    }
   }
-  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+  ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) {
+    button.yt-spec-button-shape-next--size-m {
+      background: var(--yta-background) !important;
+    }
   }
-  &[dark] ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) button {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+  ytd-live-chat-frame[collapsed] {
+    border-color: transparent !important;
+
+    ytd-toggle-button-renderer {
+      margin-left: 1px !important;
+      margin-right: 1px !important;
+
+      button, a {
+        border-color: transparent !important;
+        box-shadow: var(--yt-spec-outline) 0 0 0 1px !important;
+        &:not(.yt-spec-button-shape-next--size-m) {
+          border-radius: 12px;
+          padding: 3px;
+        }
+      }
+    }
   }
-  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer:not(:hover):not(:focus-within) button:not(:active) {
-    background: none !important;
-  }
-  ytd-live-chat-frame ytd-toggle-button-renderer .yt-spec-button-shape-next--button-text-content {
-    width: 100%; // Fixes shadow clipping
+  ytd-live-chat-frame:not([collapsed]) ytd-toggle-button-renderer:not(:hover):not(:focus-within) {
+    button, a {
+      &:not(:active) {
+        background: none !important;
+        box-shadow: none !important;
+      }
+    }
   }
 
   /* Like button icon (gets an incorrect theme after switching device themes 2 times) */
@@ -831,10 +887,10 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
   &[dark] ytd-rich-metadata-renderer {
-    background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+    background: var(--yta-background) !important;
   }
 
   /* Cosmetics - Donation */
@@ -870,7 +926,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     .header.ytd-playlist-panel-renderer {
-      background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+      background: var(--yta-background) !important;
     }
     
     ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
@@ -923,7 +979,7 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-video-renderer {
       &[selected],
       &:hover:not(.dragging) {
-        background-color: rgba(0, 0, 0, .1) !important;
+        background-color: var(--yta-background-10-percent) !important;
         backdrop-filter: saturate(1.1);
       }
       &[selected] {
@@ -939,8 +995,8 @@ html[data-ambientlight-enabled="true"] {
     }
 
     yt-chip-cloud-chip-renderer:not([selected]) {
-      background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-      outline: 1px solid var(--yt-spec-10-percent-layer) !important;
+      background: var(--yta-background) !important;
+      // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       
       &:hover {
         background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
@@ -949,35 +1005,39 @@ html[data-ambientlight-enabled="true"] {
     
     ytd-watch-metadata {
       #description.ytd-watch-metadata {
-        background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
-        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
+        background: var(--yta-background) !important;
+        // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
+
+        .yt-core-attributed-string--link-inherit-color .yt-core-attributed-string__link--call-to-action-color {
+          color: var(--yt-spec-call-to-action);
+        }
       }
       
       .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-        outline: 1px solid var(--yt-spec-10-percent-layer) !important;
+        // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
         &.yt-spec-button-shape-next {
-          &--segmented-start,
-          &--segmented-end {
-            outline: 0 !important;
-          }
-          &--segmented-start {
-            box-shadow: (
-              var(--yt-spec-10-percent-layer) -1px 0,
-              var(--yt-spec-10-percent-layer) 0 -1px,
-              var(--yt-spec-10-percent-layer) 0 1px
-            ) !important;
-          }
-          &--segmented-end {
-            box-shadow: (
-              var(--yt-spec-10-percent-layer) 1px 0,
-              var(--yt-spec-10-percent-layer) 0 -1px,
-              var(--yt-spec-10-percent-layer) 0 1px
-            ) !important;
-          }
+          // &--segmented-start,
+          // &--segmented-end {
+          //   outline: 0 !important;
+          // }
+          // &--segmented-start {
+          //   box-shadow: (
+          //     var(--yt-spec-10-percent-layer) -1px 0,
+          //     var(--yt-spec-10-percent-layer) 0 -1px,
+          //     var(--yt-spec-10-percent-layer) 0 1px
+          //   ) !important;
+          // }
+          // &--segmented-end {
+          //   box-shadow: (
+          //     var(--yt-spec-10-percent-layer) 1px 0,
+          //     var(--yt-spec-10-percent-layer) 0 -1px,
+          //     var(--yt-spec-10-percent-layer) 0 1px
+          //   ) !important;
+          // }
         }
         
         &:not(:hover):not(:focus) {
-          background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+          background: var(--yta-background) !important;
         }
       }
     }
@@ -989,14 +1049,25 @@ html[data-ambientlight-enabled="true"] {
   &[dark] {
     ytd-app {
       .header.ytd-playlist-panel-renderer {
-        background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+        background: var(--yta-background) !important;
       }
 
       yt-chip-cloud-chip-renderer:not([selected]) {
-        background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
+        background: var(--yta-background) !important;
         
         &:hover {
           background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
+        }
+      }
+    
+      ytd-watch-metadata {
+        #description.ytd-watch-metadata {
+          background: var(--yta-background) !important;
+        }
+        .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
+          &:not(:hover):not(:focus) {
+            background: var(--yta-background) !important;
+          }
         }
       }
 
@@ -1013,23 +1084,11 @@ html[data-ambientlight-enabled="true"] {
       ytd-playlist-panel-video-renderer {
         &[selected],
         &:hover:not(.dragging) {
-          background-color: rgba(255, 255, 255, .1) !important;
           backdrop-filter: saturate(1.15);
         }
         &[selected] {
           #video-title.ytd-playlist-panel-video-renderer {
             color: rgb(255,255,255) !important;
-          }
-        }
-      }
-    
-      ytd-watch-metadata {
-        #description.ytd-watch-metadata {
-          background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
-        }
-        .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-          &:not(:hover):not(:focus) {
-            background: rgba(0,0,0,var(--ambientlight-fill-opacity, .1)) !important;
           }
         }
       }

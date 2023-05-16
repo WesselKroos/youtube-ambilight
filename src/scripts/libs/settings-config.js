@@ -203,7 +203,7 @@ const SettingsConfig = [
     label: 'Buttons & boxes background opacity',
     type: 'list',
     default: 10,
-    min: 0,
+    min: -100,
     max: 100,
     step: 1
   },
