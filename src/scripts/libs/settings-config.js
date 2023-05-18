@@ -557,7 +557,7 @@ const SettingsConfig = [
     label: 'Fade in duration',
     description: 'More GPU memory',
     questionMark: {
-      title: 'Slowly fades new colors into the ambient light\n(Also reduces flickering)'
+      title: 'Fades in the ambient light\n(Also reduces flickering)'
     },
     type: 'list',
     default: 0,
