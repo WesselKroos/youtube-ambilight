@@ -151,7 +151,7 @@ const SettingsConfig = [
     description: 'While scrolled down',
     type: 'list',
     default: 100,
-    min: 0,
+    min: -100,
     max: 100,
     step: 1,
     advanced: true
@@ -566,7 +566,7 @@ const SettingsConfig = [
     label: 'Fade in duration',
     description: 'More GPU memory',
     questionMark: {
-      title: 'Fades in the ambient light\n(Also reduces flickering)'
+      title: 'Fading between changes in the ambient light'
     },
     type: 'list',
     default: 0,
@@ -579,7 +579,7 @@ const SettingsConfig = [
     name: 'flickerReduction',
     label: 'Flicker reduction',
     questionMark: {
-      title: 'Reduces flickering by slowing down brightness changes in the ambient light'
+      title: 'Reduces flickering by fading between brightness changes in the ambient light'
     },
     type: 'list',
     default: 0,

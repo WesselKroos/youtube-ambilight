@@ -1655,7 +1655,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     // Header transparency
     let headerFillOpacity = this.settings.headerFillOpacity
-    headerFillOpacity = (headerFillOpacity !== 100) ? (headerFillOpacity / 100) : ''
+    headerFillOpacity = (headerFillOpacity !== 100) ? ((headerFillOpacity + 100) / 200) : ''
     this.mastheadElem.style.setProperty('--ytal-fill-opacity', headerFillOpacity)
     this.mastheadElem.classList.toggle('ytal-header-transparent', headerFillOpacity !== '')
     
