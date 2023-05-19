@@ -218,8 +218,9 @@ html[data-ambientlight-enabled="true"] {
     @include scrollbar-light-thin();
     background: #fff !important;
     background-color: #fff !important;
-    background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff) !important;
-    background-color: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff) !important;
+    --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
+    background: var(--ytal-page-background) !important;
+    background-color: var(--ytal-page-background) !important;
     
     &[data-ambientlight-hide-scrollbar="true"],
     &[data-ambientlight-immersive="true"] {
@@ -238,8 +239,9 @@ html[data-ambientlight-enabled="true"] {
       @include scrollbar-dark-thin();
       background: #000 !important;
       background-color: #000 !important;
-      background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000) !important;
-      background-color: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000) !important;
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
+      background: var(--ytal-page-background) !important;
+      background-color: var(--ytal-page-background) !important;
     }
   }
 
@@ -2398,17 +2400,20 @@ html[data-ambientlight-enabled="true"] {
     opacity: var(--ytal-debanding-opacity, 0);
   }
   .ambientlight::after {
-    content: '';
+    content: var(--ytal-debanding-content, none);
     position: absolute;
     z-index: 3;
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
-    background: linear-gradient(0deg, #ffff 0px, #fffe 25px, #fffc 50px, #fff8 100px, #fff3 150px, #fff1 175px, #fff0 200px);
+    background: linear-gradient(0deg, #ffff 0px, #fff0 200px);
+    background: linear-gradient(0deg, var(--ytal-page-background, #ffff) 0px, #fff0 200px);
   }
   &[dark] .ambientlight::after {
-    background: linear-gradient(0deg, #000f 0px, #000e 25px, #000c 50px, #0008 100px, #0003 150px, #0001 175px, #0000 200px);
+    background: linear-gradient(0deg, #000f 0px, #0000 200px);
+    background: linear-gradient(0deg, var(--ytal-page-background, #000f) 0px, #0000 200px);
+    
   }
 
   .html5-video-player {
