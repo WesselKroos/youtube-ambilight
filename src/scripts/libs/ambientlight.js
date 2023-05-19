@@ -463,6 +463,12 @@ export default class Ambientlight {
     this.videoListeners = this.videoListeners || {
       seeked: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
+
+        // Prevent WebGL flicker reduction from mixing old frames
+        if(this.projectorBuffer?.ctx?.clearPreviousRect) {
+          this.projectorBuffer.ctx.clearPreviousRect()
+        }
+
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
 
@@ -493,6 +499,12 @@ export default class Ambientlight {
 
         this.sizesChanged = true
         this.buffersCleared = true
+        
+        // Prevent WebGL flicker reduction from mixing old frames
+        if(this.projectorBuffer?.ctx?.clearPreviousRect) {
+          this.projectorBuffer.ctx.clearPreviousRect()
+        }
+
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
         this.initVideoIfSrcChanged()

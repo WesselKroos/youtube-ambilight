@@ -183,17 +183,21 @@ export class WebGLContext {
       varying vec2 fUV;
       uniform sampler2D textureSampler[${this.settings.flickerReduction ? 2 : 1}];
       uniform float fMipmapLevel;
+      ${this.settings.flickerReduction ? 'uniform float fPreviousCleared;' : ''}
       
       void main(void) {
         ${this.settings.flickerReduction ? `
           vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
           vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-          float percentage = min(1.,
-            ${flickerReductionDifference} / abs(
-              (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
-              (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
-            )
-          );
+          float percentage = 1.;
+          if(fPreviousCleared < .5) {
+            percentage = min(1.,
+              ${flickerReductionDifference} / abs(
+                (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
+                (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
+              )
+            );
+          } 
           gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
         ` : `
           gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
@@ -426,11 +430,22 @@ export class WebGLContext {
         const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
         this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
       }
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
       this.textures.push(texture);
     }
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
 
     const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
     this.ctx.uniform1iv(textureSamplerLoc, this.textures.map((_, i) => i));
+    
+    if(this.settings.flickerReduction) {
+      this.fPreviousClearedLoc = this.ctx.getUniformLocation(this.program, 'fPreviousCleared');
+      this.ctx.uniform1f(this.fPreviousClearedLoc, 1);
+      this.fPreviousCleared = 1;
+    } else {
+      this.fPreviousClearedLoc = undefined
+      this.fPreviousCleared = undefined
+    }
 
     return true
   }
@@ -438,8 +453,23 @@ export class WebGLContext {
   clearRect = () => {
     if(this.ctxIsInvalid || this.lost) return
     
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+
+    this.clearPreviousRect()
+  }
+
+  clearPreviousRect = () => {
+    if(!this.settings.flickerReduction || !this.fPreviousClearedLoc || this.fPreviousCleared === 1) return
+
+    this.ctx.activeTexture(this.ctx['TEXTURE1'])
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
+
+    this.ctx.uniform1f(this.fPreviousClearedLoc, 1)
+    this.fPreviousCleared = 1
   }
 
   defaultScale = new Float32Array([
@@ -523,17 +553,22 @@ export class WebGLContext {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     if(this.settings.showResolutions) this.loadTime = performance.now() - start
-    
+
     if(this.settings.showResolutions) start = performance.now()
-    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4)
+
+    if(this.settings.flickerReduction && this.fPreviousClearedLoc && this.fPreviousCleared === 1) {
+      this.fPreviousCleared = 0
+      this.ctx.uniform1f(this.fPreviousClearedLoc, 0)
+    }
 
     if(this.settings.flickerReduction) {
-      this.ctx.activeTexture(this.ctx[`TEXTURE1`])
+      this.ctx.activeTexture(this.ctx['TEXTURE1'])
       this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, this.canvas)
       if(this.webGLVersion !== 1) {
         this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
       }
-      this.ctx.activeTexture(this.ctx[`TEXTURE0`])
+      this.ctx.activeTexture(this.ctx['TEXTURE0'])
     }
 
     if(this.settings.showResolutions) this.drawTime = performance.now() - start
@@ -572,7 +607,7 @@ export class WebGLContext {
     const invalid = this.isContextLost() || !this.program;
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.log(`Ambient light for YouTube™ | WebGLContext is lost`)
+      console.log('Ambient light for YouTube™ | WebGLContext is lost')
     }
     return invalid;
   }

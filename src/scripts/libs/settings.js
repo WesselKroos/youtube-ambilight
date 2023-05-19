@@ -592,6 +592,7 @@ export default class Settings {
             'flickerReduction'
           ].some(name => name === setting.name)) {
             await this.updateBufferProjectorWebGLCtx()
+            this.ambientlight.buffersCleared = true
           }
 
           if ([
