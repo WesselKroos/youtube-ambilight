@@ -43,7 +43,8 @@ export default class Settings {
       } else {
         if([
           'resolution',
-          'frameFading'
+          'frameFading',
+          'flickerReduction'
         ].includes(setting.name)) {
           settingsToRemove.push(setting)
         }
@@ -149,6 +150,7 @@ export default class Settings {
     this.set('webGL', false, true, true)
     this.updateVisibility()
 
+    this.saveStorageEntry('flickerReduction', undefined) // Override potential crash reason
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
 
@@ -581,8 +583,14 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
-            await this.updateWebGLCtx()
+            await this.updateProjectorWebGLCtx()
             this.updateVisibility()
+          }
+
+          if ([
+            'flickerReduction'
+          ].some(name => name === setting.name)) {
+            await this.updateBufferProjectorWebGLCtx()
           }
 
           if ([
@@ -884,15 +892,30 @@ export default class Settings {
     return elem
   }
 
-  resetFrameFading() {
-    const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
-    if(this['frameFading'] === defaultValue) return
+  async updateBufferProjectorWebGLCtx() {
+    if(!this.ambientlight.projectorBuffer?.ctx?.initCtx) return // Can be undefined when migrating from previous settings
 
-    this.set('frameFading', defaultValue, true)
-    this.updateWebGLCtx()
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0)) // Await for update sizes
+      if(!this.ambientlight.projectorBuffer?.ctx?.initCtx) return // Can be undefined when migrating from previous settings
+  
+      if(!(await this.ambientlight.projectorBuffer.ctx.initCtx(true))) return
+      this.setWarning('')
+    } catch(ex) {
+      this.ambientlight.projectorBuffer.ctx.setWebGLWarning('change')
+      throw ex
+    }
   }
 
-  async updateWebGLCtx() {
+  resetFrameFading() {
+    const frameFadingDefaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
+    if(this['frameFading'] === frameFadingDefaultValue) return
+
+    this.set('frameFading', frameFadingDefaultValue, true)
+    this.updateProjectorWebGLCtx()
+  }
+
+  async updateProjectorWebGLCtx() {
     if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
 
     try {
@@ -1033,7 +1056,7 @@ export default class Settings {
     {
       name: 'frameFading',
       controllers: ['frameBlending']
-    },
+    }
   ]
   optionalSettings = [
     {
@@ -1083,7 +1106,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'resolution', 'vibrance', 'frameFading' ],
+      names: [ 'resolution', 'vibrance', 'frameFading', 'flickerReduction' ],
       visible: () => this.webGL
     }
   ]

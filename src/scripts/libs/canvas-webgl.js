@@ -106,7 +106,8 @@ export class WebGLContext {
   }
 
   webglcontextcreationerrors = []
-  async initCtx() {
+  // syncCompilation prevents black flickering while settings are changed
+  async initCtx(syncCompilation = false)  {
     if(this.program) {
       try {
         this.ctx.finish() // Wait for any pending draw calls to finish
@@ -159,6 +160,12 @@ export class WebGLContext {
       // this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
     }
 
+    let flickerReductionDifference;
+    if(this.settings.flickerReduction) {
+      const easing = (x) => 1 - Math.sqrt(1 - Math.pow(x, 2));
+      flickerReductionDifference = easing((100 - Math.min(99, 50 + (this.settings.flickerReduction / 2.4))) / 100);
+    }
+
     // Shaders
     var vertexShaderSrc = `
       precision lowp float;
@@ -174,11 +181,23 @@ export class WebGLContext {
     var fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
-      uniform sampler2D sampler;
+      uniform sampler2D textureSampler[${this.settings.flickerReduction ? 2 : 1}];
       uniform float fMipmapLevel;
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+        ${this.settings.flickerReduction ? `
+          vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+          vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+          float percentage = min(1.,
+            ${flickerReductionDifference} / abs(
+              (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
+              (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
+            )
+          );
+          gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
+        ` : `
+          gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+        `}
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -194,7 +213,7 @@ export class WebGLContext {
     this.ctx.attachShader(program, fragmentShader);
     this.ctx.linkProgram(program);
     
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile')
+    const parallelShaderCompileExt = syncCompilation ? undefined : this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
       this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
@@ -381,29 +400,37 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    this.texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    if (this.webGLVersion == 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-    } else {
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    this.textures = [];
+    for(let i = 0; i < (this.settings.flickerReduction ? 2 : 1); i++) {
+      const texture = this.ctx.createTexture();
+      this.ctx.activeTexture(this.ctx[`TEXTURE${i}`]);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+      if (this.webGLVersion == 1) {
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+      } else {
+        this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+      }
+      const tfaExt = (
+        this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+      );
+      if(tfaExt) {
+        const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      }
+      this.textures.push(texture);
     }
-    const tfaExt = (
-      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
-    );
-    if(tfaExt) {
-      const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
-    }
+
+    const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
+    this.ctx.uniform1iv(textureSamplerLoc, this.textures.map((_, i) => i));
 
     return true
   }
@@ -499,6 +526,16 @@ export class WebGLContext {
     
     if(this.settings.showResolutions) start = performance.now()
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+
+    if(this.settings.flickerReduction) {
+      this.ctx.activeTexture(this.ctx[`TEXTURE1`])
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, this.canvas)
+      if(this.webGLVersion !== 1) {
+        this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+      }
+      this.ctx.activeTexture(this.ctx[`TEXTURE0`])
+    }
+
     if(this.settings.showResolutions) this.drawTime = performance.now() - start
   }
 

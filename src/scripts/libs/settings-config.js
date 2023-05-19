@@ -589,6 +589,20 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'flickerReduction',
+    label: 'Flicker reduction',
+    questionMark: {
+      title: 'Reduces flickering by throttling brightness changes in the ambient light'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+    manualinput: false,
+    advanced: true
+  },
+  {
     type: 'section',
     label: 'General',
     name: 'sectionGeneralCollapsed',
