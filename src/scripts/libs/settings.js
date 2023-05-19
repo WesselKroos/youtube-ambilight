@@ -399,7 +399,7 @@ export default class Settings {
 
     this.bezelElem = this.createBezelElem()
     on(this.bezelElem, 'animationend', () => {
-      this.bezelElem.classList.add('yta-bezel--no-animation')
+      this.bezelElem.classList.add('ytal-bezel--no-animation')
     })
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
@@ -559,6 +559,7 @@ export default class Settings {
             'surroundingContentShadowOpacity',
             'surroundingContentFillOpacity',
             'surroundingContentImagesOpacity',
+            'pageBackgroundGreyness',
             'debandingStrength',
             'videoShadowSize',
             'videoShadowOpacity',
@@ -835,7 +836,7 @@ export default class Settings {
 
   createBezelElem() {
     const elem = document.createElement('div')
-    elem.className = 'yta-bezel ytp-bezel yta-bezel--no-animation'
+    elem.className = 'ytal-bezel ytp-bezel ytal-bezel--no-animation'
     elem.setAttribute('role', 'status')
 
     const iconElem = document.createElement('div')
@@ -1294,10 +1295,10 @@ export default class Settings {
   }
 
   displayBezel(text, strike = false) {
-    this.bezelElem.classList.add('yta-bezel--no-animation')
+    this.bezelElem.classList.add('ytal-bezel--no-animation')
     setTimeout(() => {
-      this.bezelElem.classList.toggle('yta-bezel--strike', strike)
-      this.bezelElem.classList.remove('yta-bezel--no-animation')
+      this.bezelElem.classList.toggle('ytal-bezel--strike', strike)
+      this.bezelElem.classList.remove('ytal-bezel--no-animation')
       this.bezelTextElem.textContent = text
     }, 0);
   }

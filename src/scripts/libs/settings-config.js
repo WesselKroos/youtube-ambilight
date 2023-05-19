@@ -208,6 +208,15 @@ const SettingsConfig = [
     step: 1
   },
   {
+    name: 'pageBackgroundGreyness',
+    label: 'Background greyness',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: .1
+  },
+  {
     name: 'immersiveTheaterView',
     label: 'Hide everything in theater mode',
     type: 'checkbox',
@@ -567,6 +576,20 @@ const SettingsConfig = [
     manualinput: false
   },
   {
+    name: 'flickerReduction',
+    label: 'Flicker reduction',
+    questionMark: {
+      title: 'Reduces flickering by slowing down brightness changes in the ambient light'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+    manualinput: false,
+    advanced: true
+  },
+  {
     name: 'frameBlending',
     label: 'Smooth motion (frame blending)',
     questionMark: {
@@ -586,20 +609,6 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 1,
-    advanced: true
-  },
-  {
-    name: 'flickerReduction',
-    label: 'Flicker reduction',
-    questionMark: {
-      title: 'Reduces flickering by throttling brightness changes in the ambient light'
-    },
-    type: 'list',
-    default: 0,
-    min: 0,
-    max: 100,
-    step: 1,
-    manualinput: false,
     advanced: true
   },
   {

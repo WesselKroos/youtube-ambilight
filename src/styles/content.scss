@@ -164,19 +164,19 @@ html[data-ambientlight-enabled="true"] {
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
     --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
     --yt-spec-outline: var(--yt-spec-10-percent-layer);
-    --yta-background: rgba(0,0,0,.1); // fallback
-    --yta-background: rgba(0,0,0,calc((var(--ambientlight-fill-opacity, .55) - .5) * 2)); // fallback
-    --yta-background: rgba(
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)),
-      calc((max(var(--ambientlight-fill-opacity, .55), .5) * 2) - (min(var(--ambientlight-fill-opacity, .55), .5) * 2))
+    --ytal-background: rgba(0,0,0,.1); // fallback
+    --ytal-background: rgba(0,0,0,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
+    --ytal-background: rgba(
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)),
+      calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2))
     );
-    --yta-background-10-percent: rgba(0,0,0,.1); // fallback
-    --yta-background-10-percent: rgb(
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)), 
-      calc(255 * (99 - var(--ambientlight-fill-opacity, .55) * 200)),
+    --ytal-background-10-percent: rgba(0,0,0,.1); // fallback
+    --ytal-background-10-percent: rgb(
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
+      calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)),
       .1
     );
   }
@@ -193,19 +193,19 @@ html[data-ambientlight-enabled="true"] {
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
       --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
-      --yta-background: rgba(255,255,255,.1); // fallback
-      --yta-background: rgba(255,255,255,calc((var(--ambientlight-fill-opacity, .55) - .5) * 2)); // fallback
-      --yta-background: rgba(
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)),
-        calc((max(var(--ambientlight-fill-opacity, .55), .5) * 2) - (min(var(--ambientlight-fill-opacity, .55), .5) * 2))
+      --ytal-background: rgba(255,255,255,.1); // fallback
+      --ytal-background: rgba(255,255,255,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
+      --ytal-background: rgba(
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)),
+        calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2))
       );
-      --yta-background-10-percent: rgba(255,255,255,.1); // fallback
-      --yta-background-10-percent: rgba(
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)), 
-        calc(255 * (-99 + var(--ambientlight-fill-opacity, .55) * 200)),
+      --ytal-background-10-percent: rgba(255,255,255,.1); // fallback
+      --ytal-background-10-percent: rgba(
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
+        calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)),
         .1
       );
     }
@@ -218,7 +218,9 @@ html[data-ambientlight-enabled="true"] {
     @include scrollbar-light-thin();
     background: #fff !important;
     background-color: #fff !important;
-
+    background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff) !important;
+    background-color: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff) !important;
+    
     &[data-ambientlight-hide-scrollbar="true"],
     &[data-ambientlight-immersive="true"] {
       scrollbar-width: none !important;
@@ -236,6 +238,8 @@ html[data-ambientlight-enabled="true"] {
       @include scrollbar-dark-thin();
       background: #000 !important;
       background-color: #000 !important;
+      background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000) !important;
+      background-color: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000) !important;
     }
   }
 
@@ -262,7 +266,7 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Transparent elements */
 
   body ytd-app #masthead-container {
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       ytd-masthead,
       #background.ytd-masthead {
@@ -277,7 +281,7 @@ html[data-ambientlight-enabled="true"] {
         background: rgba(255,255,255) !important;
       }
     }
-    &.yta-header-transparent {
+    &.ytal-header-transparent {
       ytd-masthead {
         box-shadow: transparent 0 1px 0 0;
       }
@@ -285,7 +289,7 @@ html[data-ambientlight-enabled="true"] {
         ytd-masthead {
           &,
           &[dark] {
-            background: rgba(255,255,255,var(--ambientlight-fill-opacity, .1)) !important;
+            background: rgba(255,255,255,var(--ytal-fill-opacity, .1)) !important;
             backdrop-filter: blur(30px);
             box-shadow: rgba(0,0,0,.1) 0 1px 0 0;
             --yt-spec-outline: rgba(0,0,0,.1);
@@ -308,9 +312,9 @@ html[data-ambientlight-enabled="true"] {
         background: rgba(15,15,15) !important;
       }
     }
-    &.yta-header-transparent:not(.at-top) {
+    &.ytal-header-transparent:not(.at-top) {
       ytd-masthead {
-        background: rgba(15,15,15,var(--ambientlight-fill-opacity, .1)) !important;
+        background: rgba(15,15,15,var(--ytal-fill-opacity, .1)) !important;
         box-shadow: rgba(255,255,255,.1) 0 1px 0 0;
       }
     }
@@ -329,7 +333,7 @@ html[data-ambientlight-enabled="true"] {
     #background.ytd-masthead {
       transition: background-color .15s;
     }
-    #masthead-container.yta-header-transparent ytd-masthead {
+    #masthead-container.ytal-header-transparent ytd-masthead {
       transition: background-color .15s, box-shadow .15s;
     }
     #masthead-container.no-animation {
@@ -341,7 +345,7 @@ html[data-ambientlight-enabled="true"] {
     #masthead-container.ytd-app::after {
       display: none;
     }
-    #masthead-container:not(.yta-header-transparent):not(.at-top) #voice-search-button {
+    #masthead-container:not(.ytal-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
   }
@@ -396,11 +400,11 @@ html[data-ambientlight-enabled="true"] {
 
   #header.ytd-engagement-panel-title-header-renderer,
   #content.ytd-engagement-panel-section-list-renderer {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
   &[dark] #header.ytd-engagement-panel-title-header-renderer,
   &[dark] #content.ytd-engagement-panel-section-list-renderer  {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
 
   #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
@@ -447,7 +451,7 @@ html[data-ambientlight-enabled="true"] {
       #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
       #logo.ytd-topbar-logo-renderer {
         &:not(:hover):not(:focus-within) {
-          opacity: var(--ambientlight-image-opacity) !important;
+          opacity: var(--ytal-image-opacity) !important;
         }
       }
     }
@@ -515,7 +519,7 @@ html[data-ambientlight-enabled="true"] {
     @include masthead-icon {
       transition: color .15s;
     }
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       @include masthead-icon {
         color: rgba(0,0,0,.4) !important;
@@ -526,7 +530,7 @@ html[data-ambientlight-enabled="true"] {
     #{$account-btn} {
       transition: border-color .15s, color .15s;
     }
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
@@ -553,7 +557,7 @@ html[data-ambientlight-enabled="true"] {
 
   // Header at top
   &:not([dark]) #masthead-container {
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       --yt-button-color: #000;
       #search-button-narrow,
@@ -660,7 +664,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   &[dark] #masthead-container {
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       #country-code.ytd-topbar-logo-renderer {
         color: rgba(245, 245, 245, .4);
@@ -690,7 +694,7 @@ html[data-ambientlight-enabled="true"] {
   /* Header searchbar at top or transparent*/
 
   &:not([dark]) #masthead-container {
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       ytd-searchbox:not(:hover):not(:focus-within) {
         #container.ytd-searchbox {
@@ -740,7 +744,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   &[dark] #masthead-container {
-    &.yta-header-transparent,
+    &.ytal-header-transparent,
     &.at-top {
       ytd-searchbox {
         &:not(:hover):not(:focus-within) {
@@ -776,10 +780,10 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-clarification-renderer {
     margin-top: 24px;
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
   &[dark] ytd-clarification-renderer {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
 
   /* Cosmetics - Clarify box info panel */
@@ -797,7 +801,7 @@ html[data-ambientlight-enabled="true"] {
     background: none !important;
   }
   a.ytd-merch-shelf-item-renderer:not(:hover):not(:focus) yt-img-shadow.ytd-merch-shelf-item-renderer {
-    opacity: var(--ambientlight-image-opacity) !important;
+    opacity: var(--ytal-image-opacity) !important;
   }
 
   /* Cosmetics - Movie offer */ 
@@ -807,10 +811,10 @@ html[data-ambientlight-enabled="true"] {
   }
   $movie-offer: '#header.ytd-movie-offer-module-renderer, #wide-clickable-area.ytd-movie-offer-module-renderer, #header.ytd-tvfilm-offer-module-renderer';
   #{$movie-offer} {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
   &[dark] #{$movie-offer} {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
 
   /* Live chat (Iframe styling in live-chat.css */
@@ -832,7 +836,7 @@ html[data-ambientlight-enabled="true"] {
   }
   ytd-live-chat-frame ytd-toggle-button-renderer:not(:hover):not(:focus-within) {
     button.yt-spec-button-shape-next--size-m {
-      background: var(--yta-background) !important;
+      background: var(--ytal-background) !important;
     }
   }
   ytd-live-chat-frame[collapsed] {
@@ -887,10 +891,10 @@ html[data-ambientlight-enabled="true"] {
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
   &[dark] ytd-rich-metadata-renderer {
-    background: var(--yta-background) !important;
+    background: var(--ytal-background) !important;
   }
 
   /* Cosmetics - Donation */
@@ -926,7 +930,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     .header.ytd-playlist-panel-renderer {
-      background: var(--yta-background) !important;
+      background: var(--ytal-background) !important;
     }
     
     ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
@@ -979,7 +983,7 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-video-renderer {
       &[selected],
       &:hover:not(.dragging) {
-        background-color: var(--yta-background-10-percent) !important;
+        background-color: var(--ytal-background-10-percent) !important;
         backdrop-filter: saturate(1.1);
       }
       &[selected] {
@@ -995,7 +999,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     yt-chip-cloud-chip-renderer:not([selected]) {
-      background: var(--yta-background) !important;
+      background: var(--ytal-background) !important;
       // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
       
       &:hover {
@@ -1005,7 +1009,7 @@ html[data-ambientlight-enabled="true"] {
     
     ytd-watch-metadata {
       #description.ytd-watch-metadata {
-        background: var(--yta-background) !important;
+        background: var(--ytal-background) !important;
         // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
 
         .yt-core-attributed-string--link-inherit-color .yt-core-attributed-string__link--call-to-action-color {
@@ -1037,7 +1041,7 @@ html[data-ambientlight-enabled="true"] {
         }
         
         &:not(:hover):not(:focus) {
-          background: var(--yta-background) !important;
+          background: var(--ytal-background) !important;
         }
       }
     }
@@ -1049,11 +1053,11 @@ html[data-ambientlight-enabled="true"] {
   &[dark] {
     ytd-app {
       .header.ytd-playlist-panel-renderer {
-        background: var(--yta-background) !important;
+        background: var(--ytal-background) !important;
       }
 
       yt-chip-cloud-chip-renderer:not([selected]) {
-        background: var(--yta-background) !important;
+        background: var(--ytal-background) !important;
         
         &:hover {
           background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
@@ -1062,11 +1066,11 @@ html[data-ambientlight-enabled="true"] {
     
       ytd-watch-metadata {
         #description.ytd-watch-metadata {
-          background: var(--yta-background) !important;
+          background: var(--ytal-background) !important;
         }
         .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
           &:not(:hover):not(:focus) {
-            background: var(--yta-background) !important;
+            background: var(--ytal-background) !important;
           }
         }
       }
@@ -1194,7 +1198,7 @@ html[data-ambientlight-enabled="true"] {
     }
 
     ytd-app #masthead-container {
-      &:not(.yta-header-transparent) {
+      &:not(.ytal-header-transparent) {
         will-change: opacity; // conflicts with backdrop-filter
       }
       
@@ -2151,8 +2155,8 @@ html[data-ambientlight-enabled="true"] {
 html[data-ambientlight-enabled="true"] {
   // Video shadow
   .ambientlight__video-shadow {
-    background: var(--ambientlight-video-shadow-background, none) !important;
-    box-shadow: var(--ambientlight-video-shadow-box-shadow, none) !important;
+    background: var(--ytal-video-shadow-background, none) !important;
+    box-shadow: var(--ytal-video-shadow-box-shadow, none) !important;
   }
 
   // Image opacity
@@ -2167,22 +2171,22 @@ html[data-ambientlight-enabled="true"] {
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
     .ytd-item-section-renderer#{$not-hover} #thumbnail,
     .ytd-watch-next-secondary-results-renderer#{$not-hover} #thumbnail {
-      opacity: var(--ambientlight-image-opacity) !important;
+      opacity: var(--ytal-image-opacity) !important;
     }
   }
   
 
   // All shadows
   
-  #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]) #container.ytd-masthead {
-    &.yta-header-transparent,
+  #masthead-container.ytal-header-shadow:not([style*="--ytal-text-shadow:"]) #container.ytd-masthead {
+    &.ytal-header-transparent,
     &.at-top {
       transition: filter .15s;
     }
   }
   @mixin filter-and-text-shadow-selectors {
-    #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]).yta-header-transparent #container.ytd-masthead,
-    #masthead-container.yta-header-shadow:not([style*="--ambientlight-text-shadow:"]).at-top #container.ytd-masthead,
+    #masthead-container.ytal-header-shadow:not([style*="--ytal-text-shadow:"]).ytal-header-transparent #container.ytd-masthead,
+    #masthead-container.ytal-header-shadow:not([style*="--ytal-text-shadow:"]).at-top #container.ytd-masthead,
     ytd-app #top > #container > *,
     ytd-app #primary-inner > *:not(#player),
     ytd-app #secondary,
@@ -2194,15 +2198,15 @@ html[data-ambientlight-enabled="true"] {
 
   &:not([dark]) {
     @include filter-and-text-shadow-selectors {
-      filter: var(--ambientlight-filter-shadow-inverted) !important;
-      text-shadow: var(--ambientlight-text-shadow-inverted) !important;
+      filter: var(--ytal-filter-shadow-inverted) !important;
+      text-shadow: var(--ytal-text-shadow-inverted) !important;
     }
   }
 
   &[dark] {
     @include filter-and-text-shadow-selectors {
-      filter: var(--ambientlight-filter-shadow) !important;
-      text-shadow: var(--ambientlight-text-shadow) !important;
+      filter: var(--ytal-filter-shadow) !important;
+      text-shadow: var(--ytal-text-shadow) !important;
     }
   }
 
@@ -2217,7 +2221,7 @@ html[data-ambientlight-enabled="true"] {
     color: var(--yt-spec-text-secondary);
   }
 
-  > body[style*="--ambientlight-text-shadow:"] {
+  > body[style*="--ytal-text-shadow:"] {
     // Remove default title text-shadow
     .title.ytd-video-primary-info-renderer {
       text-shadow: inherit !important;
@@ -2294,7 +2298,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   @mixin filter-shadow-selectors {
-    > body[style*="--ambientlight-text-shadow:"] {
+    > body[style*="--ytal-text-shadow:"] {
       // Buttons & icons shadows
       ytd-app #primary-inner > *:not(#player),
       ytd-app #secondary {
@@ -2348,12 +2352,12 @@ html[data-ambientlight-enabled="true"] {
       }
     }
     
-    #masthead-container.yta-header-shadow[style*="--ambientlight-text-shadow:"] {
+    #masthead-container.ytal-header-shadow[style*="--ytal-text-shadow:"] {
       ytd-searchbox {
         transition: filter .15s;
       }
       
-      &.yta-header-transparent,
+      &.ytal-header-transparent,
       &.at-top {
         yt-icon.ytd-logo svg {
           overflow: visible;
@@ -2372,26 +2376,26 @@ html[data-ambientlight-enabled="true"] {
   
   &:not([dark]) {
     @include filter-shadow-selectors {
-      filter: var(--ambientlight-button-shadow-inverted) !important;
+      filter: var(--ytal-button-shadow-inverted) !important;
     }
   }
   
   &[dark] {
     @include filter-shadow-selectors {
-      filter: var(--ambientlight-button-shadow) !important;
+      filter: var(--ytal-button-shadow) !important;
     }
   }
 
   .ambientlight::before {
-    content: var(--ambientlight-debanding-content, none);
+    content: var(--ytal-debanding-content, none);
     position: absolute;
     z-index: 2;
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
-    background: var(--ambientlight-debanding-background, none);
-    opacity: var(--ambientlight-debanding-opacity, 0);
+    background: var(--ytal-debanding-background, none);
+    opacity: var(--ytal-debanding-opacity, 0);
   }
   .ambientlight::after {
     content: '';
@@ -2408,7 +2412,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   .html5-video-player {
-    overflow: var(--ambientlight-html5-video-player-overflow, hidden);
+    overflow: var(--ytal-html5-video-player-overflow, hidden);
   }
   #primary .ytp-gradient-bottom {
     -webkit-mask-image: linear-gradient(to right, 
@@ -2428,7 +2432,7 @@ html[data-ambientlight-enabled="true"] {
   }
 }
 
-.yta-bezel {
+.ytal-bezel {
   pointer-events: none;
   contain: size style layout paint;
 

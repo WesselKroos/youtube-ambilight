@@ -1630,27 +1630,33 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateStyles() {
+    // Page background
+    let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
+    pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
+    document.documentElement.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
+
+
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
     fillOpacity = (fillOpacity !== 10) ? ((fillOpacity + 100) / 200) : ''
-    document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
+    document.body.style.setProperty('--ytal-fill-opacity', fillOpacity)
 
     // Header transparency
     let headerFillOpacity = this.settings.headerFillOpacity
     headerFillOpacity = (headerFillOpacity !== 100) ? (headerFillOpacity / 100) : ''
-    this.mastheadElem.style.setProperty('--ambientlight-fill-opacity', headerFillOpacity)
-    this.mastheadElem.classList.toggle('yta-header-transparent', headerFillOpacity !== '')
+    this.mastheadElem.style.setProperty('--ytal-fill-opacity', headerFillOpacity)
+    this.mastheadElem.classList.toggle('ytal-header-transparent', headerFillOpacity !== '')
     
 
     // Images transparency
     let imageOpacity = this.settings.surroundingContentImagesOpacity
     imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
-    document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
+    document.body.style.setProperty('--ytal-image-opacity', imageOpacity)
 
     // Header transparency
     let headerImageOpacity = this.settings.headerImagesOpacity
     headerImageOpacity = (imageOpacity !== 100) ? (headerImageOpacity / 100) : ''
-    this.mastheadElem.style.setProperty('--ambientlight-image-opacity', headerImageOpacity)
+    this.mastheadElem.style.setProperty('--ytal-image-opacity', headerImageOpacity)
 
     
     // Shadows
@@ -1675,21 +1681,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     // Header shadow
     const headerShadowSize = this.settings.headerShadowSize / 5
     const headerShadowOpacity = this.settings.headerShadowOpacity / 100
-    this.mastheadElem.classList.toggle('yta-header-shadow', headerShadowSize && headerShadowOpacity)
+    this.mastheadElem.classList.toggle('ytal-header-shadow', headerShadowSize && headerShadowOpacity)
 
     const getHeaderFilterShadow = (color) => getFilterShadow(color, headerShadowSize, headerShadowOpacity)
     const getHeaderTextShadow = (color) => getTextShadow(color, headerShadowSize, headerShadowOpacity)
 
     // Header !textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
     
     // Header textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
 
-    this.mastheadElem.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
 
     // Content shadow
     const contentShadowSize = this.settings.surroundingContentShadowSize / 5
@@ -1698,24 +1704,24 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const getContentTextShadow = (color) => getTextShadow(color, contentShadowSize, contentShadowOpacity)
 
     // Content !textAndBtnOnly
-    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
     
     // Content textAndBtnOnly
-    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
 
-    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
-    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
+    document.body.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
 
 
     // Video shadow
     const videoShadowSize = parseFloat(this.settings.videoShadowSize, 10) / 2 + Math.pow(this.settings.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.settings.videoShadowOpacity / 100
     
-    document.body.style.setProperty('--ambientlight-video-shadow-background', 
+    document.body.style.setProperty('--ytal-video-shadow-background', 
       (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
-    document.body.style.setProperty('--ambientlight-video-shadow-box-shadow', 
+    document.body.style.setProperty('--ytal-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
@@ -1725,7 +1731,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
 
     // Video scale
-    document.body.style.setProperty('--ambientlight-html5-video-player-overflow', 
+    document.body.style.setProperty('--ytal-html5-video-player-overflow', 
       (this.settings.videoScale > 100) ?  'visible' : '')
 
 
@@ -1734,11 +1740,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
 
-    document.body.style.setProperty('--ambientlight-debanding-content', 
+    document.body.style.setProperty('--ytal-debanding-content', 
       debandingStrength ? `''` : '')
-    document.body.style.setProperty('--ambientlight-debanding-background', 
+    document.body.style.setProperty('--ytal-debanding-background', 
       debandingStrength ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')` : '')
-    document.body.style.setProperty('--ambientlight-debanding-opacity', 
+    document.body.style.setProperty('--ytal-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
   }
 
