@@ -214,7 +214,8 @@ const SettingsConfig = [
     default: 0,
     min: 0,
     max: 100,
-    step: .1
+    step: .1,
+    new: true
   },
   {
     name: 'immersiveTheaterView',
@@ -587,7 +588,8 @@ const SettingsConfig = [
     max: 100,
     step: 1,
     manualinput: false,
-    advanced: true
+    advanced: true,
+    new: true
   },
   {
     name: 'frameBlending',

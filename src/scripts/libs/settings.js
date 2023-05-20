@@ -78,6 +78,7 @@ export default class Settings {
     names.push('setting-webGLCrash')
     names.push('setting-webGLCrashVersion')
     names.push('setting-surroundingContentImagesTransparency')
+    names.push('setting-showUpdates')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
@@ -210,6 +211,18 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
+          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+            <div class="ytp-menuitem-label" rowspan="2">
+              <span class="ytpa-updates">${''
+               }<b>New in version ${version}:</b>
+                <ul>
+                  <li>Page content > Background greyness</li>
+                  <li>The background colors of boxes and buttons can now also be inverted</li>
+                  <li>(Advanced) Ambient light > Flicker reduction</li>
+                </ul>${''
+             }</span>
+            </div>
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>
@@ -349,6 +362,12 @@ export default class Settings {
           }
         </div>
       </div>`
+
+    this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
+    on(this.updateItemElem, 'click', this.hideUpdates)
+    if(Settings.storedSettingsCached['setting-showUpdates']) {
+      this.showUpdates()
+    }
 
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
@@ -1318,6 +1337,19 @@ export default class Settings {
 
     this.infoElem.textContent = message
     this.infoItemElem.style.display = message ? '' : 'none'
+  }
+
+  showUpdates = () => {
+    this.updateItemElem.style.display = ''
+    this.menuBtn.classList.toggle('has-updates', true)
+    this.menuBtn.title = 'Ambient light has been updated with new settings\nClick to see what\'s new'
+  }
+
+  hideUpdates = () => {
+    this.updateItemElem.style.display = 'none'
+    this.menuBtn.classList.toggle('has-updates', false)
+    this.menuBtn.title = ''
+    this.set('showUpdates', null, false)
   }
 
   handleDocumentVisibilityChange = () => {
