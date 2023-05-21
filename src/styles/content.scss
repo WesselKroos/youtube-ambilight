@@ -2327,6 +2327,7 @@ html[data-ambientlight-enabled="true"] {
     // new video info
     h1.ytd-watch-metadata,
     ytd-watch-metadata ytd-menu-renderer[has-flexible-items],
+    ytd-watch-metadata #description-inner #info-container,
 
     // Related video - channel name
     ytd-video-meta-block #byline-container,
@@ -2335,7 +2336,9 @@ html[data-ambientlight-enabled="true"] {
     #author-text.yt-simple-endpoint.ytd-comment-renderer,
 
     // Collapsable comment
-    #expander[collapsed].ytd-comment-renderer {
+    #expander[collapsed].ytd-comment-renderer,
+
+    yt-chip-cloud-chip-renderer yt-formatted-string {
       overflow: initial !important;
     }
 
@@ -2369,6 +2372,12 @@ html[data-ambientlight-enabled="true"] {
         text-shadow: none !important;
       }
     }
+  }
+
+  // new video info
+  ytd-watch-metadata #description-inner #info-container {
+    -webkit-mask-image: initial !important;
+    mask-image: initial !important;
   }
 
   @mixin filter-shadow-selectors {
