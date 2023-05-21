@@ -25,6 +25,7 @@ export default class Settings {
       this.initMenu()
       if(this.webGLCrashDate) this.updateWebGLCrashDescription()
       if(this.pendingWarning) this.pendingWarning()
+      this.showUpdatesMessage()
       return this
     }.bind(this))()
   }
@@ -78,7 +79,6 @@ export default class Settings {
     names.push('setting-webGLCrash')
     names.push('setting-webGLCrashVersion')
     names.push('setting-surroundingContentImagesTransparency')
-    names.push('setting-showUpdates')
 
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
 
@@ -215,7 +215,7 @@ export default class Settings {
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
-                The default background color of boxes and buttons have been inverted. You can revert this by adjusting the "Page content > Buttons & boxes background opacity" setting to a negative value
+                The default background color of boxes and buttons has been inverted to match the YouTube style. You can revert this change by adjusting the "Page content > Buttons & boxes background opacity" setting to a negative value.
               </span>
             </div>
           </div>
@@ -361,10 +361,6 @@ export default class Settings {
 
     this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
     on(this.updateItemElem, 'click', this.hideUpdatesMessage)
-    if(Settings.storedSettingsCached['setting-showUpdates']) {
-      this.showUpdatesMessage()
-    }
-
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
     this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info')
@@ -1042,7 +1038,7 @@ export default class Settings {
       on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
 
-    this.hideUpdatesMessage()
+    this.hideUpdatesBadge()
   }
 
   onSettingsFadeOutEnd = () => {
@@ -1337,21 +1333,42 @@ export default class Settings {
     this.infoItemElem.style.display = message ? '' : 'none'
   }
 
-  showUpdatesMessage = () => {
-    this.updateItemElem.style.display = ''
-    this.menuBtn.classList.toggle('has-updates', true)
-    this.menuBtn.title = 'Ambient light has been updated with new settings\nClick to see what\'s new'
-    this.showingUpdatesMessage = true
+  showUpdatesMessage = async () => {
+    try {
+      if(!version) return
+
+      let entries;
+      try {
+        entries = await contentScript.getStorageEntryOrEntries(['shown-version-updates'], true) || {}
+      } catch {
+        return
+      }
+      const installedVersion = entries['shown-version-updates']
+      if(installedVersion ===  version) return
+
+      this.updateItemElem.style.display = ''
+      this.menuBtn.classList.toggle('has-updates', true)
+      this.menuBtn.title = 'Ambient light has been updated with new settings\nClick to see what\'s new'
+      this.showingUpdatesMessage = true
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
   }
 
   hideUpdatesMessage = () => {
-    if(!this.showingUpdatesMessage) return
+    if(this.updateItemElem.style.display === 'none') return
 
     this.updateItemElem.style.display = 'none'
+    this.showingUpdatesMessage = undefined
+    this.hideUpdatesBadge()
+  }
+
+  hideUpdatesBadge = () => {
+    if(!this.menuBtn.classList.contains('has-updates')) return
     this.menuBtn.classList.toggle('has-updates', false)
     this.menuBtn.title = ''
-    this.set('showUpdates', null, false)
-    this.showingUpdatesMessage = undefined
+
+    contentScript.setStorageEntry('shown-version-updates', version, false)
   }
 
   handleDocumentVisibilityChange = () => {
