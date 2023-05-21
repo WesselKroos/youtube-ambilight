@@ -1,5 +1,4 @@
-import { storage } from './libs/storage'
-import { getBrowser, getFeedbackFormLink, getVersion } from './libs/utils'
+import { getBrowser, getFeedbackFormLink } from './libs/utils'
 
 chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason !== 'install' && details.reason !== 'update') return
@@ -10,12 +9,6 @@ chrome.runtime.onInstalled.addListener(function (details) {
 
   if (details.reason === 'install' && getBrowser() === 'Firefox') {
     chrome.runtime.openOptionsPage()
-  }
-
-  if(details.reason === 'update' && details.previousVersion) {
-    if(getVersion() !== details.previousVersion) {
-      storage.set('setting-showUpdates', true)
-    }
   }
 })
 
