@@ -580,7 +580,7 @@ const SettingsConfig = [
     name: 'flickerReduction',
     label: 'Flicker reduction',
     questionMark: {
-      title: 'Reduces flickering by fading between brightness changes in the ambient light'
+      title: 'Reduces flickering by limiting the speed at which brightness changes in the ambient light'
     },
     type: 'list',
     default: 0,
