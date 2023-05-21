@@ -264,6 +264,20 @@ const SettingsConfig = [
     step: .1
   },
   {
+    name: 'videoDebandingStrength',
+    label: 'Debanding (noise)',
+    questionMark: {
+      title: 'Click for more information about Dithering',
+      href: 'https://www.lifewire.com/what-is-dithering-4686105'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true
+  },
+  {
     name: 'videoOverlayEnabled',
     label: 'Sync video with ambient light',
     questionMark: {

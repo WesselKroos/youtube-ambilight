@@ -1747,6 +1747,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       (this.settings.videoScale > 100) ?  'visible' : '')
 
 
+    // Video Debanding
+    const videoDebandingStrength = parseFloat(this.settings.videoDebandingStrength)
+    const videoNoiseImageIndex = (videoDebandingStrength > 75) ? 3 : (videoDebandingStrength > 50) ? 2 : 1
+    const videoNoiseOpacity =  videoDebandingStrength / ((videoDebandingStrength > 75) ? 100 : (videoDebandingStrength > 50) ? 75 : 50)
+
+    document.body.style.setProperty('--ytal-video-debanding-content', 
+      videoDebandingStrength ? `''` : '')
+    document.body.style.setProperty('--ytal-video-debanding-background', 
+      videoDebandingStrength ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')` : '')
+    document.body.style.setProperty('--ytal-video-debanding-opacity', 
+      videoDebandingStrength ? videoNoiseOpacity : '')
+
+
     // Debanding
     const debandingStrength = parseFloat(this.settings.debandingStrength)
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1

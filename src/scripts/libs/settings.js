@@ -571,6 +571,7 @@ export default class Settings {
             'surroundingContentFillOpacity',
             'surroundingContentImagesOpacity',
             'pageBackgroundGreyness',
+            'videoDebandingStrength',
             'debandingStrength',
             'videoShadowSize',
             'videoShadowOpacity',
