@@ -214,13 +214,9 @@ export default class Settings {
           <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
-               }<b>New in version ${version}:</b>
-                <ul>
-                  <li>Page content > Background greyness</li>
-                  <li>The background colors of boxes and buttons can now also be inverted</li>
-                  <li>(Advanced) Ambient light > Flicker reduction</li>
-                </ul>${''
-             }</span>
+               }<b>Important changes in version ${version}:</b>
+                The default background color of boxes and buttons have been inverted. You can revert this by adjusting the "Page content > Buttons & boxes background opacity" setting to a negative value
+              </span>
             </div>
           </div>
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
@@ -364,9 +360,9 @@ export default class Settings {
       </div>`
 
     this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
-    on(this.updateItemElem, 'click', this.hideUpdates)
+    on(this.updateItemElem, 'click', this.hideUpdatesMessage)
     if(Settings.storedSettingsCached['setting-showUpdates']) {
-      this.showUpdates()
+      this.showUpdatesMessage()
     }
 
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
@@ -1045,6 +1041,8 @@ export default class Settings {
     setTimeout(() => {
       on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
+
+    this.hideUpdatesMessage()
   }
 
   onSettingsFadeOutEnd = () => {
@@ -1339,17 +1337,21 @@ export default class Settings {
     this.infoItemElem.style.display = message ? '' : 'none'
   }
 
-  showUpdates = () => {
+  showUpdatesMessage = () => {
     this.updateItemElem.style.display = ''
     this.menuBtn.classList.toggle('has-updates', true)
     this.menuBtn.title = 'Ambient light has been updated with new settings\nClick to see what\'s new'
+    this.showingUpdatesMessage = true
   }
 
-  hideUpdates = () => {
+  hideUpdatesMessage = () => {
+    if(!this.showingUpdatesMessage) return
+
     this.updateItemElem.style.display = 'none'
     this.menuBtn.classList.toggle('has-updates', false)
     this.menuBtn.title = ''
     this.set('showUpdates', null, false)
+    this.showingUpdatesMessage = undefined
   }
 
   handleDocumentVisibilityChange = () => {
