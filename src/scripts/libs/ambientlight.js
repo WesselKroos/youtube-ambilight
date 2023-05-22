@@ -1997,7 +1997,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   onNextLimitedFrame = async (compose) => {
     const time = performance.now()
-    if(this.nextFrameTime) {
+    if(this.nextFrameTime && !this.buffersCleared && !this.sizesChanged && !this.sizesInvalidated) {
       if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES && !this.videoIsHidden) {
         if(this.nextFrameTime > time && this.videoFrameCallbackReceived) {
           this.videoFrameCallbackReceived = false
