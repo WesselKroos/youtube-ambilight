@@ -1581,8 +1581,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.checkIfNeedToHideVideoOverlay()
 
     if (videoOverlayEnabled && videoOverlay && !videoOverlay.elem.parentNode) {
-      if(this.videoContainerElem) {
-      this.videoContainerElem.appendChild(videoOverlay.elem)
+      if(this.videoElem) {
+        this.videoElem.after(videoOverlay.elem)
       } else {
         if(!this.videoContainerElemMissingThrown) {
           SentryReporter.captureException(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
@@ -1596,6 +1596,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     } else if(this.videoContainerElemMissingWarning) {
       this.settings.setWarning('')
       this.videoContainerElemMissingWarning = false
+    }
+
+    if(this.videoDebandingElem) {
+      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style'))
     }
 
     if (videoOverlayEnabled && videoOverlay) {
@@ -1749,11 +1753,20 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     // Video Debanding
     const videoDebandingStrength = parseFloat(this.settings.videoDebandingStrength)
+    if(videoDebandingStrength) {
+      if(!this.videoDebandingElem) {
+        this.videoDebandingElem = document.createElement('div')
+        this.videoDebandingElem.classList.add('ambientlight__video-debanding')
+        this.videoContainerElem.appendChild(this.videoDebandingElem)
+      }
+    } else if(this.videoDebandingElem) {
+      this.videoDebandingElem.remove()
+      this.videoDebandingElem = undefined
+    }
     const videoNoiseImageIndex = (videoDebandingStrength > 75) ? 3 : (videoDebandingStrength > 50) ? 2 : 1
     const videoNoiseOpacity =  videoDebandingStrength / ((videoDebandingStrength > 75) ? 100 : (videoDebandingStrength > 50) ? 75 : 50)
 
-    document.body.style.setProperty('--ytal-video-debanding-content', 
-      videoDebandingStrength ? `''` : '')
+    this.videoContainerElem.setAttribute('style', this.videoElem.getAttribute('style'))
     document.body.style.setProperty('--ytal-video-debanding-background', 
       videoDebandingStrength ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')` : '')
     document.body.style.setProperty('--ytal-video-debanding-opacity', 
