@@ -1132,6 +1132,14 @@ html[data-ambientlight-enabled="true"] {
     } 
   }
 
+  /* Improve scrolling smoothness */
+  .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
+  ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
+  .ytd-macro-markers-list-renderer#contents // Chapters
+  {
+    will-change: scroll-position !important;
+  }
+
   /* Ambientlight */
 
   .ambientlight,

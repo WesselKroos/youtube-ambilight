@@ -90,3 +90,8 @@ yt-live-chat-renderer #panel-pages.yt-live-chat-renderer {
   border-bottom: none !important;
   box-shadow: var(--yt-spec-10-percent-layer) 0 -1px inset;
 }
+
+/* Improve scrolling smoothness */
+#item-scroller.yt-live-chat-item-list-renderer {
+  will-change: scroll-position !important;
+}
