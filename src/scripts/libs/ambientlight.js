@@ -1599,11 +1599,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     if(this.videoDebandingElem) {
-      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style'))
+      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
     }
 
     if (videoOverlayEnabled && videoOverlay) {
-      videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
+      videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style') || '')
       let videoOverlayWidth = this.srcVideoOffset.width
       let videoOverlayHeight = this.srcVideoOffset.height
       if(this.videoElem.style.width && this.videoElem.style.height) {
@@ -1766,7 +1766,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const videoNoiseImageIndex = (videoDebandingStrength > 75) ? 3 : (videoDebandingStrength > 50) ? 2 : 1
     const videoNoiseOpacity =  videoDebandingStrength / ((videoDebandingStrength > 75) ? 100 : (videoDebandingStrength > 50) ? 75 : 50)
 
-    this.videoContainerElem.setAttribute('style', this.videoElem.getAttribute('style'))
+    this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
     document.body.style.setProperty('--ytal-video-debanding-background', 
       videoDebandingStrength ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')` : '')
     document.body.style.setProperty('--ytal-video-debanding-opacity', 
