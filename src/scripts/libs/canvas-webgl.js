@@ -162,8 +162,7 @@ export class WebGLContext {
 
     let flickerReductionDifference;
     if(this.settings.flickerReduction) {
-      const easing = (x) => 1 - Math.sqrt(1 - Math.pow(x, 2));
-      flickerReductionDifference = easing((100 - Math.min(99, 50 + (this.settings.flickerReduction / 2.4))) / 100);
+      flickerReductionDifference = (118 - this.settings.flickerReduction) / 118
     }
 
     // Shaders
@@ -188,20 +187,20 @@ export class WebGLContext {
       void main(void) {
         ${this.settings.flickerReduction ? `
           vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-          vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-          float percentage = 1.;
           if(fPreviousCleared < .5) {
-            percentage = min(1.,
-              ${flickerReductionDifference} / abs(
-                (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
-                (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
-              )
+            vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+            
+            float difference = abs(
+              (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
+              (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
             );
-          } 
-          gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
-        ` : `
-          gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-        `}
+            float percentage = 1.;
+            percentage = min(1., (1. - (difference * difference * difference)) * ${flickerReductionDifference.toFixed(3)});
+            gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
+            return;
+          }
+        `: ''}
+        gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
