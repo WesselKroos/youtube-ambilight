@@ -1759,14 +1759,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.videoDebandingElem.classList.add('ambientlight__video-debanding')
         this.videoContainerElem.appendChild(this.videoDebandingElem)
       }
+      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
     } else if(this.videoDebandingElem) {
       this.videoDebandingElem.remove()
       this.videoDebandingElem = undefined
     }
+
     const videoNoiseImageIndex = (videoDebandingStrength > 75) ? 3 : (videoDebandingStrength > 50) ? 2 : 1
     const videoNoiseOpacity =  videoDebandingStrength / ((videoDebandingStrength > 75) ? 100 : (videoDebandingStrength > 50) ? 75 : 50)
 
-    this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
     document.body.style.setProperty('--ytal-video-debanding-background', 
       videoDebandingStrength ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')` : '')
     document.body.style.setProperty('--ytal-video-debanding-opacity', 
