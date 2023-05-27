@@ -215,7 +215,8 @@ export default class Settings {
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
-                The default background color of boxes and buttons has been inverted to match the YouTube style. You can revert this change by adjusting the "Page content > Buttons & boxes background opacity" setting to a negative value.
+                The default background color of boxes and buttons has been inverted to match the YouTube style.
+                If you like the old style more you can set the "Page content > Buttons & boxes background opacity" setting to a negative value to restore them to the old style.
               </span>
             </div>
           </div>
