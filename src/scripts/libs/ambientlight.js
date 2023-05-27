@@ -2043,8 +2043,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.averageVideoFramesDifference < .0175 &&
     !this.sizesInvalidated &&
     !this.buffersCleared &&
-    this.videoElem.currentTime > 2 && 
-    this.videoElem.currentTime < this.videoElem.duration - 2
+    this.videoElem.currentTime > 5 && 
+    this.videoElem.currentTime < this.videoElem.duration - 5
   )
 
   canScheduleNextFrame = () => (!(
