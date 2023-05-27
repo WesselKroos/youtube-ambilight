@@ -1133,6 +1133,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initSettings() {
     this.settings = await new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
     parseSettingsToSentry(this.settings)
+    
+    if(!this.settings.prioritizePageLoadSpeed) return
+
+    if(!this.videoElem || this.videoElem.networkState < 1 || this.videoElem.readyState < 3) {
+      while(!this.videoElem || this.videoElem.networkState < 1 || this.videoElem.readyState < 3) {
+        await new Promise(resolve => setTimeout(resolve, 500 ))
+      }
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 })) // Buffering/rendering budget for low-end devices
+    } else {
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
+    }
+
+    if(document.visibilityState === 'hidden') {
+      await new Promise(resolve => raf(resolve))
+    }
   }
 
   initVideoOverlay() {
@@ -2762,12 +2777,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(initial) {
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve))
-      }
-      if(this.settings.prioritizePageLoadSpeed) {
-        await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
-        if(document.visibilityState === 'hidden') {
-          await new Promise(resolve => raf(resolve))
-        }
       }
       this.calculateAverageVideoFramesDifference()
     }

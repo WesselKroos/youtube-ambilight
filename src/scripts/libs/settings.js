@@ -985,9 +985,15 @@ export default class Settings {
 
   menuOnCloseScrollBottom = -1
   menuOnCloseScrollHeight = 1
-  onSettingsBtnClicked = () => {
+  onSettingsBtnClicked = async () => {
     const isOpen = this.menuElem.classList.contains('is-visible')
     if (isOpen) return
+
+    off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
+
+    while(!this.ambientlight.initializedTime) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
     this.menuElem.classList.remove('fade-out')
     this.menuElem.classList.add('is-visible')
@@ -1006,7 +1012,6 @@ export default class Settings {
       this.ambientlight.videoPlayerElem.classList.add('ytp-ambientlight-settings-shown')
     }
 
-    off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
       on(body, 'click', this.onCloseMenu, undefined, (listener) => this.onCloseMenuListener = listener)
       this.scrollToWarning()
