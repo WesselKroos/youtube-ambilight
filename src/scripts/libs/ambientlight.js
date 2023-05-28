@@ -2782,6 +2782,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
     this.pendingStart = undefined
     this.initializedTime = performance.now()
+    this.settings.onLoaded()
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {

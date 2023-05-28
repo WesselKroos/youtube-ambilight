@@ -25,7 +25,6 @@ export default class Settings {
       this.initMenu()
       if(this.webGLCrashDate) this.updateWebGLCrashDescription()
       if(this.pendingWarning) this.pendingWarning()
-      this.showUpdatesMessage()
       return this
     }.bind(this))()
   }
@@ -191,10 +190,12 @@ export default class Settings {
     settingsMenuBtnTooltipTextWrapper.className = 'ytp-tooltip-text-wrapper'
     settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper)
 
-    const settingsMenuBtnTooltipText = document.createElement('span')
-    settingsMenuBtnTooltipText.className = 'ytp-tooltip-text ytp-tooltip-text-no-title'
-    settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
-    settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
+    this.settingsMenuBtnTooltipText = document.createElement('span')
+    this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-text ytp-tooltip-text-no-title'
+    this.settingsMenuBtnTooltipText.appendChild(document.createTextNode('Ambient light loading is paused.'))
+    this.settingsMenuBtnTooltipText.appendChild(document.createElement('br'))
+    this.settingsMenuBtnTooltipText.appendChild(document.createTextNode('Waiting for the video and page to be loaded first...'))
+    settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText)
 
     this.menuBtn.prepend(settingsMenuBtnTooltip)
     const ytSettingsBtn = document.querySelector('ytd-watch-flexy [data-tooltip-target-id="ytp-autonav-toggle-button"]')
@@ -880,7 +881,7 @@ export default class Settings {
 
   createMenuButton() {
     const elem = document.createElement('button')
-    elem.className = 'ytp-button ytp-ambientlight-settings-button'
+    elem.className = 'ytp-button ytp-ambientlight-settings-button is-loading'
     elem.setAttribute('aria-owns', 'ytp-id-190')
 
     const xmlns = "http://www.w3.org/2000/svg"
@@ -1051,6 +1052,15 @@ export default class Settings {
   onSettingsFadeOutEnd = () => {
     this.menuElem.classList.remove('fade-out', 'is-visible')
     off(this.menuElem, 'animationend', this.onSettingsFadeOutEndListener)
+  }
+
+  onLoaded = () => {
+    if(!this.menuBtn.classList.contains('is-loading')) return
+    
+    this.menuBtn.classList.remove('is-loading')
+    this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
+    
+    this.showUpdatesMessage()
   }
 
   

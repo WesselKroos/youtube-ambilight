@@ -1409,7 +1409,14 @@ html[data-ambientlight-enabled="true"] {
       }
     }
   }
-  
+
+  html:not([data-ambientlight-enabled="true"]) &,
+  &.is-loading {
+    &::after {
+      background-color: #555;
+    }
+  }
+
   svg {
     transition: transform .1s cubic-bezier(0.4,0.0,1,1);
   }
