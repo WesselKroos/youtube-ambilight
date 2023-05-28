@@ -2884,6 +2884,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
       // Recalculate the player menu width to remove the elements on the second row
       try {
+        await new Promise(resolve => raf(resolve))
         const menu = document.querySelector('ytd-menu-renderer[has-flexible-items]')
         if(menu?.onStamperFinished) {
           menu.onStamperFinished()
