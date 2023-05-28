@@ -2881,6 +2881,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
       this.ytdAppElem.style.background = ''
+
+      // Recalculate the player menu width to remove the elements on the second row
+      try {
+        const menu = document.querySelector('ytd-menu-renderer[has-flexible-items]')
+        if(menu?.onStamperFinished) {
+          menu.onStamperFinished()
+        }
+      } catch {}
     })()
 
     this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
