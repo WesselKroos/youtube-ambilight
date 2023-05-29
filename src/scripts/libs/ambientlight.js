@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -70,6 +70,8 @@ export default class Ambientlight {
       this.detectChromiumBug1092080Workaround()
 
       await this.initSettings()
+      await this.waitForPageload()
+
       this.theming = new Theming(this)
       this.stats = new Stats(this)
       this.barDetection = new BarDetection()
@@ -90,6 +92,12 @@ export default class Ambientlight {
 
       this.checkGetImageDataAllowed()
       await this.initListeners()
+
+      new Promise(resolve => wrapErrorHandler(() => {
+        this.initializedTime = performance.now()
+        this.settings.onLoaded()
+        resolve()
+      })())
 
       if (this.settings.enabled) {
         try {
@@ -368,6 +376,33 @@ export default class Ambientlight {
       console.warn('Ambient light for YouTube™ | applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
       SentryReporter.captureException(ex)
       this.enableChromiumBugVideoJitterWorkaround = false // Prevent retries
+    }
+  }
+
+  waitForPageload = async () => {
+    if((this.settings.enabled && !this.settings.prioritizePageLoadSpeed) || !this.videoElem || !isWatchPageUrl()) return
+
+    if(this.videoElem.readyState < 3) {
+      await new Promise(resolve => {
+        if(!(this.videoElem.readyState < 3)) {
+          resolve()
+          return
+        }
+
+        const handleCanPlay = () => {
+          off(this.videoElem, 'canplay', handleCanPlay)
+          resolve()
+        }
+        on(this.videoElem, 'canplay', handleCanPlay)
+      })
+        
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 })) // Buffering/rendering budget for low-end devices
+    } else {
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
+    }
+
+    if(document.visibilityState === 'hidden') {
+      await new Promise(resolve => raf(resolve))
     }
   }
 
@@ -1133,21 +1168,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initSettings() {
     this.settings = await new Settings(this, this.settingsMenuBtnParent, this.videoPlayerElem)
     parseSettingsToSentry(this.settings)
-    
-    if(!this.settings.prioritizePageLoadSpeed) return
-
-    if(!this.videoElem || this.videoElem.networkState < 1 || this.videoElem.readyState < 3) {
-      while(!this.videoElem || this.videoElem.networkState < 1 || this.videoElem.readyState < 3) {
-        await new Promise(resolve => setTimeout(resolve, 500 ))
-      }
-      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 })) // Buffering/rendering budget for low-end devices
-    } else {
-      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
-    }
-
-    if(document.visibilityState === 'hidden') {
-      await new Promise(resolve => raf(resolve))
-    }
   }
 
   initVideoOverlay() {
@@ -1313,6 +1333,29 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.settings.set('videoScale', videoScale, true)
   }
 
+  getView = () => {
+    if(!this.settings.enabled)
+      return VIEW_DISABLED
+
+    if(!document.contains(this.videoPlayerElem))
+      return VIEW_DETACHED
+
+    if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
+      return VIEW_FULLSCREEN
+
+    if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
+      return VIEW_POPUP
+
+    if(this.ytdWatchFlexyElemFromVideo
+      ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
+      : this.playerTheaterContainerElemFromVideo
+    ) {
+      return VIEW_THEATER
+    }
+
+    return VIEW_SMALL
+  }
+
   updateView = () => {
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
 
@@ -1325,24 +1368,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     const wasView = this.view
-    if(!this.settings.enabled) {
-      this.view = VIEW_DISABLED
-    } else if(document.contains(this.videoPlayerElem)) {
-      if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
-        this.view = VIEW_FULLSCREEN
-      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
-        this.view = VIEW_POPUP
-      else if(
-        this.ytdWatchFlexyElemFromVideo
-          ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
-          : this.playerTheaterContainerElemFromVideo
-      )
-        this.view = VIEW_THEATER
-      else
-        this.view = VIEW_SMALL
-    } else {
-      this.view = VIEW_DETACHED
-    }
+    this.view = this.getView()
     if(wasView === this.view) return false
 
     const videoPlayerSizeUpdated = this.updateImmersiveMode()
@@ -2781,8 +2807,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
-    this.initializedTime = performance.now()
-    this.settings.onLoaded()
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
