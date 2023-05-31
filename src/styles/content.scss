@@ -1239,9 +1239,17 @@ html[data-ambientlight-enabled="true"] {
         will-change: opacity; // conflicts with backdrop-filter
       }
       
-      &.at-top:not(:hover):not(:focus-within) {
-        transition: opacity .15s ease-out;
-        opacity: 0;
+      @supports selector(:has(*)) {
+        &.at-top:not(:hover):not(:has(:focus-visible)) {
+          transition: opacity .15s ease-out;
+          opacity: 0;
+        }
+      }
+      @supports not (selector(:has(*))) {
+        &.at-top:not(:hover):not(:focus-within) {
+          transition: opacity .15s ease-out;
+          opacity: 0;
+        }
       }
     }
   }
