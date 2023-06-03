@@ -1167,7 +1167,7 @@ html[data-ambientlight-enabled="true"] {
     top: 0;
     left: 0;
     contain: strict;
-    // will-change: transform; // Improves resizing performance
+    will-change: transform; // Improves resizing performance
   }
 
   .ambientlight__clip {
