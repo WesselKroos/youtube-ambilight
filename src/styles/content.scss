@@ -2654,16 +2654,22 @@ html[data-ambientlight-enabled="true"] {
           }
 
           @include scrollbar-light-thin;
-          &:not(:hover)::-webkit-scrollbar-thumb:not(:hover) {
-            background-color: transparent;
+          &:not(:hover) {
+            &::-webkit-scrollbar-thumb:not(:hover) {
+              background-color: transparent;
+            }
+            scrollbar-color: transparent transparent !important;
           }
         }
       }
     }
     &[dark] ytd-watch-flexy[flexy][is-two-columns_] #secondary-inner.ytd-watch-flexy #related.ytd-watch-flexy {
       @include scrollbar-dark-thin;
-      &:not(:hover)::-webkit-scrollbar-thumb:not(:hover) {
-        background-color: transparent;
+      &:not(:hover) {
+        &::-webkit-scrollbar-thumb:not(:hover) {
+          background-color: transparent;
+        }
+        scrollbar-color: transparent transparent !important;
       }
     }
   }
