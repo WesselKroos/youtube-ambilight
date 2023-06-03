@@ -20,6 +20,7 @@
   }
   &::-webkit-scrollbar-thumb {
     border: 4px solid transparent;
+    border-radius: 9px;
     background-clip: content-box;
     background-color: rgba(255, 255, 255, .2);
   }
@@ -36,6 +37,7 @@
   }
   &::-webkit-scrollbar-thumb {
     border: 4px solid transparent;
+    border-radius: 9px;
     background-clip: content-box;
     background-color: rgba(0, 0, 0, .2);
   }
@@ -255,6 +257,9 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-app[scrolling] {
     overflow-x: hidden !important;
+    &:hover {
+      will-change: scroll-position !important; /* Improves scroll performance */
+    }
   }
 
   /* Prevent YouTube's flickering scrollbar bug */
@@ -1132,14 +1137,6 @@ html[data-ambientlight-enabled="true"] {
     } 
   }
 
-  /* Improve scrolling smoothness */
-  .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
-  ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
-  .ytd-macro-markers-list-renderer#contents // Chapters
-  {
-    will-change: scroll-position !important;
-  }
-
   /* Ambientlight */
 
   .ambientlight,
@@ -1170,7 +1167,7 @@ html[data-ambientlight-enabled="true"] {
     top: 0;
     left: 0;
     contain: strict;
-    will-change: transform; // Improves resizing performance
+    // will-change: transform; // Improves resizing performance
   }
 
   .ambientlight__clip {
@@ -1286,7 +1283,10 @@ html[data-ambientlight-enabled="true"] {
   opacity: 0;
   cursor: default;
   transition: none;
-  will-change: width,height,transform,opacity !important; // Improves scrolling performance
+  &:hover {
+    will-change: scroll-position !important; // Improves scrolling performance
+  }
+
   .ytp-fullscreen & {
     width: 490px;
     max-height: calc(100% - 140px);
@@ -2538,6 +2538,7 @@ html[data-ambientlight-enabled="true"] {
   .html5-video-player {
     overflow: var(--ytal-html5-video-player-overflow, hidden);
   }
+
   #primary .ytp-gradient-bottom {
     -webkit-mask-image: linear-gradient(to right, 
       transparent 0%, 
@@ -2553,6 +2554,118 @@ html[data-ambientlight-enabled="true"] {
       rgb(0, 0, 0, .55) calc(100% - 50px), 
       rgb(0, 0, 0, .3) calc(100% - 25px), 
       transparent 100%);
+  }
+
+  // Improve layout rendering performance to compensate for the performance cost of the ambient light 
+
+  .html5-video-player {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 110px;
+  }
+  primary-inner > #info {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 110px;
+  }
+  primary-inner > #meta {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 180px;
+  }
+  primary-inner > #ticket-shelf {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 140px;
+  }
+  ytd-comment-thread-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 100px;
+  }
+  ytd-playlist-panel-video-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 70px;
+  }
+  ytd-playlist-video-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 101px;
+  }
+  /*yt-related-chip-cloud-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 51px;
+  }*/
+  ytd-compact-video-renderer,
+  ytd-compact-radio-renderer,
+  ytd-compact-playlist-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 94px;
+  }
+  ytd-grid-video-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 239px;
+  }
+  yt-live-chat-text-message-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 32px;
+  }
+  yt-live-chat-paid-message-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 32px;
+  }
+  yt-live-chat-membership-item-renderer {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1px auto 32px;
+  }
+
+  /* Improve scrolling smoothness */
+  .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
+  ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
+  .ytd-macro-markers-list-renderer#contents // Chapters
+  {
+    &:hover {
+      will-change: scroll-position !important;
+    }
+  }
+
+  /* Limit related videos to scrollable list with a height of 100vh */
+  &[data-ambientlight-related-scrollbar] {
+    ytd-watch-flexy[flexy][is-two-columns_] {
+      #secondary-inner.ytd-watch-flexy {
+        height: 100%;
+        min-height: calc(3000px + 100vh); /* Must at least be high enough to fit the panels + related list */
+        
+        #related.ytd-watch-flexy {
+          position: sticky;
+          top: 56px;
+          height: calc(100vh - 56px);
+          overflow-x: hidden;
+          overflow-y: auto;
+          &:hover {
+            will-change: scroll-position;
+          }
+
+          @include scrollbar-light-thin;
+          &:not(:hover)::-webkit-scrollbar-thumb:not(:hover) {
+            background-color: transparent;
+          }
+        }
+      }
+    }
+    &[dark] ytd-watch-flexy[flexy][is-two-columns_] #secondary-inner.ytd-watch-flexy #related.ytd-watch-flexy {
+      @include scrollbar-dark-thin;
+      &:not(:hover)::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+    }
   }
 }
 

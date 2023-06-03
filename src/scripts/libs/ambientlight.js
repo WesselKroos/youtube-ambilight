@@ -1692,7 +1692,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
     document.documentElement.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
 
-
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
     fillOpacity = (fillOpacity !== 10) ? ((fillOpacity + 100) / 200) : ''
@@ -2879,6 +2878,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-hide-scrollbar')
+    html.removeAttribute('data-ambientlight-related-scrollbar')
 
     this.updateSizes()
     this.updateVideoPlayerSize()
@@ -2898,6 +2898,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     html.setAttribute('data-ambientlight-enabled', true)
     if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+    if(this.settings.relatedVideosListWithScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
     
     ;(async () => {
       await new Promise(resolve => raf(resolve))

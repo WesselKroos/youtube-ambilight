@@ -224,6 +224,13 @@ const SettingsConfig = [
     default: false
   },
   {
+    name: 'relatedVideosListWithScrollbar',
+    label: 'Related videos list with scrollbar',
+    type: 'checkbox',
+    advanced: true,
+    default: true
+  },
+  {
     name: 'hideScrollbar',
     label: 'Hide scrollbar',
     type: 'checkbox',

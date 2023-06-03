@@ -694,6 +694,7 @@ export default class Settings {
             'directionBottomEnabled',
             'directionLeftEnabled',
             'advancedSettings',
+            'relatedVideosListWithScrollbar',
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
@@ -737,6 +738,13 @@ export default class Settings {
 
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
+          }
+
+          if (setting.name === 'relatedVideosListWithScrollbar' && this.enabled) {
+            if(value)
+              html.setAttribute('data-ambientlight-related-scrollbar', true)
+            else
+              html.removeAttribute('data-ambientlight-related-scrollbar')
           }
 
           if (setting.name === 'hideScrollbar' && this.enabled) {
