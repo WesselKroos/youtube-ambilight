@@ -228,7 +228,7 @@ const SettingsConfig = [
     label: 'Related videos list with scrollbar',
     type: 'checkbox',
     advanced: true,
-    default: true
+    default: false
   },
   {
     name: 'hideScrollbar',

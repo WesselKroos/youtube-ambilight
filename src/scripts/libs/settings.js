@@ -216,9 +216,11 @@ export default class Settings {
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
-                The default background color of boxes and buttons has been inverted to match the YouTube style.
-                If you like the old style more you can set the "Page content > Buttons & boxes background opacity" setting to a negative value to restore them to the old style.
-              </span>
+                <ul>
+                  <li>The list of related videos has been made sticky so that you can scroll faster through the comments under the video.</li>
+                  ${''/*<li>The default background color of boxes and buttons has been inverted to match the YouTube style.
+                  If you like the old style more you can set the "Page content > Buttons & boxes background opacity" setting to a negative value to restore them to the old style.</li>*/}
+              </ul></span>
             </div>
           </div>
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">

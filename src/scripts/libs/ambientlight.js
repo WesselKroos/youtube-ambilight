@@ -1752,6 +1752,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     this.mastheadElem.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
     this.mastheadElem.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+    if(textAndBtnOnly) {
+      this.mastheadElem.setAttribute('data-ambientlight-text-shadow', true)
+    } else {
+      this.mastheadElem.removeAttribute('data-ambientlight-text-shadow')
+    }
 
     // Content shadow
     const contentShadowSize = this.settings.surroundingContentShadowSize / 5
@@ -1769,7 +1774,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     document.body.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
     document.body.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
-
+    if(textAndBtnOnly) {
+      document.body.setAttribute('data-ambientlight-text-shadow', true)
+    } else {
+      document.body.removeAttribute('data-ambientlight-text-shadow')
+    }
 
     // Video shadow
     const videoShadowSize = parseFloat(this.settings.videoShadowSize, 10) / 2 + Math.pow(this.settings.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
