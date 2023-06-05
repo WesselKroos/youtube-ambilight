@@ -2530,6 +2530,9 @@ html[data-ambientlight-enabled="true"] {
     content-visibility: auto;
     contain-intrinsic-size: auto 100px;
   }
+  ytd-playlist-panel-renderer #top-level-buttons-computed {
+    z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
+  }
   ytd-playlist-panel-video-renderer {
     content-visibility: auto;
     contain-intrinsic-size: auto 62px;
@@ -2544,15 +2547,11 @@ html[data-ambientlight-enabled="true"] {
     ytd-compact-playlist-renderer {
       content-visibility: auto;
       contain-intrinsic-size: auto 94px;
+
+      tp-yt-paper-tooltip.ytd-channel-name #tooltip {
+        margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+      }
     }
-  }
-
-  #top-level-buttons-computed {
-    z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
-  }
-
-  tp-yt-paper-tooltip.ytd-channel-name #tooltip {
-    margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
   }
 
 
