@@ -2532,7 +2532,7 @@ html[data-ambientlight-enabled="true"] {
   }
   ytd-playlist-panel-video-renderer {
     content-visibility: auto;
-    contain-intrinsic-size: auto 70px;
+    contain-intrinsic-size: auto 62px;
   }
   yt-related-chip-cloud-renderer {
     content-visibility: auto;
@@ -2545,6 +2545,14 @@ html[data-ambientlight-enabled="true"] {
       content-visibility: auto;
       contain-intrinsic-size: auto 94px;
     }
+  }
+
+  #top-level-buttons-computed {
+    z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
+  }
+
+  tp-yt-paper-tooltip.ytd-channel-name #tooltip {
+    margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
   }
 
 
