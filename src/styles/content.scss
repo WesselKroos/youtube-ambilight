@@ -2644,6 +2644,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   /* Improve scrolling smoothness */
+  #guide-inner-content.ytd-app, // youtube menu
   .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
   ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
   .ytd-macro-markers-list-renderer#contents // Chapters
@@ -2652,11 +2653,6 @@ html[data-ambientlight-enabled="true"] {
     // content-visibility: auto;
     // contain-intrinsic-size: auto 1px auto 110px;
 
-    &:hover {
-      will-change: scroll-position !important;
-    }
-  }
-  #guide-inner-content.ytd-app { // youtube menu
     &:hover {
       will-change: scroll-position !important;
     }
@@ -2672,8 +2668,8 @@ html[data-ambientlight-enabled="true"] {
         
       #related.ytd-watch-flexy {
         position: sticky;
-        top: 85px;
-        height: calc(100vh - 85px);
+        top: 80px;
+        height: calc(100vh - 104px);
         overflow-x: hidden;
         overflow-y: auto;
         &:hover {
