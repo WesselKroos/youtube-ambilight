@@ -1832,7 +1832,9 @@ html[data-ambientlight-enabled="true"] {
 
     &,
     &:hover {
-      background: #22aa00 !important;
+      background: #115500 !important;
+      box-shadow: #22aa00 0 0 0 4px inset;
+      border-top-left-radius: 12px;
     }
 
     &::before {
@@ -1861,9 +1863,9 @@ html[data-ambientlight-enabled="true"] {
   }
 
   li {
-    margin: 0 0 0 15px;
+    margin: 10px 0 0 15px;
     padding: 0;
-    line-height: 16px;
+    line-height: 1.2em;
   }
 
   .ytp-menuitem-label {

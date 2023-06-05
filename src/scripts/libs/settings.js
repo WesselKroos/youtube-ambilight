@@ -217,9 +217,9 @@ export default class Settings {
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
                 <ul>
-                  <li>The list of related videos has been made sticky so that you can scroll faster through the comments under the video.</li>
-                  ${''/*<li>The default background color of boxes and buttons has been inverted to match the YouTube style.
-                  If you like the old style more you can set the "Page content > Buttons & boxes background opacity" setting to a negative value to restore them to the old style.</li>*/}
+                  <li>The speed of interactions (scrolling lists, clicking buttons, switching between small, theater and fullscreen views) has been improved. Please let me know if it is noticeable or has worsend for you instead through the feedback link below.
+                  <li>The background color of boxes and buttons has been inverted to match YouTube's style.
+                  To return back to the old style you can change the "Page content > Buttons & boxes background opacity" setting to a negative value.</li>
               </ul></span>
             </div>
           </div>

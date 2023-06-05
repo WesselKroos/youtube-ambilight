@@ -226,7 +226,7 @@ const SettingsConfig = [
   {
     name: 'relatedScrollbar',
     label: 'Related videos as scrollable list',
-    description: 'Improves your scrolling speed through comments',
+    description: 'Also improves scrolling through comments',
     type: 'checkbox',
     advanced: true,
     default: false
