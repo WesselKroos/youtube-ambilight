@@ -97,18 +97,13 @@ yt-live-chat-renderer #panel-pages.yt-live-chat-renderer {
 yt-live-chat-text-message-renderer,
 yt-live-chat-paid-message-renderer,
 yt-live-chat-membership-item-renderer {
-  // contain: content;
   content-visibility: auto;
   contain-intrinsic-size: auto 56px;
 }
 
-/* Improve scrolling smoothness */
-#item-scroller.yt-live-chat-item-list-renderer {
-  // contain: content;
-  // content-visibility: auto;
-  // contain-intrinsic-size: auto 1px auto 500px;
 
-  &:hover {
-    will-change: scroll-position !important;
-  }
+/* Improve scrolling smoothness */
+
+#item-scroller.yt-live-chat-item-list-renderer:hover {
+  will-change: scroll-position !important;
 }

@@ -1051,32 +1051,8 @@ html[data-ambientlight-enabled="true"] {
         }
       }
       
-      .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-        // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
-        &.yt-spec-button-shape-next {
-          // &--segmented-start,
-          // &--segmented-end {
-          //   outline: 0 !important;
-          // }
-          // &--segmented-start {
-          //   box-shadow: (
-          //     var(--yt-spec-10-percent-layer) -1px 0,
-          //     var(--yt-spec-10-percent-layer) 0 -1px,
-          //     var(--yt-spec-10-percent-layer) 0 1px
-          //   ) !important;
-          // }
-          // &--segmented-end {
-          //   box-shadow: (
-          //     var(--yt-spec-10-percent-layer) 1px 0,
-          //     var(--yt-spec-10-percent-layer) 0 -1px,
-          //     var(--yt-spec-10-percent-layer) 0 1px
-          //   ) !important;
-          // }
-        }
-        
-        &:not(:hover):not(:focus) {
-          background: var(--ytal-background) !important;
-        }
+      .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
+        background: var(--ytal-background) !important;
       }
     }
     
@@ -2547,89 +2523,18 @@ html[data-ambientlight-enabled="true"] {
       transparent 100%);
   }
 
-  // Improve menu translate animation
-
-  // body,
-  // body.lock-scrollbar {
-  //   overflow-x: hidden !important;
-  //   overflow-y: scroll !important;
-  // }
-  // #contentContainer.tp-yt-app-drawer {
-  //   contain: content;
-  //   visibility: visible;
-  // }
 
   // Improve layout rendering performance to compensate for the performance cost of the ambient light 
 
-  // #masthead-container {
-  //   contain: content;
-  //   // content-visibility: auto;
-  //   // contain-intrinsic-size: auto 1px auto 56px;
-  // }
-  // // #player {
-  // //   contain: content;
-  // //   content-visibility: auto;
-  // //   contain-intrinsic-size: auto 1px auto 110px;
-  // // }
-  // .html5-video-player {
-  //   contain: content;
-  //   // content-visibility: auto;
-  //   // contain-intrinsic-size: auto 1px auto 110px;
-  // }
-
-  // ytd-live-chat-frame {
-  //   contain: content;
-  //   // content-visibility: auto;
-  //   // contain-intrinsic-size: auto 1px auto 600px;
-  // }
-
-  // #related {
-  //   contain: content;
-  // }
-
-  // ytd-watch-metadata {
-  //   contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 206px;
-  // }
-  // primary-inner > #info {
-  //   contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 110px;
-  // }
-  // primary-inner > #meta {
-  //   contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 180px;
-  // }
-  // primary-inner > #ticket-shelf {
-  //   contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 140px;
-  // }
-  // ytd-comments {
-  //   contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 500px;
-  // }
   ytd-comment-thread-renderer {
-    // contain: content;
     content-visibility: auto;
     contain-intrinsic-size: auto 100px;
   }
   ytd-playlist-panel-video-renderer {
-    // contain: content;
     content-visibility: auto;
     contain-intrinsic-size: auto 70px;
   }
-  
-  // ytd-playlist-video-renderer {
-  //   // contain: content;
-  //   content-visibility: auto;
-  //   contain-intrinsic-size: auto 1px auto 101px;
-  // }
   yt-related-chip-cloud-renderer {
-    // contain: content;
     content-visibility: auto;
     contain-intrinsic-size: auto 100px;
   }
@@ -2637,28 +2542,27 @@ html[data-ambientlight-enabled="true"] {
     ytd-compact-video-renderer,
     ytd-compact-radio-renderer,
     ytd-compact-playlist-renderer {
-      // contain: content;
       content-visibility: auto;
       contain-intrinsic-size: auto 94px;
     }
   }
 
+
   /* Improve scrolling smoothness */
+
   #guide-inner-content.ytd-app, // youtube menu
   .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
   ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
   .ytd-macro-markers-list-renderer#contents // Chapters
   {
-    // contain: content;
-    // content-visibility: auto;
-    // contain-intrinsic-size: auto 1px auto 110px;
-
     &:hover {
       will-change: scroll-position !important;
     }
   }
 
+
   /* Limit related videos to scrollable list with a height of 100vh */
+
   &[data-ambientlight-related-scrollbar] {
     ytd-watch-flexy[flexy][is-two-columns_] {
       #secondary-inner.ytd-watch-flexy {
@@ -2696,10 +2600,6 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  // yt-touch-feedback-shape {
-  //   display: none !important;
-  // }
-
   .yt-spec-touch-feedback-shape__stroke,
   .yt-spec-touch-feedback-shape__fill,
   .stroke.yt-interaction,
@@ -2707,6 +2607,7 @@ html[data-ambientlight-enabled="true"] {
     will-change: initial !important;
   }
 }
+
 
 .ytal-bezel {
   pointer-events: none;
@@ -2750,11 +2651,6 @@ html[data-ambientlight-enabled="true"] {
   }
 }
 
-
-// // override via extra &.ytp-settings-menu selector
-// .ytp-popup.ytp-settings-menu.disable-youtube-ambient-mode-workaround {
-//   visibility: hidden !important;
-// }
 
 .ambientlight__chromium-bug-video-jitter-workaround {
   position: absolute;
