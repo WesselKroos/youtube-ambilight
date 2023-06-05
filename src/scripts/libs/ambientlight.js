@@ -2907,7 +2907,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     html.setAttribute('data-ambientlight-enabled', true)
     if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
-    if(this.settings.relatedVideosListWithScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
+    if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
     
     ;(async () => {
       await new Promise(resolve => raf(resolve))

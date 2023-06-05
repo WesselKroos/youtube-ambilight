@@ -2502,9 +2502,15 @@ html[data-ambientlight-enabled="true"] {
     
   }
 
+
+  // Zoomed in video overflow prevention
+
   .html5-video-player {
     overflow: var(--ytal-html5-video-player-overflow, hidden);
   }
+
+
+  // Soft video controls shadow gradient on the sides
 
   #primary .ytp-gradient-bottom {
     -webkit-mask-image: linear-gradient(to right, 
@@ -2521,6 +2527,13 @@ html[data-ambientlight-enabled="true"] {
       rgb(0, 0, 0, .55) calc(100% - 50px), 
       rgb(0, 0, 0, .3) calc(100% - 25px), 
       transparent 100%);
+  }
+
+
+  // Faster comments loading
+
+  #below {
+    margin-bottom: 50vh;
   }
 
 
