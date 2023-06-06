@@ -218,14 +218,17 @@ export default class Settings {
                }<b>Important changes in version ${version}:</b>
                 <ul>
                   <li>${''
-                    }The speed of interactions has been improved (scrolling lists, clicking buttons, ${''
-                    }switching between small, theater and fullscreen, etc). You can let me know if the improvement ${''
-                    }is noticeable or if it has worsend for you instead through the feedback link down below.
-                  </li>
-                  <li>${''
                     }The background color of boxes and buttons has been inverted to match YouTube's style. ${''
                     }To return back to the old style you can change the "Page content > Buttons & boxes background ${''
                     }opacity" setting to a negative value.
+                  </li>
+                  <li>${''
+                    }The speed of interactions has been improved when the ambient light is turned on ${''
+                    }(scrolling lists, clicking buttons, switching between small, theater and fullscreen, etc).
+                    To observe the speed difference, scroll through a lot of comments (200 or more) ${''
+                    }and then compare the interaction speed between having the ambient light turned on versus off.
+                     You can let me know if the improvement is noticeable for you ${''
+                    }or warn me if it has worsend for you instead through the feedback link down below.
                   </li>
               </ul></span>
             </div>
