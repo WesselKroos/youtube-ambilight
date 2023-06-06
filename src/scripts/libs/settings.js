@@ -43,7 +43,8 @@ export default class Settings {
       } else {
         if([
           'resolution',
-          'frameFading'
+          'frameFading',
+          'flickerReduction'
         ].includes(setting.name)) {
           settingsToRemove.push(setting)
         }
@@ -149,6 +150,7 @@ export default class Settings {
     this.set('webGL', false, true, true)
     this.updateVisibility()
 
+    this.saveStorageEntry('flickerReduction', undefined) // Override potential crash reason
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
 
@@ -188,10 +190,12 @@ export default class Settings {
     settingsMenuBtnTooltipTextWrapper.className = 'ytp-tooltip-text-wrapper'
     settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper)
 
-    const settingsMenuBtnTooltipText = document.createElement('span')
-    settingsMenuBtnTooltipText.className = 'ytp-tooltip-text ytp-tooltip-text-no-title'
-    settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
-    settingsMenuBtnTooltipTextWrapper.prepend(settingsMenuBtnTooltipText)
+    this.settingsMenuBtnTooltipText = document.createElement('span')
+    this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-text ytp-tooltip-text-no-title'
+    this.settingsMenuBtnTooltipText.appendChild(document.createTextNode('Ambient light loading is paused.'))
+    this.settingsMenuBtnTooltipText.appendChild(document.createElement('br'))
+    this.settingsMenuBtnTooltipText.appendChild(document.createTextNode('Waiting for the video and page to be loaded first...'))
+    settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText)
 
     this.menuBtn.prepend(settingsMenuBtnTooltip)
     const ytSettingsBtn = document.querySelector('ytd-watch-flexy [data-tooltip-target-id="ytp-autonav-toggle-button"]')
@@ -208,6 +212,27 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
+          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+            <div class="ytp-menuitem-label" rowspan="2">
+              <span class="ytpa-updates">${''
+               }<b>Important changes in version ${version}:</b>
+                <ul>
+                  <li>${''
+                    }The background color of boxes and buttons has been inverted to match YouTube's style. ${''
+                    }To return back to the old style you can change the "Page content > Buttons & boxes background ${''
+                    }opacity" setting to a negative value.
+                  </li>
+                  <li>${''
+                    }The speed of interactions has been improved when the ambient light is turned on ${''
+                    }(scrolling lists, clicking buttons, switching between small, theater and fullscreen, etc).
+                    To observe the speed difference, scroll through a lot of comments (200 or more) ${''
+                    }and then compare the interaction speed between having the ambient light turned on versus off.
+                     You can let me know if the improvement is noticeable for you ${''
+                    }or warn me if it has worsend for you instead through the feedback link down below.
+                  </li>
+              </ul></span>
+            </div>
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>
@@ -348,6 +373,8 @@ export default class Settings {
         </div>
       </div>`
 
+    this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
+    on(this.updateItemElem, 'click', this.hideUpdatesMessage)
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
     this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info')
@@ -397,7 +424,7 @@ export default class Settings {
 
     this.bezelElem = this.createBezelElem()
     on(this.bezelElem, 'animationend', () => {
-      this.bezelElem.classList.add('yta-bezel--no-animation')
+      this.bezelElem.classList.add('ytal-bezel--no-animation')
     })
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
@@ -557,6 +584,8 @@ export default class Settings {
             'surroundingContentShadowOpacity',
             'surroundingContentFillOpacity',
             'surroundingContentImagesOpacity',
+            'pageBackgroundGreyness',
+            'videoDebandingStrength',
             'debandingStrength',
             'videoShadowSize',
             'videoShadowOpacity',
@@ -581,8 +610,15 @@ export default class Settings {
                 this.set('framerateLimit', defaultValue, true)
               }
             }
-            await this.updateWebGLCtx()
+            await this.updateProjectorWebGLCtx()
             this.updateVisibility()
+          }
+
+          if ([
+            'flickerReduction'
+          ].some(name => name === setting.name)) {
+            await this.updateBufferProjectorWebGLCtx()
+            this.ambientlight.buffersCleared = true
           }
 
           if ([
@@ -602,6 +638,15 @@ export default class Settings {
           ) {
             this.ambientlight.canvassesInvalidated = true
           }
+
+          if (
+            setting.name === 'spread' || 
+            setting.name === 'blur'
+          ) {
+            if(this.ambientlight.chromiumBugVideoJitterWorkaround?.update)
+              this.ambientlight.chromiumBugVideoJitterWorkaround.update()
+          }
+
           if(setting.name === 'vibrance') {
             try {
             if(!(await this.ambientlight.projector.updateVibrance())) return
@@ -661,6 +706,7 @@ export default class Settings {
             'directionBottomEnabled',
             'directionLeftEnabled',
             'advancedSettings',
+            'relatedScrollbar',
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
@@ -704,6 +750,13 @@ export default class Settings {
 
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
+          }
+
+          if (setting.name === 'relatedScrollbar' && this.enabled) {
+            if(value)
+              html.setAttribute('data-ambientlight-related-scrollbar', true)
+            else
+              html.removeAttribute('data-ambientlight-related-scrollbar')
           }
 
           if (setting.name === 'hideScrollbar' && this.enabled) {
@@ -818,7 +871,7 @@ export default class Settings {
 
   createBezelElem() {
     const elem = document.createElement('div')
-    elem.className = 'yta-bezel ytp-bezel yta-bezel--no-animation'
+    elem.className = 'ytal-bezel ytp-bezel ytal-bezel--no-animation'
     elem.setAttribute('role', 'status')
 
     const iconElem = document.createElement('div')
@@ -848,7 +901,7 @@ export default class Settings {
 
   createMenuButton() {
     const elem = document.createElement('button')
-    elem.className = 'ytp-button ytp-ambientlight-settings-button'
+    elem.className = 'ytp-button ytp-ambientlight-settings-button is-loading'
     elem.setAttribute('aria-owns', 'ytp-id-190')
 
     const xmlns = "http://www.w3.org/2000/svg"
@@ -875,15 +928,30 @@ export default class Settings {
     return elem
   }
 
-  resetFrameFading() {
-    const defaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
-    if(this['frameFading'] === defaultValue) return
+  async updateBufferProjectorWebGLCtx() {
+    if(!this.ambientlight.projectorBuffer?.ctx?.initCtx) return // Can be undefined when migrating from previous settings
 
-    this.set('frameFading', defaultValue, true)
-    this.updateWebGLCtx()
+    try {
+      await new Promise(resolve => setTimeout(resolve, 0)) // Await for update sizes
+      if(!this.ambientlight.projectorBuffer?.ctx?.initCtx) return // Can be undefined when migrating from previous settings
+  
+      if(!(await this.ambientlight.projectorBuffer.ctx.initCtx(true))) return
+      this.setWarning('')
+    } catch(ex) {
+      this.ambientlight.projectorBuffer.ctx.setWebGLWarning('change')
+      throw ex
+    }
   }
 
-  async updateWebGLCtx() {
+  resetFrameFading() {
+    const frameFadingDefaultValue = SettingsConfig.find(s => s.name === 'frameFading')?.default
+    if(this['frameFading'] === frameFadingDefaultValue) return
+
+    this.set('frameFading', frameFadingDefaultValue, true)
+    this.updateProjectorWebGLCtx()
+  }
+
+  async updateProjectorWebGLCtx() {
     if(!this.ambientlight.projector?.initCtx) return // Can be undefined when migrating from previous settings
 
     try {
@@ -938,9 +1006,15 @@ export default class Settings {
 
   menuOnCloseScrollBottom = -1
   menuOnCloseScrollHeight = 1
-  onSettingsBtnClicked = () => {
+  onSettingsBtnClicked = async () => {
     const isOpen = this.menuElem.classList.contains('is-visible')
     if (isOpen) return
+
+    off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
+
+    while(!this.ambientlight.initializedTime) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
     this.menuElem.classList.remove('fade-out')
     this.menuElem.classList.add('is-visible')
@@ -959,7 +1033,6 @@ export default class Settings {
       this.ambientlight.videoPlayerElem.classList.add('ytp-ambientlight-settings-shown')
     }
 
-    off(this.menuBtn, 'click', this.onSettingsBtnClickedListener)
     setTimeout(() => {
       on(body, 'click', this.onCloseMenu, undefined, (listener) => this.onCloseMenuListener = listener)
       this.scrollToWarning()
@@ -992,11 +1065,22 @@ export default class Settings {
     setTimeout(() => {
       on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)
     }, 100)
+
+    this.hideUpdatesBadge()
   }
 
   onSettingsFadeOutEnd = () => {
     this.menuElem.classList.remove('fade-out', 'is-visible')
     off(this.menuElem, 'animationend', this.onSettingsFadeOutEndListener)
+  }
+
+  onLoaded = () => {
+    if(!this.menuBtn.classList.contains('is-loading')) return
+    
+    this.menuBtn.classList.remove('is-loading')
+    this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings'
+    
+    this.showUpdatesMessage()
   }
 
   
@@ -1024,7 +1108,7 @@ export default class Settings {
     {
       name: 'frameFading',
       controllers: ['frameBlending']
-    },
+    }
   ]
   optionalSettings = [
     {
@@ -1074,7 +1158,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'resolution', 'vibrance', 'frameFading' ],
+      names: [ 'resolution', 'vibrance', 'frameFading', 'flickerReduction' ],
       visible: () => this.webGL
     }
   ]
@@ -1262,10 +1346,10 @@ export default class Settings {
   }
 
   displayBezel(text, strike = false) {
-    this.bezelElem.classList.add('yta-bezel--no-animation')
+    this.bezelElem.classList.add('ytal-bezel--no-animation')
     setTimeout(() => {
-      this.bezelElem.classList.toggle('yta-bezel--strike', strike)
-      this.bezelElem.classList.remove('yta-bezel--no-animation')
+      this.bezelElem.classList.toggle('ytal-bezel--strike', strike)
+      this.bezelElem.classList.remove('ytal-bezel--no-animation')
       this.bezelTextElem.textContent = text
     }, 0);
   }
@@ -1284,6 +1368,44 @@ export default class Settings {
 
     this.infoElem.textContent = message
     this.infoItemElem.style.display = message ? '' : 'none'
+  }
+
+  showUpdatesMessage = async () => {
+    try {
+      if(!version) return
+
+      let entries;
+      try {
+        entries = await contentScript.getStorageEntryOrEntries(['shown-version-updates'], true) || {}
+      } catch {
+        return
+      }
+      const installedVersion = entries['shown-version-updates']
+      if(installedVersion ===  version) return
+
+      this.updateItemElem.style.display = ''
+      this.menuBtn.classList.toggle('has-updates', true)
+      this.menuBtn.title = 'Ambient light has been updated with new settings\nClick to see what\'s new'
+      this.showingUpdatesMessage = true
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
+  }
+
+  hideUpdatesMessage = () => {
+    if(this.updateItemElem.style.display === 'none') return
+
+    this.updateItemElem.style.display = 'none'
+    this.showingUpdatesMessage = undefined
+    this.hideUpdatesBadge()
+  }
+
+  hideUpdatesBadge = () => {
+    if(!this.menuBtn.classList.contains('has-updates')) return
+    this.menuBtn.classList.toggle('has-updates', false)
+    this.menuBtn.title = ''
+
+    contentScript.setStorageEntry('shown-version-updates', version, false)
   }
 
   handleDocumentVisibilityChange = () => {

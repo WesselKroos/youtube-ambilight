@@ -2,6 +2,23 @@ import { appendErrorStack } from "./generic";
 import { workerFromCode } from "./worker";
 
 const workerCode = function () {
+  // This is a copy of the SafeOffscreenCanvas in generic.js because this is inside a worker
+  class SafeOffscreenCanvas {
+    constructor(width, height, pixelated) {
+      if(typeof OffscreenCanvas !== 'undefined') {
+        return new OffscreenCanvas(width, height)
+      } else {
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        if (pixelated) {
+          canvas.style.imageRendering = 'pixelated'
+        }
+        return canvas
+      }
+    }
+  }
+
   let canvas;
   let ctx;
   const getStoryboardPageImageDatas = async (storyboard, page) => {
@@ -11,7 +28,7 @@ const workerCode = function () {
     const bitmap = await createImageBitmap(blob);
 
     if(!canvas) {
-      canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      canvas = new SafeOffscreenCanvas(bitmap.width, bitmap.height);
       ctx = canvas.getContext('2d');
     } else if(
       canvas.width !== bitmap.width ||
@@ -193,6 +210,7 @@ const getStoryboard = (ytdWatchFlexyElem) => {
   const spec = ytdWatchFlexyElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
   if(!spec) return
 
+  // eslint-disable-next-line no-unused-vars
   const [baseUrl, _1, _2, sb] = spec
     .split('|')
     .map(i => i?.split('#'));
@@ -258,6 +276,6 @@ export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
   return await onMessagePromise
 }
 
-export const cancelGetAverageVideoFramesDifference = async () => {
+export const cancelGetAverageVideoFramesDifference = () => {
   workerMessageId++;
 }

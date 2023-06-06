@@ -1,9 +1,11 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
+import eslint from '@rollup/plugin-eslint'
 
 const common = {
   context: 'window',
   plugins: [
+    eslint(),
     resolve(),
     babel({
       babelHelpers: 'bundled',

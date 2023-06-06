@@ -151,7 +151,7 @@ const SettingsConfig = [
     description: 'While scrolled down',
     type: 'list',
     default: 100,
-    min: 0,
+    min: -100,
     max: 100,
     step: 1,
     advanced: true
@@ -203,14 +203,32 @@ const SettingsConfig = [
     label: 'Buttons & boxes background opacity',
     type: 'list',
     default: 10,
-    min: 0,
+    min: -100,
     max: 100,
     step: 1
+  },
+  {
+    name: 'pageBackgroundGreyness',
+    label: 'Background greyness',
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: .1,
+    new: true
   },
   {
     name: 'immersiveTheaterView',
     label: 'Hide everything in theater mode',
     type: 'checkbox',
+    default: false
+  },
+  {
+    name: 'relatedScrollbar',
+    label: 'Related videos as scrollable list',
+    description: 'Also improves scrolling through comments',
+    type: 'checkbox',
+    advanced: true,
     default: false
   },
   {
@@ -252,6 +270,21 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: .1
+  },
+  {
+    name: 'videoDebandingStrength',
+    label: 'Debanding (noise)',
+    questionMark: {
+      title: 'Click for more information about Dithering',
+      href: 'https://www.lifewire.com/what-is-dithering-4686105'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+    advanced: true,
+    new: true
   },
   {
     name: 'videoOverlayEnabled',
@@ -557,7 +590,7 @@ const SettingsConfig = [
     label: 'Fade in duration',
     description: 'More GPU memory',
     questionMark: {
-      title: 'Slowly fades new colors into the ambient light\n(Also reduces flickering)'
+      title: 'Fading between changes in the ambient light'
     },
     type: 'list',
     default: 0,
@@ -565,6 +598,21 @@ const SettingsConfig = [
     max: 21.2, // 15 seconds
     step: .02,
     manualinput: false
+  },
+  {
+    name: 'flickerReduction',
+    label: 'Flicker reduction',
+    questionMark: {
+      title: 'Reduces flickering by limiting the speed at which brightness changes in the ambient light'
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+    manualinput: false,
+    advanced: true,
+    new: true
   },
   {
     name: 'frameBlending',

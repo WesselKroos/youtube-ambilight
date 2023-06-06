@@ -1,4 +1,4 @@
-import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
+import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas } from './generic'
 import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
@@ -109,7 +109,8 @@ const workerCode = function () {
       // Calculate averages and deviations
 
       const maxAllowedDeviation = maxSize * (0.0125 * scale)
-      let closestSizes = sizes = [...topSizes, ...bottomSizes]
+      let sizes = [...topSizes, ...bottomSizes]
+      let closestSizes = sizes
       while(closestSizes.length > 7) {
         const averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
         closestSizes = closestSizes.sort((a, b) => sortSizes(averageSize, a, b)).slice(0, closestSizes.length - 1)

@@ -29,7 +29,7 @@ export const workerFromCode = (func) => {
         console.error(error)
       }
     
-      postMessage = (data, transferableData) => {
+      postMessage = (data) => {
         try {
           this.globalScope.onmessage({
             data

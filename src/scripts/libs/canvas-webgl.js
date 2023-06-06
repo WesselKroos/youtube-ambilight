@@ -20,7 +20,7 @@ import { ctxOptions, requestIdleCallback, wrapErrorHandler } from './generic';
 // }
 
 export class WebGLOffscreenCanvas {
-  constructor(width, height, settings) {
+  constructor(width, height, ambientlight, settings) {
     if(typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -32,7 +32,7 @@ export class WebGLOffscreenCanvas {
     this.canvas._getContext = this.canvas.getContext;
     this.canvas.getContext = async (type, options = {}) => {
       if(type === '2d') {
-        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, settings);
+        this.canvas.ctx = this.ctx = this.canvas.ctx || await new WebGLContext(this.canvas, type, options, ambientlight, settings);
       } else {
         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
       }
@@ -45,11 +45,12 @@ export class WebGLOffscreenCanvas {
 export class WebGLContext {
   lostCount = 0
 
-  constructor(canvas, type, options, settings) {
+  constructor(canvas, type, options, ambientlight, settings) {
     return (async function WebGLContextConstructor() {
-      this.settings = settings;
-      this.setWarning = settings.setWarning;
-      this.canvas = canvas;
+      this.ambientlight = ambientlight
+      this.settings = settings
+      this.setWarning = settings.setWarning
+      this.canvas = canvas
       this.canvas.addEventListener('webglcontextlost', wrapErrorHandler(function webGLContextLost(event) {
         event.preventDefault()
 
@@ -64,7 +65,7 @@ export class WebGLContext {
         this.setWebGLWarning('restore')
       }.bind(this)), false);
       this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function webGLContextRestored() {
-        console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
+        // console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
         if(this.lostCount >= 3) {
           console.error('Ambient light for YouTube™ | WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
           this.setWebGLWarning('3 times restore')
@@ -76,7 +77,7 @@ export class WebGLContext {
 
         if(this.ctx && !this.ctx.isContextLost()) {
           this.lost = false
-          if(!window.ambientlight.projector?.lost && !window.ambientlight.projector?.blurLost)
+          if(!this.ambientlight.projector?.lost && !this.ambientlight.projector?.blurLost)
             this.setWarning('')
         } else {
           console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
@@ -105,7 +106,8 @@ export class WebGLContext {
   }
 
   webglcontextcreationerrors = []
-  async initCtx() {
+  // syncCompilation prevents black flickering while settings are changed
+  async initCtx(syncCompilation = false)  {
     if(this.program) {
       try {
         this.ctx.finish() // Wait for any pending draw calls to finish
@@ -158,6 +160,11 @@ export class WebGLContext {
       // this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
     }
 
+    let flickerReductionDifference;
+    if(this.settings.flickerReduction) {
+      flickerReductionDifference = (118 - this.settings.flickerReduction) / 118
+    }
+
     // Shaders
     var vertexShaderSrc = `
       precision lowp float;
@@ -173,11 +180,27 @@ export class WebGLContext {
     var fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
-      uniform sampler2D sampler;
+      uniform sampler2D textureSampler[${this.settings.flickerReduction ? 2 : 1}];
       uniform float fMipmapLevel;
+      ${this.settings.flickerReduction ? 'uniform float fPreviousCleared;' : ''}
       
       void main(void) {
-        gl_FragColor = texture2D(sampler, fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+        ${this.settings.flickerReduction ? `
+          vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+          if(fPreviousCleared < .5) {
+            vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+            
+            float difference = abs(
+              (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
+              (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
+            );
+            float percentage = 1.;
+            percentage = min(1., (1. - (difference * difference * difference)) * ${flickerReductionDifference.toFixed(3)});
+            gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
+            return;
+          }
+        `: ''}
+        gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
       }
     `;
     var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
@@ -193,7 +216,7 @@ export class WebGLContext {
     this.ctx.attachShader(program, fragmentShader);
     this.ctx.linkProgram(program);
     
-    const parallelShaderCompileExt = this.ctx.getExtension('KHR_parallel_shader_compile')
+    const parallelShaderCompileExt = syncCompilation ? undefined : this.ctx.getExtension('KHR_parallel_shader_compile');
     if(parallelShaderCompileExt?.COMPLETION_STATUS_KHR) {
       // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
       this.ctx.getProgramParameter(program, parallelShaderCompileExt.COMPLETION_STATUS_KHR)
@@ -380,28 +403,47 @@ export class WebGLContext {
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
-    this.texture = this.ctx.createTexture();
-    this.ctx.bindTexture(this.ctx.TEXTURE_2D, this.texture);
-    this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
-    if (this.webGLVersion == 1) {
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
-    } else {
-      this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+    this.textures = [];
+    for(let i = 0; i < (this.settings.flickerReduction ? 2 : 1); i++) {
+      const texture = this.ctx.createTexture();
+      this.ctx.activeTexture(this.ctx[`TEXTURE${i}`]);
+      this.ctx.bindTexture(this.ctx.TEXTURE_2D, texture);
+      this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAG_FILTER, this.ctx.LINEAR);
+      if (this.webGLVersion == 1) {
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.CLAMP_TO_EDGE);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.CLAMP_TO_EDGE);
+      } else {
+        this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MAX_LEVEL, 8);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_MIN_FILTER, this.ctx.LINEAR_MIPMAP_LINEAR);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_S, this.ctx.MIRRORED_REPEAT);
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, this.ctx.TEXTURE_WRAP_T, this.ctx.MIRRORED_REPEAT);
+      }
+      const tfaExt = (
+        this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
+        this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
+      );
+      if(tfaExt) {
+        const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
+        this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+      }
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      this.textures.push(texture);
     }
-    const tfaExt = (
-      this.ctx.getExtension('EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
-      this.ctx.getExtension('WEBKIT_EXT_texture_filter_anisotropic')
-    );
-    if(tfaExt) {
-      const max = this.ctx.getParameter(tfaExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1;
-      this.ctx.texParameteri(this.ctx.TEXTURE_2D, tfaExt.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(16, max));
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
+
+    const textureSamplerLoc = this.ctx.getUniformLocation(this.program, 'textureSampler');
+    this.ctx.uniform1iv(textureSamplerLoc, this.textures.map((_, i) => i));
+    
+    if(this.settings.flickerReduction) {
+      this.fPreviousClearedLoc = this.ctx.getUniformLocation(this.program, 'fPreviousCleared');
+      this.ctx.uniform1f(this.fPreviousClearedLoc, 1);
+      this.fPreviousCleared = 1;
+    } else {
+      this.fPreviousClearedLoc = undefined
+      this.fPreviousCleared = undefined
     }
 
     return true
@@ -410,8 +452,23 @@ export class WebGLContext {
   clearRect = () => {
     if(this.ctxIsInvalid || this.lost) return
     
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
     this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
+
+    this.clearPreviousRect()
+  }
+
+  clearPreviousRect = () => {
+    if(!this.settings.flickerReduction || !this.fPreviousClearedLoc || this.fPreviousCleared === 1) return
+
+    this.ctx.activeTexture(this.ctx['TEXTURE1'])
+    this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, 1, 1, 0, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    this.ctx.activeTexture(this.ctx['TEXTURE0'])
+
+    this.ctx.uniform1f(this.fPreviousClearedLoc, 1)
+    this.fPreviousCleared = 1
   }
 
   defaultScale = new Float32Array([
@@ -442,10 +499,6 @@ export class WebGLContext {
     return this._cachedScale
   }
 
-  // drawTextureSize = {
-  //   width: 0,
-  //   height: 0
-  // }
   drawImage = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     if(this.ctxIsInvalid || this.lost) return
 
@@ -499,9 +552,24 @@ export class WebGLContext {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     }
     if(this.settings.showResolutions) this.loadTime = performance.now() - start
-    
+
     if(this.settings.showResolutions) start = performance.now()
-    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4)
+
+    if(this.settings.flickerReduction && this.fPreviousClearedLoc && this.fPreviousCleared === 1) {
+      this.fPreviousCleared = 0
+      this.ctx.uniform1f(this.fPreviousClearedLoc, 0)
+    }
+
+    if(this.settings.flickerReduction) {
+      this.ctx.activeTexture(this.ctx['TEXTURE1'])
+      this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, this.canvas)
+      if(this.webGLVersion !== 1) {
+        this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
+      }
+      this.ctx.activeTexture(this.ctx['TEXTURE0'])
+    }
+
     if(this.settings.showResolutions) this.drawTime = performance.now() - start
   }
 
@@ -538,7 +606,7 @@ export class WebGLContext {
     const invalid = this.isContextLost() || !this.program;
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.log(`Ambient light for YouTube™ | WebGLContext is lost`)
+      console.log('Ambient light for YouTube™ | WebGLContext is lost')
     }
     return invalid;
   }

@@ -1,11 +1,11 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, appendErrorStack, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
 import Projector2d from './projector-2d'
 import ProjectorWebGL from './projector-webgl'
 import { WebGLOffscreenCanvas } from './canvas-webgl'
-import { getAverageVideoFramesDifference } from './static-image-detection'
+import { cancelGetAverageVideoFramesDifference, getAverageVideoFramesDifference } from './static-image-detection'
 import Theming from './theming'
 import Stats from './stats'
 
@@ -70,6 +70,8 @@ export default class Ambientlight {
       this.detectChromiumBug1092080Workaround()
 
       await this.initSettings()
+      await this.waitForPageload()
+
       this.theming = new Theming(this)
       this.stats = new Stats(this)
       this.barDetection = new BarDetection()
@@ -90,6 +92,12 @@ export default class Ambientlight {
 
       this.checkGetImageDataAllowed()
       await this.initListeners()
+
+      new Promise(resolve => wrapErrorHandler(() => {
+        this.initializedTime = performance.now()
+        this.settings.onLoaded()
+        resolve()
+      })())
 
       if (this.settings.enabled) {
         try {
@@ -319,13 +327,22 @@ export default class Ambientlight {
         }
 
         const enable = (
-          !this.videoIsHidden &&
-          isPlaying &&
           displayFrameRateHasBeenAbove60 &&
-          this.averageVideoFramesDifference >= .0175
+          this.averageVideoFramesDifference >= .0175 &&
+          isPlaying &&
+          !this.isHidden &&
+          !this.videoIsHidden &&
+          !(this.settings.spread === 0 && this.settings.blur === 0) &&
+          !(
+            this.atTop &&
+            this.isFillingFullscreen && 
+            !this.settings.detectHorizontalBarSizeEnabled &&
+            !this.settings.detectVerticalBarSizeEnabled &&
+            !this.settings.videoOverlayEnabled
+          )
         )
 
-        if(enable && !elem.parentElement) {
+        if(enable && elem.parentElement !== this.elem) {
           this.elem.appendChild(elem)
         } else if(!enable && elem.parentElement) {
           elem.parentElement.removeChild(elem)
@@ -359,6 +376,33 @@ export default class Ambientlight {
       console.warn('Ambient light for YouTube™ | applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
       SentryReporter.captureException(ex)
       this.enableChromiumBugVideoJitterWorkaround = false // Prevent retries
+    }
+  }
+
+  waitForPageload = async () => {
+    if((this.settings.enabled && !this.settings.prioritizePageLoadSpeed) || !this.videoElem || !isWatchPageUrl()) return
+
+    if(this.videoElem.readyState < 3) {
+      await new Promise(resolve => {
+        if(!(this.videoElem.readyState < 3)) {
+          resolve()
+          return
+        }
+
+        const handleCanPlay = () => {
+          off(this.videoElem, 'canplay', handleCanPlay)
+          resolve()
+        }
+        on(this.videoElem, 'canplay', handleCanPlay)
+      })
+        
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 })) // Buffering/rendering budget for low-end devices
+    } else {
+      await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
+    }
+
+    if(document.visibilityState === 'hidden') {
+      await new Promise(resolve => raf(resolve))
     }
   }
 
@@ -398,6 +442,7 @@ export default class Ambientlight {
   }
 
   resetAverageVideoFramesDifference = () => {
+    cancelGetAverageVideoFramesDifference()
     this.averageVideoFramesDifference = 1
     this.settings.updateAverageVideoFramesDifferenceInfo()
 
@@ -453,6 +498,12 @@ export default class Ambientlight {
     this.videoListeners = this.videoListeners || {
       seeked: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return
+
+        // Prevent WebGL flicker reduction from mixing old frames
+        if(this.projectorBuffer?.ctx?.clearPreviousRect) {
+          this.projectorBuffer.ctx.clearPreviousRect()
+        }
+
         // When the video is paused this is the first event. Else [loadeddata] is first
         if (this.initVideoIfSrcChanged()) return
 
@@ -483,6 +534,12 @@ export default class Ambientlight {
 
         this.sizesChanged = true
         this.buffersCleared = true
+        
+        // Prevent WebGL flicker reduction from mixing old frames
+        if(this.projectorBuffer?.ctx?.clearPreviousRect) {
+          this.projectorBuffer.ctx.clearPreviousRect()
+        }
+
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed() // Re-check after crossOrigin attribute has been applied
         this.initVideoIfSrcChanged()
@@ -1058,7 +1115,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     let projectorsBufferCtx;
     if(this.settings.webGL) {
       try {
-        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this.settings)
+        projectorsBufferElem = new WebGLOffscreenCanvas(1, 1, this, this.settings)
         projectorsBufferCtx = await projectorsBufferElem.getContext('2d', ctxOptions)
 
         if(this.settings.webGLCrashDate) {
@@ -1276,6 +1333,29 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.settings.set('videoScale', videoScale, true)
   }
 
+  getView = () => {
+    if(!this.settings.enabled)
+      return VIEW_DISABLED
+
+    if(!document.contains(this.videoPlayerElem))
+      return VIEW_DETACHED
+
+    if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
+      return VIEW_FULLSCREEN
+
+    if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
+      return VIEW_POPUP
+
+    if(this.ytdWatchFlexyElemFromVideo
+      ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
+      : this.playerTheaterContainerElemFromVideo
+    ) {
+      return VIEW_THEATER
+    }
+
+    return VIEW_SMALL
+  }
+
   updateView = () => {
     this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
 
@@ -1288,24 +1368,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     const wasView = this.view
-    if(!this.settings.enabled) {
-      this.view = VIEW_DISABLED
-    } else if(document.contains(this.videoPlayerElem)) {
-      if(this.videoPlayerElem.classList.contains('ytp-fullscreen'))
-        this.view = VIEW_FULLSCREEN
-      else if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
-        this.view = VIEW_POPUP
-      else if(
-        this.ytdWatchFlexyElemFromVideo
-          ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
-          : this.playerTheaterContainerElemFromVideo
-      )
-        this.view = VIEW_THEATER
-      else
-        this.view = VIEW_SMALL
-    } else {
-      this.view = VIEW_DETACHED
-    }
+    this.view = this.getView()
     if(wasView === this.view) return false
 
     const videoPlayerSizeUpdated = this.updateImmersiveMode()
@@ -1559,8 +1622,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.checkIfNeedToHideVideoOverlay()
 
     if (videoOverlayEnabled && videoOverlay && !videoOverlay.elem.parentNode) {
-      if(this.videoContainerElem) {
-      this.videoContainerElem.appendChild(videoOverlay.elem)
+      if(this.videoElem) {
+        this.videoElem.after(videoOverlay.elem)
       } else {
         if(!this.videoContainerElemMissingThrown) {
           SentryReporter.captureException(new Error('VideoOverlayEnabled but the .html5-video-container element does not exist'))
@@ -1576,8 +1639,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoContainerElemMissingWarning = false
     }
 
+    if(this.videoDebandingElem) {
+      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
+    }
+
     if (videoOverlayEnabled && videoOverlay) {
-      videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style'))
+      videoOverlay.elem.setAttribute('style', this.videoElem.getAttribute('style') || '')
       let videoOverlayWidth = this.srcVideoOffset.width
       let videoOverlayHeight = this.srcVideoOffset.height
       if(this.videoElem.style.width && this.videoElem.style.height) {
@@ -1620,27 +1687,32 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateStyles() {
+    // Page background
+    let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
+    pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
+    document.documentElement.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
+
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
-    fillOpacity = (fillOpacity !== 10) ? (fillOpacity / 100) : ''
-    document.body.style.setProperty('--ambientlight-fill-opacity', fillOpacity)
+    fillOpacity = (fillOpacity !== 10) ? ((fillOpacity + 100) / 200) : ''
+    document.body.style.setProperty('--ytal-fill-opacity', fillOpacity)
 
     // Header transparency
     let headerFillOpacity = this.settings.headerFillOpacity
-    headerFillOpacity = (headerFillOpacity !== 100) ? (headerFillOpacity / 100) : ''
-    this.mastheadElem.style.setProperty('--ambientlight-fill-opacity', headerFillOpacity)
-    this.mastheadElem.classList.toggle('yta-header-transparent', headerFillOpacity !== '')
+    headerFillOpacity = (headerFillOpacity !== 100) ? ((headerFillOpacity + 100) / 200) : ''
+    this.mastheadElem.style.setProperty('--ytal-fill-opacity', headerFillOpacity)
+    this.mastheadElem.classList.toggle('ytal-header-transparent', headerFillOpacity !== '')
     
 
     // Images transparency
     let imageOpacity = this.settings.surroundingContentImagesOpacity
     imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
-    document.body.style.setProperty('--ambientlight-image-opacity', imageOpacity)
+    document.body.style.setProperty('--ytal-image-opacity', imageOpacity)
 
     // Header transparency
     let headerImageOpacity = this.settings.headerImagesOpacity
     headerImageOpacity = (imageOpacity !== 100) ? (headerImageOpacity / 100) : ''
-    this.mastheadElem.style.setProperty('--ambientlight-image-opacity', headerImageOpacity)
+    this.mastheadElem.style.setProperty('--ytal-image-opacity', headerImageOpacity)
 
     
     // Shadows
@@ -1665,21 +1737,26 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     // Header shadow
     const headerShadowSize = this.settings.headerShadowSize / 5
     const headerShadowOpacity = this.settings.headerShadowOpacity / 100
-    this.mastheadElem.classList.toggle('yta-header-shadow', headerShadowSize && headerShadowOpacity)
+    this.mastheadElem.classList.toggle('ytal-header-shadow', headerShadowSize && headerShadowOpacity)
 
     const getHeaderFilterShadow = (color) => getFilterShadow(color, headerShadowSize, headerShadowOpacity)
     const getHeaderTextShadow = (color) => getTextShadow(color, headerShadowSize, headerShadowOpacity)
 
     // Header !textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
     
     // Header textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
 
-    this.mastheadElem.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+    this.mastheadElem.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
+    this.mastheadElem.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+    if(textAndBtnOnly) {
+      this.mastheadElem.setAttribute('data-ambientlight-text-shadow', true)
+    } else {
+      this.mastheadElem.removeAttribute('data-ambientlight-text-shadow')
+    }
 
     // Content shadow
     const contentShadowSize = this.settings.surroundingContentShadowSize / 5
@@ -1688,24 +1765,28 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const getContentTextShadow = (color) => getTextShadow(color, contentShadowSize, contentShadowOpacity)
 
     // Content !textAndBtnOnly
-    document.body.style.setProperty(`--ambientlight-filter-shadow`, (!textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-filter-shadow-inverted`, (!textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
     
     // Content textAndBtnOnly
-    document.body.style.setProperty(`--ambientlight-button-shadow`, (textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
-    document.body.style.setProperty(`--ambientlight-button-shadow-inverted`, (textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
+    document.body.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''))
+    document.body.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''))
 
-    document.body.style.setProperty('--ambientlight-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
-    document.body.style.setProperty('--ambientlight-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
-
+    document.body.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getContentTextShadow('0,0,0') : ''))
+    document.body.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getContentTextShadow('255,255,255') : ''))
+    if(textAndBtnOnly) {
+      document.body.setAttribute('data-ambientlight-text-shadow', true)
+    } else {
+      document.body.removeAttribute('data-ambientlight-text-shadow')
+    }
 
     // Video shadow
     const videoShadowSize = parseFloat(this.settings.videoShadowSize, 10) / 2 + Math.pow(this.settings.videoShadowSize / 5, 1.77) // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.settings.videoShadowOpacity / 100
     
-    document.body.style.setProperty('--ambientlight-video-shadow-background', 
+    document.body.style.setProperty('--ytal-video-shadow-background', 
       (videoShadowSize && videoShadowOpacity) ? `rgba(0,0,0,${videoShadowOpacity})` : '')
-    document.body.style.setProperty('--ambientlight-video-shadow-box-shadow', 
+    document.body.style.setProperty('--ytal-video-shadow-box-shadow', 
       (videoShadowSize && videoShadowOpacity)
         ? `
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px,
@@ -1715,8 +1796,31 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
 
     // Video scale
-    document.body.style.setProperty('--ambientlight-html5-video-player-overflow', 
+    document.body.style.setProperty('--ytal-html5-video-player-overflow', 
       (this.settings.videoScale > 100) ?  'visible' : '')
+
+
+    // Video Debanding
+    const videoDebandingStrength = parseFloat(this.settings.videoDebandingStrength)
+    if(videoDebandingStrength) {
+      if(!this.videoDebandingElem) {
+        this.videoDebandingElem = document.createElement('div')
+        this.videoDebandingElem.classList.add('ambientlight__video-debanding')
+        this.videoContainerElem.appendChild(this.videoDebandingElem)
+      }
+      this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
+    } else if(this.videoDebandingElem) {
+      this.videoDebandingElem.remove()
+      this.videoDebandingElem = undefined
+    }
+
+    const videoNoiseImageIndex = (videoDebandingStrength > 75) ? 3 : (videoDebandingStrength > 50) ? 2 : 1
+    const videoNoiseOpacity =  videoDebandingStrength / ((videoDebandingStrength > 75) ? 100 : (videoDebandingStrength > 50) ? 75 : 50)
+
+    document.body.style.setProperty('--ytal-video-debanding-background', 
+      videoDebandingStrength ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')` : '')
+    document.body.style.setProperty('--ytal-video-debanding-opacity', 
+      videoDebandingStrength ? videoNoiseOpacity : '')
 
 
     // Debanding
@@ -1724,11 +1828,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const noiseImageIndex = (debandingStrength > 75) ? 3 : (debandingStrength > 50) ? 2 : 1
     const noiseOpacity =  debandingStrength / ((debandingStrength > 75) ? 100 : (debandingStrength > 50) ? 75 : 50)
 
-    document.body.style.setProperty('--ambientlight-debanding-content', 
+    document.body.style.setProperty('--ytal-debanding-content', 
       debandingStrength ? `''` : '')
-    document.body.style.setProperty('--ambientlight-debanding-background', 
+    document.body.style.setProperty('--ytal-debanding-background', 
       debandingStrength ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')` : '')
-    document.body.style.setProperty('--ambientlight-debanding-opacity', 
+    document.body.style.setProperty('--ytal-debanding-opacity', 
       debandingStrength ? noiseOpacity : '')
   }
 
@@ -1931,7 +2035,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.previousPresentedFrames = presentedFrames
     }
 
-    if(this.settings.framerateLimit || this.averageVideoFramesDifference < .0175) {
+    if(this.settings.framerateLimit || this.limitFramerateToSaveEnergy()) {
       await this.onNextLimitedFrame(compose)
     } else {
       await this.nextFrame(compose)
@@ -1943,7 +2047,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   onNextLimitedFrame = async (compose) => {
     const time = performance.now()
-    if(this.nextFrameTime) {
+    if(this.nextFrameTime && !this.buffersCleared && !this.sizesChanged && !this.sizesInvalidated) {
       if(this.settings.frameSync === FRAMESYNC_VIDEOFRAMES && !this.videoIsHidden) {
         if(this.nextFrameTime > time && this.videoFrameCallbackReceived) {
           this.videoFrameCallbackReceived = false
@@ -1971,8 +2075,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   getRealFramerateLimit() {
-    if(this.averageVideoFramesDifference < .002) return .2 // 5 seconds
-    if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
+    if(this.limitFramerateToSaveEnergy()) {
+      if(this.averageVideoFramesDifference < .002) return .2 // 5 seconds
+      if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
+    }
 
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
     const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
@@ -1980,6 +2086,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       : this.settings.framerateLimit
     return realFramerateLimit
   }
+
+  
+  limitFramerateToSaveEnergy = () => (
+    this.averageVideoFramesDifference < .0175 &&
+    !this.sizesInvalidated &&
+    !this.buffersCleared &&
+    this.videoElem.currentTime > 5 && 
+    this.videoElem.currentTime < this.videoElem.duration - 5
+  )
 
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
@@ -2315,8 +2430,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoFrameCount = newVideoFrameCount
     }
 
-
-    // Horizontal bar detection
     const detectBarSize = (
       hasNewFrame &&
       !this.barDetection?.run && 
@@ -2324,8 +2437,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     )
 
     const dontDrawAmbientlight = (
-      this.atTop &&
-      this.isFillingFullscreen
+      (this.atTop && this.isFillingFullscreen) ||
+      (this.settings.spread === 0 && this.settings.blur === 0)
     )
 
     const dontDrawBuffer = (dontDrawAmbientlight && !detectBarSize)
@@ -2699,16 +2812,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve))
       }
-      if(this.settings.prioritizePageLoadSpeed) {
-        await new Promise(resolve => requestIdleCallback(resolve, { timeout: 2000 })) // Buffering/rendering budget for low-end devices
-        if(document.visibilityState === 'hidden') {
-          await new Promise(resolve => raf(resolve))
-        }
-      }
       this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
-    this.initializedTime = performance.now()
 
     // Continue only if still enabled after await
     if(this.settings.enabled) {
@@ -2767,6 +2873,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if (this.isHidden) return
     this.isHidden = true
 
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
+
     await this.theming.updateTheme()
 
     if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
@@ -2778,6 +2887,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-hide-scrollbar')
+    html.removeAttribute('data-ambientlight-related-scrollbar')
 
     this.updateSizes()
     this.updateVideoPlayerSize()
@@ -2797,6 +2907,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     html.setAttribute('data-ambientlight-enabled', true)
     if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+    if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
     
     ;(async () => {
       await new Promise(resolve => raf(resolve))
@@ -2804,11 +2915,23 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
       this.ytdAppElem.style.background = ''
+
+      // Recalculate the player menu width to remove the elements on the second row
+      try {
+        await new Promise(resolve => raf(resolve))
+        const menu = document.querySelector('ytd-menu-renderer[has-flexible-items]')
+        if(menu?.onStamperFinished) {
+          menu.onStamperFinished()
+        }
+      } catch {}
     })()
 
     this.handleDocumentVisibilityChange() // In case the visibility had changed while disabled
     this.updateVideoPlayerSize()
     this.updateSizes()
+    
+    if(this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update()
   }
 
   updateAtTop = async () => {

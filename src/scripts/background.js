@@ -7,11 +7,11 @@ chrome.runtime.onInstalled.addListener(function (details) {
     chrome.runtime.setUninstallURL(getFeedbackFormLink())
   }
 
-  if (details.reason !== 'install' || getBrowser() !== 'Firefox') return
-  
-  chrome.runtime.openOptionsPage()
+  if (details.reason === 'install' && getBrowser() === 'Firefox') {
+    chrome.runtime.openOptionsPage()
+  }
 })
 
-chrome.browserAction.onClicked.addListener(function (tab) {
+chrome.browserAction.onClicked.addListener(function () {
   chrome.runtime.openOptionsPage()
 })
