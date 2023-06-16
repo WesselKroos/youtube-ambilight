@@ -8,38 +8,50 @@
   &::-moz-range-thumb {@content}
 }
 
-@mixin scrollbar-dark-thin() {
-  scrollbar-width: thin;
+@mixin scrollbar-dark-thin($is-page-scroller: false) {
   scrollbar-color: rgba(255, 255, 255, .2) transparent !important;
+  @if($is-page-scroller == false) {
+    scrollbar-width: thin;
+  }
 
   &::-webkit-scrollbar {
-    width: 16px;
+    @if($is-page-scroller) {
+      background: var(--ytal-page-background, #000);
+    } @else {
+      background: transparent;
+    }
   }
   &::-webkit-scrollbar-track {
-    background-color: transparent;
+    background: transparent;
   }
   &::-webkit-scrollbar-thumb {
     border: 4px solid transparent;
     border-radius: 9px;
+    background: rgba(255, 255, 255, .2);
     background-clip: content-box;
-    background-color: rgba(255, 255, 255, .2);
   }
 }
-@mixin scrollbar-light-thin() {
-  scrollbar-width: thin;
+@mixin scrollbar-light-thin($is-page-scroller: false) {
   scrollbar-color: rgba(0, 0, 0, .2) transparent !important;
+  @if($is-page-scroller == false) {
+    scrollbar-width: thin;
+  }
 
   &::-webkit-scrollbar {
-    width: 16px;
+    @if($is-page-scroller) {
+      background: var(--ytal-page-background, #fff);
+    } @else {
+      background: transparent;
+    }
   }
   &::-webkit-scrollbar-track {
-    background-color: transparent;
+    background: transparent;
   }
   &::-webkit-scrollbar-thumb {
     border: 4px solid transparent;
     border-radius: 9px;
+    background: rgba(0, 0, 0, .2);
     background-clip: content-box;
-    background-color: rgba(0, 0, 0, .2);
   }
 }
 
@@ -217,7 +229,7 @@ html[data-ambientlight-enabled="true"] {
   &[lang],
   &[style],
   body {
-    @include scrollbar-light-thin();
+    @include scrollbar-light-thin(true);
     background: #fff !important;
     background-color: #fff !important;
     --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
@@ -238,7 +250,7 @@ html[data-ambientlight-enabled="true"] {
     &[lang],
     &[style],
     body {
-      @include scrollbar-dark-thin();
+      @include scrollbar-dark-thin(true);
       background: #000 !important;
       background-color: #000 !important;
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
