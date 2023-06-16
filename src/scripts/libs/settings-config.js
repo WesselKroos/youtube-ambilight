@@ -236,7 +236,7 @@ const SettingsConfig = [
     label: 'Hide scrollbar',
     type: 'checkbox',
     advanced: true,
-    default: true
+    default: false
   },
   {
     type: 'section',
