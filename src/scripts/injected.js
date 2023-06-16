@@ -24,7 +24,12 @@ wrapErrorHandler(function initErrorEvents() {
 const getOtherUnknownAppElems = () => 
   [...document.querySelectorAll('body > *')]
     .filter(function getAppElems(elem) {
-      return (elem.tagName.endsWith('-APP') && !['YTD-APP', 'YTVP-APP', 'YTCP-APP', 'YTLR-APP', 'DAILY-COMPANION-APP'].includes(elem.tagName))
+      return (
+        elem.tagName.endsWith('-APP') && 
+        ![
+          'YTD-APP', 'YTVP-APP', 'YTCP-APP', 'YTLR-APP', 'DAILY-COMPANION-APP'
+        ].includes(elem.tagName)
+      )
     });
 
 const logErrorEventWithPageTrees = (message, details = {}) => {
@@ -59,7 +64,7 @@ const isVideoInKnownInvalidLocation = () => {
   const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
   const ytdInlinePreviewPlayerVideoElem = document.querySelector('#inline-preview-player video.html5-main-video')
   const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
-  const outsideYtdAppVideoElem = document.querySelector('body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
+  const outsideYtdAppVideoElem = document.querySelector('html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
   return !!(ytdAppPlayerVideoElem || playerApiVideoElem || ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || outsideYtdAppVideoElem)
 }
 
