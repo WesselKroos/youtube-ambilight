@@ -236,7 +236,7 @@ const SettingsConfig = [
     label: 'Hide scrollbar',
     type: 'checkbox',
     advanced: true,
-    default: true
+    default: false
   },
   {
     type: 'section',
@@ -322,7 +322,7 @@ const SettingsConfig = [
   },
   {
     type: 'section',
-    label: 'Black bars',
+    label: 'Remove black & colored bars',
     name: 'sectionHorizontalBarsCollapsed',
     default: true
   },
@@ -349,8 +349,21 @@ const SettingsConfig = [
     default: false
   },
   {
+    name: 'barSizeDetectionAverageHistorySize',
+    label: 'Bar detection average',
+    questionMark: {
+      title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
+    },
+    type: 'list',
+    default: 4,
+    min: 1,
+    max: 30,
+    step: 1,
+    advanced: true
+  },
+  {
     name: 'detectHorizontalBarSizeOffsetPercentage',
-    label: 'Black bar detection offset',
+    label: 'Bar detection offset',
     type: 'list',
     default: 0,
     min: -5,
@@ -360,7 +373,7 @@ const SettingsConfig = [
   },
   {
     name: 'horizontalBarsClipPercentage',
-    label: 'Black bars size',
+    label: 'Bar size',
     type: 'list',
     default: 0,
     min: 0,
@@ -375,7 +388,7 @@ const SettingsConfig = [
   },
   {
     name: 'verticalBarsClipPercentage',
-    label: 'Black sidebars size',
+    label: 'Sidebars size',
     type: 'list',
     default: 0,
     min: 0,
@@ -385,7 +398,7 @@ const SettingsConfig = [
   },
   {
     name: 'horizontalBarsClipPercentageReset',
-    label: 'Reset black bars next video',
+    label: 'Reset bars next video',
     type: 'checkbox',
     default: true,
     advanced: true

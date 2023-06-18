@@ -212,7 +212,7 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+          ${''/*<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
@@ -232,7 +232,7 @@ export default class Settings {
                   </li>
               </ul></span>
             </div>
-          </div>
+          </div>*/}
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>
@@ -374,7 +374,10 @@ export default class Settings {
       </div>`
 
     this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
-    on(this.updateItemElem, 'click', this.hideUpdatesMessage)
+    if(this.updateItemElem) {
+      on(this.updateItemElem, 'click', this.hideUpdatesMessage)
+    }
+
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
     this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info')
@@ -991,6 +994,9 @@ export default class Settings {
         [FRAMESYNC_VIDEOFRAMES]: 'Video framerate'
       }[value]
     }
+    if(setting.name === 'barSizeDetectionAverageHistorySize') {
+      return (this.barSizeDetectionAverageHistorySize == 1) ? `1 frame` : `${value} frames`
+    }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
@@ -1121,6 +1127,7 @@ export default class Settings {
     {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
+        'barSizeDetectionAverageHistorySize',
         'detectHorizontalBarSizeOffsetPercentage'
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
@@ -1309,12 +1316,12 @@ export default class Settings {
       }
     } catch (ex) {
       if(ex.message.includes('QuotaExceededError')) {
-        this.setWarning('The changes cannot be saved because the settings have changed too often.\nWait a few seconds...')
+        this.setWarning('The changes could not be saved because the settings have changed too often.\nWait a few seconds...')
         return
       }
 
       if(ex.message === 'uninstalled') {
-        this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
+        this.setWarning('The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.')
         return
       }
 
@@ -1381,7 +1388,9 @@ export default class Settings {
         return
       }
       const installedVersion = entries['shown-version-updates']
-      if(installedVersion ===  version) return
+      if(installedVersion === version) return
+
+      if(!this.updateItemElem) return
 
       this.updateItemElem.style.display = ''
       this.menuBtn.classList.toggle('has-updates', true)

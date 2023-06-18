@@ -74,7 +74,7 @@ export default class Ambientlight {
 
       this.theming = new Theming(this)
       this.stats = new Stats(this)
-      this.barDetection = new BarDetection()
+      this.barDetection = new BarDetection(this)
       this.detectChromiumBug1123708Workaround()
       this.detectChromiumBugVideoJitterWorkaround()
 
@@ -2432,7 +2432,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     const detectBarSize = (
       hasNewFrame &&
-      !this.barDetection?.run && 
       (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
     )
 
@@ -2587,8 +2586,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   scheduleBarSizeDetection = () => {
     try {
-      if(this.barDetection.run) return
-
       if(
         (this.getImageDataAllowed && this.checkGetImageDataAllowed()) || 
         this.getImageDataAllowed
@@ -2611,6 +2608,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
           this.settings.verticalBarsClipPercentage,
           this.p ? this.p.h / this.p.w : 1,
           !this.settings.frameBlending,
+          this.settings.barSizeDetectionAverageHistorySize || 1,
           wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
         )
       }
