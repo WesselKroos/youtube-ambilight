@@ -350,9 +350,9 @@ const SettingsConfig = [
   },
   {
     name: 'barSizeDetectionAverageHistorySize',
-    label: 'Bar detection average frames',
+    label: 'Bar detection average',
     questionMark: {
-      title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut that does also increase the amount of inaccurate detections.'
+      title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
     },
     type: 'list',
     default: 4,
