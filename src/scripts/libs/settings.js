@@ -212,7 +212,7 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+          ${''/*<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Important changes in version ${version}:</b>
@@ -232,7 +232,7 @@ export default class Settings {
                   </li>
               </ul></span>
             </div>
-          </div>
+          </div>*/}
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>
@@ -374,7 +374,10 @@ export default class Settings {
       </div>`
 
     this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
-    on(this.updateItemElem, 'click', this.hideUpdatesMessage)
+    if(this.updateItemElem) {
+      on(this.updateItemElem, 'click', this.hideUpdatesMessage)
+    }
+
     this.warningItemElem = this.menuElem.querySelector('.ytpa-menuitem--warning')
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning')
     this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info')
@@ -1385,7 +1388,9 @@ export default class Settings {
         return
       }
       const installedVersion = entries['shown-version-updates']
-      if(installedVersion ===  version) return
+      if(installedVersion === version) return
+
+      if(!this.updateItemElem) return
 
       this.updateItemElem.style.display = ''
       this.menuBtn.classList.toggle('has-updates', true)
