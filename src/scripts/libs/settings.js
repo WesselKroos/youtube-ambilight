@@ -991,6 +991,9 @@ export default class Settings {
         [FRAMESYNC_VIDEOFRAMES]: 'Video framerate'
       }[value]
     }
+    if(setting.name === 'barSizeDetectionAverageHistorySize') {
+      return (this.barSizeDetectionAverageHistorySize == 1) ? `1 frame` : `${value} frames`
+    }
     if(setting.name === 'framerateLimit') {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
@@ -1121,6 +1124,7 @@ export default class Settings {
     {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
+        'barSizeDetectionAverageHistorySize',
         'detectHorizontalBarSizeOffsetPercentage'
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
@@ -1309,12 +1313,12 @@ export default class Settings {
       }
     } catch (ex) {
       if(ex.message.includes('QuotaExceededError')) {
-        this.setWarning('The changes cannot be saved because the settings have changed too often.\nWait a few seconds...')
+        this.setWarning('The changes could not be saved because the settings have changed too often.\nWait a few seconds...')
         return
       }
 
       if(ex.message === 'uninstalled') {
-        this.setWarning('The changes cannot be saved because the extension has been updated.\nRefresh the page to continue.')
+        this.setWarning('The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.')
         return
       }
 

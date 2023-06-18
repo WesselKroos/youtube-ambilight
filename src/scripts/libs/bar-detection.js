@@ -1,4 +1,4 @@
-import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas } from './generic'
+import { appendErrorStack, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
 import SentryReporter from './sentry-reporter'
 import { workerFromCode } from './worker'
 
@@ -19,9 +19,7 @@ const workerCode = function () {
 
     // Give the GPU cores breathing time to decode the video or prepaint other elements in between
     // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
-    await new Promise(resolve => {
-      setTimeout(resolve, duration < 1 ? 0 : Math.min(1000/24, duration / 2))
-    })
+    await new Promise(resolve => setTimeout(resolve, duration < 1 ? 0 : 1)) // Math.min(1000/24, duration / 2))
   }
 
   function sortSizes(averageSize, a, b) {
@@ -288,6 +286,10 @@ export default class BarDetection {
     vertical: []
   }
 
+  constructor(ambientlight) {
+    this.ambientlight = ambientlight
+  }
+
   clear = () => {
     this.workerMessageId++; // invalidate current worker processes
     if(this.worker) {
@@ -297,7 +299,6 @@ export default class BarDetection {
       })
     }
 
-    this.cleared = true
     this.run = null
     this.history = {
       horizontal: [],
@@ -308,15 +309,13 @@ export default class BarDetection {
   detect = (buffer, detectColored, offsetPercentage,
     detectHorizontal, currentHorizontalPercentage,
     detectVertical, currentVerticalPercentage,
-    ratio, allowedToTransfer, callback) => {
-    if(this.run) return
+    ratio, allowedToTransfer, averageHistorySize, callback) => {
+    if(this.run) {
+      this.continueAfterRun = true
+      return
+    }
 
     const run = this.run = {}
-    if(this.cleared) {
-      this.cleared = false
-      currentHorizontalPercentage = 0
-      currentVerticalPercentage = 0
-    }
 
     if(!this.worker) {
       this.worker = workerFromCode(workerCode)
@@ -335,36 +334,36 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, callback
+      ratio, allowedToTransfer, averageHistorySize,
+      callback
     }
 
-    requestIdleCallback(async () => await this.idleHandler(run), { timeout: 100 }, true)
+    requestIdleCallback(async () => await this.idleHandler(run), { timeout: 1 }, true)
   }
 
-  averagePercentage(percentage, currentPercentage, history) {
-    if(percentage !== undefined) {
-      const detectedPercentage = percentage
+  averagePercentage(percentage, currentPercentage, history, averageHistorySize) {
+    if(percentage === undefined) return
 
-      // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
-      percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+    const detectedPercentage = percentage
 
-      let adjustment = (percentage - currentPercentage)
+    // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
+    percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+
+    let adjustment = (percentage - currentPercentage)
+    if(adjustment > -1.5 && adjustment <= 0) {
+      // Ignore small adjustments
+      adjustment = (detectedPercentage - currentPercentage)
       if(adjustment > -1.5 && adjustment <= 0) {
-        // Ignore small adjustments
-        adjustment = (detectedPercentage - currentPercentage)
-        if(adjustment > -1.5 && adjustment <= 0) {
-          percentage = undefined
-        } else {
-          percentage = currentPercentage // Disable throttling
-        }
+        percentage = undefined
+      } else {
+        percentage = currentPercentage // Disable throttling
       }
-      history.push(detectedPercentage)
-      if(history.length > 4) history.splice(0, 1)
-      return percentage
-    } else if(percentage === 0 && history.length) {
-      history.splice(0, history.length)
-      return percentage
     }
+
+    history.push(detectedPercentage)
+    if(history.length > averageHistorySize) history.splice(0, history.length - averageHistorySize)
+
+    return percentage
   }
 
   idleHandler = async (run) => {
@@ -374,7 +373,8 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, callback
+      ratio, allowedToTransfer, averageHistorySize,
+      callback
     } = this.idleHandlerArguments
 
     let canvasInfo;
@@ -449,9 +449,9 @@ export default class BarDetection {
               throw e.data.error
             }
 
-            const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal)
-            const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical)
-      
+            const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
+            const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
+
             if(
               horizontalPercentage !== undefined || verticalPercentage !== undefined ||
               (e.data.horizontalPercentage !== undefined && Math.abs(e.data.horizontalPercentage - currentHorizontalPercentage) > 0.5) || 
@@ -498,11 +498,15 @@ export default class BarDetection {
         )
       const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
 
-      setTimeout(() => {
+      setTimeout(wrapErrorHandler(() => {
         if(this.run !== run) return
 
         this.run = null
-      }, throttle)
+        if(!this.continueAfterRun) return
+        
+        this.continueAfterRun = false
+        this.ambientlight.scheduleBarSizeDetection()
+      }), throttle)
     } catch(ex) {
        // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
       const isKnownError = (
