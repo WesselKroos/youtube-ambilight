@@ -219,6 +219,11 @@ export default class SentryReporter {
         console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
       }
 
+      // Ignore errors we cannot fix
+      if(ex.message?.includes(`can't access dead object`)) // Firefox has destroyed the webpage but the extensions javascript not yet
+        return
+
+
       if(!crashOptions?.crash) {
         console.warn('Ambient light for YouTube™ | Crash reporting is disabled. If you want this error to be fixed, open the extension options to enable crash reporting. Then refresh the page and reproduce the error again to send a crash report.')
         return
