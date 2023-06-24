@@ -170,6 +170,56 @@
   }
 }
 
+.ambientlight__chromium-bug-video-jitter-workaround {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  left: calc(50vw - 1px);
+  top: calc(100vh - 10px);
+  background: #00000001;
+  display: none;
+  contain: strict;
+  will-change: transform;
+
+  html[data-ambientlight-enabled="true"] & {
+    display: block;
+    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
+  }
+
+  @keyframes ambientlight-chromium-bug-video-jitter-workaround {
+    0% {
+      opacity: .0000000001;
+    }
+    100% {
+      opacity: .0000000002;
+    }
+  }
+}
+
+
+/* Override incorrect default description colors when switching between themes */
+    
+#description.ytd-watch-metadata {
+  .yt-core-attributed-string {
+    &--link-inherit-color {
+      color: inherit !important;
+    }
+
+    &--highlight-text-decorator {
+      background-color: var(--yt-spec-badge-chip-background) !important;
+
+      .yt-core-attributed-string__link--call-to-action-color {
+        color: inherit !important;
+      }
+    }
+
+    &__link--call-to-action-color {
+      color: var(--yt-spec-call-to-action) !important;
+    }
+  }
+}
+
+
 html[data-ambientlight-enabled="true"] {
   /* General */
 
@@ -1056,11 +1106,6 @@ html[data-ambientlight-enabled="true"] {
     ytd-watch-metadata {
       #description.ytd-watch-metadata {
         background: var(--ytal-background) !important;
-        // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
-
-        .yt-core-attributed-string--link-inherit-color .yt-core-attributed-string__link--call-to-action-color {
-          color: var(--yt-spec-call-to-action);
-        }
       }
       
       .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
@@ -1250,6 +1295,48 @@ html[data-ambientlight-enabled="true"] {
 }
 
 /* Settings */
+
+.ytal-bezel {
+  pointer-events: none;
+  contain: size style layout paint;
+
+  &--no-animation {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .ytp-svg-fill {
+    font-size: 30px;
+  }
+
+  .ytp-bezel-icon {
+    position: relative;
+  }
+  
+  .ytp-bezel-icon::before {
+    content: '';
+    display: block;
+    position: absolute;
+    width: 80%;
+    height: 3px;
+    margin: 0;
+    top: calc(50% - 1.5px);
+    left: 10%;
+    opacity: 0;
+    outline: 3px solid #111;
+    transform: rotate(-45deg);
+    background: #fff;
+
+    .ytp-fullscreen & {
+      height: 4px;
+      top: calc(50% - 2px);
+    }
+  }
+
+  &--strike .ytp-bezel-icon::before {
+    opacity: 1;
+  }
+}
 
 .ytp-ambientlight-settings-shown .ytp-chrome-bottom {
   opacity: 1 !important;
@@ -2641,75 +2728,5 @@ html[data-ambientlight-enabled="true"] {
   .stroke.yt-interaction,
   .fill.yt-interaction {
     will-change: initial !important;
-  }
-}
-
-
-.ytal-bezel {
-  pointer-events: none;
-  contain: size style layout paint;
-
-  &--no-animation {
-    animation: none !important;
-    opacity: 0 !important;
-  }
-
-  .ytp-svg-fill {
-    font-size: 30px;
-  }
-
-  .ytp-bezel-icon {
-    position: relative;
-  }
-  
-  .ytp-bezel-icon::before {
-    content: '';
-    display: block;
-    position: absolute;
-    width: 80%;
-    height: 3px;
-    margin: 0;
-    top: calc(50% - 1.5px);
-    left: 10%;
-    opacity: 0;
-    outline: 3px solid #111;
-    transform: rotate(-45deg);
-    background: #fff;
-
-    .ytp-fullscreen & {
-      height: 4px;
-      top: calc(50% - 2px);
-    }
-  }
-
-  &--strike .ytp-bezel-icon::before {
-    opacity: 1;
-  }
-}
-
-
-.ambientlight__chromium-bug-video-jitter-workaround {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  left: calc(50vw - 1px);
-  top: calc(100vh - 10px);
-  background: #00000001;
-  display: none;
-  contain: strict;
-  will-change: transform;
-
-  html[data-ambientlight-enabled="true"] & {
-    display: block;
-    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
-  }
-
-  @keyframes ambientlight-chromium-bug-video-jitter-workaround {
-    0% {
-      opacity: .0000000001;
-    }
-    100% {
-      opacity: .0000000002;
-    }
   }
 }

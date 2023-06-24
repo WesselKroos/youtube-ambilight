@@ -32,11 +32,11 @@
     "build:manifest": "copyfiles -u 1 src/manifest.json dist",
     "build:html": "copyfiles -u 1 src/options.html dist",
     "build:images": "copyfiles -u 2 src/images/* dist/images",
-    "build:css:content": "sass --no-source-map src/styles/content.scss dist/styles/content.css",
-    "build:css:live-chat": "sass --no-source-map src/styles/live-chat.scss dist/styles/live-chat.css",
-    "build:css:options": "copyfiles -u 2 src/styles/options.css dist/styles",
-    "build:css": "run-p build:css:content build:css:live-chat build:css:options",
+    "build:styles:content": "sass --no-source-map src/styles/content.scss dist/styles/content.css",
+    "build:styles:live-chat": "sass --no-source-map src/styles/live-chat.scss dist/styles/live-chat.css",
+    "build:styles:options": "copyfiles -u 2 src/styles/options.css dist/styles",
+    "build:styles": "run-p build:styles:content build:styles:live-chat build:styles:options",
     "build:scripts": "rollup -c",
-    "build": "run-s build:scripts build:css build:manifest build:html build:images"
+    "build": "run-s build:scripts build:styles build:manifest build:html build:images"
   }
 }
