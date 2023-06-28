@@ -403,7 +403,8 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-app {
     &,
-    #player-theater-container,
+    #player-theater-container, // Old theater view
+    #player-wide-container,
     #player-container,
     .html5-video-player,
     .html5-main-video {
@@ -439,7 +440,9 @@ html[data-ambientlight-enabled="true"] {
 
   /* Disable ambient mode */
   
-  #cinematics.ytd-watch-flexy {
+  #cinematics.ytd-watch-flexy,
+  #cinematics-container.ytd-watch-flexy,
+  #cinematics-wide-container.ytd-watch-flexy {
     display: none !important;
   }
 
@@ -450,8 +453,11 @@ html[data-ambientlight-enabled="true"] {
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
-  ytd-app #player-theater-container {
-    transition: background-color 0s .01s;
+  ytd-app {
+    #player-theater-container, // Old theater view
+    #player-wide-container {
+      transition: background-color 0s .01s;
+    }
   }
 
   /* Video */
@@ -1255,12 +1261,15 @@ html[data-ambientlight-enabled="true"] {
   /* Immersive mode */
 
   &[data-ambientlight-immersive="true"] {
-    ytd-watch-flexy {
-      &[theater] #player-theater-container.ytd-watch-flexy {
-        height: calc(100vh - 169px) !important;
-        max-height: calc(100vh - 169px) !important;
-        margin-top: 29px;
-        margin-bottom: 84px;
+    ytd-watch-flexy[theater] {
+      #player-theater-container, // Old theater view
+      #player-wide-container {
+        &.ytd-watch-flexy {
+          height: calc(100vh - 169px) !important;
+          max-height: calc(100vh - 169px) !important;
+          margin-top: 29px;
+          margin-bottom: 84px;
+        }
       }
     }
 
