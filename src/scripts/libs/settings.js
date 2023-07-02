@@ -91,12 +91,15 @@ export default class Settings {
         Settings.storedSettingsCached['setting-webGL'] = null
       } else {
         SettingsConfig.find(setting => setting.name === 'saturation').advanced = true
+        SettingsConfig.find(setting => setting.name === 'spread').max = 400
       }
     } else {
       for(const settingName of webGLOnlySettings) {
         if(Settings.storedSettingsCached[`setting-${settingName}`] !== undefined)
           delete Settings.storedSettingsCached[`setting-${settingName}`]
       }
+      if(Settings.storedSettingsCached['setting-spread'] > 200)
+        Settings.storedSettingsCached['setting-spread'] = 200
     }
 
     return Settings.storedSettingsCached;

@@ -1550,7 +1550,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     let pScale;
     if(this.settings.webGL) {
       const relativeBlur = (this.settings.resolution / 100) * (this.isHdr ? 0 : this.settings.blur)
-      const pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
+      let pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
         ((this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
         ? 256
         : (relativeBlur >= 20
@@ -1561,6 +1561,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
             )
           )
         )
+      if(this.settings.spread > 200)
+        pMinSize = pMinSize / 2
+
       pScale = Math.min(.5, 
         Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height),
         Math.min(1024 / this.srcVideoOffset.width, 1024 / this.srcVideoOffset.height))
