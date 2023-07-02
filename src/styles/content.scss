@@ -1208,6 +1208,10 @@ html[data-ambientlight-enabled="true"] {
     contain: strict;
     // will-change: transform; // Improves resizing performance, but reduces cpu rendering performance
   }
+  body[data-ambientlight-fixed="true"] .ambientlight {
+    position: fixed;
+    height: 100vh;
+  }
 
   .ambientlight__clip {
     //overflow: hidden;
@@ -2597,7 +2601,7 @@ html[data-ambientlight-enabled="true"] {
     background: var(--ytal-debanding-background, none);
     opacity: var(--ytal-debanding-opacity, 0);
   }
-  .ambientlight::after {
+  body:not([data-ambientlight-fixed="true"]) .ambientlight::after {
     content: var(--ytal-debanding-content, none);
     position: absolute;
     z-index: 3;
@@ -2608,7 +2612,7 @@ html[data-ambientlight-enabled="true"] {
     background: linear-gradient(0deg, #ffff 0px, #fff0 200px);
     background: linear-gradient(0deg, var(--ytal-page-background, #ffff) 0px, #fff0 200px);
   }
-  &[dark] .ambientlight::after {
+  &[dark] body:not([data-ambientlight-fixed="true"]) .ambientlight::after {
     background: linear-gradient(0deg, #000f 0px, #0000 200px);
     background: linear-gradient(0deg, var(--ytal-page-background, #000f) 0px, #0000 200px);
     

@@ -34,6 +34,14 @@ export default class Settings {
       return Settings.storedSettingsCached
     }
 
+    const webGLOnlySettings = [
+      'resolution',
+      'vibrance',
+      'frameFading',
+      'flickerReduction',
+      'fixedPosition',
+      'chromiumBugVideoJitterWorkaround'
+    ]
     const settingsToRemove = []
     for(const setting of SettingsConfig) {
       if(supportsWebGL()) {
@@ -41,11 +49,7 @@ export default class Settings {
           setting.default = 50
         }
       } else {
-        if([
-          'resolution',
-          'frameFading',
-          'flickerReduction'
-        ].includes(setting.name)) {
+        if(webGLOnlySettings.includes(setting.name)) {
           settingsToRemove.push(setting)
         }
         if([
@@ -87,6 +91,11 @@ export default class Settings {
         Settings.storedSettingsCached['setting-webGL'] = null
       } else {
         SettingsConfig.find(setting => setting.name === 'saturation').advanced = true
+      }
+    } else {
+      for(const settingName of webGLOnlySettings) {
+        if(Settings.storedSettingsCached[`setting-${settingName}`] !== undefined)
+          delete Settings.storedSettingsCached[`setting-${settingName}`]
       }
     }
 
@@ -692,6 +701,7 @@ export default class Settings {
             'energySaver',
             'videoOverlayEnabled',
             'frameBlending',
+            'fixedPosition',
             'showFPS',
             'showFrametimes',
             'showResolutions',
@@ -848,7 +858,8 @@ export default class Settings {
           }
 
           if([
-            'surroundingContentTextAndBtnOnly'
+            'surroundingContentTextAndBtnOnly',
+            'fixedPosition'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
             this.ambientlight.optionalFrame()
@@ -1165,7 +1176,7 @@ export default class Settings {
       visible: () => this.videoShadowSize
     },
     {
-      names: [ 'resolution', 'vibrance', 'frameFading', 'flickerReduction' ],
+      names: [ 'resolution', 'vibrance', 'frameFading', 'flickerReduction', 'fixedPosition' ],
       visible: () => this.webGL
     }
   ]

@@ -1012,28 +1012,21 @@ export default class ProjectorWebGL {
       right: window.innerWidth + blurSize,
       bottom: window.innerHeight + blurSize
     }
-    videoRect = {
-      left: videoRect.left + blurSize,
-      top: videoRect.top + blurSize,
-      right: videoRect.right - blurSize,
-      bottom: videoRect.bottom - blurSize
-    }
     const canvasRectCenter = {
       x: canvasRect.left + (canvasRect.width / 2),
       y: canvasRect.top + (canvasRect.height / 2)
     }
-
     const cropRect = {
       left: Math.max(canvasRect.left, windowRect.left),
       top: Math.max(canvasRect.top, windowRect.top),
       right: Math.min(canvasRect.right, windowRect.right),
-      bottom: Math.min(canvasRect.bottom, windowRect.bottom + 100) // 100 = a single scroll step
+      bottom: Math.min(canvasRect.bottom, windowRect.bottom + (this.settings.fixedPosition ? 0 : 100)) // 100 = a single scroll step
     };
     const cropPerc = {
       left: (canvasRectCenter.x - cropRect.left) / (canvasRectCenter.x - canvasRect.left),
       top: (canvasRectCenter.y - cropRect.top) / (canvasRectCenter.y - canvasRect.top),
       right: (cropRect.right - canvasRectCenter.x) / (canvasRect.right - canvasRectCenter.x),
-      bottom: this.atTop
+      bottom: (this.atTop || this.settings.fixedPosition)
         ? (cropRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
         : 1
     }
@@ -1044,6 +1037,19 @@ export default class ProjectorWebGL {
       l: -Math.max(0, cropPerc.left.toFixed(4))
     }
 
+    videoRect = (this.settings.fixedPosition && !this.atTop)
+      ? {
+        left: canvasRectCenter.x,
+        top: canvasRectCenter.y,
+        right: canvasRectCenter.x,
+        bottom: canvasRectCenter.y
+      }
+      : {
+        left: videoRect.left + blurSize,
+        top: videoRect.top + blurSize,
+        right: videoRect.right - blurSize,
+        bottom: videoRect.bottom - blurSize
+      }
     const cutPerc = {
       left: (canvasRectCenter.x - videoRect.left) / (canvasRectCenter.x - canvasRect.left),
       top: (canvasRectCenter.y - videoRect.top) / (canvasRectCenter.y - canvasRect.top),

@@ -1687,6 +1687,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateStyles() {
+    // Fixed position
+    document.body.setAttribute('data-ambientlight-fixed', this.settings.fixedPosition)
+
     // Page background
     let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
     pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
