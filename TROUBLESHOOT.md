@@ -170,7 +170,20 @@ If any of the values in step 2 and 3 are incorrect you can go to [about:config](
 
 # Known issues and solutions
 
-#### Video's in 4K and higher resolutions or 50/60fps are stuttering or dropping frames
+## 1. Video's stutter or freezes completely when there are 2 browser windows open
+
+Chromium browsers (Chrome, Edge, Opera) have a problem with the playback of a video while in another browser window a graphical effect is being rendered. These graphical effects are often animations. For example: a loading animation, or hovering over a link that slowly changes color. This happens in some hardware (CPU and/or GPU) configurations, but doesn't happen for everyone. 
+
+   __To workaround this issue follow these steps:__
+   1. Go to chrome://flags (or edge://flags or opera://flags)
+   2. Search for the flag "Hardware-accelerated video decode" with the hashtag #disable-accelerated-video-decode
+   3. Set that flag to disabled
+   4. Click on the relaunch button at the bottom right
+
+If it has been fixed after that change, you were affected by this Chromium bug.
+Make sure to leave your CPU and GPU configuration in this Chromium bug report so that the Chromium developers can try to fix this bug for you hardware: https://bugs.chromium.org/p/chromium/issues/detail?id=1461254
+
+## 2. Video's in 4K and higher resolutions or 50/60fps are stuttering or dropping frames
 
 1. Are you using a NVidia graphics card on Windows? Then you might have this issue:
    [Issue 1431590: Frame drops and jitter on 4k60fps videos when NVidia's Power management mode is set to Adaptive](https://bugs.chromium.org/p/chromium/issues/detail?id=1431590)
