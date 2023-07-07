@@ -181,7 +181,8 @@ Chromium browsers (Chrome, Edge, Opera) have a problem with the playback of a vi
    4. Click on the relaunch button at the bottom right
 
 If it has been fixed after that change, you were affected by this Chromium bug.
-Make sure to leave your CPU and GPU configuration in this Chromium bug report so that the Chromium developers can try to fix this bug for you hardware: https://bugs.chromium.org/p/chromium/issues/detail?id=1461254
+Make sure to leave your CPU and GPU configuration in this Chromium bug report so that the Chromium developers can try to fix this bug for you hardware: 
+[Issue 1461254: Video playback freezes when 2 visible windows have running animations](https://bugs.chromium.org/p/chromium/issues/detail?id=1461254)
 
 ## 2. Video's in 4K and higher resolutions or 50/60fps are stuttering or dropping frames
 
