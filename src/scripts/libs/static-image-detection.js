@@ -190,16 +190,19 @@ const workerCode = function () {
   }
 
   this.onmessage = async (e) => {
-    const id = e.data.id
+    const id = e.data.id;
+    const baseUrl = e.data.storyboard.baseUrl;
     try {
       const difference = await getAverageVideoFramesDifference(e.data.storyboard)
       this.postMessage({ 
         id,
+        baseUrl,
         difference
       })
     } catch(ex) {
       this.postMessage({
         id,
+        baseUrl,
         error: ex
       })
     }
@@ -231,31 +234,42 @@ const getStoryboard = (ytdWatchFlexyElem) => {
 
 let worker;
 let workerMessageId = 0;
+let lastDifference = {
+  baseUrl: undefined,
+  value: 1
+};
+let onMessagePromise;
+let nextGetIsWaiting = false;
+
 export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
-  workerMessageId++;
-  const id = workerMessageId
+  if(onMessagePromise) {
+    nextGetIsWaiting = true;
+    while(onMessagePromise) {
+      await onMessagePromise;
+    }
+    nextGetIsWaiting = false;
+  }
 
   const storyboard = getStoryboard(ytdWatchFlexyElem);
   if(!storyboard) return // Failed to retrieve the storyboard data
 
+  const alreadyCalculated = lastDifference.baseUrl === storyboard.baseUrl;
+  if(alreadyCalculated) return lastDifference.value
 
   if(!worker) {
     worker = workerFromCode(workerCode)
   }
 
+  workerMessageId++;
+  const id = workerMessageId;
+
   const stack = new Error().stack
-  const onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
+  onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
     worker.onerror = (err) => reject(err)
     worker.onmessage = (e) => {
       try {
-        if(
-          e.data.id !== workerMessageId
-        ) {
-          // console.warn('Ambient light for YouTube™ | Ignoring old average video frames difference:', 
-          //   e.data.id, e.data.difference)
-          resolve()
-          return
-        }
+        if(e.data.id !== workerMessageId) return
+
         if(e.data.error) {
           // Readable name for the worker script
           e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/static-image-detection-worker.js:')
@@ -263,6 +277,10 @@ export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
           throw e.data.error
         }
 
+        lastDifference = {
+          baseUrl: e.data.baseUrl,
+          value: e.data.difference
+        }
         resolve(e.data.difference)
       } catch(ex) {
         reject(ex)
@@ -273,7 +291,9 @@ export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
     id,
     storyboard
   })
-  return await onMessagePromise
+  const difference = await onMessagePromise;
+  onMessagePromise = undefined;
+  return nextGetIsWaiting ? undefined : difference;
 }
 
 export const cancelGetAverageVideoFramesDifference = () => {

@@ -455,7 +455,7 @@ export default class Ambientlight {
 
     try {
       // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
-      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem);
+      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem)
       if(difference === undefined) return
 
       this.averageVideoFramesDifference = difference
@@ -464,8 +464,12 @@ export default class Ambientlight {
       if(this.chromiumBugVideoJitterWorkaround?.update)
         this.chromiumBugVideoJitterWorkaround.update()
     } catch(ex) {
-      if(ex?.message !== 'Failed to fetch')
+      if(
+        ex?.message !== 'Failed to fetch' && // Chromium
+        ex?.message !== 'NetworkError when attempting to fetch resource.' // Firefox
+      ) {
         SentryReporter.captureException(ex)
+      }
     }
   }
 
@@ -2816,12 +2820,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve))
       }
-      this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
 
     // Continue only if still enabled after await
-    if(this.settings.enabled) {
+    if(this.settings.enabled && this.isOnVideoPage) {
+      this.calculateAverageVideoFramesDifference()
+
       // Prevent incorrect stats from showing
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
