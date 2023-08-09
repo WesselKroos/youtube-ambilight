@@ -32,8 +32,7 @@
     {
       "matches": ["https://www.youtube.com/*"],
       "exclude_matches": ["https://www.youtube.com/live_chat*"],
-      "js": ["scripts/content.js"],
-      "css": ["styles/content.css"]
+      "js": ["scripts/content.js"]
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
@@ -46,6 +45,7 @@
   ],
   "web_accessible_resources": [
     "styles/options.css",
+    "styles/content.css",
     "scripts/injected.js",
     "images/noise-1.png",
     "images/noise-2.png",
