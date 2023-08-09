@@ -37,20 +37,18 @@ class ContentScript {
   getStorageEntriesId = 0
   async getStorageEntryOrEntries(nameOrNames, throwOnUninstalled) {
     const currentId = this.getStorageEntriesId++;
-    let listener;
-    const removeListener = function removeGetStorageEntryOrEntriesMessageListener() {
-      this.removeMessageListener(listener)
-    }.bind(this)
 
     const stack = new Error().stack
     const getStorageEntriesPromise = new Promise(function getStorageEntryOrEntries(resolve, reject) {
+      let listener;
       try {
         listener = this.addMessageListener('get-storage-entries',
           function getStorageEntryOrEntriesMessageListener({ id, valueOrValues, error }) {
             try {
               if(id !== currentId) return
 
-              removeListener()
+              this.removeMessageListener(listener)
+              
               if(error &&
                 (throwOnUninstalled || !(error.message === 'uninstalled' || error.message.includes('QuotaExceededError')))
               ) throw error
@@ -61,6 +59,11 @@ class ContentScript {
             }
           }.bind(this))
       } catch(ex) {
+        try {
+          if(listener) {
+            this.removeMessageListener(listener)
+          }
+        } catch {}
         reject(appendErrorStack(stack, ex))
       }
     }.bind(this))
@@ -72,20 +75,17 @@ class ContentScript {
   setStorageEntryId = 0
   async setStorageEntry(name, value, throwOnUninstalled) {
     const currentId = this.setStorageEntryId++;
-    let listener;
-    const removeListener = function removeSetStorageEntryMessageListener() {
-      this.removeMessageListener(listener)
-    }.bind(this)
-
     const stack = new Error().stack
     const setStorageEntryPromise = new Promise(function setStorageEntry(resolve, reject) {
+      let listener;
       try {
         listener = this.addMessageListener('set-storage-entry', 
           function setStorageEntryMessageListener({ id, error }) {
             try {
               if(id !== currentId) return
 
-              removeListener()
+              this.removeMessageListener(listener)
+
               if(error &&
                 (throwOnUninstalled || !(error.message === 'uninstalled' || error.message.includes('QuotaExceededError')))
               ) throw error
@@ -94,8 +94,14 @@ class ContentScript {
             } catch(ex) {
               reject(appendErrorStack(stack, ex))
             }
-          }.bind(this))
+          }.bind(this)
+        )
       } catch(ex) {
+        try {
+          if(listener) {
+            this.removeMessageListener(listener)
+          }
+        } catch {}
         reject(appendErrorStack(stack, ex))
       }
     }.bind(this))
