@@ -502,7 +502,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
   getRange = (list) => {
     list = list.filter(value => value !== undefined)
-    if(!list.length) return ['?', '?']
+    if(!list.length) return ['?', '?'].map(value => value.padStart(8, ' '))
     
     const sortedList = list.sort((a, b) => a - b)
     return [
