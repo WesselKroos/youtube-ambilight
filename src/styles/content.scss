@@ -442,8 +442,9 @@ html[data-ambientlight-enabled="true"] {
   /* Disable ambient mode */
   
   #cinematics.ytd-watch-flexy,
-  #cinematics-container.ytd-watch-flexy,
-  #cinematics-wide-container.ytd-watch-flexy {
+  #cinematics-container.ytd-watch-flexy, // Old theater view
+  #cinematics-wide-container.ytd-watch-flexy, // Second old theater view
+  #cinematics-full-bleed-container.ytd-watch-flexy {
     display: none !important;
   }
 
