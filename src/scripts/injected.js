@@ -64,8 +64,9 @@ const isVideoInKnownInvalidLocation = () => {
   const ytPlayerManagerVideoElem = document.querySelector('yt-player-manager video.html5-main-video')
   const ytdInlinePreviewPlayerVideoElem = document.querySelector('#inline-preview-player video.html5-main-video')
   const ytdMiniplayerVideoElem = document.querySelector('ytd-miniplayer video.html5-main-video')
+  const channelPlayerVideoElem = document.querySelector('ytd-channel-video-player-renderer video.html5-main-video')
   const outsideYtdAppVideoElem = document.querySelector('html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video')
-  return !!(ytdAppPlayerVideoElem || playerApiVideoElem || ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || outsideYtdAppVideoElem)
+  return !!(ytdAppPlayerVideoElem || playerApiVideoElem || ytPlayerManagerVideoElem || ytdInlinePreviewPlayerVideoElem || ytdMiniplayerVideoElem || channelPlayerVideoElem || outsideYtdAppVideoElem)
 }
 
 const detectDetachedVideo = () => {
