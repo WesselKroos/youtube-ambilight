@@ -510,8 +510,8 @@ export default class BarDetection {
     } catch(ex) {
        // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
       const isKnownError = (
-        ex.message?.includes('ImageBitmap construction failed') ||
-        ex.message?.includes('DataCloneError')
+        ex.message?.includes('ImageBitmap construction failed') || // Chromium
+        ex.name === 'DataCloneError' // Firefox
       )
       if(!isKnownError) {
         ex.details = {
