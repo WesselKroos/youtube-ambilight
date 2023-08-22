@@ -408,8 +408,10 @@ html[data-ambientlight-enabled="true"] {
     #full-bleed-container,
     #player-full-bleed-container,
     #player-container,
+    #ytd-player,
     .html5-video-player,
-    .html5-main-video {
+    .html5-main-video,
+    ytd-watch-flexy div:has(.html5-main-video) {
       background: none !important;
     }
 
@@ -459,8 +461,10 @@ html[data-ambientlight-enabled="true"] {
   ytd-app {
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
+    // #player-full-bleed-container,
     #full-bleed-container,
-    #player-full-bleed-container {
+    > div:has(ytd-player) // Covers any future updates to the html structure
+    {
       transition: background-color 0s .01s;
     }
   }
@@ -1274,13 +1278,12 @@ html[data-ambientlight-enabled="true"] {
       #player-theater-container, // Old theater view
       #player-wide-container, // Second old theater view
       // #player-full-bleed-container // Third old theater view
-      #full-bleed-container {
-        &.ytd-watch-flexy {
-          height: calc(100vh - 169px) !important;
-          max-height: calc(100vh - 169px) !important;
-          margin-top: 29px;
-          margin-bottom: 84px;
-        }
+      #full-bleed-container,
+      > div:has(ytd-player) {
+        height: calc(100vh - 169px) !important;
+        max-height: calc(100vh - 169px) !important;
+        margin-top: 29px;
+        margin-bottom: 84px;
       }
     }
 

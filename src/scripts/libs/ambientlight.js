@@ -117,11 +117,11 @@ export default class Ambientlight {
   }
 
   get playerTheaterContainerElem() {
-    return document.querySelector('ytd-watch-flexy #player-theater-container')
+    return document.querySelector('ytd-watch-flexy #full-bleed-container')
   }
 
   get playerTheaterContainerElemFromVideo() {
-    return this.videoElem?.closest('#player-theater-container')
+    return this.videoElem?.closest('#full-bleed-container')
   }
 
   get ytdWatchFlexyElemFromVideo() {
@@ -2913,13 +2913,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.playerTheaterContainerElem) {
       this.playerTheaterContainerElem.style.setProperty('background', 'none', 'important')
     }
-
-    html.setAttribute('data-ambientlight-enabled', true)
-    if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
-    if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
     
-    ;(async () => {
+    (async () => {
       await new Promise(resolve => raf(resolve))
+
+      html.setAttribute('data-ambientlight-enabled', true)
+      if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+      if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
 
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
