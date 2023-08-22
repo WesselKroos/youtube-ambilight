@@ -405,6 +405,7 @@ html[data-ambientlight-enabled="true"] {
     &,
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
+    #full-bleed-container,
     #player-full-bleed-container,
     #player-container,
     .html5-video-player,
@@ -458,6 +459,7 @@ html[data-ambientlight-enabled="true"] {
   ytd-app {
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
+    #full-bleed-container,
     #player-full-bleed-container {
       transition: background-color 0s .01s;
     }
@@ -1271,7 +1273,8 @@ html[data-ambientlight-enabled="true"] {
     ytd-watch-flexy[theater] {
       #player-theater-container, // Old theater view
       #player-wide-container, // Second old theater view
-      #player-full-bleed-container {
+      // #player-full-bleed-container // Third old theater view
+      #full-bleed-container {
         &.ytd-watch-flexy {
           height: calc(100vh - 169px) !important;
           max-height: calc(100vh - 169px) !important;
