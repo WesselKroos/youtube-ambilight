@@ -650,6 +650,14 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'fixedPosition',
+    label: 'Fixed position',
+    description: 'Ignores the scroll position of the page',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
     type: 'section',
     label: 'General',
     name: 'sectionGeneralCollapsed',

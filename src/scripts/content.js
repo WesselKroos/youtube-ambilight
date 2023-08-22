@@ -68,19 +68,24 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   // }
   // addWebGLLint()
 
-  const s = document.createElement('script')
-  s.defer = true
-  s.src = chrome.runtime.getURL('scripts/injected.js')
-  s.setAttribute('data-crash-options', JSON.stringify(crashOptions))
-  s.setAttribute('data-version', version)
-  s.setAttribute('data-feedback-form-link', getFeedbackFormLink())
-  s.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
-  
-  s.onload = wrapErrorHandler(function injectScriptOnLoad() {
-    if(s.parentNode) s.parentNode.removeChild(s)
-  }.bind(this))
-  s.onerror = function injectScriptOnError(ex) {
+  const script = document.createElement('script')
+  script.defer = true
+  script.src = chrome.runtime.getURL('scripts/injected.js')
+  script.setAttribute('data-crash-options', JSON.stringify(crashOptions))
+  script.setAttribute('data-version', version)
+  script.setAttribute('data-feedback-form-link', getFeedbackFormLink())
+  script.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
+  script.onerror = function injectScriptOnError(ex) {
     SentryReporter.captureException(ex)
   }.bind(this)
-  document.body.appendChild(s)
+  document.head.appendChild(script)
+
+  
+  const style = document.createElement('link')
+  style.rel = 'stylesheet'
+  style.href = chrome.runtime.getURL('styles/content.css')
+  style.onerror = function injectStyleOnError(ex) {
+    SentryReporter.captureException(ex)
+  }.bind(this)
+  document.head.appendChild(style)
 }))()

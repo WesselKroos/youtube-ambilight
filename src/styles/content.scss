@@ -61,11 +61,7 @@
 }
 
 .ambientlight__top {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: 1px;
-  pointer-events: none;
+  display: none;
 }
 
 /* Workaround for issue with OffScreenCanvas */
@@ -309,27 +305,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  body,
-  ytd-app[scrolling_] {
-    overflow-x: hidden; //Prevent video scale 200% from creating a horizontal scrollbar
-    overflow-y: visible;
-  }
-
-  /* Prevent YouTube's horizontal scrollbar in fullscreen when the video is zoomed in */
-
   ytd-app[scrolling] {
-    overflow-x: hidden !important;
     &:hover {
       will-change: scroll-position !important; /* Improves scroll performance */
     }
   }
 
-  /* Prevent YouTube's flickering scrollbar bug */
 
-  #page-manager.ytd-app {
-    overflow: visible !important;
-    overflow-y: visible !important;
-    overflow-x: visible !important;
+  #content.ytd-app {
+    position: relative; /* Fixes ambientlight auto height */
   }
 
   /* Cosmetics - Transparent elements */
@@ -404,10 +388,14 @@ html[data-ambientlight-enabled="true"] {
   ytd-app {
     &,
     #player-theater-container, // Old theater view
-    #player-wide-container,
+    #player-wide-container, // Second old theater view
+    #full-bleed-container,
+    #player-full-bleed-container,
     #player-container,
+    #ytd-player,
     .html5-video-player,
-    .html5-main-video {
+    .html5-main-video,
+    ytd-watch-flexy div:has(.html5-main-video) {
       background: none !important;
     }
 
@@ -441,8 +429,9 @@ html[data-ambientlight-enabled="true"] {
   /* Disable ambient mode */
   
   #cinematics.ytd-watch-flexy,
-  #cinematics-container.ytd-watch-flexy,
-  #cinematics-wide-container.ytd-watch-flexy {
+  #cinematics-container.ytd-watch-flexy, // Old theater view
+  #cinematics-wide-container.ytd-watch-flexy, // Second old theater view
+  #cinematics-full-bleed-container.ytd-watch-flexy {
     display: none !important;
   }
 
@@ -455,7 +444,11 @@ html[data-ambientlight-enabled="true"] {
   //Reduce theater mode flicker when switching between enabled and disabled
   ytd-app {
     #player-theater-container, // Old theater view
-    #player-wide-container {
+    #player-wide-container, // Second old theater view
+    // #player-full-bleed-container,
+    #full-bleed-container,
+    > div:has(ytd-player) // Covers any future updates to the html structure
+    {
       transition: background-color 0s .01s;
     }
   }
@@ -1199,19 +1192,44 @@ html[data-ambientlight-enabled="true"] {
 
   .ambientlight {
     display: block;
-    height: 300%;
     overflow: hidden;
     pointer-events: none;
     user-select: none;
-    top: 0;
+    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
     left: 0;
     contain: strict;
     // will-change: transform; // Improves resizing performance, but reduces cpu rendering performance
+
+    &::before {
+      content: var(--ytal-debanding-content, none);
+      position: absolute;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      background: var(--ytal-debanding-background, none);
+      opacity: var(--ytal-debanding-opacity, 0);
+    }
+  }
+  body[data-ambientlight-fixed="true"] .ambientlight {
+    position: fixed;
+    height: 100vh;
   }
 
-  .ambientlight__clip {
-    //overflow: hidden;
+  .ambientlight__top {
+    display: block;
+    position: absolute;
+    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
+    width: 100%;
+    height: 1px;
+    pointer-events: none;
   }
+
+  // .ambientlight__clip {
+  //   overflow: hidden;
+  // }
+  
   .ambientlight__video-shadow {
     display: none;
   }
@@ -1263,13 +1281,14 @@ html[data-ambientlight-enabled="true"] {
   &[data-ambientlight-immersive="true"] {
     ytd-watch-flexy[theater] {
       #player-theater-container, // Old theater view
-      #player-wide-container {
-        &.ytd-watch-flexy {
-          height: calc(100vh - 169px) !important;
-          max-height: calc(100vh - 169px) !important;
-          margin-top: 29px;
-          margin-bottom: 84px;
-        }
+      #player-wide-container, // Second old theater view
+      // #player-full-bleed-container // Third old theater view
+      #full-bleed-container,
+      > div:has(ytd-player) {
+        height: calc(100vh - 169px) !important;
+        max-height: calc(100vh - 169px) !important;
+        margin-top: 29px;
+        margin-bottom: 84px;
       }
     }
 
@@ -2585,35 +2604,6 @@ html[data-ambientlight-enabled="true"] {
       filter: var(--ytal-button-shadow) !important;
     }
   }
-
-  .ambientlight::before {
-    content: var(--ytal-debanding-content, none);
-    position: absolute;
-    z-index: 2;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-    background: var(--ytal-debanding-background, none);
-    opacity: var(--ytal-debanding-opacity, 0);
-  }
-  .ambientlight::after {
-    content: var(--ytal-debanding-content, none);
-    position: absolute;
-    z-index: 3;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-    background: linear-gradient(0deg, #ffff 0px, #fff0 200px);
-    background: linear-gradient(0deg, var(--ytal-page-background, #ffff) 0px, #fff0 200px);
-  }
-  &[dark] .ambientlight::after {
-    background: linear-gradient(0deg, #000f 0px, #0000 200px);
-    background: linear-gradient(0deg, var(--ytal-page-background, #000f) 0px, #0000 200px);
-    
-  }
-
 
   // Zoomed in video overflow prevention
 

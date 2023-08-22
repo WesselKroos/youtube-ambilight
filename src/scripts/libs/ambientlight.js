@@ -117,11 +117,11 @@ export default class Ambientlight {
   }
 
   get playerTheaterContainerElem() {
-    return document.querySelector('ytd-watch-flexy #player-theater-container')
+    return document.querySelector('ytd-watch-flexy #full-bleed-container')
   }
 
   get playerTheaterContainerElemFromVideo() {
-    return this.videoElem?.closest('#player-theater-container')
+    return this.videoElem?.closest('#full-bleed-container')
   }
 
   get ytdWatchFlexyElemFromVideo() {
@@ -455,7 +455,7 @@ export default class Ambientlight {
 
     try {
       // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
-      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem);
+      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem)
       if(difference === undefined) return
 
       this.averageVideoFramesDifference = difference
@@ -464,8 +464,12 @@ export default class Ambientlight {
       if(this.chromiumBugVideoJitterWorkaround?.update)
         this.chromiumBugVideoJitterWorkaround.update()
     } catch(ex) {
-      if(ex?.message !== 'Failed to fetch')
+      if(
+        ex?.message !== 'Failed to fetch' && // Chromium
+        ex?.message !== 'NetworkError when attempting to fetch resource.' // Firefox
+      ) {
         SentryReporter.captureException(ex)
+      }
     }
   }
 
@@ -1024,11 +1028,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initAmbientlightElems() {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
-    body.prepend(this.elem)
 
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambientlight__top')
-    body.prepend(this.topElem)
+    
+    if(this.ytdWatchFlexyElem.__shady_native_prepend) {
+      this.ytdWatchFlexyElem.__shady_native_prepend(this.elem)
+      this.ytdWatchFlexyElem.__shady_native_prepend(this.topElem)
+    } else {
+      this.ytdWatchFlexyElem.prepend(this.elem)
+      this.ytdWatchFlexyElem.prepend(this.topElem)
+    }
 
     this.videoShadowElem = document.createElement('div')
     this.videoShadowElem.classList.add('ambientlight__video-shadow')
@@ -1382,26 +1392,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoPlayerResizeToFullscreen = this.isFullscreen
     }
 
-    if(this.isFullscreen) {
-      if(this.elem.parentElement !== this.ytdAppElem) {
-        // prepend is overriden by Shady DOM when:
-        //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
-        // This causes the elements to be removed from the document instead of being added to the ytdAppElem
-        if(this.ytdAppElem?.__shady_native_prepend) {
-          this.ytdAppElem.__shady_native_prepend(this.elem)
-          this.ytdAppElem.__shady_native_prepend(this.topElem)
-        } else {
-          this.ytdAppElem.prepend(this.elem)
-          this.ytdAppElem.prepend(this.topElem)
-        }
-      }
-    } else {
-      if(this.elem.parentElement !== body) {
-        body.prepend(this.elem)
-        body.prepend(this.topElem)
-      }
-    }
-
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -1550,7 +1540,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     let pScale;
     if(this.settings.webGL) {
       const relativeBlur = (this.settings.resolution / 100) * (this.isHdr ? 0 : this.settings.blur)
-      const pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
+      let pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
         ((this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
         ? 256
         : (relativeBlur >= 20
@@ -1561,6 +1551,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
             )
           )
         )
+      if(this.settings.spread > 200)
+        pMinSize = pMinSize / 2
+
       pScale = Math.min(.5, 
         Math.max(pMinSize / this.srcVideoOffset.width, pMinSize / this.srcVideoOffset.height),
         Math.min(1024 / this.srcVideoOffset.width, 1024 / this.srcVideoOffset.height))
@@ -1687,6 +1680,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateStyles() {
+    // Fixed position
+    document.body.setAttribute('data-ambientlight-fixed', this.settings.fixedPosition)
+
     // Page background
     let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
     pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
@@ -2810,12 +2806,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(document.visibilityState === 'hidden') {
         await new Promise(resolve => raf(resolve))
       }
-      this.calculateAverageVideoFramesDifference()
     }
     this.pendingStart = undefined
 
     // Continue only if still enabled after await
-    if(this.settings.enabled) {
+    if(this.settings.enabled && this.isOnVideoPage) {
+      this.calculateAverageVideoFramesDifference()
+
       // Prevent incorrect stats from showing
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval
       await this.nextFrame()
@@ -2902,13 +2899,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.playerTheaterContainerElem) {
       this.playerTheaterContainerElem.style.setProperty('background', 'none', 'important')
     }
-
-    html.setAttribute('data-ambientlight-enabled', true)
-    if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
-    if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
     
-    ;(async () => {
+    (async () => {
       await new Promise(resolve => raf(resolve))
+
+      html.setAttribute('data-ambientlight-enabled', true)
+      if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
+      if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
 
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''

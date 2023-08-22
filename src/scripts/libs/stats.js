@@ -165,13 +165,14 @@ export default class Stats {
 
       // Ambientlight FPS
       const ambientlightFrameRate = this.ambientlight.ambientlightFrameRate
+      const framerateLimit = this.ambientlight.getRealFramerateLimit()
       const ambientlightFPSText = `AMBIENT: ${ambientlightFrameRate.toFixed(2)} ${ambientlightFrameRate
-        ? `(${(1000/ambientlightFrameRate).toFixed(1)}ms)${this.settings.framerateLimit 
-          ? ` LIMITED: ${this.ambientlight.getRealFramerateLimit().toFixed(2)}` : ''
+        ? `(${(1000/ambientlightFrameRate).toFixed(1)}ms)${framerateLimit
+          ? ` LIMITED TO: ${framerateLimit.toFixed(2)}` : ''
         }` : ''
       }`
-      const ambientlightFrameRateTarget = this.settings.framerateLimit 
-        ? Math.min(videoFrameRate, this.ambientlight.getRealFramerateLimit()) 
+      const ambientlightFrameRateTarget = framerateLimit
+        ? Math.min(videoFrameRate, framerateLimit) 
         : videoFrameRate
       const ambientlightFPSColor = (ambientlightFrameRate < ambientlightFrameRateTarget * .9)
         ? '#f55'
@@ -352,7 +353,7 @@ GREEN        | when the video frame will be displayed
 
 STATS
 Frames on time: ${(frameTimes.length - delayedFrames - skippedFrames).toString().padStart(3, ' ')} | Delayed: ${delayedFrames.toString().padStart(3, ' ')} | Skipped: ${skippedFrames.toString().padStart(3, ' ')}
-Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parseFloat(ambientlightBudgetRange[1])}ms`
+Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudgetRange[1]}ms`
     this.ambientlightFTLegendElem.childNodes[0].nodeValue = legend
 
     const xSize = 3
@@ -458,8 +459,9 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
     const range = (max - min + displayFrameDuration)
     const yScale = height / range
     const yLine = 1 / yScale
+    const framerateLimit = this.ambientlight.getRealFramerateLimit()
     const frameRects = frameDurations.map(fd => ([
-      ...(this.settings.framerateLimit || fd.isDrawn ? [] : [[this.settings.framerateLimit ? '#000' : '#800', xSize, min - displayFrameDuration / 2, range]]),
+      ...(framerateLimit || fd.isDrawn ? [] : [['#800', xSize, min - displayFrameDuration / 2, range]]),
       ['#06f', xSize, ...fd.decodeToPresent],
       ['#666', 1, ...fd.composeToReceive],
       ['#f80', 1, ...fd.presentToCompose],
@@ -470,7 +472,8 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
 
       [fd.isDrawnBeforeNextCompose  ? '#666' : '#666', 1, fd.nextCompose, yLine],
       [fd.isDrawnBeforeNextDisplay  ? '#fff' : '#fff', 1, fd.nextDisplay, yLine],
-      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#0f0', 1, fd.videoDisplay, yLine]
+      [fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#0f0', 1, fd.videoDisplay, yLine],
+      ...(framerateLimit && !fd.isDrawn ? [['#000000bb', xSize, min - displayFrameDuration / 2, range]] : []),
     ]))
     // console.log(frameRects)
 
@@ -485,7 +488,7 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
           rects.push([color, x + Math.round(xSize / 2 - xFrameSize / 2), Math.round((y - offset) * yScale), xFrameSize, Math.max(1, Math.round(ySize * yScale))])
         }
         
-      } else if(!this.settings.framerateLimit) {
+      } else if(!framerateLimit) {
         rects.push(['#f00', x, 0, xSize, height])
       }
     }
@@ -497,14 +500,21 @@ Ambient rendering budget: ${parseFloat(ambientlightBudgetRange[0])}ms to ${parse
     }
   }
 
-  getRange = (list) => list.length 
-    ? list
-      .sort((a, b) => a - b)
-      .reduce((lowest, de, i) => (i === 0)
-        ? [de]
-        : (i === list.length - 1)
-          ? [lowest.toFixed(1)?.padStart(8, ' '), de.toFixed(1)?.padStart(8, ' ')]
-          : lowest
-      )
-    : ['?', '?'];
+  getRange = (list) => {
+    list = list.filter(value => value !== undefined)
+    if(!list.length) return ['?', '?'].map(value => value.padStart(8, ' '))
+    
+    const sortedList = list.sort((a, b) => a - b)
+    return [
+        sortedList[0], 
+        sortedList[sortedList.length - 1]
+      ]
+      .map(value => 
+        (value === undefined
+          ? '?'
+          : value.toFixed(1)
+        )
+        .padStart(8, ' ')
+      );
+  }
 }

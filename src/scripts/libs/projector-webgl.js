@@ -97,9 +97,6 @@ export default class ProjectorWebGL {
 
     if(!this.cropped) this.updateCrop()
 
-    const internalFormat = this.ctx.RGBA;
-    const format = this.ctx.RGBA;
-    const formatType = this.ctx.UNSIGNED_BYTE;
     const srcWidth = src.videoWidth || src.width
     const srcHeight = src.videoHeight || src.height
 
@@ -120,6 +117,14 @@ export default class ProjectorWebGL {
       height: srcHeight
     }
     const updateTextureSize = this.drawTextureSize.width !== textureSize.width || this.drawTextureSize.height !== textureSize.height
+
+    const blurCanvasBound = Math.floor(this.blurBound / this.blurCanvasScale)
+    const blurCanvasWidthMinBounds = this.blurCanvas.width - (blurCanvasBound * 2)
+    const blurCanvasHeightMinBounds = this.blurCanvas.height - (blurCanvasBound * 2)
+    
+    const internalFormat = this.ctx.RGBA;
+    const format = this.ctx.RGBA;
+    const formatType = this.ctx.UNSIGNED_BYTE;
 
     let start = this.settings.showResolutions ? performance.now() : undefined
     if(this.projectorsCount > 1) {
@@ -145,32 +150,34 @@ export default class ProjectorWebGL {
           : emptyOpacities
         )
       ]
-      this.ctx.uniform1fv(this.fTextureOpacityLoc, new Float32Array(opacities))
 
       // Draw texture
       
       const textureIndex = Math.floor(this.drawIndex / this.subProjectorsCount)
       const previousTextureIndex = Math.floor((this.drawIndex - 1) / this.subProjectorsCount)
 
-      this.ctx.activeTexture(this.ctx[`TEXTURE${textureIndex + 1}`])
       const isNewTexture = textureIndex !== previousTextureIndex
-      if(isNewTexture && this.drawInitial) {
-        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
-      }
+      const drawInitialAndIsNewTexture = this.drawInitial && isNewTexture
 
       const subIndex = this.drawIndex % this.subProjectorsCount
       const xIndex = subIndex % subProjectorsDimensionMultiplier
       const yIndex = Math.floor(subIndex / subProjectorsDimensionMultiplier) % subProjectorsDimensionMultiplier
       const x = (srcWidth + this.drawBorder) * xIndex
       const y = (srcHeight + this.drawBorder) * yIndex
-      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, x, y, format, formatType, src)
-      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
 
       if(this.drawInitial) {
         const isLastSubTexture = this.drawIndex == this.projectorsCount - 1
         if(isLastSubTexture)
           this.drawInitial = false
       }
+
+      this.ctx.uniform1fv(this.fTextureOpacityLoc, new Float32Array(opacities))
+      this.ctx.activeTexture(this.ctx[`TEXTURE${textureIndex + 1}`])
+      if(drawInitialAndIsNewTexture) {
+        this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, textureSize.width, textureSize.height, 0, format, formatType, null)
+      }
+      this.ctx.texSubImage2D(this.ctx.TEXTURE_2D, 0, x, y, format, formatType, src)
+      this.ctx.generateMipmap(this.ctx.TEXTURE_2D)
     } else {
       if(updateTextureSize) {
         this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, internalFormat, format, formatType, src);
@@ -187,10 +194,11 @@ export default class ProjectorWebGL {
     
     if(this.settings.showResolutions) start = performance.now()
     this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height)
-    if(this.settings.showResolutions) this.blurClearTime = performance.now() - start
-    const blurCanvasBound = Math.floor(this.blurBound / this.blurCanvasScale)
-    if(this.settings.showResolutions) start = performance.now()
-    this.blurCtx.drawImage(this.elem, blurCanvasBound, blurCanvasBound, this.blurCanvas.width - (blurCanvasBound * 2), this.blurCanvas.height - (blurCanvasBound * 2))
+    if(this.settings.showResolutions) {
+      this.blurClearTime = performance.now() - start
+      start = performance.now()
+    }
+    this.blurCtx.drawImage(this.elem, blurCanvasBound, blurCanvasBound, blurCanvasWidthMinBounds, blurCanvasHeightMinBounds)
     if(this.settings.showResolutions) this.blurDrawTime = performance.now() - start
 
     if(updateTextureSize) {
@@ -259,6 +267,10 @@ export default class ProjectorWebGL {
     this.projectors[0] = {
       elem: this.blurCanvas,
       ctx: this.blurCtx
+    }
+
+    if(this.blurLost) {
+      this.blurLost = false
     }
   }
 
@@ -626,7 +638,7 @@ export default class ProjectorWebGL {
             ambientlight = hsv2rgb(ambientlightHSV);
           }
         ` : ''}
-        gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
+        gl_FragColor = vec4(ambientlight * (1. - shadowAlpha), 1.);
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
@@ -1012,28 +1024,21 @@ export default class ProjectorWebGL {
       right: window.innerWidth + blurSize,
       bottom: window.innerHeight + blurSize
     }
-    videoRect = {
-      left: videoRect.left + blurSize,
-      top: videoRect.top + blurSize,
-      right: videoRect.right - blurSize,
-      bottom: videoRect.bottom - blurSize
-    }
     const canvasRectCenter = {
       x: canvasRect.left + (canvasRect.width / 2),
       y: canvasRect.top + (canvasRect.height / 2)
     }
-
     const cropRect = {
       left: Math.max(canvasRect.left, windowRect.left),
       top: Math.max(canvasRect.top, windowRect.top),
       right: Math.min(canvasRect.right, windowRect.right),
-      bottom: Math.min(canvasRect.bottom, windowRect.bottom + 100) // 100 = a single scroll step
+      bottom: Math.min(canvasRect.bottom, windowRect.bottom + (this.settings.fixedPosition ? 0 : 100)) // 100 = a single scroll step
     };
     const cropPerc = {
       left: (canvasRectCenter.x - cropRect.left) / (canvasRectCenter.x - canvasRect.left),
       top: (canvasRectCenter.y - cropRect.top) / (canvasRectCenter.y - canvasRect.top),
       right: (cropRect.right - canvasRectCenter.x) / (canvasRect.right - canvasRectCenter.x),
-      bottom: this.atTop
+      bottom: (this.atTop || this.settings.fixedPosition)
         ? (cropRect.bottom - canvasRectCenter.y) / (canvasRect.bottom - canvasRectCenter.y)
         : 1
     }
@@ -1044,6 +1049,19 @@ export default class ProjectorWebGL {
       l: -Math.max(0, cropPerc.left.toFixed(4))
     }
 
+    videoRect = (this.settings.fixedPosition && !this.atTop)
+      ? {
+        left: canvasRectCenter.x,
+        top: canvasRectCenter.y,
+        right: canvasRectCenter.x,
+        bottom: canvasRectCenter.y
+      }
+      : {
+        left: videoRect.left + blurSize,
+        top: videoRect.top + blurSize,
+        right: videoRect.right - blurSize,
+        bottom: videoRect.bottom - blurSize
+      }
     const cutPerc = {
       left: (canvasRectCenter.x - videoRect.left) / (canvasRectCenter.x - canvasRect.left),
       top: (canvasRectCenter.y - videoRect.top) / (canvasRectCenter.y - canvasRect.top),
