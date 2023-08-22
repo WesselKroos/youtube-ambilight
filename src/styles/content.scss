@@ -394,9 +394,14 @@ html[data-ambientlight-enabled="true"] {
     #player-container,
     #ytd-player,
     .html5-video-player,
-    .html5-main-video,
-    ytd-watch-flexy div:has(.html5-main-video) {
+    .html5-main-video {
       background: none !important;
+    }
+    
+    @supports selector(:has(*)) {
+      ytd-watch-flexy div:has(.html5-main-video) {
+        background: none !important;
+      }
     }
 
     ytd-masthead,
@@ -446,10 +451,14 @@ html[data-ambientlight-enabled="true"] {
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
     // #player-full-bleed-container,
-    #full-bleed-container,
-    > div:has(ytd-player) // Covers any future updates to the html structure
-    {
+    #full-bleed-container {
       transition: background-color 0s .01s;
+    }
+
+    @supports selector(:has(*)) {
+      > div:has(ytd-player) { // Covers any future updates to the html structure
+        transition: background-color 0s .01s;
+      }
     }
   }
 
@@ -1280,15 +1289,24 @@ html[data-ambientlight-enabled="true"] {
 
   &[data-ambientlight-immersive="true"] {
     ytd-watch-flexy[theater] {
-      #player-theater-container, // Old theater view
-      #player-wide-container, // Second old theater view
-      // #player-full-bleed-container // Third old theater view
-      #full-bleed-container,
-      > div:has(ytd-player) {
+      @mixin theater {
         height: calc(100vh - 169px) !important;
         max-height: calc(100vh - 169px) !important;
         margin-top: 29px;
         margin-bottom: 84px;
+      }
+
+      #player-theater-container, // Old theater view
+      #player-wide-container, // Second old theater view
+      // #player-full-bleed-container // Third old theater view
+      #full-bleed-container {
+        @include theater;
+      }
+
+      @supports selector(:has(*)) {
+        > div:has(ytd-player) {
+          @include theater;
+        }
       }
     }
 
