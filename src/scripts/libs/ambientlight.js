@@ -1028,11 +1028,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initAmbientlightElems() {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
-    body.prepend(this.elem)
 
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambientlight__top')
-    body.prepend(this.topElem)
+    
+    if(this.ytdWatchFlexyElem.__shady_native_prepend) {
+      this.ytdWatchFlexyElem.__shady_native_prepend(this.elem)
+      this.ytdWatchFlexyElem.__shady_native_prepend(this.topElem)
+    } else {
+      this.ytdWatchFlexyElem.prepend(this.elem)
+      this.ytdWatchFlexyElem.prepend(this.topElem)
+    }
 
     this.videoShadowElem = document.createElement('div')
     this.videoShadowElem.classList.add('ambientlight__video-shadow')
@@ -1384,26 +1390,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(fullscreenChanged && this.settings.enabled && this.isOnVideoPage) {
       this.videoPlayerResizeFromFullscreen = !this.isFullscreen
       this.videoPlayerResizeToFullscreen = this.isFullscreen
-    }
-
-    if(this.isFullscreen) {
-      if(this.elem.parentElement !== this.ytdAppElem) {
-        // prepend is overriden by Shady DOM when:
-        //   window.shadyDOM.settings.noPatch === "on-demand" && ytcfg.get('EXPERIMENT_FLAGS').polymer_on_demand_shady_dom === true
-        // This causes the elements to be removed from the document instead of being added to the ytdAppElem
-        if(this.ytdAppElem?.__shady_native_prepend) {
-          this.ytdAppElem.__shady_native_prepend(this.elem)
-          this.ytdAppElem.__shady_native_prepend(this.topElem)
-        } else {
-          this.ytdAppElem.prepend(this.elem)
-          this.ytdAppElem.prepend(this.topElem)
-        }
-      }
-    } else {
-      if(this.elem.parentElement !== body) {
-        body.prepend(this.elem)
-        body.prepend(this.topElem)
-      }
     }
 
     // Todo: Set the settings for the specific view

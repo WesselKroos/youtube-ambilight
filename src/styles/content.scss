@@ -61,11 +61,7 @@
 }
 
 .ambientlight__top {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: 1px;
-  pointer-events: none;
+  display: none;
 }
 
 /* Workaround for issue with OffScreenCanvas */
@@ -309,27 +305,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  body,
-  ytd-app[scrolling_] {
-    overflow-x: hidden; //Prevent video scale 200% from creating a horizontal scrollbar
-    overflow-y: visible;
-  }
-
-  /* Prevent YouTube's horizontal scrollbar in fullscreen when the video is zoomed in */
-
   ytd-app[scrolling] {
-    overflow-x: hidden !important;
     &:hover {
       will-change: scroll-position !important; /* Improves scroll performance */
     }
   }
 
-  /* Prevent YouTube's flickering scrollbar bug */
 
-  #page-manager.ytd-app {
-    overflow: visible !important;
-    overflow-y: visible !important;
-    overflow-x: visible !important;
+  #content.ytd-app {
+    position: relative; /* Fixes ambientlight auto height */
   }
 
   /* Cosmetics - Transparent elements */
@@ -1208,23 +1192,44 @@ html[data-ambientlight-enabled="true"] {
 
   .ambientlight {
     display: block;
-    height: 300%;
     overflow: hidden;
     pointer-events: none;
     user-select: none;
-    top: 0;
+    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
     left: 0;
     contain: strict;
     // will-change: transform; // Improves resizing performance, but reduces cpu rendering performance
+
+    &::before {
+      content: var(--ytal-debanding-content, none);
+      position: absolute;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      background: var(--ytal-debanding-background, none);
+      opacity: var(--ytal-debanding-opacity, 0);
+    }
   }
   body[data-ambientlight-fixed="true"] .ambientlight {
     position: fixed;
     height: 100vh;
   }
 
-  .ambientlight__clip {
-    //overflow: hidden;
+  .ambientlight__top {
+    display: block;
+    position: absolute;
+    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
+    width: 100%;
+    height: 1px;
+    pointer-events: none;
   }
+
+  // .ambientlight__clip {
+  //   overflow: hidden;
+  // }
+  
   .ambientlight__video-shadow {
     display: none;
   }
@@ -2599,35 +2604,6 @@ html[data-ambientlight-enabled="true"] {
       filter: var(--ytal-button-shadow) !important;
     }
   }
-
-  .ambientlight::before {
-    content: var(--ytal-debanding-content, none);
-    position: absolute;
-    z-index: 2;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-    background: var(--ytal-debanding-background, none);
-    opacity: var(--ytal-debanding-opacity, 0);
-  }
-  body:not([data-ambientlight-fixed="true"]) .ambientlight::after {
-    content: var(--ytal-debanding-content, none);
-    position: absolute;
-    z-index: 3;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-    background: linear-gradient(0deg, #ffff 0px, #fff0 200px);
-    background: linear-gradient(0deg, var(--ytal-page-background, #ffff) 0px, #fff0 200px);
-  }
-  &[dark] body:not([data-ambientlight-fixed="true"]) .ambientlight::after {
-    background: linear-gradient(0deg, #000f 0px, #0000 200px);
-    background: linear-gradient(0deg, var(--ytal-page-background, #000f) 0px, #0000 200px);
-    
-  }
-
 
   // Zoomed in video overflow prevention
 
