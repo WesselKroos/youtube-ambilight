@@ -2911,6 +2911,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
       this.ytdAppElem.style.background = ''
 
+      this.updateVideoPlayerSize() // In case the theater player height changed
+
       // Recalculate the player menu width to remove the elements on the second row
       try {
         await new Promise(resolve => raf(resolve))
