@@ -1204,6 +1204,7 @@ html[data-ambientlight-enabled="true"] {
     overflow: hidden;
     pointer-events: none;
     user-select: none;
+    z-index: -1; // Fixes glitching in some video's in the small view in Firefox
     top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
     left: 0;
     contain: strict;
