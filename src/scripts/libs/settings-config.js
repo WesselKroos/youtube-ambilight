@@ -28,7 +28,7 @@ const SettingsConfig = [
   {
     name: 'showFrametimes',
     label: 'Frametime stats',
-    description: 'More CPU usage',
+    description: 'Uses: CPU power',
     questionMark: {
       title: 'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
     },
@@ -148,7 +148,7 @@ const SettingsConfig = [
   {
     name: 'headerFillOpacity',
     label: 'Background opacity',
-    description: 'While scrolled down',
+    description: 'Only applies when scrolled down',
     type: 'list',
     default: 100,
     min: -100,
@@ -329,7 +329,7 @@ const SettingsConfig = [
   {
     name: 'detectHorizontalBarSizeEnabled',
     label: 'Remove black bars',
-    description: 'More CPU usage',
+    description: 'Uses: CPU power',
     type: 'checkbox',
     default: false,
     defaultKey: 'B'
@@ -337,7 +337,7 @@ const SettingsConfig = [
   {
     name: 'detectVerticalBarSizeEnabled',
     label: 'Remove black sidebars',
-    description: 'More CPU usage',
+    description: 'Uses: CPU power',
     type: 'checkbox',
     default: false,
     defaultKey: 'V'
@@ -535,7 +535,7 @@ const SettingsConfig = [
   {
     name: 'blur',
     label: 'Blur',
-    description: 'More GPU memory',
+    description: 'Uses: GPU memory',
     type: 'list',
     default: 30,
     min: 0,
@@ -556,7 +556,7 @@ const SettingsConfig = [
   {
     name: 'spread',
     label: 'Spread',
-    description: 'More GPU usage',
+    description: 'Uses: GPU power',
     type: 'list',
     default: 17,
     min: 0,
@@ -601,7 +601,7 @@ const SettingsConfig = [
   {
     name: 'frameFading',
     label: 'Fade in duration',
-    description: 'More GPU memory',
+    description: 'Uses: GPU memory',
     questionMark: {
       title: 'Fading between changes in the ambient light'
     },
@@ -634,7 +634,7 @@ const SettingsConfig = [
       title: 'Click for more information about Frame blending',
       href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s'
     },
-    description: 'More GPU usage. Also works with "Sync video" setting',
+    description: 'Uses: GPU power. Also works with "Sync video"',
     type: 'checkbox',
     default: false,
     advanced: true
