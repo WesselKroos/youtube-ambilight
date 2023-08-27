@@ -55,6 +55,14 @@
   }
 }
 
+@mixin ytd-watch {
+  ytd-watch-flexy,
+  ytd-watch-fixie,
+  ytd-watch-grid {
+    @content;
+  }
+}
+
 
 .ambientlight {
   display: none;
@@ -195,7 +203,7 @@
 
 /* Override incorrect default description colors when switching between themes */
     
-#description.ytd-watch-metadata {
+#description {
   .yt-core-attributed-string {
     &--link-inherit-color {
       color: inherit !important;
@@ -314,6 +322,13 @@ html[data-ambientlight-enabled="true"] {
 
   #content.ytd-app {
     position: relative; /* Fixes ambientlight auto height */
+
+    // Fixes margin above ambientlight
+    &::before {
+      content: '';
+      display: table;
+      clear: both;
+    }
   }
 
   /* Cosmetics - Transparent elements */
@@ -399,8 +414,10 @@ html[data-ambientlight-enabled="true"] {
     }
     
     @supports selector(:has(*)) {
-      ytd-watch-flexy div:has(.html5-main-video) {
-        background: none !important;
+      @include ytd-watch {
+        div:has(.html5-main-video) {
+          background: none !important;
+        }
       }
     }
 
@@ -425,19 +442,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  /* Prevent ambient light overlaying content */
-  
-  ytd-watch-flexy[fullscreen] {
-    z-index: 1;
-  }
-
   /* Disable ambient mode */
   
-  #cinematics.ytd-watch-flexy,
-  #cinematics-container.ytd-watch-flexy, // Old theater view
-  #cinematics-wide-container.ytd-watch-flexy, // Second old theater view
-  #cinematics-full-bleed-container.ytd-watch-flexy {
-    display: none !important;
+  ytd-app {
+    #cinematics,
+    #cinematics-container, // Old theater view
+    #cinematics-wide-container, // Second old theater view
+    #cinematics-full-bleed-container {
+      display: none !important;
+    }
   }
 
   /* Video preview while moving the timeline */
@@ -502,30 +515,50 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Chapters & Transcriptions & Side comments */
 
-  #header.ytd-engagement-panel-title-header-renderer,
+  #header.ytd-engagement-panel-title-header-renderer {
+    background: none !important;
+  }
+
   #content.ytd-engagement-panel-section-list-renderer {
-    background: var(--ytal-background) !important;
+    background: none !important;
+    
+    #contents.ytd-section-list-renderer,
+    ytd-structured-description-content-renderer {
+      overflow-x: hidden; // Prevents scrollbar caused by negative margins of the text-shadow workaround
+      @include scrollbar-light-thin();
+      &:hover {
+        will-change: scroll-position;
+      }
+    }
   }
-  &[dark] #header.ytd-engagement-panel-title-header-renderer,
-  &[dark] #content.ytd-engagement-panel-section-list-renderer  {
-    background: var(--ytal-background) !important;
+  &[dark] #content.ytd-engagement-panel-section-list-renderer {
+    #contents.ytd-section-list-renderer,
+    ytd-structured-description-content-renderer {
+      @include scrollbar-dark-thin();
+    }
   }
 
-  #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
-    overflow-x: hidden; // Prevents scrollbar caused by negative margins of the text-shadow workaround
-    @include scrollbar-light-thin();
+  @mixin macro-marker-and-transcript-time {
+    ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
+      @content;
+    }
+    ytd-macro-markers-list-item-renderer {
+      &,
+      &:hover,
+      &[active] {
+        #time.ytd-macro-markers-list-item-renderer {
+          @content;
+        }
+      }
+    }
   }
-  &[dark] #content.ytd-engagement-panel-section-list-renderer #contents.ytd-section-list-renderer {
-    @include scrollbar-dark-thin();
-  }
-
-  ytd-engagement-panel-section-list-renderer #time.ytd-macro-markers-list-item-renderer,
-  ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
+  @include macro-marker-and-transcript-time {
     background-color: rgba(255, 255, 255, .05) !important;
   }
-  &[dark] ytd-engagement-panel-section-list-renderer #time.ytd-macro-markers-list-item-renderer,
-  &[dark] ytd-transcript-segment-list-renderer .segment-timestamp.ytd-transcript-segment-renderer {
-    background-color: rgba(0, 0, 0, .05) !important;
+  &[dark] {
+    @include macro-marker-and-transcript-time {
+      background-color: rgba(0, 0, 0, .05) !important;
+    }
   }
 
   ytd-transcript-search-box-renderer {
@@ -535,6 +568,10 @@ html[data-ambientlight-enabled="true"] {
   .input-container.ytd-transcript-search-box-renderer {
     background: none;
     border: 1px solid var(--yt-spec-10-percent-layer) !important;
+  }
+
+  ytd-macro-markers-list-item-renderer yt-icon {
+    color: var(--yt-spec-text-primary) !important;
   }
 
   /* Cosmetics - Search */
@@ -997,7 +1034,8 @@ html[data-ambientlight-enabled="true"] {
   ytd-rich-metadata-renderer {
     background: var(--ytal-background) !important;
   }
-  &[dark] ytd-rich-metadata-renderer {
+
+  ytd-engagement-panel-section-list-renderer {
     background: var(--ytal-background) !important;
   }
 
@@ -1084,13 +1122,16 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-playlist-panel-video-renderer {
+    ytd-playlist-panel-video-renderer,
+    ytd-macro-markers-list-item-renderer {
       &[selected],
+      &[active],
       &:hover:not(.dragging) {
         background-color: var(--ytal-background-10-percent) !important;
         backdrop-filter: saturate(1.1);
       }
-      &[selected] {
+      &[selected],
+      &[active] {
         #index.ytd-playlist-panel-video-renderer,
         #byline.ytd-playlist-panel-video-renderer,
         #video-info.ytd-playlist-panel-video-renderer {
@@ -1098,6 +1139,19 @@ html[data-ambientlight-enabled="true"] {
         }
         #video-title.ytd-playlist-panel-video-renderer {
           color: rgb(0, 0, 0) !important;
+        }
+      }
+    }
+
+    ytd-macro-markers-list-item-renderer {
+      &,
+      &:hover,
+      &[active] {
+        h4.ytd-macro-markers-list-item-renderer {
+          color: inherit !important;
+        }
+        #time.ytd-macro-markers-list-item-renderer {
+          color: var(--yt-spec-themed-blue) !important;
         }
       }
     }
@@ -1112,14 +1166,16 @@ html[data-ambientlight-enabled="true"] {
     }
     
     ytd-watch-metadata {
-      #description.ytd-watch-metadata {
-        background: var(--ytal-background) !important;
-      }
-      
       .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
         background: var(--ytal-background) !important;
       }
     }
+    #primary #description.ytd-watch-metadata,
+    #secondary.ytd-watch-grid,
+    #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
+      background: var(--ytal-background) !important;
+    }
+    
     
     #{$comments-reply-input} {
       border-bottom-color: rgba(20,20,20,.5);
@@ -1127,26 +1183,9 @@ html[data-ambientlight-enabled="true"] {
   }
   &[dark] {
     ytd-app {
-      .header.ytd-playlist-panel-renderer {
-        background: var(--ytal-background) !important;
-      }
-
       yt-chip-cloud-chip-renderer:not([selected]) {
-        background: var(--ytal-background) !important;
-        
         &:hover {
           background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
-        }
-      }
-    
-      ytd-watch-metadata {
-        #description.ytd-watch-metadata {
-          background: var(--ytal-background) !important;
-        }
-        .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal {
-          &:not(:hover):not(:focus) {
-            background: var(--ytal-background) !important;
-          }
         }
       }
 
@@ -1205,7 +1244,7 @@ html[data-ambientlight-enabled="true"] {
     pointer-events: none;
     user-select: none;
     z-index: -1; // Fixes glitching in some video's in the small view in Firefox
-    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
+    top: 0;
     left: 0;
     contain: strict;
     // will-change: transform; // Improves resizing performance, but reduces cpu rendering performance
@@ -1222,15 +1261,17 @@ html[data-ambientlight-enabled="true"] {
       opacity: var(--ytal-debanding-opacity, 0);
     }
   }
-  body[data-ambientlight-fixed="true"] .ambientlight {
-    position: fixed;
-    height: 100vh;
+  body[data-ambientlight-fixed="true"] {
+    .ambientlight {
+      position: fixed;
+      height: 100vh;
+    }
   }
 
   .ambientlight__top {
     display: block;
     position: absolute;
-    top: calc(0px - var(--ytd-masthead-height, var(--ytd-toolbar-height, 0px)));
+    top: 0;
     width: 100%;
     height: 1px;
     pointer-events: none;
@@ -1239,7 +1280,7 @@ html[data-ambientlight-enabled="true"] {
   // .ambientlight__clip {
   //   overflow: hidden;
   // }
-  
+
   .ambientlight__video-shadow {
     display: none;
   }
@@ -1289,24 +1330,36 @@ html[data-ambientlight-enabled="true"] {
   /* Immersive mode */
 
   &[data-ambientlight-immersive="true"] {
-    ytd-watch-flexy[theater] {
-      @mixin theater {
-        height: calc(100vh - 169px) !important;
-        max-height: calc(100vh - 169px) !important;
-        margin-top: 29px;
-        margin-bottom: 84px;
-      }
+    @mixin theater {
+      height: calc(100vh - 169px) !important;
+      max-height: calc(100vh - 169px) !important;
+      margin-top: 29px;
+      margin-bottom: 84px;
+    }
 
-      #player-theater-container, // Old theater view
-      #player-wide-container, // Second old theater view
-      // #player-full-bleed-container // Third old theater view
-      #full-bleed-container {
-        @include theater;
-      }
-
-      @supports selector(:has(*)) {
-        > div:has(ytd-player) {
+    @include ytd-watch {
+      &[theater],
+      &[full-bleed-player] {
+        #player-theater-container, // Old theater view
+        #player-wide-container, // Second old theater view
+        // #player-full-bleed-container // Third old theater view
+        #full-bleed-container,
+        #player-full-bleed-container.ytd-watch-grid,
+        #player.ytd-watch-fixie // kevlar_watch_fixie: true
+        {
           @include theater;
+        }
+      }
+    }
+
+    // Predicts any future changes to: ytd-watch-flexy[full-bleed-player] div#full-bleed-container
+    @supports selector(:has(*)) {
+      ytd-watch-flexy {
+        &[theater]
+        &[full-bleed-player] {
+          > div:has(ytd-player) {
+            @include theater;
+          }
         }
       }
     }
@@ -2398,7 +2451,7 @@ html[data-ambientlight-enabled="true"] {
   }
 
   // Image opacity
-  ytd-watch-flexy {
+  @include ytd-watch {
     $not-hover: ':not(:hover):not(:focus-within)';
 
     ytd-video-owner-renderer#{$not-hover} #avatar,
@@ -2423,10 +2476,16 @@ html[data-ambientlight-enabled="true"] {
     }
   }
   @mixin filter-and-text-shadow-selectors {
-    .ytal-header-shadow.at-top:not([data-ambientlight-text-shadow]) #container.ytd-masthead,
-    #below.ytd-watch-flexy,
-    #secondary.ytd-watch-flexy {
+    .ytal-header-shadow.at-top:not([data-ambientlight-text-shadow]) #container.ytd-masthead {
       @content;
+    }
+    @include ytd-watch {
+      #below,
+      #secondary,
+      #bottom-grid,
+      ytd-watch-metadata.ytd-watch-fixie {
+        @content;
+      }
     }
   }
 
@@ -2447,6 +2506,16 @@ html[data-ambientlight-enabled="true"] {
   // Comment on the side - Submit comment form
   ytd-item-section-renderer[static-comments-header] #header.ytd-item-section-renderer {
     background: none !important;
+  }
+
+  // Comment on the side - Fixes infinte scrolling in comments when being scrolled down 
+  ytd-watch-fixie {
+    ytd-item-section-renderer[static-comments-header] #header.ytd-item-section-renderer {
+      backdrop-filter: blur(10px);
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
   }
     
 
@@ -2549,7 +2618,6 @@ html[data-ambientlight-enabled="true"] {
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
       #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
-      .watch-active-metadata.ytd-watch-flexy button:not(.yt-spec-button-shape-next--filled) > *, // old video info
       #info-container.ytd-watch-metadata,
       #description-inline-expander.ytd-watch-metadata,
       ytd-subscription-notification-toggle-button-renderer,
@@ -2565,6 +2633,10 @@ html[data-ambientlight-enabled="true"] {
       #{$playlist-header} ytd-playlist-loop-button-renderer,
       #{$playlist-header} ytd-toggle-button-renderer button,
       ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
+      ytd-playlist-panel-video-renderer yt-icon.ytd-menu-renderer,
+      
+      ytd-macro-markers-list-item-renderer yt-button-shape yt-icon,
+      .ytd-item-section-renderer yt-icon.ytd-menu-renderer,
 
       ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
       #like-button.ytd-comment-action-buttons-renderer, // Comment like button
@@ -2580,7 +2652,11 @@ html[data-ambientlight-enabled="true"] {
 
       #chatframe,
 
-      ytd-transcript-footer-renderer #trigger tp-yt-paper-button {
+      ytd-transcript-footer-renderer #trigger tp-yt-paper-button,
+      
+      #left-arrow-button.yt-chip-cloud-renderer yt-icon,
+      #right-arrow-button.yt-chip-cloud-renderer yt-icon
+      {
         @content;
         text-shadow: none !important;
       }
@@ -2621,6 +2697,49 @@ html[data-ambientlight-enabled="true"] {
   &[dark] {
     @include filter-shadow-selectors {
       filter: var(--ytal-button-shadow) !important;
+    }
+  }
+
+  // Hide secondary metadata when overlayed by another panel in ytd-watch-grid
+
+  @include ytd-watch {
+    @supports selector(:has(*)) {
+      #secondary {
+        &:has([visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]),
+        &:has(ytd-live-chat-frame:not([collapsed])),
+        &:has(ytd-playlist-panel-renderer:not([collapsed])) {
+          background: none !important;
+
+          ytd-watch-metadata[description-collapsed],
+          ytd-playlist-panel-renderer[collapsed] {
+            opacity: 0 !important;
+          }
+        }
+        &:has([visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]) {
+          #show-hide-button.ytd-live-chat-frame {
+            opacity: 0 !important;
+          }
+        }
+      }
+    }
+
+    @supports not (selector(:has(*))) {
+      #secondary-inner {
+        ytd-engagement-panel-section-list-renderer {
+          background: rgb(245,245,245);
+        }
+      }
+    }
+  }
+  &[dark] {
+    @include ytd-watch {
+      @supports not (selector(:has(*))) {
+        #secondary-inner {
+          ytd-engagement-panel-section-list-renderer {
+            background: rgb(10,10,10);
+          }
+        }
+      }
     }
   }
 

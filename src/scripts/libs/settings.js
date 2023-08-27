@@ -210,7 +210,7 @@ export default class Settings {
     settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText)
 
     this.menuBtn.prepend(settingsMenuBtnTooltip)
-    const ytSettingsBtn = document.querySelector('ytd-watch-flexy [data-tooltip-target-id="ytp-autonav-toggle-button"]')
+    const ytSettingsBtn = document.querySelector('ytd-player [data-tooltip-target-id="ytp-autonav-toggle-button"]')
     if (ytSettingsBtn) {
       ytSettingsBtn.parentNode.insertBefore(this.menuBtn, ytSettingsBtn)
     } else {

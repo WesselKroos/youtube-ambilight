@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -56,10 +56,10 @@ export default class Ambientlight {
   previousDrawTime = 0
   clearTime = 0
 
-  constructor(ytdAppElem, ytdWatchFlexyElem, videoElem, mastheadElem) {
+  constructor(ytdAppElem, ytdWatchElem, videoElem, mastheadElem) {
     return (async function AmbientlightConstructor() {
       this.ytdAppElem = ytdAppElem
-      this.ytdWatchFlexyElem = ytdWatchFlexyElem
+      this.ytdWatchElem = ytdWatchElem
       this.mastheadElem = mastheadElem
 
       this.detectChromiumBug1142112Workaround()
@@ -113,23 +113,23 @@ export default class Ambientlight {
   }
 
   get playerSmallContainerElem() {
-    return document.querySelector('ytd-watch-flexy #player-container-inner')
+    return document.querySelector(watchSelectors.map(selector => `${selector} #player-container-inner`).join(', '))
   }
 
   get playerTheaterContainerElem() {
-    return document.querySelector('ytd-watch-flexy #full-bleed-container')
+    return document.querySelector(watchSelectors.map(selector => `${selector} #full-bleed-container`).join(', '))
   }
 
   get playerTheaterContainerElemFromVideo() {
     return this.videoElem?.closest('#full-bleed-container')
   }
 
-  get ytdWatchFlexyElemFromVideo() {
-    return this.videoElem?.closest('ytd-watch-flexy')
+  get ytdWatchElemFromVideo() {
+    return this.videoElem?.closest(watchSelectors.join(', '))
   }
 
   get thumbnailOverlayElem() {
-    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = document.querySelector('ytd-watch-flexy .ytp-cued-thumbnail-overlay')
+    if(!this._thumbnailOverlayElem) this._thumbnailOverlayElem = document.querySelector(watchSelectors.map(selector => `${selector} .ytp-cued-thumbnail-overlay`).join(', '))
     return this._thumbnailOverlayElem
   }
 
@@ -145,7 +145,7 @@ export default class Ambientlight {
     //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
     // }
     
-    this.settingsMenuBtnParent = document.querySelector('ytd-watch-flexy .ytp-right-controls, ytd-watch-flexy .ytp-chrome-controls > *:last-child')
+    this.settingsMenuBtnParent = document.querySelector('ytd-player .ytp-right-controls, ytd-player .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
@@ -426,7 +426,7 @@ export default class Ambientlight {
 
   initAverageVideoFramesDifferenceListeners() {
     try {
-      on(this.ytdWatchFlexyElem, 'yt-page-data-will-update', () => {
+      on(this.ytdWatchElem, 'yt-page-data-will-update', () => {
         if(this.averageVideoFramesDifference === 1) return
 
         this.resetAverageVideoFramesDifference()
@@ -454,8 +454,8 @@ export default class Ambientlight {
     if(!this.settings.energySaver) return
 
     try {
-      // const videoId = this.ytdWatchFlexyElem?.playerData?.videoDetails?.videoId
-      const difference = await getAverageVideoFramesDifference(this.ytdWatchFlexyElem)
+      // const videoId = this.ytdWatchElem?.playerData?.videoDetails?.videoId
+      const difference = await getAverageVideoFramesDifference(this.ytdWatchElem)
       if(difference === undefined) return
 
       this.averageVideoFramesDifference = difference
@@ -598,8 +598,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       'yt-autonav-pause-player-ended': this.videoListeners.ended
     }
     for (const name in this.playerListeners) {
-      off(this.ytdWatchFlexyElem, name, this.playerListeners[name])
-      on(this.ytdWatchFlexyElem, name, this.playerListeners[name])
+      off(this.ytdWatchElem, name, this.playerListeners[name])
+      on(this.ytdWatchElem, name, this.playerListeners[name])
     }
 
     if(this.videoObserver) {
@@ -1032,12 +1032,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambientlight__top')
     
-    if(this.ytdWatchFlexyElem.__shady_native_prepend) {
-      this.ytdWatchFlexyElem.__shady_native_prepend(this.elem)
-      this.ytdWatchFlexyElem.__shady_native_prepend(this.topElem)
+    const contentElem = this.ytdAppElem.querySelector('#content.ytd-app')
+    if(contentElem.__shady_native_prepend) {
+      contentElem.__shady_native_prepend(this.elem)
+      contentElem.__shady_native_prepend(this.topElem)
     } else {
-      this.ytdWatchFlexyElem.prepend(this.elem)
-      this.ytdWatchFlexyElem.prepend(this.topElem)
+      contentElem.prepend(this.elem)
+      contentElem.prepend(this.topElem)
     }
 
     this.videoShadowElem = document.createElement('div')
@@ -1356,8 +1357,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.videoPlayerElem.classList.contains('ytp-player-minimized'))
       return VIEW_POPUP
 
-    if(this.ytdWatchFlexyElemFromVideo
-      ? this.ytdWatchFlexyElemFromVideo.getAttribute('theater') !== null
+    if(this.ytdWatchElemFromVideo
+      ? this.ytdWatchElemFromVideo.getAttribute('theater') !== null
       : this.playerTheaterContainerElemFromVideo
     ) {
       return VIEW_THEATER
@@ -1386,6 +1387,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const isFullscreen = (this.view == VIEW_FULLSCREEN)
     const fullscreenChanged = isFullscreen !== this.isFullscreen
     this.isFullscreen = isFullscreen
+
+    this.updateFixedStyle()
     
     if(fullscreenChanged && this.settings.enabled && this.isOnVideoPage) {
       this.videoPlayerResizeFromFullscreen = !this.isFullscreen
@@ -1490,8 +1493,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       (this.videoOffset.left + window.scrollX) - 
       ((unscaledWidth - this.videoOffset.width) / 2)
     )
+    const scrollYCorrection = (this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' && this.view === VIEW_SMALL)
+      ? window.scrollY
+      : 0;
     const unscaledTop = Math.round(
-      this.videoOffset.top - 
+      this.videoOffset.top - scrollYCorrection - 
       ((unscaledHeight - this.videoOffset.height) / 2)
     )
 
@@ -1679,9 +1685,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
   }
 
-  updateStyles() {
+  updateFixedStyle() {
     // Fixed position
-    document.body.setAttribute('data-ambientlight-fixed', this.settings.fixedPosition)
+    document.body.setAttribute('data-ambientlight-fixed', this.settings.fixedPosition || (this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' && this.view === VIEW_SMALL))
+  }
+
+  updateStyles() {
+    this.updateFixedStyle()
 
     // Page background
     let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
@@ -1972,7 +1982,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   getElemRect(elem) {
     const scrollableRect = (this.isFullscreen)
-      ? (this.ytdWatchFlexyElemFromVideo || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
+      ? (this.ytdWatchElemFromVideo || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
       : body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
 

@@ -331,3 +331,5 @@ export const mediaErrorToString = (value) => (({
   3: 'MEDIA_ERR_DECODE',
   4: 'MEDIA_ERR_SRC_NOT_SUPPORTED'
 })[value] || value) ?? 'UNKNOWN'
+
+export const watchSelectors = ['ytd-watch-flexy', 'ytd-watch-fixie', 'ytd-watch-grid']

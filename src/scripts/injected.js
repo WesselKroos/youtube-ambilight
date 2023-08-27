@@ -1,4 +1,4 @@
-import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -36,7 +36,7 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
   if (!isWatchPageUrl()) return
   if (isVideoInKnownInvalidLocation()) return
 
-  const allSelector = 'html, body, ytd-app, ytd-watch-flexy, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
+  const allSelector = 'html, body, ytd-app, #content.ytd-app, ytd-watch-flexy, ytd-watch-fixie, ytd-watch-grid, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
   const otherAppElems = getOtherUnknownAppElems()
 
   details = {
@@ -50,7 +50,13 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
     otherAppsTree: otherAppElems.length > 0 ? getSelectorTreeString(otherAppElems.map(elem => elem.tagName).join(',')) : undefined,
     bodyTree: getSelectorTreeString('body'),
     ytdAppTree: getSelectorTreeString('ytd-app'),
-    ytdWatchFlexyTree: getSelectorTreeString('ytd-watch-flexy'),
+    ytdAppContentTree: getSelectorTreeString('#content.ytd-app'),
+    ytdWatchTree: (() => {
+      return watchSelectors
+        .filter(selector => document.querySelector(selector))
+        .map(selector => getSelectorTreeString(selector))
+        .find(() => true)
+    })(),
     ytdPlayerTree: getSelectorTreeString('ytd-player'),
     ΩTree: getSelectorTreeString(allSelector),
   }
@@ -90,7 +96,7 @@ const detectDetachedVideo = () => {
 
     if(!document.querySelector('video')) return
 
-    const newVideoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
+    const newVideoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
     if (!newVideoElem) {
       logErrorEventWithPageTrees('detectDetachedVideo')
       return
@@ -139,9 +145,9 @@ const tryInitAmbientlight = async () => {
   if (!isWatchPageUrl()) return
   if(!document.querySelector('video')) return
 
-  const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
+  const videoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
   if (!videoElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-flexy video.html5-main-video')
+    logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-... video.html5-main-video')
     return
   }
 
@@ -151,9 +157,17 @@ const tryInitAmbientlight = async () => {
     return
   }
 
-  const ytdWatchFlexyElem = document.querySelector('ytd-app ytd-watch-flexy')
-  if(!ytdWatchFlexyElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: ytd-watch-flexy')
+  const contentElem = document.querySelector('#content.ytd-app')
+  if(!contentElem) {
+    logErrorEventWithPageTrees('initialize - not found yet: #content.ytd-app')
+    return
+  }
+
+  
+
+  const ytdWatchElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector}`).join(', '))
+  if(!ytdWatchElem) {
+    logErrorEventWithPageTrees(`initialize - not found yet: ytd-app ytd-watch-...`)
     return
   }
 
@@ -163,7 +177,7 @@ const tryInitAmbientlight = async () => {
     return
   }
   
-  window.ambientlight = await new Ambientlight(ytdAppElem, ytdWatchFlexyElem, videoElem, mastheadElem)
+  window.ambientlight = await new Ambientlight(ytdAppElem, ytdWatchElem, videoElem, mastheadElem)
 
   errorEvents.list = []
   detectDetachedVideo()
@@ -197,7 +211,7 @@ const startIfWatchPageHasVideo = () => {
     return
   }
 
-  const videoElem = document.querySelector('ytd-app ytd-watch-flexy video.html5-main-video')
+  const videoElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector} video.html5-main-video`).join(', '))
   if(!videoElem) return
 
   getWatchPageViewObserver().disconnect()

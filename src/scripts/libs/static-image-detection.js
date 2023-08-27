@@ -209,8 +209,8 @@ const workerCode = function () {
   }
 };
 
-const getStoryboard = (ytdWatchFlexyElem) => {
-  const spec = ytdWatchFlexyElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
+const getStoryboard = (ytdWatchElem) => {
+  const spec = ytdWatchElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
   if(!spec) return
 
   // eslint-disable-next-line no-unused-vars
@@ -241,7 +241,7 @@ let lastDifference = {
 let onMessagePromise;
 let nextGetIsWaiting = false;
 
-export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
+export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
   if(onMessagePromise) {
     nextGetIsWaiting = true;
     while(onMessagePromise) {
@@ -250,7 +250,7 @@ export const getAverageVideoFramesDifference = async (ytdWatchFlexyElem) => {
     nextGetIsWaiting = false;
   }
 
-  const storyboard = getStoryboard(ytdWatchFlexyElem);
+  const storyboard = getStoryboard(ytdWatchElem);
   if(!storyboard) return // Failed to retrieve the storyboard data
 
   const alreadyCalculated = lastDifference.baseUrl === storyboard.baseUrl;

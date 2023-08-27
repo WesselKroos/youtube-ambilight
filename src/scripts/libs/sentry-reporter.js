@@ -3,7 +3,7 @@ import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/de
 import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
 import { Scope } from '@sentry/core/esm/scope';
 
-import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4 } from './generic';
+import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
 import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
 
@@ -521,13 +521,13 @@ export default class SentryReporter {
 
       if(navigator.doNotTrack !== '1' && crashOptions?.video) {
         try {
-          const ytdWatchFlexyElem = document.querySelector('ytd-watch-flexy, .ytd-page-manager')
-          if (ytdWatchFlexyElem) {
-            const videoId = ytdWatchFlexyElem?.getAttribute('video-id')
-            setExtra('ytd-watch-flexy[video-id]', videoId)
+          const ytdWatchElem = document.querySelector(`${watchSelectors.join(', ')}, .ytd-page-manager`)
+          if (ytdWatchElem) {
+            const videoId = ytdWatchElem?.getAttribute('video-id')
+            setExtra('ytd-watch-...[video-id]', videoId)
           }
         } catch (ex) { 
-          setExtra('ytd-watch-flexy[video-id] (exception)', ex)
+          setExtra('ytd-watch-...[video-id] (exception)', ex)
         }
       }
 
