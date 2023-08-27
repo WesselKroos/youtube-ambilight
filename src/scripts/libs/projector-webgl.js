@@ -638,7 +638,7 @@ export default class ProjectorWebGL {
             ambientlight = hsv2rgb(ambientlightHSV);
           }
         ` : ''}
-        gl_FragColor = vec4(ambientlight * (1. - shadowAlpha), 1.);
+        gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
       }
     `;
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
