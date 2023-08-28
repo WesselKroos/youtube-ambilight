@@ -1031,14 +1031,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     this.topElem = document.createElement('div')
     this.topElem.classList.add('ambientlight__top')
+
+    this.clearfixElem = document.createElement('div')
+    this.clearfixElem.classList.add('ambientlight__clearfix')
     
     const contentElem = this.ytdAppElem.querySelector('#content.ytd-app')
     if(contentElem.__shady_native_prepend) {
       contentElem.__shady_native_prepend(this.elem)
       contentElem.__shady_native_prepend(this.topElem)
+      contentElem.__shady_native_prepend(this.clearfixElem)
     } else {
       contentElem.prepend(this.elem)
       contentElem.prepend(this.topElem)
+      contentElem.prepend(this.clearfixElem)
     }
 
     this.videoShadowElem = document.createElement('div')
