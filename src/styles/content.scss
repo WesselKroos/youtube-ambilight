@@ -1067,10 +1067,6 @@ html[data-ambientlight-enabled="true"] {
     .header.ytd-playlist-panel-renderer {
       background: var(--ytal-background) !important;
     }
-    
-    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer {
-      box-shadow: var(--yt-spec-10-percent-layer) 0 1px inset !important;
-    }
 
     .playlist-items.ytd-playlist-panel-renderer {
       @include scrollbar-light-thin();
@@ -1346,7 +1342,7 @@ html[data-ambientlight-enabled="true"] {
         #player-wide-container, // Second old theater view
         // #player-full-bleed-container // Third old theater view
         #full-bleed-container,
-        #player-full-bleed-container.ytd-watch-grid,
+        #player-full-bleed-container.ytd-watch-grid, // kevlar_watch_grid: true
         #player.ytd-watch-fixie // kevlar_watch_fixie: true
         {
           @include theater;
