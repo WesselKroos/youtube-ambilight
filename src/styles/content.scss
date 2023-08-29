@@ -1372,6 +1372,22 @@ html[data-ambientlight-enabled="true"] {
           transition: opacity .15s ease-out;
           opacity: 0;
         }
+        &.at-top:not(:hover):has(:focus-visible):not(:has(ytd-searchbox:focus-within)) {
+          opacity: 1;
+          transition: none;
+          animation: masthead-focus-visible-fade-out 3s forwards;
+          @keyframes masthead-focus-visible-fade-out {
+            0% {
+              opacity: 1;
+            }
+            90% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0;
+            }
+          }
+        }
       }
       @supports not (selector(:has(*))) {
         &.at-top:not(:hover):not(:focus-within) {
