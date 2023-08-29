@@ -1742,7 +1742,7 @@ html[data-ambientlight-enabled="true"] {
   .ytpa-section {
     display: flex;
     width: 100%;
-    margin: 5px 0;
+    margin: 0 0 1px;
     filter: drop-shadow(rgb(0, 0, 0, .5) 0px 1px 0px) drop-shadow(rgb(0, 0, 0, .25) 0px -1px 0px);
     font-weight: 600;
     color: #ddd;
@@ -1773,7 +1773,6 @@ html[data-ambientlight-enabled="true"] {
       }
     }
     &.is-collapsed {
-      margin: 5px 0 -4px;
       &::after {
         position: absolute;
         right: 12px;
@@ -1796,12 +1795,9 @@ html[data-ambientlight-enabled="true"] {
           background: #4447;
         }
       }
-      $sel: '&';
-      @for $i from 1 through 15 {
-        $sel: if($i == 1, " + *:not(.ytpa-section)", selector-nest($sel, " + *:not(.ytpa-section)"));
-        #{$sel} {
-          display: none;
-        }
+      
+      + .ytpa-section-content {
+        display: none;
       }
     }
 
@@ -1835,6 +1831,10 @@ html[data-ambientlight-enabled="true"] {
       color: transparent;
       font-size: 0;
     }
+  }
+  .ytpa-section-content {
+    box-sizing: border-box;
+    padding: 5px 0;
   }
 
   .ytpa-menuitem--experimental,
@@ -1963,7 +1963,7 @@ html[data-ambientlight-enabled="true"] {
 
     &.ytpa-menuitem--header {
       margin-top: 5px;
-      margin-bottom: -5px;
+      margin-bottom: 0;
       padding-top: 2px;
       padding-bottom: 8px;
       cursor: default;
@@ -2424,7 +2424,10 @@ html[data-ambientlight-enabled="true"] {
 }
 .ytpa-ambientlight-settings-menu:not(.ytpa-ambientlight-settings-menu--advanced) {
   .ytpa-section--advanced {
-    display: none !important;
+    &,
+    & + .ytpa-section-content {
+      display: none !important;
+    }
   }
   .ytpa-menuitem--advanced {
     &,
@@ -2441,15 +2444,9 @@ html[data-ambientlight-enabled="true"] {
 }
 .ytpa-ambientlight-settings-menu:not(.ytpa-ambientlight-settings-menu--hdr) {
   .ytpa-section--hdr {
-    display: none !important;
-  }
-  .ytpa-menuitem--hdr {
     &,
-    + .ytp-menuitem-range {
+    & + .ytpa-section-content {
       display: none !important;
-      + .setting-range-datalist {
-        display: none !important;
-      }
     }
   }
 }

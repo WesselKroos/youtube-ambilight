@@ -1,4 +1,4 @@
-import { html, body, on, off, setTimeout, supportsWebGL } from './generic'
+import { html, body, on, off, setTimeout, supportsWebGL, raf } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -281,7 +281,7 @@ export default class Settings {
             </div>
           </div>
           ${
-      SettingsConfig.map(setting => {
+      SettingsConfig.map((setting, i) => {
         let classes = 'ytp-menuitem'
         if(setting.advanced) classes += ' ytpa-menuitem--advanced'
         if(setting.hdr) classes += ' ytpa-menuitem--hdr'
@@ -303,7 +303,22 @@ export default class Settings {
         `
         const value = this[setting.name];
         
-        if (setting.type === 'checkbox') {
+        if (setting.type === 'section') {
+          return `
+            ${i !== 0 ? '</div>' : ''}
+            <div 
+              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}" 
+              data-name="${setting.name}">
+              <div class="ytpa-section__cell">
+                <div class="ytpa-section__label">${label}</div>
+              </div>
+              <div class="ytpa-section__cell">
+                <div class="ytpa-section__fill">-</div>
+              </div>
+            </div>
+            <div class="ytpa-section-content">
+          `
+        } else if (setting.type === 'checkbox') {
           return `
             <div id="setting-${setting.name}" 
               class="${classes}" 
@@ -366,22 +381,10 @@ export default class Settings {
               `}
             </div>
           `
-        } else if (setting.type === 'section') {
-          return `
-            <div 
-              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}" 
-              data-name="${setting.name}">
-              <div class="ytpa-section__cell">
-                <div class="ytpa-section__label">${label}</div>
-              </div>
-              <div class="ytpa-section__cell">
-                <div class="ytpa-section__fill">-</div>
-              </div>
-            </div>
-          `
         }
       }).join('')
           }
+          </div>
         </div>
       </div>`
 
@@ -398,7 +401,6 @@ export default class Settings {
     const resetSettingsBtnElem = this.menuElem.querySelector('.ytpa-reset-settings-btn')
     on(resetSettingsBtnElem, 'click', async () => {
       if(!confirm('Are you sure you want to reset ALL the settings and reload the watch page?')) return
-      
 
       for(const setting of SettingsConfig) {
         this.saveStorageEntry(setting.name, undefined)
@@ -420,11 +422,45 @@ export default class Settings {
       })
     }
     for (const section of this.menuElem.querySelectorAll('.ytpa-section')) {
-      on(section, 'click', () => {
+      on(section, 'click', async () => {
         const name = section.getAttribute('data-name')
         const value = !this[name]
         this.set(name, value)
-        section.classList[value ? 'add' : 'remove']('is-collapsed')
+
+        if(!value) {
+          section.classList.remove('is-collapsed')
+        }
+
+        const sectionContent = section.nextElementSibling
+        sectionContent.style.opacity = ''
+        let startHeight = value ? sectionContent.clientHeight ?? 0 : 0
+        let endHeight = value ? 0 : sectionContent.clientHeight ?? 0
+        sectionContent.style.opacity = ''
+        sectionContent.style.height = `${startHeight}px`
+        sectionContent.style.marginBottom = value ? '0' : '-5px'
+        sectionContent.style.paddingBottom = value ? '5px' : '0'
+        sectionContent.style.overflow = 'hidden'
+        sectionContent.style.position = 'relative'
+
+        await new Promise(resolve => setTimeout(resolve, 1))
+        section.classList.add('is-collapsed-transition')
+        sectionContent.style.transition = 'height .4s ease-in-out, margin-bottom .4s ease-in-out, padding-bottom .4s ease-in-out'
+        sectionContent.style.height = `${endHeight}px`
+        sectionContent.style.marginBottom = value ? '-5px' : '0'
+        sectionContent.style.paddingBottom = value ? '0' : '5px'
+
+        await new Promise(resolve => setTimeout(resolve, 400))
+        section.classList.remove('is-collapsed-transition')
+        sectionContent.style.transition = ''
+        sectionContent.style.height = ''
+        sectionContent.style.marginBottom = ''
+        sectionContent.style.paddingBottom = ''
+        sectionContent.style.overflow = ''
+        sectionContent.style.position = ''
+
+        if(value) {
+          section.classList.add('is-collapsed')
+        }
       })
     }
     
@@ -1201,14 +1237,62 @@ export default class Settings {
         valueElem.setAttribute('title', '')
       }
     }
+    const isMenuOpen = this.menuElem.classList.contains('is-visible')
 
     for(const optionalGroup of this.optionalSettings) {
       const optionalSettings = optionalGroup.names.map(name => this.menuElem.querySelector(`#setting-${name}`)).filter(setting => setting)
       const visible = optionalGroup.visible()
       for (const optionalSetting of optionalSettings) {
-        optionalSetting.style.display = visible ? '' : 'none'
+        if(!optionalSetting.animationTimeout && optionalSetting.style.display === (visible ? '' : 'none')) continue;
+
+        if(optionalSetting.animationTimeout) {
+          clearTimeout(optionalSetting.animationTimeout)
+        }
+
+        if(!isMenuOpen) {
+          optionalSetting.style.display = visible ? '' : 'none'
+        } else {
+          this.fadeSettingElement(optionalSetting, visible)
+        }
       }
     }
+  }
+
+  async fadeSettingElement(elem, visible) {
+    await new Promise(resolve => {
+      elem.style.display = elem.classList.contains('ytp-menuitem') ? 'flex' : 'block'// overrides .ytpa-section.is-collapsed selector
+      const height = elem.clientHeight ?? 0
+      elem.style.marginBottom = visible ? `-${height}px` : '0px'
+      elem.style.transformOrigin = '0% 0%'
+      elem.style.transform = visible ? 'scaleY(0%)' : 'scaleY(100%)'
+
+      elem.animationTimeout = raf(() => {
+        elem.style.transition = 'transform .3s ease-in-out, margin-bottom .3s ease-in-out'
+        elem.style.willChange = 'transform'  
+        elem.style.transform = visible ? 'scaleY(100%)' : 'scaleY(0%)'
+        elem.style.marginBottom = visible ? '0px' : `-${height}px`
+
+        let timeout = setTimeout(() => {
+          timeout = undefined
+          resolve()
+        }, 500)
+
+        elem.animationTimeout = setTimeout(() => {
+          elem.animationTimeout = undefined
+          if(elem.style.transition === '') return
+
+          elem.style.display = visible ? '' : 'none'
+          elem.style.transition = ''
+          elem.style.transformOrigin = ''
+          elem.style.transform = ''
+          elem.style.marginBottom = ''
+          elem.style.willChange = ''
+
+          if(timeout) clearTimeout(timeout)
+          resolve()
+        }, 300)
+      })
+    })
   }
 
   setKey(name, key) {
