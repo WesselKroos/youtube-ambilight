@@ -332,7 +332,7 @@ export default class Ambientlight {
           isPlaying &&
           !this.isHidden &&
           !this.videoIsHidden &&
-          !(this.settings.spread === 0 && this.settings.blur === 0) &&
+          !(this.settings.spread === 0 && this.settings.blur2 === 0) &&
           !(
             this.atTop &&
             this.isFillingFullscreen && 
@@ -1536,7 +1536,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     const brightness = this.settings.brightness + (this.isHdr ? this.settings.hdrBrightness - 100 : 0)
     const saturation = this.settings.saturation + (this.isHdr ? this.settings.hdrSaturation - 100 : 0)
     this.filterElem.style.filter = `
-      ${(!this.settings.webGL && blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur)}px)` : ''}
+      ${(!this.settings.webGL && blur != 0) ? `blur(${Math.round(this.videoOffset.height * .0025 * this.settings.blur2)}px)` : ''}
       ${(contrast != 100) ? `contrast(${contrast}%)` : ''}
       ${(brightness != 100) ? `brightness(${brightness}%)` : ''}
       ${(saturation != 100) ? `saturate(${saturation}%)` : ''}
@@ -1550,7 +1550,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     let pScale;
     if(this.settings.webGL) {
-      const relativeBlur = (this.settings.resolution / 100) * (this.isHdr ? 0 : this.settings.blur)
+      const relativeBlur = (this.settings.resolution / 100) * (this.isHdr ? 0 : this.settings.blur2)
       let pMinSize = (this.settings.resolution / 100) * (this.isHdr ? 2 : 1) *
         ((this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
         ? 256
@@ -2448,7 +2448,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     const dontDrawAmbientlight = (
       (this.atTop && this.isFillingFullscreen) ||
-      (this.settings.spread === 0 && this.settings.blur === 0)
+      (this.settings.spread === 0 && this.settings.blur2 === 0)
     )
 
     const dontDrawBuffer = (dontDrawAmbientlight && !detectBarSize)

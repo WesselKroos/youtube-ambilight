@@ -87,9 +87,9 @@ const SettingsConfig = [
       title: 'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
     },
     type: 'list',
-    default: 0,
+    default: 2,
     min: 0,
-    max: 1,
+    max: 2,
     step: 1,
     manualinput: false,
     advanced: true
@@ -533,7 +533,7 @@ const SettingsConfig = [
     default: false
   },
   {
-    name: 'blur',
+    name: 'blur2',
     label: 'Blur',
     description: 'Uses: GPU memory',
     type: 'list',
@@ -560,11 +560,11 @@ const SettingsConfig = [
     type: 'list',
     default: 17,
     min: 0,
-    max: 200,
+    max: 400,
     step: .1
   },
   {
-    name: 'bloom',
+    name: 'spreadFadeStart',
     label: 'Spread fade start',
     type: 'list',
     default: 15,
@@ -574,7 +574,7 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'fadeOutEasing',
+    name: 'spreadFadeCurve',
     label: 'Spread fade curve',
     description: 'To better see what changes: Turn the blur to 0%',
     type: 'list',

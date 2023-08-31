@@ -909,8 +909,8 @@ export default class ProjectorWebGL {
       this.elem.height = height
     }
 
-    this.blurCanvasScale = settings.blur > 1 ? 2 : 1
-    const blurPx = settings.blur * (this.height / 512) * 1.275
+    this.blurCanvasScale = settings.blur2 > 1 ? 2 : 1
+    const blurPx = settings.blur2 * (this.height / 512) * 1.275
     const blurRadius = 2.64
     this.blurBound = Math.max(1, Math.ceil(blurPx * blurRadius))
     if(this.blurCanvas) {

@@ -60,10 +60,10 @@ export default class Settings {
         }
       }
       
-      if(HTMLVideoElement.prototype.requestVideoFrameCallback) {
+      if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
         if(setting.name === 'frameSync') {
-          setting.max = 2
-          setting.default = 2
+          setting.max = 1
+          setting.default = 0
         }
       }
     }
@@ -83,17 +83,47 @@ export default class Settings {
     names.push('setting-webGLCrashVersion')
     names.push('setting-surroundingContentImagesTransparency')
 
+    // Migrate old settings
+    names.push('setting-blur')
+    names.push('setting-bloom')
+    names.push('setting-fadeOutEasing')
+
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+
+    // Migrate old settings
+    if(Settings.storedSettingsCached['setting-blur'] !== null) {
+      const value = (Math.round(Settings.storedSettingsCached['setting-blur'] + 30) * 10) / 10 // Prevent rounding error
+      
+      delete Settings.storedSettingsCached['setting-blur']
+      await contentScript.setStorageEntry('setting-blur', undefined, false)
+
+      Settings.storedSettingsCached['setting-blur2'] = value
+      await contentScript.setStorageEntry('setting-blur2', value, false)
+    }
+    if(Settings.storedSettingsCached['setting-bloom'] !== null) {
+      const value = Math.round((Settings.storedSettingsCached['setting-bloom'] + 7) * 10) / 10 // Prevent rounding error
+      delete Settings.storedSettingsCached['setting-bloom']
+      await contentScript.setStorageEntry('setting-bloom', undefined, false)
+
+      Settings.storedSettingsCached['setting-spreadFadeStart'] = value
+      await contentScript.setStorageEntry('setting-spreadFadeStart', value, false)
+    }
+    if(Settings.storedSettingsCached['setting-fadeOutEasing'] !== null) {
+      Settings.storedSettingsCached['setting-spreadFadeCurve'] = Settings.storedSettingsCached['setting-fadeOutEasing']
+      delete Settings.storedSettingsCached['setting-fadeOutEasing']
+      await contentScript.setStorageEntry('setting-fadeOutEasing', undefined, false)
+    }
 
     // Disable enabled WebGL setting if not supported anymore
     if(Settings.storedSettingsCached['setting-webGL']) {
       if(!supportsWebGL()) {
         Settings.storedSettingsCached['setting-webGL'] = null
+        SettingsConfig.find(setting => setting.name === 'spread').max = 200
       } else {
         SettingsConfig.find(setting => setting.name === 'saturation').advanced = true
-        SettingsConfig.find(setting => setting.name === 'spread').max = 400
       }
     } else {
+      SettingsConfig.find(setting => setting.name === 'spread').max = 200
       for(const settingName of webGLOnlySettings) {
         if(Settings.storedSettingsCached[`setting-${settingName}`] !== undefined)
           delete Settings.storedSettingsCached[`setting-${settingName}`]
@@ -573,7 +603,7 @@ export default class Settings {
           }
 
           if(!this.advancedSettings) {
-            if(setting.name === 'blur') {
+            if(setting.name === 'blur2') {
               const edgeValue = (value <= 5 ) 
                 ? 2 
                 : ((value >= 42.5) 
@@ -692,7 +722,7 @@ export default class Settings {
 
           if (
             setting.name === 'spread' || 
-            setting.name === 'blur'
+            setting.name === 'blur2'
           ) {
             if(this.ambientlight.chromiumBugVideoJitterWorkaround?.update)
               this.ambientlight.chromiumBugVideoJitterWorkaround.update()
@@ -1313,8 +1343,10 @@ export default class Settings {
     const changed = this[name] !== value
     this[name] = value
 
+    // Migrated to blur2
     if (name === 'blur')
       value = Math.round((value - 30) * 10) / 10 // Prevent rounding error
+    // Migrated to spreadFadeStart
     if (name === 'bloom')
       value = Math.round((value - 7) * 10) / 10 // Prevent rounding error
 
@@ -1367,17 +1399,24 @@ export default class Settings {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
     if (value === null || value === undefined) {
       value = setting.default
+
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
       value = (
         value === 'true' || // localStorage
         value === true // storage.local
       )
+
     } else if (setting.type === 'list') {
       value = parseFloat(value)
+
+      // Migrated to blur2
       if (name === 'blur')
         value = Math.round((value + 30) * 10) / 10 // Prevent rounding error
+
+      // Migrated to spreadFadeStart
       if (name === 'bloom')
         value = Math.round((value + 7) * 10) / 10 // Prevent rounding error
+
       if(name === 'frameSync' && value >= 50) {
         value = {
           50: FRAMESYNC_DECODEDFRAMES,
