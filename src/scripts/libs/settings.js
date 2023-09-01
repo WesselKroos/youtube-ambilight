@@ -504,9 +504,6 @@ export default class Settings {
     this.menuElemParent.prepend(this.menuElem)
 
     this.bezelElem = this.createBezelElem()
-    on(this.bezelElem, 'animationend', () => {
-      this.bezelElem.classList.add('ytal-bezel--no-animation')
-    })
     this.bezelTextElem = this.bezelElem.querySelector('text')
     this.menuElemParent.prepend(this.bezelElem)
 
@@ -1138,6 +1135,10 @@ export default class Settings {
     this.menuOnCloseScrollHeight = (this.menuElem.scrollHeight)
 
     on(this.menuElem, 'animationend', this.onSettingsFadeOutEnd, undefined, (listener) => this.onSettingsFadeOutEndListener = listener)
+    this.onSettingsFadeOutEndTimeout = setTimeout(() => {
+      this.onSettingsFadeOutEndTimeout = undefined
+      this.onSettingsFadeOutEnd()
+    }, 500)
     this.menuElem.classList.add('fade-out')
 
     this.menuBtn.setAttribute('aria-expanded', false)
@@ -1156,8 +1157,13 @@ export default class Settings {
   }
 
   onSettingsFadeOutEnd = () => {
-    this.menuElem.classList.remove('fade-out', 'is-visible')
     off(this.menuElem, 'animationend', this.onSettingsFadeOutEndListener)
+    if(this.onSettingsFadeOutEndTimeout) {
+      clearTimeout(this.onSettingsFadeOutEndTimeout)
+      this.onSettingsFadeOutEndTimeout = undefined
+    }
+
+    this.menuElem.classList.remove('fade-out', 'is-visible')
   }
 
   onLoaded = () => {
@@ -1493,9 +1499,24 @@ export default class Settings {
     this.bezelElem.classList.add('ytal-bezel--no-animation')
     setTimeout(() => {
       this.bezelElem.classList.toggle('ytal-bezel--strike', strike)
-      this.bezelElem.classList.remove('ytal-bezel--no-animation')
       this.bezelTextElem.textContent = text
-    }, 0);
+    
+      const onBezelElemAnimationEnd = () => {
+        off(this.bezelElem, 'animationend', onBezelElemAnimationEnd)
+        if(this.bezelElemTimeout) {
+          clearTimeout(this.bezelElemTimeout)
+          this.bezelElemTimeout = undefined
+        }
+        this.bezelElem.classList.add('ytal-bezel--no-animation')
+      }
+      on(this.bezelElem, 'animationend', onBezelElemAnimationEnd)
+      this.bezelElemTimeout = setTimeout(() => {
+        this.bezelElemTimeout = undefined
+        onBezelElemAnimationEnd()
+      }, 1000)
+
+      this.bezelElem.classList.remove('ytal-bezel--no-animation')
+    }, 1);
   }
 
   updateAverageVideoFramesDifferenceInfo = () => {

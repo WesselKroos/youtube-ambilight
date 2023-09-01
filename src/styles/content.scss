@@ -1481,9 +1481,12 @@ html[data-ambientlight-enabled="true"] {
     max-height: calc(100% - 140px);
   }
   &.is-visible {
-    opacity: 0;
+    opacity: 1;
     animation: ytpa-ambientlight-settings-menu-fade-in .2s 1 normal forwards;
     @keyframes ytpa-ambientlight-settings-menu-fade-in {
+      0% {
+        opacity: 0;
+      }
       25% {
         opacity: 0;
       }
