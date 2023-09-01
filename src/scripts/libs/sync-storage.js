@@ -1,6 +1,6 @@
 import { appendErrorStack, wrapErrorHandler } from './generic'
 
-class Storage {
+class SyncStorage {
   async set(nameOrNamesAndValues, value = undefined) {
     const multiple = typeof nameOrNamesAndValues !== 'string'
     const namesAndValues = multiple ? nameOrNamesAndValues : { [nameOrNamesAndValues]: value }
@@ -17,9 +17,9 @@ class Storage {
           }
         }
         if(!multiple && value === undefined) {
-          chrome.storage.local.remove([nameOrNamesAndValues], setCallback)
+          chrome.storage.sync.remove([nameOrNamesAndValues], setCallback)
         } else {
-          chrome.storage.local.set(namesAndValues, setCallback)
+          chrome.storage.sync.set(namesAndValues, setCallback)
         }
       } catch(ex) {
         reject(appendErrorStack(stack, ex))
@@ -33,7 +33,7 @@ class Storage {
     const stack = new Error().stack
     return await new Promise(function storageGet(resolve, reject) {
       try {
-        chrome.storage.local.get(names, function getCallback(result) {
+        chrome.storage.sync.get(names, function getCallback(result) {
           try {
             if (chrome.runtime.lastError) throw chrome.runtime.lastError
             resolve(multiple ? result : (
@@ -51,17 +51,11 @@ class Storage {
 
   addListener(handler) {
     try {
-      chrome.storage.local.onChanged.addListener(wrapErrorHandler(handler, true))
+      chrome.storage.sync.onChanged.addListener(wrapErrorHandler(handler, true))
     } catch(ex) {
       console.warn('Ambient light for YouTube™ | Failed to listen to crash report option changes. If any of them change you\'ll have to refresh the page to update the new crash report options.')
     }
   }
 }
 
-export const storage = new Storage()
-
-export const defaultCrashOptions = {
-  video: false,
-  technical: true,
-  crash: true
-}
+export const syncStorage = new SyncStorage()

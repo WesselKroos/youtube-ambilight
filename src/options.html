@@ -33,6 +33,24 @@
       </a>
     </p>
 
+    <h2>Import / Export settings</h2>
+    <div id="importExportStatus" class="import-export-status"></div>
+    <div id="importExportStatusDetails" class="import-export-status-details" tabindex="0"></div>
+    <h3>File storage</h3>
+    <p>
+      <button id="exportFileBtn">Export to file</button>
+      <button id="importFileBtn">Import from file</button>
+      <input hidden name="import-settings-file" type="file" accept=".json"/>
+    </p>
+    <h3>Cloud storage (Your browser account)</h3>
+    <p>
+      <button id="exportAccountBtn">Export to cloud</button>
+      <button id="importAccountBtn" disabled>Import from cloud</button>
+    </p>
+    <p>
+      <div id="importableAccountStatus" class="importable-account-status"></div>
+    </p>
+
     <h2>Crash reports & Privacy</h2>
     <p>
       A crash report contains only anonymous data and will be deleted after 30 days.

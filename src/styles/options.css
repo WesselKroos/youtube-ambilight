@@ -173,3 +173,37 @@ label {
   margin: 10px 0 25px;
   display: block;
 }
+
+.import-export-status {
+  color: #5f5;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
+.import-export-status.has-error {
+  color: #f55;
+}
+.import-export-status-details {
+  margin: 0 -3px;
+  border-radius: 4px;
+  padding: 0px 3px;
+  max-height: 180px;
+  background: #000;
+  overflow: auto;
+  color: #aaa;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
+.import-export-status-details:not(:focus) {
+  max-height: 18px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.importable-account-status {
+  color: #aaa;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
