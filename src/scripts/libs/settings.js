@@ -1496,27 +1496,32 @@ export default class Settings {
   }
 
   displayBezel(text, strike = false) {
+    if(this.onBezelElemAnimationEndTimeout) {
+      this.onBezelElemAnimationEnd()
+    }
+
     this.bezelElem.classList.add('ytal-bezel--no-animation')
     setTimeout(() => {
       this.bezelElem.classList.toggle('ytal-bezel--strike', strike)
       this.bezelTextElem.textContent = text
     
-      const onBezelElemAnimationEnd = () => {
-        off(this.bezelElem, 'animationend', onBezelElemAnimationEnd)
-        if(this.bezelElemTimeout) {
-          clearTimeout(this.bezelElemTimeout)
-          this.bezelElemTimeout = undefined
-        }
-        this.bezelElem.classList.add('ytal-bezel--no-animation')
-      }
-      on(this.bezelElem, 'animationend', onBezelElemAnimationEnd)
-      this.bezelElemTimeout = setTimeout(() => {
-        this.bezelElemTimeout = undefined
-        onBezelElemAnimationEnd()
+      on(this.bezelElem, 'animationend', this.onBezelElemAnimationEnd)
+      this.onBezelElemAnimationEndTimeout = setTimeout(() => {
+        this.onBezelElemAnimationEndTimeout = undefined
+        this.onBezelElemAnimationEnd()
       }, 1000)
 
       this.bezelElem.classList.remove('ytal-bezel--no-animation')
     }, 1);
+  }
+
+  onBezelElemAnimationEnd = () => {
+    off(this.bezelElem, 'animationend', this.onBezelElemAnimationEnd)
+    if(this.onBezelElemAnimationEndTimeout) {
+      clearTimeout(this.onBezelElemAnimationEndTimeout)
+      this.onBezelElemAnimationEndTimeout = undefined
+    }
+    this.bezelElem.classList.add('ytal-bezel--no-animation')
   }
 
   updateAverageVideoFramesDifferenceInfo = () => {
