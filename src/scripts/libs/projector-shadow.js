@@ -31,10 +31,10 @@ export default class ProjectorShadow {
     }
 
     const darkest = 1
-    const easing = (16 / (settings.fadeOutEasing * .64))
+    const easing = (16 / (settings.spreadFadeCurve * .64))
     const keyframes = this.plotKeyframes(256, easing, darkest)
 
-    let fadeOutFrom = settings.bloom / 100
+    let fadeOutFrom = settings.spreadFadeStart / 100
     const fadeOutMinH = -(video.h / 2 / edge.h)
     const fadeOutMinW = -(video.w / 2 / edge.w)
     fadeOutFrom = Math.max(fadeOutFrom, fadeOutMinH, fadeOutMinW)

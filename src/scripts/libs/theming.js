@@ -182,7 +182,7 @@ export default class Theming {
   }
 
   initLiveChatElem = () => {
-    const liveChat = document.querySelector('ytd-watch-flexy ytd-live-chat-frame')
+    const liveChat = document.querySelector('ytd-app ytd-live-chat-frame')
     if(!liveChat || this.liveChat === liveChat) return
     
     this.liveChat = liveChat
@@ -194,7 +194,7 @@ export default class Theming {
   }
 
   initLiveChatIframe = () => {
-    const iframe = document.querySelector('ytd-watch-flexy ytd-live-chat-frame iframe')
+    const iframe = document.querySelector('ytd-app ytd-live-chat-frame iframe')
     if(!iframe || this.liveChatIframe === iframe) return
 
     this.liveChatIframe = iframe
