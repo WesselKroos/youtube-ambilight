@@ -69,6 +69,7 @@
 .ambientlight__clearfix,
 .ambientlight__fps-list,
 .ambientlight__video-overlay,
+.ambientlight__video-debanding,
 .ambientlight__chromium-bug-video-jitter-workaround {
   display: none;
 }
@@ -111,6 +112,10 @@
   user-select: none;
   overflow: hidden;
   contain: strict;
+
+  html[data-ambientlight-enabled="true"] & {
+    display: block;
+  }
 }
 .ambientlight__video-resolution {
   margin-top: 10px;
@@ -172,31 +177,6 @@
 
   &--bottom {
     bottom: 3px;
-  }
-}
-
-.ambientlight__chromium-bug-video-jitter-workaround {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  left: calc(50vw - 1px);
-  top: calc(100vh - 10px);
-  background: #00000001;
-  contain: strict;
-  will-change: transform;
-
-  html[data-ambientlight-enabled="true"] & {
-    display: block;
-    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
-  }
-
-  @keyframes ambientlight-chromium-bug-video-jitter-workaround {
-    0% {
-      opacity: .0000000001;
-    }
-    100% {
-      opacity: .0000000002;
-    }
   }
 }
 
@@ -485,25 +465,6 @@ html[data-ambientlight-enabled="true"] {
     &.ambientlight__chromium-bug-direct-video-overlay-workaround {
       opacity: .9989999;
     }
-  }
-  .ambientlight__video-overlay {
-    transform-origin: center center;
-    transform: var(--video-transform);
-  }
-
-  .ambientlight__video-debanding {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin-top: 0px;
-    pointer-events: none;
-    user-select: none;
-
-    transform-origin: center center;
-    transform: var(--video-transform);
-    
-    background: var(--ytal-video-debanding-background, none);
-    opacity: var(--ytal-video-debanding-opacity, 0);
   }
 
   /* Cosmetics - Chapters & Transcriptions & Side comments */
@@ -1297,13 +1258,38 @@ html[data-ambientlight-enabled="true"] {
     transform: scale(2) rotate(30deg);
   }
 
+  .ambientlight__chromium-bug-video-jitter-workaround {
+    position: absolute;
+    left: calc(50vw - 1px);
+    top: calc(100vh - 10px);
+    display: block;
+    width: 1px;
+    height: 1px;
+    background: #00000001;
+    contain: strict;
+    will-change: transform;
+    animation: ambientlight-chromium-bug-video-jitter-workaround linear 60s infinite;
+  
+    @keyframes ambientlight-chromium-bug-video-jitter-workaround {
+      0% {
+        opacity: .0000000001;
+      }
+      100% {
+        opacity: .0000000002;
+      }
+    }
+  }
+
   .ambientlight__video-overlay {
     position: absolute;
+    display: block;
     width: 1px;
     height: 1px;
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
+    transform-origin: center center;
+    transform: var(--video-transform);
     transition: opacity .25s .25s;//, margin-top .2s ease-out;
 
     // Prevent Firefox from stopping the video rendering
@@ -1322,7 +1308,21 @@ html[data-ambientlight-enabled="true"] {
         opacity: 0.0000001; //Avoid memory leak https://codepen.io/wesselkroos/pen/MWWorLW
       }
     }
+  }
 
+  .ambientlight__video-debanding {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin-top: 0px;
+    pointer-events: none;
+    user-select: none;
+
+    transform-origin: center center;
+    transform: var(--video-transform);
+    
+    background: var(--ytal-video-debanding-background, none);
+    opacity: var(--ytal-video-debanding-opacity, 0);
   }
 
   /* Immersive mode */

@@ -1645,6 +1645,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     if(this.videoDebandingElem) {
       this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
+      if(!this.videoDebandingElem.isConnected) {
+        this.videoContainerElem.appendChild(this.videoDebandingElem)
+      }
     }
 
     if (videoOverlayEnabled && videoOverlay) {
@@ -1817,9 +1820,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(!this.videoDebandingElem) {
         this.videoDebandingElem = document.createElement('div')
         this.videoDebandingElem.classList.add('ambientlight__video-debanding')
-        this.videoContainerElem.appendChild(this.videoDebandingElem)
       }
       this.videoDebandingElem.setAttribute('style', this.videoElem.getAttribute('style') || '')
+      if(!this.videoDebandingElem.isConnected) {
+        this.videoContainerElem.appendChild(this.videoDebandingElem)
+      }
     } else if(this.videoDebandingElem) {
       this.videoDebandingElem.remove()
       this.videoDebandingElem = undefined
@@ -2888,9 +2893,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     await this.theming.updateTheme()
 
-    if (this.videoOverlay && this.videoOverlay.elem.parentNode) {
-      this.videoOverlay.elem.parentNode.removeChild(this.videoOverlay.elem)
+    if (this.videoOverlay?.elem?.isConnected) {
+      this.videoOverlay.elem.remove()
     }
+    if (this.videoDebandingElem?.isConnected) {
+      this.videoDebandingElem.remove()
+    }
+    
     this.resetVideoParentElemStyle()
     this.clear()
     this.stats.hide()
