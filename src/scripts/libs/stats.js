@@ -9,7 +9,7 @@ export default class Stats {
   }
 
   initElems() {
-    if (this.FPSListElem && this.FPSListElem.isConnected) return
+    if (this.FPSListElem) return
 
     this.FPSListElem = document.createElement('div')
     this.FPSListElem.classList.add('ambientlight__fps-list')
@@ -65,8 +65,6 @@ export default class Stats {
       this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
-
-    this.ambientlight.videoPlayerElem?.prepend(this.FPSListElem)
   }
 
   hide(onlyDisabled = false) {
@@ -100,6 +98,19 @@ export default class Stats {
         this.ambientlightFTElem.removeChild(this.frameTimesCanvas)
         this.ambientlightFTElem.style.display = 'none'
       }
+    }
+
+    if(this.FPSListElem?.isConnected &&
+      (
+        !onlyDisabled ||
+        (
+          !this.settings.showResolutions &&
+          !this.settings.showFPS &&
+          !this.settings.showFrametimes
+        )
+      )
+    ) {
+      this.FPSListElem.remove()
     }
   }
 
@@ -215,6 +226,16 @@ export default class Stats {
     }
 
     this.updateFrameTimes()
+
+    if((
+        this.settings.showFPS ||
+        this.settings.showResolutions ||
+        this.settings.showFrametimes
+      ) &&
+      this.FPSListElem?.isConnected === false
+    ) {
+      this.ambientlight.videoPlayerElem?.prepend(this.FPSListElem)
+    }
   }
 
   // Mimic received video frame stats
