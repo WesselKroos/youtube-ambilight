@@ -215,7 +215,7 @@ html[data-ambientlight-enabled="true"] {
     --ytal-background: rgba(0,0,0,.1); // fallback
     --ytal-background: rgba(0,0,0,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
     --ytal-background-opacity: calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2));
-    --ytal-background-rgb: calc(max(0, min(255 * (99 - var(--ytal-fill-opacity, .55) * 200))));
+    --ytal-background-rgb: calc(max(0, min(255, 255 * (99 - var(--ytal-fill-opacity, .55) * 200))));
     --ytal-background: rgba(
       var(--ytal-background-rgb), 
       var(--ytal-background-rgb), 
@@ -336,10 +336,11 @@ html[data-ambientlight-enabled="true"] {
 
             --ytal-background: rgba(255,255,255,.1); // fallback
             --ytal-background: rgba(255,255,255,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
+            --ytal-background-rgb: calc(max(0, min(255, 255 * (-99 + var(--ytal-fill-opacity, .55) * 200))));
             --ytal-background: rgba(
-              calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
-              calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)), 
-              calc(255 * (-99 + var(--ytal-fill-opacity, .55) * 200)),
+              var(--ytal-background-rgb), 
+              var(--ytal-background-rgb), 
+              var(--ytal-background-rgb),
               calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2))
             );
             background: var(--ytal-background) !important;
@@ -365,10 +366,11 @@ html[data-ambientlight-enabled="true"] {
       ytd-masthead {
         --ytal-background: rgba(0,0,0,.1); // fallback
         --ytal-background: rgba(0,0,0,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
+        --ytal-background-rgb: calc(max(0, min(255, 255 * (99 - var(--ytal-fill-opacity, .55) * 200))));
         --ytal-background: rgba(
-          calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
-          calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)), 
-          calc(255 * (99 - var(--ytal-fill-opacity, .55) * 200)),
+          var(--ytal-background-rgb), 
+          var(--ytal-background-rgb), 
+          var(--ytal-background-rgb),
           calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2))
         );
         background: var(--ytal-background) !important;
@@ -2852,7 +2854,7 @@ html[data-ambientlight-enabled="true"] {
         height: 100%;
         min-height: calc(3000px + 100vh); /* Must at least be high enough to fit the panels + related list */
       }
-        
+
       #related.ytd-watch-flexy {
         position: sticky;
         top: 80px;
