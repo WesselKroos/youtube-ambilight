@@ -1117,7 +1117,7 @@ export default class Settings {
     }
 
     setTimeout(() => {
-      on(body, 'click', this.onCloseMenu, undefined, (listener) => this.onCloseMenuListener = listener)
+      on(body, 'click', this.onCloseMenu, { capture: true }, (listener) => this.onCloseMenuListener = listener)
       this.scrollToWarning()
     }, 100)
   }
