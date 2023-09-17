@@ -68,6 +68,13 @@ const importSettings = async (storageName, importJson) => {
     const importedObject = JSON.parse(jsonString)
     if(typeof importedObject !== 'object') throw new Error('No settings found to import')
 
+    // Temporarely import the setting blur as blur2
+    // https://github.com/WesselKroos/youtube-ambilight/issues/191#issuecomment-1703792823
+    if('blur' in importedObject) {
+      importedObject.blur2 = importedObject.blur
+      delete importedObject.blur
+    }
+
     const settings = {}
     SettingsConfig.forEach(({ name, type, min, step, max }) => {
       if(!(name in importedObject)) return
@@ -139,22 +146,33 @@ const exportSettings = async (storageName, exportJson) => {
     
     const storedSettings = await storage.get(null)
 
-    const settings = {}
-    Object.keys(storedSettings).forEach(key => {
-      if (!key.startsWith('setting-')) return
+    let exportObject = {}
+    Object.keys(storedSettings)
+      .filter(key => key.startsWith('setting-'))
+      .forEach(key => {
+        const name = key.substring('setting-'.length)
+        if(!SettingsConfig.some(setting => setting.name === name)) return
 
-      const name = key.substring('setting-'.length)
-      if(!SettingsConfig.some(setting => setting.name === name)) return
-
-      settings[name] = storedSettings[key]
-    })
-    if(!Object.keys(settings).length) throw new Error('Nothing to export. All settings still have their default values.')
+        exportObject[name] = storedSettings[key]
+      })
+    if(!Object.keys(exportObject).length) throw new Error('Nothing to export. All settings still have their default values.')
   
-    const jsonString = JSON.stringify(settings, null, 2)
+    // Temporarely export the setting blur2 as blur
+    // https://github.com/WesselKroos/youtube-ambilight/issues/191#issuecomment-1703792823
+    if('blur2' in exportObject) {
+      exportObject.blur = exportObject.blur2
+      delete exportObject.blur2
+    }
+
+    exportObject = Object.keys(exportObject)
+      .sort()
+      .reduce((obj, key) => (obj[key] = exportObject[key], obj), {})
+
+    const jsonString = JSON.stringify(exportObject, null, 2)
     await exportJson(jsonString)
-    importExportStatus.textContent = `Exported ${Object.keys(settings).length} settings to ${storageName}`
+    importExportStatus.textContent = `Exported ${Object.keys(exportObject).length} settings to ${storageName}`
     importExportStatusDetails.textContent = `View exported settings (Click)\n\n${
-      Object.keys(settings).map(key => `${key}: ${JSON.stringify(settings[key])}`).join('\n')
+      Object.keys(exportObject).map(key => `${key}: ${JSON.stringify(exportObject[key])}`).join('\n')
     }`
   } catch(ex) {
     console.error('Failed to export settings', ex)
