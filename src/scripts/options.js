@@ -65,7 +65,7 @@ const importSettings = async (storageName, importJson) => {
     const jsonString = await importJson()
     if(!jsonString) throw new Error('No settings found to import')
 
-    const importedObject = JSON.parse(jsonString)
+    let importedObject = JSON.parse(jsonString)
     if(typeof importedObject !== 'object') throw new Error('No settings found to import')
 
     // Temporarely import the setting blur as blur2
@@ -74,26 +74,36 @@ const importSettings = async (storageName, importJson) => {
       importedObject.blur2 = importedObject.blur
       delete importedObject.blur
     }
+    
+    importedObject = Object.keys(importedObject)
+      .sort()
+      .reduce((obj, key) => (obj[key] = importedObject[key], obj), {})
 
     const settings = {}
-    SettingsConfig.forEach(({ name, type, min, step, max }) => {
-      if(!(name in importedObject)) return
-
+    for(const name in importedObject) {
       let value = importedObject[name]
+
+      const setting = SettingsConfig.find(setting => setting.name === name)
+      if(!setting) {
+        importWarnings.push(`Skipped "${name}": ${JSON.stringify(value)}. This settings might have been removed or migrated to another name after an update.`)
+        continue
+      }
+
+      const { type, min = 0, step = 0.1, max } = setting
       if(type === 'checkbox' || type === 'section') {
         if(typeof value !== 'boolean') {
           importWarnings.push(`Skipped "${name}": ${JSON.stringify(value)} is not a boolean.`)
-          return
+          continue
         }
       } else if(type === 'list') {
         if(typeof value !== 'number') {
           importWarnings.push(`Skipped "${name}": ${JSON.stringify(value)} is not a number.`)
-          return
+          continue
         }
-        const valueRoundingLeft = ((value - (min ?? 0)) * 10) % ((step ?? 0.1) * 10)
+        const valueRoundingLeft = ((value - min) * 1000) % (step * 1000)
         if(valueRoundingLeft !== 0) {
-          importWarnings.push(`Rounded down "${name}": ${JSON.stringify(value)} is not in steps of ${step ?? 0.1}${min === undefined ? '' : ` from ${min}`}.`)
-          value = Math.round((value - valueRoundingLeft) * 10) / 10
+          importWarnings.push(`Rounded down "${name}": ${JSON.stringify(value)} is not in steps of ${step}${min === undefined ? '' : ` from ${min}`}.`)
+          value = Math.round(value * 1000 - valueRoundingLeft) / 1000
         }
         if(min !== undefined && value < min) {
           importWarnings.push(`Clipped "${name}": ${JSON.stringify(value)} is lower than the minimum of ${min}.`)
@@ -106,16 +116,10 @@ const importSettings = async (storageName, importJson) => {
       }
 
       settings[`setting-${name}`] = value
-    })
+    }
     
     if(!Object.keys(settings).length) throw new Error('No settings found to import')
     
-    Object.keys(importedObject)
-      .filter(name => !(`setting-${name}` in settings))
-      .forEach(name => {
-        importWarnings.push(`Skipped "${name}". (This settings might have been removed or migrated to another name after an update.`)
-      })
-
     await storage.set(settings)
 
     importExportStatus.textContent = 
@@ -128,7 +132,7 @@ importWarnings.length ? `\n\nWith ${importWarnings.length} warnings:\n- ${import
     }
     importWarnings = []
 
-    importExportStatusDetails.textContent = `View imported settings (Click)\n\n${
+    importExportStatusDetails.textContent = `View imported settings (Click)\nNote: The blur setting is internally converted to blur2\n\n${
       Object.keys(settings).map(key => `${key.substring('setting-'.length)}: ${JSON.stringify(settings[key])}`).join('\n')
     }`
   } catch(ex) {
