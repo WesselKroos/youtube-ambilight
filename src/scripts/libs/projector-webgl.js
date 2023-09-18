@@ -474,10 +474,11 @@ export default class ProjectorWebGL {
     const maxProjectorTextures = maxTextures - 1
     ProjectorWebGL.subProjectorDimensionMax = this.webGLVersion === 2 ? 3 : 2; // WebGL1 does not allow non-power-of-two textures
     this.subProjectorsCount = 1
-    for(let i = 1; i < ProjectorWebGL.subProjectorDimensionMax && this.settings.frameFading + 1 > maxProjectorTextures * Math.pow(i, 2); i++) {
+    const frameFading = Math.round(Math.pow(this.settings.frameFading, 2))
+    for(let i = 1; i < ProjectorWebGL.subProjectorDimensionMax && frameFading + 1 > maxProjectorTextures * Math.pow(i, 2); i++) {
       this.subProjectorsCount = Math.pow(i + 1, 2);
     }
-    this.projectorsCount = Math.min(this.settings.frameFading + 1, maxProjectorTextures * this.subProjectorsCount)
+    this.projectorsCount = Math.min(frameFading + 1, maxProjectorTextures * this.subProjectorsCount)
     const projectorsTextureCount = Math.ceil(this.projectorsCount / this.subProjectorsCount)
     for(let i = 0; i < projectorsTextureCount; i++) {
       this.projectorsTexture[i] = this.ctx.createTexture();

@@ -2096,9 +2096,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
     }
 
+    const frameFading = this.settings.frameFading ? Math.round(Math.pow(this.settings.frameFading, 2)) : 0
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
-    const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
-      ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
+    const realFramerateLimit = (this.settings.webGL && frameFading > frameFadingMax)
+      ? Math.max(1, (frameFadingMax / (frameFading || 1)) * this.settings.framerateLimit)
       : this.settings.framerateLimit
     return realFramerateLimit
   }

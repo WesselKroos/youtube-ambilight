@@ -113,6 +113,15 @@ export default class Settings {
       delete Settings.storedSettingsCached['setting-fadeOutEasing']
       await contentScript.setStorageEntry('setting-fadeOutEasing', undefined, false)
     }
+    if(Settings.storedSettingsCached['setting-frameFading'] !== null) {
+      const value = Settings.storedSettingsCached['setting-frameFading']
+      const max = SettingsConfig.find(setting => setting.name === 'frameFading').max
+      if(value > max) {
+        const newValue = Math.min(max, Math.round(Math.sqrt(value) * 50) / 50)
+        Settings.storedSettingsCached['setting-frameFading'] = newValue
+        await contentScript.setStorageEntry('setting-frameFading', newValue, false)
+      }
+    }
 
     // Disable enabled WebGL setting if not supported anymore
     if(Settings.storedSettingsCached['setting-webGL']) {
@@ -585,9 +594,6 @@ export default class Settings {
           if(setting.valuePoints) {
             value = setting.valuePoints[value]
           }
-          if(setting.name === 'frameFading') {
-            value = Math.round(Math.pow(value, 2))
-          }
 
           if(this[setting.name] === value) return
 
@@ -1054,9 +1060,10 @@ export default class Settings {
     location.reload()
   }
 
-  framesToDuration(frames) {
-    if(!frames) return 'Off'
+  frameFadingValueToDuration(value) {
+    if(!value) return 'Off'
 
+    const frames = Math.pow(value, 2)
     const seconds = frames / 30
     if (seconds < 1) return `${Math.round(seconds * 1000)} ms`
     return `${Math.round(seconds * 10) / 10} seconds`
@@ -1078,7 +1085,7 @@ export default class Settings {
       return (this.framerateLimit == 0) ? 'max fps' : `${value} fps`
     }
     if(setting.name === 'frameFading') {
-      return this.framesToDuration(value)
+      return this.frameFadingValueToDuration(value)
     }
     if(setting.name === 'theme' || setting.name === 'enableInViews') {
       const snapPoint = setting.snapPoints.find(point => point.value === value)
@@ -1388,9 +1395,7 @@ export default class Settings {
 
   getInputRangeValue(name) {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
-    if(name === 'frameFading') {
-      return Math.round(5 * (Math.exp(Math.log(this[name]) / 2))) / 5
-    } else if(setting.valuePoints){
+    if(setting.valuePoints){
       return setting.valuePoints.indexOf(this[name])
     } else {
       return this[name]
