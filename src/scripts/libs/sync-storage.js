@@ -49,11 +49,29 @@ class SyncStorage {
     })
   }
 
+  onChangedListeners = []
+
   addListener(handler) {
     try {
-      chrome.storage.sync.onChanged.addListener(wrapErrorHandler(handler, true))
+      const wrappedHandler = wrapErrorHandler(handler, true)
+      chrome.storage.sync.onChanged.addListener(wrappedHandler)
+      this.onChangedListeners.push({ handler, wrappedHandler })
     } catch(ex) {
-      console.warn('Failed to listen to storage changes. If any settings change you\'ll have to refresh the page to update them.')
+      console.warn('Failed to listen to sync-storage changes. If any setting changes you\'ll have to manually refresh the page to update them.')
+      console.debug(ex)
+    }
+  }
+
+  removeListener(handler) {
+    try {
+      const entry = this.onChangedListeners.find((entry) => entry.handler === handler)
+      if(!entry) throw new Error('Cannot remove a storage.sync.onChange listener that has never been added')
+
+      chrome.storage.sync.onChanged.removeListener(entry.wrappedHandler)
+
+      this.onChangedListeners.splice(this.onChangedListeners.indexOf(entry), 1)
+    } catch(ex) {
+      console.warn('Failed to listen to sync-storage changes. If any setting changes you\'ll have to manually refresh the page to update them.')
     }
   }
 }

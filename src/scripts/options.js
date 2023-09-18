@@ -244,7 +244,9 @@ const updateImportableAccountStatus = async () => {
 }
 updateImportableAccountStatus()
 
-chrome.storage.onChanged.addListener(updateImportableAccountStatus)
-window.addEventListener('beforeunload', () => {
-  chrome.storage.onChanged.removeListener(updateImportableAccountStatus)
-})
+if(chrome?.storage?.sync?.onChanged) {
+  syncStorage.addListener(updateImportableAccountStatus)
+  window.addEventListener('beforeunload', () => {
+    syncStorage.removeListener(updateImportableAccountStatus)
+  })
+}
