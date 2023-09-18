@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8" />
   <title>Ambient light for YouTube&trade; settings</title>
   <link rel="stylesheet" href="styles/options.css">
 </head>
@@ -31,6 +32,24 @@
       <a class="donate-link" href="https://ko-fi.com/G2G59EK8L" target="_blank" rel="noopener">
         <img src="images/donate.svg" alt="Support me via a donation" title="Support me via a donation" height="33" />
       </a>
+    </p>
+
+    <h2>Import / Export settings</h2>
+    <div id="importExportStatus" class="import-export-status"></div>
+    <div id="importExportStatusDetails" class="import-export-status-details" tabindex="0"></div>
+    <h3>File storage</h3>
+    <p>
+      <button id="exportFileBtn">Export to file</button>
+      <button id="importFileBtn">Import from file</button>
+      <input hidden name="import-settings-file" type="file" accept=".json"/>
+    </p>
+    <h3>Cloud storage (Your browser account)</h3>
+    <p>
+      <button id="exportAccountBtn">Export to cloud</button>
+      <button id="importAccountBtn" disabled>Import from cloud</button>
+    </p>
+    <p>
+      <div id="importableAccountStatus" class="importable-account-status"></div>
     </p>
 
     <h2>Crash reports & Privacy</h2>

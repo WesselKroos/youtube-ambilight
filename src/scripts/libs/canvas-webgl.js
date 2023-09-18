@@ -61,13 +61,13 @@ export class WebGLContext {
         this.scaleY = undefined
         this.program = undefined // Prevent warning: Cannot delete program from old context. in initCtx
 
-        console.log(`Ambient light for YouTube™ | WebGLContext lost (${this.lostCount})`)
+        console.log(`WebGLContext lost (${this.lostCount})`)
         this.setWebGLWarning('restore')
       }.bind(this)), false);
       this.canvas.addEventListener('webglcontextrestored', wrapErrorHandler(async function webGLContextRestored() {
-        // console.log(`Ambient light for YouTube™ | WebGLContext restored (${this.lostCount})`)
+        // console.log(`WebGLContext restored (${this.lostCount})`)
         if(this.lostCount >= 3) {
-          console.error('Ambient light for YouTube™ | WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
+          console.error('WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.')
           this.setWebGLWarning('3 times restore')
           return
         }
@@ -80,12 +80,12 @@ export class WebGLContext {
           if(!this.ambientlight.projector?.lost && !this.ambientlight.projector?.blurLost)
             this.setWarning('')
         } else {
-          console.error(`Ambient light for YouTube™ | WebGLContext restore failed (${this.lostCount})`)
+          console.error(`WebGLContext restore failed (${this.lostCount})`)
           this.setWebGLWarning('restore')
         }
       }.bind(this)), false);
       this.canvas.addEventListener('webglcontextcreationerror', wrapErrorHandler(function webGLContextCreationError(e) {
-        // console.warn(`Ambient light for YouTube™ | WebGLContext creationerror: ${e.statusMessage}`)
+        // console.warn(`WebGLContext creationerror: ${e.statusMessage}`)
         this.webglcontextcreationerrors.push({
           message: e.statusMessage || '?',
           time: performance.now(),
@@ -113,7 +113,7 @@ export class WebGLContext {
         this.ctx.finish() // Wait for any pending draw calls to finish
         this.ctx.deleteProgram(this.program) // Free GPU memory
       } catch(ex) {
-        console.warn('Ambient light for YouTube™ | Failed to delete previous WebGLContext program', ex)
+        console.warn('Failed to delete previous WebGLContext program', ex)
       }
       this.program = undefined
     }
@@ -606,7 +606,7 @@ export class WebGLContext {
     const invalid = this.isContextLost() || !this.program;
     if (invalid && !this.ctxIsInvalidWarned && !this.program) {
       this.ctxIsInvalidWarned = true
-      console.log('Ambient light for YouTube™ | WebGLContext is lost')
+      console.log('WebGLContext is lost')
     }
     return invalid;
   }

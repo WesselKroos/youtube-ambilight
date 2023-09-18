@@ -1,6 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import eslint from '@rollup/plugin-eslint'
+import fs from 'fs'
 
 const common = {
   context: 'window',
@@ -29,8 +30,9 @@ const scripts = ['background', 'options', 'content', 'injected']
 
 export default scripts.map(script => Object.assign({}, {
   input:  `./src/scripts/${script}.js`,
-  output:  { 
-   file: `./dist/scripts/${script}.js`,
-   format: 'iife'
+  output:  {
+    file: `./dist/scripts/${script}.js`,
+    format: 'iife',
+    intro: fs.readFileSync('./src/scripts/intros/console.js', 'utf8')
  }
 }, common))
