@@ -31,7 +31,7 @@ export const waitForDomElement = (check, container, timeout) => new Promise((res
 })
 
 let errorHandler = (ex) => {
-  console.error(`Ambient light for YouTube™ |`, ex)
+  console.error(ex)
 }
 export const setErrorHandler = (handler) => {
   errorHandler = handler

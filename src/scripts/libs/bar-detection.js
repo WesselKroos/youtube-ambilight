@@ -321,7 +321,7 @@ export default class BarDetection {
       this.worker = workerFromCode(workerCode)
       this.worker.onmessage = (e) => {
         if(e.data.id !== -1) {
-          // console.warn('Ambient light for YouTube™ | Ignoring old bar detection message:', e.data)
+          // console.warn('Ignoring old bar detection message:', e.data)
           return
         }
         if(e.data.error) {
@@ -437,7 +437,7 @@ export default class BarDetection {
               this.run !== run || 
               e.data.id !== this.workerMessageId
             ) {
-              // console.warn('Ambient light for YouTube™ | Ignoring old bar detection percentage:', 
+              // console.warn('Ignoring old bar detection percentage:', 
               //   this.workerMessageId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
               resolve()
               return

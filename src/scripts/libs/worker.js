@@ -7,7 +7,7 @@ export const workerFromCode = (func) => {
     }
     return new Worker(URL.createObjectURL(new Blob(['(', func.toString(), ')()'], { type:'text/javascript' })))
   } catch(error) {
-    console.warn(`Ambient light for YouTube™ | Failed to create a native worker. Creating a fallback worker on the main thread instead (${error.message})`)
+    console.warn(`Failed to create a native worker. Creating a fallback worker on the main thread instead (${error.message})`)
     
     class FallbackWorker {
       isFallbackWorker = true;
@@ -19,7 +19,7 @@ export const workerFromCode = (func) => {
                 data
               })
           },
-          onmessage: () => console.error('Ambient light for YouTube™ | onmessage not implemented'),
+          onmessage: () => console.error('onmessage not implemented'),
           isFallbackWorker: true
         }
         func.bind(globalScope)()

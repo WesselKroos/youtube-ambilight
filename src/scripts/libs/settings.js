@@ -1471,7 +1471,7 @@ export default class Settings {
       if(ex.message !== 'An unexpected error occurred')
         SentryReporter.captureException(ex)
 
-      this.logStorageWarningOnce(`Ambient light for YouTube™ | Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
+      this.logStorageWarningOnce(`Failed to save settings ${JSON.stringify(this.pendingStorageEntries)}: ${ex.message}`)
     }
   }
 

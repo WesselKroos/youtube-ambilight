@@ -53,7 +53,7 @@ class SyncStorage {
     try {
       chrome.storage.sync.onChanged.addListener(wrapErrorHandler(handler, true))
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Failed to listen to crash report option changes. If any of them change you\'ll have to refresh the page to update the new crash report options.')
+      console.warn('Failed to listen to storage changes. If any settings change you\'ll have to refresh the page to update them.')
     }
   }
 }
