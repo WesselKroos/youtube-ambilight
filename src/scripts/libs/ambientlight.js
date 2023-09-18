@@ -441,6 +441,11 @@ export default class Ambientlight {
     }
   }
 
+  updateEnergySaver() {
+    this.resetAverageVideoFramesDifference()
+    this.calculateAverageVideoFramesDifference()
+  }
+
   resetAverageVideoFramesDifference = () => {
     cancelGetAverageVideoFramesDifference()
     this.averageVideoFramesDifference = 1
@@ -452,6 +457,7 @@ export default class Ambientlight {
 
   calculateAverageVideoFramesDifference = async () => {
     if(!this.settings.energySaver) return
+    if(!this.settings.enabled || !this.isOnVideoPage) return
 
     try {
       // const videoId = this.ytdWatchElem?.playerData?.videoDetails?.videoId
@@ -2976,5 +2982,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     raf(() => this.updateVideoPlayerSize()) // Because it is incorrect when transitioning from immersive theater to small
     return true
+  }
+
+  updateRelatedScrollbar() {
+    if(!this.isHidden && this.settings.relatedScrollbar)
+      html.setAttribute('data-ambientlight-related-scrollbar', true)
+    else
+      html.removeAttribute('data-ambientlight-related-scrollbar')
+  }
+
+  updateHideScrollbar() {
+    if(!this.isHidden && this.settings.hideScrollbar)
+      html.setAttribute('data-ambientlight-hide-scrollbar', true)
+    else
+      html.removeAttribute('data-ambientlight-hide-scrollbar')
   }
 }

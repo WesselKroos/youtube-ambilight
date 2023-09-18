@@ -19,11 +19,20 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   }
 
   storage.addListener(function storageListener(changes) {
-    if (!changes.crashOptions?.newValue) return
+    const {
+      crashOptions: crashOptionsChange,
+      ...settingsChanges
+    } = changes
 
-    const crashOptions = changes.crashOptions.newValue
-    setCrashOptions(crashOptions)
-    injectedScript.postMessage('crashOptions', crashOptions)
+    if (crashOptionsChange?.newValue) {
+      const crashOptions = crashOptionsChange.newValue
+      setCrashOptions(crashOptions)
+      injectedScript.postMessage('crashOptions', crashOptions)
+    }
+
+    if(settingsChanges && Object.keys(settingsChanges).length) {
+      injectedScript.postMessage('settings', settingsChanges)
+    }
   })
 
   injectedScript.addMessageListener('get-storage-entries',

@@ -838,17 +838,11 @@ export default class Settings {
           }
 
           if (setting.name === 'relatedScrollbar' && this.enabled) {
-            if(value)
-              html.setAttribute('data-ambientlight-related-scrollbar', true)
-            else
-              html.removeAttribute('data-ambientlight-related-scrollbar')
+            this.ambientlight.updateRelatedScrollbar()
           }
 
           if (setting.name === 'hideScrollbar' && this.enabled) {
-            if(value)
-              html.setAttribute('data-ambientlight-hide-scrollbar', true)
-            else
-              html.removeAttribute('data-ambientlight-hide-scrollbar')
+            this.ambientlight.updateHideScrollbar()
             this.ambientlight.updateVideoPlayerSize()
           }
 
@@ -874,11 +868,7 @@ export default class Settings {
           if ([
             'energySaver',
           ].includes(setting.name)) {
-            if(value) {
-              this.ambientlight.calculateAverageVideoFramesDifference()
-            } else {
-              this.ambientlight.resetAverageVideoFramesDifference()
-            }
+            this.ambientlight.updateEnergySaver()
           }
           
           if ([
@@ -908,11 +898,7 @@ export default class Settings {
           }
 
           if(setting.name === 'advancedSettings') {
-            if(value) {
-              this.menuElem.classList.add('ytpa-ambientlight-settings-menu--advanced')
-            } else {
-              this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--advanced')
-            }
+            this.updateAdvancedSettings()
             this.updateVisibility()
           }
 
@@ -1624,6 +1610,14 @@ export default class Settings {
     }
   }
 
+  updateAdvancedSettings() {
+    if(this.advancedSettings) {
+      this.menuElem.classList.add('ytpa-ambientlight-settings-menu--advanced')
+    } else {
+      this.menuElem.classList.remove('ytpa-ambientlight-settings-menu--advanced')
+    }
+  }
+
   scrollToWarning() {
     if(!this.warningElem.textContent || !this.scrollToWarningQueued || !this.onCloseMenuListener) return
     
@@ -1632,5 +1626,92 @@ export default class Settings {
       behavior: 'smooth',
       top: 0
     })
+  }
+
+  changedStorageValues = {}
+  onChangedStorage = async (changes) => {
+    // console.log('received settings', changes)
+
+    for(const key in changes) {
+      if(!key.startsWith('setting-')) continue
+
+      const name = key.substring('setting-'.length)
+      const setting = SettingsConfig.find(setting => setting.name === name)
+      if(!setting) continue
+
+      const change = changes[key]
+      const currentValue = this[name]
+      if(currentValue === change.newValue) {
+        if(name in this.changedStorageValues) {
+          delete this.changedStorageValues[name]
+        }
+        continue
+      }
+
+      // console.log('changed setting', name, currentValue, change)
+      this.changedStorageValues[name] = change.newValue
+    }
+
+    if(!Object.keys(this.changedStorageValues).length) return
+
+    if(this.applyChangedStorageValuesTimeout) {
+      clearTimeout(this.applyChangedStorageValuesTimeout)
+    }
+    this.applyChangedStorageValuesTimeout = await new Promise(resolve => setTimeout(resolve, 500))
+    this.applyChangedStorageValuesTimeout = undefined
+    if(this.applyChangedStorageValuesRAF) return
+
+    this.applyChangedStorageValuesRAF = new Promise((resolve) => {
+      requestAnimationFrame(resolve)
+    })
+    await this.applyChangedStorageValuesRAF
+    this.applyChangedStorageValuesRAF = undefined
+
+    const changedValues = this.changedStorageValues
+    this.changedStorageValues = {}
+    if(!Object.keys(changedValues).length) return
+
+    // console.log('changes', changedValues)
+
+    if('webGL' in changedValues) {
+      this.reloadPage()
+      return
+    }
+
+    for(const name in changedValues) {
+      this.set(name, changedValues[name], true, true)
+    }
+
+    this.updateAdvancedSettings()
+    this.updateVisibility()
+
+    // Update everything
+    if('theme' in changedValues) {
+      this.ambientlight.theming.updateTheme()
+    }
+
+    if('enabled' in changedValues) {
+      await this.ambientlight.toggleEnabled(this.enabled)
+      return
+    }
+
+    // Clear everything
+    this.ambientlight.barDetection.clear()
+    this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
+    this.ambientlight.canvassesInvalidated = true
+    this.ambientlight.sizesInvalidated = true
+    this.ambientlight.sizesChanged = true
+
+    this.ambientlight.updateStyles()
+    this.ambientlight.updateImmersiveMode()
+    this.ambientlight.updateRelatedScrollbar()
+    this.ambientlight.updateHideScrollbar()
+    this.ambientlight.updateVideoPlayerSize()
+
+    this.ambientlight.updateEnergySaver()
+    
+    await this.updateProjectorWebGLCtx()
+    await this.updateBufferProjectorWebGLCtx()
+    this.ambientlight.optionalFrame()
   }
 }

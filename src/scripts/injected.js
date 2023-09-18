@@ -253,6 +253,14 @@ const loadAmbientlight = async () => {
 
   try {
     await Settings.getStoredSettingsCached()
+    
+    contentScript.addMessageListener('settings', settingsChanges => {
+      if(window.ambientlight) {
+        window.ambientlight.settings.onChangedStorage(settingsChanges)
+      } else {
+        Settings.storedSettingsCached = undefined
+      }
+    }, true)
   } catch(ex) {
     console.warn('The settings cannot be precached')
     console.error(ex)
