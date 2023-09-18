@@ -44,7 +44,7 @@ body {
   }
 }
 
-/* The Firefox */
+/* The Firefox options page within a tab */
 @supports (-moz-appearance:button) {
   html {
     background: #23222b;
@@ -145,7 +145,7 @@ label {
   transition: transform .25s;
 }
 .expandable.expanded .expandable__toggle {
-  transform: translateX(-1px) scaleX(-1);
+  transform: rotate(90deg) translateX(-1px) scaleX(-1);
 }
 
 .expandable__details {
@@ -172,4 +172,60 @@ label {
 .donate-link {
   margin: 10px 0 25px;
   display: block;
+}
+
+.import-export-status {
+  color: #5f5;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
+.import-export-status.has-error {
+  color: #f55;
+}
+.import-export-status-details {
+  margin: 0 -3px;
+  border-radius: 4px;
+  padding: 0px 3px;
+  max-height: 180px;
+  background: #000;
+  overflow: auto;
+  color: #aaa;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
+.import-export-status-details:not(:focus) {
+  max-height: 18px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.importable-account-status {
+  color: #aaa;
+  white-space: pre-wrap;
+  font-style: italic;
+  font-size: 13px;
+}
+
+button:not(.expandable__toggle) {
+  margin-right: 5px;
+  box-shadow: #000 0 1px 2px 0;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 6px;
+  background: #008ce3;
+  text-shadow: #ffffff44 0px 0px 2px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .2s;
+}
+button:not(.expandable__toggle):hover,
+button:not(.expandable__toggle):focus {
+  background: #50ace3;
+}
+button:not(.expandable__toggle):active {
+  box-shadow: #000 0 1px 2px 0 inset;
 }

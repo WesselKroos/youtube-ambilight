@@ -210,13 +210,13 @@ export default class SentryReporter {
         }
       } catch (ex) { console.warn(ex) }
 
-      console.error('Ambient light for YouTube™ | ', ex)
+      console.error(ex)
       if(ex.details) {
         console.error(ex.details)
       }
 
       if(this.overflowProtection === 3) {
-        console.warn('Ambient light for YouTube™ | Exception overflow protection enabled')
+        console.warn('Exception overflow protection enabled')
       }
 
       // Ignore errors we cannot fix
@@ -225,7 +225,7 @@ export default class SentryReporter {
 
 
       if(!crashOptions?.crash) {
-        console.warn('Ambient light for YouTube™ | Crash reporting is disabled. If you want this error to be fixed, open the extension options to enable crash reporting. Then refresh the page and reproduce the error again to send a crash report.')
+        console.warn('Crash reporting is disabled. If you want this error to be fixed, open the extension options to enable crash reporting. Then refresh the page and reproduce the error again to send a crash report.')
         return
       }
 
@@ -247,7 +247,7 @@ export default class SentryReporter {
               version: version || 'pending'
             })
           } else {
-            console.warn('Ambient light for YouTube™ | Dropped error report because too many reports has been sent today or in the last 7 days')
+            console.warn('Dropped error report because too many reports has been sent today or in the last 7 days')
             return
           }
           await contentScript.setStorageEntry('reports', JSON.stringify(reportsThisWeek))
@@ -537,7 +537,7 @@ export default class SentryReporter {
       makeMain(previousHub)
       scope.clear()
     } catch (ex) {
-      console.error('Ambient light for YouTube™ | ', ex)
+      console.error(ex)
     }
   }
 }

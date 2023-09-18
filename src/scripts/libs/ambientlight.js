@@ -103,7 +103,7 @@ export default class Ambientlight {
         try {
           await this.enable(true)
         } catch(ex) {
-          console.warn('Ambient light for YouTube™ | Failed to enable on launch')
+          console.warn('Failed to enable on launch')
           SentryReporter.captureException(ex)
         }
       }
@@ -236,7 +236,7 @@ export default class Ambientlight {
         }
       }
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | applyChromiumBug1142112Workaround error. Continuing ambientlight initialization...')
+      console.warn('applyChromiumBug1142112Workaround error. Continuing ambientlight initialization...')
       SentryReporter.captureException(ex)
     }
   }
@@ -373,7 +373,7 @@ export default class Ambientlight {
         update
       }
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
+      console.warn('applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...')
       SentryReporter.captureException(ex)
       this.enableChromiumBugVideoJitterWorkaround = false // Prevent retries
     }
@@ -569,7 +569,7 @@ export default class Ambientlight {
       error: (ex) => {
         const videoElem = ex?.target;
         const error = videoElem?.error;
-        console.warn(`Ambient light for YouTube™ | Restoring the ambient light after a video error...
+        console.warn(`Restoring the ambient light after a video error...
 Video error: ${mediaErrorToString(error?.code)} ${error?.message ? `(${error?.message})` : ''}
 Video network state: ${networkStateToString(videoElem?.networkState)}
 Video ready state: ${readyStateToString(videoElem?.readyState)}`)
@@ -654,7 +654,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoPlayerElem.setInternalSize()
       this.sizesChanged = true
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+      console.warn('Failed to resize the video player')
     }
   }
 
@@ -751,7 +751,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
       //     this.sizesChanged = true
       //   } catch(ex) {
-      //     console.warn('Ambient light for YouTube™ | Failed to resize the video player')
+      //     console.warn('Failed to resize the video player')
       //   }
       // }
       if(!this.settings.enabled) return
@@ -1007,7 +1007,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     // Try to apply the workaround once
     if(this.videoElem.src && !getImageDataAllowed && !this.crossOriginApplied) {
-      console.warn(`Ambient light for YouTube™ | Detected cross origin video. Applying workaround... ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
+      console.warn(`Detected cross origin video. Applying workaround... ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
       this.crossOriginApplied = true
       
       try {
@@ -1016,7 +1016,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.videoPlayerElem.loadVideoById(this.videoPlayerElem.getVideoData().video_id) // Refreshes auto quality setting range above 480p
         this.videoElem.currentTime = currentTime
       } catch(ex) {
-        console.warn(`Ambient light for YouTube™ | Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
+        console.warn(`Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`)
       }
     }
 
@@ -1084,7 +1084,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         if(!this.settings.webGLCrashDate) {
           SentryReporter.captureException(ex)
         } else {
-          console.log('Ambient light for YouTube™ | ', ex)
+          console.log(ex)
         }
         this.settings.handleWebGLCrash()
       }
@@ -1146,7 +1146,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         if(!this.settings.webGLCrashDate) {
           SentryReporter.captureException(ex)
         } else {
-          console.log('Ambient light for YouTube™ | ', ex)
+          console.log(ex)
         }
         this.settings.handleWebGLCrash()
       }
@@ -2096,9 +2096,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if(this.averageVideoFramesDifference < .0175) return 1 // 1 seconds
     }
 
+    const frameFading = this.settings.frameFading ? Math.round(Math.pow(this.settings.frameFading, 2)) : 0
     const frameFadingMax = (15 * Math.pow(ProjectorWebGL.subProjectorDimensionMax, 2)) - 1
-    const realFramerateLimit = (this.settings.webGL && this.settings.frameFading > frameFadingMax)
-      ? Math.max(1, (frameFadingMax / (this.settings.frameFading || 1)) * this.settings.framerateLimit)
+    const realFramerateLimit = (this.settings.webGL && frameFading > frameFadingMax)
+      ? Math.max(1, (frameFadingMax / (frameFading || 1)) * this.settings.framerateLimit)
       : this.settings.framerateLimit
     return realFramerateLimit
   }
@@ -2206,7 +2207,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         'NS_ERROR_NOT_AVAILABLE',
         'NS_ERROR_OUT_OF_MEMORY'
       ].includes(ex.name)) {
-        console.warn('Ambient light for YouTube™ | Failed to display the ambient light')
+        console.warn('Failed to display the ambient light')
         console.error(ex)
         return
       }
@@ -2762,7 +2763,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   //         }
   //       }
   //     } catch(ex) {
-  //       console.log(`Ambient light for YouTube™ | Skipped disabling YouTube\'s own Ambient Mode: ${ex?.message}`)
+  //       console.log(`Skipped disabling YouTube\'s own Ambient Mode: ${ex?.message}`)
   //     }
 
   //     settingsBtn?.click() // Close settings
@@ -2780,7 +2781,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   //     await new Promise(resolve => raf(resolve)) // Await rendering
   //     settingsPopup.classList.remove('disable-youtube-ambient-mode-workaround')
   //   } catch(ex) {
-  //     console.log(`Ambient light for YouTube™ | Failed to automatically disable YouTube\'s own Ambient Mode: ${ex?.message}`)
+  //     console.log(`Failed to automatically disable YouTube\'s own Ambient Mode: ${ex?.message}`)
   //   }
   // }
 
@@ -2807,7 +2808,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.sizesChanged = true
       }
     } catch(ex) {
-      console.warn('Ambient light for YouTube™ | Failed to execute HDR video check')
+      console.warn('Failed to execute HDR video check')
     }
 
     this.showedCompareWarning = false
@@ -2868,7 +2869,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   onVideoFrame = wrapErrorHandler(function onVideoFrame(compose, info) {
     if (!this.requestVideoFrameCallbackId) {
-      console.warn(`Ambient light for YouTube™ | Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${compose} | ${info}`)
+      console.warn(`Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${compose} | ${info}`)
       return
     }
     this.videoElem.requestVideoFrameCallback(() => {}) // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate

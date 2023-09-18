@@ -143,7 +143,7 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 100,
-    step: 1,
+    step: .1,
   },
   {
     name: 'headerFillOpacity',
@@ -153,7 +153,7 @@ const SettingsConfig = [
     default: 100,
     min: -100,
     max: 100,
-    step: 1,
+    step: .1,
     advanced: true
   },
 
@@ -196,7 +196,7 @@ const SettingsConfig = [
     default: 100,
     min: 0,
     max: 100,
-    step: 1
+    step: .1
   },
   {
     name: 'surroundingContentFillOpacity',
@@ -205,7 +205,7 @@ const SettingsConfig = [
     default: 10,
     min: -100,
     max: 100,
-    step: 1
+    step: .1
   },
   {
     name: 'pageBackgroundGreyness',

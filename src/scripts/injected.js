@@ -254,7 +254,7 @@ const loadAmbientlight = async () => {
   try {
     await Settings.getStoredSettingsCached()
   } catch(ex) {
-    console.warn('Ambient light for YouTube™ | The settings cannot be precached')
+    console.warn('The settings cannot be precached')
     console.error(ex)
   }
 
