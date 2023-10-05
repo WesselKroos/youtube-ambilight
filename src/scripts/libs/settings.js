@@ -129,8 +129,12 @@ export default class Settings {
       }
     }
 
-    // Disable enabled WebGL setting if not supported anymore
-    if(Settings.storedSettingsCached['setting-webGL']) {
+    const webGLEnabled = (
+      Settings.storedSettingsCached['setting-webGL'] === true ||
+      (Settings.storedSettingsCached['setting-webGL'] === null && supportsWebGL())
+    )
+    if(webGLEnabled) {
+      // Disable enabled WebGL setting if not supported anymore
       if(!supportsWebGL()) {
         Settings.storedSettingsCached['setting-webGL'] = null
         SettingsConfig.find(setting => setting.name === 'spread').max = 200
@@ -210,6 +214,11 @@ export default class Settings {
     this.saveStorageEntry('flickerReduction', undefined) // Override potential crash reason
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
+    
+    SettingsConfig.find(setting => setting.name === 'spread').max = 200
+    if(this.spread > 200) this.set('spread', 200, true, false) // Override potential crash reason
+    const spreadRangeInputElem = this.menuElem.querySelector(`#setting-spread-range`)
+    if(spreadRangeInputElem) spreadRangeInputElem.max = 200
 
     await this.flushPendingStorageEntries()
     this.updateWebGLCrashDescription()
