@@ -267,9 +267,11 @@ html[data-ambientlight-enabled="true"] {
   &[style],
   body {
     @include scrollbar-light-thin(true);
-    background: #fff !important;
-    background-color: #fff !important;
-    --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
+
+    --ytal-page-background: #fff;
+    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
+    }
     background: var(--ytal-page-background) !important;
     background-color: var(--ytal-page-background) !important;
     
@@ -288,9 +290,11 @@ html[data-ambientlight-enabled="true"] {
     &[style],
     body {
       @include scrollbar-dark-thin(true);
-      background: #000 !important;
-      background-color: #000 !important;
-      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
+
+      --ytal-page-background: #000;
+      @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+        --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
+      }
       background: var(--ytal-page-background) !important;
       background-color: var(--ytal-page-background) !important;
     }

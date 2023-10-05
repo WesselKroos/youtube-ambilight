@@ -1,4 +1,4 @@
-import { html, body, on, off, setTimeout, supportsWebGL, raf } from './generic'
+import { html, body, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -67,6 +67,12 @@ export default class Settings {
         }
       }
     }
+
+    if(!supportsColorMix()) {
+      const pageBackgroundGreynessSetting = SettingsConfig.find(setting => setting.name === 'pageBackgroundGreyness')
+      settingsToRemove.push(pageBackgroundGreynessSetting)
+    }
+
     for(const setting of settingsToRemove) {
       SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
     }
