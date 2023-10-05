@@ -1317,6 +1317,7 @@ html[data-ambientlight-enabled="true"] {
 
   .ambientlight__video-debanding {
     position: absolute;
+    display: block;
     width: 1px;
     height: 1px;
     margin-top: 0px;
