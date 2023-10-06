@@ -94,11 +94,15 @@ yt-live-chat-renderer #panel-pages.yt-live-chat-renderer {
 
 // Improve layout rendering performance to compensate for the performance cost of the ambient light 
 
+#items.yt-live-chat-item-list-renderer {
+  transform: none !important;
+}
+
 yt-live-chat-text-message-renderer,
 yt-live-chat-paid-message-renderer,
 yt-live-chat-membership-item-renderer {
   content-visibility: auto;
-  contain-intrinsic-size: auto 56px;
+  contain-intrinsic-size: auto 48px;
 }
 
 
