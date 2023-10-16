@@ -810,6 +810,7 @@ export default class Settings {
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
+            'layoutPerformanceImprovements',
             'prioritizePageLoadSpeed',
             'enableInPictureInPicture'
           ].some(name => name === setting.name)) {
@@ -850,6 +851,10 @@ export default class Settings {
 
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
+          }
+
+          if (setting.name === 'layoutPerformanceImprovements' && this.enabled) {
+            this.ambientlight.updateLayoutPerformanceImprovements()
           }
 
           if (setting.name === 'relatedScrollbar' && this.enabled) {

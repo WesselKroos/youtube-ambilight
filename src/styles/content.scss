@@ -2799,65 +2799,82 @@ html[data-ambientlight-enabled="true"] {
       transparent 100%);
   }
 
+  &[data-ambientlight-layout-performance-improvements] {
 
-  // Faster comments loading
+    // Faster comments loading
 
-  #primary.ytd-watch-flexy #below {
-    margin-bottom: 25vh;
-  }
+    #primary.ytd-watch-flexy #below {
+      margin-bottom: 25vh;
+    }
 
 
-  // Improve layout rendering performance to compensate for the performance cost of the ambient light 
+    // Improve layout rendering performance to compensate for the performance cost of the ambient light 
 
-  ytd-comment-thread-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 100px;
-  }
-  ytd-playlist-panel-renderer #top-level-buttons-computed {
-    z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
-  }
-  ytd-playlist-panel-video-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 62px;
-  }
-  yt-related-chip-cloud-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 100px;
-  }
-  ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
-    ytd-compact-video-renderer,
-    ytd-compact-radio-renderer,
-    ytd-compact-playlist-renderer {
+    ytd-comment-thread-renderer {
       content-visibility: auto;
-      contain-intrinsic-size: auto 94px;
+      contain-intrinsic-size: auto 100px;
+    }
+    ytd-playlist-panel-renderer #top-level-buttons-computed {
+      z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
+    }
+    ytd-playlist-panel-video-renderer {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 62px;
+    }
+    yt-related-chip-cloud-renderer {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 100px;
+    }
+    ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
+      ytd-compact-video-renderer,
+      ytd-compact-radio-renderer,
+      ytd-compact-playlist-renderer {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 94px;
 
-      tp-yt-paper-tooltip.ytd-channel-name #tooltip {
-        margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+        tp-yt-paper-tooltip.ytd-channel-name #tooltip {
+          margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+        }
       }
     }
-  }
 
 
-  /* Improve scrolling smoothness */
+    // Improve scrolling smoothness
 
-  #guide-inner-content.ytd-app, // youtube menu
-  .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
-  ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
-  .ytd-macro-markers-list-renderer#contents // Chapters
-  {
-    &:hover {
-      will-change: scroll-position !important;
+    #guide-inner-content.ytd-app, // youtube menu
+    .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
+    ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
+    .ytd-macro-markers-list-renderer#contents // Chapters
+    {
+      &:hover {
+        will-change: scroll-position !important;
+      }
+    }
+
+    
+    // Improve playlist dragging smoothness
+    
+    ytd-playlist-panel-renderer[js-panel-height]:not([collapsed]) #container.ytd-playlist-panel-renderer {
+      height: var(--ytd-watch-flexy-panel-max-height);
+      contain: strict;
+    }
+
+    .yt-spec-touch-feedback-shape__stroke,
+    .yt-spec-touch-feedback-shape__fill,
+    .stroke.yt-interaction,
+    .fill.yt-interaction {
+      will-change: initial !important;
     }
   }
 
-
-  /* Limit related videos to scrollable list with a height of 100vh */
+  
+  // Limit related videos to scrollable list with a height of 100vh
 
   &[data-ambientlight-related-scrollbar] {
     ytd-watch-flexy[flexy][is-two-columns_] {
       #secondary-inner.ytd-watch-flexy {
         height: 100%;
-        min-height: calc(3000px + 100vh); /* Must at least be high enough to fit the panels + related list */
+        min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
       }
 
       #related.ytd-watch-flexy {
@@ -2888,12 +2905,5 @@ html[data-ambientlight-enabled="true"] {
         scrollbar-color: transparent transparent !important;
       }
     }
-  }
-
-  .yt-spec-touch-feedback-shape__stroke,
-  .yt-spec-touch-feedback-shape__fill,
-  .stroke.yt-interaction,
-  .fill.yt-interaction {
-    will-change: initial !important;
   }
 }

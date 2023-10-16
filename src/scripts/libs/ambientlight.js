@@ -2909,9 +2909,22 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     html.removeAttribute('data-ambientlight-hide-scrollbar')
     html.removeAttribute('data-ambientlight-related-scrollbar')
 
+    this.updateLayoutPerformanceImprovements()
     this.updateSizes()
     this.updateVideoPlayerSize()
   }
+
+  updateLayoutPerformanceImprovements = wrapErrorHandler(() => {
+    const liveChatHtml = this.theming.liveChatIframe?.contentDocument?.documentElement;
+    const enabled = this.settings.enabled && !this.isHidden && this.settings.layoutPerformanceImprovements
+    if(enabled) {
+      html.setAttribute('data-ambientlight-layout-performance-improvements', true)
+      if(liveChatHtml) liveChatHtml.setAttribute('data-ambientlight-layout-performance-improvements', true)
+    } else {
+      html.removeAttribute('data-ambientlight-layout-performance-improvements')
+      if(liveChatHtml) liveChatHtml.removeAttribute('data-ambientlight-layout-performance-improvements')
+    }
+  }, true)
 
   async show() {
     if (!this.isHidden) return
@@ -2931,6 +2944,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       html.setAttribute('data-ambientlight-enabled', true)
       if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
       if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
+      if(this.settings.layoutPerformanceImprovements) this.updateLayoutPerformanceImprovements()
 
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''

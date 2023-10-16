@@ -105,6 +105,23 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'layoutPerformanceImprovements',
+    label: 'Layout performance fixes',
+    description: 'Speeds up changes in the YouTube layout',
+    questionMark: {
+      title: `Some of the improvements on the /watch page include:
+- Faster webpage resizing and scrolling (Most noticeable after you've loaded in more than 100 comments)
+- Faster loading more comments and/or related videos
+- Smoother timeline scrubbing (Most noticeable after you've loaded in more than 100 comments or with a livestream chat window open)
+- Smoother livestream chat scrolling (and new messages will be appended quicker to the chat)
+- Smoother playlist scrolling (Most noticeable in a playlist with more than 25 videos)
+- Smoother dragging/re-ordering videos in a playlist (Most noticeable in a playlist with more than 25 videos)`
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
     name: 'prioritizePageLoadSpeed',
     label: 'Prioritize page load speed',
     description: 'Show ambient light after the page has loaded',
