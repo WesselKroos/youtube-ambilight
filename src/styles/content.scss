@@ -2642,7 +2642,8 @@ html[data-ambientlight-enabled="true"] {
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
       #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
-      #info-container.ytd-watch-metadata,
+      #info-container.ytd-watch-metadata, // Old info-container
+      #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
       ytd-subscription-notification-toggle-button-renderer,
 
