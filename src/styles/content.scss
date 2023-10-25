@@ -2663,6 +2663,7 @@ html[data-ambientlight-enabled="true"] {
       ytd-macro-markers-list-item-renderer yt-button-shape yt-icon,
       .ytd-item-section-renderer yt-icon.ytd-menu-renderer,
 
+      ytd-comments-header-renderer[modern-typography] .count-text.ytd-comments-header-renderer, // New comments header
       ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
       #like-button.ytd-comment-action-buttons-renderer, // Comment like button
       #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
