@@ -317,13 +317,13 @@ html[data-ambientlight-enabled="true"] {
   }
   
   .title.ytd-playlist-panel-renderer,
+  #next-video-title.ytd-playlist-panel-renderer,
   .yt-spec-button-shape-next--mono {
     color: var(--yt-spec-text-primary) !important;
   }
   
   .byline-title.ytd-playlist-panel-renderer,
   .byline-title.ytd-playlist-panel-renderer a, 
-  #next-video-title.ytd-playlist-panel-renderer,
   .index-message-wrapper.ytd-playlist-panel-renderer,
   .index-message-wrapper.ytd-playlist-panel-renderer::before {
     color: var(--yt-spec-text-secondary) !important;
