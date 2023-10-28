@@ -306,9 +306,34 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-
   #content.ytd-app {
     position: relative; /* Fixes ambientlight auto height */
+  }
+
+  /* Override incorrect default description colors when switching between themes */
+
+  ytd-subscription-notification-toggle-button-renderer-next .yt-spec-button-shape-next__icon svg path[fill] {
+    fill: var(--yt-spec-text-primary) !important;
+  }
+  
+  .title.ytd-playlist-panel-renderer,
+  .yt-spec-button-shape-next--mono {
+    color: var(--yt-spec-text-primary) !important;
+  }
+  
+  .byline-title.ytd-playlist-panel-renderer,
+  .byline-title.ytd-playlist-panel-renderer a, 
+  #next-video-title.ytd-playlist-panel-renderer,
+  .index-message-wrapper.ytd-playlist-panel-renderer,
+  .index-message-wrapper.ytd-playlist-panel-renderer::before {
+    color: var(--yt-spec-text-secondary) !important;
+  }
+
+  .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(0,0,0, .2) !important;
+  }
+  &[dark] .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(255,255,255, .2) !important;
   }
 
   /* Cosmetics - Transparent elements */
@@ -2592,7 +2617,9 @@ html[data-ambientlight-enabled="true"] {
     // Collapsable comment
     #expander[collapsed].ytd-comment-renderer,
 
-    yt-formatted-string.yt-chip-cloud-chip-renderer {
+    yt-formatted-string.yt-chip-cloud-chip-renderer,
+    #container.ytd-channel-name,
+    #channel-name.long-byline.ytd-video-meta-block {
       overflow: initial !important;
     }
 
@@ -2607,8 +2634,10 @@ html[data-ambientlight-enabled="true"] {
 
     // Remove a bit of the shadow capping from elements that cap lines as well
     ytd-expander[collapsed] > #content.ytd-expander,
-    #video-title,
-    #byline-container.ytd-video-meta-block {
+    #byline.ytd-playlist-panel-video-renderer,
+    #video-title.ytd-compact-video-renderer,
+    ytd-video-meta-block #text.ytd-channel-name,
+    #metadata-line.ytd-video-meta-block {
       margin-left: -10px !important;
       margin-top: -10px !important;
       margin-right: -10px !important;
