@@ -321,6 +321,10 @@ html[data-ambientlight-enabled="true"] {
   .yt-spec-button-shape-next--mono {
     color: var(--yt-spec-text-primary) !important;
   }
+
+  .yt-spec-button-shape-next--filled {
+    color: var(--yt-spec-text-primary-inverse) !important;
+  }
   
   .byline-title.ytd-playlist-panel-renderer,
   .byline-title.ytd-playlist-panel-renderer a, 
@@ -2638,6 +2642,7 @@ html[data-ambientlight-enabled="true"] {
       #{$info} ytd-toggle-button-renderer button,
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
+      #top-row.ytd-watch-metadata button.yt-spec-button-shape-next--filled,
       #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
