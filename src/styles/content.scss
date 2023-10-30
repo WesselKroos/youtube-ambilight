@@ -2481,8 +2481,9 @@ html[data-ambientlight-enabled="true"] {
     ytd-comment-replies-renderer .expander-header#{$not-hover} #creator-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
-    .ytd-item-section-renderer#{$not-hover} #thumbnail,
-    .ytd-watch-next-secondary-results-renderer#{$not-hover} #thumbnail {
+    ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer#{$not-hover} #thumbnail,
+    ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
+    ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail {
       opacity: var(--ytal-image-opacity) !important;
     }
   }
