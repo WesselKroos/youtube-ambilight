@@ -2764,7 +2764,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
   &[dark] {
-    @include ytd-watch {
+    ytd-watch-grid {
       @supports not (selector(:has(*))) {
         #secondary-inner {
           ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
