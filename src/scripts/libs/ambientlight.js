@@ -64,12 +64,13 @@ export default class Ambientlight {
 
       this.detectChromiumBug1142112Workaround()
       this.detectChromiumBugDirectVideoOverlayWorkaround()
-      this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
       this.detectChromiumBug1092080Workaround()
 
+      this.initElems(videoElem)
       await this.initSettings()
+      this.applyChromiumBugDirectVideoOverlayWorkaround()
       await this.waitForPageload()
 
       this.theming = new Theming(this)
@@ -156,9 +157,7 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.cancelScheduledRequestVideoFrame()
     this.videoElem = videoElem
-    if(this.enableChromiumBugDirectVideoOverlayWorkaround) {
-      this.videoElem.classList.add('ambientlight__chromium-bug-direct-video-overlay-workaround')
-    }
+    this.applyChromiumBugDirectVideoOverlayWorkaround()
     if(initListeners) this.initVideoListeners()
   }
 
@@ -264,6 +263,9 @@ export default class Ambientlight {
     }
   }
 
+  // Chromium on Windows workaround: Direct video overlays (MPO) cause white/black checkerboard artifacts
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1480717
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
   detectChromiumBugDirectVideoOverlayWorkaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
@@ -282,6 +284,14 @@ export default class Ambientlight {
       this.enableChromiumBugVideoJitterWorkaround = true
       this.settings.updateVisibility()
     }
+  }
+
+  applyChromiumBugDirectVideoOverlayWorkaround() {
+    if(!this.videoElem || !this.settings) return
+
+    this.videoElem.classList.toggle('ambientlight__chromium-bug-direct-video-overlay-workaround',
+      this.enableChromiumBugDirectVideoOverlayWorkaround && !this.settings.chromiumDirectVideoOverlay
+    )
   }
 
   applyChromiumBugVideoJitterWorkaround() {
