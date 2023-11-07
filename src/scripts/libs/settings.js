@@ -792,7 +792,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'showResolutions',
-            'chromiumDirectVideoOverlay',
+            'chromiumDirectVideoOverlayWorkaround',
             'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
             'headerTransparentEnabled',
@@ -826,7 +826,7 @@ export default class Settings {
           }
 
           if([
-            'chromiumDirectVideoOverlay'
+            'chromiumDirectVideoOverlayWorkaround'
           ].some(name => name === setting.name)) {
             this.ambientlight.applyChromiumBugDirectVideoOverlayWorkaround()
           }
@@ -1289,7 +1289,7 @@ export default class Settings {
       visible: () => this.webGL
     },
     {
-      names: [ 'chromiumDirectVideoOverlay' ],
+      names: [ 'chromiumDirectVideoOverlayWorkaround' ],
       visible: () => this.ambientlight.enableChromiumBugDirectVideoOverlayWorkaround
     }
   ]

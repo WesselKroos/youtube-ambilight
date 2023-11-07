@@ -130,27 +130,6 @@ const SettingsConfig = [
     advanced: true
   },
   {
-    name: 'chromiumDirectVideoOverlay',
-    label: 'Direct video overlay (MPO)',
-    description: 'This feature must be enabled for \nNVidia RTX Virtual Super Resolution (VSR)',
-    questionMark: {
-      title: `This feature is disabled by default because for some users it can introduce 
-black/white squared artifacts on Chromium browsers (Chrome, Edge, Opera).
-
-For more information click on the questionmark or search online for these bug reports:
-- NVidia bug 3992875: Small checkerboard like pattern
-  may randomly appear in Chromium based applications
-- Chromium bug 1155285: Occasionally checkered artifacts when using
-  drawImage directly in the video.requestVideoFrameCallback callback
-- Chromium bug 1480717: White/black checkerboard artifacts
-  appear on webpages with a video since Chrome 115`,
-      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/202'
-    },
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
     type: 'section',
     label: 'Page header',
     name: 'sectionOtherPageHeaderCollapsed',
@@ -357,6 +336,27 @@ For more information click on the questionmark or search online for these bug re
     default: true,
     advanced: true,
     experimental: true
+  },
+  {
+    name: 'chromiumDirectVideoOverlayWorkaround',
+    label: 'Video artifacts workaround',
+    description: 'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)',
+    questionMark: {
+      title: `This workaround is enabled by default, because video hardware overlays (MPO) can introduce 
+black/white squared artifacts on Chromium browsers (Chrome, Edge, Opera) for some users.
+
+For more information click on the questionmark or search online for these bug reports:
+- NVidia bug 3992875: Small checkerboard like pattern
+  may randomly appear in Chromium based applications
+- Chromium bug 1155285: Occasionally checkered artifacts when using
+  drawImage directly in the video.requestVideoFrameCallback callback
+- Chromium bug 1480717: White/black checkerboard artifacts
+  appear on webpages with a video since Chrome 115`,
+      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/202'
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true
   },
   {
     type: 'section',

@@ -290,7 +290,7 @@ export default class Ambientlight {
     if(!this.videoElem || !this.settings) return
 
     this.videoElem.classList.toggle('ambientlight__chromium-bug-direct-video-overlay-workaround',
-      this.enableChromiumBugDirectVideoOverlayWorkaround && !this.settings.chromiumDirectVideoOverlay
+      this.enableChromiumBugDirectVideoOverlayWorkaround && this.settings.chromiumDirectVideoOverlayWorkaround
     )
   }
 
