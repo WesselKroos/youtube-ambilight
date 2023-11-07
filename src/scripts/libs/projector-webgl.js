@@ -218,6 +218,9 @@ export default class ProjectorWebGL {
     this.invalidateShaderCache()
     console.log(`ProjectorWebGL blur context lost (${this.blurLostCount})`)
     this.setWebGLWarning('restore')
+
+    // The bardetection worker offscreencanvas does not trigger contextlost events
+    this.ambientlight.barDetection.clear()
   }.bind(this))
 
   onBlurCtxRestored = wrapErrorHandler(async function wrappedOnBlurCtxRestored() {
@@ -234,6 +237,9 @@ export default class ProjectorWebGL {
         this.initProjectorListeners()
         this.blurLost = false
         if(!this.lost && !this.ambientlight.projectorBuffer?.lost) this.setWarning('')
+
+        // The bardetection worker offscreencanvas does not trigger contextrestored events
+        this.ambientlight.barDetection.clear()
       }
     } else {
       console.error(`ProjectorWebGL blur context restore failed (${this.blurLostCount})`)

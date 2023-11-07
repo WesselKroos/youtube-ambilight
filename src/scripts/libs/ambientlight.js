@@ -528,7 +528,7 @@ export default class Ambientlight {
         this.ambientlightFrameCounts = []
         this.lastUpdateStatsTime = performance.now()
         
-        this.barDetection.clear()
+        this.barDetection.cancel()
 
         // Prevent any old frames from being drawn
         this.buffersCleared = true

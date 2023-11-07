@@ -658,7 +658,7 @@ export default class Settings {
             }
             this.updateVisibility()
 
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -668,7 +668,7 @@ export default class Settings {
             (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -926,7 +926,7 @@ export default class Settings {
             'detectColoredVerticalBarSizeEnabled',
             'detectVideoFillScaleEnabled'
           ].some(name => name === setting.name)) {
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
