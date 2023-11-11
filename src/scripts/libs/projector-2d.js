@@ -25,7 +25,7 @@ export default class Projector2d {
   }
 
   onProjectorCtxLost = () => {
-    console.log('Lost 2d projector')
+    console.warn('Lost 2d projector')
     this.lostCount++
     // event.preventDefault(); // Prevents restoration
     this.settings.setWarning('Failed to restore the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.')
@@ -39,7 +39,7 @@ export default class Projector2d {
       return
     }
 
-    console.log('Restored 2d projector')
+    console.warn('Restored 2d projector')
     const projectorElem = event.currentTarget
     projectorElem.width = 1 // Reset size
     this.ambientlight.buffersCleared = true // Trigger resize before redraw
@@ -49,7 +49,6 @@ export default class Projector2d {
       cancelAnimationFrame(this.scheduledRedrawAfterRestoreId)
 
     this.scheduledRedrawAfterRestoreId = raf(async () => {
-      console.log('scheduledRedrawAfterRestore')
       this.scheduledRedrawAfterRestoreId = undefined
       await this.ambientlight.optionalFrame()
       this.initProjectorListeners()
