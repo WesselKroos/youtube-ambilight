@@ -2608,6 +2608,7 @@ html[data-ambientlight-enabled="true"] {
     // Remove a bit of the shadow capping from elements that cap lines as well
     ytd-expander[collapsed] > #content.ytd-expander,
     #byline.ytd-playlist-panel-video-renderer,
+    #video-title.ytd-playlist-panel-video-renderer,
     #video-title.ytd-compact-video-renderer,
     ytd-video-meta-block #text.ytd-channel-name,
     #metadata-line.ytd-video-meta-block {
