@@ -44,9 +44,12 @@ export default class Projector2d {
     projectorElem.width = 1 // Reset size
     this.ambientlight.buffersCleared = true // Trigger resize before redraw
     this.ambientlight.sizesChanged = true // Trigger resize before redraw
+    // The bardetection worker offscreencanvas does not trigger contextrestored events
+    this.ambientlight.barDetection.clear()
 
     if(this.scheduledRedrawAfterRestoreId)
       cancelAnimationFrame(this.scheduledRedrawAfterRestoreId)
+
 
     this.scheduledRedrawAfterRestoreId = raf(async () => {
       this.scheduledRedrawAfterRestoreId = undefined
