@@ -140,11 +140,13 @@ export default class Ambientlight {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
     }
 
-    this.videoContainerElem = videoElem.closest('.html5-video-container')
+    this.ytdPlayerElem = videoElem.closest('ytd-player')
     // // Deprecated: videoContainerElem is optional and only used in the videoOverlayEnabled setting
     // if (!this.videoContainerElem) {
     //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
     // }
+    
+    this.videoContainerElem = videoElem.closest('.html5-video-container')
     
     this.settingsMenuBtnParent = document.querySelector('ytd-player .ytp-right-controls, ytd-player .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
@@ -1538,6 +1540,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         translate(${(unscaledWidth * this.barsClip[0])}px, ${(unscaledHeight * this.barsClip[1])}px)
         scale(${(videoScale / 100)})
       `
+      this.videoShadowElem.style.borderRadius = this.ytdPlayerElem ? getComputedStyle(this.ytdPlayerElem).borderRadius ?? '' : '';
     } else {
       this.videoShadowElem.style.display = ''
     }
