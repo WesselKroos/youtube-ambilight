@@ -1717,7 +1717,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     // Page background
     let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
     pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
-    document.documentElement.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
+    document.body.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
 
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity

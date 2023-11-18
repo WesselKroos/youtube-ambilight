@@ -267,13 +267,6 @@ html[data-ambientlight-enabled="true"] {
   &[style],
   body {
     @include scrollbar-light-thin(true);
-
-    --ytal-page-background: #fff;
-    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
-      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
-    }
-    background: var(--ytal-page-background) !important;
-    background-color: var(--ytal-page-background) !important;
     
     &[data-ambientlight-hide-scrollbar="true"],
     &[data-ambientlight-immersive="true"] {
@@ -290,13 +283,6 @@ html[data-ambientlight-enabled="true"] {
     &[style],
     body {
       @include scrollbar-dark-thin(true);
-
-      --ytal-page-background: #000;
-      @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
-        --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
-      }
-      background: var(--ytal-page-background) !important;
-      background-color: var(--ytal-page-background) !important;
     }
   }
 
@@ -308,6 +294,7 @@ html[data-ambientlight-enabled="true"] {
 
   #content.ytd-app {
     position: relative; /* Fixes ambientlight auto height */
+    z-index: 0; /* Fixes ambientlight behind the ytd-app z-index */
   }
 
   /* Override incorrect default description colors when switching between themes */
@@ -412,7 +399,14 @@ html[data-ambientlight-enabled="true"] {
   }
 
   ytd-app {
-    &,
+    --ytal-page-background: #fff;
+    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
+    }
+    background: #fff !important;
+    background: var(--ytal-page-background) !important;
+    background-color: var(--ytal-page-background) !important;
+
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
     #full-bleed-container,
@@ -451,6 +445,15 @@ html[data-ambientlight-enabled="true"] {
     #masthead-container:not(.ytal-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
+  }
+  &[dark] ytd-app {
+    --ytal-page-background: #000;
+    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
+    }
+    background: #000 !important;
+    background: var(--ytal-page-background) !important;
+    background-color: var(--ytal-page-background) !important;
   }
 
   /* Disable ambient mode */
