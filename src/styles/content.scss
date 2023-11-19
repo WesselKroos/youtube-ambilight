@@ -309,7 +309,7 @@ html[data-ambientlight-enabled="true"] {
     color: var(--yt-spec-text-primary) !important;
   }
 
-  .yt-spec-button-shape-next--filled {
+  .yt-spec-button-shape-next--filled:not(.yt-spec-button-shape-next--call-to-action) {
     background: var(--yt-spec-inverted-background) !important;
     color: var(--yt-spec-text-primary-inverse) !important;
   }
