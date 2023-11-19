@@ -2509,17 +2509,20 @@ html[data-ambientlight-enabled="true"] {
       // #below,
       #title.ytd-watch-metadata,
       ytd-video-owner-renderer.ytd-watch-metadata,
-      #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      #above-the-fold.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
       #middle-row.ytd-watch-metadata,
       #description-inner.ytd-watch-metadata,
       ytd-comments,
       #header.ytd-comments-entry-point-header-renderer, // fixie
       #content.ytd-comments-entry-point-header-renderer, // fixie
+      ytd-watch-metadata ytd-rich-metadata-renderer > *,
 
       // #secondary,
-      #secondary-inner > *:not(ytd-playlist-panel-renderer):not(#related),
-      #secondary.ytd-watch-fixie > *:not(ytd-playlist-panel-renderer):not(#related), // fixie
+      #secondary-inner > *:not(ytd-playlist-panel-renderer):not(#panels):not(#related),
+      #secondary.ytd-watch-fixie > *:not(ytd-playlist-panel-renderer):not(#panels):not(#related), // fixie
+      #secondary ytd-action-companion-ad-renderer,
       #header-contents.ytd-playlist-panel-renderer,
+      ytd-engagement-panel-section-list-renderer > *,
       ytd-playlist-panel-video-renderer > *,
       yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
       yt-chip-cloud-chip-renderer.selected,
@@ -2665,7 +2668,7 @@ html[data-ambientlight-enabled="true"] {
       #{$info} ytd-toggle-button-renderer button,
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
-      #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+      #above-the-fold.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
@@ -2768,15 +2771,21 @@ html[data-ambientlight-enabled="true"] {
         }
         
         &:has([visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]) {
-          #show-hide-button.ytd-live-chat-frame {
+          ytd-watch-metadata,
+          #show-hide-button.ytd-live-chat-frame,
+          #related {
             opacity: 0 !important;
           }
         }
       }
     }
 
-    @supports not (selector(:has(*))) {
-      #secondary-inner {
+    #secondary-inner {
+      ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+        background: rgb(245,245,245) !important;
+      }
+
+      @supports not (selector(:has(*))) {
         ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
         ytd-live-chat-frame:not([collapsed]),
         ytd-playlist-panel-renderer:not([collapsed]) {
@@ -2787,8 +2796,12 @@ html[data-ambientlight-enabled="true"] {
   }
   &[dark] {
     ytd-watch-grid {
-      @supports not (selector(:has(*))) {
-        #secondary-inner {
+      #secondary-inner {
+        ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+          background: rgb(10,10,10) !important;
+        }
+
+        @supports not (selector(:has(*))) {
           ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
           ytd-live-chat-frame:not([collapsed]),
           ytd-playlist-panel-renderer:not([collapsed]) {
