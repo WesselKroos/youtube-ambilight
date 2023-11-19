@@ -2506,10 +2506,27 @@ html[data-ambientlight-enabled="true"] {
       @content;
     }
     @include ytd-watch {
-      #below,
-      #secondary,
-      #bottom-grid,
-      ytd-watch-metadata.ytd-watch-fixie {
+      // #below,
+      #title.ytd-watch-metadata,
+      ytd-video-owner-renderer.ytd-watch-metadata,
+      #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      #middle-row.ytd-watch-metadata,
+      #description-inner.ytd-watch-metadata,
+      ytd-comments,
+      #header.ytd-comments-entry-point-header-renderer, // fixie
+      #content.ytd-comments-entry-point-header-renderer, // fixie
+
+      // #secondary,
+      #secondary-inner > *:not(ytd-playlist-panel-renderer):not(#related),
+      #secondary.ytd-watch-fixie > *:not(ytd-playlist-panel-renderer):not(#related), // fixie
+      #header-contents.ytd-playlist-panel-renderer,
+      ytd-playlist-panel-video-renderer > *,
+      yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      yt-chip-cloud-chip-renderer.selected,
+      yt-chip-cloud-chip-renderer:not([selected]) > *,
+      ytd-watch-next-secondary-results-renderer,
+
+      #bottom-grid {
         @content;
       }
     }
