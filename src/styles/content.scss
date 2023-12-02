@@ -505,7 +505,7 @@ html[data-ambientlight-enabled="true"] {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=1411030
     // .html5-video-container[style*="--video-transform"] {
     &.ambientlight__chromium-bug-direct-video-overlay-workaround {
-      opacity: .9989999;
+      clip-path: inset(0% 0%);
     }
   }
 
