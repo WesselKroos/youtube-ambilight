@@ -342,16 +342,11 @@ const SettingsConfig = [
     label: 'Video artifacts workaround',
     description: 'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)',
     questionMark: {
-      title: `This workaround is enabled by default, because video hardware overlays (MPO) can introduce 
-black/white squared artifacts on Chromium browsers (Chrome, Edge, Opera) for some users.
+      title: `This workaround is enabled by default, because videos in hardware accelerated overlays (MPO)
+can introduce several artifacts/bugs on Chromium browsers (Chrome, Edge, Opera) for some users.
+Examples are: random black/white squares, flickering or a squeezed video.
 
-For more information click on the questionmark or search online for these bug reports:
-- NVidia bug 3992875: Small checkerboard like pattern
-  may randomly appear in Chromium based applications
-- Chromium bug 1155285: Occasionally checkered artifacts when using
-  drawImage directly in the video.requestVideoFrameCallback callback
-- Chromium bug 1480717: White/black checkerboard artifacts
-  appear on webpages with a video since Chrome 115`,
+Click on the questionmark for more and updated information about these artifacts/bugs.`,
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/202'
     },
     type: 'checkbox',
