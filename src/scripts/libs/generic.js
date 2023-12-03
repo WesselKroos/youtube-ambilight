@@ -295,6 +295,18 @@ export const supportsWebGL = () => {
   return _supportsWebGL
 }
 
+let _supportsColorMix;
+export const supportsColorMix = () => {
+  if(_supportsColorMix === undefined) {
+    try {
+      _supportsColorMix = CSS.supports('background-color: color-mix(in srgb, #000 0%, #000)')
+    } catch {
+      _supportsColorMix = false
+    }
+  }
+  return _supportsColorMix
+}
+
 export const isWatchPageUrl = () => (location.pathname === '/watch')
 
 export const getCookie = async (name) => 

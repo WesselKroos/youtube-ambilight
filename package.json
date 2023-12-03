@@ -38,5 +38,11 @@
     "build:styles": "run-p build:styles:content build:styles:live-chat build:styles:options",
     "build:scripts": "rollup -c",
     "build": "run-s build:scripts build:styles build:manifest build:html build:images"
+  },
+  "engines": {
+    "node": "16.20.2"
+  },
+  "volta": {
+    "node": "16.20.2"
   }
 }

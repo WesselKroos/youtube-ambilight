@@ -156,11 +156,11 @@ export default class Theming {
 
   initLiveChat = () => {
     this.initLiveChatSecondaryElem()
-    if(this.secondaryInnerElem) return
+    if(this.secondaryElem) return
 
     const observer = new MutationObserver(wrapErrorHandler(() => {
       this.initLiveChatSecondaryElem()
-      if(!this.secondaryInnerElem) return
+      if(!this.secondaryElem) return
 
       observer.disconnect()
     }))
@@ -171,12 +171,12 @@ export default class Theming {
   }
   
   initLiveChatSecondaryElem = () => {
-    this.secondaryInnerElem = document.querySelector('#secondary-inner')
-    if(!this.secondaryInnerElem) return
+    this.secondaryElem = document.querySelector('#secondary')
+    if(!this.secondaryElem) return
 
     this.initLiveChatElem()
     const observer = new MutationObserver(wrapErrorHandler(this.initLiveChatElem))
-    observer.observe(this.secondaryInnerElem, {
+    observer.observe(this.secondaryElem, {
       childList: true
     })
   }
@@ -199,7 +199,10 @@ export default class Theming {
 
     this.liveChatIframe = iframe
     this.updateLiveChatTheme()
-    iframe.addEventListener('load', this.updateLiveChatTheme)
+    iframe.addEventListener('load', () => {
+      this.ambientlight.updateLayoutPerformanceImprovements()
+      this.updateLiveChatTheme()
+    })
   }
 
   updateLiveChatTheme = () => {

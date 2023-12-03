@@ -91,19 +91,29 @@ yt-live-chat-renderer #panel-pages.yt-live-chat-renderer {
   box-shadow: var(--yt-spec-10-percent-layer) 0 -1px inset;
 }
 
-
-// Improve layout rendering performance to compensate for the performance cost of the ambient light 
-
-yt-live-chat-text-message-renderer,
-yt-live-chat-paid-message-renderer,
-yt-live-chat-membership-item-renderer {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 56px;
+yt-reaction-control-panel-view-model:not([reaction-control-panel-expanded]) #fab-container.yt-reaction-control-panel-view-model:not(:hover) {
+  background: none !important;
 }
 
+html[data-ambientlight-layout-performance-improvements] {
 
-/* Improve scrolling smoothness */
+  // Improve layout rendering performance to compensate for the performance cost of the ambient light 
 
-#item-scroller.yt-live-chat-item-list-renderer:hover {
-  will-change: scroll-position !important;
+  #items.yt-live-chat-item-list-renderer {
+    transform: none !important;
+  }
+
+  yt-live-chat-text-message-renderer,
+  yt-live-chat-paid-message-renderer,
+  yt-live-chat-membership-item-renderer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100px;
+  }
+
+
+  /* Improve scrolling smoothness */
+
+  #item-scroller.yt-live-chat-item-list-renderer:hover {
+    will-change: scroll-position !important;
+  }
 }

@@ -113,6 +113,23 @@ const SettingsConfig = [
     advanced: true
   },
   {
+    name: 'layoutPerformanceImprovements',
+    label: 'Layout performance fixes',
+    description: 'Speeds up changes in the YouTube layout',
+    questionMark: {
+      title: `Some of the improvements on the /watch page include:
+- Faster webpage resizing and scrolling (Most noticeable after you've loaded in more than 100 comments)
+- Faster loading more comments and/or related videos
+- Smoother timeline scrubbing (Most noticeable after you've loaded in more than 100 comments or with a livestream chat window open)
+- Smoother livestream chat scrolling (and new messages will be appended quicker to the chat)
+- Smoother playlist scrolling (Most noticeable in a playlist with more than 25 videos)
+- Smoother dragging/re-ordering videos in a playlist (Most noticeable in a playlist with more than 25 videos)`
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
     type: 'section',
     label: 'Page header',
     name: 'sectionOtherPageHeaderCollapsed',
@@ -319,6 +336,22 @@ const SettingsConfig = [
     default: true,
     advanced: true,
     experimental: true
+  },
+  {
+    name: 'chromiumDirectVideoOverlayWorkaround',
+    label: 'Video artifacts workaround',
+    description: 'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)',
+    questionMark: {
+      title: `This workaround is enabled by default, because videos in hardware accelerated overlays (MPO)
+can introduce several artifacts/bugs on Chromium browsers (Chrome, Edge, Opera) for some users.
+Examples are: random black/white squares, flickering or a squeezed video.
+
+Click on the questionmark for more and updated information about these artifacts/bugs.`,
+      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/202'
+    },
+    type: 'checkbox',
+    default: true,
+    advanced: true
   },
   {
     type: 'section',

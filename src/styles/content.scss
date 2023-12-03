@@ -267,11 +267,6 @@ html[data-ambientlight-enabled="true"] {
   &[style],
   body {
     @include scrollbar-light-thin(true);
-    background: #fff !important;
-    background-color: #fff !important;
-    --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
-    background: var(--ytal-page-background) !important;
-    background-color: var(--ytal-page-background) !important;
     
     &[data-ambientlight-hide-scrollbar="true"],
     &[data-ambientlight-immersive="true"] {
@@ -288,11 +283,6 @@ html[data-ambientlight-enabled="true"] {
     &[style],
     body {
       @include scrollbar-dark-thin(true);
-      background: #000 !important;
-      background-color: #000 !important;
-      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
-      background: var(--ytal-page-background) !important;
-      background-color: var(--ytal-page-background) !important;
     }
   }
 
@@ -302,9 +292,40 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-
   #content.ytd-app {
     position: relative; /* Fixes ambientlight auto height */
+    z-index: 0; /* Fixes ambientlight behind the ytd-app z-index */
+  }
+
+  /* Override incorrect default description colors when switching between themes */
+
+  ytd-subscription-notification-toggle-button-renderer-next .yt-spec-button-shape-next__icon svg path[fill] {
+    fill: var(--yt-spec-text-primary) !important;
+  }
+  
+  .title.ytd-playlist-panel-renderer,
+  #next-video-title.ytd-playlist-panel-renderer,
+  .yt-spec-button-shape-next--mono {
+    color: var(--yt-spec-text-primary) !important;
+  }
+
+  .yt-spec-button-shape-next--filled:not(.yt-spec-button-shape-next--call-to-action) {
+    background: var(--yt-spec-inverted-background) !important;
+    color: var(--yt-spec-text-primary-inverse) !important;
+  }
+  
+  .byline-title.ytd-playlist-panel-renderer,
+  .byline-title.ytd-playlist-panel-renderer a, 
+  .index-message-wrapper.ytd-playlist-panel-renderer,
+  .index-message-wrapper.ytd-playlist-panel-renderer::before {
+    color: var(--yt-spec-text-secondary) !important;
+  }
+
+  .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(0,0,0, .2) !important;
+  }
+  &[dark] .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(255,255,255, .2) !important;
   }
 
   /* Cosmetics - Transparent elements */
@@ -379,7 +400,14 @@ html[data-ambientlight-enabled="true"] {
   }
 
   ytd-app {
-    &,
+    --ytal-page-background: #fff;
+    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
+    }
+    background: #fff !important;
+    background: var(--ytal-page-background) !important;
+    background-color: var(--ytal-page-background) !important;
+
     #player-theater-container, // Old theater view
     #player-wide-container, // Second old theater view
     #full-bleed-container,
@@ -418,6 +446,15 @@ html[data-ambientlight-enabled="true"] {
     #masthead-container:not(.ytal-header-transparent):not(.at-top) #voice-search-button {
       transition: background-color .15s .05s;
     }
+  }
+  &[dark] ytd-app {
+    --ytal-page-background: #000;
+    @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
+      --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
+    }
+    background: #000 !important;
+    background: var(--ytal-page-background) !important;
+    background-color: var(--ytal-page-background) !important;
   }
 
   /* Disable ambient mode */
@@ -468,7 +505,7 @@ html[data-ambientlight-enabled="true"] {
     // https://bugs.chromium.org/p/chromium/issues/detail?id=1411030
     // .html5-video-container[style*="--video-transform"] {
     &.ambientlight__chromium-bug-direct-video-overlay-workaround {
-      opacity: .9989999;
+      clip-path: inset(0% 0%);
     }
   }
 
@@ -1044,38 +1081,6 @@ html[data-ambientlight-enabled="true"] {
     yt-chip-cloud-renderer {
       background: none !important;
     }
-    yt-chip-cloud-renderer {
-      #left-arrow,
-      #right-arrow {
-        pointer-events: none;
-      }
-      &:not(:hover):not(:focus-visible) {
-        #left-arrow,
-        #right-arrow {
-          opacity: 0;
-        }
-      }
-      #left-arrow.yt-chip-cloud-renderer::after {
-        background: linear-gradient(to left, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
-      }
-      #right-arrow.yt-chip-cloud-renderer::before {
-        background: linear-gradient(to right, transparent 10%, var(--yt-spec-10-percent-layer) 90%) !important;
-      }
-      #left-arrow-button,
-      #right-arrow-button {
-        pointer-events: all;
-        background: var(--yt-spec-10-percent-layer) !important;
-        backdrop-filter: blur(3px) !important;
-      }
-      #left-arrow-button {
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
-      }
-      #right-arrow-button {
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
-      }
-    }
 
     ytd-playlist-panel-video-renderer,
     ytd-macro-markers-list-item-renderer {
@@ -1317,6 +1322,7 @@ html[data-ambientlight-enabled="true"] {
 
   .ambientlight__video-debanding {
     position: absolute;
+    display: block;
     width: 1px;
     height: 1px;
     margin-top: 0px;
@@ -2479,8 +2485,9 @@ html[data-ambientlight-enabled="true"] {
     ytd-comment-replies-renderer .expander-header#{$not-hover} #creator-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
-    .ytd-item-section-renderer#{$not-hover} #thumbnail,
-    .ytd-watch-next-secondary-results-renderer#{$not-hover} #thumbnail {
+    ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer#{$not-hover} #thumbnail,
+    ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
+    ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail {
       opacity: var(--ytal-image-opacity) !important;
     }
   }
@@ -2499,10 +2506,30 @@ html[data-ambientlight-enabled="true"] {
       @content;
     }
     @include ytd-watch {
-      #below,
-      #secondary,
-      #bottom-grid,
-      ytd-watch-metadata.ytd-watch-fixie {
+      // #below,
+      #title.ytd-watch-metadata,
+      ytd-video-owner-renderer.ytd-watch-metadata,
+      #above-the-fold.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      #middle-row.ytd-watch-metadata,
+      #description-inner.ytd-watch-metadata,
+      ytd-comments,
+      #header.ytd-comments-entry-point-header-renderer, // fixie
+      #content.ytd-comments-entry-point-header-renderer, // fixie
+      ytd-watch-metadata ytd-rich-metadata-renderer > *,
+
+      // #secondary,
+      #secondary-inner > *:not(ytd-playlist-panel-renderer):not(#panels):not(#related),
+      #secondary.ytd-watch-fixie > *:not(ytd-playlist-panel-renderer):not(#panels):not(#related), // fixie
+      #secondary ytd-action-companion-ad-renderer,
+      #header-contents.ytd-playlist-panel-renderer,
+      ytd-engagement-panel-section-list-renderer > *,
+      ytd-playlist-panel-video-renderer > *,
+      yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      yt-chip-cloud-chip-renderer.selected,
+      yt-chip-cloud-chip-renderer:not([selected]) > *,
+      ytd-watch-next-secondary-results-renderer,
+
+      #bottom-grid {
         @content;
       }
     }
@@ -2587,7 +2614,9 @@ html[data-ambientlight-enabled="true"] {
     // Collapsable comment
     #expander[collapsed].ytd-comment-renderer,
 
-    yt-formatted-string.yt-chip-cloud-chip-renderer {
+    yt-formatted-string.yt-chip-cloud-chip-renderer,
+    #container.ytd-channel-name,
+    #channel-name.long-byline.ytd-video-meta-block {
       overflow: initial !important;
     }
 
@@ -2602,8 +2631,11 @@ html[data-ambientlight-enabled="true"] {
 
     // Remove a bit of the shadow capping from elements that cap lines as well
     ytd-expander[collapsed] > #content.ytd-expander,
-    #video-title,
-    #byline-container.ytd-video-meta-block {
+    #byline.ytd-playlist-panel-video-renderer,
+    #video-title.ytd-playlist-panel-video-renderer,
+    #video-title.ytd-compact-video-renderer,
+    ytd-video-meta-block #text.ytd-channel-name,
+    #metadata-line.ytd-video-meta-block {
       margin-left: -10px !important;
       margin-top: -10px !important;
       margin-right: -10px !important;
@@ -2636,8 +2668,9 @@ html[data-ambientlight-enabled="true"] {
       #{$info} ytd-toggle-button-renderer button,
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
-      #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
-      #info-container.ytd-watch-metadata,
+      #above-the-fold.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+      #info-container.ytd-watch-metadata, // Old info-container
+      #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
       ytd-subscription-notification-toggle-button-renderer,
 
@@ -2649,7 +2682,7 @@ html[data-ambientlight-enabled="true"] {
       #{$playlist-header} .publisher,
       #{$playlist-header} .index-message-wrapper,
       #{$playlist-header} yt-icon-button,
-      #{$playlist-header} ytd-playlist-loop-button-renderer,
+      #{$playlist-header} ytd-playlist-loop-button-renderer button,
       #{$playlist-header} ytd-toggle-button-renderer button,
       ytd-playlist-panel-video-renderer yt-icon.ytd-button-renderer,
       ytd-playlist-panel-video-renderer yt-icon.ytd-menu-renderer,
@@ -2657,6 +2690,7 @@ html[data-ambientlight-enabled="true"] {
       ytd-macro-markers-list-item-renderer yt-button-shape yt-icon,
       .ytd-item-section-renderer yt-icon.ytd-menu-renderer,
 
+      ytd-comments-header-renderer[modern-typography] .count-text.ytd-comments-header-renderer, // New comments header
       ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
       #like-button.ytd-comment-action-buttons-renderer, // Comment like button
       #dislike-button.ytd-comment-action-buttons-renderer, // Comment dislike button
@@ -2737,15 +2771,21 @@ html[data-ambientlight-enabled="true"] {
         }
         
         &:has([visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]) {
-          #show-hide-button.ytd-live-chat-frame {
+          ytd-watch-metadata,
+          #show-hide-button.ytd-live-chat-frame,
+          #related {
             opacity: 0 !important;
           }
         }
       }
     }
 
-    @supports not (selector(:has(*))) {
-      #secondary-inner {
+    #secondary-inner {
+      ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+        background: rgb(245,245,245) !important;
+      }
+
+      @supports not (selector(:has(*))) {
         ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
         ytd-live-chat-frame:not([collapsed]),
         ytd-playlist-panel-renderer:not([collapsed]) {
@@ -2755,9 +2795,13 @@ html[data-ambientlight-enabled="true"] {
     }
   }
   &[dark] {
-    @include ytd-watch {
-      @supports not (selector(:has(*))) {
-        #secondary-inner {
+    ytd-watch-grid {
+      #secondary-inner {
+        ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+          background: rgb(10,10,10) !important;
+        }
+
+        @supports not (selector(:has(*))) {
           ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
           ytd-live-chat-frame:not([collapsed]),
           ytd-playlist-panel-renderer:not([collapsed]) {
@@ -2794,65 +2838,82 @@ html[data-ambientlight-enabled="true"] {
       transparent 100%);
   }
 
+  &[data-ambientlight-layout-performance-improvements] {
 
-  // Faster comments loading
+    // Faster comments loading
 
-  #primary.ytd-watch-flexy #below {
-    margin-bottom: 25vh;
-  }
+    #primary.ytd-watch-flexy #below {
+      margin-bottom: 25vh;
+    }
 
 
-  // Improve layout rendering performance to compensate for the performance cost of the ambient light 
+    // Improve layout rendering performance to compensate for the performance cost of the ambient light 
 
-  ytd-comment-thread-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 100px;
-  }
-  ytd-playlist-panel-renderer #top-level-buttons-computed {
-    z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
-  }
-  ytd-playlist-panel-video-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 62px;
-  }
-  yt-related-chip-cloud-renderer {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 100px;
-  }
-  ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
-    ytd-compact-video-renderer,
-    ytd-compact-radio-renderer,
-    ytd-compact-playlist-renderer {
+    ytd-comment-thread-renderer {
       content-visibility: auto;
-      contain-intrinsic-size: auto 94px;
+      contain-intrinsic-size: auto 100px;
+    }
+    ytd-playlist-panel-renderer #top-level-buttons-computed {
+      z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
+    }
+    ytd-playlist-panel-video-renderer {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 62px;
+    }
+    yt-related-chip-cloud-renderer {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 100px;
+    }
+    ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
+      ytd-compact-video-renderer,
+      ytd-compact-radio-renderer,
+      ytd-compact-playlist-renderer {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 94px;
 
-      tp-yt-paper-tooltip.ytd-channel-name #tooltip {
-        margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+        tp-yt-paper-tooltip.ytd-channel-name #tooltip {
+          margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+        }
       }
     }
-  }
 
 
-  /* Improve scrolling smoothness */
+    // Improve scrolling smoothness
 
-  #guide-inner-content.ytd-app, // youtube menu
-  .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
-  ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
-  .ytd-macro-markers-list-renderer#contents // Chapters
-  {
-    &:hover {
-      will-change: scroll-position !important;
+    #guide-inner-content.ytd-app, // youtube menu
+    .playlist-items.ytd-playlist-panel-renderer#items, // Playlist
+    ytd-transcript-segment-list-renderer.ytd-transcript-search-panel-renderer, // Transcriptions
+    .ytd-macro-markers-list-renderer#contents // Chapters
+    {
+      &:hover {
+        will-change: scroll-position !important;
+      }
+    }
+
+    
+    // Improve playlist dragging smoothness
+    
+    ytd-playlist-panel-renderer[js-panel-height]:not([collapsed]) #container.ytd-playlist-panel-renderer {
+      height: var(--ytd-watch-flexy-panel-max-height);
+      contain: strict;
+    }
+
+    .yt-spec-touch-feedback-shape__stroke,
+    .yt-spec-touch-feedback-shape__fill,
+    .stroke.yt-interaction,
+    .fill.yt-interaction {
+      will-change: initial !important;
     }
   }
 
-
-  /* Limit related videos to scrollable list with a height of 100vh */
+  
+  // Limit related videos to scrollable list with a height of 100vh
 
   &[data-ambientlight-related-scrollbar] {
     ytd-watch-flexy[flexy][is-two-columns_] {
       #secondary-inner.ytd-watch-flexy {
         height: 100%;
-        min-height: calc(3000px + 100vh); /* Must at least be high enough to fit the panels + related list */
+        min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
       }
 
       #related.ytd-watch-flexy {
@@ -2883,12 +2944,5 @@ html[data-ambientlight-enabled="true"] {
         scrollbar-color: transparent transparent !important;
       }
     }
-  }
-
-  .yt-spec-touch-feedback-shape__stroke,
-  .yt-spec-touch-feedback-shape__fill,
-  .stroke.yt-interaction,
-  .fill.yt-interaction {
-    will-change: initial !important;
   }
 }

@@ -64,12 +64,13 @@ export default class Ambientlight {
 
       this.detectChromiumBug1142112Workaround()
       this.detectChromiumBugDirectVideoOverlayWorkaround()
-      this.initElems(videoElem)
       this.detectMozillaBug1606251Workaround()
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround()
       this.detectChromiumBug1092080Workaround()
 
+      this.initElems(videoElem)
       await this.initSettings()
+      this.applyChromiumBugDirectVideoOverlayWorkaround()
       await this.waitForPageload()
 
       this.theming = new Theming(this)
@@ -139,11 +140,13 @@ export default class Ambientlight {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
     }
 
-    this.videoContainerElem = videoElem.closest('.html5-video-container')
+    this.ytdPlayerElem = videoElem.closest('ytd-player')
     // // Deprecated: videoContainerElem is optional and only used in the videoOverlayEnabled setting
     // if (!this.videoContainerElem) {
     //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
     // }
+    
+    this.videoContainerElem = videoElem.closest('.html5-video-container')
     
     this.settingsMenuBtnParent = document.querySelector('ytd-player .ytp-right-controls, ytd-player .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
@@ -156,9 +159,7 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.cancelScheduledRequestVideoFrame()
     this.videoElem = videoElem
-    if(this.enableChromiumBugDirectVideoOverlayWorkaround) {
-      this.videoElem.classList.add('ambientlight__chromium-bug-direct-video-overlay-workaround')
-    }
+    this.applyChromiumBugDirectVideoOverlayWorkaround()
     if(initListeners) this.initVideoListeners()
   }
 
@@ -264,6 +265,9 @@ export default class Ambientlight {
     }
   }
 
+  // Chromium on Windows workaround: Direct video overlays (MPO) cause white/black checkerboard artifacts
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1480717
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
   detectChromiumBugDirectVideoOverlayWorkaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
@@ -282,6 +286,14 @@ export default class Ambientlight {
       this.enableChromiumBugVideoJitterWorkaround = true
       this.settings.updateVisibility()
     }
+  }
+
+  applyChromiumBugDirectVideoOverlayWorkaround() {
+    if(!this.videoElem || !this.settings) return
+
+    this.videoElem.classList.toggle('ambientlight__chromium-bug-direct-video-overlay-workaround',
+      this.enableChromiumBugDirectVideoOverlayWorkaround && this.settings.chromiumDirectVideoOverlayWorkaround
+    )
   }
 
   applyChromiumBugVideoJitterWorkaround() {
@@ -518,7 +530,7 @@ export default class Ambientlight {
         this.ambientlightFrameCounts = []
         this.lastUpdateStatsTime = performance.now()
         
-        this.barDetection.clear()
+        this.barDetection.cancel()
 
         // Prevent any old frames from being drawn
         this.buffersCleared = true
@@ -1528,6 +1540,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         translate(${(unscaledWidth * this.barsClip[0])}px, ${(unscaledHeight * this.barsClip[1])}px)
         scale(${(videoScale / 100)})
       `
+      this.videoShadowElem.style.borderRadius = this.ytdPlayerElem ? getComputedStyle(this.ytdPlayerElem).borderRadius ?? '' : '';
     } else {
       this.videoShadowElem.style.display = ''
     }
@@ -1704,7 +1717,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     // Page background
     let pageBackgroundGreyness = this.settings.pageBackgroundGreyness
     pageBackgroundGreyness = pageBackgroundGreyness ? `${pageBackgroundGreyness}%` : ''
-    document.documentElement.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
+    document.body.style.setProperty('--ytal-page-background-greyness', pageBackgroundGreyness)
 
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity
@@ -2909,9 +2922,22 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     html.removeAttribute('data-ambientlight-hide-scrollbar')
     html.removeAttribute('data-ambientlight-related-scrollbar')
 
+    this.updateLayoutPerformanceImprovements()
     this.updateSizes()
     this.updateVideoPlayerSize()
   }
+
+  updateLayoutPerformanceImprovements = wrapErrorHandler(() => {
+    const liveChatHtml = this.theming.liveChatIframe?.contentDocument?.documentElement;
+    const enabled = this.settings.enabled && !this.isHidden && this.settings.layoutPerformanceImprovements
+    if(enabled) {
+      html.setAttribute('data-ambientlight-layout-performance-improvements', true)
+      if(liveChatHtml) liveChatHtml.setAttribute('data-ambientlight-layout-performance-improvements', true)
+    } else {
+      html.removeAttribute('data-ambientlight-layout-performance-improvements')
+      if(liveChatHtml) liveChatHtml.removeAttribute('data-ambientlight-layout-performance-improvements')
+    }
+  }, true)
 
   async show() {
     if (!this.isHidden) return
@@ -2931,6 +2957,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       html.setAttribute('data-ambientlight-enabled', true)
       if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
       if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
+      if(this.settings.layoutPerformanceImprovements) this.updateLayoutPerformanceImprovements()
 
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''

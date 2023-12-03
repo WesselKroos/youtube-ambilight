@@ -5,8 +5,19 @@ import { workerFromCode } from './worker'
 const workerCode = function () {
   let catchedWorkerCreationError = false
   let canvas;
+  let canvasIsCreatedInWorker = false
   let ctx;
   let workerMessageId = 0;
+
+  const postError = (ex) => {
+    if (!catchedWorkerCreationError) {
+      catchedWorkerCreationError = true
+      this.postMessage({
+        id: -1,
+        error: ex
+      })
+    }
+  }
 
   async function getLineImageData(imageLines, yLength, index) {
     const params = yLength === 'height' 
@@ -188,12 +199,47 @@ const workerCode = function () {
       percentage = Math.min(percentage, maxPercentage)
       return percentage
     }
+
+    const createCanvas = (width, height) => {
+      canvas = new OffscreenCanvas(width, height)
+      canvas.addEventListener('contextlost', () => {
+        try {
+          // Free GPU memory
+          canvas.width = 1
+          canvas.height = 1
+        } catch(ex) {
+          postError(ex)
+        }
+      })
+      canvas.addEventListener('contextrestored', () => {
+        try {
+          canvas.width = 1
+          canvas.height = 1
+        } catch(ex) {
+          postError(ex)
+        }
+      })
+
+      canvasIsCreatedInWorker = true
+
+      ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true
+      })
+      ctx.imageSmoothingEnabled = false
+    }
     
     this.onmessage = async (e) => {
       const id = e.data.id
       try {
         if(e.data.type === 'cancellation') {
           workerMessageId = id
+          return
+        }
+        // contextlost/contextrestored are never fired in our worker. Keeping our context lost
+        if(e.data.type === 'clear') {
+          workerMessageId = id
+          if(canvas && canvasIsCreatedInWorker && canvas.width !== 1 && canvas.height !== 1) createCanvas(1, 1)
           return
         }
 
@@ -209,12 +255,7 @@ const workerCode = function () {
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
           if(!canvas) {
-            canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
-            ctx = canvas.getContext('2d', {
-              alpha: false,
-              desynchronized: true
-            })
-            ctx.imageSmoothingEnabled = false
+            createCanvas(bitmap.width, bitmap.height)
           } else if(
             canvas.width !== bitmap.width ||
             canvas.height !== bitmap.height
@@ -222,14 +263,16 @@ const workerCode = function () {
             canvas.width = bitmap.width
             canvas.height = bitmap.height
             ctx = canvas.getContext('2d', {
-              alpha: false
+              alpha: false,
+              desynchronized: true
             })
             ctx.imageSmoothingEnabled = false
-          } 
+          }
           ctx.drawImage(bitmap, 0, 0)
           bitmap.close()
         } else {
           canvas = canvasInfo.canvas
+          canvasIsCreatedInWorker = false
           ctx = canvasInfo.ctx
         }
         
@@ -262,13 +305,7 @@ const workerCode = function () {
       }
     }
   } catch(ex) {
-    if (!catchedWorkerCreationError) {
-      catchedWorkerCreationError = true
-      this.postMessage({
-        id: -1,
-        error: ex
-      })
-    }
+    postError(ex)
   }
 }
 
@@ -276,7 +313,6 @@ export default class BarDetection {
   worker
   workerMessageId = 0
   run = null
-  cleared = true
   canvas;
   ctx;
   catchedDetectBarSizeError = false;
@@ -291,6 +327,22 @@ export default class BarDetection {
   }
 
   clear = () => {
+    this.workerMessageId++; // invalidate current worker processes
+    if(this.worker) {
+      this.worker.postMessage({
+        id: this.workerMessageId,
+        type: 'clear'
+      })
+    }
+
+    this.run = null
+    this.history = {
+      horizontal: [],
+      vertical: []
+    }
+  }
+
+  cancel = () => {
     this.workerMessageId++; // invalidate current worker processes
     if(this.worker) {
       this.worker.postMessage({

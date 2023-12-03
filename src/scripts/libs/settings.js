@@ -1,4 +1,4 @@
-import { html, body, on, off, setTimeout, supportsWebGL, raf } from './generic'
+import { html, body, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -67,6 +67,12 @@ export default class Settings {
         }
       }
     }
+
+    if(!supportsColorMix()) {
+      const pageBackgroundGreynessSetting = SettingsConfig.find(setting => setting.name === 'pageBackgroundGreyness')
+      settingsToRemove.push(pageBackgroundGreynessSetting)
+    }
+
     for(const setting of settingsToRemove) {
       SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
     }
@@ -123,8 +129,12 @@ export default class Settings {
       }
     }
 
-    // Disable enabled WebGL setting if not supported anymore
-    if(Settings.storedSettingsCached['setting-webGL']) {
+    const webGLEnabled = (
+      Settings.storedSettingsCached['setting-webGL'] === true ||
+      (Settings.storedSettingsCached['setting-webGL'] === null && supportsWebGL())
+    )
+    if(webGLEnabled) {
+      // Disable enabled WebGL setting if not supported anymore
       if(!supportsWebGL()) {
         Settings.storedSettingsCached['setting-webGL'] = null
         SettingsConfig.find(setting => setting.name === 'spread').max = 200
@@ -204,6 +214,11 @@ export default class Settings {
     this.saveStorageEntry('flickerReduction', undefined) // Override potential crash reason
     this.saveStorageEntry('frameFading', undefined) // Override potential crash reason
     this.saveStorageEntry('resolution', undefined) // Override potential crash reason
+    
+    SettingsConfig.find(setting => setting.name === 'spread').max = 200
+    if(this.spread > 200) this.set('spread', 200, true, false) // Override potential crash reason
+    const spreadRangeInputElem = this.menuElem.querySelector(`#setting-spread-range`)
+    if(spreadRangeInputElem) spreadRangeInputElem.max = 200
 
     await this.flushPendingStorageEntries()
     this.updateWebGLCrashDescription()
@@ -643,7 +658,7 @@ export default class Settings {
             }
             this.updateVisibility()
 
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -653,7 +668,7 @@ export default class Settings {
             (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
             setting.name === 'detectHorizontalBarSizeOffsetPercentage'
           ) {
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -777,6 +792,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'showResolutions',
+            'chromiumDirectVideoOverlayWorkaround',
             'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
             'headerTransparentEnabled',
@@ -795,6 +811,7 @@ export default class Settings {
             'hideScrollbar',
             'immersiveTheaterView',
             'webGL',
+            'layoutPerformanceImprovements',
             'prioritizePageLoadSpeed',
             'enableInPictureInPicture'
           ].some(name => name === setting.name)) {
@@ -806,6 +823,12 @@ export default class Settings {
             'chromiumBugVideoJitterWorkaround',
           ].some(name => name === setting.name)) {
             this.ambientlight.applyChromiumBugVideoJitterWorkaround()
+          }
+
+          if([
+            'chromiumDirectVideoOverlayWorkaround'
+          ].some(name => name === setting.name)) {
+            this.ambientlight.applyChromiumBugDirectVideoOverlayWorkaround()
           }
 
           if([
@@ -835,6 +858,10 @@ export default class Settings {
 
           if (setting.name === 'enabled') {
             this.ambientlight.toggleEnabled(value)
+          }
+
+          if (setting.name === 'layoutPerformanceImprovements' && this.enabled) {
+            this.ambientlight.updateLayoutPerformanceImprovements()
           }
 
           if (setting.name === 'relatedScrollbar' && this.enabled) {
@@ -899,7 +926,7 @@ export default class Settings {
             'detectColoredVerticalBarSizeEnabled',
             'detectVideoFillScaleEnabled'
           ].some(name => name === setting.name)) {
-            this.ambientlight.barDetection.clear()
+            this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -1260,6 +1287,10 @@ export default class Settings {
     {
       names: [ 'resolution', 'vibrance', 'frameFading', 'flickerReduction', 'fixedPosition' ],
       visible: () => this.webGL
+    },
+    {
+      names: [ 'chromiumDirectVideoOverlayWorkaround' ],
+      visible: () => this.ambientlight.enableChromiumBugDirectVideoOverlayWorkaround
     }
   ]
   updateVisibility() {
