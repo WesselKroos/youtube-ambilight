@@ -927,8 +927,28 @@ html[data-ambientlight-enabled="true"] {
 
   ytd-info-panel-content-renderer {
     &,
+    .header,
     .content {
       background: none !important;
+    }
+  }
+
+  ytd-info-panel-container-renderer {
+    .header {
+      background: none !important;
+    }
+    .divider-offset {
+      border-color: var(--yt-spec-outline) !important;
+    }
+    .header,
+    .content {
+      border: 1px solid var(--yt-spec-outline) !important;
+    }
+    .header {
+      border-bottom-style: none !important;
+    }
+    .content {
+      border-top-style: none !important;
     }
   }
 
