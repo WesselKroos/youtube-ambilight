@@ -2507,7 +2507,8 @@ html[data-ambientlight-enabled="true"] {
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
     ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer#{$not-hover} #thumbnail,
     ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
-    ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail {
+    ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail,
+    ytd-watch-next-secondary-results-renderer ytd-reel-item-renderer#{$not-hover} #thumbnail {
       opacity: var(--ytal-image-opacity) !important;
     }
   }
@@ -2952,6 +2953,15 @@ html[data-ambientlight-enabled="true"] {
             background-color: transparent;
           }
           scrollbar-color: transparent transparent !important;
+        }
+
+        #left-arrow.yt-horizontal-list-renderer {
+          align-items: flex-start;
+          left: 4px;
+        }
+        #right-arrow.yt-horizontal-list-renderer {
+          align-items: flex-end;
+          right: 4px;
         }
       }
     }
