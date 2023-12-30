@@ -60,12 +60,17 @@ export default class Settings {
         }
       }
       
-      if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
-        if(setting.name === 'frameSync') {
-          setting.max = 1
-          setting.default = 0
+      if(setting.name === 'frameSync') {
+        if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
+            setting.max = 1
+            setting.default = 0
         }
       }
+    }
+
+    if(getBrowser() === 'Firefox') {
+      const enableInVRVideosSetting = SettingsConfig.find(setting => setting.name === 'enableInVRVideos')
+      settingsToRemove.push(enableInVRVideosSetting)
     }
 
     if(!supportsColorMix()) {
@@ -768,7 +773,7 @@ export default class Settings {
           }
 
           this.ambientlight.sizesChanged = true
-          this.ambientlight.optionalFrame()
+          this.ambientlight.optionalFrame(true)
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', async (e) => {
@@ -813,7 +818,8 @@ export default class Settings {
             'webGL',
             'layoutPerformanceImprovements',
             'prioritizePageLoadSpeed',
-            'enableInPictureInPicture'
+            'enableInPictureInPicture',
+            'enableInVRVideos'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
@@ -961,7 +967,7 @@ export default class Settings {
             'fixedPosition'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
-            this.ambientlight.optionalFrame()
+            this.ambientlight.optionalFrame(true)
             return
           }
 
@@ -973,7 +979,7 @@ export default class Settings {
           }
 
           this.ambientlight.sizesInvalidated = true
-          this.ambientlight.optionalFrame()
+          this.ambientlight.optionalFrame(true)
         })
       }
     }
@@ -1291,6 +1297,10 @@ export default class Settings {
     {
       names: [ 'chromiumDirectVideoOverlayWorkaround' ],
       visible: () => this.ambientlight.enableChromiumBugDirectVideoOverlayWorkaround
+    },
+    {
+      names: [ 'framerateLimit' ],
+      visible: () => !this.ambientlight.isVrVideo
     }
   ]
   updateVisibility() {
@@ -1627,7 +1637,7 @@ export default class Settings {
     }, 1) // Give ambient light the time to clear existing warnings
   }
 
-  setWarning = (message, optional = false) => {
+  setWarning = (message, optional = false, icon = true) => {
     if(!this.menuElem || this.ambientlight.isPageHidden) {
       this.pendingWarning = () => this.setWarning(message, optional)
       return
@@ -1640,7 +1650,7 @@ export default class Settings {
 
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
-    this.menuBtn.classList.toggle('has-warning', !!message)
+    this.menuBtn.classList.toggle('has-warning', icon && !!message)
     this.scrollToWarningQueued = !!message
     if(!message) return
 

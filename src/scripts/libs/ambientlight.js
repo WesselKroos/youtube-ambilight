@@ -8,6 +8,7 @@ import { WebGLOffscreenCanvas } from './canvas-webgl'
 import { cancelGetAverageVideoFramesDifference, getAverageVideoFramesDifference } from './static-image-detection'
 import Theming from './theming'
 import Stats from './stats'
+import { getBrowser } from './utils'
 
 const VIEW_DISABLED = 'DISABLED'
 const VIEW_DETACHED = 'DETACHED'
@@ -39,7 +40,7 @@ export default class Ambientlight {
   isFullscreen = false
   isFillingFullscreen = false
   isVideoHiddenOnWatchPage = false
-  isVR = false
+  isVrVideo = false
   isHdr = false
   isControlledByAnotherExtension = false
 
@@ -1384,8 +1385,40 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     return VIEW_SMALL
   }
 
+  drawVR = (...args) => {
+    const result = this.vrVideoCtxDrawArrays.bind(this.vrVideoCtx)(...args)
+    this.nextFrame()
+    return result
+  }
+
   updateView = () => {
-    this.isVR = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
+    const isVrVideo = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
+    if(isVrVideo !== this.isVrVideo) {
+      this.isVrVideo = isVrVideo
+      if(this.isVrVideo) {
+        this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas')
+        this.vrVideoCtx = this.vrVideoElem.getContext('webgl')
+        if(this.vrVideoCtx) {
+          if(this.vrVideoCtx.drawArrays !== this.drawVR) {
+            this.vrVideoCtxDrawArrays = this.vrVideoCtx.drawArrays
+            this.vrVideoCtx.drawArrays = this.drawVR
+          }
+        }
+        if(getBrowser() === 'Firefox') {
+          this.settings.setWarning('Ambient light does not support VR videos', false, false)
+        }
+      } else {
+        this.vrVideoElem = undefined
+        if(this.vrVideoCtx) {
+          this.vrVideoCtx.drawArrays = this.vrVideoCtxDrawArrays
+        }
+        this.vrVideoCtx = undefined
+        if(getBrowser() === 'Firefox') {
+          this.settings.setWarning()
+        }
+      }
+      this.settings.updateVisibility()
+    }
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
     this.isControlledByAnotherExtension = (
@@ -1449,7 +1482,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     const notVisible = (
       !this.settings.enabled ||
-      this.isVR ||
+      (this.isVrVideo && !this.settings.enableInVRVideos) ||
       !videoParentElem ||
       !this.videoPlayerElem ||
       !this.isInEnabledView()
@@ -1557,6 +1590,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     this.srcVideoOffset = {
       top: this.videoOffset.top,
+      width: (this.vrVideoElem?.width ?? this.videoElem.videoWidth),
+      height: (this.vrVideoElem?.height ?? this.videoElem.videoHeight)
+    }
+    this.vrVideoSrcOffset = {
       width: this.videoElem.videoWidth,
       height: this.videoElem.videoHeight
     }
@@ -1948,8 +1985,16 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     //Auto quality moved up or down
-    if (this.srcVideoOffset.width !== this.videoElem.videoWidth
-      || this.srcVideoOffset.height !== this.videoElem.videoHeight) {
+    if (
+      this.srcVideoOffset.width !== (this.vrVideoElem?.width ?? this.videoElem.videoWidth) ||
+      this.srcVideoOffset.height !== (this.vrVideoElem?.height ?? this.videoElem.videoHeight)
+    ) {
+        return true
+    }
+    if (this.isVrVideo && (
+      this.vrVideoSrcOffset.width !== this.videoElem.videoWidth ||
+      this.vrVideoSrcOffset.height !== this.videoElem.videoHeight
+    )) {
         return true
     }
 
@@ -2129,6 +2174,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
     !this.isOnVideoPage ||
+    this.isVrVideo ||
     this.pendingStart ||
     this.videoElem.ended ||
     this.videoElem.paused ||
@@ -2137,7 +2183,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.isAmbientlightHiddenOnWatchPage
   ))
 
-  optionalFrame = async () => {
+  optionalFrame = async (fromSettingChange = false) => {
     if(
       !this.initializedTime ||
       !this.settings.enabled ||
@@ -2145,7 +2191,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.pendingStart ||
       this.resizeAfterFrames > 0 ||
       this.videoElem.ended ||
-      ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame)
+      ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame) ||
+      (!fromSettingChange && this.isVrVideo)
     ) return
     
     await this.nextFrame()
@@ -2395,7 +2442,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   shouldShow = () => (
     this.settings.enabled &&
     this.isOnVideoPage &&
-    !this.isVR &&
+    !(this.isVrVideo && !this.settings.enableInVRVideos) &&
     this.isInEnabledView()
   )
 
@@ -2450,7 +2497,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     } else if (this.settings.frameSync == FRAMESYNC_DISPLAYFRAMES) {
       hasNewFrame = true
     }
-    hasNewFrame = hasNewFrame || this.buffersCleared
+    hasNewFrame = hasNewFrame || this.buffersCleared || this.isVrVideo
     
     const droppedFrames = (this.videoFrameCount > 120 && this.videoFrameCount < newVideoFrameCount - 1)
     if (droppedFrames && !this.buffersCleared) {
@@ -2461,6 +2508,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     const detectBarSize = (
+      !this.vrVideoElem &&
       hasNewFrame &&
       (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
     )
@@ -2485,7 +2533,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
             this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
-            this.videoOverlayBuffer.ctx.drawImage(this.videoElem, 
+            this.videoOverlayBuffer.ctx.drawImage(this.vrVideoElem ?? this.videoElem, 
               0, 0, this.videoOverlayBuffer.elem.width, this.videoOverlayBuffer.elem.height)
             if(this.buffersCleared) {
               this.previousVideoOverlayBuffer.ctx.drawImage(this.videoOverlayBuffer.elem, 0, 0)
@@ -2499,7 +2547,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
             // Prevent adjusted barsClipPx from leaking previous frame into the frame
             this.projectorBuffer.ctx.clearRect(0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
             
-            this.projectorBuffer.ctx.drawImage(this.videoElem,
+            this.projectorBuffer.ctx.drawImage(this.vrVideoElem ?? this.videoElem,
               0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
             if(this.buffersCleared) {
               this.previousProjectorBuffer.ctx.drawImage(this.projectorBuffer.elem, 0, 0)
@@ -2576,14 +2624,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         if(this.enableChromiumBug1092080Workaround) {
           this.videoOverlay.ctx.clearRect(0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
         }
-        this.videoOverlay.ctx.drawImage(this.videoElem, 
+        this.videoOverlay.ctx.drawImage(this.vrVideoElem ?? this.videoElem, 
           0, 0, this.videoOverlay.elem.width, this.videoOverlay.elem.height)
       }
 
       const shouldDrawDirectlyFromVideoElem = this.shouldDrawDirectlyFromVideoElem()
       if (!dontDrawBuffer) {
         if(!shouldDrawDirectlyFromVideoElem) {
-          this.projectorBuffer.ctx.drawImage(this.videoElem,
+          // console.log('draw', hasNewFrame, dontDrawAmbientlight, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
+          this.projectorBuffer.ctx.drawImage(this.vrVideoElem ?? this.videoElem,
             0, 0, this.projectorBuffer.elem.width, this.projectorBuffer.elem.height)
         }
 
@@ -2591,7 +2640,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
           if(!shouldDrawDirectlyFromVideoElem) {
             this.projector.draw(this.projectorBuffer.elem)
           } else {
-            this.projector.draw(this.videoElem)
+            this.projector.draw(this.vrVideoElem ?? this.videoElem)
           }
         }
       }

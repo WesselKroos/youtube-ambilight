@@ -737,6 +737,13 @@ Click on the questionmark for more and updated information about these artifacts
     advanced: true
   },
   {
+    name: 'enableInVRVideos',
+    label: 'Enable in VR videos',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
     name: 'enabled',
     label: 'Enabled',
     type: 'checkbox',
