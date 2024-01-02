@@ -1385,6 +1385,35 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     return VIEW_SMALL
   }
 
+  initVR = () => {
+    this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas')
+    this.vrVideoCtx = this.vrVideoElem.getContext('webgl')
+    if(this.vrVideoCtx) {
+      if(this.vrVideoCtx.drawArrays !== this.drawVR) {
+        this.vrVideoCtxDrawArrays = this.vrVideoCtx.drawArrays
+        this.vrVideoCtx.drawArrays = this.drawVR
+      }
+    }
+    if(getBrowser() === 'Firefox') {
+      this.settings.setWarning('Ambient light does not support VR videos', false, false)
+    }
+
+    this.settings.updateVisibility()
+  }
+
+  disposeVR = () => {
+    this.vrVideoElem = undefined
+    if(this.vrVideoCtx) {
+      this.vrVideoCtx.drawArrays = this.vrVideoCtxDrawArrays
+    }
+    this.vrVideoCtx = undefined
+    if(getBrowser() === 'Firefox') {
+      this.settings.setWarning()
+    }
+
+    this.settings.updateVisibility()
+  }
+
   drawVR = (...args) => {
     const result = this.vrVideoCtxDrawArrays.bind(this.vrVideoCtx)(...args)
     this.nextFrame()
@@ -1393,32 +1422,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   updateView = () => {
     const isVrVideo = this.videoPlayerElem?.classList.contains('ytp-webgl-spherical')
-    if(isVrVideo !== this.isVrVideo) {
+    if(isVrVideo != this.isVrVideo) {
       this.isVrVideo = isVrVideo
-      if(this.isVrVideo) {
-        this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas')
-        this.vrVideoCtx = this.vrVideoElem.getContext('webgl')
-        if(this.vrVideoCtx) {
-          if(this.vrVideoCtx.drawArrays !== this.drawVR) {
-            this.vrVideoCtxDrawArrays = this.vrVideoCtx.drawArrays
-            this.vrVideoCtx.drawArrays = this.drawVR
-          }
-        }
-        if(getBrowser() === 'Firefox') {
-          this.settings.setWarning('Ambient light does not support VR videos', false, false)
-        }
-      } else {
-        this.vrVideoElem = undefined
-        if(this.vrVideoCtx) {
-          this.vrVideoCtx.drawArrays = this.vrVideoCtxDrawArrays
-        }
-        this.vrVideoCtx = undefined
-        if(getBrowser() === 'Firefox') {
-          this.settings.setWarning()
-        }
-      }
-      this.settings.updateVisibility()
+      this.sizesChanged = true
     }
+    if(!isVrVideo && this.vrVideoElem) this.disposeVR()
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
     this.isControlledByAnotherExtension = (
@@ -1521,7 +1529,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.resetVideoParentElemStyle()
     }
 
-    this.videoOffset = this.getElemRect(this.videoElem)
+    if(this.isVrVideo !== !!this.vrVideoElem) {
+      if(this.isVrVideo) {
+        this.initVR()
+      } else {
+        this.disposeVR()
+      }
+    }
+
+    this.videoOffset = this.getElemRect(this.isVrVideo ? this.vrVideoElem : this.videoElem)
     this.isFillingFullscreen = (
       this.isFullscreen &&
       Math.abs(this.videoOffset.width - window.innerWidth) < 10 &&
@@ -1992,8 +2008,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         return true
     }
     if (this.isVrVideo && (
-      this.vrVideoSrcOffset.width !== this.videoElem.videoWidth ||
-      this.vrVideoSrcOffset.height !== this.videoElem.videoHeight
+      this.vrVideoSrcOffset?.width !== this.videoElem.videoWidth ||
+      this.vrVideoSrcOffset?.height !== this.videoElem.videoHeight
     )) {
         return true
     }
@@ -2174,7 +2190,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   canScheduleNextFrame = () => (!(
     !this.settings.enabled ||
     !this.isOnVideoPage ||
-    this.isVrVideo ||
+    (this.isVrVideo && this.vrVideoElem) ||
     this.pendingStart ||
     this.videoElem.ended ||
     this.videoElem.paused ||
@@ -2192,7 +2208,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.resizeAfterFrames > 0 ||
       this.videoElem.ended ||
       ((!this.videoElem.paused && !this.videoElem.seeking) && this.scheduledNextFrame) ||
-      (!fromSettingChange && this.isVrVideo)
+      (!fromSettingChange && this.isVrVideo && this.vrVideoElem)
     ) return
     
     await this.nextFrame()
@@ -2955,6 +2971,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.chromiumBugVideoJitterWorkaround.update()
 
     await this.theming.updateTheme()
+
+    if(this.isVrVideo) this.disposeVR()
 
     if (this.videoOverlay?.elem?.isConnected) {
       this.videoOverlay.elem.remove()

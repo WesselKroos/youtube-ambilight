@@ -748,7 +748,7 @@ Click on the questionmark for more and updated information about these artifacts
     label: 'Enabled',
     type: 'checkbox',
     default: true,
-    defaultKey: 'A'
+    defaultKey: 'G'
   },
 ]
 
