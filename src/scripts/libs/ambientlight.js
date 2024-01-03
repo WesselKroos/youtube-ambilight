@@ -1016,7 +1016,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   checkGetImageDataAllowed() {
     const isSameOriginVideo = (!!this.videoElem.src && this.videoElem.src.indexOf(location.origin) !== -1)
-    const getImageDataAllowed = (!window.chrome || isSameOriginVideo || (!isSameOriginVideo && this.videoElem.crossOrigin))
+    const getImageDataAllowed = !window.chrome || isSameOriginVideo || (!isSameOriginVideo && this.videoElem.crossOrigin)
 
     // Try to apply the workaround once
     if(this.videoElem.src && !getImageDataAllowed && !this.crossOriginApplied) {
@@ -1034,6 +1034,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     if(this.getImageDataAllowed === getImageDataAllowed) return
+
     this.getImageDataAllowed = getImageDataAllowed
     this.settings.updateVisibility()
   }
@@ -2524,9 +2525,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
 
     const detectBarSize = (
-      !this.vrVideoElem &&
       hasNewFrame &&
-      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled)
+      (this.settings.detectHorizontalBarSizeEnabled || this.settings.detectVerticalBarSizeEnabled) &&
+      !this.isVrVideo
     )
 
     const dontDrawAmbientlight = (
@@ -2681,32 +2682,30 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   scheduleBarSizeDetection = () => {
     try {
-      if(
-        (this.getImageDataAllowed && this.checkGetImageDataAllowed()) || 
-        this.getImageDataAllowed
-      ) {
-        this.barDetection.detect(
+      this.checkGetImageDataAllowed()
+      if(!this.getImageDataAllowed) return
+
+      this.barDetection.detect(
+        (
+          this.shouldDrawDirectlyFromVideoElem() ||
           (
-            this.shouldDrawDirectlyFromVideoElem() ||
-            (
-              (this.projectorBuffer.elem.height < 256 || this.projectorBuffer.elem.width < 256) &&
-              this.projectorBuffer.elem.height < this.videoElem.videoHeight
-            )
-          ) 
-            ? this.videoElem
-            : this.projectorBuffer.elem ,
-          this.settings.detectColoredHorizontalBarSizeEnabled,
-          this.settings.detectHorizontalBarSizeOffsetPercentage,
-          this.settings.detectHorizontalBarSizeEnabled,
-          this.settings.horizontalBarsClipPercentage,
-          this.settings.detectVerticalBarSizeEnabled,
-          this.settings.verticalBarsClipPercentage,
-          this.p ? this.p.h / this.p.w : 1,
-          !this.settings.frameBlending,
-          this.settings.barSizeDetectionAverageHistorySize || 1,
-          wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
-        )
-      }
+            (this.projectorBuffer.elem.height < 256 || this.projectorBuffer.elem.width < 256) &&
+            this.projectorBuffer.elem.height < this.videoElem.videoHeight
+          )
+        ) 
+          ? this.videoElem
+          : this.projectorBuffer.elem ,
+        this.settings.detectColoredHorizontalBarSizeEnabled,
+        this.settings.detectHorizontalBarSizeOffsetPercentage,
+        this.settings.detectHorizontalBarSizeEnabled,
+        this.settings.horizontalBarsClipPercentage,
+        this.settings.detectVerticalBarSizeEnabled,
+        this.settings.verticalBarsClipPercentage,
+        this.p ? this.p.h / this.p.w : 1,
+        !this.settings.frameBlending,
+        this.settings.barSizeDetectionAverageHistorySize || 1,
+        wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
+      )
     } catch (ex) {
       if (!this.showedDetectBarSizeWarning) {
         this.showedDetectBarSizeWarning = true
