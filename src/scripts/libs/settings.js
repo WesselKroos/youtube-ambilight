@@ -321,10 +321,19 @@ export default class Settings {
               </a>
             </div>
             <div class="ytp-menuitem-content">
-              <button
-                class="ytpa-reset-settings-btn"
-                title="Reset all settings"
-              ></button>
+              <div class="ytpa-settings-toolbar">
+                <button
+                  class="ytpa-export-import-settings-btn"
+                  type="button"
+                >
+                  <span class="ytpa-export-import-settings-btn__tooltip">How to export or import settings:<br/>1. Click on the extension icon to open the option.<br/>2. Scroll down to "Import / Export settings"</span>
+                </button>
+                <button
+                  class="ytpa-reset-settings-btn"
+                  title="Reset all settings"
+                  type="button"
+                ></button>
+              </div>
             </div>
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
@@ -471,6 +480,7 @@ export default class Settings {
       await new Promise(resolve => setTimeout(resolve, 1000))
       this.reloadPage()
     })
+
     for (const label of this.menuElem.querySelectorAll('.setting-range-datalist__label')) {
       on(label, 'click', (e) => {
         const value = e.target.value
@@ -480,6 +490,7 @@ export default class Settings {
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
     }
+
     for (const section of this.menuElem.querySelectorAll('.ytpa-section')) {
       on(section, 'click', async () => {
         const name = section.getAttribute('data-name')

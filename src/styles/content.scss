@@ -1695,12 +1695,111 @@ html[data-ambientlight-enabled="true"] {
       font-size: 16px;
     }
   }
+
+  .ytpa-settings-toolbar {
+    display: flex;
+  }
+  
+  .ytpa-export-import-settings-btn {
+    appearance: none;
+    position: relative;
+    display: block;
+    margin: -2px 3px 0 auto;
+    border: 0;
+    padding: 0;
+    width: 15px;
+    height: 14px;
+    outline: none;
+    border-radius: 2px;
+    border: 1px solid #ffffff88;
+    border-top-color: transparent;
+    background: none;
+    cursor: help;
+    &:hover,
+    &:focus-visible {
+      border-color: #30acf3;
+      border-top-color: transparent;
+    }
+    .ytp-fullscreen & {
+      width: 20px;
+      height: 20px;
+      border-width: 2px;
+    }
+
+    &::before,
+    &::after {
+      position: absolute;
+      top: 0;
+      left: 0;
+      content: '';
+      pointer-events: none;
+      display: block;
+      width: 0;
+      height: 0;
+      border: 0px solid #ffffff99;
+    }
+    &:hover,
+    &:focus-visible {
+      &::before,
+      &::after {
+        border-color: #30acf3;
+      }
+    }
+    &::before {
+      width: 6px;
+      height: 6px;
+      margin-left: 3px;
+      border-top-width: 1px;
+      border-left-width: 1px;
+      transform: rotate(45deg);
+      .ytp-fullscreen & {
+        width: 7px;
+        height: 7px;
+        margin-left: 3px;
+        border-top-width: 2px;
+        border-left-width: 2px;
+        transform: translateX(0.5px) rotate(45deg);
+      }
+    }
+    &::after {
+      height: 8px;
+      margin-top: 1px;
+      margin-left: 6px;
+      border-left-width: 1px;
+      .ytp-fullscreen & {
+        height: 11px;
+        margin-left: 7px;
+        border-left-width: 2px;
+      }
+    }
+
+    .ytpa-export-import-settings-btn__tooltip {
+      position: absolute;
+      z-index: 1;
+      top: 18px;
+      right: -40px;
+      background: #222;
+      border: 1px solid #aaa;
+      padding: 5px;
+      color: #fff;
+      text-align: left;
+      font-size: 1.2rem;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    &:hover,
+    &:focus-visible {
+      .ytpa-export-import-settings-btn__tooltip {
+        visibility: visible;
+      }
+    }
+  }
   
   .ytpa-reset-settings-btn {
     appearance: none;
     position: relative;
     display: block;
-    margin: -2px 3px 0 auto;
+    margin: -2px 3px 0 10px;
     border: 0;
     padding: 0;
     width: 14px;
@@ -1712,7 +1811,8 @@ html[data-ambientlight-enabled="true"] {
     background: none;
     cursor: pointer;
     transition: transform .5s;
-    &:hover {
+    &:hover,
+    &:focus-visible {
       transform: rotate(-180deg);
       border-color: #30acf3;
       border-top-color: transparent;
@@ -1721,6 +1821,7 @@ html[data-ambientlight-enabled="true"] {
       width: 20px;
       height: 20px;
       border-width: 2px;
+      margin-left: 15px;
     }
 
     &::before,
@@ -1738,7 +1839,8 @@ html[data-ambientlight-enabled="true"] {
         margin: -6px 0 0 12px;
       }
     }
-    &:hover {
+    &:hover,
+    &:focus-visible {
       &::before,
       &::after {
         background: #30acf3;
