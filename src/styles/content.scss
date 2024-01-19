@@ -1498,7 +1498,7 @@ html[data-ambientlight-enabled="true"] {
   max-height: calc(100% - 70px);
   overflow-y: auto !important;
   right: 12px;
-  bottom: 49px;
+  bottom: 61px ;
   z-index: 1001 !important; // above ad
   opacity: 0;
   cursor: default;
@@ -2098,9 +2098,9 @@ html[data-ambientlight-enabled="true"] {
     }
 
     &.ytpa-menuitem--header {
-      margin-top: 5px;
+      margin-top: 0;
       margin-bottom: 0;
-      padding-top: 2px;
+      padding-top: 5px;
       padding-bottom: 8px;
       cursor: default;
       &,
