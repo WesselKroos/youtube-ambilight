@@ -438,10 +438,10 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'detectVideoFillScaleEnabled',
-    label: 'Fill video to screen',
+    label: 'Fill video to removed bars',
     type: 'checkbox',
     default: false,
-    defaultKey: 'S'
+    defaultKey: 'H'
   },
   {
     type: 'section',

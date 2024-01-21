@@ -295,7 +295,7 @@ export default class Settings {
                         }(You can let me know if the support fails on your device through the feedback link down below.)
                       </li>`}
                   <li>${''
-                    }The default hotkey to enable/disable the ambient light has been changed from [A] to [G]${getBrowser() === 'Firefox' ? '.' : ' to support rotation via the AWSD keys in VR/180/360 videos.'}
+                    }Some hotkeys have changed${getBrowser() === 'Firefox' ? '.' : ' to support rotation via the AWSD keys in VR/180/360 videos.'}\n- Enable/disable: [A] -> [G]\n- Fill video: [S] -> [H] 
                   </li>
               </ul></span>
             </div>
