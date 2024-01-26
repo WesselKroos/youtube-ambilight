@@ -202,6 +202,14 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
 
 3. For Chromium browsers: The D3D11on12 graphics backend is more efficiënt. To enable it follow the instructions in [Select the best graphics card backend](#select-the-best-graphics-card-backend)
 
+## 3. NVidia RTX Video Super Resolution (VSR) / NVidia RTX Video HDR does not work
+
+   __To enable support for NVidia RTX Video follow these steps:__
+   1. Open the Ambient light settings
+   2. Enable the setting: Settings > Advanced
+   3. Disable the setting: Settings > Video > Video artifacts workaround
+
+NVidia RTX Video requires Window's Multi-Plane Overlay feature. The ambient light disables this feature by default to prevent graphical artifacts that appear for some users. For more info about these artifacts you can visit: [Issue 1155285: Occasionally checkered artifacts when using drawImage directly in the video.requestVideoFrameCallback callback](https://bugs.chromium.org/p/chromium/issues/detail?id=1155285)
 
 ---
 
