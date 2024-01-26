@@ -1024,13 +1024,16 @@ html[data-ambientlight-enabled="true"] {
 
   /* Like button icon (gets an incorrect theme after switching device themes 2 times) */
   @mixin like-btn {
-    ytd-segmented-like-dislike-button-renderer lottie-component path {
-      &[fill="rgb(255,255,255)"],
-      &[stroke="rgb(255,255,255)"],
-      &[fill="rgb(0,0,0)"],
-      &[stroke="rgb(0,0,0)"]
-      {
-        @content;
+    segmented-like-dislike-button-view-model,
+    ytd-segmented-like-dislike-button-renderer {
+      lottie-component path {
+        &[fill="rgb(255,255,255)"],
+        &[stroke="rgb(255,255,255)"],
+        &[fill="rgb(0,0,0)"],
+        &[stroke="rgb(0,0,0)"]
+        {
+          @content;
+        }
       }
     }
   }
