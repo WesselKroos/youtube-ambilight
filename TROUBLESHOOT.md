@@ -208,6 +208,7 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
    1. Open the Ambient light settings
    2. Enable the setting: Settings > Advanced
    3. Disable the setting: Settings > Video > Video artifacts workaround
+   4. [Optional] Re-disable the setting: Settings > Advanced
 
 NVidia RTX Video requires Window's Multi-Plane Overlay feature. The ambient light disables this feature by default to prevent graphical artifacts that appear for some users. For more info about these artifacts you can visit: [Issue 1155285: Occasionally checkered artifacts when using drawImage directly in the video.requestVideoFrameCallback callback](https://bugs.chromium.org/p/chromium/issues/detail?id=1155285)
 
