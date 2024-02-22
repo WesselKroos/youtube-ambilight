@@ -2978,6 +2978,12 @@ html[data-ambientlight-enabled="true"] {
     ytd-comment-thread-renderer {
       content-visibility: auto;
       contain-intrinsic-size: auto 100px;
+
+      // absolute positioned emojis dropdown
+      #emojis.ytd-commentbox {
+        position: relative;
+        max-width: 100%;
+      }
     }
     ytd-playlist-panel-renderer #top-level-buttons-computed {
       z-index: 1002; // Prevents the "loop playlist" button tooltip from being hidden behind the first playlist item
@@ -2997,8 +3003,9 @@ html[data-ambientlight-enabled="true"] {
         content-visibility: auto;
         contain-intrinsic-size: auto 94px;
 
-        tp-yt-paper-tooltip.ytd-channel-name #tooltip {
-          margin-bottom: -8px; // Prevents the channel name tooltip from going outside the related video bounds
+        // Related video - Channel name & badges tooltips
+        tp-yt-paper-tooltip {
+          top: -8px !important;
         }
       }
     }
