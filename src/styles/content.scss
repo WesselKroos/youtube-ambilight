@@ -1101,6 +1101,7 @@ html[data-ambientlight-enabled="true"] {
     ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
     ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
     .playlist-items.ytd-playlist-panel-renderer,
+    ytd-live-chat-frame #show-hide-button.ytd-live-chat-frame > ytd-button-renderer.ytd-live-chat-frame,
     yt-chip-cloud-renderer {
       background: none !important;
     }
@@ -1154,7 +1155,6 @@ html[data-ambientlight-enabled="true"] {
       }
     }
     #primary #description.ytd-watch-metadata,
-    #secondary.ytd-watch-grid,
     #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
       background: var(--ytal-background) !important;
     }
@@ -2613,7 +2613,8 @@ html[data-ambientlight-enabled="true"] {
     ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer#{$not-hover} #thumbnail,
     ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
     ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail,
-    ytd-watch-next-secondary-results-renderer ytd-reel-item-renderer#{$not-hover} #thumbnail {
+    ytd-watch-next-secondary-results-renderer ytd-reel-item-renderer#{$not-hover} #thumbnail,
+    ytd-rich-item-renderer#{$not-hover} #thumbnail {
       opacity: var(--ytal-image-opacity) !important;
     }
   }
@@ -2879,9 +2880,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Fix ambient light height in grid layout
+
+  #secondary-inner.ytd-watch-grid {
+    position: relative !important;
+  }
+
   // Hide secondary metadata when overlayed by another panel in ytd-watch-grid
 
-  ytd-watch-grid {
+  ytd-watch-grid[default-layout] {
     @supports selector(:has(*)) {
       #secondary {
         &:has(ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]),
@@ -2920,21 +2927,27 @@ html[data-ambientlight-enabled="true"] {
       }
     }
   }
-  &[dark] {
-    ytd-watch-grid {
-      #secondary-inner {
-        ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+  &[dark] ytd-watch-grid[default-layout] {
+    #secondary-inner {
+      ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"][visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"] {
+        background: rgb(10,10,10) !important;
+      }
+
+      @supports not (selector(:has(*))) {
+        ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
+        ytd-live-chat-frame:not([collapsed]),
+        ytd-playlist-panel-renderer:not([collapsed]) {
           background: rgb(10,10,10) !important;
         }
-
-        @supports not (selector(:has(*))) {
-          ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"],
-          ytd-live-chat-frame:not([collapsed]),
-          ytd-playlist-panel-renderer:not([collapsed]) {
-            background: rgb(10,10,10) !important;
-          }
-        }
       }
+    }
+  }
+
+  // Style experimental grid layout that is being A/B tested
+
+  ytd-watch-grid {
+    ytd-playlist-panel-renderer[collapsible][collapsed] .header.ytd-playlist-panel-renderer {
+      background-color: var(--yt-spec-brand-background-primary) !important;
     }
   }
 
@@ -3027,7 +3040,7 @@ html[data-ambientlight-enabled="true"] {
     // Improve playlist dragging smoothness
     
     ytd-playlist-panel-renderer[js-panel-height]:not([collapsed]) #container.ytd-playlist-panel-renderer {
-      height: var(--ytd-watch-flexy-panel-max-height);
+      height: var(--ytd-watch-flexy-panel-max-height, max(400px, 100%) );
       contain: strict;
     }
 
@@ -3086,5 +3099,64 @@ html[data-ambientlight-enabled="true"] {
         scrollbar-color: transparent transparent !important;
       }
     }
+
+    ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+      position: sticky;
+      bottom: 0;
+      margin-top: auto;
+
+      #below {
+        height: calc(100vh - 56px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        &:hover {
+          will-change: scroll-position;
+        }
+  
+        @include scrollbar-light-thin;
+        &:not(:hover) {
+          &::-webkit-scrollbar-thumb:not(:hover) {
+            background-color: transparent;
+          }
+          scrollbar-color: transparent transparent !important;
+        }
+      }
+    }
+
+    ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+      position: sticky;
+      top: 80px;
+      height: calc(100vh - 104px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      &:hover {
+        will-change: scroll-position;
+      }
+
+      @include scrollbar-light-thin;
+      &:not(:hover) {
+        &::-webkit-scrollbar-thumb:not(:hover) {
+          background-color: transparent;
+        }
+        scrollbar-color: transparent transparent !important;
+      }
+    }
+    &[dark] ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]),
+    &[dark] ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) #below {
+      @include scrollbar-dark-thin;
+      &:not(:hover) {
+        &::-webkit-scrollbar-thumb:not(:hover) {
+          background-color: transparent;
+        }
+        scrollbar-color: transparent transparent !important;
+      }
+    }
+  }
+
+  // Load more shorts button
+
+  .button-container.ytd-rich-shelf-renderer {
+    background: none !important;
+    backdrop-filter: blur(5px);
   }
 }
