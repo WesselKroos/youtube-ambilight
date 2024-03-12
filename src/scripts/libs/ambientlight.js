@@ -168,7 +168,8 @@ export default class Ambientlight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1719154
   detectMozillaBugSlowCanvas2DReadPixelsWorkaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
-    if(match) {
+    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    if(version && version < 123) {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
   }
