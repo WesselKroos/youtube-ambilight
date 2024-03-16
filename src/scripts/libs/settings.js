@@ -677,8 +677,10 @@ export default class Settings {
           }
 
           if (
-            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
-            setting.name === 'detectHorizontalBarSizeOffsetPercentage'
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && (
+              setting.name === 'detectHorizontalBarSizeOffsetPercentage' ||
+              setting.name === 'barSizeDetectionAllowedAnomaliesPercentage'
+            )
           ) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
@@ -937,7 +939,7 @@ export default class Settings {
             'detectVerticalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
             'detectColoredVerticalBarSizeEnabled',
-            'detectVideoFillScaleEnabled'
+            'detectVideoFillScaleEnabled',
           ].some(name => name === setting.name)) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {

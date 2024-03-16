@@ -2705,6 +2705,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.p ? this.p.h / this.p.w : 1,
         !this.settings.frameBlending,
         this.settings.barSizeDetectionAverageHistorySize || 1,
+        this.settings.barSizeDetectionAllowedAnomaliesPercentage || 20,
         wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
       )
     } catch (ex) {
