@@ -1263,7 +1263,8 @@ export default class Settings {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
         'barSizeDetectionAverageHistorySize',
-        'detectHorizontalBarSizeOffsetPercentage'
+        'detectHorizontalBarSizeOffsetPercentage',
+        'barSizeDetectionAllowedAnomaliesPercentage'
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },

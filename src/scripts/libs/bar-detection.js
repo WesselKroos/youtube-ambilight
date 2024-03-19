@@ -8,6 +8,7 @@ const workerCode = function () {
   let canvasIsCreatedInWorker = false
   let ctx;
   let workerMessageId = 0;
+  let globalXOffsetIndex = 0;
 
   const postError = (ex) => {
     if (!catchedWorkerCreationError) {
@@ -83,9 +84,10 @@ const workerCode = function () {
     return averageColor
   }
 
-  const partSizeBorderMultiplier = 1
   try {
-    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage) => {
+    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
+      
+      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
       const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
       const imageLines = []
       for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
@@ -96,7 +98,7 @@ const workerCode = function () {
         // await getLineImageData(imageLines, yLength, index)
         await getLineImageData(imageLines, yLength, 
           Math.min(Math.max(0,
-            index + Math.round(Math.random() * (partSize / 2) - partSize / 4)
+            index + Math.round(xOffset * (partSize / 2) - partSize / 4)
           ), canvas[xLength] - 1))
       }
       if(id < workerMessageId) {
@@ -311,11 +313,13 @@ const workerCode = function () {
       try {
         if(e.data.type === 'cancellation') {
           workerMessageId = id
+          globalXOffsetIndex = 0
           return
         }
         // contextlost/contextrestored are never fired in our worker. Keeping our context lost
         if(e.data.type === 'clear') {
           workerMessageId = id
+          globalXOffsetIndex = 0
           if(canvas && canvasIsCreatedInWorker && canvas.width !== 1 && canvas.height !== 1) createCanvas(1, 1)
           return
         }
@@ -329,6 +333,7 @@ const workerCode = function () {
         const canvasInfo = e.data.canvasInfo
         const ratio = e.data.ratio
         const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
+        const xOffsetSize = e.data.xOffsetSize
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -354,14 +359,23 @@ const workerCode = function () {
           ctx = canvasInfo.ctx
         }
         
+        globalXOffsetIndex++
+        if(globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0
+        const xOffset = xOffsetSize === 1 ? .5 : (
+          (Math.ceil(globalXOffsetIndex / 2) + (globalXOffsetIndex % 2))
+          / (xOffsetSize - 1)
+        )
+        // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
         let horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
-              id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage, allowedAnomaliesPercentage
+              id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage,
+              allowedAnomaliesPercentage, xOffset
           )
           : undefined
-          let verticalPercentage = detectVertical
+        let verticalPercentage = detectVertical
           ? await workerDetectBarSize(
-              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage, allowedAnomaliesPercentage
+              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage,
+              allowedAnomaliesPercentage, xOffset
           )
           : undefined
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -478,7 +492,20 @@ export default class BarDetection {
     const detectedPercentage = percentage
 
     // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
-    percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+    // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+    const percentagesOccurrence = [...history, detectedPercentage]
+      .reduce((percentages, precentage) => {
+        percentages[precentage] = (percentages[precentage] ?? 0) + 1
+        return percentages
+      }, {})
+    percentage = Object.keys(percentagesOccurrence).reduce(
+      (a, b) => percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b)
+        
+    // Is the difference less than 2 occurences? Then prevent flickering
+    if(percentage !== currentPercentage && Math.abs(percentagesOccurrence[percentage] - percentagesOccurrence[currentPercentage]) <= history.length / 2) {
+      percentage = currentPercentage
+    }
+    // console.log(percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
     if(adjustment > -1.5 && adjustment <= 0) {
@@ -613,7 +640,8 @@ export default class BarDetection {
           detectHorizontal, currentHorizontalPercentage,
           detectVertical, currentVerticalPercentage,
           ratio,
-          allowedAnomaliesPercentage
+          allowedAnomaliesPercentage,
+          xOffsetSize: averageHistorySize
         },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )

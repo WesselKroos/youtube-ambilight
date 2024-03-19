@@ -377,9 +377,45 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'detectColoredHorizontalBarSizeEnabled',
-    label: 'Also remove colored bars',
+    label: 'Detection: Remove colored bars',
     type: 'checkbox',
     default: false
+  },
+  {
+    name: 'detectHorizontalBarSizeOffsetPercentage',
+    label: 'Detection: Offset',
+    type: 'list',
+    default: 0,
+    min: -5,
+    max: 5,
+    step: 0.1,
+    advanced: true
+  },
+  {
+    name: 'barSizeDetectionAverageHistorySize',
+    label: 'Detection: Frames average',
+    questionMark: {
+      title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
+    },
+    type: 'list',
+    default: 4,
+    min: 1,
+    max: 30,
+    step: 1,
+    advanced: true
+  },
+  {
+    name: 'barSizeDetectionAllowedAnomaliesPercentage',
+    label: 'Detection: Ignored anomalies',
+    questionMark: {
+      title: 'The percentage of anomalies in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
+    },
+    type: 'list',
+    default: 30,
+    min: 10,
+    max: 90,
+    step: 10,
+    advanced: true
   },
   {
     name: 'horizontalBarsClipPercentage',
@@ -404,42 +440,6 @@ Click on the questionmark for more and updated information about these artifacts
     min: 0,
     max: 40,
     step: 0.1,
-    advanced: true
-  },
-  {
-    name: 'detectHorizontalBarSizeOffsetPercentage',
-    label: 'Bar detection offset',
-    type: 'list',
-    default: 0,
-    min: -5,
-    max: 5,
-    step: 0.1,
-    advanced: true
-  },
-  {
-    name: 'barSizeDetectionAverageHistorySize',
-    label: 'Bar detection average',
-    questionMark: {
-      title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
-    },
-    type: 'list',
-    default: 4,
-    min: 1,
-    max: 30,
-    step: 1,
-    advanced: true
-  },
-  {
-    name: 'barSizeDetectionAllowedAnomaliesPercentage',
-    label: 'Bar detection anomalies',
-    questionMark: {
-      title: 'The percentage of anomalies that are being allowed to appear inside bars. \n(The elements that are sticking outside the video: \nlogos, subtitles and other special effects)'
-    },
-    type: 'list',
-    default: 30,
-    min: 10,
-    max: 90,
-    step: 10,
     advanced: true
   },
   {
