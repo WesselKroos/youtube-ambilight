@@ -2359,12 +2359,12 @@ html[data-ambientlight-enabled="true"] {
     margin: 3px 0;
   }
   .ytp-menuitem[aria-checked="true"] .ytp-menuitem-toggle-checkbox {
-    background-color: #007cc3;
+    background-color: #007cc3 !important;
   }
   .ytp-menuitem[aria-disabled="true"] .ytp-menuitem-toggle-checkbox {
-    background-color: #333;
+    background-color: #333 !important;
     &::after {
-      background-color: #333;
+      background-color: #333 !important;
     }
   }
 
