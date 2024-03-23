@@ -291,11 +291,11 @@ export default class Settings {
                   ${getBrowser() === 'Firefox'
                     ? ''
                     : `<li>${''
-                        }The ambient light now also supports VR/180/360 videos. ${''
-                        }(You can let me know if the support fails on your device through the feedback link down below.)
+                        }The ambient light now also supports VR/180/360 videos.\n ${''
+                        }(Let me know when support fails on your device through the feedback link.)
                       </li>`}
                   <li>${''
-                    }Some hotkeys have changed${getBrowser() === 'Firefox' ? '.' : ' to support rotation via the AWSD keys in VR/180/360 videos.'}\n- Enable/disable: [A] -> [G]\n- Fill video: [S] -> [H] 
+                    }The following hotkeys have changed${getBrowser() === 'Firefox' ? ':' : ' to support rotation via the AWSD keys in VR/180/360 videos:'} \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
                   </li>
               </ul></span>
             </div>
