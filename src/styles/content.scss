@@ -1365,8 +1365,8 @@ html[data-ambientlight-enabled="true"] {
     @mixin theater {
       height: calc(100vh - 169px) !important;
       max-height: calc(100vh - 169px) !important;
-      margin-top: 29px;
-      margin-bottom: 84px;
+      padding-top: 29px;
+      padding-bottom: 84px;
     }
 
     @include ytd-watch {
