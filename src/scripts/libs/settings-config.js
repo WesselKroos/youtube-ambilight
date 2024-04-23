@@ -405,10 +405,10 @@ Click on the questionmark for more and updated information about these artifacts
     advanced: true
   },
   {
-    name: 'barSizeDetectionAllowedAnomaliesPercentage',
-    label: 'Detection: Ignored anomalies',
+    name: 'barSizeDetectionAllowedElementsPercentage',
+    label: 'Detection: Ignored elements',
     questionMark: {
-      title: 'The percentage of anomalies in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
+      title: 'The percentage of elements in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
     },
     type: 'list',
     default: 30,
@@ -705,6 +705,51 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     type: 'section',
+    label: 'View modes',
+    name: 'sectionViewsCollapsed',
+    default: false
+  },
+  {
+    name: 'enableInViews',
+    label: 'Enable in layouts',
+    type: 'list',
+    manualinput: false,
+    default: 0,
+    min: 0,
+    max: 5,
+    step: 1,
+    snapPoints: [
+      { value:  0, label: 'All' },
+      { value:  1, label: 'Small' },
+      { value:  2, hiddenLabel: 'Small & Theater' },
+      { value:  3, label: 'Theater' },
+      { value:  4, hiddenLabel: 'Theater & Fullscreen' },
+      { value:  5, label: 'Fullscreen' },
+    ]
+  },
+  {
+    name: 'enableInPictureInPicture',
+    label: 'Picture in picture',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'enableInEmbed',
+    label: 'Embedded videos',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
+    name: 'enableInVRVideos',
+    label: 'VR/360 videos',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
+    type: 'section',
     label: 'General',
     name: 'sectionGeneralCollapsed',
     default: false
@@ -723,38 +768,6 @@ Click on the questionmark for more and updated information about these artifacts
       { value:  0, label: 'Default' },
       { value:  1, label: 'Dark'    },
     ]
-  },
-  {
-    name: 'enableInViews',
-    label: 'View mode(s)',
-    type: 'list',
-    manualinput: false,
-    default: 0,
-    min: 0,
-    max: 5,
-    step: 1,
-    snapPoints: [
-      { value:  0, label: 'All' },
-      { value:  1, label: 'Small' },
-      { value:  2, hiddenLabel: 'Small & Theater' },
-      { value:  3, label: 'Theater' },
-      { value:  4, hiddenLabel: 'Theater & Fullscreen' },
-      { value:  5, label: 'Fullscreen' },
-    ]
-  },
-  {
-    name: 'enableInPictureInPicture',
-    label: 'Enable in Picture-in-picture mode',
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
-    name: 'enableInVRVideos',
-    label: 'Enable in VR videos',
-    type: 'checkbox',
-    default: true,
-    advanced: true
   },
   {
     name: 'enabled',

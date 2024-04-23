@@ -1,4 +1,4 @@
-import { getCookie, html, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
+import { getCookie, html, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
 import SentryReporter from "./sentry-reporter"
 
@@ -72,6 +72,8 @@ export default class Theming {
       attributeFilter: ['dark']
     })
 
+    if(isEmbedPageUrl()) return
+    
     this.initLiveChat() // Depends on this.youtubeTheme set in initListeners
   }
   
@@ -148,8 +150,10 @@ export default class Theming {
   async toggleDarkTheme() {
     const wasDark = this.isDarkTheme()
     document.documentElement.toggleAttribute('dark', !wasDark)
-    this.ambientlight.ytdAppElem.setMastheadTheme() // Required when we go: theater dark -> non-theater dark -> non-theater light
-    this.updateLiveChatTheme()
+    if(!isEmbedPageUrl()) {
+      this.ambientlight.ytdAppElem.setMastheadTheme() // Required when we go: theater dark -> non-theater dark -> non-theater light
+      this.updateLiveChatTheme()
+    }
 
     const isDark = this.isDarkTheme()
     if (wasDark !== isDark) return

@@ -36,6 +36,11 @@
       "js": ["scripts/content.js"]
     },
     {
+      "matches": ["https://www.youtube.com/embed/*"],
+      "js": ["scripts/content.js"],
+      "all_frames": true
+    },
+    {
       "matches": ["https://www.youtube.com/live_chat*"],
       "exclude_matches": ["https://www.youtube.com/live_chat?is_popout=1*"],
       "css": [

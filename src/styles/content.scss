@@ -330,7 +330,7 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Transparent elements */
 
-  body ytd-app #masthead-container {
+  #masthead-container {
     &.ytal-header-transparent,
     &.at-top {
       ytd-masthead,
@@ -344,6 +344,9 @@ html[data-ambientlight-enabled="true"] {
     &:not(.at-top) {
       ytd-masthead {
         background: rgba(255,255,255) !important;
+        &[dark] {
+          background: rgba(15,15,15) !important;
+        }
       }
     }
     &.ytal-header-transparent {
@@ -370,14 +373,7 @@ html[data-ambientlight-enabled="true"] {
       }
     }
   }
-  body ytd-app #masthead-container {
-    &:not(.at-top) {
-      ytd-masthead[dark]   {
-        background: rgba(15,15,15) !important;
-      }
-    }
-  }
-  &[dark] body ytd-app #masthead-container {
+  &[dark] #masthead-container {
     &:not(.at-top) {
       ytd-masthead  {
         background: rgba(15,15,15) !important;
@@ -399,6 +395,25 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  #player-theater-container, // Old theater view
+  #player-wide-container, // Second old theater view
+  #full-bleed-container,
+  #player-full-bleed-container,
+  #player-container,
+  #ytd-player,
+  .html5-video-player,
+  .html5-main-video {
+    background: none !important;
+  }
+  
+  @supports selector(:has(*)) {
+    @include ytd-watch {
+      div:has(.html5-main-video) {
+        background: none !important;
+      }
+    }
+  }
+
   ytd-app {
     --ytal-page-background: #fff;
     @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
@@ -407,46 +422,8 @@ html[data-ambientlight-enabled="true"] {
     background: #fff !important;
     background: var(--ytal-page-background) !important;
     background-color: var(--ytal-page-background) !important;
-
-    #player-theater-container, // Old theater view
-    #player-wide-container, // Second old theater view
-    #full-bleed-container,
-    #player-full-bleed-container,
-    #player-container,
-    #ytd-player,
-    .html5-video-player,
-    .html5-main-video {
-      background: none !important;
-    }
-    
-    @supports selector(:has(*)) {
-      @include ytd-watch {
-        div:has(.html5-main-video) {
-          background: none !important;
-        }
-      }
-    }
-
-    ytd-masthead,
-    #background.ytd-masthead {
-      transition: background-color .15s;
-    }
-    #masthead-container.ytal-header-transparent ytd-masthead {
-      transition: background-color .15s, box-shadow .15s;
-    }
-    #masthead-container.no-animation {
-      ytd-masthead,
-      #background.ytd-masthead {
-        transition: none !important;
-      }
-    }
-    #masthead-container.ytd-app::after {
-      display: none;
-    }
-    #masthead-container:not(.ytal-header-transparent):not(.at-top) #voice-search-button {
-      transition: background-color .15s .05s;
-    }
   }
+
   &[dark] ytd-app {
     --ytal-page-background: #000;
     @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
@@ -457,15 +434,33 @@ html[data-ambientlight-enabled="true"] {
     background-color: var(--ytal-page-background) !important;
   }
 
+  ytd-masthead,
+  #background.ytd-masthead {
+    transition: background-color .15s;
+  }
+  #masthead-container.ytal-header-transparent ytd-masthead {
+    transition: background-color .15s, box-shadow .15s;
+  }
+  #masthead-container.no-animation {
+    ytd-masthead,
+    #background.ytd-masthead {
+      transition: none !important;
+    }
+  }
+  #masthead-container.ytd-app::after {
+    display: none;
+  }
+  #masthead-container:not(.ytal-header-transparent):not(.at-top) #voice-search-button {
+    transition: background-color .15s .05s;
+  }
+
   /* Disable ambient mode */
   
-  ytd-app {
-    #cinematics,
-    #cinematics-container, // Old theater view
-    #cinematics-wide-container, // Second old theater view
-    #cinematics-full-bleed-container {
-      display: none !important;
-    }
+  #cinematics,
+  #cinematics-container, // Old theater view
+  #cinematics-wide-container, // Second old theater view
+  #cinematics-full-bleed-container {
+    display: none !important;
   }
 
   /* Video preview while moving the timeline */
@@ -475,18 +470,16 @@ html[data-ambientlight-enabled="true"] {
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
-  ytd-app {
-    #player-theater-container, // Old theater view
-    #player-wide-container, // Second old theater view
-    // #player-full-bleed-container,
-    #full-bleed-container {
-      transition: background-color 0s .01s;
-    }
+  #player-theater-container, // Old theater view
+  #player-wide-container, // Second old theater view
+  // #player-full-bleed-container,
+  #full-bleed-container {
+    transition: background-color 0s .01s;
+  }
 
-    @supports selector(:has(*)) {
-      > div:has(ytd-player) { // Covers any future updates to the html structure
-        transition: background-color 0s .01s;
-      }
+  @supports selector(:has(*)) {
+    ytd-app > div:has(ytd-player) { // Covers any future updates to the html structure
+      transition: background-color 0s .01s;
     }
   }
 
@@ -572,7 +565,7 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Search */
 
-  ytd-app #masthead-container {
+  #masthead-container {
     #guide-icon.ytd-masthead,
     yt-icon.ytd-logo,
     yt-icon.ytd-topbar-logo-renderer,
@@ -1084,120 +1077,117 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Text visibility */
 
-  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
-  ytd-app {
-    ytd-watch #top > #player {
-      z-index: 2;
-    }
+  
+  ytd-watch #top > #player {
+    z-index: 2;
+  }
 
-    .header.ytd-playlist-panel-renderer {
+  .header.ytd-playlist-panel-renderer {
+    background: var(--ytal-background) !important;
+  }
+
+  .playlist-items.ytd-playlist-panel-renderer {
+    @include scrollbar-light-thin();
+  }
+
+  ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
+  ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
+  .playlist-items.ytd-playlist-panel-renderer,
+  ytd-live-chat-frame #show-hide-button.ytd-live-chat-frame > ytd-button-renderer.ytd-live-chat-frame,
+  yt-chip-cloud-renderer {
+    background: none !important;
+  }
+
+  ytd-playlist-panel-video-renderer,
+  ytd-macro-markers-list-item-renderer {
+    &[selected],
+    &[active],
+    &:hover:not(.dragging) {
+      background-color: var(--ytal-background-10-percent) !important;
+      backdrop-filter: saturate(1.1);
+    }
+    &[selected],
+    &[active] {
+      #index.ytd-playlist-panel-video-renderer,
+      #byline.ytd-playlist-panel-video-renderer,
+      #video-info.ytd-playlist-panel-video-renderer {
+        color: rgba(var(--yt-spec-text-secondary), .8) !important;
+      }
+      #video-title.ytd-playlist-panel-video-renderer {
+        color: rgb(0, 0, 0) !important;
+      }
+    }
+  }
+
+  ytd-macro-markers-list-item-renderer {
+    &,
+    &:hover,
+    &[active] {
+      h4.ytd-macro-markers-list-item-renderer {
+        color: inherit !important;
+      }
+      #time.ytd-macro-markers-list-item-renderer {
+        color: var(--yt-spec-themed-blue) !important;
+      }
+    }
+  }
+
+  yt-chip-cloud-chip-renderer:not([selected]) {
+    background: var(--ytal-background) !important;
+    // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
+    
+    &:hover {
+      background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
+    }
+  }
+  
+  ytd-watch-metadata {
+    .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
       background: var(--ytal-background) !important;
+    }
+  }
+  #primary #description.ytd-watch-metadata,
+  #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
+    background: var(--ytal-background) !important;
+  }
+  
+  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
+  #{$comments-reply-input} {
+    border-bottom-color: rgba(20,20,20,.5);
+  }
+    
+  &[dark] {
+    yt-chip-cloud-chip-renderer:not([selected]) {
+      &:hover {
+        background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
+      }
     }
 
     .playlist-items.ytd-playlist-panel-renderer {
-      @include scrollbar-light-thin();
+      @include scrollbar-dark-thin();
     }
 
-    ytd-playlist-panel-renderer:not([within-miniplayer]) #container.ytd-playlist-panel-renderer,
-    ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
-    .playlist-items.ytd-playlist-panel-renderer,
-    ytd-live-chat-frame #show-hide-button.ytd-live-chat-frame > ytd-button-renderer.ytd-live-chat-frame,
-    yt-chip-cloud-renderer {
-      background: none !important;
+    #playlist #header-description a,
+    #index.ytd-playlist-panel-video-renderer,
+    span.yt-view-count-renderer {
+      color: rgba(255, 255, 255, 0.882) !important;
     }
-
-    ytd-playlist-panel-video-renderer,
-    ytd-macro-markers-list-item-renderer {
+  
+    ytd-playlist-panel-video-renderer {
       &[selected],
-      &[active],
       &:hover:not(.dragging) {
-        background-color: var(--ytal-background-10-percent) !important;
-        backdrop-filter: saturate(1.1);
+        backdrop-filter: saturate(1.15);
       }
-      &[selected],
-      &[active] {
-        #index.ytd-playlist-panel-video-renderer,
-        #byline.ytd-playlist-panel-video-renderer,
-        #video-info.ytd-playlist-panel-video-renderer {
-          color: rgba(var(--yt-spec-text-secondary), .8) !important;
-        }
+      &[selected] {
         #video-title.ytd-playlist-panel-video-renderer {
-          color: rgb(0, 0, 0) !important;
+          color: rgb(255,255,255) !important;
         }
       }
     }
-
-    ytd-macro-markers-list-item-renderer {
-      &,
-      &:hover,
-      &[active] {
-        h4.ytd-macro-markers-list-item-renderer {
-          color: inherit !important;
-        }
-        #time.ytd-macro-markers-list-item-renderer {
-          color: var(--yt-spec-themed-blue) !important;
-        }
-      }
-    }
-
-    yt-chip-cloud-chip-renderer:not([selected]) {
-      background: var(--ytal-background) !important;
-      // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
-      
-      &:hover {
-        background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
-      }
-    }
-    
-    ytd-watch-metadata {
-      .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
-        background: var(--ytal-background) !important;
-      }
-    }
-    #primary #description.ytd-watch-metadata,
-    #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
-      background: var(--ytal-background) !important;
-    }
-    
-    
+  
     #{$comments-reply-input} {
-      border-bottom-color: rgba(20,20,20,.5);
+      border-bottom-color: rgba(255, 255, 255,.5);
     }
-  }
-  &[dark] {
-    ytd-app {
-      yt-chip-cloud-chip-renderer:not([selected]) {
-        &:hover {
-          background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
-        }
-      }
-
-      .playlist-items.ytd-playlist-panel-renderer {
-        @include scrollbar-dark-thin();
-      }
-
-      #playlist #header-description a,
-      #index.ytd-playlist-panel-video-renderer,
-      span.yt-view-count-renderer {
-        color: rgba(255, 255, 255, 0.882) !important;
-      }
-    
-      ytd-playlist-panel-video-renderer {
-        &[selected],
-        &:hover:not(.dragging) {
-          backdrop-filter: saturate(1.15);
-        }
-        &[selected] {
-          #video-title.ytd-playlist-panel-video-renderer {
-            color: rgb(255,255,255) !important;
-          }
-        }
-      }
-    
-      #{$comments-reply-input} {
-        border-bottom-color: rgba(255, 255, 255,.5);
-      }
-    } 
   }
 
   /* Ambientlight */
@@ -1396,7 +1386,7 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    ytd-app #masthead-container {
+    #masthead-container {
       // &:not(.ytal-header-transparent) {
       //   will-change: opacity; // conflicts with backdrop-filter, and reduces cpu rendering performance
       // }

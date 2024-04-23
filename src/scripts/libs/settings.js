@@ -679,7 +679,7 @@ export default class Settings {
           if (
             (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && (
               setting.name === 'detectHorizontalBarSizeOffsetPercentage' ||
-              setting.name === 'barSizeDetectionAllowedAnomaliesPercentage'
+              setting.name === 'barSizeDetectionAllowedElementsPercentage'
             )
           ) {
             this.ambientlight.barDetection.cancel()
@@ -828,6 +828,7 @@ export default class Settings {
             'layoutPerformanceImprovements',
             'prioritizePageLoadSpeed',
             'enableInPictureInPicture',
+            'enableInEmbed',
             'enableInVRVideos'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
@@ -1264,7 +1265,7 @@ export default class Settings {
         'detectColoredHorizontalBarSizeEnabled',
         'barSizeDetectionAverageHistorySize',
         'detectHorizontalBarSizeOffsetPercentage',
-        'barSizeDetectionAllowedAnomaliesPercentage'
+        'barSizeDetectionAllowedElementsPercentage'
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },

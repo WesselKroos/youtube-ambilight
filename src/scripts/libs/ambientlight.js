@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors } from './generic'
+import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -57,11 +57,11 @@ export default class Ambientlight {
   previousDrawTime = 0
   clearTime = 0
 
-  constructor(ytdAppElem, ytdWatchElem, videoElem, mastheadElem) {
+  constructor(videoElem, ytdAppElem, ytdWatchElem, mastheadElem) {
     return (async function AmbientlightConstructor() {
-      this.ytdAppElem = ytdAppElem
-      this.ytdWatchElem = ytdWatchElem
-      this.mastheadElem = mastheadElem
+      this.ytdAppElem = ytdAppElem // Not available in embeds
+      this.ytdWatchElem = ytdWatchElem // Not available in embeds
+      this.mastheadElem = mastheadElem // Not available in embeds
 
       this.detectChromiumBug1142112Workaround()
       this.detectChromiumBugDirectVideoOverlayWorkaround()
@@ -141,15 +141,13 @@ export default class Ambientlight {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player')
     }
 
+    // ytdPlayerElem is optional and only used on non-embed pages in small view to set the border radius
     this.ytdPlayerElem = videoElem.closest('ytd-player')
-    // // Deprecated: videoContainerElem is optional and only used in the videoOverlayEnabled setting
-    // if (!this.videoContainerElem) {
-    //   throw new Error('Cannot find videoContainerElem: .html5-video-container')
-    // }
-    
+
+    // videoContainerElem is optional and only used in the videoOverlayEnabled setting
     this.videoContainerElem = videoElem.closest('.html5-video-container')
     
-    this.settingsMenuBtnParent = document.querySelector('ytd-player .ytp-right-controls, ytd-player .ytp-chrome-controls > *:last-child')
+    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector('.ytp-right-controls, .ytp-chrome-controls > *:last-child')
     if(!this.settingsMenuBtnParent) {
       throw new Error('Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child')
     }
@@ -439,6 +437,8 @@ export default class Ambientlight {
   }
 
   initAverageVideoFramesDifferenceListeners() {
+    if(!this.ytdWatchElem) return
+
     try {
       on(this.ytdWatchElem, 'yt-page-data-will-update', () => {
         if(this.averageVideoFramesDifference === 1) return
@@ -465,7 +465,7 @@ export default class Ambientlight {
   }
 
   calculateAverageVideoFramesDifference = async () => {
-    if(!this.settings.energySaver) return
+    if(!this.settings.energySaver || !this.ytdWatchElem) return
 
     try {
       // const videoId = this.ytdWatchElem?.playerData?.videoDetails?.videoId
@@ -608,12 +608,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       on(this.videoElem, name, this.videoListeners[name])
     }
     
-    this.playerListeners = this.playerListeners || {
-      'yt-autonav-pause-player-ended': this.videoListeners.ended
-    }
-    for (const name in this.playerListeners) {
-      off(this.ytdWatchElem, name, this.playerListeners[name])
-      on(this.ytdWatchElem, name, this.playerListeners[name])
+    if(this.ytdWatchElem) {
+      this.playerListeners = this.playerListeners || {
+        'yt-autonav-pause-player-ended': this.videoListeners.ended
+      }
+      for (const name in this.playerListeners) {
+        off(this.ytdWatchElem, name, this.playerListeners[name])
+        on(this.ytdWatchElem, name, this.playerListeners[name])
+      }
     }
 
     if(this.videoObserver) {
@@ -975,7 +977,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   handleVideoFocus = () => {
-    if (!this.settings.enabled || !this.isOnVideoPage) return
+    if (!this.settings.enabled || !this.isOnVideoPage || !this.ytdAppElem) return
 
     const startTop = this.view === VIEW_FULLSCREEN ? this.ytdAppElem.scrollTop : window.scrollY
     raf(function handleVideoFocusRaf() {
@@ -1044,20 +1046,24 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
 
-    this.topElem = document.createElement('div')
-    this.topElem.classList.add('ambientlight__top')
+    if(this.mastheadElem) {
+      this.topElem = document.createElement('div')
+      this.topElem.classList.add('ambientlight__top')
+    }
 
     this.clearfixElem = document.createElement('div')
     this.clearfixElem.classList.add('ambientlight__clearfix')
     
-    const contentElem = this.ytdAppElem.querySelector('#content.ytd-app')
+    const contentElem = this.ytdAppElem
+      ? this.ytdAppElem.querySelector('#content.ytd-app')
+      : this.videoPlayerElem // In embed view
     if(contentElem.__shady_native_prepend) {
       contentElem.__shady_native_prepend(this.elem)
-      contentElem.__shady_native_prepend(this.topElem)
+      if(this.topElem) contentElem.__shady_native_prepend(this.topElem)
       contentElem.__shady_native_prepend(this.clearfixElem)
     } else {
       contentElem.prepend(this.elem)
-      contentElem.prepend(this.topElem)
+      if(this.topElem) contentElem.prepend(this.topElem)
       contentElem.prepend(this.clearfixElem)
     }
 
@@ -1469,13 +1475,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   isInEnabledView = () => {
     const enableInViews = this.settings.enableInViews
     const enabledInView = {
-      SMALL: enableInViews <= 2,
-      THEATER: enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
-      FULLSCREEN: enableInViews === 0 || enableInViews >= 4
+      [VIEW_SMALL]: enableInViews <= 2,
+      [VIEW_THEATER]: enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
+      [VIEW_FULLSCREEN]: enableInViews === 0 || enableInViews >= 4
     }[this.view] || false
 
-    const enabledInPictureInPicture = this.settings.enableInPictureInPicture || !this.videoIsPictureInPicture
+    if(isEmbedPageUrl()) {
+      return this.settings.enableInEmbed && (this.view !== VIEW_FULLSCREEN || enabledInView)
+    }
 
+    const enabledInPictureInPicture = this.settings.enableInPictureInPicture || !this.videoIsPictureInPicture
+    
     return enabledInView && enabledInPictureInPicture
   }
 
@@ -1779,11 +1789,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     fillOpacity = (fillOpacity !== 10) ? ((fillOpacity + 100) / 200) : ''
     document.body.style.setProperty('--ytal-fill-opacity', fillOpacity)
 
-    // Header transparency
-    let headerFillOpacity = this.settings.headerFillOpacity
-    headerFillOpacity = (headerFillOpacity !== 100) ? ((headerFillOpacity + 100) / 200) : ''
-    this.mastheadElem.style.setProperty('--ytal-fill-opacity', headerFillOpacity)
-    this.mastheadElem.classList.toggle('ytal-header-transparent', headerFillOpacity !== '')
+    if(this.mastheadElem) {
+      // Header transparency
+      let headerFillOpacity = this.settings.headerFillOpacity
+      headerFillOpacity = (headerFillOpacity !== 100) ? ((headerFillOpacity + 100) / 200) : ''
+      this.mastheadElem.style.setProperty('--ytal-fill-opacity', headerFillOpacity)
+      this.mastheadElem.classList.toggle('ytal-header-transparent', headerFillOpacity !== '')
+    }
     
 
     // Images transparency
@@ -1791,10 +1803,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     imageOpacity = (imageOpacity !== 100) ? (imageOpacity / 100) : ''
     document.body.style.setProperty('--ytal-image-opacity', imageOpacity)
 
-    // Header transparency
-    let headerImageOpacity = this.settings.headerImagesOpacity
-    headerImageOpacity = (imageOpacity !== 100) ? (headerImageOpacity / 100) : ''
-    this.mastheadElem.style.setProperty('--ytal-image-opacity', headerImageOpacity)
+    if(this.mastheadElem) {
+      // Header transparency
+      let headerImageOpacity = this.settings.headerImagesOpacity
+      headerImageOpacity = (imageOpacity !== 100) ? (headerImageOpacity / 100) : ''
+      this.mastheadElem.style.setProperty('--ytal-image-opacity', headerImageOpacity)
+    }
 
     
     // Shadows
@@ -1816,28 +1830,30 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       `
       : ''
 
-    // Header shadow
-    const headerShadowSize = this.settings.headerShadowSize / 5
-    const headerShadowOpacity = this.settings.headerShadowOpacity / 100
-    this.mastheadElem.classList.toggle('ytal-header-shadow', headerShadowSize && headerShadowOpacity)
+    if(this.mastheadElem) {
+      // Header shadow
+      const headerShadowSize = this.settings.headerShadowSize / 5
+      const headerShadowOpacity = this.settings.headerShadowOpacity / 100
+      this.mastheadElem.classList.toggle('ytal-header-shadow', headerShadowSize && headerShadowOpacity)
 
-    const getHeaderFilterShadow = (color) => getFilterShadow(color, headerShadowSize, headerShadowOpacity)
-    const getHeaderTextShadow = (color) => getTextShadow(color, headerShadowSize, headerShadowOpacity)
+      const getHeaderFilterShadow = (color) => getFilterShadow(color, headerShadowSize, headerShadowOpacity)
+      const getHeaderTextShadow = (color) => getTextShadow(color, headerShadowSize, headerShadowOpacity)
 
-    // Header !textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
-    
-    // Header textAndBtnOnly
-    this.mastheadElem.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+      // Header !textAndBtnOnly
+      this.mastheadElem.style.setProperty(`--ytal-filter-shadow`, (!textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+      this.mastheadElem.style.setProperty(`--ytal-filter-shadow-inverted`, (!textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
+      
+      // Header textAndBtnOnly
+      this.mastheadElem.style.setProperty(`--ytal-button-shadow`, (textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''))
+      this.mastheadElem.style.setProperty(`--ytal-button-shadow-inverted`, (textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''))
 
-    this.mastheadElem.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
-    this.mastheadElem.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
-    if(textAndBtnOnly) {
-      this.mastheadElem.setAttribute('data-ambientlight-text-shadow', true)
-    } else {
-      this.mastheadElem.removeAttribute('data-ambientlight-text-shadow')
+      this.mastheadElem.style.setProperty('--ytal-text-shadow', (textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''))
+      this.mastheadElem.style.setProperty('--ytal-text-shadow-inverted', (textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''))
+      if(textAndBtnOnly) {
+        this.mastheadElem.setAttribute('data-ambientlight-text-shadow', true)
+      } else {
+        this.mastheadElem.removeAttribute('data-ambientlight-text-shadow')
+      }
     }
 
     // Content shadow
@@ -2705,7 +2721,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.p ? this.p.h / this.p.w : 1,
         !this.settings.frameBlending,
         this.settings.barSizeDetectionAverageHistorySize || 1,
-        this.settings.barSizeDetectionAllowedAnomaliesPercentage || 20,
+        this.settings.barSizeDetectionAllowedElementsPercentage || 20,
         wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
       )
     } catch (ex) {
@@ -2800,9 +2816,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.settings.set('enabled', true, true)
     }
     
-    this.mastheadElem.classList.add('no-animation')
+    if(this.mastheadElem) this.mastheadElem.classList.add('no-animation')
     await this.start(initial)
-    this.mastheadElem.classList.remove('no-animation')
+    if(this.mastheadElem) this.mastheadElem.classList.remove('no-animation')
   }
 
   // async disableYouTubeAmbientMode() {
@@ -3014,7 +3030,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     await this.theming.updateTheme()
     
     // Pre-style to prevent black/white flashes
-    this.ytdAppElem.style.setProperty('background', this.theming.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
+    if(this.ytdAppElem) this.ytdAppElem.style.setProperty('background', this.theming.shouldBeDarkTheme() ? '#000' : '#fff', 'important')
     if(this.playerTheaterContainerElem) {
       this.playerTheaterContainerElem.style.setProperty('background', 'none', 'important')
     }
@@ -3029,7 +3045,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
       // Reset
       if(this.playerTheaterContainerElem) this.playerTheaterContainerElem.style.background = ''
-      this.ytdAppElem.style.background = ''
+      if(this.ytdAppElem) this.ytdAppElem.style.background = ''
 
       this.updateVideoPlayerSize() // In case the theater player height changed
 
@@ -3052,7 +3068,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateAtTop = async () => {
-    this.mastheadElem.classList.toggle('at-top', this.atTop)
+    if(this.mastheadElem)
+      this.mastheadElem.classList.toggle('at-top', this.atTop)
 
     if(this.settings.webGL)
       await this.projector.handleAtTopChange(this.atTop)
