@@ -169,7 +169,7 @@ export default class Ambientlight {
   detectMozillaBugSlowCanvas2DReadPixelsWorkaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
     const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version < 123) {
+    if(version && (version < 123 || version > 124)) {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
   }
