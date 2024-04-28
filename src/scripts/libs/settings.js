@@ -295,7 +295,7 @@ export default class Settings {
                         }(Let me know when support fails on your device through the feedback link.)
                       </li>`}
                   <li>${''
-                    }The following hotkeys have changed${getBrowser() === 'Firefox' ? ':' : ' to support rotation via the AWSD keys in VR/180/360 videos:'} \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
+                    }The following hotkeys have changed to prevent conflicts with the AWSD keys in VR/180/360 videos: \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
                   </li>
               </ul></span>
             </div>
