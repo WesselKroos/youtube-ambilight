@@ -114,12 +114,12 @@ const SettingsConfig = [
   },
   {
     name: 'layoutPerformanceImprovements',
-    label: 'Layout performance fixes',
-    description: 'Speeds up changes in the YouTube layout',
+    label: 'YouTube responsiveness fixes',
+    description: 'Improves the responsiveness of the webpage',
     questionMark: {
       title: `Some of the improvements on the /watch page include:
 - Faster webpage resizing and scrolling (Most noticeable after you've loaded in more than 100 comments)
-- Faster loading more comments and/or related videos
+- Faster loadingtimes for comments and/or related videos
 - Smoother timeline scrubbing (Most noticeable after you've loaded in more than 100 comments or with a livestream chat window open)
 - Smoother livestream chat scrolling (and new messages will be appended quicker to the chat)
 - Smoother playlist scrolling (Most noticeable in a playlist with more than 25 videos)
@@ -377,13 +377,23 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'detectColoredHorizontalBarSizeEnabled',
-    label: 'Also remove colored bars',
+    label: 'Detection: Remove colored bars',
     type: 'checkbox',
     default: false
   },
   {
+    name: 'detectHorizontalBarSizeOffsetPercentage',
+    label: 'Detection: Offset',
+    type: 'list',
+    default: 0,
+    min: -5,
+    max: 5,
+    step: 0.1,
+    advanced: true
+  },
+  {
     name: 'barSizeDetectionAverageHistorySize',
-    label: 'Bar detection average',
+    label: 'Detection: Frames average',
     questionMark: {
       title: 'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
     },
@@ -395,13 +405,16 @@ Click on the questionmark for more and updated information about these artifacts
     advanced: true
   },
   {
-    name: 'detectHorizontalBarSizeOffsetPercentage',
-    label: 'Bar detection offset',
+    name: 'barSizeDetectionAllowedElementsPercentage',
+    label: 'Detection: Ignored elements',
+    questionMark: {
+      title: 'The percentage of elements in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
+    },
     type: 'list',
-    default: 0,
-    min: -5,
-    max: 5,
-    step: 0.1,
+    default: 30,
+    min: 10,
+    max: 90,
+    step: 10,
     advanced: true
   },
   {
@@ -438,10 +451,10 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'detectVideoFillScaleEnabled',
-    label: 'Fill video to screen',
+    label: 'Fill video to removed bars',
     type: 'checkbox',
     default: false,
-    defaultKey: 'S'
+    defaultKey: 'H'
   },
   {
     type: 'section',
@@ -692,6 +705,51 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     type: 'section',
+    label: 'View modes',
+    name: 'sectionViewsCollapsed',
+    default: false
+  },
+  {
+    name: 'enableInViews',
+    label: 'Enable in layouts',
+    type: 'list',
+    manualinput: false,
+    default: 0,
+    min: 0,
+    max: 5,
+    step: 1,
+    snapPoints: [
+      { value:  0, label: 'All' },
+      { value:  1, label: 'Small' },
+      { value:  2, hiddenLabel: 'Small & Theater' },
+      { value:  3, label: 'Theater' },
+      { value:  4, hiddenLabel: 'Theater & Fullscreen' },
+      { value:  5, label: 'Fullscreen' },
+    ]
+  },
+  {
+    name: 'enableInPictureInPicture',
+    label: 'Picture in picture',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'enableInEmbed',
+    label: 'Embedded videos',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
+    name: 'enableInVRVideos',
+    label: 'VR/360 videos',
+    type: 'checkbox',
+    default: true,
+    advanced: true
+  },
+  {
+    type: 'section',
     label: 'General',
     name: 'sectionGeneralCollapsed',
     default: false
@@ -712,36 +770,11 @@ Click on the questionmark for more and updated information about these artifacts
     ]
   },
   {
-    name: 'enableInViews',
-    label: 'View mode(s)',
-    type: 'list',
-    manualinput: false,
-    default: 0,
-    min: 0,
-    max: 5,
-    step: 1,
-    snapPoints: [
-      { value:  0, label: 'All' },
-      { value:  1, label: 'Small' },
-      { value:  2, hiddenLabel: 'Small & Theater' },
-      { value:  3, label: 'Theater' },
-      { value:  4, hiddenLabel: 'Theater & Fullscreen' },
-      { value:  5, label: 'Fullscreen' },
-    ]
-  },
-  {
-    name: 'enableInPictureInPicture',
-    label: 'Enable in Picture-in-picture mode',
-    type: 'checkbox',
-    default: false,
-    advanced: true
-  },
-  {
     name: 'enabled',
     label: 'Enabled',
     type: 'checkbox',
     default: true,
-    defaultKey: 'A'
+    defaultKey: 'G'
   },
 ]
 

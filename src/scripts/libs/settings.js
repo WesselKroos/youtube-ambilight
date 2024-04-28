@@ -60,12 +60,17 @@ export default class Settings {
         }
       }
       
-      if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
-        if(setting.name === 'frameSync') {
-          setting.max = 1
-          setting.default = 0
+      if(setting.name === 'frameSync') {
+        if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
+            setting.max = 1
+            setting.default = 0
         }
       }
+    }
+
+    if(getBrowser() === 'Firefox') {
+      const enableInVRVideosSetting = SettingsConfig.find(setting => setting.name === 'enableInVRVideos')
+      settingsToRemove.push(enableInVRVideosSetting)
     }
 
     if(!supportsColorMix()) {
@@ -278,27 +283,23 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          ${''/*<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
-               }<b>Important changes in version ${version}:</b>
+               }<b>Changes in version ${version}:</b>
                 <ul>
+                  ${getBrowser() === 'Firefox'
+                    ? ''
+                    : `<li>${''
+                        }The ambient light now also supports VR/180/360 videos.\n ${''
+                        }(Let me know when support fails on your device through the feedback link.)
+                      </li>`}
                   <li>${''
-                    }The background color of boxes and buttons has been inverted to match YouTube's style. ${''
-                    }To return back to the old style you can change the "Page content > Buttons & boxes background ${''
-                    }opacity" setting to a negative value.
-                  </li>
-                  <li>${''
-                    }The speed of interactions has been improved when the ambient light is turned on ${''
-                    }(scrolling lists, clicking buttons, switching between small, theater and fullscreen, etc).
-                    To observe the speed difference, scroll through a lot of comments (200 or more) ${''
-                    }and then compare the interaction speed between having the ambient light turned on versus off.
-                     You can let me know if the improvement is noticeable for you ${''
-                    }or warn me if it has worsend for you instead through the feedback link down below.
+                    }The following hotkeys have changed to prevent conflicts with the AWSD keys in VR/180/360 videos: \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
                   </li>
               </ul></span>
             </div>
-          </div>*/}
+          </div>
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>
@@ -316,10 +317,19 @@ export default class Settings {
               </a>
             </div>
             <div class="ytp-menuitem-content">
-              <button
-                class="ytpa-reset-settings-btn"
-                title="Reset all settings"
-              ></button>
+              <div class="ytpa-settings-toolbar">
+                <button
+                  class="ytpa-export-import-settings-btn"
+                  type="button"
+                >
+                  <span class="ytpa-export-import-settings-btn__tooltip">How to export or import settings:<br/>1. Click on the extension icon to open the option.<br/>2. Scroll down to "Import / Export settings"</span>
+                </button>
+                <button
+                  class="ytpa-reset-settings-btn"
+                  title="Reset all settings"
+                  type="button"
+                ></button>
+              </div>
             </div>
           </div>
           <div class="ytp-menuitem ytpa-menuitem--header">
@@ -466,6 +476,7 @@ export default class Settings {
       await new Promise(resolve => setTimeout(resolve, 1000))
       this.reloadPage()
     })
+
     for (const label of this.menuElem.querySelectorAll('.setting-range-datalist__label')) {
       on(label, 'click', (e) => {
         const value = e.target.value
@@ -475,6 +486,7 @@ export default class Settings {
         inputElem.dispatchEvent(new Event('change', { bubbles: true }))
       })
     }
+
     for (const section of this.menuElem.querySelectorAll('.ytpa-section')) {
       on(section, 'click', async () => {
         const name = section.getAttribute('data-name')
@@ -616,7 +628,7 @@ export default class Settings {
           valueElem.textContent = this.getSettingListDisplayText(setting)
 
           if(setting.name === 'theme') {
-            this.ambientlight.theming.updateTheme()
+            this.ambientlight.theming.updateTheme(true)
             return
           }
 
@@ -665,8 +677,10 @@ export default class Settings {
           }
 
           if (
-            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) &&
-            setting.name === 'detectHorizontalBarSizeOffsetPercentage'
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && (
+              setting.name === 'detectHorizontalBarSizeOffsetPercentage' ||
+              setting.name === 'barSizeDetectionAllowedElementsPercentage'
+            )
           ) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
@@ -768,7 +782,7 @@ export default class Settings {
           }
 
           this.ambientlight.sizesChanged = true
-          this.ambientlight.optionalFrame()
+          this.ambientlight.optionalFrame(true)
         })
       } else if (setting.type === 'checkbox') {
         on(settingElem, 'dblclick contextmenu click', async (e) => {
@@ -813,7 +827,9 @@ export default class Settings {
             'webGL',
             'layoutPerformanceImprovements',
             'prioritizePageLoadSpeed',
-            'enableInPictureInPicture'
+            'enableInPictureInPicture',
+            'enableInEmbed',
+            'enableInVRVideos'
           ].some(name => name === setting.name)) {
             this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
@@ -924,7 +940,7 @@ export default class Settings {
             'detectVerticalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
             'detectColoredVerticalBarSizeEnabled',
-            'detectVideoFillScaleEnabled'
+            'detectVideoFillScaleEnabled',
           ].some(name => name === setting.name)) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
@@ -961,7 +977,7 @@ export default class Settings {
             'fixedPosition'
           ].some(name => name === setting.name)) {
             this.ambientlight.updateStyles()
-            this.ambientlight.optionalFrame()
+            this.ambientlight.optionalFrame(true)
             return
           }
 
@@ -973,7 +989,7 @@ export default class Settings {
           }
 
           this.ambientlight.sizesInvalidated = true
-          this.ambientlight.optionalFrame()
+          this.ambientlight.optionalFrame(true)
         })
       }
     }
@@ -1248,7 +1264,8 @@ export default class Settings {
       names: [
         'detectColoredHorizontalBarSizeEnabled',
         'barSizeDetectionAverageHistorySize',
-        'detectHorizontalBarSizeOffsetPercentage'
+        'detectHorizontalBarSizeOffsetPercentage',
+        'barSizeDetectionAllowedElementsPercentage'
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },
@@ -1291,6 +1308,10 @@ export default class Settings {
     {
       names: [ 'chromiumDirectVideoOverlayWorkaround' ],
       visible: () => this.ambientlight.enableChromiumBugDirectVideoOverlayWorkaround
+    },
+    {
+      names: [ 'framerateLimit' ],
+      visible: () => !this.ambientlight.isVrVideo
     }
   ]
   updateVisibility() {
@@ -1627,7 +1648,7 @@ export default class Settings {
     }, 1) // Give ambient light the time to clear existing warnings
   }
 
-  setWarning = (message, optional = false) => {
+  setWarning = (message, optional = false, icon = true) => {
     if(!this.menuElem || this.ambientlight.isPageHidden) {
       this.pendingWarning = () => this.setWarning(message, optional)
       return
@@ -1640,7 +1661,7 @@ export default class Settings {
 
     this.warningItemElem.style.display = message ? '' : 'none'
     this.warningElem.textContent = message
-    this.menuBtn.classList.toggle('has-warning', !!message)
+    this.menuBtn.classList.toggle('has-warning', icon && !!message)
     this.scrollToWarningQueued = !!message
     if(!message) return
 

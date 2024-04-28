@@ -4,7 +4,7 @@
 
 [![Ambient light for YouTube™](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/heading.png?raw=true)](https://github.com/WesselKroos/youtube-ambilight#readme)
 
-Immersive yourself in YouTube videos with ambient light!
+Immerse yourself in YouTube videos with ambient light!
 
 ![Preview](https://github.com/WesselKroos/chrome-youtube-ambilight/blob/master/assets/readme/screenshot-1.jpg?raw=true)
 

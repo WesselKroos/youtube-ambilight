@@ -8,6 +8,7 @@ const workerCode = function () {
   let canvasIsCreatedInWorker = false
   let ctx;
   let workerMessageId = 0;
+  let globalXOffsetIndex = 0;
 
   const postError = (ex) => {
     if (!catchedWorkerCreationError) {
@@ -39,23 +40,87 @@ const workerCode = function () {
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
-  const partSizeBorderMultiplier = 1
+  function sortColors(averageColor, a, b) {
+    const aDiff = Math.abs(averageColor[0] - a[0]) + Math.abs(averageColor[1] - a[1]) + Math.abs(averageColor[2] - a[2])
+    const bDiff = Math.abs(averageColor[0] - b[0]) + Math.abs(averageColor[1] - b[1]) + Math.abs(averageColor[2] - b[2])
+    return (aDiff === bDiff) ? 0 : (aDiff > bDiff) ? 1 : -1
+  }
+
+  function getAverageColor(imageLines, channels) {
+    const edgeOffset = 4
+    const topOffsetIndex = channels * edgeOffset
+    const bottomOffsetIndex = imageLines[0].length - channels - topOffsetIndex
+
+    let colors = []
+    let i = 0
+    for(const line of imageLines) {
+      i = topOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
+      colors.push([line[i], line[i + 1], line[i + 2]])
+      i = bottomOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
+      colors.push([line[i], line[i + 1], line[i + 2]])
+    }
+    // const oldColor = colors[0]
+
+    let averageColor = [
+      colors.reduce((average, color) => average + color[0], 0) / colors.length,
+      colors.reduce((average, color) => average + color[1], 0) / colors.length,
+      colors.reduce((average, color) => average + color[2], 0) / colors.length
+    ]
+    colors.sort((a, b) => sortColors(averageColor, a, b))
+    // const droppedColors = 
+    colors.splice(Math.floor(colors.length / 2))
+
+    averageColor = [
+      colors.reduce((average, color) => average + color[0], 0) / colors.length,
+      colors.reduce((average, color) => average + color[1], 0) / colors.length,
+      colors.reduce((average, color) => average + color[2], 0) / colors.length
+    ]
+    // colors.sort((a, b) => sortColors(averageColor, a, b))
+
+    // console.log(oldColor, averageColor)
+
+    // const color = colors[0]
+    colors.length = 0
+    return averageColor
+  }
+
   try {
-    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage) => {
+    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
+      
+      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
       const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
       const imageLines = []
       for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
-        if(id < workerMessageId) return
-        await getLineImageData(imageLines, yLength, index)
+        if(id < workerMessageId) {
+          imageLines.length = 0
+          return
+        }
+        // await getLineImageData(imageLines, yLength, index)
+        await getLineImageData(imageLines, yLength, 
+          Math.min(Math.max(0,
+            index + Math.round(xOffset * (partSize / 2) - partSize / 4)
+          ), canvas[xLength] - 1))
       }
-      if(id < workerMessageId) return
+      if(id < workerMessageId) {
+        imageLines.length = 0
+        return
+      }
 
       const channels = 4
-      const colorIndex = (channels * 4)
-      let color = detectColored ?
-        [imageLines[0][colorIndex], imageLines[0][colorIndex + 1], imageLines[0][colorIndex + 2]] :
-        [2,2,2]
-      const maxColorDeviation = 16
+      const color = getAverageColor(imageLines, channels)
+      if(!detectColored && (
+        color[0] + color[1] + color[2] > 8 ||
+        Math.abs(color[0] - color[1]) > 3 ||
+        Math.abs(color[1] - color[2]) > 3 ||
+        Math.abs(color[2] - color[0]) > 3
+      )) {
+        imageLines.length = 0
+        return 0
+      }
+
+      const maxColorDeviation = 8 // 16
+      const maxBrightnessDeviation = 8
+      const maxColorAndBrightnessDeviationSum = 16
       const ignoreEdge = 2
       const lineLimit = (imageLines[0].length / 2)
       const largeStep = 20
@@ -66,11 +131,14 @@ const workerCode = function () {
         let step = largeStep
         // From the top down
         for (let i = (channels * ignoreEdge); i < line.length; i += (channels * step)) {
+          const colorDeviation = Math.abs(line[i] - color[0]) + Math.abs(line[i+1] - color[1]) + Math.abs(line[i+2] - color[2])
+          const brightnessDeviation = Math.abs(line[i] + line[i+1] + line[i+2] - (color[0] + color[1] + color[2]))
           if(
             // Above the top limit
             i < lineLimit &&
-            // Within the color deviation
-            (Math.abs(line[i] - color[0]) + Math.abs(line[i+1] - color[1]) + Math.abs(line[i+2] - color[2])) <= maxColorDeviation
+            // Within the color and brightness deviation
+            (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
+            colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
           ) continue;
 
           // Change the step from large to 1 pixel
@@ -88,11 +156,16 @@ const workerCode = function () {
         step = largeStep
         // From the bottom up
         for (let i = (line.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
+          const colorDeviation = Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])
+          const brightnessDeviation = Math.abs(line[i-3] + line[i-2] + line[i-1] - (color[0] + color[1] + color[2]))
+          // (Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])) <= maxColorDeviation
           if(
             // Below the bottom limit
             i > lineLimit &&
             // Within the color deviation
-            (Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])) <= maxColorDeviation
+            // Within the color and brightness deviation
+            (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
+            colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
           ) continue;
 
           // Change the step from large to 1 pixel
@@ -111,7 +184,10 @@ const workerCode = function () {
       const maxSize = (imageLines[0].length / channels)
       imageLines.length = 0
 
+      // console.log(topSizes, bottomSizes)
       if(!topSizes.length || !bottomSizes.length) {
+        if(topSizes.length) topSizes.length = 0
+        if(bottomSizes.length) bottomSizes.length = 0
         return
       }
 
@@ -119,8 +195,11 @@ const workerCode = function () {
 
       const maxAllowedDeviation = maxSize * (0.0125 * scale)
       let sizes = [...topSizes, ...bottomSizes]
+      topSizes.length = 0
+      bottomSizes.length = 0
+      const threshold = sizes.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
       let closestSizes = sizes
-      while(closestSizes.length > 7) {
+      while(closestSizes.length > threshold) {
         const averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
         closestSizes = closestSizes.sort((a, b) => sortSizes(averageSize, a, b)).slice(0, closestSizes.length - 1)
       }
@@ -234,11 +313,13 @@ const workerCode = function () {
       try {
         if(e.data.type === 'cancellation') {
           workerMessageId = id
+          globalXOffsetIndex = 0
           return
         }
         // contextlost/contextrestored are never fired in our worker. Keeping our context lost
         if(e.data.type === 'clear') {
           workerMessageId = id
+          globalXOffsetIndex = 0
           if(canvas && canvasIsCreatedInWorker && canvas.width !== 1 && canvas.height !== 1) createCanvas(1, 1)
           return
         }
@@ -251,6 +332,8 @@ const workerCode = function () {
         const currentVerticalPercentage = e.data.currentVerticalPercentage
         const canvasInfo = e.data.canvasInfo
         const ratio = e.data.ratio
+        const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
+        const xOffsetSize = e.data.xOffsetSize
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -276,14 +359,23 @@ const workerCode = function () {
           ctx = canvasInfo.ctx
         }
         
+        globalXOffsetIndex++
+        if(globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0
+        const xOffset = xOffsetSize === 1 ? .5 : (
+          (Math.ceil(globalXOffsetIndex / 2) + (globalXOffsetIndex % 2))
+          / (xOffsetSize - 1)
+        )
+        // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
         let horizontalPercentage = detectHorizontal
           ? await workerDetectBarSize(
-              id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage
+              id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage,
+              allowedAnomaliesPercentage, xOffset
           )
           : undefined
-          let verticalPercentage = detectVertical
+        let verticalPercentage = detectVertical
           ? await workerDetectBarSize(
-              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage
+              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage,
+              allowedAnomaliesPercentage, xOffset
           )
           : undefined
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -361,7 +453,8 @@ export default class BarDetection {
   detect = (buffer, detectColored, offsetPercentage,
     detectHorizontal, currentHorizontalPercentage,
     detectVertical, currentVerticalPercentage,
-    ratio, allowedToTransfer, averageHistorySize, callback) => {
+    ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
+    callback) => {
     if(this.run) {
       this.continueAfterRun = true
       return
@@ -386,7 +479,7 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, averageHistorySize,
+      ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
       callback
     }
 
@@ -399,7 +492,20 @@ export default class BarDetection {
     const detectedPercentage = percentage
 
     // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
-    percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+    // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
+    const percentagesOccurrence = [...history, detectedPercentage]
+      .reduce((percentages, precentage) => {
+        percentages[precentage] = (percentages[precentage] ?? 0) + 1
+        return percentages
+      }, {})
+    percentage = Object.keys(percentagesOccurrence).reduce(
+      (a, b) => percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b)
+        
+    // Is the difference less than 2 occurences? Then prevent flickering
+    if(percentage !== currentPercentage && Math.abs(percentagesOccurrence[percentage] - percentagesOccurrence[currentPercentage]) <= history.length / 2) {
+      percentage = currentPercentage
+    }
+    // console.log(percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
     if(adjustment > -1.5 && adjustment <= 0) {
@@ -425,7 +531,7 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, averageHistorySize,
+      ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
       callback
     } = this.idleHandlerArguments
 
@@ -504,15 +610,17 @@ export default class BarDetection {
             const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
             const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
 
+            const barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
             if(
-              horizontalPercentage !== undefined || verticalPercentage !== undefined ||
+              barsFound ||
               (e.data.horizontalPercentage !== undefined && Math.abs(e.data.horizontalPercentage - currentHorizontalPercentage) > 0.5) || 
               (e.data.verticalPercentage !== undefined && Math.abs(e.data.verticalPercentage - currentVerticalPercentage) > 0.5)
             ) {
-              if(
+              const barsChanged = (
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
-              ) {
+              )
+              if(barsChanged) {
                 callback(horizontalPercentage, verticalPercentage)
               }
               this.lastChange = performance.now()
@@ -531,7 +639,9 @@ export default class BarDetection {
           detectColored, offsetPercentage,
           detectHorizontal, currentHorizontalPercentage,
           detectVertical, currentVerticalPercentage,
-          ratio
+          ratio,
+          allowedAnomaliesPercentage,
+          xOffsetSize: averageHistorySize
         },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )

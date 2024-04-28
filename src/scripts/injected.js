@@ -1,4 +1,4 @@
-import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -80,7 +80,7 @@ const detectDetachedVideo = () => {
     if (!isWatchPageUrl()) return
 
     const videoElem = ambientlight.videoElem
-    const ytdAppElem = ambientlight.ytdAppElem
+    const ytdAppElem = ambientlight.ytdAppElem ?? document.body
 
     const isDetached = (
       !videoElem ||
@@ -96,26 +96,30 @@ const detectDetachedVideo = () => {
 
     if(!document.querySelector('video')) return
 
-    const newVideoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
+    const newVideoElem = document.body !== ytdAppElem
+      ? document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
+      : ytdAppElem.querySelector('video.html5-main-video')
     if (!newVideoElem) {
       logErrorEventWithPageTrees('detectDetachedVideo')
       return
     }
     
-    const newYtdAppElem = newVideoElem.closest('ytd-app')
-    if(newYtdAppElem !== ytdAppElem) {
-      const details = {
-        documentHasOldVideo: document.contains(videoElem),
-        documentHasOldYtdApp: document.contains(ytdAppElem),
-        htmlHasOldVideo: document.documentElement?.contains(videoElem),
-        htmlHasOldYtdApp: document.documentElement?.contains(ytdAppElem),
-        newYtdAppHasOldVideo: newYtdAppElem?.contains(videoElem),
-        oldYtdAppHasOldVideo: ytdAppElem?.contains(videoElem),
-        oldYtdAppTree: getNodeTreeString(ytdAppElem),
-        oldVideoTree: getNodeTreeString(videoElem)
+    if(document.body !== ytdAppElem) {
+      const newYtdAppElem = newVideoElem.closest('ytd-app')
+      if(newYtdAppElem !== ytdAppElem) {
+        const details = {
+          documentHasOldVideo: document.contains(videoElem),
+          documentHasOldYtdApp: document.contains(ytdAppElem),
+          htmlHasOldVideo: document.documentElement?.contains(videoElem),
+          htmlHasOldYtdApp: document.documentElement?.contains(ytdAppElem),
+          newYtdAppHasOldVideo: newYtdAppElem?.contains(videoElem),
+          oldYtdAppHasOldVideo: ytdAppElem?.contains(videoElem),
+          oldYtdAppTree: getNodeTreeString(ytdAppElem),
+          oldVideoTree: getNodeTreeString(videoElem)
+        }
+        logErrorEventWithPageTrees('detectDetachedYtdApp', details)
+        return // We do not support this, because if we do we have to move or re-create the settings menu, canvasses and other elements as well
       }
-      logErrorEventWithPageTrees('detectDetachedYtdApp', details)
-      return // We do not support this, because if we do we have to move or re-create the settings menu, canvasses and other elements as well
     }
 
 
@@ -145,46 +149,56 @@ const tryInitAmbientlight = async () => {
   if (!isWatchPageUrl()) return
   if(!document.querySelector('video')) return
 
-  const videoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
-  if (!videoElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-... video.html5-main-video')
-    return
+  if(isEmbedPageUrl()) {
+    const videoElem = document.querySelector('#player #movie_player video.html5-main-video')
+    if (!videoElem) {
+      logErrorEventWithPageTrees('initialize - not found yet: #player #movie_player video.html5-main-video')
+      return
+    }
+
+    window.ambientlight = await new Ambientlight(videoElem)
+  } else {
+    const videoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
+    if (!videoElem) {
+      logErrorEventWithPageTrees('initialize - not found yet: ytd-app ytd-watch-... video.html5-main-video')
+      return
+    }
+
+    const ytdAppElem = document.querySelector('ytd-app')
+    if(!ytdAppElem) {
+      logErrorEventWithPageTrees('initialize - not found yet: ytd-app')
+      return
+    }
+
+    const contentElem = document.querySelector('#content.ytd-app')
+    if(!contentElem) {
+      logErrorEventWithPageTrees('initialize - not found yet: #content.ytd-app')
+      return
+    }
+
+    
+
+    const ytdWatchElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector}`).join(', '))
+    if(!ytdWatchElem) {
+      logErrorEventWithPageTrees(`initialize - not found yet: ytd-app ytd-watch-...`)
+      return
+    }
+
+    const mastheadElem = document.querySelector('ytd-app #masthead-container')
+    if(!mastheadElem) {
+      logErrorEventWithPageTrees('initialize - not found yet: #masthead-container')
+      return
+    }
+    window.ambientlight = await new Ambientlight(videoElem, ytdAppElem, ytdWatchElem, mastheadElem)
+
+    errorEvents.list = []
+    detectDetachedVideo()
+    detectPageTransitions(ytdAppElem)
+    if(!window.ambientlight.isOnVideoPage) {
+      detectWatchPageVideo(ytdAppElem)
+    }
   }
 
-  const ytdAppElem = document.querySelector('ytd-app')
-  if(!ytdAppElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: ytd-app')
-    return
-  }
-
-  const contentElem = document.querySelector('#content.ytd-app')
-  if(!contentElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: #content.ytd-app')
-    return
-  }
-
-  
-
-  const ytdWatchElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector}`).join(', '))
-  if(!ytdWatchElem) {
-    logErrorEventWithPageTrees(`initialize - not found yet: ytd-app ytd-watch-...`)
-    return
-  }
-
-  const mastheadElem = document.querySelector('ytd-app #masthead-container')
-  if(!mastheadElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: #masthead-container')
-    return
-  }
-  
-  window.ambientlight = await new Ambientlight(ytdAppElem, ytdWatchElem, videoElem, mastheadElem)
-
-  errorEvents.list = []
-  detectDetachedVideo()
-  detectPageTransitions(ytdAppElem)
-  if(!window.ambientlight.isOnVideoPage) {
-    detectWatchPageVideo(ytdAppElem);
-  }
   return true
 }
 
@@ -237,15 +251,24 @@ const detectPageTransitions = (ytdAppElem) => {
 }
 
 const loadAmbientlight = async () => {
-  // Validate YouTube desktop web app
+  // Mobile player
+  if(document.querySelector('#player-control-container')) return;
+
+  // Validate YouTube desktop web app or embedded page
   const ytdAppElem = document.querySelector('ytd-app')
   if(!ytdAppElem) {
-    const otherAppElems = getOtherUnknownAppElems()
-    if(otherAppElems.length) {
-      const selectorTree = getSelectorTreeString(otherAppElems.map(elem => elem.tagName).join(','))
-      throw new AmbientlightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
+    if(isEmbedPageUrl()) {
+      if(!document.querySelector('#player')) {
+        throw new AmbientlightError('Found no #player element on the embed page')
+      }
+    } else {
+      const otherAppElems = getOtherUnknownAppElems()
+      if(otherAppElems.length) {
+        const selectorTree = getSelectorTreeString(otherAppElems.map(elem => elem.tagName).join(','))
+        throw new AmbientlightError('Found one or more *-app elements but cannot find desktop app element: ytd-app', selectorTree)
+      }
+      return
     }
-    return
   }
 
   if (await tryInitAmbientlight()) return

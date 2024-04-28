@@ -329,7 +329,7 @@ export default class SentryReporter {
               'pageHiddenClearTime',
               'pageShownTime',
               'clearTime',
-              'isVR',
+              'isVrVideo',
               'srcVideoOffset.top',
               'srcVideoOffset.width',
               'srcVideoOffset.height',

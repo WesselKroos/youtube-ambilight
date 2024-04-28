@@ -1,4 +1,4 @@
-import { getCookie, html, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
+import { getCookie, html, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
 import SentryReporter from "./sentry-reporter"
 
@@ -14,18 +14,18 @@ export default class Theming {
 
   initListeners() {
     // Appearance (theme) changes initiated by the YouTube menu
-    this.originalTheme = this.isDarkTheme() ? 1 : -1
+    this.youtubeTheme = this.isDarkTheme() ? 1 : -1
     on(document, 'yt-action', async (e) => {
       if (!this.settings.enabled) return
       const name = e?.detail?.actionName
       if (name === 'yt-signal-action-toggle-dark-theme-off') {
-        this.originalTheme = await this.prefCookieToTheme()
+        this.youtubeTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-signal-action-toggle-dark-theme-on') {
-        this.originalTheme = await this.prefCookieToTheme()
+        this.youtubeTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-signal-action-toggle-dark-theme-device') {
-        this.originalTheme = await this.prefCookieToTheme()
+        this.youtubeTheme = await this.prefCookieToTheme()
         this.updateTheme()
       } else if(name === 'yt-forward-redux-action-to-live-chat-iframe') {
         // Let YouTube change the theme to an incorrect color in this process
@@ -45,13 +45,13 @@ export default class Theming {
           for(const change of e.changed) {
             if(change.name !== 'PREF') continue
 
-            this.originalTheme = await this.prefCookieToTheme(change.value)
+            this.youtubeTheme = await this.prefCookieToTheme(change.value)
             this.updateTheme()
           }
         }, true));
       }
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', wrapErrorHandler(async () => {
-        this.originalTheme = await this.prefCookieToTheme()
+        this.youtubeTheme = await this.prefCookieToTheme()
         this.updateTheme()
       }, true))
     } catch(ex) {
@@ -72,7 +72,9 @@ export default class Theming {
       attributeFilter: ['dark']
     })
 
-    this.initLiveChat() // Depends on this.originalTheme set in initListeners
+    if(isEmbedPageUrl()) return
+    
+    this.initLiveChat() // Depends on this.youtubeTheme set in initListeners
   }
   
   prefCookieToTheme = async (cookieValue) => {
@@ -95,7 +97,9 @@ export default class Theming {
   isDarkTheme = () => (html.getAttribute('dark') !== null)
   
   shouldBeDarkTheme = () => {
-    const toTheme = ((!this.settings.enabled || this.ambientlight.isHidden || this.settings.theme === THEME_DEFAULT) ? this.originalTheme : this.settings.theme)
+    const toTheme = (!this.settings.enabled || this.ambientlight.isHidden || this.settings.theme === THEME_DEFAULT)
+      ? this.youtubeTheme
+      : this.settings.theme
     return (toTheme === THEME_DARK)
   }
 
@@ -107,9 +111,12 @@ export default class Theming {
     )
   }
 
-  updateTheme = wrapErrorHandler(async function updateTheme() {
-    if(this.updatingTheme) return
-    if(!this.shouldToggleTheme()) return
+  updateTheme = wrapErrorHandler(async function updateTheme(fromSettings = false) {
+    if(
+      this.updatingTheme || 
+      (!fromSettings && this.settings.theme === THEME_DEFAULT) ||
+      !this.shouldToggleTheme()
+    ) return
 
     this.updatingTheme = true
     
@@ -143,8 +150,10 @@ export default class Theming {
   async toggleDarkTheme() {
     const wasDark = this.isDarkTheme()
     document.documentElement.toggleAttribute('dark', !wasDark)
-    this.ambientlight.ytdAppElem.setMastheadTheme() // Required when we go: theater dark -> non-theater dark -> non-theater light
-    this.updateLiveChatTheme()
+    if(!isEmbedPageUrl()) {
+      this.ambientlight.ytdAppElem.setMastheadTheme() // Required when we go: theater dark -> non-theater dark -> non-theater light
+      this.updateLiveChatTheme()
+    }
 
     const isDark = this.isDarkTheme()
     if (wasDark !== isDark) return

@@ -307,7 +307,12 @@ export const supportsColorMix = () => {
   return _supportsColorMix
 }
 
-export const isWatchPageUrl = () => (location.pathname === '/watch')
+export const isWatchPageUrl = () => (
+  location.pathname === '/watch' || 
+  isEmbedPageUrl()
+)
+
+export const isEmbedPageUrl = () => location.pathname?.startsWith('/embed/')
 
 export const getCookie = async (name) => 
   window.cookieStore
