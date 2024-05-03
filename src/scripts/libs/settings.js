@@ -256,6 +256,7 @@ export default class Settings {
     const settingsMenuBtnTooltip = document.createElement('div')
     settingsMenuBtnTooltip.className = 'ytp-tooltip ytp-bottom ytp-ambientlight-settings-button-tooltip'
     settingsMenuBtnTooltip.setAttribute('aria-live', 'polite')
+    settingsMenuBtnTooltip.style.opacity = 0
 
     const settingsMenuBtnTooltipTextWrapper = document.createElement('div')
     settingsMenuBtnTooltipTextWrapper.className = 'ytp-tooltip-text-wrapper'
