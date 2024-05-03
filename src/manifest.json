@@ -31,7 +31,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
-      "exclude_matches": ["https://www.youtube.com/live_chat*"],
+      "exclude_matches": ["https://www.youtube.com/live_chat*", "https://www.youtube.com/embed/*"],
       "js": ["scripts/content.js"]
     },
     {
