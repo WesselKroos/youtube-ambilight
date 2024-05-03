@@ -284,7 +284,7 @@ export default class Settings {
     this.menuElem.innerHTML = `
       <div class="ytp-panel">
         <div class="ytp-panel-menu" role="menu">
-          <div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+          ${'' /*<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-updates">${''
                }<b>Changes in version ${version}:</b>
@@ -300,7 +300,7 @@ export default class Settings {
                   </li>
               </ul></span>
             </div>
-          </div>
+          </div>*/}
           <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
             <div class="ytp-menuitem-label" rowspan="2">
               <span class="ytpa-warning"></span>

@@ -148,13 +148,17 @@ const tryInitAmbientlight = async () => {
   if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
   if(!document.querySelector('video')) return
-  const settingsMenuBtnParent = document.querySelector('.html5-video-player .ytp-right-controls, .html5-video-player .ytp-chrome-controls > *:last-child')
-  if(!settingsMenuBtnParent) return
 
   if(isEmbedPageUrl()) {
     const videoElem = document.querySelector('#player #movie_player video.html5-main-video')
     if (!videoElem) {
       logErrorEventWithPageTrees('initialize - not found yet: #player #movie_player video.html5-main-video')
+      return
+    }
+
+    const settingsMenuBtnParent = document.querySelector('.html5-video-player .ytp-right-controls, .html5-video-player .ytp-chrome-controls > *:last-child')
+    if(!settingsMenuBtnParent) {
+      logErrorEventWithPageTrees('initialize - not found yet: .html5-video-player .ytp-right-controls, .html5-video-player .ytp-chrome-controls > *:last-child')
       return
     }
 
