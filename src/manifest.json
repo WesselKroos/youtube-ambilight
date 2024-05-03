@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Ambient light for YouTube™",
   "description": "Immerse yourself in YouTube™ videos with ambient light!",
-  "version": "2.38.2",
+  "version": "2.38.3",
   "homepage_url": "https://github.com/WesselKroos/youtube-ambilight",
   "author": "Wessel Kroos",
   "icons": {
@@ -31,7 +31,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
-      "exclude_matches": ["https://www.youtube.com/live_chat*"],
+      "exclude_matches": ["https://www.youtube.com/live_chat*", "https://www.youtube.com/embed/*"],
       "js": ["scripts/content.js"]
     },
     {

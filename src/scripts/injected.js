@@ -156,6 +156,12 @@ const tryInitAmbientlight = async () => {
       return
     }
 
+    const settingsMenuBtnParent = document.querySelector('.html5-video-player .ytp-right-controls, .html5-video-player .ytp-chrome-controls > *:last-child')
+    if(!settingsMenuBtnParent) {
+      logErrorEventWithPageTrees('initialize - not found yet: .html5-video-player .ytp-right-controls, .html5-video-player .ytp-chrome-controls > *:last-child')
+      return
+    }
+
     window.ambientlight = await new Ambientlight(videoElem)
   } else {
     const videoElem = document.querySelector(watchSelectors.map(selector => `ytd-app #content.ytd-app ${selector} video.html5-main-video`).join(', '))
@@ -255,12 +261,13 @@ const loadAmbientlight = async () => {
   if(document.querySelector('#player-control-container')) return;
 
   // Validate YouTube desktop web app or embedded page
-  const ytdAppElem = document.querySelector('ytd-app')
-  if(!ytdAppElem) {
+  let observerTarget = document.querySelector('ytd-app')
+  if(!observerTarget) {
     if(isEmbedPageUrl()) {
       if(!document.querySelector('#player')) {
         throw new AmbientlightError('Found no #player element on the embed page')
       }
+      observerTarget = document.body
     } else {
       const otherAppElems = getOtherUnknownAppElems()
       if(otherAppElems.length) {
@@ -320,7 +327,7 @@ const loadAmbientlight = async () => {
     },
     true
   ))
-  observer.observe(ytdAppElem, {
+  observer.observe(observerTarget, {
     childList: true,
     subtree: true
   })

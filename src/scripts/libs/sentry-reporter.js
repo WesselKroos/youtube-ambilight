@@ -3,7 +3,7 @@ import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/de
 import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
 import { Scope } from '@sentry/core/esm/scope';
 
-import { html, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
+import { html, isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
 import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
 
@@ -431,6 +431,11 @@ export default class SentryReporter {
           pageExtra.isVideo = (location.pathname == '/watch')
         } catch (ex) {
           setExtra('Page .isVideo (exception)', ex)
+        }
+        try {
+          pageExtra.isEmbed = isEmbedPageUrl()
+        } catch (ex) {
+          setExtra('Page .isEmbed (exception)', ex)
         }
         try {
           pageExtra.isYtdApp = !!document.querySelector('ytd-app')
