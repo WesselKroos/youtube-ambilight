@@ -6,6 +6,37 @@ import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-repor
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
+const captureResourceLoadingException = async (url, event) => {
+  let error
+  try {
+    await new Promise((resolve, reject) => {
+      try {
+        const req = new XMLHttpRequest()
+        req.onreadystatechange = () => {
+          try {
+            if (req.readyState == XMLHttpRequest.DONE) {
+              error = new Error(`Error on ${url} request: ${req.statusText} (${req.status})`)
+              resolve()
+            }
+          } catch(ex) {
+            reject(ex)
+          }
+        }
+        req.open("GET", url, true)
+        req.send()
+      } catch(ex) {
+        reject(ex)
+      }
+    })
+  } catch(ex) {
+    error = ex
+  } finally {
+    error = error ?? new Error(`Unknown error on ${url} request.`)
+    error.details = event
+    SentryReporter.captureException(error)
+  }
+}
+
 ;(wrapErrorHandler(async function loadContentScript() {
   const version = getVersion()
   setVersion(version)
@@ -67,37 +98,6 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   //   document.body.appendChild(s)
   // }
   // addWebGLLint()
-
-  const captureResourceLoadingException = async (url, event) => {
-    let error
-    try {
-      await new Promise((resolve, reject) => {
-        try {
-          const req = new XMLHttpRequest()
-          req.onreadystatechange = () => {
-            try {
-              if (req.readyState == XMLHttpRequest.DONE) {
-                error = new Error(`Error on ${url} request: ${req.statusText} (${req.status})`)
-                resolve()
-              }
-            } catch(ex) {
-              reject(ex)
-            }
-          }
-          req.open("GET", url, true)
-          req.send()
-        } catch(ex) {
-          reject(ex)
-        }
-      })
-    } catch(ex) {
-      error = ex
-    } finally {
-      error = error ?? new Error(`Unknown error on ${url} request.`)
-      error.details = event
-      SentryReporter.captureException(error)
-    }
-  }
 
   const script = document.createElement('script')
   script.defer = true
