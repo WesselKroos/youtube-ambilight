@@ -8,7 +8,8 @@ export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
 export const FRAMESYNC_VIDEOFRAMES = 2
 
-const feedbackFormLink = document.currentScript?.getAttribute('data-feedback-form-link') || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
+const feedbackFormLink = document.currentScript?.getAttribute('data-feedback-form-link') 
+  || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 const baseUrl = document.currentScript?.getAttribute('data-base-url') || ''
 const version = document.currentScript?.getAttribute('data-version') || ''
 
@@ -50,7 +51,7 @@ export default class Settings {
         }
       } else {
         if(webGLOnlySettings.includes(setting.name)) {
-          settingsToRemove.push(setting)
+          settingsToRemove.push(setting.name)
         }
         if([
           'webGL'
@@ -69,17 +70,22 @@ export default class Settings {
     }
 
     if(getBrowser() === 'Firefox') {
-      const enableInVRVideosSetting = SettingsConfig.find(setting => setting.name === 'enableInVRVideos')
-      settingsToRemove.push(enableInVRVideosSetting)
+      settingsToRemove.push('enableInVRVideos')
     }
 
     if(!supportsColorMix()) {
-      const pageBackgroundGreynessSetting = SettingsConfig.find(setting => setting.name === 'pageBackgroundGreyness')
-      settingsToRemove.push(pageBackgroundGreynessSetting)
+      settingsToRemove.push('pageBackgroundGreyness')
     }
 
-    for(const setting of settingsToRemove) {
-      SettingsConfig.splice(SettingsConfig.indexOf(setting), 1)
+    for(const settingName of settingsToRemove) {
+      const settingIndex = SettingsConfig.findIndex(setting => setting.name === settingName)
+      if(settingIndex === -1) {
+        SentryReporter.captureException(new Error(`Cannot remove setting ${settingName}. Does not exist in SettingsConfig.${'\n'
+          }Present settings: ${SettingsConfig.map(setting => setting.name).join(', ')}`
+        ))
+        continue;
+      }
+      SettingsConfig.splice(settingIndex, 1)
     }
 
     const names = []

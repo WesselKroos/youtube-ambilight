@@ -6,6 +6,37 @@ import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-repor
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
+const captureResourceLoadingException = async (url, event) => {
+  let error
+  try {
+    await new Promise((resolve, reject) => {
+      try {
+        const req = new XMLHttpRequest()
+        req.onreadystatechange = () => {
+          try {
+            if (req.readyState == XMLHttpRequest.DONE) {
+              error = new Error(`Error on ${url} request: ${req.statusText} (${req.status})`)
+              resolve()
+            }
+          } catch(ex) {
+            reject(ex)
+          }
+        }
+        req.open("GET", url, true)
+        req.send()
+      } catch(ex) {
+        reject(ex)
+      }
+    })
+  } catch(ex) {
+    error = ex
+  } finally {
+    error = error ?? new Error(`Unknown error on ${url} request.`)
+    error.details = event
+    SentryReporter.captureException(error)
+  }
+}
+
 ;(wrapErrorHandler(async function loadContentScript() {
   const version = getVersion()
   setVersion(version)
@@ -75,8 +106,8 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   script.setAttribute('data-version', version)
   script.setAttribute('data-feedback-form-link', getFeedbackFormLink())
   script.setAttribute('data-base-url', chrome.runtime.getURL('') || '')
-  script.onerror = function injectScriptOnError(ex) {
-    SentryReporter.captureException(ex)
+  script.onerror = async function injectScriptOnError(event) {
+    await captureResourceLoadingException(script.src, event)
   }.bind(this)
   document.head.appendChild(script)
 
@@ -84,8 +115,8 @@ setErrorHandler((ex) => SentryReporter.captureException(ex))
   const style = document.createElement('link')
   style.rel = 'stylesheet'
   style.href = chrome.runtime.getURL('styles/content.css')
-  style.onerror = function injectStyleOnError(ex) {
-    SentryReporter.captureException(ex)
+  style.onerror = async function injectStyleOnError(event) {
+    await captureResourceLoadingException(style.href, event)
   }.bind(this)
   document.head.appendChild(style)
 }))()

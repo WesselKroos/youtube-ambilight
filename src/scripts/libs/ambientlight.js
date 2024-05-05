@@ -996,13 +996,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(key === ' ') return
 
     const keys = this.settings.getKeys()
-    if (key === keys.detectHorizontalBarSizeEnabled) // b by default
+    if (key === keys.detectHorizontalBarSizeEnabled)
       this.settings.clickUI('detectHorizontalBarSizeEnabled')
     if (key === keys.detectVerticalBarSizeEnabled)
       this.settings.clickUI('detectVerticalBarSizeEnabled')
-    if (key === keys.detectVideoFillScaleEnabled) // w by default
+    if (key === keys.detectVideoFillScaleEnabled)
       this.settings.clickUI('detectVideoFillScaleEnabled')
-    if (key === keys.enabled) // a by default
+    if (key === keys.enabled)
       await this.toggleEnabled()
   }
 
