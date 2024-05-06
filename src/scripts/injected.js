@@ -334,8 +334,9 @@ const loadAmbientlight = async () => {
 }
 
 const onLoad = wrapErrorHandler(async function onLoadCallback() {
-  if(window.ambientlight) return
+  if(window.ambientlight !== undefined) return
 
+  window.ambientlight = false
   await loadAmbientlight()
 })
 
