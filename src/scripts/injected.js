@@ -342,7 +342,11 @@ const onLoad = wrapErrorHandler(async function onLoadCallback() {
 
 ;(function setup() {
   try {
-    onLoad()
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", onLoad)
+    } else {
+      onLoad()
+    }
   } catch (ex) {
     SentryReporter.captureException(ex)
   }
