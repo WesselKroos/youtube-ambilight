@@ -334,6 +334,7 @@ const loadAmbientlight = async () => {
 }
 
 const onLoad = wrapErrorHandler(async function onLoadCallback() {
+  document.removeEventListener("DOMContentLoaded", onLoad)
   if(window.ambientlight !== undefined) return
 
   window.ambientlight = false
