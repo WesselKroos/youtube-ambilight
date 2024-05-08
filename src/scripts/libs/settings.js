@@ -1,4 +1,4 @@
-import { html, body, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
+import { html, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -1174,7 +1174,7 @@ export default class Settings {
     }
 
     setTimeout(() => {
-      on(body, 'click', this.onCloseMenu, { capture: true }, (listener) => this.onCloseMenuListener = listener)
+      on(document.body, 'click', this.onCloseMenu, { capture: true }, (listener) => this.onCloseMenuListener = listener)
       this.scrollToWarning()
     }, 100)
   }
@@ -1204,7 +1204,7 @@ export default class Settings {
       this.ambientlight.videoPlayerElem.classList.remove('ytp-ambientlight-settings-shown')
     }
 
-    off(body, 'click', this.onCloseMenuListener)
+    off(document.body, 'click', this.onCloseMenuListener)
     this.onCloseMenuListener = undefined
     setTimeout(() => {
       on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)

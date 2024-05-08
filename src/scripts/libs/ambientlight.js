@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
+import { html, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -1438,7 +1438,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
     this.isControlledByAnotherExtension = (
-      body.classList.contains('efyt-mini-player') // Enhancer for YouTube
+      document.body.classList.contains('efyt-mini-player') // Enhancer for YouTube
     )
     if(wasControlledByAnotherExtension !== this.isControlledByAnotherExtension) {
       this.sizesChanged = true
@@ -2084,8 +2084,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   getElemRect(elem) {
     const scrollableRect = (this.isFullscreen)
-      ? (this.ytdWatchElemFromVideo || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
-      : body.getBoundingClientRect()
+      ? (this.ytdWatchElemFromVideo || this.playerTheaterContainerElemFromVideo || document.body).getBoundingClientRect()
+      : document.body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
 
     return {
