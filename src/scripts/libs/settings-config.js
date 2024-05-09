@@ -1,3 +1,6 @@
+import { supportsColorMix, supportsWebGL } from "./generic";
+import { getBrowser } from "./utils";
+
 const SettingsConfig = [
   {
     type: 'section',
@@ -777,5 +780,60 @@ Click on the questionmark for more and updated information about these artifacts
     defaultKey: 'G'
   },
 ]
+
+export const WebGLOnlySettings = [
+  'resolution',
+  'vibrance',
+  'frameFading',
+  'flickerReduction',
+  'fixedPosition',
+  'chromiumBugVideoJitterWorkaround'
+]
+
+let prepared = false;
+export const prepareSettingsConfigOnce = () => {
+  if(prepared) return
+
+  const settingsToRemove = []
+  for(const setting of SettingsConfig) {
+    if(supportsWebGL()) {
+      if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
+        setting.default = 50
+      }
+    } else {
+      if(WebGLOnlySettings.includes(setting.name)) {
+        settingsToRemove.push(setting.name)
+      }
+      if([
+        'webGL'
+      ].includes(setting.name)) {
+        setting.default = false
+        setting.disabled = 'You have disabled WebGL in your browser.'
+      }
+    }
+    
+    if(setting.name === 'frameSync') {
+      if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
+          setting.max = 1
+          setting.default = 0
+      }
+    }
+  }
+
+  if(getBrowser() === 'Firefox') {
+    settingsToRemove.push('enableInVRVideos')
+  }
+
+  if(!supportsColorMix()) {
+    settingsToRemove.push('pageBackgroundGreyness')
+  }
+
+  for(const settingName of settingsToRemove) {
+    const settingIndex = SettingsConfig.findIndex(setting => setting.name === settingName)
+    SettingsConfig.splice(settingIndex, 1)
+  }
+
+  prepared = true
+}
 
 export default SettingsConfig

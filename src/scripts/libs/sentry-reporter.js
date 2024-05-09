@@ -3,9 +3,9 @@ import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/de
 import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
 import { Scope } from '@sentry/core/esm/scope';
 
-import { html, isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
-import { contentScript } from './messaging';
+import { isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
 import SettingsConfig from './settings-config';
+import { contentScript } from './messaging/content';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document
@@ -417,7 +417,7 @@ export default class SentryReporter {
 
         try {
           setExtra('YouTube', {
-            dark: !!html?.attributes?.dark,
+            dark: !!document.documentElement?.attributes?.dark,
             loggedIn: (window.yt)
               ? !!window.yt?.config_?.LOGGED_IN
               : (document.querySelector('ytd-topbar-menu-button-renderer') ? !!document.querySelector('#avatar-btn') : undefined)
@@ -573,11 +573,11 @@ export class ErrorEvents {
     }, false)
   }
 
-  send = () => {
+  send = (message, force) => {
     const lastEvent = this.list[this.list.length - 1]
     const lastTime = lastEvent.time
     const firstTime =  this.list[0].firstTime || this.list[0].time
-    if(lastTime - firstTime < 5) {
+    if(!force && lastTime - firstTime < 5) {
       return // Give the site 5 seconds to load the watch page or move the video element
     }
 
@@ -589,7 +589,7 @@ export class ErrorEvents {
     this.list = []
 
     SentryReporter.captureException(
-      new AmbientlightError('Closed or hid the page with pending errors', details)
+      new AmbientlightError(message ?? 'Closed or hid the page with pending errors', details)
     )
   }
 

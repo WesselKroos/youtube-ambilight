@@ -1,5 +1,5 @@
-import { getCookie, html, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
-import { contentScript } from "./messaging"
+import { getCookie, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
+import { contentScript } from "./messaging/content"
 import SentryReporter from "./sentry-reporter"
 
 const THEME_LIGHT = -1
@@ -66,7 +66,7 @@ export default class Theming {
       this.updateTheme()
       if(themeCorrections === 5) this.themeObserver.disconnect()
     }))
-    this.themeObserver.observe(html, {
+    this.themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeOldValue: true,
       attributeFilter: ['dark']
@@ -94,7 +94,7 @@ export default class Theming {
     return THEME_LIGHT
   }
 
-  isDarkTheme = () => (html.getAttribute('dark') !== null)
+  isDarkTheme = () => (document.documentElement.getAttribute('dark') !== null)
   
   shouldBeDarkTheme = () => {
     const toTheme = (!this.settings.enabled || this.ambientlight.isHidden || this.settings.theme === THEME_DEFAULT)
@@ -121,7 +121,23 @@ export default class Theming {
     this.updatingTheme = true
     
     if(this.themeToggleFailed !== false) {
-      const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+      // eslint-disable-next-line no-async-promise-executor
+      const lastFailedThemeToggle = await new Promise(async (resolve, reject) => {
+        try {
+          let timeout = setTimeout(() => {
+            timeout = undefined
+            resolve()
+          }, 5000)
+          const result = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+          if(!timeout) return
+          
+          clearTimeout(timeout)
+          resolve(result)
+        } catch(ex) {
+          reject(ex)
+        }
+      })
+      
       if(lastFailedThemeToggle) {
         const now = new Date().getTime()
         const withinThresshold = now - 10000 < lastFailedThemeToggle

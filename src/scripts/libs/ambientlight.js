@@ -1,4 +1,4 @@
-import { html, body, on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
+import { on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -1045,6 +1045,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initAmbientlightElems() {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
+    this.elem.style.position = 'absolute'
 
     if(this.mastheadElem) {
       this.topElem = document.createElement('div')
@@ -1438,7 +1439,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension
     this.isControlledByAnotherExtension = (
-      body.classList.contains('efyt-mini-player') // Enhancer for YouTube
+      document.body.classList.contains('efyt-mini-player') // Enhancer for YouTube
     )
     if(wasControlledByAnotherExtension !== this.isControlledByAnotherExtension) {
       this.sizesChanged = true
@@ -2084,8 +2085,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   getElemRect(elem) {
     const scrollableRect = (this.isFullscreen)
-      ? (this.ytdWatchElemFromVideo || this.playerTheaterContainerElemFromVideo || body).getBoundingClientRect()
-      : body.getBoundingClientRect()
+      ? (this.ytdWatchElemFromVideo || this.playerTheaterContainerElemFromVideo || document.body).getBoundingClientRect()
+      : document.body.getBoundingClientRect()
     const elemRect = elem.getBoundingClientRect()
 
     return {
@@ -3002,6 +3003,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     this.clear()
     this.stats.hide()
 
+    const html = document.documentElement
     html.removeAttribute('data-ambientlight-enabled')
     html.removeAttribute('data-ambientlight-hide-scrollbar')
     html.removeAttribute('data-ambientlight-related-scrollbar')
@@ -3012,7 +3014,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   }
 
   updateLayoutPerformanceImprovements = wrapErrorHandler(() => {
-    const liveChatHtml = this.theming.liveChatIframe?.contentDocument?.documentElement;
+    const html = document.documentElement
+    const liveChatHtml = this.theming.liveChatIframe?.contentDocument?.documentElement
     const enabled = this.settings.enabled && !this.isHidden && this.settings.layoutPerformanceImprovements
     if(enabled) {
       html.setAttribute('data-ambientlight-layout-performance-improvements', true)
@@ -3038,6 +3041,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     (async () => {
       await new Promise(resolve => raf(resolve))
 
+      const html = document.documentElement
       html.setAttribute('data-ambientlight-enabled', true)
       if(this.settings.hideScrollbar) html.setAttribute('data-ambientlight-hide-scrollbar', true)
       if(this.settings.relatedScrollbar) html.setAttribute('data-ambientlight-related-scrollbar', true)
@@ -3077,6 +3081,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
   updateImmersiveMode() {
     this.immersiveTheater = (this.settings.immersiveTheaterView && this.view === VIEW_THEATER)
+    const html = document.documentElement
     const changed = (html.getAttribute('data-ambientlight-immersive') === 'true') !== this.immersiveTheater
     if(!changed) return false
 

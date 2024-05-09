@@ -1215,6 +1215,7 @@ html[data-ambientlight-enabled="true"] {
     z-index: -1; // Fixes glitching in some video's in the small view in Firefox
     top: 0;
     left: 0;
+    min-height: 100svh;
     display: block;
     overflow: hidden;
     pointer-events: none;
@@ -1237,7 +1238,7 @@ html[data-ambientlight-enabled="true"] {
   body[data-ambientlight-fixed="true"] {
     .ambientlight {
       position: fixed;
-      height: 100vh;
+      height: 100svh;
     }
   }
 
@@ -2318,6 +2319,7 @@ html[data-ambientlight-enabled="true"] {
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
       -webkit-appearance: none;
+      appearance: none;
       margin: 0;
     }
 
@@ -2379,6 +2381,7 @@ html[data-ambientlight-enabled="true"] {
     input[type="range"] {
       display: block;
       -webkit-appearance: none;
+      appearance: none;
       background: none;
       cursor: pointer;
       width: calc(100% - 28px);
@@ -2393,6 +2396,7 @@ html[data-ambientlight-enabled="true"] {
       }
       @include input-range-track {
         -webkit-appearance: none;
+        appearance: none;
         background: rgba(255,255,255,0.3);
         height: 3px;
         outline: none;
@@ -2402,6 +2406,7 @@ html[data-ambientlight-enabled="true"] {
       }
       @include input-range-thumb {
         -webkit-appearance: none;
+        appearance: none;
         height: 13px;
         width: 13px;
         margin-top: -5px;
@@ -2951,7 +2956,7 @@ html[data-ambientlight-enabled="true"] {
   // Soft video controls shadow gradient on the sides
 
   #primary .ytp-gradient-bottom {
-    -webkit-mask-image: linear-gradient(to right, 
+    mask-image: linear-gradient(to right, 
       transparent 0%, 
       rgb(0, 0, 0, .3) 25px, 
       rgb(0, 0, 0, .55) 50px, 
@@ -2972,7 +2977,7 @@ html[data-ambientlight-enabled="true"] {
     // Faster comments loading
 
     #primary.ytd-watch-flexy #below {
-      margin-bottom: 25vh;
+      margin-bottom: 25svh;
     }
 
 

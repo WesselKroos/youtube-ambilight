@@ -198,9 +198,6 @@ export function off(elem, eventNames, callback) {
   }
 }
 
-export const html = document.documentElement
-export const body = document.body
-
 export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
 const colorSpace = (
@@ -350,3 +347,67 @@ export const mediaErrorToString = (value) => (({
 })[value] || value) ?? 'UNKNOWN'
 
 export const watchSelectors = ['ytd-watch-flexy', 'ytd-watch-fixie', 'ytd-watch-grid']
+
+let warningElem;
+let warningElemText;
+export const setWarning = (text) => {
+  if(!warningElem) {
+    const elem = document.createElement('div')
+    elem.style.position = 'fixed'
+    elem.style.zIndex = 999999
+    elem.style.left = 0
+    elem.style.bottom = 0
+    elem.style.padding = '5px 8px'
+    elem.style.background = 'rgba(0,0,0,.99)'
+    elem.style.color = '#fff'
+    elem.style.border = '1px solid #f80'
+    elem.style.borderTopRightRadius = '3px'
+    elem.style.whiteSpace = 'pre-wrap'
+    elem.style.fontSize = '15px'
+    elem.style.lineHeight = '18px'
+    elem.style.fontFamily = 'sans-serif'
+    elem.style.overflowWrap = 'anywhere'
+    elem.style.overflow = 'hidden'
+    warningElem = elem
+    
+    const closeButton = document.createElement('button')
+    closeButton.style.position = 'absolute'
+    closeButton.style.zIndex = 2
+    closeButton.style.right = 0
+    closeButton.style.top = 0
+    closeButton.style.border = 'none'
+    closeButton.style.borderBottomLeftRadius = '3px'
+    closeButton.style.padding = '0px 8px'
+    closeButton.style.background = '#f80'
+    closeButton.style.fontWeight = 'bold'
+    closeButton.style.fontFamily = 'inherit'
+    closeButton.style.lineHeight = '20px'
+    closeButton.style.fontSize = '22px'
+    closeButton.style.color = '#000'
+    closeButton.style.cursor = 'pointer'
+    closeButton.textContent = 'x'
+    closeButton.addEventListener('click', () => setWarning(''))
+    elem.appendChild(closeButton)
+
+    const titleElem = document.createElement('div')
+    titleElem.style.fontWeight = 'bold'
+    titleElem.style.color = '#008cff'
+    titleElem.style.fontSize = '22px'
+    titleElem.style.lineHeight = '28px'
+    titleElem.textContent = 'Ambient light for YouTube™\n'
+    elem.appendChild(titleElem)
+
+    const textElem = document.createElement('div')
+    warningElemText = textElem
+    elem.appendChild(textElem)
+  }
+
+  const elem = warningElem
+  if(text) {
+    warningElemText.textContent = text
+    document.documentElement.appendChild(elem)
+  } else {
+    warningElemText.textContent = ''
+    elem.remove()
+  }
+}

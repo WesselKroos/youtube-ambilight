@@ -272,7 +272,10 @@ export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
 
         if(e.data.error) {
           // Readable name for the worker script
-          e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/static-image-detection-worker.js:')
+          if(e.data.error.stack?.replace) {
+            e.data.error.stack = e.data.error.stack
+            .replace(/blob:.+?:\/.+?:/g, 'extension://scripts/static-image-detection-worker.js:')
+          }
           appendErrorStack(stack, e.data.error)
           throw e.data.error
         }

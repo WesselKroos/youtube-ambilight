@@ -1,8 +1,8 @@
-import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl, setWarning } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
-import { contentScript } from './libs/messaging'
 import Settings from './libs/settings'
+import { contentScript } from './libs/messaging/content'
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
@@ -182,8 +182,6 @@ const tryInitAmbientlight = async () => {
       return
     }
 
-    
-
     const ytdWatchElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector}`).join(', '))
     if(!ytdWatchElem) {
       logErrorEventWithPageTrees(`initialize - not found yet: ytd-app ytd-watch-...`)
@@ -265,7 +263,9 @@ const loadAmbientlight = async () => {
   if(!observerTarget) {
     if(isEmbedPageUrl()) {
       if(!document.querySelector('#player')) {
-        throw new AmbientlightError('Found no #player element on the embed page')
+        logErrorEventWithPageTrees('initialize - not found yet: #player')
+        errorEvents.send('Found no #player element on the embed page', true)
+        return
       }
       observerTarget = document.body
     } else {
@@ -284,7 +284,10 @@ const loadAmbientlight = async () => {
   try {
     await Settings.getStoredSettingsCached()
   } catch(ex) {
-    console.warn('The settings cannot be precached')
+    setWarning(`Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'
+      }This can happen after you have updated the extension. ${'\n\n'
+      }${ex?.toString()}`
+    )
     console.error(ex)
   }
 
@@ -334,14 +337,20 @@ const loadAmbientlight = async () => {
 }
 
 const onLoad = wrapErrorHandler(async function onLoadCallback() {
-  if(window.ambientlight) return
+  document.removeEventListener("DOMContentLoaded", onLoad)
+  if(window.ambientlight !== undefined) return
 
+  window.ambientlight = false
   await loadAmbientlight()
 })
 
 ;(function setup() {
   try {
-    onLoad()
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", onLoad)
+    } else {
+      onLoad()
+    }
   } catch (ex) {
     SentryReporter.captureException(ex)
   }

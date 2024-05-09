@@ -1,8 +1,7 @@
-import { html, body, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
+import { on, off, setTimeout, supportsWebGL, raf, setWarning } from './generic'
 import SentryReporter from './sentry-reporter'
-import { contentScript } from './messaging'
-import { getBrowser } from './utils'
-import SettingsConfig from './settings-config'
+import { contentScript } from './messaging/content'
+import SettingsConfig, { prepareSettingsConfigOnce, WebGLOnlySettings } from './settings-config'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -35,58 +34,7 @@ export default class Settings {
       return Settings.storedSettingsCached
     }
 
-    const webGLOnlySettings = [
-      'resolution',
-      'vibrance',
-      'frameFading',
-      'flickerReduction',
-      'fixedPosition',
-      'chromiumBugVideoJitterWorkaround'
-    ]
-    const settingsToRemove = []
-    for(const setting of SettingsConfig) {
-      if(supportsWebGL()) {
-        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-          setting.default = 50
-        }
-      } else {
-        if(webGLOnlySettings.includes(setting.name)) {
-          settingsToRemove.push(setting.name)
-        }
-        if([
-          'webGL'
-        ].includes(setting.name)) {
-          setting.default = false
-          setting.disabled = 'You have disabled WebGL in your browser.'
-        }
-      }
-      
-      if(setting.name === 'frameSync') {
-        if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
-            setting.max = 1
-            setting.default = 0
-        }
-      }
-    }
-
-    if(getBrowser() === 'Firefox') {
-      settingsToRemove.push('enableInVRVideos')
-    }
-
-    if(!supportsColorMix()) {
-      settingsToRemove.push('pageBackgroundGreyness')
-    }
-
-    for(const settingName of settingsToRemove) {
-      const settingIndex = SettingsConfig.findIndex(setting => setting.name === settingName)
-      if(settingIndex === -1) {
-        SentryReporter.captureException(new Error(`Cannot remove setting ${settingName}. Does not exist in SettingsConfig.${'\n'
-          }Present settings: ${SettingsConfig.map(setting => setting.name).join(', ')}`
-        ))
-        continue;
-      }
-      SettingsConfig.splice(settingIndex, 1)
-    }
+    prepareSettingsConfigOnce()
 
     const names = []
     for (const setting of SettingsConfig) {
@@ -105,7 +53,14 @@ export default class Settings {
     names.push('setting-bloom')
     names.push('setting-fadeOutEasing')
 
+    const warningTimeout = setTimeout(() => setWarning(
+      `It is taking more than 5 seconds to load your previous settings. Something might be wrong.${'\n'
+      }Refresh the webpage to try it again. ${'\n\n'
+      }This can happen after you have updated the extension.`
+    ), 5000)
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+    clearTimeout(warningTimeout)
+    setWarning()
 
     // Migrate old settings
     if(Settings.storedSettingsCached['setting-blur'] !== null) {
@@ -154,7 +109,7 @@ export default class Settings {
       }
     } else {
       SettingsConfig.find(setting => setting.name === 'spread').max = 200
-      for(const settingName of webGLOnlySettings) {
+      for(const settingName of WebGLOnlySettings) {
         if(Settings.storedSettingsCached[`setting-${settingName}`] !== undefined)
           delete Settings.storedSettingsCached[`setting-${settingName}`]
       }
@@ -168,9 +123,9 @@ export default class Settings {
   async getAll() {
     let storedSettings = {}
     try {
-      storedSettings = await Settings.getStoredSettingsCached();
+      storedSettings = await Settings.getStoredSettingsCached()
     } catch {
-      this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
+      this.setWarning('Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again.')
     }
 
     const webGLCrash = storedSettings['setting-webGLCrash']
@@ -200,7 +155,7 @@ export default class Settings {
 
     await this.flushPendingStorageEntries() // Complete migrations
 
-    if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
+    if(this.enabled) document.documentElement.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
   }
 
   migrate(storedSettings) {
@@ -887,6 +842,7 @@ export default class Settings {
             this.ambientlight.updateLayoutPerformanceImprovements()
           }
 
+          const html = document.documentElement
           if (setting.name === 'relatedScrollbar' && this.enabled) {
             if(value)
               html.setAttribute('data-ambientlight-related-scrollbar', true)
@@ -1174,7 +1130,7 @@ export default class Settings {
     }
 
     setTimeout(() => {
-      on(body, 'click', this.onCloseMenu, { capture: true }, (listener) => this.onCloseMenuListener = listener)
+      on(document.body, 'click', this.onCloseMenu, { capture: true }, (listener) => this.onCloseMenuListener = listener)
       this.scrollToWarning()
     }, 100)
   }
@@ -1204,7 +1160,7 @@ export default class Settings {
       this.ambientlight.videoPlayerElem.classList.remove('ytp-ambientlight-settings-shown')
     }
 
-    off(body, 'click', this.onCloseMenuListener)
+    off(document.body, 'click', this.onCloseMenuListener)
     this.onCloseMenuListener = undefined
     setTimeout(() => {
       on(this.menuBtn, 'click', this.onSettingsBtnClicked, undefined, (listener) => this.onSettingsBtnClickedListener = listener)

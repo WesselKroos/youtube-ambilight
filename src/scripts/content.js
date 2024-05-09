@@ -1,10 +1,46 @@
 import { getFeedbackFormLink, getVersion } from './libs/utils'
-import { setErrorHandler, wrapErrorHandler } from './libs/generic'
-import { injectedScript } from './libs/messaging'
+import { setErrorHandler, setWarning, wrapErrorHandler } from './libs/generic'
 import { defaultCrashOptions, storage } from './libs/storage'
 import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-reporter'
+import { injectedScript } from './libs/messaging/injected'
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
+
+const waitForHtmlElement = async () => {
+  if(document.documentElement) return
+
+  await new Promise((resolve, reject) => {
+    try {
+      const observer = new MutationObserver(() => {
+        if(!document.documentElement) return;
+
+        observer.disconnect()
+        resolve()
+      })
+      observer.observe(document, { childList: true })
+    } catch(ex) {
+      reject(ex)
+    }
+  })
+}
+
+const waitForHeadElement = async () => {
+  if(document.head) return
+
+  await new Promise((resolve, reject) => {
+    try {
+      const observer = new MutationObserver(() => {
+        if(!document.head) return;
+
+        observer.disconnect()
+        resolve()
+      })
+      observer.observe(document.documentElement, { childList: true })
+    } catch(ex) {
+      reject(ex)
+    }
+  })
+}
 
 const captureResourceLoadingException = async (url, event) => {
   let error
@@ -15,7 +51,7 @@ const captureResourceLoadingException = async (url, event) => {
         req.onreadystatechange = () => {
           try {
             if (req.readyState == XMLHttpRequest.DONE) {
-              error = new Error(`Error on ${url} request: ${req.statusText} (${req.status})`)
+              error = new Error(`Cannot load ${url} (Status: ${req.statusText} ${req.status})`)
               resolve()
             }
           } catch(ex) {
@@ -31,9 +67,15 @@ const captureResourceLoadingException = async (url, event) => {
   } catch(ex) {
     error = ex
   } finally {
-    error = error ?? new Error(`Unknown error on ${url} request.`)
+    error = error ?? new Error(`Cannot load ${url} (Status: unknown)`)
     error.details = event
     SentryReporter.captureException(error)
+    
+    setWarning(`Failed to load a resource. Refresh the webpage to try it again. ${'\n'
+      }This can happen after you have updated the extension. ${'\n\n'
+      }Or if this happens often, view the error in your browser's DevTools javascript console panel. ${'\n'
+      }Tip: Look for errors about this url: ${url}`
+    )
   }
 }
 
@@ -86,6 +128,9 @@ const captureResourceLoadingException = async (url, event) => {
       }
     })
 
+  await waitForHtmlElement()
+  await waitForHeadElement()
+
   // const addWebGLLint = () => {
   //   const s = document.createElement('script')
   //   s.src = 'https://greggman.github.io/webgl-lint/webgl-lint.js'
@@ -99,8 +144,23 @@ const captureResourceLoadingException = async (url, event) => {
   // }
   // addWebGLLint()
 
+  const loaded = await new Promise(resolve => {
+    const style = document.createElement('link')
+    style.rel = 'stylesheet'
+    style.href = chrome.runtime.getURL('styles/content.css')
+    style.onerror = async function injectStyleOnError(event) {
+      await captureResourceLoadingException(style.href, event)
+      resolve(false)
+    }.bind(this)
+    style.onload = function injectStyleOnLoad() {
+      resolve(true)
+    }.bind(this)
+    document.head.appendChild(style)
+  })
+  if(!loaded) return
+
   const script = document.createElement('script')
-  script.defer = true
+  script.async = true
   script.src = chrome.runtime.getURL('scripts/injected.js')
   script.setAttribute('data-crash-options', JSON.stringify(crashOptions))
   script.setAttribute('data-version', version)
@@ -110,13 +170,4 @@ const captureResourceLoadingException = async (url, event) => {
     await captureResourceLoadingException(script.src, event)
   }.bind(this)
   document.head.appendChild(script)
-
-  
-  const style = document.createElement('link')
-  style.rel = 'stylesheet'
-  style.href = chrome.runtime.getURL('styles/content.css')
-  style.onerror = async function injectStyleOnError(event) {
-    await captureResourceLoadingException(style.href, event)
-  }.bind(this)
-  document.head.appendChild(style)
 }))()
