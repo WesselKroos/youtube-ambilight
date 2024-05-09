@@ -1,8 +1,7 @@
-import { on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
+import { on, off, setTimeout, supportsWebGL, raf } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
-import { getBrowser } from './utils'
-import SettingsConfig from './settings-config'
+import SettingsConfig, { prepareSettingsConfigOnce, WebGLOnlySettings } from './settings-config'
 
 export const FRAMESYNC_DECODEDFRAMES = 0
 export const FRAMESYNC_DISPLAYFRAMES = 1
@@ -35,58 +34,7 @@ export default class Settings {
       return Settings.storedSettingsCached
     }
 
-    const webGLOnlySettings = [
-      'resolution',
-      'vibrance',
-      'frameFading',
-      'flickerReduction',
-      'fixedPosition',
-      'chromiumBugVideoJitterWorkaround'
-    ]
-    const settingsToRemove = []
-    for(const setting of SettingsConfig) {
-      if(supportsWebGL()) {
-        if(setting.name === 'resolution' && getBrowser() === 'Firefox') {
-          setting.default = 50
-        }
-      } else {
-        if(webGLOnlySettings.includes(setting.name)) {
-          settingsToRemove.push(setting.name)
-        }
-        if([
-          'webGL'
-        ].includes(setting.name)) {
-          setting.default = false
-          setting.disabled = 'You have disabled WebGL in your browser.'
-        }
-      }
-      
-      if(setting.name === 'frameSync') {
-        if(!HTMLVideoElement.prototype.requestVideoFrameCallback) {
-            setting.max = 1
-            setting.default = 0
-        }
-      }
-    }
-
-    if(getBrowser() === 'Firefox') {
-      settingsToRemove.push('enableInVRVideos')
-    }
-
-    if(!supportsColorMix()) {
-      settingsToRemove.push('pageBackgroundGreyness')
-    }
-
-    for(const settingName of settingsToRemove) {
-      const settingIndex = SettingsConfig.findIndex(setting => setting.name === settingName)
-      if(settingIndex === -1) {
-        SentryReporter.captureException(new Error(`Cannot remove setting ${settingName}. Does not exist in SettingsConfig.${'\n'
-          }Present settings: ${SettingsConfig.map(setting => setting.name).join(', ')}`
-        ))
-        continue;
-      }
-      SettingsConfig.splice(settingIndex, 1)
-    }
+    prepareSettingsConfigOnce()
 
     const names = []
     for (const setting of SettingsConfig) {
@@ -154,7 +102,7 @@ export default class Settings {
       }
     } else {
       SettingsConfig.find(setting => setting.name === 'spread').max = 200
-      for(const settingName of webGLOnlySettings) {
+      for(const settingName of WebGLOnlySettings) {
         if(Settings.storedSettingsCached[`setting-${settingName}`] !== undefined)
           delete Settings.storedSettingsCached[`setting-${settingName}`]
       }
