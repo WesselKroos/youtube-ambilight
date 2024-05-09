@@ -1,5 +1,5 @@
 import { getCookie, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
-import { contentScript } from "./messaging"
+import { contentScript } from "./messaging/content"
 import SentryReporter from "./sentry-reporter"
 
 const THEME_LIGHT = -1

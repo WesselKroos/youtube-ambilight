@@ -1,7 +1,7 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter'
 import { ctxOptions, requestIdleCallback, SafeOffscreenCanvas, wrapErrorHandler } from './generic'
-import { contentScript } from './messaging'
 import ProjectorShadow from './projector-shadow'
+import { contentScript } from './messaging/content'
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL'

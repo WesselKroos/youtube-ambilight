@@ -1,8 +1,8 @@
 import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl, setWarning } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
-import { contentScript } from './libs/messaging'
 import Settings from './libs/settings'
+import { contentScript } from './libs/messaging/content'
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 

@@ -1,8 +1,8 @@
 import { getFeedbackFormLink, getVersion } from './libs/utils'
 import { setErrorHandler, setWarning, wrapErrorHandler } from './libs/generic'
-import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-reporter'
+import { injectedScript } from './libs/messaging/injected'
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 

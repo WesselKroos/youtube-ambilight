@@ -4,8 +4,8 @@ import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
 import { Scope } from '@sentry/core/esm/scope';
 
 import { isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
-import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
+import { contentScript } from './messaging/content';
 
 const getNodeSelector = (elem) => {
   if(!elem.tagName) return elem.nodeName // Document

@@ -1,6 +1,6 @@
 import { on, off, setTimeout, supportsWebGL, raf, setWarning } from './generic'
 import SentryReporter from './sentry-reporter'
-import { contentScript } from './messaging'
+import { contentScript } from './messaging/content'
 import SettingsConfig, { prepareSettingsConfigOnce, WebGLOnlySettings } from './settings-config'
 
 export const FRAMESYNC_DECODEDFRAMES = 0

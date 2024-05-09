@@ -364,7 +364,7 @@ export const setWarning = (text) => {
     elem.style.borderTopRightRadius = '3px'
     elem.style.whiteSpace = 'pre-wrap'
     elem.style.fontSize = '15px'
-    elem.style.lineHeight = '20px'
+    elem.style.lineHeight = '18px'
     elem.style.fontFamily = 'sans-serif'
     elem.style.overflowWrap = 'anywhere'
     elem.style.overflow = 'hidden'
@@ -381,6 +381,7 @@ export const setWarning = (text) => {
     closeButton.style.background = '#f80'
     closeButton.style.fontWeight = 'bold'
     closeButton.style.fontFamily = 'inherit'
+    closeButton.style.lineHeight = '20px'
     closeButton.style.fontSize = '22px'
     closeButton.style.color = '#000'
     closeButton.style.cursor = 'pointer'
@@ -392,7 +393,7 @@ export const setWarning = (text) => {
     titleElem.style.fontWeight = 'bold'
     titleElem.style.color = '#008cff'
     titleElem.style.fontSize = '22px'
-    elem.style.lineHeight = '28px'
+    titleElem.style.lineHeight = '28px'
     titleElem.textContent = 'Ambient light for YouTube™\n'
     elem.appendChild(titleElem)
 
