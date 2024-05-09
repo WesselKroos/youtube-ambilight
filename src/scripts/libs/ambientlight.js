@@ -1045,6 +1045,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
   async initAmbientlightElems() {
     this.elem = document.createElement('div')
     this.elem.classList.add('ambientlight')
+    this.elem.style.position = 'absolute'
 
     if(this.mastheadElem) {
       this.topElem = document.createElement('div')
