@@ -6,6 +6,42 @@ import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-repor
 
 setErrorHandler((ex) => SentryReporter.captureException(ex))
 
+const waitForHtmlElement = async () => {
+  if(document.documentElement) return
+
+  await new Promise((resolve, reject) => {
+    try {
+      const observer = new MutationObserver(() => {
+        if(!document.documentElement) return;
+
+        observer.disconnect()
+        resolve()
+      })
+      observer.observe(document, { childList: true })
+    } catch(ex) {
+      reject(ex)
+    }
+  })
+}
+
+const waitForHeadElement = async () => {
+  if(document.head) return
+
+  await new Promise((resolve, reject) => {
+    try {
+      const observer = new MutationObserver(() => {
+        if(!document.head) return;
+
+        observer.disconnect()
+        resolve()
+      })
+      observer.observe(document.documentElement, { childList: true })
+    } catch(ex) {
+      reject(ex)
+    }
+  })
+}
+
 const captureResourceLoadingException = async (url, event) => {
   let error
   try {
@@ -86,6 +122,9 @@ const captureResourceLoadingException = async (url, event) => {
       }
     })
 
+  await waitForHtmlElement()
+  await waitForHeadElement()
+
   // const addWebGLLint = () => {
   //   const s = document.createElement('script')
   //   s.src = 'https://greggman.github.io/webgl-lint/webgl-lint.js'
@@ -115,7 +154,7 @@ const captureResourceLoadingException = async (url, event) => {
   if(!loaded) return
 
   const script = document.createElement('script')
-  script.defer = true
+  script.async = true
   script.src = chrome.runtime.getURL('scripts/injected.js')
   script.setAttribute('data-crash-options', JSON.stringify(crashOptions))
   script.setAttribute('data-version', version)
