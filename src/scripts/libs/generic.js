@@ -198,8 +198,6 @@ export function off(elem, eventNames, callback) {
   }
 }
 
-export const html = document.documentElement
-
 export const raf = (callback) => requestAnimationFrame(wrapErrorHandler(callback))
 
 const colorSpace = (

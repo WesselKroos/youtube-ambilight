@@ -1,4 +1,4 @@
-import { getCookie, html, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
+import { getCookie, isEmbedPageUrl, isWatchPageUrl, on, requestIdleCallback, wrapErrorHandler } from "./generic"
 import { contentScript } from "./messaging"
 import SentryReporter from "./sentry-reporter"
 
@@ -66,7 +66,7 @@ export default class Theming {
       this.updateTheme()
       if(themeCorrections === 5) this.themeObserver.disconnect()
     }))
-    this.themeObserver.observe(html, {
+    this.themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeOldValue: true,
       attributeFilter: ['dark']
@@ -94,7 +94,7 @@ export default class Theming {
     return THEME_LIGHT
   }
 
-  isDarkTheme = () => (html.getAttribute('dark') !== null)
+  isDarkTheme = () => (document.documentElement.getAttribute('dark') !== null)
   
   shouldBeDarkTheme = () => {
     const toTheme = (!this.settings.enabled || this.ambientlight.isHidden || this.settings.theme === THEME_DEFAULT)

@@ -3,7 +3,7 @@ import { Dedupe as DedupeIntegration } from "@sentry/browser/esm/integrations/de
 import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
 import { Scope } from '@sentry/core/esm/scope';
 
-import { html, isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
+import { isEmbedPageUrl, mediaErrorToString, networkStateToString, on, readyStateToString, uuidv4, watchSelectors } from './generic';
 import { contentScript } from './messaging';
 import SettingsConfig from './settings-config';
 
@@ -417,7 +417,7 @@ export default class SentryReporter {
 
         try {
           setExtra('YouTube', {
-            dark: !!html?.attributes?.dark,
+            dark: !!document.documentElement?.attributes?.dark,
             loggedIn: (window.yt)
               ? !!window.yt?.config_?.LOGGED_IN
               : (document.querySelector('ytd-topbar-menu-button-renderer') ? !!document.querySelector('#avatar-btn') : undefined)

@@ -1,4 +1,4 @@
-import { html, on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
+import { on, off, setTimeout, supportsWebGL, raf, supportsColorMix } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import { getBrowser } from './utils'
@@ -200,7 +200,7 @@ export default class Settings {
 
     await this.flushPendingStorageEntries() // Complete migrations
 
-    if(this.enabled) html.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
+    if(this.enabled) document.documentElement.setAttribute('data-ambientlight-hide-scrollbar', this.hideScrollbar)
   }
 
   migrate(storedSettings) {
@@ -887,6 +887,7 @@ export default class Settings {
             this.ambientlight.updateLayoutPerformanceImprovements()
           }
 
+          const html = document.documentElement
           if (setting.name === 'relatedScrollbar' && this.enabled) {
             if(value)
               html.setAttribute('data-ambientlight-related-scrollbar', true)
