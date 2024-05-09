@@ -32,12 +32,14 @@
     {
       "matches": ["https://www.youtube.com/*"],
       "exclude_matches": ["https://www.youtube.com/live_chat*", "https://www.youtube.com/embed/*"],
-      "js": ["scripts/content.js"]
+      "js": ["scripts/content.js"],
+      "run_at": "document_start"
     },
     {
       "matches": ["https://www.youtube.com/embed/*"],
       "js": ["scripts/content.js"],
-      "all_frames": true
+      "all_frames": true,
+      "run_at": "document_start"
     },
     {
       "matches": ["https://www.youtube.com/live_chat*"],
@@ -45,7 +47,8 @@
       "css": [
         "styles/live-chat.css"
       ],
-      "all_frames": true
+      "all_frames": true,
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
