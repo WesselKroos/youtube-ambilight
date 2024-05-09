@@ -1215,6 +1215,7 @@ html[data-ambientlight-enabled="true"] {
     z-index: -1; // Fixes glitching in some video's in the small view in Firefox
     top: 0;
     left: 0;
+    min-height: 100svh;
     display: block;
     overflow: hidden;
     pointer-events: none;
@@ -1237,7 +1238,7 @@ html[data-ambientlight-enabled="true"] {
   body[data-ambientlight-fixed="true"] {
     .ambientlight {
       position: fixed;
-      height: 100vh;
+      height: 100svh;
     }
   }
 
@@ -2972,7 +2973,7 @@ html[data-ambientlight-enabled="true"] {
     // Faster comments loading
 
     #primary.ytd-watch-flexy #below {
-      margin-bottom: 25vh;
+      margin-bottom: 25svh;
     }
 
 
