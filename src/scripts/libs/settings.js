@@ -1,4 +1,4 @@
-import { on, off, setTimeout, supportsWebGL, raf } from './generic'
+import { on, off, setTimeout, supportsWebGL, raf, setWarning } from './generic'
 import SentryReporter from './sentry-reporter'
 import { contentScript } from './messaging'
 import SettingsConfig, { prepareSettingsConfigOnce, WebGLOnlySettings } from './settings-config'
@@ -53,7 +53,14 @@ export default class Settings {
     names.push('setting-bloom')
     names.push('setting-fadeOutEasing')
 
+    const warningTimeout = setTimeout(() => setWarning(
+      `It is taking more than 5 seconds to load your settings. ${'\n\n'
+      }Something might be wrong. Have you uninstalled or reinstalled the extension? ${'\n'
+      }Then reload the webpage to reload the extension.`
+    ), 5000)
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
+    clearTimeout(warningTimeout)
+    setWarning()
 
     // Migrate old settings
     if(Settings.storedSettingsCached['setting-blur'] !== null) {
@@ -116,7 +123,7 @@ export default class Settings {
   async getAll() {
     let storedSettings = {}
     try {
-      storedSettings = await Settings.getStoredSettingsCached();
+      storedSettings = await Settings.getStoredSettingsCached()
     } catch {
       this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
     }

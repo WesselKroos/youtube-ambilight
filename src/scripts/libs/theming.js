@@ -121,7 +121,23 @@ export default class Theming {
     this.updatingTheme = true
     
     if(this.themeToggleFailed !== false) {
-      const lastFailedThemeToggle = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+      // eslint-disable-next-line no-async-promise-executor
+      const lastFailedThemeToggle = await new Promise(async (resolve, reject) => {
+        try {
+          let timeout = setTimeout(() => {
+            timeout = undefined
+            resolve()
+          }, 5000)
+          const result = await contentScript.getStorageEntryOrEntries('last-failed-theme-toggle')
+          if(!timeout) return
+          
+          clearTimeout(timeout)
+          resolve(result)
+        } catch(ex) {
+          reject(ex)
+        }
+      })
+      
       if(lastFailedThemeToggle) {
         const now = new Date().getTime()
         const withinThresshold = now - 10000 < lastFailedThemeToggle

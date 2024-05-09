@@ -1,5 +1,5 @@
 import { getFeedbackFormLink, getVersion } from './libs/utils'
-import { setErrorHandler, wrapErrorHandler } from './libs/generic'
+import { setErrorHandler, setWarning, wrapErrorHandler } from './libs/generic'
 import { injectedScript } from './libs/messaging'
 import { defaultCrashOptions, storage } from './libs/storage'
 import SentryReporter, { setCrashOptions, setVersion } from './libs/sentry-reporter'
@@ -70,6 +70,11 @@ const captureResourceLoadingException = async (url, event) => {
     error = error ?? new Error(`Cannot load ${url} (Status: unknown)`)
     error.details = event
     SentryReporter.captureException(error)
+    
+    setWarning(`Failed to load a resource. Reload the webpage to reload the extension. ${'\n\n'
+      }Or if this happens often, view the error in your browser's DevTools javascript console panel and report it to the developer. ${'\n'
+      }Tip: Look for errors about the url: ${url}`
+    )
   }
 }
 

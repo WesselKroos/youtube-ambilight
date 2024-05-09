@@ -182,8 +182,6 @@ const tryInitAmbientlight = async () => {
       return
     }
 
-    
-
     const ytdWatchElem = document.querySelector(watchSelectors.map(selector => `ytd-app ${selector}`).join(', '))
     if(!ytdWatchElem) {
       logErrorEventWithPageTrees(`initialize - not found yet: ytd-app ytd-watch-...`)
