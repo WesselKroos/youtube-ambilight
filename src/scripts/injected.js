@@ -263,7 +263,9 @@ const loadAmbientlight = async () => {
   if(!observerTarget) {
     if(isEmbedPageUrl()) {
       if(!document.querySelector('#player')) {
-        throw new AmbientlightError('Found no #player element on the embed page')
+        logErrorEventWithPageTrees('initialize - not found yet: #player')
+        errorEvents.send('Found no #player element on the embed page', true)
+        return
       }
       observerTarget = document.body
     } else {

@@ -573,11 +573,11 @@ export class ErrorEvents {
     }, false)
   }
 
-  send = () => {
+  send = (message, force) => {
     const lastEvent = this.list[this.list.length - 1]
     const lastTime = lastEvent.time
     const firstTime =  this.list[0].firstTime || this.list[0].time
-    if(lastTime - firstTime < 5) {
+    if(!force && lastTime - firstTime < 5) {
       return // Give the site 5 seconds to load the watch page or move the video element
     }
 
@@ -589,7 +589,7 @@ export class ErrorEvents {
     this.list = []
 
     SentryReporter.captureException(
-      new AmbientlightError('Closed or hid the page with pending errors', details)
+      new AmbientlightError(message ?? 'Closed or hid the page with pending errors', details)
     )
   }
 
