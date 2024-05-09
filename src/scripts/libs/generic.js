@@ -359,13 +359,15 @@ export const setWarning = (text) => {
     elem.style.bottom = 0
     elem.style.padding = '5px 8px'
     elem.style.background = 'rgba(0,0,0,.99)'
-    elem.style.color = '#f80'
+    elem.style.color = '#fff'
     elem.style.border = '1px solid #f80'
+    elem.style.borderTopRightRadius = '3px'
     elem.style.whiteSpace = 'pre-wrap'
-    elem.style.fontSize = '16px'
-    elem.style.lineHeight = '22px'
+    elem.style.fontSize = '15px'
+    elem.style.lineHeight = '20px'
     elem.style.fontFamily = 'sans-serif'
     elem.style.overflowWrap = 'anywhere'
+    elem.style.overflow = 'hidden'
     warningElem = elem
     
     const closeButton = document.createElement('button')
@@ -386,6 +388,14 @@ export const setWarning = (text) => {
     closeButton.addEventListener('click', () => setWarning(''))
     elem.appendChild(closeButton)
 
+    const titleElem = document.createElement('div')
+    titleElem.style.fontWeight = 'bold'
+    titleElem.style.color = '#008cff'
+    titleElem.style.fontSize = '22px'
+    elem.style.lineHeight = '28px'
+    titleElem.textContent = 'Ambient light for YouTube™\n'
+    elem.appendChild(titleElem)
+
     const textElem = document.createElement('div')
     warningElemText = textElem
     elem.appendChild(textElem)
@@ -393,7 +403,7 @@ export const setWarning = (text) => {
 
   const elem = warningElem
   if(text) {
-    warningElemText.textContent = `Ambient light for YouTube™ warning:\n${text}`
+    warningElemText.textContent = text
     document.documentElement.appendChild(elem)
   } else {
     warningElemText.textContent = ''

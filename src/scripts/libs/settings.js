@@ -54,9 +54,9 @@ export default class Settings {
     names.push('setting-fadeOutEasing')
 
     const warningTimeout = setTimeout(() => setWarning(
-      `It is taking more than 5 seconds to load your settings. ${'\n\n'
-      }Something might be wrong. Have you uninstalled or reinstalled the extension? ${'\n'
-      }Then reload the webpage to reload the extension.`
+      `It is taking more than 5 seconds to load your previous settings. Something might be wrong.${'\n'
+      }Refresh the webpage to try it again. ${'\n\n'
+      }This can happen after you have updated the extension.`
     ), 5000)
     Settings.storedSettingsCached = await contentScript.getStorageEntryOrEntries(names, true) || {}
     clearTimeout(warningTimeout)
@@ -125,7 +125,7 @@ export default class Settings {
     try {
       storedSettings = await Settings.getStoredSettingsCached()
     } catch {
-      this.setWarning('The settings cannot be retrieved, the extension could have been updated.\nRefresh the page to retry again.')
+      this.setWarning('Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again.')
     }
 
     const webGLCrash = storedSettings['setting-webGLCrash']

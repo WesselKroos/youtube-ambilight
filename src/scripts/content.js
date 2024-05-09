@@ -71,9 +71,10 @@ const captureResourceLoadingException = async (url, event) => {
     error.details = event
     SentryReporter.captureException(error)
     
-    setWarning(`Failed to load a resource. Reload the webpage to reload the extension. ${'\n\n'
-      }Or if this happens often, view the error in your browser's DevTools javascript console panel and report it to the developer. ${'\n'
-      }Tip: Look for errors about the url: ${url}`
+    setWarning(`Failed to load a resource. Refresh the webpage to try it again. ${'\n'
+      }This can happen after you have updated the extension. ${'\n\n'
+      }Or if this happens often, view the error in your browser's DevTools javascript console panel. ${'\n'
+      }Tip: Look for errors about this url: ${url}`
     )
   }
 }

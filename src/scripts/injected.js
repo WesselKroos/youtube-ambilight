@@ -1,4 +1,4 @@
-import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl } from './libs/generic'
+import { on, wrapErrorHandler, isWatchPageUrl, setErrorHandler, watchSelectors, isEmbedPageUrl, setWarning } from './libs/generic'
 import SentryReporter, { getSelectorTreeString, getNodeTreeString, AmbientlightError, ErrorEvents, setVersion, setCrashOptions } from './libs/sentry-reporter'
 import Ambientlight from './libs/ambientlight'
 import { contentScript } from './libs/messaging'
@@ -284,7 +284,10 @@ const loadAmbientlight = async () => {
   try {
     await Settings.getStoredSettingsCached()
   } catch(ex) {
-    console.warn('The settings cannot be precached')
+    setWarning(`Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'
+      }This can happen after you have updated the extension. ${'\n\n'
+      }${ex?.toString()}`
+    )
     console.error(ex)
   }
 
