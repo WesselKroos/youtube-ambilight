@@ -15,7 +15,7 @@ const captureResourceLoadingException = async (url, event) => {
         req.onreadystatechange = () => {
           try {
             if (req.readyState == XMLHttpRequest.DONE) {
-              error = new Error(`Error on ${url} request: ${req.statusText} (${req.status})`)
+              error = new Error(`Cannot load ${url} (Status: ${req.statusText} ${req.status})`)
               resolve()
             }
           } catch(ex) {
@@ -31,7 +31,7 @@ const captureResourceLoadingException = async (url, event) => {
   } catch(ex) {
     error = ex
   } finally {
-    error = error ?? new Error(`Unknown error on ${url} request.`)
+    error = error ?? new Error(`Cannot load ${url} (Status: unknown)`)
     error.details = event
     SentryReporter.captureException(error)
   }
@@ -99,6 +99,21 @@ const captureResourceLoadingException = async (url, event) => {
   // }
   // addWebGLLint()
 
+  const loaded = await new Promise(resolve => {
+    const style = document.createElement('link')
+    style.rel = 'stylesheet'
+    style.href = chrome.runtime.getURL('styles/content.css')
+    style.onerror = async function injectStyleOnError(event) {
+      await captureResourceLoadingException(style.href, event)
+      resolve(false)
+    }.bind(this)
+    style.onload = function injectStyleOnLoad() {
+      resolve(true)
+    }.bind(this)
+    document.head.appendChild(style)
+  })
+  if(!loaded) return
+
   const script = document.createElement('script')
   script.defer = true
   script.src = chrome.runtime.getURL('scripts/injected.js')
@@ -110,13 +125,4 @@ const captureResourceLoadingException = async (url, event) => {
     await captureResourceLoadingException(script.src, event)
   }.bind(this)
   document.head.appendChild(script)
-
-  
-  const style = document.createElement('link')
-  style.rel = 'stylesheet'
-  style.href = chrome.runtime.getURL('styles/content.css')
-  style.onerror = async function injectStyleOnError(event) {
-    await captureResourceLoadingException(style.href, event)
-  }.bind(this)
-  document.head.appendChild(style)
 }))()
