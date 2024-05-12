@@ -278,7 +278,7 @@ export class WebGLContext {
     // Validate these parameters after program compilation to prevent render blocking validation
     const vertexShaderCompiled = this.ctx.getShaderParameter(vertexShader, this.ctx.COMPILE_STATUS)
     const fragmentShaderCompiled = this.ctx.getShaderParameter(fragmentShader, this.ctx.COMPILE_STATUS)
-    const programLinked = false // this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)
+    const programLinked = this.ctx.getProgramParameter(program, this.ctx.LINK_STATUS)
     if(!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed')
       programCompilationError.name = 'WebGLError'
