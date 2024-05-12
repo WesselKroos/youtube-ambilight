@@ -122,7 +122,7 @@ export class WebGLContext {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
-        alpha: false,
+        // alpha: false, // Decreases performance on some platforms
         depth: false,
         antialias: false,
         desynchronized: true,

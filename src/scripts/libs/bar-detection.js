@@ -302,7 +302,7 @@ const workerCode = function () {
       canvasIsCreatedInWorker = true
 
       ctx = canvas.getContext('2d', {
-        alpha: false,
+        // alpha: false, // Decreases performance on some platforms
         desynchronized: true
       })
       ctx.imageSmoothingEnabled = false
@@ -346,7 +346,7 @@ const workerCode = function () {
             canvas.width = bitmap.width
             canvas.height = bitmap.height
             ctx = canvas.getContext('2d', {
-              alpha: false,
+              // alpha: false, // Decreases performance on some platforms
               desynchronized: true
             })
             ctx.imageSmoothingEnabled = false
@@ -548,7 +548,7 @@ export default class BarDetection {
 
         if(!this.ctx || (this.ctx?.isContextLost && this.ctx.isContextLost())) {
           this.ctx = this.canvas.getContext('2d', {
-            alpha: false,
+            // alpha: false, // Decreases performance on some platforms
             desynchronized: true
           })
           this.ctx.imageSmoothingEnabled = true
