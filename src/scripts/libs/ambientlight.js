@@ -1107,6 +1107,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
           SentryReporter.captureException(ex)
         } else {
           console.log(ex)
+          if(ex?.details) console.log(ex.details)
         }
         this.settings.handleWebGLCrash()
       }
@@ -1169,6 +1170,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
           SentryReporter.captureException(ex)
         } else {
           console.log(ex)
+          if(ex?.details) console.log(ex.details)
         }
         this.settings.handleWebGLCrash()
       }

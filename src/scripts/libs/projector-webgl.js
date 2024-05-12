@@ -517,11 +517,15 @@ export default class ProjectorWebGL {
         fUV = vUV;
         gl_Position = vec4(vPosition, 0, 1);
       }
-    `;
-    const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
-    this.ctx.shaderSource(vertexShader, vertexShaderSrc);
-    this.ctx.compileShader(vertexShader);
-    this.ctx.attachShader(program, vertexShader);
+    `
+      .replace(/\n {6}/g, '\n')
+      .replace(/ +\n/g, '')
+      .replace(/\n+/g, '\n')
+      .trim()
+    const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER)
+    this.ctx.shaderSource(vertexShader, vertexShaderSrc)
+    this.ctx.compileShader(vertexShader)
+    this.ctx.attachShader(program, vertexShader)
     
     const fragmentShaderSrc = `
       precision lowp float;
@@ -598,41 +602,41 @@ export default class ProjectorWebGL {
       }
       
       ${this.settings.vibrance !== 100 ? `
-        vec3 rgb2hsv(vec3 c)
-        {
-            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+      vec3 rgb2hsv(vec3 c)
+      {
+          vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+          vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+          vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
 
-            float d = q.x - min(q.w, q.y);
-            float e = 1.0e-10;
-            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+          float d = q.x - min(q.w, q.y);
+          float e = 1.0e-10;
+          return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+      }
+
+      vec3 hsv2rgb(vec3 c)
+      {
+          vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+          vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+          return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+      }
+
+      float saturate(float c, float v) {
+        float x = c;
+        if(v < 0.) {
+          x = 1. - c;
         }
 
-        vec3 hsv2rgb(vec3 c)
-        {
-            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+        float a = 1. + 5. * (1. - abs(v));
+        float y = a * a - x * ( (a * a - 1.) / (a * a) ) - (a - x / a) * (a - x / a);
+        float d = y - x;
+        y = min(1., x + d * 5.);
+
+        if(v >= 0.) {
+          return y;
+        } else {
+          return 1. - y;
         }
-
-        float saturate(float c, float v) {
-          float x = c;
-          if(v < 0.) {
-            x = 1. - c;
-          }
-
-          float a = 1. + 5. * (1. - abs(v));
-          float y = a * a - x * ( (a * a - 1.) / (a * a) ) - (a - x / a) * (a - x / a);
-          float d = y - x;
-          y = min(1., x + d * 5.);
-
-          if(v >= 0.) {
-            return y;
-          } else {
-            return 1. - y;
-          }
-        }
+      }
       ` :''}
 
       void main(void) {
@@ -647,7 +651,11 @@ export default class ProjectorWebGL {
         ` : ''}
         gl_FragColor = vec4(ambientlight, 1. - shadowAlpha);
       }
-    `;
+    `
+      .replace(/\n {6}/g, '\n')
+      .replace(/ +\n/g, '')
+      .replace(/\n+/g, '\n')
+      .trim();
     const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(fragmentShader);
@@ -778,22 +786,28 @@ export default class ProjectorWebGL {
             vertexShader: ext.getTranslatedShaderSource(vertexShader),
             fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
           }
+          if(!programCompilationError.details.Ωsources.vertexShader) {
+            programCompilationError.details.Ωsources.vertexShaderCode = vertexShaderSrc
+          }
+          if(!programCompilationError.details.Ωsources.fragmentShader) {
+            programCompilationError.details.Ωsources.fragmentShaderCode = fragmentShaderSrc
+          }
         }
       } catch(ex) {
         programCompilationError.details.debugShadersError = ex
       }
 
-      // try {
-      //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-      //   programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-      //     : 'unknown'
-      //   programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-      //     : 'unknown'
-      // } catch(ex) {
-      //   programCompilationError.details.gpuError = ex
-      // }
+      try {
+        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+          : 'unknown'
+        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+          : 'unknown'
+      } catch(ex) {
+        programCompilationError.details.gpuError = ex
+      }
 
       if(
         programCompilationError.details.vertexShaderInfoLog ||
@@ -802,7 +816,9 @@ export default class ProjectorWebGL {
         programCompilationError.details.programValidationInfoLog ||
         programCompilationError.details.validateProgramError ||
         programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.vertexShaderCode ||
         programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.Ωsources?.fragmentShaderCode ||
         programCompilationError.details.debugShadersError
       ) {
         programCompilationError.name = 'WebGLErrorWithInfoLog'
