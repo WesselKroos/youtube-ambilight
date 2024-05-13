@@ -200,6 +200,15 @@ const workerCode = function () {
         difference
       })
     } catch(ex) {
+      if(ex?.name === 'SecurityError') {
+        this.postMessage({
+          id,
+          baseUrl,
+          difference: 1
+        })
+        return
+      }
+
       this.postMessage({
         id,
         baseUrl,
@@ -266,7 +275,7 @@ export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
   const stack = new Error().stack
   onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
     worker.onerror = (err) => reject(err)
-    worker.onmessage = (e) => {
+    worker.onmessage = function onMessage(e) {
       try {
         if(e.data.id !== workerMessageId) return
 
@@ -288,7 +297,7 @@ export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
       } catch(ex) {
         reject(ex)
       }
-    }
+    }.bind(this)
   }.bind(this))
   worker.postMessage({
     id,
