@@ -210,11 +210,14 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
    3. Disable the setting: Settings > Video > Video artifacts workaround
    4. [Optional] Re-disable the setting: Settings > Advanced
 
-NVidia RTX Video requires Window's Multi-Plane Overlay feature.
-The ambient light disables this feature by default to prevent graphical artifacts that appear for some users. For more info about these artifacts you can visit the reported Chromium issues:
-- [Issue 1155285: Occasionally checkered artifacts when using drawImage directly in the video.requestVideoFrameCallback callback](https://bugs.chromium.org/p/chromium/issues/detail?id=1155285)
-- [Video is incorrectly scaled in fullscreen modus (and via the F11 key)](https://issues.chromium.org/issues/338237034)
+> ⚠️ Firefox always disables RTX VSR/HDR when any black bars are removed from the video. Because any transformation on a video disables Window's Multi-Plane Overlay feature.
 
+> ⚠️ NVidia RTX Video requires Window's Multi-Plane Overlay feature. But this feature causes artifacts on some devices. That's the reason why this feature is disabled by default via the "Video artifacts workaround" setting.
+> For more info about the possible artifacts you could encounter, visit these reported issues:
+> - [Chromium: Occasionally checkered artifacts when using drawImage directly in the video.requestVideoFrameCallback callback](https://bugs.chromium.org/p/chromium/issues/detail?id=1155285)
+> - [Chromium: Video is incorrectly scaled in fullscreen modus (and via the F11 key)](https://issues.chromium.org/issues/338237034)
+> - [Chromium: Thin black line appears around the video](https://issues.chromium.org/issues/40228515)
+> - [Firefox: Thin black line appears around the video](https://github.com/WesselKroos/youtube-ambilight/issues/238)
 ---
 
 # Request troubleshooting assistance or report a browser bug
