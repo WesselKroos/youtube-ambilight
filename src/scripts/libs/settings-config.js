@@ -330,13 +330,13 @@ const SettingsConfig = [
   {
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
-    description: 'Only required for monitors above 60Hz',
+    description: 'Only usefull for monitors above 60Hz',
     questionMark: {
       title: 'Click for more information about this bug in Chromium browsers',
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
     },
     type: 'checkbox',
-    default: true,
+    default: false,
     advanced: true,
     experimental: true
   },
