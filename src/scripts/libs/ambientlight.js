@@ -668,7 +668,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       this.videoPlayerElem.setInternalSize()
       this.sizesChanged = true
     } catch(ex) {
-      console.warn('Failed to resize the video player')
+      console.warn(`Failed to resize the video player${ex?.message ? `: ${ex?.message}` : ''}`)
     }
   }
 
