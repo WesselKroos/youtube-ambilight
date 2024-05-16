@@ -148,7 +148,7 @@ const tryInitAmbientlight = async () => {
   if (window.ambientlight) return true
   if (!isWatchPageUrl()) return
   if(!document.querySelector('video')) return
-
+  
   if(isEmbedPageUrl()) {
     const videoElem = document.querySelector('#player #movie_player video.html5-main-video')
     if (!videoElem) {
@@ -262,11 +262,6 @@ const loadAmbientlight = async () => {
   let observerTarget = document.querySelector('ytd-app')
   if(!observerTarget) {
     if(isEmbedPageUrl()) {
-      if(!document.querySelector('#player')) {
-        logErrorEventWithPageTrees('initialize - not found yet: #player')
-        errorEvents.send('Found no #player element on the embed page', true)
-        return
-      }
       observerTarget = document.body
     } else {
       const otherAppElems = getOtherUnknownAppElems()

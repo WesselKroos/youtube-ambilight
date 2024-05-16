@@ -223,7 +223,7 @@ const extendedColorSpace = (
 )
 
 export const ctxOptions = {
-  alpha: false,
+  // alpha: false, // Decreases performance on some platforms
   // desynchronized: true,
   imageSmoothingQuality: 'low',
   colorSpace,

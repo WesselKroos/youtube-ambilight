@@ -122,7 +122,7 @@ export class WebGLContext {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
-        alpha: false,
+        // alpha: false, // Decreases performance on some platforms
         depth: false,
         antialias: false,
         desynchronized: true,
@@ -166,7 +166,7 @@ export class WebGLContext {
     }
 
     // Shaders
-    var vertexShaderSrc = `
+    const vertexShaderSrc = `
       precision lowp float;
       attribute vec2 vPosition;
       attribute vec2 vUV;
@@ -176,8 +176,12 @@ export class WebGLContext {
         fUV = vUV;
         gl_Position = vec4(vPosition, 0, 1);
       }
-    `;
-    var fragmentShaderSrc = `
+    `
+      .replace(/\n {6}/g, '\n')
+      .replace(/ +\n/g, '')
+      .replace(/\n+/g, '\n')
+      .trim();
+    const fragmentShaderSrc = `
       precision lowp float;
       varying vec2 fUV;
       uniform sampler2D textureSampler[${this.settings.flickerReduction ? 2 : 1}];
@@ -186,25 +190,29 @@ export class WebGLContext {
       
       void main(void) {
         ${this.settings.flickerReduction ? `
-          vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-          if(fPreviousCleared < .5) {
-            vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
-            
-            float difference = abs(
-              (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
-              (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
-            );
-            float percentage = 1.;
-            percentage = min(1., (1. - (difference * difference * difference)) * ${flickerReductionDifference.toFixed(3)});
-            gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
-            return;
-          }
+        vec4 currentColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+        if(fPreviousCleared < .5) {
+          vec4 previousColor = texture2D(textureSampler[1], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
+          
+          float difference = abs(
+            (currentColor.r * .213 + currentColor.g * .715 + currentColor.b * .072) - 
+            (previousColor.r * .213 + previousColor.g * .715 + previousColor.b * .072)
+          );
+          float percentage = 1.;
+          percentage = min(1., (1. - (difference * difference * difference)) * ${flickerReductionDifference.toFixed(3)});
+          gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
+          return;
+        }
         `: ''}
         gl_FragColor = texture2D(textureSampler[0], fUV${this.webGLVersion !== 1 ? ', fMipmapLevel' : ''});
       }
-    `;
-    var vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
-    var fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
+    `
+      .replace(/\n {6}/g, '\n')
+      .replace(/ +\n/g, '')
+      .replace(/\n+/g, '\n')
+      .trim();
+    const vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
+    const fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
     this.ctx.shaderSource(vertexShader, vertexShaderSrc);
     this.ctx.shaderSource(fragmentShader, fragmentShaderSrc);
     this.ctx.compileShader(vertexShader);
@@ -308,22 +316,28 @@ export class WebGLContext {
             vertexShader: ext.getTranslatedShaderSource(vertexShader),
             fragmentShader: ext.getTranslatedShaderSource(fragmentShader)
           }
+          if(!programCompilationError.details.Ωsources.vertexShader) {
+            programCompilationError.details.Ωsources.vertexShaderCode = vertexShaderSrc
+          }
+          if(!programCompilationError.details.Ωsources.fragmentShader) {
+            programCompilationError.details.Ωsources.fragmentShaderCode = fragmentShaderSrc
+          }
         }
       } catch(ex) {
         programCompilationError.details.debugShadersError = ex
       }
 
-      // try {
-      //   const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
-      //   programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
-      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
-      //     : 'unknown'
-      //   programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
-      //     ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
-      //     : 'unknown'
-      // } catch(ex) {
-      //   programCompilationError.details.gpuError = ex
-      // }
+      try {
+        const debugRendererInfo = this.ctx.getExtension('WEBGL_debug_renderer_info')
+        programCompilationError.details.gpuVendor = debugRendererInfo?.UNMASKED_VENDOR_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)
+          : 'unknown'
+        programCompilationError.details.gpuRenderer = debugRendererInfo?.UNMASKED_RENDERER_WEBGL
+          ? this.ctx.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)
+          : 'unknown'
+      } catch(ex) {
+        programCompilationError.details.gpuError = ex
+      }
 
       if(
         programCompilationError.details.vertexShaderInfoLog ||
@@ -332,7 +346,9 @@ export class WebGLContext {
         programCompilationError.details.programValidationInfoLog ||
         programCompilationError.details.validateProgramError ||
         programCompilationError.details.Ωsources?.vertexShader ||
+        programCompilationError.details.Ωsources?.vertexShaderCode ||
         programCompilationError.details.Ωsources?.fragmentShader ||
+        programCompilationError.details.Ωsources?.fragmentShaderCode ||
         programCompilationError.details.debugShadersError
       ) {
         programCompilationError.name = 'WebGLErrorWithInfoLog'
@@ -379,7 +395,7 @@ export class WebGLContext {
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(this.program, 'fMipmapLevel');
 
     // Buffers
-    var vUVBuffer = this.ctx.createBuffer();
+    const vUVBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vUVBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
       0, 0, 
@@ -387,11 +403,11 @@ export class WebGLContext {
       1, 1, 
       1, 0
     ]), this.ctx.STATIC_DRAW);
-    var vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
+    const vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(vUVLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vUVLoc);
 
-    var vPositionBuffer = this.ctx.createBuffer();
+    const vPositionBuffer = this.ctx.createBuffer();
     this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, vPositionBuffer);
     this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([
       -1, 1, 
@@ -399,7 +415,7 @@ export class WebGLContext {
       1, -1, 
       1, 1
     ]), this.ctx.STATIC_DRAW);
-    var vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
+    const vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition'); 
     this.ctx.vertexAttribPointer(vPositionLoc, 2, this.ctx.FLOAT, false, 2 * Float32Array.BYTES_PER_ELEMENT, 0);
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
