@@ -345,12 +345,13 @@ const SettingsConfig = [
     label: 'Video artifacts workaround',
     description: 'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)',
     questionMark: {
-      title: `This workaround is enabled by default, because videos in hardware accelerated overlays (MPO)
-can introduce several artifacts/bugs on Chromium browsers (Chrome, Edge, Opera) for some users.
+      title: `This workaround is enabled by default, 
+because videos in hardware accelerated overlays (MPO)
+can introduce several artifacts/bugs for some users.
 Examples are: random black/white squares, flickering or a squeezed video.
 
 Click on the questionmark for more and updated information about these artifacts/bugs.`,
-      href: 'https://github.com/WesselKroos/youtube-ambilight/issues/202'
+      href: 'https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work'
     },
     type: 'checkbox',
     default: true,

@@ -492,13 +492,12 @@ html[data-ambientlight-enabled="true"] {
     transform-origin: center center;
     transform: var(--video-transform);
 
-    // Disable direct composition video overlay that causes chromium bugs:
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=1335391
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=1411030
+    // Disable the direct composition video overlay that can cause artifacts on Windows
+    // https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work
     // .html5-video-container[style*="--video-transform"] {
     &.ambientlight__chromium-bug-direct-video-overlay-workaround {
-      clip-path: inset(0% 0%);
+      clip-path: inset(0% 0%); // Chromium
+      transform: var(--video-transform, translate3d(0, 0, 1px)); // Firefox
     }
   }
 

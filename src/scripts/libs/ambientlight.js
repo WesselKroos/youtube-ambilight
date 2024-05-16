@@ -166,7 +166,7 @@ export default class Ambientlight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1719154
   detectMozillaBugSlowCanvas2DReadPixelsWorkaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version && (version < 123 || version > 124)) {
       this.enableMozillaBugReadPixelsWorkaround = true
     }
@@ -180,7 +180,7 @@ export default class Ambientlight {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
   detectMozillaBug1606251Workaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version && version < 74) {
       this.enableMozillaBug1606251Workaround = true
     }
@@ -192,7 +192,7 @@ export default class Ambientlight {
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1142112
   detectChromiumBug1142112Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version && HTMLVideoElement.prototype.requestVideoFrameCallback) {
       this.enableChromiumBug1142112Workaround = true
     }
@@ -248,7 +248,7 @@ export default class Ambientlight {
     if(this.settings.webGL) return
 
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version && version >= 85) {
       this.enableChromiumBug1123708Workaround = true
     }
@@ -259,20 +259,9 @@ export default class Ambientlight {
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1092080
   detectChromiumBug1092080Workaround() {
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version && version >= 82 && version < 88) {
       this.enableChromiumBug1092080Workaround = true
-    }
-  }
-
-  // Chromium on Windows workaround: Direct video overlays (MPO) cause white/black checkerboard artifacts
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1480717
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1155285
-  detectChromiumBugDirectVideoOverlayWorkaround() {
-    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
-    if(version && version >= 59) {
-      this.enableChromiumBugDirectVideoOverlayWorkaround = true
     }
   }
 
@@ -281,10 +270,19 @@ export default class Ambientlight {
     if(!this.settings.webGL) return // This has to much impact on the performance of the Canvas2D renderer
 
     const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/)
-    const version = (match && match.length > 1) ? parseFloat(match[1]) : null
+    const version = (match?.length > 1) ? parseFloat(match[1]) : null
     if(version) {
       this.enableChromiumBugVideoJitterWorkaround = true
       this.settings.updateVisibility()
+    }
+  }
+
+  // Disable the direct composition video overlay that can cause artifacts on Windows
+  // https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work
+  detectChromiumBugDirectVideoOverlayWorkaround() {
+    const match = navigator.userAgent.match(/Windows/)
+    if(match?.length > 0) {
+      this.enableChromiumBugDirectVideoOverlayWorkaround = true
     }
   }
 
