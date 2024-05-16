@@ -200,7 +200,10 @@ const workerCode = function () {
         difference
       })
     } catch(ex) {
-      if(ex?.name === 'SecurityError') {
+      if ([
+        'InvalidStateError', 
+        'SecurityError'
+      ].includes(ex?.name)) {
         this.postMessage({
           id,
           baseUrl,
