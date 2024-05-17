@@ -262,7 +262,7 @@ const loadAmbientlight = async () => {
   let observerTarget = document.querySelector('ytd-app')
   if(!observerTarget) {
     if(isEmbedPageUrl()) {
-      observerTarget = document.body
+      observerTarget = document.documentElement
     } else {
       const otherAppElems = getOtherUnknownAppElems()
       if(otherAppElems.length) {
