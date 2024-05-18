@@ -793,7 +793,7 @@ export default class Settings {
             'enableInEmbed',
             'enableInVRVideos'
           ].some(name => name === setting.name)) {
-            this.set(setting.name, value)
+            if(setting.name !== 'webGL') this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
@@ -945,6 +945,7 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
+            this.saveStorageEntry('webGL', value)
             await this.flushPendingStorageEntries()
             await new Promise(resolve => setTimeout(resolve, 1000))
             this.reloadPage()
