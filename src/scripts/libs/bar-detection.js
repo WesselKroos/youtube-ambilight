@@ -68,11 +68,12 @@ const workerCode = function () {
 
     let colors = []
     let i = 0
-    for(const line of imageLines) {
+    for(const imageLine of imageLines) {
+      const data = imageLine.data
       i = topOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([line[i], line[i + 1], line[i + 2]])
+      colors.push([data[i], data[i + 1], data[i + 2]])
       i = bottomOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([line[i], line[i + 1], line[i + 2]])
+      colors.push([data[i], data[i + 1], data[i + 2]])
     }
     // const oldColor = colors[0]
 
