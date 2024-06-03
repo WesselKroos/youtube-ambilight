@@ -2,6 +2,7 @@ import { Canvas, on, requestIdleCallback } from './generic'
 
 export default class Stats {
   frametimesHistoryMax = 120
+  barDetectionDurationsMax = 5
 
   constructor(ambientlight) {
     this.ambientlight = ambientlight
@@ -65,6 +66,8 @@ export default class Stats {
       this.videoBufferResolutionElem = appendFPSItem('ambientlight__video-buffer-resolution')
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
+
+    this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-dration')
   }
 
   hide(onlyDisabled = false) {
@@ -83,6 +86,10 @@ export default class Stats {
       this.videoSyncedElem.childNodes[0].nodeValue = ''
       this.ambientlightFPSElem.childNodes[0].nodeValue = ''
       this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = ''
+    }
+    
+    if(!onlyDisabled || !this.settings.showBarDetectionStats) {
+      this.barDetectionDurationElem.childNodes[0].nodeValue = ''
     }
 
     if(!onlyDisabled || !this.settings.showFPS || !this.settings.showFrametimes) {
@@ -104,6 +111,7 @@ export default class Stats {
       (
         !onlyDisabled ||
         (
+          !this.settings.showBarDetectionStats &&
           !this.settings.showResolutions &&
           !this.settings.showFPS &&
           !this.settings.showFrametimes
@@ -226,8 +234,10 @@ export default class Stats {
     }
 
     this.updateFrameTimes()
+    this.updateBarDetectionDurations()
 
     if((
+        this.settings.showBarDetectionStats ||
         this.settings.showFPS ||
         this.settings.showResolutions ||
         this.settings.showFrametimes
@@ -537,5 +547,35 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         )
         .padStart(8, ' ')
       );
+  }
+
+  barDetectionDurations = []
+  addBarDetectionDuration = (duration) => {
+    if(!this.settings.showBarDetectionStats) return
+
+    this.barDetectionDurations.push(duration)
+  }
+
+  updateBarDetectionDurations = () => {
+    if(
+      !this.settings.showBarDetectionStats || 
+      !this.barDetectionDurations.length ||
+      (!this.settings.detectHorizontalBarSizeEnabled && !this.settings.detectVerticalBarSizeEnabled)
+    ) {
+      if(this.barDetectionDurationElem?.parentNode) {
+        this.barDetectionDurationElem.childNodes[0].nodeValue = ''
+        this.barDetectionDurationElem.style.color = ''
+      }
+      return
+    }
+
+    
+    const durations = this.barDetectionDurations.slice(-this.barDetectionDurationsMax)
+    this.barDetectionDurations = durations
+
+    const duration = Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length).toFixed(1)
+    
+    this.barDetectionDurationElem.childNodes[0].nodeValue = `REMOVE BARS DETECTION: ${duration}ms`
+    this.barDetectionDurationElem.style.color = '#fff'
   }
 }

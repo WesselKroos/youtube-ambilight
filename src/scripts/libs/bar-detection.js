@@ -9,6 +9,7 @@ const workerCode = function () {
   let ctx;
   let workerMessageId = 0;
   let globalXOffsetIndex = 0;
+  const scanlinesAmount = 5 // 10 // 40 // 5
 
   const postError = (ex) => {
     if (!catchedWorkerCreationError) {
@@ -20,18 +21,32 @@ const workerCode = function () {
     }
   }
 
-  async function getLineImageData(imageLines, yLength, index) {
+  let getLineImageDataStart
+  async function getLineImageData(imageLines, yLength, xIndex) {
+    if(!getLineImageDataStart) {
+      getLineImageDataStart = performance.now()
+    } else if(performance.now() - getLineImageDataStart > 4) {
+      // Give the CPU breathing time to execute other javascript code/internal browser code in between on single core instances
+      // (or GPU cores breathing time to decode the video or prepaint other elements in between)
+      // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+      
+      // const delayStart = performance.now()
+      await new Promise(resolve => setTimeout(resolve, 1)) // 0/1 = 13.5ms in Firefox & 0/1.5 ms in Chromium
+      // console.log(`was busy for ${(delayStart - getLineImageDataStart).toFixed(2)}ms | delayed by ${(performance.now() - delayStart).toFixed(2)}ms`)
+      getLineImageDataStart = performance.now()
+    }
+
     const params = yLength === 'height' 
-      ? [index, 0, 1, canvas.height]
-      : [0, index, canvas.width, 1]
+      ? [xIndex, 0, 1, canvas.height]
+      : [0, xIndex, canvas.width, 1]
 
-    const start = performance.now()
-    imageLines.push(ctx.getImageData(...params).data)
-    const duration = performance.now() - start
-
-    // Give the GPU cores breathing time to decode the video or prepaint other elements in between
-    // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
-    await new Promise(resolve => setTimeout(resolve, duration < 1 ? 0 : 1)) // Math.min(1000/24, duration / 2))
+    // const start = performance.now()
+    // const duration = performance.now() - start
+    imageLines.push({
+      xIndex,
+      yLength,
+      data: ctx.getImageData(...params).data
+    })
   }
 
   function sortSizes(averageSize, a, b) {
@@ -49,7 +64,7 @@ const workerCode = function () {
   function getAverageColor(imageLines, channels) {
     const edgeOffset = 4
     const topOffsetIndex = channels * edgeOffset
-    const bottomOffsetIndex = imageLines[0].length - channels - topOffsetIndex
+    const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
 
     let colors = []
     let i = 0
@@ -88,7 +103,7 @@ const workerCode = function () {
     const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
       
       const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
-      const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
+      const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
       const imageLines = []
       for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
         if(id < workerMessageId) {
@@ -101,6 +116,7 @@ const workerCode = function () {
             index + Math.round(xOffset * (partSize / 2) - partSize / 4)
           ), canvas[xLength] - 1))
       }
+      // console.log(`scanned ${imageLines.length} lines`)
       if(id < workerMessageId) {
         imageLines.length = 0
         return
@@ -122,20 +138,21 @@ const workerCode = function () {
       const maxBrightnessDeviation = 8
       const maxColorAndBrightnessDeviationSum = 16
       const ignoreEdge = 2
-      const lineLimit = (imageLines[0].length / 2)
+      const middleIndex = (imageLines[0].data.length / 2)
       const largeStep = 20
       const topSizes = []
       const bottomSizes = []
     
-      for(const line of imageLines) {
+      for(const imageLine of imageLines) {
+        const data = imageLine.data
         let step = largeStep
         // From the top down
-        for (let i = (channels * ignoreEdge); i < line.length; i += (channels * step)) {
-          const colorDeviation = Math.abs(line[i] - color[0]) + Math.abs(line[i+1] - color[1]) + Math.abs(line[i+2] - color[2])
-          const brightnessDeviation = Math.abs(line[i] + line[i+1] + line[i+2] - (color[0] + color[1] + color[2]))
+        for (let i = (channels * ignoreEdge); i < data.length; i += (channels * step)) {
+          const colorDeviation = Math.abs(data[i] - color[0]) + Math.abs(data[i+1] - color[1]) + Math.abs(data[i+2] - color[2])
+          const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
           if(
             // Above the top limit
-            i < lineLimit &&
+            i < middleIndex &&
             // Within the color and brightness deviation
             (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
             colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
@@ -155,13 +172,13 @@ const workerCode = function () {
 
         step = largeStep
         // From the bottom up
-        for (let i = (line.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
-          const colorDeviation = Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])
-          const brightnessDeviation = Math.abs(line[i-3] + line[i-2] + line[i-1] - (color[0] + color[1] + color[2]))
-          // (Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])) <= maxColorDeviation
+        for (let i = (data.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
+          const colorDeviation = Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])
+          const brightnessDeviation = Math.abs(data[i-3] + data[i-2] + data[i-1] - (color[0] + color[1] + color[2]))
+          // (Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])) <= maxColorDeviation
           if(
             // Below the bottom limit
-            i > lineLimit &&
+            i > middleIndex &&
             // Within the color deviation
             // Within the color and brightness deviation
             (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
@@ -169,20 +186,22 @@ const workerCode = function () {
           ) continue;
 
           // Change the step from large to 1 pixel
-          if(i !== line.length - 1 && step === largeStep) {
-            i = Math.min((line.length - 1 + channels) , i + (channels * step))
+          if(i !== data.length - 1 && step === largeStep) {
+            i = Math.min((data.length - 1 + channels) , i + (channels * step))
             step = Math.ceil(1, Math.floor(step / 2))
             continue
           }
 
           // Found the first video pixel, add to bottomSizes
-          bottomSizes.push(((line.length - 1) - i) / channels)
+          bottomSizes.push(((data.length - 1) - i) / channels)
           break;
         }
       }
 
-      const maxSize = (imageLines[0].length / channels)
+      const maxSize = (imageLines[0].data.length / channels)
       imageLines.length = 0
+
+      // console.log(JSON.stringify(topSizes), JSON.stringify(bottomSizes))
 
       // console.log(topSizes, bottomSizes)
       if(!topSizes.length || !bottomSizes.length) {
@@ -205,6 +224,8 @@ const workerCode = function () {
       }
       const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
       let deviationIsAllowed = (maxDeviation <= maxAllowedDeviation)
+
+      // console.log(JSON.stringify(closestSizes))
 
       if(!deviationIsAllowed) {
         const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
@@ -279,6 +300,15 @@ const workerCode = function () {
       return percentage
     }
 
+    const createContext = () => {
+      ctx = canvas.getContext('2d', {
+        // alpha: false, // Decreases performance on some platforms
+        desynchronized: true,
+        willReadFrequently: true
+      })
+      ctx.imageSmoothingEnabled = false
+    }
+
     const createCanvas = (width, height) => {
       canvas = new OffscreenCanvas(width, height)
       canvas.addEventListener('contextlost', () => {
@@ -301,11 +331,7 @@ const workerCode = function () {
 
       canvasIsCreatedInWorker = true
 
-      ctx = canvas.getContext('2d', {
-        // alpha: false, // Decreases performance on some platforms
-        desynchronized: true
-      })
-      ctx.imageSmoothingEnabled = false
+      createContext()
     }
     
     this.onmessage = async (e) => {
@@ -334,6 +360,8 @@ const workerCode = function () {
         const ratio = e.data.ratio
         const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
         const xOffsetSize = e.data.xOffsetSize
+
+        getLineImageDataStart = performance.now()
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -345,11 +373,8 @@ const workerCode = function () {
           ) {
             canvas.width = bitmap.width
             canvas.height = bitmap.height
-            ctx = canvas.getContext('2d', {
-              // alpha: false, // Decreases performance on some platforms
-              desynchronized: true
-            })
-            ctx.imageSmoothingEnabled = false
+
+            createContext()
           }
           ctx.drawImage(bitmap, 0, 0)
           bitmap.close()
@@ -394,6 +419,8 @@ const workerCode = function () {
           id,
           error: ex
         })
+      } finally {
+        getLineImageDataStart = 0
       }
     }
   } catch(ex) {
@@ -652,13 +679,16 @@ export default class BarDetection {
       if(this.run !== run) return
       
       const now = performance.now()
+      const duration = now - start
+      this.ambientlight.stats.addBarDetectionDuration(duration)
+
       const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
         ? 1000
         : ((this.lastChange + 3000 < now)
           ? 500
           : 0
         )
-      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
+      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(duration, 1.2) - 250))
 
       setTimeout(wrapErrorHandler(() => {
         if(this.run !== run) return

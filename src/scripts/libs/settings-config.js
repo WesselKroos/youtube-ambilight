@@ -23,14 +23,14 @@ const SettingsConfig = [
   },
   {
     name: 'showFPS',
-    label: 'Framerate stats',
+    label: 'Framerates',
     type: 'checkbox',
     default: false,
     advanced: true
   },
   {
     name: 'showFrametimes',
-    label: 'Frametime stats',
+    label: 'Frametimes graph',
     description: 'Uses: CPU power',
     questionMark: {
       title: 'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
@@ -41,7 +41,14 @@ const SettingsConfig = [
   },
   {
     name: 'showResolutions',
-    label: 'Resolution & draw time stats',
+    label: 'Resolutions & drawtimes',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'showBarDetectionStats',
+    label: 'Bar detection',
     type: 'checkbox',
     default: false,
     advanced: true

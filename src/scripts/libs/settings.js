@@ -768,6 +768,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'showResolutions',
+            'showBarDetectionStats',
             'chromiumDirectVideoOverlayWorkaround',
             'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
@@ -925,7 +926,8 @@ export default class Settings {
           if([
             'showFPS',
             'showFrametimes',
-            'showResolutions'
+            'showResolutions',
+            'showBarDetectionStats',
           ].some(name => name === setting.name)) {
             if(value) {
               this.ambientlight.stats.update()
@@ -1276,6 +1278,10 @@ export default class Settings {
     {
       names: [ 'framerateLimit' ],
       visible: () => !this.ambientlight.isVrVideo
+    },
+    {
+      names: [ 'showBarDetectionStats' ],
+      visible: () => (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     }
   ]
   updateVisibility() {
