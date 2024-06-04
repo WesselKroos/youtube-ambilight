@@ -118,7 +118,7 @@
   }
 }
 .ambientlight__video-resolution,
-.ambientlight__ambientlight-bar-detection-dration {
+.ambientlight__ambientlight-bar-detection-duration {
   margin-top: 10px;
 }
 .ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
@@ -178,6 +178,27 @@
 
   &--bottom {
     bottom: 3px;
+  }
+}
+
+.ambientlight__ambientlight-bar-detection-graph {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, .85);
+  width: fit-content;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  resize: vertical;
+
+  canvas {
+    display: block;
+    height: 100%;
+    border: 1px solid #000;
+    cursor: help;
+
+    @at-root .ambientlight__ambientlight-bar-detection-graph:not([style*="height: 1"]) canvas {
+      image-rendering: pixelated;
+    }
   }
 }
 

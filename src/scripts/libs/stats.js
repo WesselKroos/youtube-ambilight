@@ -29,13 +29,19 @@ export default class Stats {
     this.ambientlightFTAxisLegendsElem.classList.add('ambientlight__ambientlight-ft-axis-legends')
 
     this.ambientlightFTAxisLegendTopElem = document.createElement('div')
-    this.ambientlightFTAxisLegendTopElem.classList.add('ambientlight__ambientlight-ft-axis-legend', 'ambientlight__ambientlight-ft-axis-legend--top')
+    this.ambientlightFTAxisLegendTopElem.classList.add(
+      'ambientlight__ambientlight-ft-axis-legend',
+      'ambientlight__ambientlight-ft-axis-legend--top'
+    )
     const ambientlightFTAxisLegendTopElemNode = document.createTextNode('')
     this.ambientlightFTAxisLegendTopElem.appendChild(ambientlightFTAxisLegendTopElemNode)
     this.ambientlightFTAxisLegendsElem.append(this.ambientlightFTAxisLegendTopElem)
     
     this.ambientlightFTAxisLegendBottomElem = document.createElement('div')
-    this.ambientlightFTAxisLegendBottomElem.classList.add('ambientlight__ambientlight-ft-axis-legend', 'ambientlight__ambientlight-ft-axis-legend--bottom')
+    this.ambientlightFTAxisLegendBottomElem.classList.add(
+      'ambientlight__ambientlight-ft-axis-legend',
+      'ambientlight__ambientlight-ft-axis-legend--bottom'
+    )
     const ambientlightFTAxisLegendBottomElemNode = document.createTextNode('')
     this.ambientlightFTAxisLegendBottomElem.appendChild(ambientlightFTAxisLegendBottomElemNode)
     this.ambientlightFTAxisLegendsElem.append(this.ambientlightFTAxisLegendBottomElem)
@@ -67,7 +73,9 @@ export default class Stats {
     this.projectorBufferResolutionElem = appendFPSItem('ambientlight__projector-buffer-resolution')
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
 
-    this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-dration')
+    this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-duration')
+    this.barDetectionResultElem = appendFPSItem('ambientlight__ambientlight-bar-detection-result')
+    this.barDetectionGraphElem = appendFPSItem('ambientlight__ambientlight-bar-detection-graph')
   }
 
   hide(onlyDisabled = false) {
@@ -90,6 +98,14 @@ export default class Stats {
     
     if(!onlyDisabled || !this.settings.showBarDetectionStats) {
       this.barDetectionDurationElem.childNodes[0].nodeValue = ''
+      this.barDetectionResultElem.childNodes[0].nodeValue = ''
+      
+      if(this.barDetectionCanvas?.parentNode) {
+        if(this.barDetectionCtx)
+          this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+        this.barDetectionGraphElem.removeChild(this.barDetectionCanvas)
+        this.barDetectionGraphElem.style.display = 'none'
+      }
     }
 
     if(!onlyDisabled || !this.settings.showFPS || !this.settings.showFrametimes) {
@@ -566,6 +582,17 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         this.barDetectionDurationElem.childNodes[0].nodeValue = ''
         this.barDetectionDurationElem.style.color = ''
       }
+      if(this.barDetectionResultElem?.parentNode) {
+        this.barDetectionResultElem.childNodes[0].nodeValue = ''
+        this.barDetectionResultElem.style.color = ''
+      }
+      
+      if(this.barDetectionCanvas?.parentNode) {
+        if(this.barDetectionCtx)
+          this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+        this.barDetectionGraphElem.removeChild(this.barDetectionCanvas)
+        this.barDetectionGraphElem.style.display = 'none'
+      }
       return
     }
 
@@ -574,8 +601,174 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     this.barDetectionDurations = durations
 
     const duration = Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length).toFixed(1)
-    
+
     this.barDetectionDurationElem.childNodes[0].nodeValue = `REMOVE BARS DETECTION: ${duration}ms`
     this.barDetectionDurationElem.style.color = '#fff'
+  }
+
+  updateBarDetectionImage = (image) => {
+    if(!image) return
+    if(!this.settings.showBarDetectionStats) return
+
+    const width = image.width ?? 1
+    const height = image.height ?? 1
+
+    if(!this.barDetectionCanvas) {
+      this.barDetectionCanvas = new Canvas(width, height)
+      this.barDetectionCanvas.setAttribute('title', `Lines\nGreen: Detected bar \nGray: Scanlines\n\nDots\nGreen: Included points\nRed: Ignored points`)
+      on(this.barDetectionCanvas, 'click', e => {
+        e.preventDefault();
+        this.barDetectionGraphElem.toggleAttribute('legend');
+      }, { capture: true })
+      on(this.barDetectionCanvas, 'mousedown', e => {
+        e.preventDefault();
+      }, { capture: true }) // Prevent pause
+      this.barDetectionGraphElem.appendChild(this.barDetectionCanvas)
+      this.barDetectionGraphElem.style.display = ''
+
+      this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
+    } else if (
+      this.barDetectionCanvas.width !== width ||
+      this.barDetectionCanvas.height !== height
+    ) {
+      this.barDetectionCanvas.width = width
+      this.barDetectionCanvas.height = height
+    } else {
+      this.barDetectionCtx.clearRect(0, 0, width, height)
+    }
+    if(!this.barDetectionCanvas?.parentNode) {
+      this.barDetectionGraphElem.appendChild(this.barDetectionCanvas)
+      this.barDetectionGraphElem.style.display = ''
+    }
+
+    this.barDetectionCtx.drawImage(image, 0, 0)
+  }
+
+  updateBarDetectionResult = (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
+    if(!this.settings.showBarDetectionStats || !this.barDetectionCtx) return
+
+    this.barDetectionResultElem.childNodes[0].nodeValue = `DETECTED BARS: ${
+      [
+        this.settings.detectHorizontalBarSizeEnabled ? `H ${(horizontalBarSizeInfo.percentage ?? horizontalPercentage ?? 0).toFixed(2)}%` : '',
+        this.settings.detectVerticalBarSizeEnabled ? `V ${(verticalBarSizeInfo.percentage ?? verticalPercentage ?? 0).toFixed(2)}%` : ''
+      ].filter(s => s).join(' | ')
+    }`
+    this.barDetectionResultElem.style.color = barsFound ? '#0f0' : '#fff'
+
+    const width = this.barDetectionCanvas.width
+    const height = this.barDetectionCanvas.height
+
+    const rects = []
+
+    if(horizontalBarSizeInfo.percentage !== undefined) {
+      rects.push([
+        '#00ff0077',
+        0,
+        Math.floor(height * (horizontalBarSizeInfo.percentage / 100)) - 1,
+        width,
+        1,
+      ])
+      rects.push([
+        '#00ff0077',
+        0,
+        height + 1 - Math.ceil(height * (horizontalBarSizeInfo.percentage / 100)),
+        width,
+        1,
+      ])
+    }
+    
+    if(verticalBarSizeInfo.percentage !== undefined) {
+      rects.push([
+        '#00ff0077',
+        Math.floor(width * (verticalBarSizeInfo.percentage / 100)) - 1,
+        0,
+        1,
+        height,
+      ])
+      rects.push([
+        '#00ff0077',
+        width + 1 - Math.ceil(width * (verticalBarSizeInfo.percentage / 100)),
+        0,
+        1,
+        height,
+      ])
+    }
+
+    if(horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesTop } of horizontalBarSizeInfo.topEdges) {
+        rects.push([
+          '#555',
+          xIndex,
+          0,
+          1,
+          yIndex - 1,
+        ])
+        rects.push([
+          deviates || deviatesTop ? '#f00' : '#0f0',
+          xIndex - 1,
+          yIndex - 1,
+          3,
+          2,
+        ])
+      }
+      for(const { xIndex, yIndex, deviates, deviatesBottom } of horizontalBarSizeInfo.bottomEdges) {
+        rects.push([
+          '#555',
+          xIndex,
+          height,
+          1,
+          -yIndex + 1,
+        ])
+        rects.push([
+          deviates || deviatesBottom ? '#f00' : '#0f0',
+          xIndex - 1,
+          height - yIndex + 1,
+          3,
+          -2,
+        ])
+      }
+    }
+
+    if(verticalBarSizeInfo.topEdges && verticalBarSizeInfo.bottomEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesTop } of verticalBarSizeInfo.topEdges) {
+        rects.push([
+          '#555',
+          0,
+          xIndex,
+          yIndex - 1,
+          1,
+        ])
+        rects.push([
+          deviates || deviatesTop ? '#f00' : '#0f0',
+          yIndex - 1,
+          xIndex - 1,
+          2,
+          3,
+        ])
+      }
+      for(const { xIndex, yIndex, deviates, deviatesBottom } of verticalBarSizeInfo.bottomEdges) {
+        rects.push([
+          '#555',
+          width,
+          xIndex,
+          -yIndex + 1,
+          1,
+        ])
+        rects.push([
+          deviates || deviatesBottom ? '#f00' : '#0f0',
+          width - yIndex + 1,
+          xIndex - 1,
+          -2,
+          3,
+        ])
+      }
+    }
+    
+    this.barDetectionCtx.strokeStyle = '#000'
+    for(const rect of rects) {
+      this.barDetectionCtx.fillStyle = rect[0]
+      this.barDetectionCtx.strokeRect(rect[1], rect[2], rect[3], rect[4])
+      this.barDetectionCtx.fillRect(rect[1], rect[2], rect[3], rect[4])
+    }
   }
 }
