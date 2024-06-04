@@ -100,9 +100,9 @@ const workerCode = function () {
   }
 
   function detectEdges(imageLines, channels, color) {
-    const maxColorDeviation = 8 // 16
-    const maxBrightnessDeviation = 8
-    const maxColorAndBrightnessDeviationSum = 16
+    const maxColorDeviation = 4 // 8
+    const maxBrightnessDeviation = 4
+    const maxColorAndBrightnessDeviationSum = 8
     const ignoreEdge = 2
     const middleIndex = (imageLines[0].data.length / 2)
     const largeStep = 20
@@ -193,8 +193,8 @@ const workerCode = function () {
         })
     }
 
-    const nonDeviatingEdges = edges.filter(p => !p.deviates)
-    const maxDeviation = Math.abs(Math.max(...nonDeviatingEdges) - Math.min(...nonDeviatingEdges))
+    const nonDeviatingEdgeSizes = edges.filter(p => !p.deviates).map(e => e.yIndex)
+    const maxDeviation = Math.abs(Math.max(...nonDeviatingEdgeSizes) - Math.min(...nonDeviatingEdgeSizes))
     if(maxDeviation <= maxAllowedDeviation) return false
 
     // Allow a higher deviation between top and bottom edges
@@ -210,7 +210,7 @@ const workerCode = function () {
           p.deviatesTop = true
         })
     }
-    const nonDeviatingTopEdges = topEdges.filter(p => !p.deviatesTop)
+    const nonDeviatingTopEdges = topEdges.filter(p => !p.deviatesTop).map(e => e.yIndex)
     const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges) - Math.min(...nonDeviatingTopEdges))
     const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
 
@@ -224,11 +224,11 @@ const workerCode = function () {
           p.deviatesBottom = true
         })
     }
-    const nonDeviatingBottomEdges = topEdges.filter(p => !p.deviatesBottom)
+    const nonDeviatingBottomEdges = topEdges.filter(p => !p.deviatesBottom).map(e => e.yIndex)
     const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges) - Math.min(...nonDeviatingBottomEdges))
     const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
 
-    if(!topDeviationIsAllowed || !bottomDeviationIsAllowed) return false
+    if(!topDeviationIsAllowed || !bottomDeviationIsAllowed) return true
 
     const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
     return (maxDeviation > maxAllowedCombinedSidesDeviation)

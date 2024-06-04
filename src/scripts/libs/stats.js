@@ -1,4 +1,4 @@
-import { Canvas, on, requestIdleCallback } from './generic'
+import { Canvas, SafeOffscreenCanvas, on, requestIdleCallback } from './generic'
 
 export default class Stats {
   frametimesHistoryMax = 120
@@ -101,8 +101,18 @@ export default class Stats {
       this.barDetectionResultElem.childNodes[0].nodeValue = ''
       
       if(this.barDetectionCanvas?.parentNode) {
-        if(this.barDetectionCtx)
+        if(this.barDetectionCtx) {
           this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+          this.barDetectionCanvas.width = 1
+          this.barDetectionCanvas.height = 1
+        }
+        
+        if(this.barDetectionBufferCtx) {
+          this.barDetectionBufferCtx.clearRect(0, 0, this.barDetectionBufferCanvas.width, this.barDetectionBufferCanvas.height)
+          this.barDetectionBufferCanvas.width = 1
+          this.barDetectionBufferCanvas.height = 1
+        }
+
         this.barDetectionGraphElem.removeChild(this.barDetectionCanvas)
         this.barDetectionGraphElem.style.display = 'none'
       }
@@ -586,13 +596,24 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         this.barDetectionResultElem.childNodes[0].nodeValue = ''
         this.barDetectionResultElem.style.color = ''
       }
-      
+
       if(this.barDetectionCanvas?.parentNode) {
-        if(this.barDetectionCtx)
+        if(this.barDetectionCtx) {
           this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+          this.barDetectionCanvas.width = 1
+          this.barDetectionCanvas.height = 1
+        }
+        
+        if(this.barDetectionBufferCtx) {
+          this.barDetectionBufferCtx.clearRect(0, 0, this.barDetectionBufferCanvas.width, this.barDetectionBufferCanvas.height)
+          this.barDetectionBufferCanvas.width = 1
+          this.barDetectionBufferCanvas.height = 1
+        }
+
         this.barDetectionGraphElem.removeChild(this.barDetectionCanvas)
         this.barDetectionGraphElem.style.display = 'none'
       }
+
       return
     }
 
@@ -615,7 +636,9 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     if(!this.barDetectionCanvas) {
       this.barDetectionCanvas = new Canvas(width, height)
-      this.barDetectionCanvas.setAttribute('title', `Lines\nGreen: Detected bar \nGray: Scanlines\n\nDots\nGreen: Included points\nRed: Ignored points`)
+      this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
+
+      this.barDetectionCanvas.setAttribute('title', `Lines\nGreen: Detected bar \nGray: Scanlines\n\nDots\nGreen: Included points\nOrange: Inconsistent points\nRed: Ignored points`)
       on(this.barDetectionCanvas, 'click', e => {
         e.preventDefault();
         this.barDetectionGraphElem.toggleAttribute('legend');
@@ -625,23 +648,26 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       }, { capture: true }) // Prevent pause
       this.barDetectionGraphElem.appendChild(this.barDetectionCanvas)
       this.barDetectionGraphElem.style.display = ''
-
-      this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
+      
+      this.barDetectionBufferCanvas = new SafeOffscreenCanvas(width, height)
+      this.barDetectionBufferCtx = this.barDetectionBufferCanvas.getContext('2d', { alpha: true })
     } else if (
       this.barDetectionCanvas.width !== width ||
       this.barDetectionCanvas.height !== height
     ) {
       this.barDetectionCanvas.width = width
       this.barDetectionCanvas.height = height
+      this.barDetectionBufferCanvas.width = width
+      this.barDetectionBufferCanvas.height = height
     } else {
-      this.barDetectionCtx.clearRect(0, 0, width, height)
+      this.barDetectionBufferCtx.clearRect(0, 0, width, height)
     }
     if(!this.barDetectionCanvas?.parentNode) {
       this.barDetectionGraphElem.appendChild(this.barDetectionCanvas)
       this.barDetectionGraphElem.style.display = ''
     }
 
-    this.barDetectionCtx.drawImage(image, 0, 0)
+    this.barDetectionBufferCtx.drawImage(image, 0, 0)
   }
 
   updateBarDetectionResult = (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
@@ -704,7 +730,9 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
           yIndex - 1,
         ])
         rects.push([
-          deviates || deviatesTop ? '#f00' : '#0f0',
+          (deviates || deviatesTop)
+            ? '#f00' 
+            : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           xIndex - 1,
           yIndex - 1,
           3,
@@ -720,7 +748,9 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
           -yIndex + 1,
         ])
         rects.push([
-          deviates || deviatesBottom ? '#f00' : '#0f0',
+          (deviates || deviatesBottom )
+            ? '#f00' 
+            : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           xIndex - 1,
           height - yIndex + 1,
           3,
@@ -739,7 +769,9 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
           1,
         ])
         rects.push([
-          deviates || deviatesTop ? '#f00' : '#0f0',
+          (deviates || deviatesTop)
+            ? '#f00' 
+            : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           yIndex - 1,
           xIndex - 1,
           2,
@@ -755,7 +787,9 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
           1,
         ])
         rects.push([
-          deviates || deviatesBottom ? '#f00' : '#0f0',
+          (deviates || deviatesBottom)
+            ? '#f00' 
+            : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           width - yIndex + 1,
           xIndex - 1,
           -2,
@@ -763,7 +797,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ])
       }
     }
-    
+
+    this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+    this.barDetectionCtx.drawImage(this.barDetectionBufferCanvas, 0, 0)
+
     this.barDetectionCtx.strokeStyle = '#000'
     for(const rect of rects) {
       this.barDetectionCtx.fillStyle = rect[0]
