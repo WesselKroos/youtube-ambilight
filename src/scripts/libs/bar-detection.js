@@ -105,7 +105,7 @@ const workerCode = function () {
     const maxColorAndBrightnessDeviationSum = 8
     const ignoreEdge = 2
     const middleIndex = (imageLines[0].data.length / 2)
-    const largeStep = 20
+    const largeStep = 4
     const topEdges = []
     const bottomEdges = []
   
@@ -711,10 +711,10 @@ export default class BarDetection {
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
               )
+              this.lastChange = performance.now()
               if(barsChanged) {
                 callback(horizontalPercentage, verticalPercentage)
               }
-              this.lastChange = performance.now()
             }
 
             resolve()
