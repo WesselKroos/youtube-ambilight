@@ -2912,6 +2912,11 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Keep icons within buttons with animated icons clickable
+  button yt-animated-icon {
+    pointer-events: none !important;
+  }
+
   // Fix ambient light height in grid layout
 
   #secondary-inner.ytd-watch-grid {
