@@ -100,9 +100,9 @@ const workerCode = function () {
   }
 
   function detectEdges(imageLines, channels, color) {
-    const maxColorDeviation = 4 // 8
-    const maxBrightnessDeviation = 4
-    const maxColorAndBrightnessDeviationSum = 8
+    const maxColorDeviation = 8
+    const maxBrightnessDeviation = 8
+    const maxColorAndBrightnessDeviationSum = 16
     const ignoreEdge = 2
     const middleIndex = (imageLines[0].data.length / 2)
     const largeStep = 4

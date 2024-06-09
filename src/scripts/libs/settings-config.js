@@ -417,16 +417,15 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedElementsPercentage',
-    label: 'Detection: Ignored elements',
+    label: 'Detection: Ignored bar elements',
     questionMark: {
-      title: 'The percentage of elements in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
+      title: 'At 10% only clean bars are removed.\nA higher value removes bars with elements as well.\n(For example: logos, subtitles, reaction cams, special effects, etc...)'
     },
     type: 'list',
     default: 30,
     min: 10,
     max: 90,
-    step: 10,
-    advanced: true
+    step: 10
   },
   {
     name: 'horizontalBarsClipPercentage',
