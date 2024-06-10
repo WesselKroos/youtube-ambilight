@@ -9,6 +9,7 @@ const workerCode = function () {
   let ctx;
   let workerMessageId = 0;
   let globalXOffsetIndex = 0;
+  const scanlinesAmount = 5 // 10 // 40 // 5
 
   const postError = (ex) => {
     if (!catchedWorkerCreationError) {
@@ -20,23 +21,36 @@ const workerCode = function () {
     }
   }
 
-  async function getLineImageData(imageLines, yLength, index) {
+  let getLineImageDataStart
+  async function getLineImageData(imageLines, yLength, xIndex) {
+    if(!getLineImageDataStart) {
+      getLineImageDataStart = performance.now()
+    } else if(performance.now() - getLineImageDataStart > 4) {
+      // Give the CPU breathing time to execute other javascript code/internal browser code in between on single core instances
+      // (or GPU cores breathing time to decode the video or prepaint other elements in between)
+      // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+      
+      // const delayStart = performance.now()
+      await new Promise(resolve => setTimeout(resolve, 1)) // 0/1 = 13.5ms in Firefox & 0/1.5 ms in Chromium
+      // console.log(`was busy for ${(delayStart - getLineImageDataStart).toFixed(2)}ms | delayed by ${(performance.now() - delayStart).toFixed(2)}ms`)
+      getLineImageDataStart = performance.now()
+    }
+
     const params = yLength === 'height' 
-      ? [index, 0, 1, canvas.height]
-      : [0, index, canvas.width, 1]
+      ? [xIndex, 0, 1, canvas.height]
+      : [0, xIndex, canvas.width, 1]
 
-    const start = performance.now()
-    imageLines.push(ctx.getImageData(...params).data)
-    const duration = performance.now() - start
-
-    // Give the GPU cores breathing time to decode the video or prepaint other elements in between
-    // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
-    await new Promise(resolve => setTimeout(resolve, duration < 1 ? 0 : 1)) // Math.min(1000/24, duration / 2))
+    // const start = performance.now()
+    // const duration = performance.now() - start
+    imageLines.push({
+      xIndex,
+      data: ctx.getImageData(...params).data
+    })
   }
 
-  function sortSizes(averageSize, a, b) {
-    const aGap = Math.abs(averageSize - a)
-    const bGap = Math.abs(averageSize - b)
+  const sortSizes = (averageSize) => (a, b) => {
+    const aGap = Math.abs(averageSize - a.yIndex)
+    const bGap = Math.abs(averageSize - b.yIndex)
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
@@ -49,15 +63,16 @@ const workerCode = function () {
   function getAverageColor(imageLines, channels) {
     const edgeOffset = 4
     const topOffsetIndex = channels * edgeOffset
-    const bottomOffsetIndex = imageLines[0].length - channels - topOffsetIndex
+    const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
 
     let colors = []
     let i = 0
-    for(const line of imageLines) {
+    for(const imageLine of imageLines) {
+      const data = imageLine.data
       i = topOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([line[i], line[i + 1], line[i + 2]])
+      colors.push([data[i], data[i + 1], data[i + 2]])
       i = bottomOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([line[i], line[i + 1], line[i + 2]])
+      colors.push([data[i], data[i + 1], data[i + 2]])
     }
     // const oldColor = colors[0]
 
@@ -84,23 +99,205 @@ const workerCode = function () {
     return averageColor
   }
 
+  function detectEdges(imageLines, channels, color) {
+    const maxColorDeviation = 8
+    const maxBrightnessDeviation = 8
+    const maxColorAndBrightnessDeviationSum = 16
+    const ignoreEdge = 2
+    const middleIndex = (imageLines[0].data.length / 2)
+    const largeStep = 4
+    const topEdges = []
+    const bottomEdges = []
+  
+    for(const imageLine of imageLines) {
+      const {
+        xIndex,
+        data,
+      } = imageLine
+      let step = largeStep
+      // From the top down
+      for (let i = (channels * ignoreEdge); i < data.length; i += (channels * step)) {
+        const colorDeviation = Math.abs(data[i] - color[0]) + Math.abs(data[i+1] - color[1]) + Math.abs(data[i+2] - color[2])
+        const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
+        if(
+          // Above the top limit
+          i < middleIndex &&
+          // Within the color and brightness deviation
+          (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
+          colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
+        ) continue;
+
+        // Change the step from large to 1 pixel
+        if(i !== 0 && step === largeStep) {
+          i = Math.max(-channels, i - (channels * step))
+          step = Math.ceil(1, Math.floor(step / 2))
+          continue
+        }
+
+        // Found the first video pixel, add to topEdges
+        topEdges.push({
+          xIndex,
+          yIndex: i / channels
+        })
+        break;
+      }
+
+      step = largeStep
+      // From the bottom up
+      for (let i = (data.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
+        const colorDeviation = Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])
+        const brightnessDeviation = Math.abs(data[i-3] + data[i-2] + data[i-1] - (color[0] + color[1] + color[2]))
+        // (Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])) <= maxColorDeviation
+        if(
+          // Below the bottom limit
+          i > middleIndex &&
+          // Within the color deviation
+          // Within the color and brightness deviation
+          (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
+          colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
+        ) continue;
+
+        // Change the step from large to 1 pixel
+        if(i !== data.length - 1 && step === largeStep) {
+          i = Math.min((data.length - 1 + channels) , i + (channels * step))
+          step = Math.ceil(1, Math.floor(step / 2))
+          continue
+        }
+
+        // Found the first video pixel, add to bottomEdges
+        bottomEdges.push({
+          xIndex,
+          yIndex: ((data.length - 1) - i) / channels
+        })
+        break;
+      }
+    }
+
+    return { topEdges, bottomEdges }
+  }
+
+  const reduceAverageSize = (edges) => edges.reduce((sum, edge) => sum + edge.yIndex, 0) / edges.length
+
+  function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage) {
+    const maxAllowedDeviation = maxSize * (0.0125 * scale)
+
+    const threshold = edges.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
+    while(edges.filter(p => !p.deviates).length > threshold) {
+      const nonDeviatingEdges = edges.filter(p => !p.deviates)
+      const averageSize = reduceAverageSize(nonDeviatingEdges)
+      nonDeviatingEdges
+        .sort(sortSizes(averageSize))
+        .slice(nonDeviatingEdges.length - 1)
+        .forEach(p => {
+          p.deviates = true
+        })
+    }
+
+    const nonDeviatingEdgeSizes = edges.filter(p => !p.deviates).map(e => e.yIndex)
+    const maxDeviation = Math.abs(Math.max(...nonDeviatingEdgeSizes) - Math.min(...nonDeviatingEdgeSizes))
+    if(maxDeviation <= maxAllowedDeviation) return false
+
+    // Allow a higher deviation between top and bottom edges
+    const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
+
+    while(topEdges.filter(p => !p.deviatesTop).length > threshold) {
+      const nonDeviatingEdges = topEdges.filter(p => !p.deviatesTop)
+      const averageSize = reduceAverageSize(nonDeviatingEdges)
+      nonDeviatingEdges
+        .sort(sortSizes(averageSize))
+        .slice(nonDeviatingEdges.length - 1)
+        .forEach(p => {
+          p.deviatesTop = true
+        })
+    }
+    const nonDeviatingTopEdges = topEdges.filter(p => !p.deviatesTop).map(e => e.yIndex)
+    const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges) - Math.min(...nonDeviatingTopEdges))
+    const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
+
+    while(bottomEdges.filter(p => !p.deviatesBottom).length > threshold) {
+      const nonDeviatingEdges = bottomEdges.filter(p => !p.deviatesBottom)
+      const averageSize = reduceAverageSize(nonDeviatingEdges)
+      nonDeviatingEdges
+        .sort(sortSizes(averageSize))
+        .slice(nonDeviatingEdges.length - 1)
+        .forEach(p => {
+          p.deviatesBottom = true
+        })
+    }
+    const nonDeviatingBottomEdges = topEdges.filter(p => !p.deviatesBottom).map(e => e.yIndex)
+    const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges) - Math.min(...nonDeviatingBottomEdges))
+    const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
+
+    if(!topDeviationIsAllowed || !bottomDeviationIsAllowed) return true
+
+    const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
+    return (maxDeviation > maxAllowedCombinedSidesDeviation)
+  }
+
+  function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage) {
+    const minSize = maxSize * (0.012 * scale)
+    const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
+
+    let size = 0;
+    if(exceedsDeviationLimit) {
+      let lowestSize = Math.min(...edges.map(point => point.yIndex))
+      let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
+      if(lowestPercentage >= currentPercentage - 4) {
+        return // Detected percentage is close to the current percentage, but the detected edges deviate too much
+      }
+  
+      size = lowestSize
+      if(size < minSize) {
+        size = 0
+      } else {
+        size += (maxSize * (offsetPercentage/100))
+      }
+    } else {
+      size = Math.max(...edges
+        .filter(p => !p.deviates)
+        .map(point => point.yIndex))
+      if(size < minSize) {
+        size = 0
+      } else {
+        size += (maxSize * ((baseOffsetPercentage + offsetPercentage)/100))
+      }
+    }
+
+    if(size > (maxSize * 0.49)) {
+      let lowestSize = Math.min(...edges.map(point => point.yIndex))
+      if(lowestSize >= minSize) {
+        lowestSize += (maxSize * (offsetPercentage/100))
+      }
+      let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
+      if(lowestPercentage < currentPercentage) {
+        return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
+      }
+      return // Filled with a almost single color
+    }
+    
+    let percentage = Math.round((size / maxSize) * 10000) / 100
+    const maxPercentage = 36
+    percentage = Math.min(percentage, maxPercentage)
+    return percentage
+  }
+
   try {
     const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
       
       const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
-      const partSize = Math.floor(canvas[xLength] / (5 + (partSizeBorderMultiplier * 2)))
+      const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
       const imageLines = []
       for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
         if(id < workerMessageId) {
           imageLines.length = 0
           return
         }
-        // await getLineImageData(imageLines, yLength, index)
-        await getLineImageData(imageLines, yLength, 
-          Math.min(Math.max(0,
-            index + Math.round(xOffset * (partSize / 2) - partSize / 4)
-          ), canvas[xLength] - 1))
+        const xIndex = Math.min(Math.max(0,
+          index + Math.round(xOffset * (partSize / 2) - partSize / 4)
+        ), canvas[xLength] - 1)
+        await getLineImageData(imageLines, yLength, xIndex)
       }
+      // console.log(`scanned ${imageLines.length} lines`)
       if(id < workerMessageId) {
         imageLines.length = 0
         return
@@ -114,169 +311,53 @@ const workerCode = function () {
         Math.abs(color[1] - color[2]) > 3 ||
         Math.abs(color[2] - color[0]) > 3
       )) {
+        const topEdges = imageLines.map(line => ({ xIndex: line.xIndex, yIndex: 0, deviates: true }))
+        const bottomEdges = imageLines.map(line => ({ xIndex: line.xIndex, yIndex: 0, deviates: true }))
         imageLines.length = 0
-        return 0
-      }
-
-      const maxColorDeviation = 8 // 16
-      const maxBrightnessDeviation = 8
-      const maxColorAndBrightnessDeviationSum = 16
-      const ignoreEdge = 2
-      const lineLimit = (imageLines[0].length / 2)
-      const largeStep = 20
-      const topSizes = []
-      const bottomSizes = []
-    
-      for(const line of imageLines) {
-        let step = largeStep
-        // From the top down
-        for (let i = (channels * ignoreEdge); i < line.length; i += (channels * step)) {
-          const colorDeviation = Math.abs(line[i] - color[0]) + Math.abs(line[i+1] - color[1]) + Math.abs(line[i+2] - color[2])
-          const brightnessDeviation = Math.abs(line[i] + line[i+1] + line[i+2] - (color[0] + color[1] + color[2]))
-          if(
-            // Above the top limit
-            i < lineLimit &&
-            // Within the color and brightness deviation
-            (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
-            colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
-          ) continue;
-
-          // Change the step from large to 1 pixel
-          if(i !== 0 && step === largeStep) {
-            i = Math.max(-channels, i - (channels * step))
-            step = Math.ceil(1, Math.floor(step / 2))
-            continue
-          }
-
-          // Found the first video pixel, add to topSizes
-          topSizes.push(i / channels)
-          break;
-        }
-
-        step = largeStep
-        // From the bottom up
-        for (let i = (line.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
-          const colorDeviation = Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])
-          const brightnessDeviation = Math.abs(line[i-3] + line[i-2] + line[i-1] - (color[0] + color[1] + color[2]))
-          // (Math.abs(line[i-3] - color[0]) + Math.abs(line[i-2] - color[1]) + Math.abs(line[i-1] - color[2])) <= maxColorDeviation
-          if(
-            // Below the bottom limit
-            i > lineLimit &&
-            // Within the color deviation
-            // Within the color and brightness deviation
-            (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
-            colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
-          ) continue;
-
-          // Change the step from large to 1 pixel
-          if(i !== line.length - 1 && step === largeStep) {
-            i = Math.min((line.length - 1 + channels) , i + (channels * step))
-            step = Math.ceil(1, Math.floor(step / 2))
-            continue
-          }
-
-          // Found the first video pixel, add to bottomSizes
-          bottomSizes.push(((line.length - 1) - i) / channels)
-          break;
+        
+        return {
+          percentage: 0,
+          topEdges,
+          bottomEdges
         }
       }
 
-      const maxSize = (imageLines[0].length / channels)
+      const { topEdges, bottomEdges } = detectEdges(imageLines, channels, color)
+
+      const maxSize = imageLines[0].data.length / channels
       imageLines.length = 0
 
-      // console.log(topSizes, bottomSizes)
-      if(!topSizes.length || !bottomSizes.length) {
-        if(topSizes.length) topSizes.length = 0
-        if(bottomSizes.length) bottomSizes.length = 0
+      // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
+
+      // console.log(topEdges, bottomEdges)
+      if(!topEdges.length || !bottomEdges.length) {
+        // This should never happen, but just in case it does
+        if(topEdges.length) topEdges.length = 0
+        if(bottomEdges.length) bottomEdges.length = 0
         return
       }
 
-      // Calculate averages and deviations
+      const edges = [...topEdges, ...bottomEdges]
+      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage)
 
-      const maxAllowedDeviation = maxSize * (0.0125 * scale)
-      let sizes = [...topSizes, ...bottomSizes]
-      topSizes.length = 0
-      bottomSizes.length = 0
-      const threshold = sizes.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
-      let closestSizes = sizes
-      while(closestSizes.length > threshold) {
-        const averageSize = (closestSizes.reduce((a, b) => a + b, 0) / closestSizes.length)
-        closestSizes = closestSizes.sort((a, b) => sortSizes(averageSize, a, b)).slice(0, closestSizes.length - 1)
+      // console.log(JSON.stringify(edges), exceedsDeviationLimit)
+
+      const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage)
+
+      return {
+        percentage,
+        topEdges,
+        bottomEdges
       }
-      const maxDeviation = Math.abs(Math.max(...closestSizes) - Math.min(...closestSizes))
-      let deviationIsAllowed = (maxDeviation <= maxAllowedDeviation)
+    }
 
-      if(!deviationIsAllowed) {
-        const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
-
-        let closestTopSizes = topSizes
-        while(closestTopSizes.length > 4) {
-          const averageTopSize = (closestTopSizes.reduce((a, b) => a + b, 0) / closestTopSizes.length)
-          closestTopSizes = closestTopSizes.sort((a, b) => sortSizes(averageTopSize, a, b)).slice(0, closestTopSizes.length - 1)
-        }
-        const maxTopDeviation = Math.abs(Math.max(...closestTopSizes) - Math.min(...closestTopSizes))
-        const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
-
-        if(topDeviationIsAllowed) {
-          let closestBottomSizes = bottomSizes
-          while(closestBottomSizes.length > 4) {
-            const averageBottomSize = (closestBottomSizes.reduce((a, b) => a + b, 0) / closestBottomSizes.length)
-            closestBottomSizes = closestBottomSizes.sort((a, b) => sortSizes(averageBottomSize, a, b)).slice(0, closestBottomSizes.length - 1)
-          }
-          const maxBottomDeviation = Math.abs(Math.max(...closestBottomSizes) - Math.min(...closestBottomSizes))
-          const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
-
-          if(bottomDeviationIsAllowed) {
-            const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
-            deviationIsAllowed = (maxDeviation <= maxAllowedCombinedSidesDeviation)
-          }
-        }
-      }
-
-      // Check if calculated percentages are allowed
-
-      const minSize = maxSize * (0.012 * scale)
-      const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
-
-      let size = 0;
-      if(!deviationIsAllowed) {
-        let lowestSize = Math.min(...sizes)
-        let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-        if(lowestPercentage >= currentPercentage - 4) {
-          return // Detected percentage is close to the current percentage, but the detected points deviate too much
-        }
-    
-        size = lowestSize
-        if(size < minSize) {
-          size = 0
-        } else {
-          size += (maxSize * (offsetPercentage/100))
-        }
-      } else {
-        size = Math.max(...closestSizes)
-        if(size < minSize) {
-          size = 0
-        } else {
-          size += (maxSize * ((baseOffsetPercentage + offsetPercentage)/100))
-        }
-      }
-
-      if(size > (maxSize * 0.49)) {
-        let lowestSize = Math.min(...sizes)
-        if(lowestSize >= minSize) {
-          lowestSize += (maxSize * (offsetPercentage/100))
-        }
-        let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-        if(lowestPercentage < currentPercentage) {
-          return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
-        }
-        return // Filled with a almost single color
-      }
-      
-      let percentage = Math.round((size / maxSize) * 10000) / 100
-      const maxPercentage = 36
-      percentage = Math.min(percentage, maxPercentage)
-      return percentage
+    const createContext = () => {
+      ctx = canvas.getContext('2d', {
+        // alpha: false, // Decreases performance on some platforms
+        desynchronized: true,
+        willReadFrequently: true
+      })
+      ctx.imageSmoothingEnabled = false
     }
 
     const createCanvas = (width, height) => {
@@ -301,11 +382,7 @@ const workerCode = function () {
 
       canvasIsCreatedInWorker = true
 
-      ctx = canvas.getContext('2d', {
-        // alpha: false, // Decreases performance on some platforms
-        desynchronized: true
-      })
-      ctx.imageSmoothingEnabled = false
+      createContext()
     }
     
     this.onmessage = async (e) => {
@@ -334,6 +411,8 @@ const workerCode = function () {
         const ratio = e.data.ratio
         const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
         const xOffsetSize = e.data.xOffsetSize
+
+        getLineImageDataStart = performance.now()
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -345,14 +424,10 @@ const workerCode = function () {
           ) {
             canvas.width = bitmap.width
             canvas.height = bitmap.height
-            ctx = canvas.getContext('2d', {
-              // alpha: false, // Decreases performance on some platforms
-              desynchronized: true
-            })
-            ctx.imageSmoothingEnabled = false
+
+            createContext()
           }
           ctx.drawImage(bitmap, 0, 0)
-          bitmap.close()
         } else {
           canvas = canvasInfo.canvas
           canvasIsCreatedInWorker = false
@@ -366,13 +441,13 @@ const workerCode = function () {
           / (xOffsetSize - 1)
         )
         // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
-        let horizontalPercentage = detectHorizontal
+        let horizontalBarSizeInfo = detectHorizontal
           ? await workerDetectBarSize(
               id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage,
               allowedAnomaliesPercentage, xOffset
           )
           : undefined
-        let verticalPercentage = detectVertical
+        let verticalBarSizeInfo = detectVertical
           ? await workerDetectBarSize(
               id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage,
               allowedAnomaliesPercentage, xOffset
@@ -381,19 +456,21 @@ const workerCode = function () {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
       
         if(id < workerMessageId) {
-          horizontalPercentage = undefined
-          verticalPercentage = undefined
+          horizontalBarSizeInfo = undefined
+          verticalBarSizeInfo = undefined
         }
         this.postMessage({ 
           id,
-          horizontalPercentage,
-          verticalPercentage
+          horizontalBarSizeInfo,
+          verticalBarSizeInfo
         })
       } catch(ex) {
         this.postMessage({
           id,
           error: ex
         })
+      } finally {
+        getLineImageDataStart = 0
       }
     }
   } catch(ex) {
@@ -475,6 +552,10 @@ export default class BarDetection {
       }
     }
 
+    // Ignore previous percentages in cases: new video src, seeked or setting changed
+    if(this.history.horizontal.length === 0) currentHorizontalPercentage = undefined
+    if(this.history.vertical.length === 0) currentVerticalPercentage = undefined
+
     this.idleHandlerArguments = {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
@@ -542,7 +623,8 @@ export default class BarDetection {
 
       if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
-          this.canvas = new SafeOffscreenCanvas(512, 512) // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+          this.canvas = new SafeOffscreenCanvas(Math.min(buffer.width ?? 512, 512), Math.min(buffer.height ?? 512, 512))
+          // Smallest size to prevent many garbage collections caused by transferToImageBitmap
           this.ctx = undefined
         }
 
@@ -584,6 +666,8 @@ export default class BarDetection {
         }
         return
       }
+      
+      this.ambientlight.stats.updateBarDetectionImage(canvasInfo.bitmap ?? canvasInfo.canvas)
 
       this.workerMessageId++;
       const stack = new Error().stack
@@ -601,29 +685,40 @@ export default class BarDetection {
               return
             }
             if(e.data.error) {
+              const error = e.data.error
               // Readable name for the worker script
-              e.data.error.stack = e.data.error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/bar-detection-worker.js:')
-              appendErrorStack(stack, e.data.error)
-              throw e.data.error
+              error.stack = error.stack.replace(/blob:.+?:\/.+?:/g, 'extension://scripts/bar-detection-worker.js:')
+              appendErrorStack(stack, error)
+              throw error
             }
 
-            const horizontalPercentage = this.averagePercentage(e.data.horizontalPercentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
-            const verticalPercentage = this.averagePercentage(e.data.verticalPercentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
+            const {
+              horizontalBarSizeInfo = {},
+              verticalBarSizeInfo = {}
+            } = e.data
+
+            const horizontalPercentage = this.averagePercentage(horizontalBarSizeInfo.percentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
+            const verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
 
             const barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
+
+            this.ambientlight.stats.updateBarDetectionResult(
+              barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
+            )
+
             if(
               barsFound ||
-              (e.data.horizontalPercentage !== undefined && Math.abs(e.data.horizontalPercentage - currentHorizontalPercentage) > 0.5) || 
-              (e.data.verticalPercentage !== undefined && Math.abs(e.data.verticalPercentage - currentVerticalPercentage) > 0.5)
+              (horizontalBarSizeInfo.percentage !== undefined && Math.abs(horizontalBarSizeInfo.percentage - currentHorizontalPercentage) > 0.5) || 
+              (verticalBarSizeInfo.percentage !== undefined && Math.abs(verticalBarSizeInfo.percentage - currentVerticalPercentage) > 0.5)
             ) {
               const barsChanged = (
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
               )
+              this.lastChange = performance.now()
               if(barsChanged) {
                 callback(horizontalPercentage, verticalPercentage)
               }
-              this.lastChange = performance.now()
             }
 
             resolve()
@@ -652,13 +747,16 @@ export default class BarDetection {
       if(this.run !== run) return
       
       const now = performance.now()
+      const duration = now - start
+      this.ambientlight.stats.addBarDetectionDuration(duration)
+
       const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
         ? 1000
         : ((this.lastChange + 3000 < now)
           ? 500
           : 0
         )
-      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(now - start, 1.2) - 250))
+      const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(duration, 1.2) - 250))
 
       setTimeout(wrapErrorHandler(() => {
         if(this.run !== run) return

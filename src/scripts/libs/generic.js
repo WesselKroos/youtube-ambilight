@@ -411,3 +411,8 @@ export const setWarning = (text) => {
     elem.remove()
   }
 }
+
+export const isNetworkError = (ex) => (
+  ex?.message !== 'Failed to fetch' && // Chromium
+  ex?.message !== 'NetworkError when attempting to fetch resource.' // Firefox
+)

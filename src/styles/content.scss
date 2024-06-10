@@ -117,7 +117,8 @@
     display: block;
   }
 }
-.ambientlight__video-resolution {
+.ambientlight__video-resolution,
+.ambientlight__ambientlight-bar-detection-duration {
   margin-top: 10px;
 }
 .ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
@@ -180,6 +181,27 @@
   }
 }
 
+.ambientlight__ambientlight-bar-detection-graph {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, .85);
+  width: fit-content;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  resize: vertical;
+
+  canvas {
+    display: block;
+    height: 100%;
+    border: 1px solid #000;
+    cursor: help;
+
+    @at-root .ambientlight__ambientlight-bar-detection-graph:not([style*="height: 1"]) canvas {
+      image-rendering: pixelated;
+    }
+  }
+}
+
 
 /* Override incorrect default description colors when switching between themes */
     
@@ -212,6 +234,8 @@ html[data-ambientlight-enabled="true"] {
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
     --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
     --yt-spec-outline: var(--yt-spec-10-percent-layer);
+
+    --ytal-text-rgb: 10;
     --ytal-background: rgba(0,0,0,.1); // fallback
     --ytal-background: rgba(0,0,0,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
     --ytal-background-opacity: calc((max(var(--ytal-fill-opacity, .55), .5) * 2) - (min(var(--ytal-fill-opacity, .55), .5) * 2));
@@ -243,6 +267,8 @@ html[data-ambientlight-enabled="true"] {
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
       --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
+
+      --ytal-text-rgb: 245;
       --ytal-background: rgba(255,255,255,.1); // fallback
       --ytal-background: rgba(255,255,255,calc((var(--ytal-fill-opacity, .55) - .5) * 2)); // fallback
       --ytal-background-rgb: calc(max(0, min(255, 255 * (-99 + var(--ytal-fill-opacity, .55) * 200))));
@@ -1141,9 +1167,21 @@ html[data-ambientlight-enabled="true"] {
   }
   
   ytd-watch-metadata {
-    .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--tonal:not(:hover):not(:focus) {
-      background: var(--ytal-background) !important;
+    .yt-spec-button-shape-next--tonal {
+      &.yt-spec-button-shape-next--mono:not(:hover):not(:focus) {
+        background: var(--ytal-background) !important;
+      }
+      &.yt-spec-button-shape-next--disabled {
+        background: var(--ytal-background) !important;
+        color: rgba(
+          var(--ytal-text-rgb), 
+          var(--ytal-text-rgb), 
+          var(--ytal-text-rgb),
+          .35
+        ) !important;
+      }
     }
+    
   }
   #primary #description.ytd-watch-metadata,
   #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
@@ -2872,6 +2910,11 @@ html[data-ambientlight-enabled="true"] {
     @include filter-shadow-selectors {
       filter: var(--ytal-button-shadow) !important;
     }
+  }
+
+  // Keep icons within buttons with animated icons clickable
+  button yt-animated-icon {
+    pointer-events: none !important;
   }
 
   // Fix ambient light height in grid layout

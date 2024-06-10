@@ -23,14 +23,14 @@ const SettingsConfig = [
   },
   {
     name: 'showFPS',
-    label: 'Framerate stats',
+    label: 'Framerates',
     type: 'checkbox',
     default: false,
     advanced: true
   },
   {
     name: 'showFrametimes',
-    label: 'Frametime stats',
+    label: 'Frametimes graph',
     description: 'Uses: CPU power',
     questionMark: {
       title: 'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
@@ -41,7 +41,14 @@ const SettingsConfig = [
   },
   {
     name: 'showResolutions',
-    label: 'Resolution & draw time stats',
+    label: 'Resolutions & drawtimes',
+    type: 'checkbox',
+    default: false,
+    advanced: true
+  },
+  {
+    name: 'showBarDetectionStats',
+    label: 'Bar detection',
     type: 'checkbox',
     default: false,
     advanced: true
@@ -410,16 +417,15 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedElementsPercentage',
-    label: 'Detection: Ignored elements',
+    label: 'Detection: Ignored bar elements',
     questionMark: {
-      title: 'The percentage of elements in bars which will being ignored. \nThese elements will then be hidden because they are outside main video frame. \n(Think of logos, subtitles and other special effects)'
+      title: 'At 10% only clean bars are removed.\nA higher value removes bars with elements as well.\n(For example: logos, subtitles, reaction cams, special effects, etc...)'
     },
     type: 'list',
     default: 30,
     min: 10,
     max: 90,
-    step: 10,
-    advanced: true
+    step: 10
   },
   {
     name: 'horizontalBarsClipPercentage',

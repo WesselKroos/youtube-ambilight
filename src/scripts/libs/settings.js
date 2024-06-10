@@ -639,10 +639,13 @@ export default class Settings {
           }
 
           if (
-            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && (
-              setting.name === 'detectHorizontalBarSizeOffsetPercentage' ||
-              setting.name === 'barSizeDetectionAllowedElementsPercentage'
-            )
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && 
+            [
+              'detectColoredHorizontalBarSizeEnabled',
+              'barSizeDetectionAverageHistorySize',
+              'detectHorizontalBarSizeOffsetPercentage',
+              'barSizeDetectionAllowedElementsPercentage'
+            ].includes(setting.name)
           ) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {
@@ -768,6 +771,7 @@ export default class Settings {
             'showFPS',
             'showFrametimes',
             'showResolutions',
+            'showBarDetectionStats',
             'chromiumDirectVideoOverlayWorkaround',
             'chromiumBugVideoJitterWorkaround',
             'surroundingContentTextAndBtnOnly',
@@ -793,7 +797,7 @@ export default class Settings {
             'enableInEmbed',
             'enableInVRVideos'
           ].some(name => name === setting.name)) {
-            this.set(setting.name, value)
+            if(setting.name !== 'webGL') this.set(setting.name, value)
             this.menuElem.querySelector(`#setting-${setting.name}`).setAttribute('aria-checked', value)
           }
 
@@ -925,7 +929,8 @@ export default class Settings {
           if([
             'showFPS',
             'showFrametimes',
-            'showResolutions'
+            'showResolutions',
+            'showBarDetectionStats',
           ].some(name => name === setting.name)) {
             if(value) {
               this.ambientlight.stats.update()
@@ -945,6 +950,7 @@ export default class Settings {
           }
 
           if(setting.name === 'webGL') {
+            this.saveStorageEntry('webGL', value)
             await this.flushPendingStorageEntries()
             await new Promise(resolve => setTimeout(resolve, 1000))
             this.reloadPage()
@@ -1275,6 +1281,10 @@ export default class Settings {
     {
       names: [ 'framerateLimit' ],
       visible: () => !this.ambientlight.isVrVideo
+    },
+    {
+      names: [ 'showBarDetectionStats' ],
+      visible: () => (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     }
   ]
   updateVisibility() {
