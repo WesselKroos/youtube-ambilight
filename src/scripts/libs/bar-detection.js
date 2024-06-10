@@ -623,7 +623,7 @@ export default class BarDetection {
 
       if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
-          this.canvas = new SafeOffscreenCanvas(Math.min(buffer.width ?? 512, 512), Math.min(buffer.height ?? 512, 512))
+          this.canvas = new SafeOffscreenCanvas(Math.min(buffer.videoWidth || buffer.width || 512, 512), Math.min(buffer.videoHeight || buffer.height || 512, 512))
           // Smallest size to prevent many garbage collections caused by transferToImageBitmap
           this.ctx = undefined
         }
