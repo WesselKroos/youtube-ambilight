@@ -1,4 +1,4 @@
-import { appendErrorStack } from "./generic";
+import { appendErrorStack, isNetworkError } from "./generic";
 import { workerFromCode } from "./worker";
 
 const workerCode = function () {
@@ -200,10 +200,13 @@ const workerCode = function () {
         difference
       })
     } catch(ex) {
-      if ([
-        'InvalidStateError', 
-        'SecurityError'
-      ].includes(ex?.name)) {
+      if (
+        isNetworkError(ex) ||
+        [
+          'InvalidStateError', 
+          'SecurityError'
+        ].includes(ex?.name)
+      ) {
         this.postMessage({
           id,
           baseUrl,

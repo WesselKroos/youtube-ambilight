@@ -1,4 +1,4 @@
-import { on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl } from './generic'
+import { on, off, raf, ctxOptions, Canvas, SafeOffscreenCanvas, setTimeout, wrapErrorHandler, readyStateToString, networkStateToString, mediaErrorToString, requestIdleCallback, isWatchPageUrl, watchSelectors, isEmbedPageUrl, isNetworkError } from './generic'
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter'
 import BarDetection from './bar-detection'
 import Settings, { FRAMESYNC_DECODEDFRAMES, FRAMESYNC_DISPLAYFRAMES, FRAMESYNC_VIDEOFRAMES } from './settings'
@@ -476,10 +476,7 @@ export default class Ambientlight {
       if(this.chromiumBugVideoJitterWorkaround?.update)
         this.chromiumBugVideoJitterWorkaround.update()
     } catch(ex) {
-      if(
-        ex?.message !== 'Failed to fetch' && // Chromium
-        ex?.message !== 'NetworkError when attempting to fetch resource.' // Firefox
-      ) {
+      if(!isNetworkError(ex)) {
         SentryReporter.captureException(ex)
       }
     }
