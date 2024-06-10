@@ -639,10 +639,13 @@ export default class Settings {
           }
 
           if (
-            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && (
-              setting.name === 'detectHorizontalBarSizeOffsetPercentage' ||
-              setting.name === 'barSizeDetectionAllowedElementsPercentage'
-            )
+            (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled) && 
+            [
+              'detectColoredHorizontalBarSizeEnabled',
+              'barSizeDetectionAverageHistorySize',
+              'detectHorizontalBarSizeOffsetPercentage',
+              'barSizeDetectionAllowedElementsPercentage'
+            ].includes(setting.name)
           ) {
             this.ambientlight.barDetection.cancel()
             if(this.enabled && this.webGL) {

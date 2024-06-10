@@ -552,6 +552,10 @@ export default class BarDetection {
       }
     }
 
+    // Ignore previous percentages in cases: new video src, seeked or setting changed
+    if(this.history.horizontal.length === 0) currentHorizontalPercentage = undefined
+    if(this.history.vertical.length === 0) currentVerticalPercentage = undefined
+
     this.idleHandlerArguments = {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
