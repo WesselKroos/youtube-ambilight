@@ -505,6 +505,7 @@ export default class BarDetection {
     }
 
     this.run = null
+    this.continueAfterRun = false
     this.history = {
       horizontal: [],
       vertical: []
@@ -521,6 +522,7 @@ export default class BarDetection {
     }
 
     this.run = null
+    this.continueAfterRun = false
     this.history = {
       horizontal: [],
       vertical: []
