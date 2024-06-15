@@ -121,7 +121,7 @@ const workerCode = function () {
         const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
         if(
           // Above the top limit
-          i < middleIndex &&
+          i < middleIndex - channels &&
           // Within the color and brightness deviation
           (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
           colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
@@ -144,9 +144,9 @@ const workerCode = function () {
 
       step = largeStep
       // From the bottom up
-      for (let i = (data.length - 1 - (channels * ignoreEdge)); i >= 0; i -= (channels * step)) {
-        const colorDeviation = Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])
-        const brightnessDeviation = Math.abs(data[i-3] + data[i-2] + data[i-1] - (color[0] + color[1] + color[2]))
+      for (let i = (data.length - channels * (1 + ignoreEdge)); i >= 0; i -= (channels * step)) {
+        const colorDeviation = Math.abs(data[i] - color[0]) + Math.abs(data[i+1] - color[1]) + Math.abs(data[i+2] - color[2])
+        const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
         // (Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])) <= maxColorDeviation
         if(
           // Below the bottom limit
@@ -158,8 +158,8 @@ const workerCode = function () {
         ) continue;
 
         // Change the step from large to 1 pixel
-        if(i !== data.length - 1 && step === largeStep) {
-          i = Math.min((data.length - 1 + channels) , i + (channels * step))
+        if(i !== data.length - channels && step === largeStep) {
+          i = Math.min((data.length - channels), i + (channels * step))
           step = Math.ceil(1, Math.floor(step / 2))
           continue
         }
@@ -167,7 +167,7 @@ const workerCode = function () {
         // Found the first video pixel, add to bottomEdges
         bottomEdges.push({
           xIndex,
-          yIndex: ((data.length - 1) - i) / channels
+          yIndex: (data.length - i) / channels
         })
         break;
       }
