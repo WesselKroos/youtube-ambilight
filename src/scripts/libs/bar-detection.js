@@ -22,7 +22,7 @@ const workerCode = function () {
   }
 
   let getLineImageDataStart
-  async function getLineImageData(imageLines, yLength, xIndex) {
+  async function getLineImageData(imageLines, yAxis, xIndex) {
     if(!getLineImageDataStart) {
       getLineImageDataStart = performance.now()
     } else if(performance.now() - getLineImageDataStart > 4) {
@@ -36,7 +36,7 @@ const workerCode = function () {
       getLineImageDataStart = performance.now()
     }
 
-    const params = yLength === 'height' 
+    const params = yAxis === 'height' 
       ? [xIndex, 0, 1, canvas.height]
       : [0, xIndex, canvas.width, 1]
 
@@ -99,15 +99,84 @@ const workerCode = function () {
     return averageColor
   }
 
-  function detectEdges(imageLines, channels, color) {
-    const maxColorDeviation = 8
-    const maxBrightnessDeviation = 8
-    const maxColorAndBrightnessDeviationSum = 16
+  function getColorDeviation(a, b) {
+    return (
+      Math.abs(a[0] - b[0]) +
+      Math.abs(a[1] - b[1]) +
+      Math.abs(a[2] - b[2])
+    )
+  }
+
+  function getBrightnessDeviation(a, b) {
+    return Math.abs(
+      a[0] + a[1] + a[2] -
+      (b[0] + b[1] + b[2])
+    )
+  }
+
+  function isWithinColorAndBrightnessDeviationLimit(a, b) {
+    const colorDeviation = getColorDeviation(a, b)
+    const brightnessDeviation = getBrightnessDeviation(a, b)
+    return (
+      (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
+      colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
+    )
+  }
+
+  const maxColorDeviation = 8
+  const maxBrightnessDeviation = 8
+  const maxColorAndBrightnessDeviationSum = 16
+
+  const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
+  const edgePointYRange = 4;
+  const certaintyEasing = (x) => -(Math.cos(Math.PI * x) - 1) / 2
+  function getCertainty(point, yAxis, yDirection, color, channels) {
+    const x = point.x - edgePointXRange
+    const y = point.y - edgePointYRange
+    const xLength = 1 + edgePointXRange * 2;
+    const yLength = 1 + edgePointYRange * 2;
+    const data = ctx.getImageData(...(yAxis === 'height'
+      ? [x, y, xLength, yLength]
+      : [y, x, yLength, xLength]
+    )).data
+
+    // console.log(point, yAxis, yDirection, color)
+    // console.log(x, y, xLength, yLength)
+    // console.log(data)
+    
+    let score = 0
+    for(let dx = 0; dx < xLength; dx++) {
+      const ix = dx * (yAxis === 'height' ? 1 : yLength)
+      
+      for(let dy = 0; dy < yLength; dy++) {
+        const dy2 = yDirection === 1 ? dy : yLength - 1 - dy
+        const iy = dy2 * (yAxis === 'height' ? xLength : 1)
+        const i = ix * channels + iy * channels
+        
+        const iColor = (data[i+3] === 0)
+          ? color // Outside canvas bounds
+          : [data[i], data[i+1], data[i+2]]
+        const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+        // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
+        if (within === dy < Math.floor(yLength / 2)) {
+          score++
+        }
+      }
+    }
+    const length = (xLength * yLength)
+    const certainty = (score - length / 2) / (length / 2)
+    // console.log('edges', certainty, JSON.stringify(certainties)) //, JSON.stringify(edges))
+
+    return certaintyEasing(certainty)
+  }
+
+  function detectEdges(imageLines, channels, color, yAxis) {
     const ignoreEdge = 2
     const middleIndex = (imageLines[0].data.length / 2)
     const largeStep = 4
     const topEdges = []
     const bottomEdges = []
+    const minCertainty = .65
   
     for(const imageLine of imageLines) {
       const {
@@ -115,17 +184,27 @@ const workerCode = function () {
         data,
       } = imageLine
       let step = largeStep
+      let wasDeviating = false
+      let wasUncertain = false
       // From the top down
       for (let i = (channels * ignoreEdge); i < data.length; i += (channels * step)) {
-        const colorDeviation = Math.abs(data[i] - color[0]) + Math.abs(data[i+1] - color[1]) + Math.abs(data[i+2] - color[2])
-        const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
-        if(
-          // Above the top limit
-          i < middleIndex - channels &&
-          // Within the color and brightness deviation
-          (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
-          colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
-        ) continue;
+        if(wasUncertain) {
+          wasUncertain = false
+          step = 1
+        }
+
+        const iColor = [data[i], data[i+1], data[i+2]]
+        const limitNotReached = i < middleIndex - channels // Below the top limit
+        if(!limitNotReached) break;
+
+        const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
+
+        if(limitNotReached && wasDeviating && !isDeviating) {
+          wasDeviating = false
+          continue
+        }
+
+        if(limitNotReached && wasDeviating === isDeviating) continue;
 
         // Change the step from large to 1 pixel
         if(i !== 0 && step === largeStep) {
@@ -134,28 +213,45 @@ const workerCode = function () {
           continue
         }
 
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color, channels)
+        if(limitNotReached && certainty < minCertainty) {
+          // console.log('uncertain top', xIndex, i / channels, certainty)
+          // step = largeStep
+          wasUncertain = true
+          wasDeviating = true
+          continue
+        }
+
         // Found the first video pixel, add to topEdges
         topEdges.push({
           xIndex,
-          yIndex: i / channels
+          yIndex: i / channels,
+          certainty
         })
         break;
       }
 
       step = largeStep
+      wasDeviating = false
+      wasUncertain = false
       // From the bottom up
       for (let i = (data.length - channels * (1 + ignoreEdge)); i >= 0; i -= (channels * step)) {
-        const colorDeviation = Math.abs(data[i] - color[0]) + Math.abs(data[i+1] - color[1]) + Math.abs(data[i+2] - color[2])
-        const brightnessDeviation = Math.abs(data[i] + data[i+1] + data[i+2] - (color[0] + color[1] + color[2]))
-        // (Math.abs(data[i-3] - color[0]) + Math.abs(data[i-2] - color[1]) + Math.abs(data[i-1] - color[2])) <= maxColorDeviation
-        if(
-          // Below the bottom limit
-          i > middleIndex &&
-          // Within the color deviation
-          // Within the color and brightness deviation
-          (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
-          colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
-        ) continue;
+        if(wasUncertain) {
+          wasUncertain = false
+          step = 1
+        }
+
+        const iColor = [data[i], data[i+1], data[i+2]]
+        const limitNotReached = i > middleIndex // Above the bottom limit
+        if(!limitNotReached) break;
+        const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
+
+        if(limitNotReached && wasDeviating && !isDeviating) {
+          wasDeviating = false
+          continue
+        }
+
+        if(limitNotReached && wasDeviating === isDeviating) continue;
 
         // Change the step from large to 1 pixel
         if(i !== data.length - channels && step === largeStep) {
@@ -164,10 +260,20 @@ const workerCode = function () {
           continue
         }
 
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color, channels)
+        if(limitNotReached && certainty < minCertainty) {
+          // console.log('uncertain bottom', xIndex, i / channels, certainty)
+          // step = largeStep
+          wasUncertain = true
+          wasDeviating = true
+          continue
+        }
+
         // Found the first video pixel, add to bottomEdges
         bottomEdges.push({
           xIndex,
-          yIndex: (data.length - i) / channels
+          yIndex: (data.length - i) / channels,
+          certainty
         })
         break;
       }
@@ -182,49 +288,55 @@ const workerCode = function () {
     const maxAllowedDeviation = maxSize * (0.0125 * scale)
 
     const threshold = edges.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
-    while(edges.filter(p => !p.deviates).length > threshold) {
-      const nonDeviatingEdges = edges.filter(p => !p.deviates)
+    while(edges.filter(e => !e.deviates).length > threshold) {
+      const nonDeviatingEdges = edges.filter(e => !e.deviates)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
         .sort(sortSizes(averageSize))
         .slice(nonDeviatingEdges.length - 1)
-        .forEach(p => {
-          p.deviates = true
+        .forEach(e => {
+          e.deviates = true
         })
     }
 
-    const nonDeviatingEdgeSizes = edges.filter(p => !p.deviates).map(e => e.yIndex)
+    const nonDeviatingEdgeSizes = edges
+      .filter(e => !e.deviates)
+      .map(e => e.yIndex)
     const maxDeviation = Math.abs(Math.max(...nonDeviatingEdgeSizes) - Math.min(...nonDeviatingEdgeSizes))
     if(maxDeviation <= maxAllowedDeviation) return false
 
     // Allow a higher deviation between top and bottom edges
     const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
 
-    while(topEdges.filter(p => !p.deviatesTop).length > threshold) {
-      const nonDeviatingEdges = topEdges.filter(p => !p.deviatesTop)
+    while(topEdges.filter(e => !e.deviatesTop).length > threshold) {
+      const nonDeviatingEdges = topEdges.filter(e => !e.deviatesTop)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
         .sort(sortSizes(averageSize))
         .slice(nonDeviatingEdges.length - 1)
-        .forEach(p => {
-          p.deviatesTop = true
+        .forEach(e => {
+          e.deviatesTop = true
         })
     }
-    const nonDeviatingTopEdges = topEdges.filter(p => !p.deviatesTop).map(e => e.yIndex)
+    const nonDeviatingTopEdges = topEdges
+      .filter(e => !e.deviatesTop)
+      .map(e => e.yIndex)
     const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges) - Math.min(...nonDeviatingTopEdges))
     const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
 
-    while(bottomEdges.filter(p => !p.deviatesBottom).length > threshold) {
-      const nonDeviatingEdges = bottomEdges.filter(p => !p.deviatesBottom)
+    while(bottomEdges.filter(e => !e.deviatesBottom).length > threshold) {
+      const nonDeviatingEdges = bottomEdges.filter(e => !e.deviatesBottom)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
         .sort(sortSizes(averageSize))
         .slice(nonDeviatingEdges.length - 1)
-        .forEach(p => {
-          p.deviatesBottom = true
+        .forEach(e => {
+          e.deviatesBottom = true
         })
     }
-    const nonDeviatingBottomEdges = topEdges.filter(p => !p.deviatesBottom).map(e => e.yIndex)
+    const nonDeviatingBottomEdges = topEdges
+      .filter(e => !e.deviatesBottom)
+      .map(e => e.yIndex)
     const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges) - Math.min(...nonDeviatingBottomEdges))
     const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
 
@@ -238,9 +350,9 @@ const workerCode = function () {
     const minSize = maxSize * (0.012 * scale)
     const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
 
-    let size = 0;
+    let size;
     if(exceedsDeviationLimit) {
-      let lowestSize = Math.min(...edges.map(point => point.yIndex))
+      let lowestSize = Math.min(...edges.map(e => e.yIndex))
       let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
       if(lowestPercentage >= currentPercentage - 4) {
         return // Detected percentage is close to the current percentage, but the detected edges deviate too much
@@ -253,9 +365,7 @@ const workerCode = function () {
         size += (maxSize * (offsetPercentage/100))
       }
     } else {
-      size = Math.max(...edges
-        .filter(p => !p.deviates)
-        .map(point => point.yIndex))
+      size = Math.max(...edges.filter(e => !e.deviates).map(e => e.yIndex))
       if(size < minSize) {
         size = 0
       } else {
@@ -264,7 +374,7 @@ const workerCode = function () {
     }
 
     if(size > (maxSize * 0.49)) {
-      let lowestSize = Math.min(...edges.map(point => point.yIndex))
+      let lowestSize = Math.min(...edges.map(e => e.yIndex))
       if(lowestSize >= minSize) {
         lowestSize += (maxSize * (offsetPercentage/100))
       }
@@ -282,7 +392,7 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectBarSize = async (id, xLength, yLength, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
+    const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
       
       const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
       const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
@@ -295,8 +405,11 @@ const workerCode = function () {
         const xIndex = Math.min(Math.max(0,
           index + Math.round(xOffset * (partSize / 2) - partSize / 4)
         ), canvas[xLength] - 1)
-        await getLineImageData(imageLines, yLength, xIndex)
+        await getLineImageData(imageLines, yAxis, xIndex)
       }
+
+      // console.log(imageSquare.length)
+
       // console.log(`scanned ${imageLines.length} lines`)
       if(id < workerMessageId) {
         imageLines.length = 0
@@ -306,7 +419,7 @@ const workerCode = function () {
       const channels = 4
       const color = getAverageColor(imageLines, channels)
       if(!detectColored && (
-        color[0] + color[1] + color[2] > 8 ||
+        color[0] + color[1] + color[2] > 16 ||
         Math.abs(color[0] - color[1]) > 3 ||
         Math.abs(color[1] - color[2]) > 3 ||
         Math.abs(color[2] - color[0]) > 3
@@ -314,7 +427,7 @@ const workerCode = function () {
         const topEdges = imageLines.map(line => ({ xIndex: line.xIndex, yIndex: 0, deviates: true }))
         const bottomEdges = imageLines.map(line => ({ xIndex: line.xIndex, yIndex: 0, deviates: true }))
         imageLines.length = 0
-        
+
         return {
           percentage: 0,
           topEdges,
@@ -322,20 +435,26 @@ const workerCode = function () {
         }
       }
 
-      const { topEdges, bottomEdges } = detectEdges(imageLines, channels, color)
+      const { topEdges, bottomEdges } = detectEdges(imageLines, channels, color, yAxis)
 
       const maxSize = imageLines[0].data.length / channels
-      imageLines.length = 0
 
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
       // console.log(topEdges, bottomEdges)
-      if(!topEdges.length || !bottomEdges.length) {
-        // This should never happen, but just in case it does
-        if(topEdges.length) topEdges.length = 0
-        if(bottomEdges.length) bottomEdges.length = 0
-        return
+      if((topEdges.length + bottomEdges.length) / (imageLines.length * 2) < (100 - allowedAnomaliesPercentage) / 100) {
+        // console.log(`Discarded. Found ${topEdges.length + bottomEdges.length} of ${imageLines.length * 2}. Required: ${(100 - allowedAnomaliesPercentage)}%`)
+        topEdges.forEach(edge => { edge.deviates = true })
+        bottomEdges.forEach(edge => { edge.deviates = true })
+        imageLines.length = 0
+        
+        return {
+          topEdges,
+          bottomEdges
+        }
       }
+
+      imageLines.length = 0
 
       const edges = [...topEdges, ...bottomEdges]
       const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage)
@@ -417,17 +536,17 @@ const workerCode = function () {
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
           if(!canvas) {
-            createCanvas(bitmap.width, bitmap.height)
+            createCanvas(512, 512)
           } else if(
-            canvas.width !== bitmap.width ||
-            canvas.height !== bitmap.height
+            canvas.width !== 512 ||
+            canvas.height !== 512
           ) {
-            canvas.width = bitmap.width
-            canvas.height = bitmap.height
+            canvas.width = 512
+            canvas.height = 512
 
             createContext()
           }
-          ctx.drawImage(bitmap, 0, 0)
+          ctx.drawImage(bitmap, 0, 0, 512, 512)
         } else {
           canvas = canvasInfo.canvas
           canvasIsCreatedInWorker = false
@@ -449,7 +568,7 @@ const workerCode = function () {
           : undefined
         let verticalBarSizeInfo = detectVertical
           ? await workerDetectBarSize(
-              id, 'height', 'width', ratio, detectColored, offsetPercentage, currentVerticalPercentage,
+              id, 'height', 'width', 1, detectColored, offsetPercentage, currentVerticalPercentage,
               allowedAnomaliesPercentage, xOffset
           )
           : undefined
@@ -625,7 +744,11 @@ export default class BarDetection {
 
       if(this.worker.isFallbackWorker || !allowedToTransfer || !buffer.transferToImageBitmap || !buffer.getContext) {
         if(!this.canvas) {
-          this.canvas = new SafeOffscreenCanvas(Math.min(buffer.videoWidth || buffer.width || 512, 512), Math.min(buffer.videoHeight || buffer.height || 512, 512))
+          this.canvas = new SafeOffscreenCanvas(
+            512, 512
+            // Math.min(buffer.videoWidth || buffer.width || 512, 512), 
+            // Math.min(buffer.videoHeight || buffer.height || 512, 512)
+          )
           // Smallest size to prevent many garbage collections caused by transferToImageBitmap
           this.ctx = undefined
         }
@@ -699,14 +822,20 @@ export default class BarDetection {
               verticalBarSizeInfo = {}
             } = e.data
 
-            const horizontalPercentage = this.averagePercentage(horizontalBarSizeInfo.percentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
-            const verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
-
-            const barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
-
+            let horizontalPercentage = this.averagePercentage(horizontalBarSizeInfo.percentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
+            let verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
+            let barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
+            
             this.ambientlight.stats.updateBarDetectionResult(
               barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
             )
+
+            const firstDetection = this.history.horizontal.length === 0 && this.history.vertical.length === 0
+            if(firstDetection) {
+              if(horizontalPercentage === undefined) horizontalPercentage = 0
+              if(verticalPercentage === undefined) verticalPercentage = 0
+              barsFound = true
+            }
 
             if(
               barsFound ||

@@ -631,8 +631,8 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     if(!image) return
     if(!this.settings.showBarDetectionStats) return
 
-    const width = image.width ?? 1
-    const height = image.height ?? 1
+    const width = 512 // image.width ?? 1
+    const height = 512 // image.height ?? 1
 
     if(!this.barDetectionCanvas) {
       this.barDetectionCanvas = new Canvas(width, height)
@@ -667,7 +667,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       this.barDetectionGraphElem.style.display = ''
     }
 
-    this.barDetectionBufferCtx.drawImage(image, 0, 0)
+    this.barDetectionBufferCtx.drawImage(image, 0, 0, this.barDetectionBufferCanvas.width, this.barDetectionBufferCanvas.height)
   }
 
   updateBarDetectionResult = (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
@@ -720,8 +720,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       ])
     }
 
+    const certaintySize = globalThis.BARDETECTION_EDGE_RANGE
+    
     if(horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
-      for(const { xIndex, yIndex, deviates, deviatesTop } of horizontalBarSizeInfo.topEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of horizontalBarSizeInfo.topEdges) {
         rects.push([
           '#555',
           xIndex,
@@ -731,15 +733,15 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ])
         rects.push([
           (deviates || deviatesTop)
-            ? '#f00' 
+            ? '#555' 
             : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
-          xIndex - 1,
+          xIndex - 1 - Math.round(certaintySize * certainty),
           yIndex - 1,
-          3,
+          1 + Math.round(certaintySize * 2 * certainty),
           2,
         ])
       }
-      for(const { xIndex, yIndex, deviates, deviatesBottom } of horizontalBarSizeInfo.bottomEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of horizontalBarSizeInfo.bottomEdges) {
         rects.push([
           '#555',
           xIndex,
@@ -749,18 +751,18 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ])
         rects.push([
           (deviates || deviatesBottom )
-            ? '#f00' 
+            ? '#555' 
             : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
-          xIndex - 1,
+          xIndex - 1 - Math.round(certaintySize * certainty),
           height - yIndex + 1,
-          3,
+          1 + Math.round(certaintySize * 2 * certainty),
           -2,
         ])
       }
     }
 
     if(verticalBarSizeInfo.topEdges && verticalBarSizeInfo.bottomEdges) {
-      for(const { xIndex, yIndex, deviates, deviatesTop } of verticalBarSizeInfo.topEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of verticalBarSizeInfo.topEdges) {
         rects.push([
           '#555',
           0,
@@ -770,15 +772,15 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ])
         rects.push([
           (deviates || deviatesTop)
-            ? '#f00' 
+            ? '#555' 
             : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           yIndex - 1,
-          xIndex - 1,
+          xIndex - 1 - Math.round(certaintySize * certainty),
           2,
-          3,
+          1 + Math.round(certaintySize * 2 * certainty),
         ])
       }
-      for(const { xIndex, yIndex, deviates, deviatesBottom } of verticalBarSizeInfo.bottomEdges) {
+      for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of verticalBarSizeInfo.bottomEdges) {
         rects.push([
           '#555',
           width,
@@ -788,12 +790,12 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ])
         rects.push([
           (deviates || deviatesBottom)
-            ? '#f00' 
+            ? '#555' 
             : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
           width - yIndex + 1,
-          xIndex - 1,
+          xIndex - 1 - Math.round(certaintySize * certainty),
           -2,
-          3,
+          1 + Math.round(certaintySize * 2 * certainty),
         ])
       }
     }
