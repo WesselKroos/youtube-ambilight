@@ -422,7 +422,7 @@ Click on the questionmark for more and updated information about these artifacts
       title: 'At 10% only clean bars are removed.\nA higher value removes bars with elements as well.\n(For example: logos, subtitles, reaction cams, special effects, etc...)'
     },
     type: 'list',
-    default: 30,
+    default: 20,
     min: 10,
     max: 90,
     step: 10
