@@ -54,25 +54,25 @@ const workerCode = function () {
     return (aGap === bGap) ? 0 : (aGap > bGap) ? 1 : -1
   }
 
-  function sortColors(averageColor, a, b) {
+  function sortAverageColors(averageColor, a, b) {
     const aDiff = Math.abs(averageColor[0] - a[0]) + Math.abs(averageColor[1] - a[1]) + Math.abs(averageColor[2] - a[2])
     const bDiff = Math.abs(averageColor[0] - b[0]) + Math.abs(averageColor[1] - b[1]) + Math.abs(averageColor[2] - b[2])
     return (aDiff === bDiff) ? 0 : (aDiff > bDiff) ? 1 : -1
   }
 
   function getAverageColor(imageLines, channels) {
-    const edgeOffset = 4
-    const topOffsetIndex = channels * edgeOffset
+    const topOffsetIndex = channels * 2
     const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
 
     let colors = []
-    let i = 0
     for(const imageLine of imageLines) {
       const data = imageLine.data
-      i = topOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([data[i], data[i + 1], data[i + 2]])
-      i = bottomOffsetIndex + (Math.round((edgeOffset * 2 * Math.random())) - edgeOffset) * channels
-      colors.push([data[i], data[i + 1], data[i + 2]])
+      for(let i = topOffsetIndex; i <= topOffsetIndex + 12 * channels; i += 2 * channels) {
+        colors.push([data[i], data[i + 1], data[i + 2]])
+      }
+      for(let i = bottomOffsetIndex; i >= bottomOffsetIndex - 12 * channels; i -= 2 * channels) {
+        colors.push([data[i], data[i + 1], data[i + 2]])
+      }
     }
     // const oldColor = colors[0]
 
@@ -81,8 +81,7 @@ const workerCode = function () {
       colors.reduce((average, color) => average + color[1], 0) / colors.length,
       colors.reduce((average, color) => average + color[2], 0) / colors.length
     ]
-    colors.sort((a, b) => sortColors(averageColor, a, b))
-    // const droppedColors = 
+    colors.sort((a, b) => sortAverageColors(averageColor, a, b))
     colors.splice(Math.floor(colors.length / 2))
 
     averageColor = [
@@ -94,6 +93,7 @@ const workerCode = function () {
 
     // console.log(oldColor, averageColor)
 
+    // console.log(averageColor, JSON.parse(JSON.stringify(colors)))
     // const color = colors[0]
     colors.length = 0
     return averageColor
@@ -129,7 +129,10 @@ const workerCode = function () {
 
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
   const edgePointYRange = 4;
-  const certaintyEasing = (x) => -(Math.cos(Math.PI * x) - 1) / 2
+
+  const easeInOutSine = (x) => -(Math.cos(Math.PI * x) - 1) / 2
+  const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
+
   function getCertainty(point, yAxis, yDirection, color, channels) {
     const x = point.x - edgePointXRange
     const y = point.y - edgePointYRange
@@ -167,7 +170,7 @@ const workerCode = function () {
     const certainty = (score - length / 2) / (length / 2)
     // console.log('edges', certainty, JSON.stringify(certainties)) //, JSON.stringify(edges))
 
-    return certaintyEasing(certainty)
+    return easeInOutQuad(certainty)
   }
 
   function detectEdges(imageLines, channels, color, yAxis) {
@@ -187,6 +190,7 @@ const workerCode = function () {
       let wasDeviating = false
       let wasUncertain = false
       // From the top down
+      let mostCertainEdge;
       for (let i = (channels * ignoreEdge); i < data.length; i += (channels * step)) {
         if(wasUncertain) {
           wasUncertain = false
@@ -195,7 +199,17 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i < middleIndex - channels // Below the top limit
-        if(!limitNotReached) break;
+        if(!limitNotReached) {
+          if(mostCertainEdge) {
+            topEdges.push({
+              xIndex,
+              yIndex: mostCertainEdge.i / channels,
+              certainty: mostCertainEdge.certainty,
+              // deviates: true
+            })
+          }
+          break
+        }
 
         const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
 
@@ -219,6 +233,12 @@ const workerCode = function () {
           // step = largeStep
           wasUncertain = true
           wasDeviating = true
+          if(!(mostCertainEdge?.certainty >= certainty)) {
+            mostCertainEdge = {
+              i,
+              certainty,
+            }
+          }
           continue
         }
 
@@ -228,12 +248,13 @@ const workerCode = function () {
           yIndex: i / channels,
           certainty
         })
-        break;
+        break
       }
 
       step = largeStep
       wasDeviating = false
       wasUncertain = false
+      mostCertainEdge = undefined
       // From the bottom up
       for (let i = (data.length - channels * (1 + ignoreEdge)); i >= 0; i -= (channels * step)) {
         if(wasUncertain) {
@@ -243,7 +264,17 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i > middleIndex // Above the bottom limit
-        if(!limitNotReached) break;
+        if(!limitNotReached) {
+          if(mostCertainEdge) {
+            bottomEdges.push({
+              xIndex,
+              yIndex: (data.length - mostCertainEdge.i) / channels,
+              certainty: mostCertainEdge.certainty,
+              // deviates: true
+            })
+          }
+          break
+        }
         const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
 
         if(limitNotReached && wasDeviating && !isDeviating) {
@@ -266,6 +297,12 @@ const workerCode = function () {
           // step = largeStep
           wasUncertain = true
           wasDeviating = true
+          if(!(mostCertainEdge?.certainty >= certainty)) {
+            mostCertainEdge = {
+              i,
+              certainty,
+            }
+          }
           continue
         }
 
@@ -275,7 +312,7 @@ const workerCode = function () {
           yIndex: (data.length - i) / channels,
           certainty
         })
-        break;
+        break
       }
     }
 
@@ -348,13 +385,13 @@ const workerCode = function () {
 
   function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage) {
     const minSize = maxSize * (0.012 * scale)
-    const baseOffsetPercentage = (0.6 * ((1 + scale) / 2))
+    const baseOffsetPercentage = (0.2 * ((1 + scale) / 2))
 
     let size;
     if(exceedsDeviationLimit) {
-      let lowestSize = Math.min(...edges.map(e => e.yIndex))
+      let lowestSize = Math.min(...edges.filter(e => e.certainty > .5).map(e => e.yIndex))
       let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-      if(lowestPercentage >= currentPercentage - 4) {
+      if(lowestPercentage >= (currentPercentage ?? 0) - 4) {
         return // Detected percentage is close to the current percentage, but the detected edges deviate too much
       }
   
@@ -379,7 +416,7 @@ const workerCode = function () {
         lowestSize += (maxSize * (offsetPercentage/100))
       }
       let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-      if(lowestPercentage < currentPercentage) {
+      if(lowestPercentage < (currentPercentage ?? 0)) {
         return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
       }
       return // Filled with a almost single color

@@ -76,6 +76,7 @@ export default class Stats {
     this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-duration')
     this.barDetectionResultElem = appendFPSItem('ambientlight__ambientlight-bar-detection-result')
     this.barDetectionGraphElem = appendFPSItem('ambientlight__ambientlight-bar-detection-graph')
+    this.barDetectionGraphElem.style.height = '256px'
   }
 
   hide(onlyDisabled = false) {
@@ -623,7 +624,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     const duration = Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length).toFixed(1)
 
-    this.barDetectionDurationElem.childNodes[0].nodeValue = `REMOVE BARS DETECTION: ${duration}ms`
+    this.barDetectionDurationElem.childNodes[0].nodeValue = `BAR DETECTION DURATION: ${duration}ms`
     this.barDetectionDurationElem.style.color = '#fff'
   }
 
@@ -688,14 +689,14 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     if(horizontalBarSizeInfo.percentage !== undefined) {
       rects.push([
-        '#00ff0077',
+        '#0f0',
         0,
         Math.floor(height * (horizontalBarSizeInfo.percentage / 100)) - 1,
         width,
         1,
       ])
       rects.push([
-        '#00ff0077',
+        '#0f0',
         0,
         height + 1 - Math.ceil(height * (horizontalBarSizeInfo.percentage / 100)),
         width,
@@ -705,14 +706,14 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     
     if(verticalBarSizeInfo.percentage !== undefined) {
       rects.push([
-        '#00ff0077',
+        '#0f0',
         Math.floor(width * (verticalBarSizeInfo.percentage / 100)) - 1,
         0,
         1,
         height,
       ])
       rects.push([
-        '#00ff0077',
+        '#0f0',
         width + 1 - Math.ceil(width * (verticalBarSizeInfo.percentage / 100)),
         0,
         1,
@@ -734,7 +735,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         rects.push([
           (deviates || deviatesTop)
             ? '#555' 
-            : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
+            : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
           xIndex - 1 - Math.round(certaintySize * certainty),
           yIndex - 1,
           1 + Math.round(certaintySize * 2 * certainty),
@@ -752,7 +753,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         rects.push([
           (deviates || deviatesBottom )
             ? '#555' 
-            : horizontalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
+            : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
           xIndex - 1 - Math.round(certaintySize * certainty),
           height - yIndex + 1,
           1 + Math.round(certaintySize * 2 * certainty),
@@ -773,7 +774,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         rects.push([
           (deviates || deviatesTop)
             ? '#555' 
-            : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
+            : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
           yIndex - 1,
           xIndex - 1 - Math.round(certaintySize * certainty),
           2,
@@ -791,7 +792,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         rects.push([
           (deviates || deviatesBottom)
             ? '#555' 
-            : verticalBarSizeInfo.percentage !== undefined ? '#0f0' : '#fa0',
+            : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
           width - yIndex + 1,
           xIndex - 1 - Math.round(certaintySize * certainty),
           -2,

@@ -196,8 +196,20 @@
     border: 1px solid #000;
     cursor: help;
 
-    @at-root .ambientlight__ambientlight-bar-detection-graph:not([style*="height: 1"]) canvas {
-      image-rendering: pixelated;
+    @at-root .ambientlight__ambientlight-bar-detection-graph {
+      &:not([style*="height: 1"]) {
+        &:not([style*="height: 2"]) {
+          &:not([style*="height: 3"]) {
+            &:not([style*="height: 4"]) {
+              &:not([style*="height: 6"]) {
+                canvas {
+                  image-rendering: pixelated;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
