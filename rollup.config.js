@@ -19,7 +19,7 @@ const common = {
           replace: {
             "instrumentFetch()": "window", // Removes Sentry iframe injection
             "getNativeFetchImplementation()": "window.fetch", // Removes Sentry iframe injection
-            "globalThis.BARDETECTION_EDGE_RANGE": "48"
+            "globalThis.BARDETECTION_EDGE_RANGE": "32"
           }
         }]
       ],
