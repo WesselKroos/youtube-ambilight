@@ -207,6 +207,13 @@ const workerCode = function () {
               certainty: mostCertainEdge.certainty,
               // deviates: true
             })
+          } else {
+            topEdges.push({
+              xIndex,
+              yIndex: 0,
+              certainty: 0,
+              deviates: true
+            })
           }
           break
         }
@@ -271,6 +278,13 @@ const workerCode = function () {
               yIndex: (data.length - mostCertainEdge.i) / channels,
               certainty: mostCertainEdge.certainty,
               // deviates: true
+            })
+          } else {
+            bottomEdges.push({
+              xIndex,
+              yIndex: 0,
+              certainty: 0,
+              deviates: true
             })
           }
           break
@@ -391,10 +405,12 @@ const workerCode = function () {
     if(exceedsDeviationLimit) {
       let lowestSize = Math.min(...edges.filter(e => e.certainty > .5).map(e => e.yIndex))
       let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
+      // console.log(lowestPercentage, lowestSize, currentPercentage)
       if(lowestPercentage >= (currentPercentage ?? 0) - 4) {
         return // Detected percentage is close to the current percentage, but the detected edges deviate too much
       }
   
+      // console.log('exceedsDeviationLimit', lowestPercentage, edges)
       size = lowestSize
       if(size < minSize) {
         size = 0
@@ -403,6 +419,7 @@ const workerCode = function () {
       }
     } else {
       size = Math.max(...edges.filter(e => !e.deviates).map(e => e.yIndex))
+      // console.log(size, currentPercentage)
       if(size < minSize) {
         size = 0
       } else {
@@ -417,6 +434,7 @@ const workerCode = function () {
       }
       let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
       if(lowestPercentage < (currentPercentage ?? 0)) {
+        // console.log('lowestPercentage', lowestPercentage, edges)
         return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
       }
       return // Filled with a almost single color
@@ -425,12 +443,12 @@ const workerCode = function () {
     let percentage = Math.round((size / maxSize) * 10000) / 100
     const maxPercentage = 36
     percentage = Math.min(percentage, maxPercentage)
+    // console.log('normal', percentage, edges)
     return percentage
   }
 
   try {
     const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
-      
       const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
       const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
       const imageLines = []
@@ -465,6 +483,7 @@ const workerCode = function () {
         const bottomEdges = imageLines.map(line => ({ xIndex: line.xIndex, yIndex: 0, deviates: true }))
         imageLines.length = 0
 
+        // console.log('edge case', topEdges, bottomEdges, percentage)
         return {
           percentage: 0,
           topEdges,
@@ -476,10 +495,21 @@ const workerCode = function () {
 
       const maxSize = imageLines[0].data.length / channels
 
+
+
+      // // TODO: 
+      // // 1. Figure out if needed: Prevents small objects in bars form reducing the bar like in Zig Zag, 
+      // // but also prevents squares in the bars from reducing the bar like in cams/screenshots
+      // // 2. Cutting off way to far:
+      // //   - The first frame: https://www.youtube.com/watch?v=liuotbjjsHw
+      // //   - https://www.youtube.com/watch?v=0MfHJmHjGxs&t=110
+      // //   - https://youtu.be/a54V6U-Nb0I?si=upIe0WDg0SblmIxY&t=403
+      // //   - Flickers back and forth to 0%: https://www.youtube.com/watch?v=TiQ7iWgY1fI&t=33s
+      
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
       // console.log(topEdges, bottomEdges)
-      if((topEdges.length + bottomEdges.length) / (imageLines.length * 2) < (100 - allowedAnomaliesPercentage) / 100) {
+      if(([...topEdges, ...bottomEdges].filter(edge => !edge.deviates).length) / (imageLines.length * 2) < (100 - allowedAnomaliesPercentage) / 100) {
         // console.log(`Discarded. Found ${topEdges.length + bottomEdges.length} of ${imageLines.length * 2}. Required: ${(100 - allowedAnomaliesPercentage)}%`)
         topEdges.forEach(edge => { edge.deviates = true })
         bottomEdges.forEach(edge => { edge.deviates = true })
@@ -499,7 +529,8 @@ const workerCode = function () {
       // console.log(JSON.stringify(edges), exceedsDeviationLimit)
 
       const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage)
-
+      // console.log('percentage', percentage, edges)
+      
       return {
         percentage,
         topEdges,
@@ -747,10 +778,10 @@ export default class BarDetection {
     // console.log(percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
-    if(adjustment > -1.5 && adjustment <= 0) {
+    if(adjustment > -1 && adjustment <= 0) {
       // Ignore small adjustments
       adjustment = (detectedPercentage - currentPercentage)
-      if(adjustment > -1.5 && adjustment <= 0) {
+      if(adjustment > -1 && adjustment <= 0) {
         percentage = undefined
       } else {
         percentage = currentPercentage // Disable throttling
