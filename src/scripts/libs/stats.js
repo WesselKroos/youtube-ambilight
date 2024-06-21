@@ -688,35 +688,37 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     const rects = []
 
     if(horizontalBarSizeInfo.percentage !== undefined) {
+      const xIndex = Math.floor(height * (horizontalBarSizeInfo.percentage / 100))
       rects.push([
         '#0f0',
         0,
-        Math.max(0, Math.floor(height * (horizontalBarSizeInfo.percentage / 100)) - 1),
+        xIndex,
         width,
         1,
       ])
       rects.push([
         '#0f0',
         0,
-        Math.min(height - 1, height - Math.ceil(height * (horizontalBarSizeInfo.percentage / 100)) + 1),
+        height - xIndex,
         width,
-        1,
+        -1,
       ])
     }
     
     if(verticalBarSizeInfo.percentage !== undefined) {
+      const yIndex = Math.floor(width * (verticalBarSizeInfo.percentage / 100))
       rects.push([
         '#0f0',
-        Math.max(0, Math.floor(width * (verticalBarSizeInfo.percentage / 100)) - 1),
+        yIndex,
         0,
         1,
         height,
       ])
       rects.push([
         '#0f0',
-        Math.min(width - 1, width - Math.ceil(width * (verticalBarSizeInfo.percentage / 100)) + 1),
+        width - yIndex,
         0,
-        1,
+        -1,
         height,
       ])
     }
@@ -725,78 +727,82 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     
     if(horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of horizontalBarSizeInfo.topEdges) {
+        const length = Math.floor(yIndex - 1)
         rects.push([
-          '#0af7',
+          '#00ccff',
           xIndex,
           0,
           1,
-          yIndex - 1,
+          length,
         ])
         rects.push([
           (deviates || deviatesTop)
             ? '#555' 
             : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          xIndex - (certaintySize * certainty),
-          yIndex - 1,
-          1 + (certaintySize * 2 * certainty),
+          xIndex - Math.floor(certaintySize * certainty),
+          length,
+          1 + Math.floor(certaintySize * certainty) * 2,
           2,
         ])
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of horizontalBarSizeInfo.bottomEdges) {
+        const length = Math.floor(yIndex - 1)
         rects.push([
-          '#0af7',
+          '#00ccff',
           xIndex,
-          height,
+          height - length + 2,
           1,
-          -yIndex + 1,
+          length,
         ])
         rects.push([
           (deviates || deviatesBottom )
             ? '#555' 
             : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          xIndex - (certaintySize * certainty),
-          height - yIndex + 2,
-          1 + (certaintySize * 2 * certainty),
-          -2,
+          xIndex - Math.floor(certaintySize * certainty),
+          height - length,
+          1 + Math.floor(certaintySize * certainty) * 2,
+          2,
         ])
       }
     }
 
     if(verticalBarSizeInfo.topEdges && verticalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of verticalBarSizeInfo.topEdges) {
+        const length = Math.floor(yIndex - 1)
         rects.push([
-          '#0af7',
+          '#00ccff',
           0,
           xIndex,
-          yIndex - 1,
+          length,
           1,
         ])
         rects.push([
           (deviates || deviatesTop)
             ? '#555' 
             : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          yIndex - 1,
-          xIndex - (certaintySize * certainty),
+          length,
+          xIndex - Math.floor(certaintySize * certainty),
           2,
-          1 + (certaintySize * 2 * certainty),
+          1 + Math.floor(certaintySize * certainty) * 2,
         ])
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of verticalBarSizeInfo.bottomEdges) {
+        const length = Math.floor(yIndex - 1)
         rects.push([
-          '#0af7',
-          width,
+          '#00ccff',
+          width - length + 2,
           xIndex,
-          -yIndex + 1,
+          length,
           1,
         ])
         rects.push([
           (deviates || deviatesBottom)
             ? '#555' 
             : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          width - yIndex + 3,
-          xIndex - (certaintySize * certainty),
-          -2,
-          1 + (certaintySize * 2 * certainty),
+          width - length,
+          xIndex - Math.floor(certaintySize * certainty),
+          2,
+          1 + Math.floor(certaintySize * certainty) * 2,
         ])
       }
     }
@@ -806,8 +812,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     this.barDetectionCtx.strokeStyle = '#000'
     for(const rect of rects) {
-      this.barDetectionCtx.fillStyle = rect[0]
       this.barDetectionCtx.strokeRect(rect[1], rect[2], rect[3], rect[4])
+    }
+    for(const rect of rects) {
+      this.barDetectionCtx.fillStyle = rect[0]
       this.barDetectionCtx.fillRect(rect[1], rect[2], rect[3], rect[4])
     }
   }
