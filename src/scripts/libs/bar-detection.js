@@ -118,14 +118,15 @@ const workerCode = function () {
     const colorDeviation = getColorDeviation(a, b)
     const brightnessDeviation = getBrightnessDeviation(a, b)
     return (
-      (colorDeviation <= maxColorDeviation || brightnessDeviation <= maxBrightnessDeviation) && 
-      colorDeviation + brightnessDeviation <= maxColorAndBrightnessDeviationSum
+      (colorDeviation <= allowedColorDeviation || brightnessDeviation <= allowedBrightnessDeviation) && 
+      colorDeviation + brightnessDeviation <= allowedColorAndBrightnessDeviationSum
     )
   }
 
-  const maxColorDeviation = 8
-  const maxBrightnessDeviation = 8
-  const maxColorAndBrightnessDeviationSum = 16
+  const maxDeviation = 255 * 3 + 255 * 3
+  const allowedColorDeviation = 8
+  const allowedBrightnessDeviation = 8
+  const allowedColorAndBrightnessDeviationSum = 16
 
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
   const edgePointYRange = 4;
@@ -159,10 +160,19 @@ const workerCode = function () {
         const iColor = (data[i+3] === 0)
           ? color // Outside canvas bounds
           : [data[i], data[i+1], data[i+2]]
+        const expectWithinDeviation = dy < Math.floor(yLength / 2)
         const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
         // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
-        if (within === dy < Math.floor(yLength / 2)) {
-          score++
+        if (within === expectWithinDeviation) {
+          if(!expectWithinDeviation) {
+            const colorDeviation = getColorDeviation(iColor, color)
+            const brightnessDeviation = getBrightnessDeviation(iColor, color)
+            const deviationScore = Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .05)
+            // console.log(dx, dy, deviationScore)
+            score += .25 + deviationScore
+          } else {
+            score += 1
+          }
         }
       }
     }
@@ -205,7 +215,7 @@ const workerCode = function () {
               xIndex,
               yIndex: mostCertainEdge.i / channels,
               certainty: mostCertainEdge.certainty,
-              // deviates: true
+              deviates: mostCertainEdge.certainty < .5 ? true : undefined
             })
           } else {
             topEdges.push({
@@ -277,7 +287,7 @@ const workerCode = function () {
               xIndex,
               yIndex: (data.length - mostCertainEdge.i) / channels,
               certainty: mostCertainEdge.certainty,
-              // deviates: true
+              deviates: mostCertainEdge.certainty < .5 ? true : undefined
             })
           } else {
             bottomEdges.push({
@@ -336,7 +346,7 @@ const workerCode = function () {
   const reduceAverageSize = (edges) => edges.reduce((sum, edge) => sum + edge.yIndex, 0) / edges.length
 
   function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage) {
-    const maxAllowedDeviation = maxSize * (0.0125 * scale)
+    const maxAllowedDeviation = maxSize * (0.005 * scale)
 
     const threshold = edges.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
     while(edges.filter(e => !e.deviates).length > threshold) {
@@ -357,7 +367,7 @@ const workerCode = function () {
     if(maxDeviation <= maxAllowedDeviation) return false
 
     // Allow a higher deviation between top and bottom edges
-    const maxAllowedSideDeviation = maxSize * (0.0125 * scale)
+    const maxAllowedSideDeviation = maxSize * (0.005 * scale)
 
     while(topEdges.filter(e => !e.deviatesTop).length > threshold) {
       const nonDeviatingEdges = topEdges.filter(e => !e.deviatesTop)
@@ -393,12 +403,12 @@ const workerCode = function () {
 
     if(!topDeviationIsAllowed || !bottomDeviationIsAllowed) return true
 
-    const maxAllowedCombinedSidesDeviation = maxSize * (0.035 * scale)
+    const maxAllowedCombinedSidesDeviation = maxSize * (0.015 * scale)
     return (maxDeviation > maxAllowedCombinedSidesDeviation)
   }
 
   function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage) {
-    const minSize = maxSize * (0.012 * scale)
+    const minSize = maxSize * (0.01 * scale)
     const baseOffsetPercentage = (0.2 * ((1 + scale) / 2))
 
     let size;
@@ -495,8 +505,6 @@ const workerCode = function () {
 
       const maxSize = imageLines[0].data.length / channels
 
-
-
       // // TODO: 
       // // 1. Figure out if needed: Prevents small objects in bars form reducing the bar like in Zig Zag, 
       // // but also prevents squares in the bars from reducing the bar like in cams/screenshots
@@ -505,6 +513,11 @@ const workerCode = function () {
       // //   - https://www.youtube.com/watch?v=0MfHJmHjGxs&t=110
       // //   - https://youtu.be/a54V6U-Nb0I?si=upIe0WDg0SblmIxY&t=403
       // //   - Flickers back and forth to 0%: https://www.youtube.com/watch?v=TiQ7iWgY1fI&t=33s
+      // //   - Cut out elements into bars: https://www.youtube.com/watch?v=W9aNGyXt294
+      // //   - Vertical colored bars remove to often at the start:
+      // //     https://www.youtube.com/watch?v=sDIi95CqTiM
+      // //     gradients? https://www.youtube.com/watch?v=aWhro47QBm8
+      // //   - Stars and 2 centered squared objects: https://www.youtube.com/watch?v=hL4IfoQzSSE&t=351s
       
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
