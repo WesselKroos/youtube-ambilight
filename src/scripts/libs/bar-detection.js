@@ -522,7 +522,20 @@ const workerCode = function () {
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
       // console.log(topEdges, bottomEdges)
-      if(([...topEdges, ...bottomEdges].filter(edge => !edge.deviates).length) / (imageLines.length * 2) < (100 - allowedAnomaliesPercentage) / 100) {
+
+
+      const edges = [...topEdges, ...bottomEdges]
+      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage)
+
+      // console.log(JSON.stringify(edges), exceedsDeviationLimit)
+
+      const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage)
+      // console.log('percentage', percentage, edges)
+      
+      if(
+        !(percentage < currentPercentage) && 
+        ([...topEdges, ...bottomEdges].filter(edge => !edge.deviates).length) / (imageLines.length * 2) < (100 - allowedAnomaliesPercentage) / 100
+      ) {
         // console.log(`Discarded. Found ${topEdges.length + bottomEdges.length} of ${imageLines.length * 2}. Required: ${(100 - allowedAnomaliesPercentage)}%`)
         topEdges.forEach(edge => { edge.deviates = true })
         bottomEdges.forEach(edge => { edge.deviates = true })
@@ -535,15 +548,6 @@ const workerCode = function () {
       }
 
       imageLines.length = 0
-
-      const edges = [...topEdges, ...bottomEdges]
-      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage)
-
-      // console.log(JSON.stringify(edges), exceedsDeviationLimit)
-
-      const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage)
-      // console.log('percentage', percentage, edges)
-      
       return {
         percentage,
         topEdges,
