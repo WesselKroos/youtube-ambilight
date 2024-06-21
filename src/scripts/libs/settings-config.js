@@ -419,7 +419,7 @@ Click on the questionmark for more and updated information about these artifacts
     name: 'barSizeDetectionAllowedElementsPercentage',
     label: 'Detection: Ignored bar elements',
     questionMark: {
-      title: 'At 10% only clean bars are removed.\nA higher value removes bars with elements as well.\n(For example: logos, subtitles, reaction cams, special effects, etc...)'
+      title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars when there is a squared object in the center of the video.'
     },
     type: 'list',
     default: 30,
