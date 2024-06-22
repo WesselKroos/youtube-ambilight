@@ -161,19 +161,21 @@ const workerCode = function () {
           ? color // Outside canvas bounds
           : [data[i], data[i+1], data[i+2]]
         const expectWithinDeviation = dy < Math.floor(yLength / 2)
-        const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+        // const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
         // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
-        if (within === expectWithinDeviation) {
+        // if (within === expectWithinDeviation) {
           if(!expectWithinDeviation) {
             const colorDeviation = getColorDeviation(iColor, color)
             const brightnessDeviation = getBrightnessDeviation(iColor, color)
-            const deviationScore = Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .05)
+            const deviationScore = Math.max(0, Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .025))
             // console.log(dx, dy, deviationScore)
             score += .25 + deviationScore
           } else {
-            score += 1
+            const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+            if(within)
+              score += 1
           }
-        }
+        // }
       }
     }
     const length = (xLength * yLength)
@@ -409,7 +411,7 @@ const workerCode = function () {
 
   function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage) {
     const minSize = maxSize * (0.01 * scale)
-    const baseOffsetPercentage = (0.2 * ((1 + scale) / 2))
+    const baseOffsetPercentage = (0.3 * ((1 + scale) / 2))
 
     let size;
     if(exceedsDeviationLimit) {
