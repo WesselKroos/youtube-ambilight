@@ -77,6 +77,7 @@ export default class Stats {
     this.barDetectionResultElem = appendFPSItem('ambientlight__ambientlight-bar-detection-result')
     this.barDetectionGraphElem = appendFPSItem('ambientlight__ambientlight-bar-detection-graph')
     this.barDetectionGraphElem.style.height = '256px'
+    this.barDetectionGraphElem.style.display = 'none'
   }
 
   hide(onlyDisabled = false) {
