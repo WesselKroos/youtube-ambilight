@@ -640,7 +640,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       this.barDetectionCanvas = new Canvas(width, height)
       this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
 
-      this.barDetectionCanvas.setAttribute('title', `THIN LINES \nBlue: Scanlines \nGreen: Detected bars \n\nTHICK LINES \nWhite: Detected edges\nGrey: Ignored edges \nOrange: Uncertain edges`)
+      this.barDetectionCanvas.setAttribute('title', `LINES \nGreen: Detected edge \nOrange: Uncertain edge \nGrey: Ignored edge \nGray: Scanline \nBlue: Detected bar`)
       on(this.barDetectionCanvas, 'click', e => {
         e.preventDefault();
         this.barDetectionGraphElem.toggleAttribute('legend');
@@ -686,134 +686,140 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     const width = this.barDetectionCanvas.width
     const height = this.barDetectionCanvas.height
 
+    this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
+    this.barDetectionCtx.drawImage(this.barDetectionBufferCanvas, 0, 0)
+    this.barDetectionCtx.strokeStyle = '#00000077'
+
     const rects = []
 
     if(horizontalBarSizeInfo.percentage !== undefined) {
       const xIndex = Math.floor(height * (horizontalBarSizeInfo.percentage / 100))
       rects.push([
-        '#0f0',
+        '#0af',
         0,
         xIndex,
         width,
         1,
       ])
       rects.push([
-        '#0f0',
+        '#0af',
         0,
-        height - xIndex,
+        height - xIndex - 1,
         width,
-        -1,
+        1,
       ])
     }
     
     if(verticalBarSizeInfo.percentage !== undefined) {
       const yIndex = Math.floor(width * (verticalBarSizeInfo.percentage / 100))
       rects.push([
-        '#0f0',
+        '#0af',
         yIndex,
         0,
         1,
         height,
       ])
       rects.push([
-        '#0f0',
-        width - yIndex,
+        '#0af',
+        width - yIndex - 1,
         0,
-        -1,
+        1,
         height,
       ])
     }
 
     const certaintySize = globalThis.BARDETECTION_EDGE_RANGE
-    
+    const getEdgeSizes = (yIndex, certainty) => {
+      const length = Math.floor(yIndex - 1)
+      return {
+        length: (length < 3) ? 0 : length,
+        radius: Math.floor(certaintySize * certainty),
+        thickness: (length < 3) ? 1 : 2
+      }
+    }
+    const getEdgeColor = (deviates, percentage) => 
+      deviates
+      ? '#555'
+      : percentage === undefined
+        ? '#f80'
+        : '#0c0'
+
     if(horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of horizontalBarSizeInfo.topEdges) {
-        const length = Math.floor(yIndex - 1)
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
         rects.push([
-          '#00ccff',
+          '#555',
           xIndex,
           0,
           1,
           length,
         ])
         rects.push([
-          (deviates || deviatesTop)
-            ? '#555' 
-            : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          xIndex - Math.floor(certaintySize * certainty),
+          getEdgeColor(deviates || deviatesTop, horizontalBarSizeInfo.percentage),
+          xIndex - radius,
           length,
-          1 + Math.floor(certaintySize * certainty) * 2,
-          2,
+          1 + radius * 2,
+          thickness,
         ])
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of horizontalBarSizeInfo.bottomEdges) {
-        const length = Math.floor(yIndex - 1)
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
         rects.push([
-          '#00ccff',
+          '#555',
           xIndex,
-          height - length + 2,
+          height - length,
           1,
           length,
         ])
         rects.push([
-          (deviates || deviatesBottom )
-            ? '#555' 
-            : horizontalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          xIndex - Math.floor(certaintySize * certainty),
-          height - length,
-          1 + Math.floor(certaintySize * certainty) * 2,
-          2,
+          getEdgeColor(deviates || deviatesBottom, horizontalBarSizeInfo.percentage),
+          xIndex - radius,
+          height - length - thickness,
+          1 + radius * 2,
+          thickness,
         ])
       }
     }
 
     if(verticalBarSizeInfo.topEdges && verticalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of verticalBarSizeInfo.topEdges) {
-        const length = Math.floor(yIndex - 1)
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
         rects.push([
-          '#00ccff',
+          '#555',
           0,
           xIndex,
           length,
           1,
         ])
         rects.push([
-          (deviates || deviatesTop)
-            ? '#555' 
-            : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
+          getEdgeColor(deviates || deviatesTop, verticalBarSizeInfo.percentage),
           length,
-          xIndex - Math.floor(certaintySize * certainty),
-          2,
-          1 + Math.floor(certaintySize * certainty) * 2,
+          xIndex - radius,
+          thickness,
+          1 + radius * 2,
         ])
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of verticalBarSizeInfo.bottomEdges) {
-        const length = Math.floor(yIndex - 1)
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
         rects.push([
-          '#00ccff',
-          width - length + 2,
+          '#555',
+          width - length,
           xIndex,
           length,
           1,
         ])
         rects.push([
-          (deviates || deviatesBottom)
-            ? '#555' 
-            : verticalBarSizeInfo.percentage !== undefined ? '#fff' : '#fa0',
-          width - length,
-          xIndex - Math.floor(certaintySize * certainty),
-          2,
-          1 + Math.floor(certaintySize * certainty) * 2,
+          getEdgeColor(deviates || deviatesBottom, verticalBarSizeInfo.percentage),
+          width - length - thickness,
+          xIndex - radius,
+          thickness,
+          1 + radius * 2,
         ])
       }
     }
 
-    this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
-    this.barDetectionCtx.drawImage(this.barDetectionBufferCanvas, 0, 0)
-
-    this.barDetectionCtx.strokeStyle = '#000'
     for(const rect of rects) {
-      this.barDetectionCtx.strokeRect(rect[1], rect[2], rect[3], rect[4])
+      this.barDetectionCtx.strokeRect(rect[1] - .5, rect[2] - .5, rect[3] + 1, rect[4] + 1)
     }
     for(const rect of rects) {
       this.barDetectionCtx.fillStyle = rect[0]

@@ -131,7 +131,6 @@ const workerCode = function () {
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
   const edgePointYRange = 4;
 
-  const easeInOutSine = (x) => -(Math.cos(Math.PI * x) - 1) / 2
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
   function getCertainty(point, yAxis, yDirection, color, channels) {
@@ -614,7 +613,7 @@ const workerCode = function () {
         const detectVertical = e.data.detectVertical
         const currentVerticalPercentage = e.data.currentVerticalPercentage
         const canvasInfo = e.data.canvasInfo
-        const ratio = e.data.ratio
+        // const ratio = e.data.ratio
         const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
         const xOffsetSize = e.data.xOffsetSize
 

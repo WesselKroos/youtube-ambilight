@@ -117,10 +117,9 @@ const SettingsConfig = [
   {
     name: 'prioritizePageLoadSpeed',
     label: 'Prioritize page load speed',
-    description: 'Show ambient light after the page has loaded',
+    description: 'Loads the ambient light after the page has loaded',
     type: 'checkbox',
-    default: true,
-    advanced: true
+    default: true
   },
   {
     name: 'layoutPerformanceImprovements',
