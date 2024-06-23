@@ -419,7 +419,7 @@ Click on the questionmark for more and updated information about these artifacts
     name: 'barSizeDetectionAllowedElementsPercentage',
     label: 'Detection: Ignored bar elements',
     questionMark: {
-      title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars when there is a squared object in the center of the video.'
+      title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars with large elements in the sides \nor crop to a squared element in the center.'
     },
     type: 'list',
     default: 30,
