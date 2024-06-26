@@ -452,7 +452,7 @@ const workerCode = function () {
     }
     
     let percentage = Math.round((size / maxSize) * 10000) / 100
-    const maxPercentage = 36
+    const maxPercentage = 38
     percentage = Math.min(percentage, maxPercentage)
     // console.log('normal', percentage, edges)
     return percentage
@@ -690,7 +690,7 @@ export default class BarDetection {
   canvas;
   ctx;
   catchedDetectBarSizeError = false;
-  lastChange;
+  changes = [];
   history = {
     horizontal: [],
     vertical: []
@@ -932,7 +932,7 @@ export default class BarDetection {
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
               )
-              this.lastChange = performance.now()
+              this.changes.push(performance.now())
               if(barsChanged) {
                 callback(horizontalPercentage, verticalPercentage)
               }
@@ -967,13 +967,24 @@ export default class BarDetection {
       const duration = now - start
       this.ambientlight.stats.addBarDetectionDuration(duration)
 
-      const minThrottle = (!this.lastChange || this.lastChange + 15000 < now)
+      if(this.changes.length > 1) {
+        const minuteAgo = performance.now() - 60000
+        this.changes = this.changes.filter(change => change > minuteAgo)
+      } else if(!this.changes.length) {
+        this.changes.push(now)
+      }
+
+      const lastChange = (this.changes.length > 0 && this.changes.length < 5)
+        ? this.changes[this.changes.length - 1]
+        : now
+      const minThrottle = lastChange + 15000 < now
         ? 1000
-        : ((this.lastChange + 3000 < now)
+        : ((lastChange + 3000 < now)
           ? 500
           : 0
         )
       const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(duration, 1.2) - 250))
+      this.ambientlight.stats.setBarDetectionThrottle(throttle)
 
       setTimeout(wrapErrorHandler(() => {
         if(this.run !== run) return

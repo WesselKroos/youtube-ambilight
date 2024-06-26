@@ -74,6 +74,7 @@ export default class Stats {
     this.projectorResolutionElem = appendFPSItem('ambientlight__projector-resolution')
 
     this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-duration')
+    this.barDetectionFPSElem = appendFPSItem('ambientlight__ambientlight-bar-detection-fps')
     this.barDetectionResultElem = appendFPSItem('ambientlight__ambientlight-bar-detection-result')
     this.barDetectionGraphElem = appendFPSItem('ambientlight__ambientlight-bar-detection-graph')
     this.barDetectionGraphElem.style.height = '256px'
@@ -100,6 +101,7 @@ export default class Stats {
     
     if(!onlyDisabled || !this.settings.showBarDetectionStats) {
       this.barDetectionDurationElem.childNodes[0].nodeValue = ''
+      this.barDetectionFPSElem.childNodes[0].nodeValue = ''
       this.barDetectionResultElem.childNodes[0].nodeValue = ''
       
       if(this.barDetectionCanvas?.parentNode) {
@@ -599,6 +601,11 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         this.barDetectionResultElem.style.color = ''
       }
 
+      if(this.barDetectionFPSElem?.parentNode) {
+        this.barDetectionFPSElem.childNodes[0].nodeValue = ''
+        this.barDetectionFPSElem.style.color = ''
+      }
+
       if(this.barDetectionCanvas?.parentNode) {
         if(this.barDetectionCtx) {
           this.barDetectionCtx.clearRect(0, 0, this.barDetectionCanvas.width, this.barDetectionCanvas.height)
@@ -627,6 +634,16 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     this.barDetectionDurationElem.childNodes[0].nodeValue = `BAR DETECTION DURATION: ${duration}ms`
     this.barDetectionDurationElem.style.color = '#fff'
+
+    const barDetectionFPS = this.barDetectionThrottle
+      ? 1000 / this.barDetectionThrottle
+      : 'VIDEO'
+    this.barDetectionFPSElem.childNodes[0].nodeValue = `BAR DETECTION FRAMERATE: ${barDetectionFPS} FPS`
+    this.barDetectionFPSElem.style.color = '#fff'
+  }
+
+  setBarDetectionThrottle = (throttle) => {
+    this.barDetectionThrottle = throttle
   }
 
   updateBarDetectionImage = (image) => {
