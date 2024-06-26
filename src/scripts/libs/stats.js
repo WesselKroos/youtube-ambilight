@@ -640,7 +640,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       this.barDetectionCanvas = new Canvas(width, height)
       this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
 
-      this.barDetectionCanvas.setAttribute('title', `LINES \nGreen: Detected edge \nOrange: Uncertain edge \nGrey: Ignored edge \nGray: Scanline \nBlue: Detected bar`)
+      this.barDetectionCanvas.setAttribute('title', `LINES \nBlue:       Detected bar\nGreen:    Detected edge \nOrange:  Uncertain edge \nGray:       Ignored edge \nDotted:   Scanline`)
       on(this.barDetectionCanvas, 'click', e => {
         e.preventDefault();
         this.barDetectionGraphElem.toggleAttribute('legend');
@@ -672,7 +672,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     this.barDetectionBufferCtx.drawImage(image, 0, 0, this.barDetectionBufferCanvas.width, this.barDetectionBufferCanvas.height)
   }
 
-  updateBarDetectionResult = (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
+  updateBarDetectionResult = async (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
     if(!this.settings.showBarDetectionStats || !this.barDetectionCtx) return
 
     this.barDetectionResultElem.childNodes[0].nodeValue = `DETECTED BARS: ${
@@ -691,6 +691,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     this.barDetectionCtx.strokeStyle = '#00000077'
 
     const rects = []
+    const fillRects = []
 
     if(horizontalBarSizeInfo.percentage !== undefined) {
       const xIndex = Math.floor(height * (horizontalBarSizeInfo.percentage / 100))
@@ -744,11 +745,21 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         ? '#f80'
         : '#0c0'
 
+    if(!this.dotsPattern) {
+      const dotsPattern = await createImageBitmap(new ImageData(new Uint8ClampedArray([
+        135, 135, 135, 255,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        135, 135, 135, 255,
+      ]), 2, 2, { colorSpace: 'srgb' }))
+      this.barDetectionDotsPattern = this.barDetectionCtx.createPattern(dotsPattern, "repeat")
+    }
+
     if(horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of horizontalBarSizeInfo.topEdges) {
         const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
-        rects.push([
-          '#555',
+        fillRects.push([
+          this.barDetectionDotsPattern,
           xIndex,
           0,
           1,
@@ -764,8 +775,8 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of horizontalBarSizeInfo.bottomEdges) {
         const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
-        rects.push([
-          '#555',
+        fillRects.push([
+          this.barDetectionDotsPattern,
           xIndex,
           height - length,
           1,
@@ -784,8 +795,8 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     if(verticalBarSizeInfo.topEdges && verticalBarSizeInfo.bottomEdges) {
       for(const { xIndex, yIndex, deviates, deviatesTop, certainty } of verticalBarSizeInfo.topEdges) {
         const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
-        rects.push([
-          '#555',
+        fillRects.push([
+          this.barDetectionDotsPattern,
           0,
           xIndex,
           length,
@@ -801,8 +812,8 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       }
       for(const { xIndex, yIndex, deviates, deviatesBottom, certainty } of verticalBarSizeInfo.bottomEdges) {
         const { length, radius, thickness } = getEdgeSizes(yIndex, certainty)
-        rects.push([
-          '#555',
+        fillRects.push([
+          this.barDetectionDotsPattern,
           width - length,
           xIndex,
           length,
@@ -818,6 +829,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       }
     }
 
+    for(const rect of fillRects) {
+      this.barDetectionCtx.fillStyle = rect[0]
+      this.barDetectionCtx.fillRect(rect[1], rect[2], rect[3], rect[4])
+    }
     for(const rect of rects) {
       this.barDetectionCtx.strokeRect(rect[1] - .5, rect[2] - .5, rect[3] + 1, rect[4] + 1)
     }

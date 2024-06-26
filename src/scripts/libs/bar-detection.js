@@ -796,10 +796,10 @@ export default class BarDetection {
     // console.log(percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
-    if(adjustment > -1 && adjustment <= 0) {
+    if(adjustment > -1.5 && adjustment <= 0) {
       // Ignore small adjustments
       adjustment = (detectedPercentage - currentPercentage)
-      if(adjustment > -1 && adjustment <= 0) {
+      if(adjustment > -1.5 && adjustment <= 0) {
         percentage = undefined
       } else {
         percentage = currentPercentage // Disable throttling
@@ -884,7 +884,7 @@ export default class BarDetection {
       const stack = new Error().stack
       const onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
         this.worker.onerror = (err) => reject(err)
-        this.worker.onmessage = (e) => {
+        this.worker.onmessage = async (e) => {
           try {
             if(
               this.run !== run || 
@@ -912,7 +912,7 @@ export default class BarDetection {
             let verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
             let barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
             
-            this.ambientlight.stats.updateBarDetectionResult(
+            await this.ambientlight.stats.updateBarDetectionResult(
               barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
             )
 
