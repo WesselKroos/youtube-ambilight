@@ -786,17 +786,17 @@ export default class BarDetection {
         percentages[precentage] = (percentages[precentage] ?? 0) + 1
         return percentages
       }, {})
-    percentage = Object.keys(percentagesOccurrence).reduce(
-      (a, b) => percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b)
+    percentage = parseFloat(Object.keys(percentagesOccurrence).reduce(
+      (a, b) => percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b))
         
     // Is the difference less than 2 occurences? Then prevent flickering
     if(percentage !== currentPercentage && Math.abs(percentagesOccurrence[percentage] - percentagesOccurrence[currentPercentage]) <= history.length / 2) {
       percentage = currentPercentage
     }
-    // console.log(percentage, percentagesOccurrence, history)
+    // console.log(detectedPercentage, percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
-    if(adjustment > -1.5 && adjustment <= 0) {
+    if(percentage !== 0 && adjustment > -1.5 && adjustment <= 0) {
       // Ignore small adjustments
       adjustment = (detectedPercentage - currentPercentage)
       if(adjustment > -1.5 && adjustment <= 0) {
@@ -912,6 +912,7 @@ export default class BarDetection {
             let verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
             let barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
             
+            // console.log(currentHorizontalPercentage, horizontalBarSizeInfo.percentage, horizontalPercentage, this.history.horizontal)
             await this.ambientlight.stats.updateBarDetectionResult(
               barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
             )

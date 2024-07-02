@@ -764,10 +764,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     if(!this.dotsPattern) {
       const dotsPattern = await createImageBitmap(new ImageData(new Uint8ClampedArray([
-        135, 135, 135, 255,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        135, 135, 135, 255,
+        175, 175, 175, 255,
+        75, 75, 75, 255,
+        75, 75, 75, 255,
+        175, 175, 175, 255,
       ]), 2, 2, { colorSpace: 'srgb' }))
       this.barDetectionDotsPattern = this.barDetectionCtx.createPattern(dotsPattern, "repeat")
     }
