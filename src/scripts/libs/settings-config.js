@@ -416,9 +416,9 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedElementsPercentage',
-    label: 'Detection: Ignored bar elements',
+    label: 'Detection: Ignored corner elements',
     questionMark: {
-      title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars with large elements in the sides \nor crop to a squared element in the center.'
+      title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars with squared elements in the corners \nor crop to a squared element in the center.'
     },
     type: 'list',
     default: 30,

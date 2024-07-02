@@ -186,7 +186,8 @@ const workerCode = function () {
 
   function detectEdges(imageLines, channels, color, yAxis) {
     const ignoreEdge = 2
-    const middleIndex = (imageLines[0].data.length / 2)
+    const middleIndex = imageLines[0].data.length / 2
+    const middleIndexOffset = channels * 10
     const largeStep = 4
     const topEdges = []
     const bottomEdges = []
@@ -209,7 +210,7 @@ const workerCode = function () {
         }
 
         const iColor = [data[i], data[i+1], data[i+2]]
-        const limitNotReached = i < middleIndex - channels // Below the top limit
+        const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
         if(!limitNotReached) {
           if(mostCertainEdge) {
             topEdges.push({
@@ -281,7 +282,7 @@ const workerCode = function () {
         }
 
         const iColor = [data[i], data[i+1], data[i+2]]
-        const limitNotReached = i > middleIndex // Above the bottom limit
+        const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
         if(!limitNotReached) {
           if(mostCertainEdge) {
             bottomEdges.push({
@@ -347,10 +348,16 @@ const workerCode = function () {
   const reduceAverageSize = (edges) => edges.reduce((sum, edge) => sum + edge.yIndex, 0) / edges.length
 
   function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage) {
-    const maxAllowedDeviation = maxSize * (0.005 * scale)
+    if(
+      !topEdges.filter(e => !e.deviates).length || 
+      !bottomEdges.filter(e => !e.deviates).length
+    ) {
+      return true
+    }
 
-    const threshold = edges.length * (1 - ((allowedAnomaliesPercentage - 10) / 100))
-    while(edges.filter(e => !e.deviates).length > threshold) {
+    const threshold = (1 - ((allowedAnomaliesPercentage - 10) / 100))
+
+    while(edges.filter(e => !e.deviates).length > edges.length * threshold) {
       const nonDeviatingEdges = edges.filter(e => !e.deviates)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
@@ -361,72 +368,100 @@ const workerCode = function () {
         })
     }
 
-    const nonDeviatingEdgeSizes = edges
-      .filter(e => !e.deviates)
-      .map(e => e.yIndex)
-    const maxDeviation = Math.abs(Math.max(...nonDeviatingEdgeSizes) - Math.min(...nonDeviatingEdgeSizes))
-    if(maxDeviation <= maxAllowedDeviation) return false
+    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > edges.length * threshold) {
+    //   const nonDeviatingEdges = topEdges.filter(e => !e.deviates && !e.deviatesTop)
+    //   const averageSize = reduceAverageSize(nonDeviatingEdges)
+    //   nonDeviatingEdges
+    //     .sort(sortSizes(averageSize))
+    //     .slice(nonDeviatingEdges.length - 1)
+    //     .forEach(e => {
+    //       e.deviatesTop = true
+    //     })
+    // }
 
-    // Allow a higher deviation between top and bottom edges
-    const maxAllowedSideDeviation = maxSize * (0.005 * scale)
+    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > edges.length * threshold) {
+    //   const nonDeviatingEdges = bottomEdges.filter(e => !e.deviates && !e.deviatesBottom)
+    //   const averageSize = reduceAverageSize(nonDeviatingEdges)
+    //   nonDeviatingEdges
+    //     .sort(sortSizes(averageSize))
+    //     .slice(nonDeviatingEdges.length - 1)
+    //     .forEach(e => {
+    //       e.deviatesBottom = true
+    //     })
+    // }
 
-    while(topEdges.filter(e => !e.deviatesTop).length > threshold) {
-      const nonDeviatingEdges = topEdges.filter(e => !e.deviatesTop)
-      const averageSize = reduceAverageSize(nonDeviatingEdges)
-      nonDeviatingEdges
-        .sort(sortSizes(averageSize))
-        .slice(nonDeviatingEdges.length - 1)
-        .forEach(e => {
-          e.deviatesTop = true
-        })
-    }
+    
+    const maxAllowedSideDeviation = maxSize * (0.008 * scale)
+    
     const nonDeviatingTopEdges = topEdges
-      .filter(e => !e.deviatesTop)
+      .filter(e => !e.deviates && !e.deviatesTop)
       .map(e => e.yIndex)
     const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges) - Math.min(...nonDeviatingTopEdges))
     const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
 
-    while(bottomEdges.filter(e => !e.deviatesBottom).length > threshold) {
-      const nonDeviatingEdges = bottomEdges.filter(e => !e.deviatesBottom)
-      const averageSize = reduceAverageSize(nonDeviatingEdges)
-      nonDeviatingEdges
-        .sort(sortSizes(averageSize))
-        .slice(nonDeviatingEdges.length - 1)
-        .forEach(e => {
-          e.deviatesBottom = true
-        })
-    }
-    const nonDeviatingBottomEdges = topEdges
-      .filter(e => !e.deviatesBottom)
+    const nonDeviatingBottomEdges = bottomEdges
+      .filter(e => !e.deviates && !e.deviatesBottom)
       .map(e => e.yIndex)
     const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges) - Math.min(...nonDeviatingBottomEdges))
     const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
 
-    if(!topDeviationIsAllowed || !bottomDeviationIsAllowed) return true
+    if(!topDeviationIsAllowed && !bottomDeviationIsAllowed) {
+      // console.log(
+      //   !topDeviationIsAllowed ? `top deviates ${maxTopDeviation}` : '',
+      //   !topDeviationIsAllowed ? topEdges : '',
+      //   !bottomDeviationIsAllowed ? `bottom deviates ${maxBottomDeviation}` : '',
+      //   !bottomDeviationIsAllowed ? bottomEdges : '',
+      //   maxAllowedSideDeviation
+      // )
+      return true
+    }
 
-    const maxAllowedCombinedSidesDeviation = maxSize * (0.015 * scale)
-    return (maxDeviation > maxAllowedCombinedSidesDeviation)
+    const averageTopSize = reduceAverageSize(nonDeviatingTopEdges)
+    const averageBottomSize = reduceAverageSize(nonDeviatingBottomEdges)
+    const sidesDeviation = Math.abs(averageTopSize - averageBottomSize)
+    if(sidesDeviation > maxAllowedSideDeviation) {
+      // console.log('average top & bottom deviates', sidesDeviation, maxAllowedSideDeviation)
+      return true
+    }
+
+
+    // Allow a higher deviation between top and bottom edges
+    const maxAllowedDeviation = maxSize * (0.035 * scale)
+    const nonDeviatingEdgeSizes = edges
+      .filter(e => !e.deviates)
+      .map(e => e.yIndex)
+    const maxDeviation = Math.abs(Math.max(...nonDeviatingEdgeSizes) - Math.min(...nonDeviatingEdgeSizes))
+    if (maxDeviation > maxAllowedDeviation) {
+      // console.log('all edges deviate', maxDeviation, maxAllowedDeviation)
+      return true
+    }
   }
 
-  function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage) {
-    const minSize = maxSize * (0.01 * scale)
+  function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage = 0, offsetPercentage = 0) {
+    const minSize = maxSize * (0.03 * scale)
+    const lowerSizeThreshold = maxSize * ((currentPercentage - 4) / 100)
     const baseOffsetPercentage = (0.3 * ((1 + scale) / 2))
 
     let size;
     if(exceedsDeviationLimit) {
-      let lowestSize = Math.min(...edges.filter(e => e.certainty > .5).map(e => e.yIndex))
-      let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-      // console.log(lowestPercentage, lowestSize, currentPercentage)
-      if(lowestPercentage >= (currentPercentage ?? 0) - 4) {
-        return // Detected percentage is close to the current percentage, but the detected edges deviate too much
-      }
+      const semiCertainLowerSizes = edges
+        .filter(e => e.certainty > .5 && e.yIndex < lowerSizeThreshold)
+        .map(e => e.yIndex)
+      if(semiCertainLowerSizes.length / edges.length < .33) return
+      
+      const lowestSize = Math.min(...semiCertainLowerSizes)
+      // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
+      // // console.log(lowestPercentage, lowestSize, currentPercentage)
+      // if(lowestPercentage >= currentPercentage - 4) {
+      //   return // deviating lowest percentage is way higher than the current percentage
+      // }
   
-      // console.log('exceedsDeviationLimit', lowestPercentage, edges)
+      // console.log('semi-certain lower percentage', lowestSize, lowerSizeThreshold, semiCertainLowerSizes, edges)
       size = lowestSize
       if(size < minSize) {
         size = 0
       } else {
-        size += (maxSize * (offsetPercentage/100))
+        size += (maxSize * (offsetPercentage / 100))
       }
     } else {
       size = Math.max(...edges.filter(e => !e.deviates).map(e => e.yIndex))
@@ -434,22 +469,24 @@ const workerCode = function () {
       if(size < minSize) {
         size = 0
       } else {
-        size += (maxSize * ((baseOffsetPercentage + offsetPercentage)/100))
+        size += (maxSize * ((baseOffsetPercentage + offsetPercentage) / 100))
       }
     }
 
-    if(size > (maxSize * 0.49)) {
-      let lowestSize = Math.min(...edges.map(e => e.yIndex))
-      if(lowestSize >= minSize) {
-        lowestSize += (maxSize * (offsetPercentage/100))
-      }
-      let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-      if(lowestPercentage < (currentPercentage ?? 0)) {
-        // console.log('lowestPercentage', lowestPercentage, edges)
-        return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
-      }
-      return // Filled with a almost single color
-    }
+    // if(size > (maxSize * 0.49)) {
+    //   console.log('size beyond half', size, maxSize)
+    //   alert('never happens?')
+    //   let lowestSize = Math.min(...edges.map(e => e.yIndex))
+    //   if(lowestSize >= minSize) {
+    //     lowestSize += (maxSize * (offsetPercentage/100))
+    //   }
+    //   let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
+    //   if(lowestPercentage < currentPercentage) {
+    //     // console.log('lowestPercentage', lowestPercentage, edges)
+    //     return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
+    //   }
+    //   return // Filled with a almost single color
+    // }
     
     let percentage = Math.round((size / maxSize) * 10000) / 100
     const maxPercentage = 38
@@ -515,10 +552,13 @@ const workerCode = function () {
       // //   - https://youtu.be/a54V6U-Nb0I?si=upIe0WDg0SblmIxY&t=403
       // //   - Flickers back and forth to 0%: https://www.youtube.com/watch?v=TiQ7iWgY1fI&t=33s
       // //   - Cut out elements into bars: https://www.youtube.com/watch?v=W9aNGyXt294
-      // //   - Vertical colored bars remove to often at the start:
+      // //   - Vertical colored bars removed to often at the start:
       // //     https://www.youtube.com/watch?v=sDIi95CqTiM
       // //     gradients? https://www.youtube.com/watch?v=aWhro47QBm8
       // //   - Stars and 2 centered squared objects: https://www.youtube.com/watch?v=hL4IfoQzSSE&t=351s
+      // //   - logo & squared: https://www.youtube.com/watch?v=UsWh21rFzh8&t=120s
+      // //   - old video with vague bars: https://www.youtube.com/watch?v=YoLJ4CWSLSI
+      // //   - Dismiss/reset black bars to content: https://youtu.be/oCmNbNhppHo?t=381
       
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
