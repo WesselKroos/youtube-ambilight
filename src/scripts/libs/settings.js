@@ -644,7 +644,8 @@ export default class Settings {
               'detectColoredHorizontalBarSizeEnabled',
               'barSizeDetectionAverageHistorySize',
               'detectHorizontalBarSizeOffsetPercentage',
-              'barSizeDetectionAllowedElementsPercentage'
+              'barSizeDetectionAllowedElementsPercentage',
+              'barSizeDetectionAllowedUnevenBarsPercentage',
             ].includes(setting.name)
           ) {
             this.ambientlight.barDetection.cancel()
@@ -1234,7 +1235,8 @@ export default class Settings {
         'detectColoredHorizontalBarSizeEnabled',
         'barSizeDetectionAverageHistorySize',
         'detectHorizontalBarSizeOffsetPercentage',
-        'barSizeDetectionAllowedElementsPercentage'
+        'barSizeDetectionAllowedElementsPercentage',
+        'barSizeDetectionAllowedUnevenBarsPercentage',
       ],
       visible: () => this.ambientlight.getImageDataAllowed && (this.detectHorizontalBarSizeEnabled || this.detectVerticalBarSizeEnabled)
     },

@@ -416,7 +416,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedElementsPercentage',
-    label: 'Detection: Ignored corner elements',
+    label: 'Detection: Certainty threshold',
     questionMark: {
       title: 'At 10% only full sized bars are removed.\nA higher percentage can also remove bars with squared elements in the corners \nor crop to a squared element in the center.'
     },
@@ -424,7 +424,21 @@ Click on the questionmark for more and updated information about these artifacts
     default: 30,
     min: 10,
     max: 90,
-    step: 10
+    step: 10,
+    advanced: true
+  },
+  {
+    name: 'barSizeDetectionAllowedUnevenBarsPercentage',
+    label: 'Detection: Uneven threshold',
+    questionMark: {
+      title: 'Higher percentages detect a more uneven bar.\nFor example: A bar is uneven when the top bar is smaller than the bottem bar.\nBut with a high percentage you also increase the risk that straight objects or lines are seen as bars.'
+    },
+    type: 'list',
+    default: 15,
+    min: 1,
+    max: 50,
+    step: 1,
+    advanced: true
   },
   {
     name: 'horizontalBarsClipPercentage',

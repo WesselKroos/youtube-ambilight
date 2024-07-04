@@ -347,7 +347,7 @@ const workerCode = function () {
 
   const reduceAverageSize = (edges) => edges.reduce((sum, edge) => sum + edge.yIndex, 0) / edges.length
 
-  function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage) {
+  function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage) {
     if(
       !topEdges.filter(e => !e.deviates).length || 
       !bottomEdges.filter(e => !e.deviates).length
@@ -426,7 +426,7 @@ const workerCode = function () {
 
 
     // Allow a higher deviation between top and bottom edges
-    const maxAllowedDeviation = maxSize * (0.035 * scale)
+    const maxAllowedDeviation = maxSize * (0.003 + (allowedUnevenBarsPercentage * 0.0008))  * scale
     const nonDeviatingEdgeSizes = edges
       .filter(e => !e.deviates)
       .map(e => e.yIndex)
@@ -496,7 +496,7 @@ const workerCode = function () {
   }
 
   try {
-    const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, xOffset) => {
+    const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset) => {
       const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
       const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
       const imageLines = []
@@ -566,7 +566,7 @@ const workerCode = function () {
 
 
       const edges = [...topEdges, ...bottomEdges]
-      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage)
+      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage)
 
       // console.log(JSON.stringify(edges), exceedsDeviationLimit)
 
@@ -646,16 +646,19 @@ const workerCode = function () {
           return
         }
 
-        const detectColored = e.data.detectColored
-        const offsetPercentage = e.data.offsetPercentage
-        const detectHorizontal = e.data.detectHorizontal
-        const currentHorizontalPercentage = e.data.currentHorizontalPercentage
-        const detectVertical = e.data.detectVertical
-        const currentVerticalPercentage = e.data.currentVerticalPercentage
-        const canvasInfo = e.data.canvasInfo
-        // const ratio = e.data.ratio
-        const allowedAnomaliesPercentage = e.data.allowedAnomaliesPercentage
-        const xOffsetSize = e.data.xOffsetSize
+        const {
+          detectColored,
+          detectHorizontal,
+          detectVertical,
+          offsetPercentage,
+          currentHorizontalPercentage,
+          currentVerticalPercentage,
+          // ratio
+          allowedAnomaliesPercentage,
+          allowedUnevenBarsPercentage, 
+          canvasInfo,
+          xOffsetSize
+        } = e.data
 
         getLineImageDataStart = performance.now()
       
@@ -689,13 +692,13 @@ const workerCode = function () {
         let horizontalBarSizeInfo = detectHorizontal
           ? await workerDetectBarSize(
               id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage,
-              allowedAnomaliesPercentage, xOffset
+              allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset
           )
           : undefined
         let verticalBarSizeInfo = detectVertical
           ? await workerDetectBarSize(
               id, 'height', 'width', 1, detectColored, offsetPercentage, currentVerticalPercentage,
-              allowedAnomaliesPercentage, xOffset
+              allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset
           )
           : undefined
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -777,7 +780,8 @@ export default class BarDetection {
   detect = (buffer, detectColored, offsetPercentage,
     detectHorizontal, currentHorizontalPercentage,
     detectVertical, currentVerticalPercentage,
-    ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
+    ratio, allowedToTransfer, averageHistorySize, 
+    allowedAnomaliesPercentage, allowedUnevenBarsPercentage,
     callback) => {
     if(this.run) {
       this.continueAfterRun = true
@@ -807,7 +811,8 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
+      ratio, allowedToTransfer, averageHistorySize, 
+      allowedAnomaliesPercentage, allowedUnevenBarsPercentage,
       callback
     }
 
@@ -859,7 +864,8 @@ export default class BarDetection {
       buffer, detectColored, offsetPercentage,
       detectHorizontal, currentHorizontalPercentage,
       detectVertical, currentVerticalPercentage,
-      ratio, allowedToTransfer, averageHistorySize, allowedAnomaliesPercentage,
+      ratio, allowedToTransfer, averageHistorySize, 
+      allowedAnomaliesPercentage, allowedUnevenBarsPercentage,
       callback
     } = this.idleHandlerArguments
 
@@ -948,6 +954,8 @@ export default class BarDetection {
               verticalBarSizeInfo = {}
             } = e.data
 
+            const firstDetection = this.history.horizontal.length === 0 && this.history.vertical.length === 0
+
             let horizontalPercentage = this.averagePercentage(horizontalBarSizeInfo.percentage, currentHorizontalPercentage || 0, this.history.horizontal, averageHistorySize)
             let verticalPercentage = this.averagePercentage(verticalBarSizeInfo.percentage, currentVerticalPercentage || 0, this.history.vertical, averageHistorySize)
             let barsFound = horizontalPercentage !== undefined || verticalPercentage !== undefined
@@ -957,7 +965,6 @@ export default class BarDetection {
               barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
             )
 
-            const firstDetection = this.history.horizontal.length === 0 && this.history.vertical.length === 0
             if(firstDetection) {
               if(horizontalPercentage === undefined) horizontalPercentage = 0
               if(verticalPercentage === undefined) verticalPercentage = 0
@@ -994,6 +1001,7 @@ export default class BarDetection {
           detectVertical, currentVerticalPercentage,
           ratio,
           allowedAnomaliesPercentage,
+          allowedUnevenBarsPercentage,
           xOffsetSize: averageHistorySize
         },
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
