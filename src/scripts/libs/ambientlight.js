@@ -659,6 +659,24 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
   }
 
+  // Removes "yt:crop=16:9" from the videoData.keywords array
+  // to prevent the video element from being scaled by YouTube in theater view
+  updateKeywordsToPreventTheaterScaling = () => {
+    try {
+      let keywords = document.head.querySelector('meta[name="keywords"]')?.content ?? '';
+      if(!keywords.includes('yt:crop=')) return
+
+      keywords = keywords.split(', ')
+      if(this.settings.enabled) {
+        keywords = keywords.filter(keyword => !keyword.startsWith('yt:crop='))
+      }
+      keywords = keywords.join(',')
+      this.videoPlayerElem.updateVideoData({ keywords })
+    } catch(ex) {
+      SentryReporter.captureException(ex)
+    }
+  }
+
   updateVideoPlayerSize = () => {
     try {
       this.videoPlayerElem.setSize()
@@ -2882,6 +2900,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if(this.pendingStart) return
     this.settings.set('enabled', false, true)
 
+    this.updateKeywordsToPreventTheaterScaling()
+
     await this.hide()
   }
 
@@ -2889,7 +2909,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart) return
 
     try {
-      const isHdr = this.videoPlayerElem.getVideoData().isHdr
+      const isHdr = this.videoPlayerElem.getVideoData()?.isHdr
       if(this.settings.webGL && this.isHdr !== isHdr) {
         this.isHdr = isHdr
         if(isHdr) {
@@ -2901,7 +2921,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
         this.sizesChanged = true
       }
     } catch(ex) {
-      console.warn('Failed to execute HDR video check')
+      SentryReporter.captureException(ex)
     }
 
     this.showedCompareWarning = false
@@ -2912,6 +2932,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
 
     this.checkGetImageDataAllowed()
     this.resetSettingsIfNeeded()
+    this.updateKeywordsToPreventTheaterScaling()
     this.updateView()
 
     this.pendingStart = true
