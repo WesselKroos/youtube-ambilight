@@ -305,7 +305,7 @@ export const supportsColorMix = () => {
 }
 
 export const isWatchPageUrl = () => (
-  location.pathname === '/watch' || 
+  ['/watch','/live/'].some(path => location.pathname.startsWith(path)) || 
   isEmbedPageUrl()
 )
 
