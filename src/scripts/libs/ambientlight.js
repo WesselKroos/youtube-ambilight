@@ -659,16 +659,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     }
   }
 
-  // Removes "yt:crop=16:9" from the videoData.keywords array
+  // Removes "yt:crop=16:9" & "yt-stretch=16:9" from the videoData.keywords array
   // to prevent the video element from being scaled by YouTube in theater view
+  ytScalingBaseKeywords = ['yt:crop=', 'yt:stretch=']
   updateKeywordsToPreventTheaterScaling = () => {
     try {
       let keywords = document.head.querySelector('meta[name="keywords"]')?.content ?? '';
-      if(!keywords.includes('yt:crop=')) return
+      if(!this.ytScalingBaseKeywords.some(baseKeyword => keywords.includes(baseKeyword))) return
 
       keywords = keywords.split(', ')
       if(this.settings.enabled) {
-        keywords = keywords.filter(keyword => !keyword.startsWith('yt:crop='))
+        keywords = keywords.filter(keyword => !this.ytScalingBaseKeywords.some(baseKeyword => keyword.startsWith(baseKeyword)))
       }
       keywords = keywords.join(',')
       this.videoPlayerElem.updateVideoData({ keywords })
