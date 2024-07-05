@@ -679,7 +679,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       this.barDetectionBufferCanvas.width = width
       this.barDetectionBufferCanvas.height = height
     } else {
-      this.barDetectionBufferCtx.clearRect(0, 0, width, height)
+      // this.barDetectionBufferCtx.clearRect(0, 0, width, height) // Causes short flickering to black
     }
     if(!this.barDetectionCanvas?.parentNode) {
       this.barDetectionGraphElem.appendChild(this.barDetectionCanvas)
