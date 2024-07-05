@@ -60,23 +60,31 @@ const workerCode = function () {
     return (aDiff === bDiff) ? 0 : (aDiff > bDiff) ? 1 : -1
   }
 
-  function getAverageColor(imageLines, channels) {
-    const topOffsetIndex = channels * 2
-    const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
+  function getAverageColor(_imageLines, perpendicularImageLines, channels) {
+    // const topOffsetIndex = channels * 2
+    // const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
 
     let colors = []
-    for(const imageLine of imageLines) {
-    // for(const xi in imageLines) {
+    // for(const imageLine of imageLines) {
+    // // for(const xi in imageLines) {
+    //   const data = imageLine.data
+    //   for(let i = topOffsetIndex; i <= topOffsetIndex + 6 * channels; i += 2 * channels) {
+    //     colors.push([data[i], data[i + 1], data[i + 2]]) // , xi, i])
+    //   }
+    //   for(let i = bottomOffsetIndex; i >= bottomOffsetIndex - 6 * channels; i -= 2 * channels) {
+    //     colors.push([data[i], data[i + 1], data[i + 2]]) //, xi, i])
+    //   }
+    // }
+    for(const imageLine of perpendicularImageLines) {
+    // for(const xi in perpendicularImageLines) {
       const data = imageLine.data
-      for(let i = topOffsetIndex; i <= topOffsetIndex + 12 * channels; i += 2 * channels) {
+      const max = data.length / channels
+      for(let i = 0; i <= max; i += 4 * channels) {
         colors.push([data[i], data[i + 1], data[i + 2]]) // , xi, i])
-      }
-      for(let i = bottomOffsetIndex; i >= bottomOffsetIndex - 12 * channels; i -= 2 * channels) {
-        colors.push([data[i], data[i + 1], data[i + 2]]) //, xi, i])
       }
     }
 
-    const averageColorLength = colors.length * .33
+    const averageColorLength = colors.length * .1
     let averageColor
     // eslint-disable-next-line no-constant-condition
     while(true) {
@@ -134,56 +142,61 @@ const workerCode = function () {
 
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
-  function getCertainty(point, yAxis, yDirection, color, channels) {
-    const x = point.x - edgePointXRange
-    const y = point.y - edgePointYRange
-    const xLength = 1 + edgePointXRange * 2;
-    const yLength = 1 + edgePointYRange * 2;
-    const data = ctx.getImageData(...(yAxis === 'height'
-      ? [x, y, xLength, yLength]
-      : [y, x, yLength, xLength]
-    )).data
+  const getCertainty = (() => {
+    let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,colorDeviation, 
+      brightnessDeviation, deviationScore, within, length, certainty
+    return function getCertainty(point, yAxis, yDirection, color, channels) {
+      x = point.x - edgePointXRange
+      y = point.y - edgePointYRange
+      xLength = 1 + edgePointXRange * 2;
+      yLength = 1 + edgePointYRange * 2;
+      data = ctx.getImageData(...(yAxis === 'height'
+        ? [x, y, xLength, yLength]
+        : [y, x, yLength, xLength]
+      )).data
 
-    // console.log(point, yAxis, yDirection, color)
-    // console.log(x, y, xLength, yLength)
-    // console.log(data)
-    
-    let score = 0
-    for(let dx = 0; dx < xLength; dx++) {
-      const ix = dx * (yAxis === 'height' ? 1 : yLength)
+      // console.log(point, yAxis, yDirection, color)
+      // console.log(x, y, xLength, yLength)
+      // console.log(data)
       
-      for(let dy = 0; dy < yLength; dy++) {
-        const dy2 = yDirection === 1 ? dy : yLength - 1 - dy
-        const iy = dy2 * (yAxis === 'height' ? xLength : 1)
-        const i = ix * channels + iy * channels
+      score = 0
+      for(dx = 0; dx < xLength; dx++) {
+        ix = dx * (yAxis === 'height' ? 1 : yLength)
         
-        const iColor = (data[i+3] === 0)
-          ? color // Outside canvas bounds
-          : [data[i], data[i+1], data[i+2]]
-        const expectWithinDeviation = dy < Math.floor(yLength / 2)
-        // const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
-        // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
-        // if (within === expectWithinDeviation) {
-          if(!expectWithinDeviation) {
-            const colorDeviation = getColorDeviation(iColor, color)
-            const brightnessDeviation = getBrightnessDeviation(iColor, color)
-            const deviationScore = Math.max(0, Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .025))
-            // console.log(dx, dy, deviationScore)
-            score += .25 + deviationScore
-          } else {
-            const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
-            if(within)
-              score += 1
-          }
-        // }
+        for(dy = 0; dy < yLength; dy++) {
+          dy2 = yDirection === 1 ? dy : yLength - 1 - dy
+          iy = dy2 * (yAxis === 'height' ? xLength : 1)
+          i = ix * channels + iy * channels
+          
+          iColor = (data[i+3] === 0)
+            ? color // Outside canvas bounds
+            : [data[i], data[i+1], data[i+2]]
+          expectWithinDeviation = dy < Math.floor(yLength / 2)
+          // const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+          // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
+          // if (within === expectWithinDeviation) {
+            if(!expectWithinDeviation) {
+              colorDeviation = getColorDeviation(iColor, color)
+              brightnessDeviation = getBrightnessDeviation(iColor, color)
+              deviationScore = Math.max(0, Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .025))
+              // console.log(dx, dy, deviationScore)
+              score += .25 + deviationScore
+            } else {
+              within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+              if(within)
+                score += 1
+            }
+          // }
+        }
       }
-    }
-    const length = (xLength * yLength)
-    const certainty = (score - length / 2) / (length / 2)
-    // console.log('edges', certainty, JSON.stringify(certainties)) //, JSON.stringify(edges))
+      data.length = 0
+      length = (xLength * yLength)
+      certainty = (score - length / 2) / (length / 2)
+      // console.log('edges', certainty, JSON.stringify(certainties)) //, JSON.stringify(edges))
 
-    return easeInOutQuad(certainty)
-  }
+      return easeInOutQuad(certainty)
+    }
+  })()
 
   function detectEdges(imageLines, channels, color, yAxis) {
     const ignoreEdge = 2
@@ -547,7 +560,19 @@ const workerCode = function () {
       }
 
       const channels = 4
-      const color = getAverageColor(imageLines, channels)
+
+      const perpendicularImageLines = []
+      await getLineImageData(perpendicularImageLines, xLength, 4)
+      await getLineImageData(perpendicularImageLines, xLength, 8)
+      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 4)
+      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 8)
+
+      if(id < workerMessageId) {
+        imageLines.length = 0
+        return
+      }
+
+      const color = getAverageColor(imageLines, perpendicularImageLines, channels, yAxis)
       if(!detectColored && (
         color[0] + color[1] + color[2] > 16 ||
         Math.abs(color[0] - color[1]) > 3 ||
