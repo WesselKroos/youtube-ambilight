@@ -657,7 +657,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
       this.barDetectionCanvas = new Canvas(width, height)
       this.barDetectionCtx = this.barDetectionCanvas.getContext('2d', { alpha: true })
 
-      this.barDetectionCanvas.setAttribute('title', `LINES \nBlue:       Detected bar\nGreen:    Detected edge \nOrange:  Uncertain edge \nGray:       Ignored edge \nDotted:   Scanline`)
+      this.barDetectionCanvas.setAttribute('title', `LINES \nBlue:       Detected bar\nGreen:    Detected edge \nOrange:  Uncertain edge \nGray:       Ignored edge \nRed dotted: Scanline`)
       on(this.barDetectionCanvas, 'click', e => {
         e.preventDefault();
         this.barDetectionGraphElem.toggleAttribute('legend');
@@ -764,10 +764,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     if(!this.dotsPattern) {
       const dotsPattern = await createImageBitmap(new ImageData(new Uint8ClampedArray([
-        175, 175, 175, 255,
-        75, 75, 75, 255,
-        75, 75, 75, 255,
-        175, 175, 175, 255,
+        255, 50, 50, 255,
+        100, 0, 0, 255,
+        100, 0, 0, 255,
+        255, 50, 50, 255,
       ]), 2, 2, { colorSpace: 'srgb' }))
       this.barDetectionDotsPattern = this.barDetectionCtx.createPattern(dotsPattern, "repeat")
     }

@@ -66,35 +66,36 @@ const workerCode = function () {
 
     let colors = []
     for(const imageLine of imageLines) {
+    // for(const xi in imageLines) {
       const data = imageLine.data
       for(let i = topOffsetIndex; i <= topOffsetIndex + 12 * channels; i += 2 * channels) {
-        colors.push([data[i], data[i + 1], data[i + 2]])
+        colors.push([data[i], data[i + 1], data[i + 2]]) // , xi, i])
       }
       for(let i = bottomOffsetIndex; i >= bottomOffsetIndex - 12 * channels; i -= 2 * channels) {
-        colors.push([data[i], data[i + 1], data[i + 2]])
+        colors.push([data[i], data[i + 1], data[i + 2]]) //, xi, i])
       }
     }
-    // const oldColor = colors[0]
 
-    let averageColor = [
-      colors.reduce((average, color) => average + color[0], 0) / colors.length,
-      colors.reduce((average, color) => average + color[1], 0) / colors.length,
-      colors.reduce((average, color) => average + color[2], 0) / colors.length
-    ]
-    colors.sort((a, b) => sortAverageColors(averageColor, a, b))
-    colors.splice(Math.floor(colors.length / 2))
+    const averageColorLength = colors.length * .33
+    let averageColor
+    // eslint-disable-next-line no-constant-condition
+    while(true) {
+      averageColor = [
+        colors.reduce((average, color) => average + color[0], 0) / colors.length,
+        colors.reduce((average, color) => average + color[1], 0) / colors.length,
+        colors.reduce((average, color) => average + color[2], 0) / colors.length
+      ]
+      if(colors.length < averageColorLength) break;
 
-    averageColor = [
-      colors.reduce((average, color) => average + color[0], 0) / colors.length,
-      colors.reduce((average, color) => average + color[1], 0) / colors.length,
-      colors.reduce((average, color) => average + color[2], 0) / colors.length
-    ]
-    // colors.sort((a, b) => sortColors(averageColor, a, b))
-
-    // console.log(oldColor, averageColor)
-
-    // console.log(averageColor, JSON.parse(JSON.stringify(colors)))
-    // const color = colors[0]
+      colors.sort((a, b) => sortAverageColors(averageColor, a, b))
+      colors.splice(0, 1)
+      colors.splice(-1, 1)
+    }
+    
+    // console.log(
+    //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
+    //   JSON.parse(JSON.stringify(colors.map(c => c.map(c => c.toString().padStart(3,' ')).join('|'))))
+    // )
     colors.length = 0
     return averageColor
   }
@@ -213,12 +214,18 @@ const workerCode = function () {
         const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
         if(!limitNotReached) {
           if(mostCertainEdge) {
-            topEdges.push({
-              xIndex,
-              yIndex: mostCertainEdge.i / channels,
-              certainty: mostCertainEdge.certainty,
-              deviates: mostCertainEdge.certainty < .5 ? true : undefined
-            })
+            topEdges
+              .find(edge => (
+                xIndex === edge.xIndex && 
+                mostCertainEdge.yIndex === edge.yIndex
+              ))
+              .deviates = false
+            // topEdges.push({
+            //   xIndex,
+            //   yIndex: mostCertainEdge.i / channels,
+            //   certainty: mostCertainEdge.certainty,
+            //   deviates: mostCertainEdge.certainty < .5 ? true : undefined
+            // })
           } else {
             topEdges.push({
               xIndex,
@@ -254,10 +261,17 @@ const workerCode = function () {
           wasDeviating = true
           if(!(mostCertainEdge?.certainty >= certainty)) {
             mostCertainEdge = {
-              i,
+              // i,
+              yIndex: i / channels,
               certainty,
             }
           }
+          topEdges.push({
+            xIndex,
+            yIndex: i / channels,
+            certainty: certainty,
+            deviates: true
+          })
           continue
         }
 
@@ -285,12 +299,18 @@ const workerCode = function () {
         const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
         if(!limitNotReached) {
           if(mostCertainEdge) {
-            bottomEdges.push({
-              xIndex,
-              yIndex: (data.length - mostCertainEdge.i) / channels,
-              certainty: mostCertainEdge.certainty,
-              deviates: mostCertainEdge.certainty < .5 ? true : undefined
-            })
+            bottomEdges
+              .find(edge => (
+                xIndex === edge.xIndex && 
+                mostCertainEdge.yIndex === edge.yIndex
+              ))
+              .deviates = false
+            // bottomEdges.push({
+            //   xIndex,
+            //   yIndex: (data.length - mostCertainEdge.i) / channels,
+            //   certainty: mostCertainEdge.certainty,
+            //   deviates: mostCertainEdge.certainty < .5 ? true : undefined
+            // })
           } else {
             bottomEdges.push({
               xIndex,
@@ -325,10 +345,17 @@ const workerCode = function () {
           wasDeviating = true
           if(!(mostCertainEdge?.certainty >= certainty)) {
             mostCertainEdge = {
-              i,
+              yIndex: (data.length - i) / channels,
+              // i,
               certainty,
             }
           }
+          bottomEdges.push({
+            xIndex,
+            yIndex: (data.length - i) / channels,
+            certainty: certainty,
+            deviates: true
+          })
           continue
         }
 
@@ -347,7 +374,7 @@ const workerCode = function () {
 
   const reduceAverageSize = (edges) => edges.reduce((sum, edge) => sum + edge.yIndex, 0) / edges.length
 
-  function getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage) {
+  function getExceedsDeviationLimit(edges, topEdges, bottomEdges, imageLines, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage) {
     if(
       !topEdges.filter(e => !e.deviates).length || 
       !bottomEdges.filter(e => !e.deviates).length
@@ -357,7 +384,7 @@ const workerCode = function () {
 
     const threshold = (1 - ((allowedAnomaliesPercentage - 10) / 100))
 
-    while(edges.filter(e => !e.deviates).length > edges.length * threshold) {
+    while(edges.filter(e => !e.deviates).length > (imageLines.length * 2) * threshold) {
       const nonDeviatingEdges = edges.filter(e => !e.deviates)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
@@ -368,7 +395,7 @@ const workerCode = function () {
         })
     }
 
-    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > edges.length * threshold) {
+    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > (imageLines.length * 2) * threshold) {
     //   const nonDeviatingEdges = topEdges.filter(e => !e.deviates && !e.deviatesTop)
     //   const averageSize = reduceAverageSize(nonDeviatingEdges)
     //   nonDeviatingEdges
@@ -379,7 +406,7 @@ const workerCode = function () {
     //     })
     // }
 
-    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > edges.length * threshold) {
+    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > (imageLines.length * 2) * threshold) {
     //   const nonDeviatingEdges = bottomEdges.filter(e => !e.deviates && !e.deviatesBottom)
     //   const averageSize = reduceAverageSize(nonDeviatingEdges)
     //   nonDeviatingEdges
@@ -437,7 +464,7 @@ const workerCode = function () {
     }
   }
 
-  function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage = 0, offsetPercentage = 0) {
+  function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, imageLines, currentPercentage = 0, offsetPercentage = 0) {
     const minSize = maxSize * (0.03 * scale)
     const lowerSizeThreshold = maxSize * ((currentPercentage - 4) / 100)
     const baseOffsetPercentage = (0.3 * ((1 + scale) / 2))
@@ -447,7 +474,7 @@ const workerCode = function () {
       const semiCertainLowerSizes = edges
         .filter(e => e.certainty > .5 && e.yIndex < lowerSizeThreshold)
         .map(e => e.yIndex)
-      if(semiCertainLowerSizes.length / edges.length < .33) return
+      if(semiCertainLowerSizes.length / (imageLines.length * 2) < .33) return
       
       const lowestSize = Math.min(...semiCertainLowerSizes)
       // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
@@ -566,11 +593,11 @@ const workerCode = function () {
 
 
       const edges = [...topEdges, ...bottomEdges]
-      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage)
+      const exceedsDeviationLimit = getExceedsDeviationLimit(edges, topEdges, bottomEdges, imageLines, maxSize, scale, allowedAnomaliesPercentage, allowedUnevenBarsPercentage)
 
       // console.log(JSON.stringify(edges), exceedsDeviationLimit)
 
-      const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, currentPercentage, offsetPercentage)
+      const percentage = getPercentage(exceedsDeviationLimit, maxSize, scale, edges, imageLines, currentPercentage, offsetPercentage)
       // console.log('percentage', percentage, edges)
       
       if(
