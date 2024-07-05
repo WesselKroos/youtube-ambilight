@@ -336,13 +336,13 @@ const SettingsConfig = [
   {
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
-    description: 'Only usefull for monitors above 60Hz',
+    description: '',
     questionMark: {
-      title: 'Click for more information about this bug in Chromium browsers',
+      title: 'Chromium has a bug that jitters the video playback when a display has a higher framerate than 60Hz.\nThis workaround prevents the jittering by forcing the browser to run at the framerate of your display instead.\nClick the questionmark for more information about this bug in Chromium browsers.\n(Btw, this workaround is only applied when a display framerate above 60Hz is detected.)',
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
     },
     type: 'checkbox',
-    default: false,
+    default: true,
     advanced: true,
     experimental: true
   },

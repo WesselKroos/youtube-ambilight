@@ -636,7 +636,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
     this.barDetectionDurationElem.style.color = '#fff'
 
     const barDetectionFPS = this.barDetectionThrottle
-      ? 1000 / this.barDetectionThrottle
+      ? Math.round(1000 / this.barDetectionThrottle).toFixed(2)
       : 'VIDEO'
     this.barDetectionFPSElem.childNodes[0].nodeValue = `BAR DETECTION FRAMERATE: ${barDetectionFPS} FPS`
     this.barDetectionFPSElem.style.color = '#fff'

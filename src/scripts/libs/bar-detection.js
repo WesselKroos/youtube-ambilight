@@ -108,7 +108,7 @@ const workerCode = function () {
     return averageColor
   }
 
-  function getColorDeviation(a, b) {
+  function getHueDeviation(a, b) {
     return (
       Math.abs(a[0] - b[0]) +
       Math.abs(a[1] - b[1]) +
@@ -123,27 +123,43 @@ const workerCode = function () {
     )
   }
 
-  function isWithinColorAndBrightnessDeviationLimit(a, b) {
-    const colorDeviation = getColorDeviation(a, b)
-    const brightnessDeviation = getBrightnessDeviation(a, b)
+  const maxDarkDeviation = {
+    hue: 8,
+    brightness: 8,
+    sum: 16
+  }
+  const maxLightDeviation = {
+    hue: 32,
+    brightness: 64,
+    sum: 86
+  }
+
+  function isColorWithinMaxDeviation(currentColor, referenceColor) {
+    const hueDeviation = getHueDeviation(currentColor, referenceColor)
+    const brightnessDeviation = getBrightnessDeviation(currentColor, referenceColor)
+
+    const maxDeviation = 
+      ((referenceColor[0] + referenceColor[1] + referenceColor[2]) > 500)
+      ? maxLightDeviation
+      : maxDarkDeviation
+
     return (
-      (colorDeviation <= allowedColorDeviation || brightnessDeviation <= allowedBrightnessDeviation) && 
-      colorDeviation + brightnessDeviation <= allowedColorAndBrightnessDeviationSum
+      (
+        hueDeviation <= maxDeviation.hue || 
+        brightnessDeviation <= maxDeviation.brightness
+      ) && 
+      hueDeviation + brightnessDeviation <= maxDeviation.sum
     )
   }
 
-  const maxDeviation = 255 * 3 + 255 * 3
-  const allowedColorDeviation = 8
-  const allowedBrightnessDeviation = 8
-  const allowedColorAndBrightnessDeviationSum = 16
-
+  const maxDeviationScore = 255 * 3 + 255 * 3
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
   const edgePointYRange = 4;
 
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
   const getCertainty = (() => {
-    let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,colorDeviation, 
+    let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,hueDeviation, 
       brightnessDeviation, deviationScore, within, length, certainty
     return function getCertainty(point, yAxis, yDirection, color, channels) {
       x = point.x - edgePointXRange
@@ -172,17 +188,17 @@ const workerCode = function () {
             ? color // Outside canvas bounds
             : [data[i], data[i+1], data[i+2]]
           expectWithinDeviation = dy < Math.floor(yLength / 2)
-          // const within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+          // const within = isColorWithinMaxDeviation(iColor, color)
           // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
           // if (within === expectWithinDeviation) {
             if(!expectWithinDeviation) {
-              colorDeviation = getColorDeviation(iColor, color)
+              hueDeviation = getHueDeviation(iColor, color)
               brightnessDeviation = getBrightnessDeviation(iColor, color)
-              deviationScore = Math.max(0, Math.min(.75, (colorDeviation + brightnessDeviation) / maxDeviation / .025))
+              deviationScore = Math.max(0, Math.min(.75, (hueDeviation + brightnessDeviation) / maxDeviationScore / .025))
               // console.log(dx, dy, deviationScore)
               score += .25 + deviationScore
             } else {
-              within = isWithinColorAndBrightnessDeviationLimit(iColor, color)
+              within = isColorWithinMaxDeviation(iColor, color)
               if(within)
                 score += 1
             }
@@ -217,6 +233,8 @@ const workerCode = function () {
       let wasUncertain = false
       // From the top down
       let mostCertainEdge;
+      let detectedEdges = 0;
+      // Example video of a lot of uncertain edges: https://www.youtube.com/watch?v=mTmet4jAkEA
       for (let i = (channels * ignoreEdge); i < data.length; i += (channels * step)) {
         if(wasUncertain) {
           wasUncertain = false
@@ -225,7 +243,7 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
-        if(!limitNotReached) {
+        if(!limitNotReached || detectedEdges > 3) {
           if(mostCertainEdge) {
             topEdges
               .find(edge => (
@@ -250,7 +268,7 @@ const workerCode = function () {
           break
         }
 
-        const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
+        const isDeviating = !isColorWithinMaxDeviation(iColor, color)
 
         if(limitNotReached && wasDeviating && !isDeviating) {
           wasDeviating = false
@@ -267,6 +285,7 @@ const workerCode = function () {
         }
 
         const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color, channels)
+        detectedEdges++;
         if(limitNotReached && certainty < minCertainty) {
           // console.log('uncertain top', xIndex, i / channels, certainty)
           // step = largeStep
@@ -301,6 +320,7 @@ const workerCode = function () {
       wasDeviating = false
       wasUncertain = false
       mostCertainEdge = undefined
+      detectedEdges = 0;
       // From the bottom up
       for (let i = (data.length - channels * (1 + ignoreEdge)); i >= 0; i -= (channels * step)) {
         if(wasUncertain) {
@@ -310,7 +330,7 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
-        if(!limitNotReached) {
+        if(!limitNotReached || detectedEdges > 3) {
           if(mostCertainEdge) {
             bottomEdges
               .find(edge => (
@@ -334,7 +354,7 @@ const workerCode = function () {
           }
           break
         }
-        const isDeviating = !isWithinColorAndBrightnessDeviationLimit(iColor, color)
+        const isDeviating = !isColorWithinMaxDeviation(iColor, color)
 
         if(limitNotReached && wasDeviating && !isDeviating) {
           wasDeviating = false
@@ -351,6 +371,7 @@ const workerCode = function () {
         }
 
         const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color, channels)
+        detectedEdges++;
         if(limitNotReached && certainty < minCertainty) {
           // console.log('uncertain bottom', xIndex, i / channels, certainty)
           // step = largeStep
@@ -487,7 +508,7 @@ const workerCode = function () {
       const semiCertainLowerSizes = edges
         .filter(e => e.certainty > .5 && e.yIndex < lowerSizeThreshold)
         .map(e => e.yIndex)
-      if(semiCertainLowerSizes.length / (imageLines.length * 2) < .33) return
+      if(semiCertainLowerSizes.length / (imageLines.length * 2) < .3) return
       
       const lowestSize = Math.min(...semiCertainLowerSizes)
       // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
@@ -562,10 +583,10 @@ const workerCode = function () {
       const channels = 4
 
       const perpendicularImageLines = []
-      await getLineImageData(perpendicularImageLines, xLength, 4)
-      await getLineImageData(perpendicularImageLines, xLength, 8)
-      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 4)
-      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 8)
+      await getLineImageData(perpendicularImageLines, xLength, 3)
+      await getLineImageData(perpendicularImageLines, xLength, 6)
+      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 3)
+      await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 6)
 
       if(id < workerMessageId) {
         imageLines.length = 0
@@ -611,6 +632,8 @@ const workerCode = function () {
       // //   - logo & squared: https://www.youtube.com/watch?v=UsWh21rFzh8&t=120s
       // //   - old video with vague bars: https://www.youtube.com/watch?v=YoLJ4CWSLSI
       // //   - Dismiss/reset black bars to content: https://youtu.be/oCmNbNhppHo?t=381
+      // //   - Flickering small bars https://youtu.be/K-D5wThCPRw?si=4fa1WL3sioN02QEl&t=82
+      // //   - Detect non-bars on white sides https://youtu.be/K-D5wThCPRw?si=90p34xMcTAboCbNb&t=850
       
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
@@ -1032,8 +1055,8 @@ export default class BarDetection {
                 (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
                 (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
               )
-              this.changes.push(performance.now())
               if(barsChanged) {
+                this.changes.push(performance.now())
                 callback(horizontalPercentage, verticalPercentage)
               }
             }
