@@ -7,7 +7,7 @@ const workerCode = function () {
   let canvas;
   let canvasIsCreatedInWorker = false
   let ctx;
-  let workerMessageId = 0;
+  let globalRunId = 0;
   let globalXOffsetIndex = 0;
   const scanlinesAmount = 5 // 10 // 40 // 5
 
@@ -60,7 +60,7 @@ const workerCode = function () {
     return (aDiff === bDiff) ? 0 : (aDiff > bDiff) ? 1 : -1
   }
 
-  function getAverageColor(_imageLines, perpendicularImageLines, channels) {
+  function getAverageColor(_imageLines, perpendicularImageLines) {
     // const topOffsetIndex = channels * 2
     // const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
 
@@ -144,26 +144,26 @@ const workerCode = function () {
       : maxDarkDeviation
 
     return (
-      (
-        hueDeviation <= maxDeviation.hue || 
-        brightnessDeviation <= maxDeviation.brightness
-      ) && 
+      hueDeviation <= maxDeviation.hue && 
+      brightnessDeviation <= maxDeviation.brightness &&
       hueDeviation + brightnessDeviation <= maxDeviation.sum
     )
   }
 
+  const channels = 4
   const maxDeviationScore = 255 * 3 + 255 * 3
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
-  const edgePointYRange = 4;
+  const edgePointYRange = 8;
+  const edgePointYCenter = 2/8;
 
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
   const getCertainty = (() => {
     let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,hueDeviation, 
       brightnessDeviation, deviationScore, within, length, certainty
-    return function getCertainty(point, yAxis, yDirection, color, channels) {
+    return function getCertainty(point, yAxis, yDirection, color) {
       x = point.x - edgePointXRange
-      y = point.y - edgePointYRange
+      y = point.y - edgePointYRange * 2 * (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter)
       xLength = 1 + edgePointXRange * 2;
       yLength = 1 + edgePointYRange * 2;
       data = ctx.getImageData(...(yAxis === 'height'
@@ -187,14 +187,14 @@ const workerCode = function () {
           iColor = (data[i+3] === 0)
             ? color // Outside canvas bounds
             : [data[i], data[i+1], data[i+2]]
-          expectWithinDeviation = dy < Math.floor(yLength / 2)
+          expectWithinDeviation = dy < Math.floor(1 + edgePointYRange * 2 * edgePointYCenter)
           // const within = isColorWithinMaxDeviation(iColor, color)
           // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
           // if (within === expectWithinDeviation) {
             if(!expectWithinDeviation) {
               hueDeviation = getHueDeviation(iColor, color)
               brightnessDeviation = getBrightnessDeviation(iColor, color)
-              deviationScore = Math.max(0, Math.min(.75, (hueDeviation + brightnessDeviation) / maxDeviationScore / .025))
+              deviationScore = Math.max(0, Math.min(.75, (hueDeviation + brightnessDeviation) / maxDeviationScore / .05))
               // console.log(dx, dy, deviationScore)
               score += .25 + deviationScore
             } else {
@@ -214,14 +214,15 @@ const workerCode = function () {
     }
   })()
 
-  function detectEdges(imageLines, channels, color, yAxis) {
-    const ignoreEdge = 2
+  const largeStep = 4
+  const ignoreEdge = 2
+  const minCertainty = .65
+  const middleIndexOffset = channels * 10
+
+  function detectEdges(imageLines, color, yAxis) {
     const middleIndex = imageLines[0].data.length / 2
-    const middleIndexOffset = channels * 10
-    const largeStep = 4
     const topEdges = []
     const bottomEdges = []
-    const minCertainty = .65
   
     for(const imageLine of imageLines) {
       const {
@@ -244,7 +245,7 @@ const workerCode = function () {
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
         if(!limitNotReached || detectedEdges > 3) {
-          if(mostCertainEdge) {
+          if(mostCertainEdge > minCertainty) {
             topEdges
               .find(edge => (
                 xIndex === edge.xIndex && 
@@ -284,7 +285,7 @@ const workerCode = function () {
           continue
         }
 
-        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color, channels)
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color)
         detectedEdges++;
         if(limitNotReached && certainty < minCertainty) {
           // console.log('uncertain top', xIndex, i / channels, certainty)
@@ -331,7 +332,7 @@ const workerCode = function () {
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
         if(!limitNotReached || detectedEdges > 3) {
-          if(mostCertainEdge) {
+          if(mostCertainEdge > minCertainty) {
             bottomEdges
               .find(edge => (
                 xIndex === edge.xIndex && 
@@ -370,7 +371,7 @@ const workerCode = function () {
           continue
         }
 
-        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color, channels)
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color)
         detectedEdges++;
         if(limitNotReached && certainty < minCertainty) {
           // console.log('uncertain bottom', xIndex, i / channels, certainty)
@@ -456,14 +457,13 @@ const workerCode = function () {
     
     const nonDeviatingTopEdges = topEdges
       .filter(e => !e.deviates && !e.deviatesTop)
-      .map(e => e.yIndex)
-    const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges) - Math.min(...nonDeviatingTopEdges))
+      
+    const maxTopDeviation = Math.abs(Math.max(...nonDeviatingTopEdges.map(e => e.yIndex)) - Math.min(...nonDeviatingTopEdges.map(e => e.yIndex)))
     const topDeviationIsAllowed = (maxTopDeviation <= maxAllowedSideDeviation)
 
     const nonDeviatingBottomEdges = bottomEdges
       .filter(e => !e.deviates && !e.deviatesBottom)
-      .map(e => e.yIndex)
-    const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges) - Math.min(...nonDeviatingBottomEdges))
+    const maxBottomDeviation = Math.abs(Math.max(...nonDeviatingBottomEdges.map(e => e.yIndex)) - Math.min(...nonDeviatingBottomEdges.map(e => e.yIndex)))
     const bottomDeviationIsAllowed = (maxBottomDeviation <= maxAllowedSideDeviation)
 
     if(!topDeviationIsAllowed && !bottomDeviationIsAllowed) {
@@ -480,14 +480,28 @@ const workerCode = function () {
     const averageTopSize = reduceAverageSize(nonDeviatingTopEdges)
     const averageBottomSize = reduceAverageSize(nonDeviatingBottomEdges)
     const sidesDeviation = Math.abs(averageTopSize - averageBottomSize)
-    if(sidesDeviation > maxAllowedSideDeviation) {
-      // console.log('average top & bottom deviates', sidesDeviation, maxAllowedSideDeviation)
+
+    const maxAllowedDeviation = maxSize * (0.003 + (allowedUnevenBarsPercentage * 0.0008))  * scale
+    const minMaxAllowedSideDeviation = maxSize * (0.016 * scale)
+    // let maxAllowedSidesDeviation = maxAllowedSideDeviation
+    let maxAllowedSidesDeviation = maxAllowedDeviation
+    if(
+      averageTopSize < minMaxAllowedSideDeviation ||
+      averageBottomSize < minMaxAllowedSideDeviation
+    )  {
+      // console.log(`A side a lower than the maximum side deviation\n${averageTopSize} | ${averageBottomSize} < ${minMaxAllowedSideDeviation}`, nonDeviatingTopEdges, nonDeviatingBottomEdges)
+      maxAllowedSidesDeviation = 2
+    } else {
+      // console.log(`${averageTopSize} | ${averageBottomSize} < ${minMaxAllowedSideDeviation}`, nonDeviatingTopEdges)
+    }
+
+    if(sidesDeviation > maxAllowedSidesDeviation) {
+      // console.log('average top & bottom deviates', sidesDeviation, maxAllowedSidesDeviation)
       return true
     }
 
 
     // Allow a higher deviation between top and bottom edges
-    const maxAllowedDeviation = maxSize * (0.003 + (allowedUnevenBarsPercentage * 0.0008))  * scale
     const nonDeviatingEdgeSizes = edges
       .filter(e => !e.deviates)
       .map(e => e.yIndex)
@@ -499,7 +513,7 @@ const workerCode = function () {
   }
 
   function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, imageLines, currentPercentage = 0, offsetPercentage = 0) {
-    const minSize = maxSize * (0.03 * scale)
+    const minSize = maxSize * (0.01 * scale)
     const lowerSizeThreshold = maxSize * ((currentPercentage - 4) / 100)
     const baseOffsetPercentage = (0.3 * ((1 + scale) / 2))
 
@@ -525,7 +539,11 @@ const workerCode = function () {
         size += (maxSize * (offsetPercentage / 100))
       }
     } else {
-      size = Math.max(...edges.filter(e => !e.deviates).map(e => e.yIndex))
+      // size = Math.max(...edges.filter(e => !e.deviates).map(e => e.yIndex))
+      const sortedEdges = edges.filter(e => !e.deviates)
+        .sort(sortSizes(0))
+        size = reduceAverageSize(sortedEdges.slice(Math.floor(sortedEdges.length / 2)))
+      // size = reduceAverageSize(edges.filter(e => !e.deviates))
       // console.log(size, currentPercentage)
       if(size < minSize) {
         size = 0
@@ -552,17 +570,19 @@ const workerCode = function () {
     let percentage = Math.round((size / maxSize) * 10000) / 100
     const maxPercentage = 38
     percentage = Math.min(percentage, maxPercentage)
-    // console.log('normal', percentage, edges)
+    // console.log('percentage', percentage, edges)
     return percentage
   }
 
   try {
     const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset) => {
-      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : 0
+      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : .1
+      // xOffset = partSizeBorderMultiplier ? xOffset * .5 : xOffset
+
       const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
       const imageLines = []
       for (let index = Math.ceil(partSize / 2) - 1 + (partSizeBorderMultiplier * partSize); index < canvas[xLength] - (partSizeBorderMultiplier * partSize); index += partSize) {
-        if(id < workerMessageId) {
+        if(id < globalRunId) {
           imageLines.length = 0
           return
         }
@@ -575,12 +595,10 @@ const workerCode = function () {
       // console.log(imageSquare.length)
 
       // console.log(`scanned ${imageLines.length} lines`)
-      if(id < workerMessageId) {
+      if(id < globalRunId) {
         imageLines.length = 0
         return
       }
-
-      const channels = 4
 
       const perpendicularImageLines = []
       await getLineImageData(perpendicularImageLines, xLength, 3)
@@ -588,12 +606,12 @@ const workerCode = function () {
       await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 3)
       await getLineImageData(perpendicularImageLines, xLength, canvas[xLength] - 6)
 
-      if(id < workerMessageId) {
+      if(id < globalRunId) {
         imageLines.length = 0
         return
       }
 
-      const color = getAverageColor(imageLines, perpendicularImageLines, channels, yAxis)
+      const color = getAverageColor(imageLines, perpendicularImageLines, yAxis)
       if(!detectColored && (
         color[0] + color[1] + color[2] > 16 ||
         Math.abs(color[0] - color[1]) > 3 ||
@@ -612,7 +630,7 @@ const workerCode = function () {
         }
       }
 
-      const { topEdges, bottomEdges } = detectEdges(imageLines, channels, color, yAxis)
+      const { topEdges, bottomEdges } = detectEdges(imageLines, color, yAxis)
 
       const maxSize = imageLines[0].data.length / channels
 
@@ -634,6 +652,12 @@ const workerCode = function () {
       // //   - Dismiss/reset black bars to content: https://youtu.be/oCmNbNhppHo?t=381
       // //   - Flickering small bars https://youtu.be/K-D5wThCPRw?si=4fa1WL3sioN02QEl&t=82
       // //   - Detect non-bars on white sides https://youtu.be/K-D5wThCPRw?si=90p34xMcTAboCbNb&t=850
+      
+      // //   - Not detecting the blue square at the sides: https://www.youtube.com/watch?v=Xhi2FdES8yI&t=215s
+      // //   - Moves a lot while seeking through video: https://www.youtube.com/watch?v=f2fzjhyCOcM
+      // //   - Vertical bar constantly switching: https://www.youtube.com/watch?v=aJWAfvS__Ts&t=200
+      // //   - Horizontal basr soncstanlty switching: https://www.youtube.com/watch?v=iqdhphwLWAU&t=45
+      // //                                            https://www.youtube.com/watch?v=laxrPE8qPzI
       
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
@@ -707,15 +731,15 @@ const workerCode = function () {
     
     this.onmessage = async (e) => {
       const id = e.data.id
+      globalRunId = id
+
       try {
         if(e.data.type === 'cancellation') {
-          workerMessageId = id
           globalXOffsetIndex = 0
           return
         }
         // contextlost/contextrestored are never fired in our worker. Keeping our context lost
         if(e.data.type === 'clear') {
-          workerMessageId = id
           globalXOffsetIndex = 0
           if(canvas && canvasIsCreatedInWorker && canvas.width !== 1 && canvas.height !== 1) createCanvas(1, 1)
           return
@@ -734,8 +758,6 @@ const workerCode = function () {
           canvasInfo,
           xOffsetSize
         } = e.data
-
-        getLineImageDataStart = performance.now()
       
         if(canvasInfo.bitmap) {
           const bitmap = canvasInfo.bitmap
@@ -751,6 +773,7 @@ const workerCode = function () {
             createContext()
           }
           ctx.drawImage(bitmap, 0, 0, 512, 512)
+          bitmap.close()
         } else {
           canvas = canvasInfo.canvas
           canvasIsCreatedInWorker = false
@@ -759,11 +782,17 @@ const workerCode = function () {
         
         globalXOffsetIndex++
         if(globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0
-        const xOffset = xOffsetSize === 1 ? .5 : (
-          (Math.ceil(globalXOffsetIndex / 2) + (globalXOffsetIndex % 2))
-          / (xOffsetSize - 1)
-        )
+        // const xOffset = xOffsetSize === 1 ? .5 : (globalXOffsetIndex / (xOffsetSize - 1))
+        const xOffset = xOffsetSize === 1
+          ? .5
+          : xOffsetSize === 2
+            ? globalXOffsetIndex
+            : (
+              (Math.ceil(globalXOffsetIndex / 2) + (globalXOffsetIndex % 2))
+              / (xOffsetSize - 1)
+            )
         // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
+
         let horizontalBarSizeInfo = detectHorizontal
           ? await workerDetectBarSize(
               id, 'width', 'height', 1, detectColored, offsetPercentage, currentHorizontalPercentage,
@@ -776,24 +805,25 @@ const workerCode = function () {
               allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset
           )
           : undefined
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
       
-        if(id < workerMessageId) {
-          horizontalBarSizeInfo = undefined
-          verticalBarSizeInfo = undefined
+        if(id !== globalRunId) {
+          return
         }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
         this.postMessage({ 
           id,
           horizontalBarSizeInfo,
           verticalBarSizeInfo
         })
       } catch(ex) {
+        if(id === globalRunId) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
         this.postMessage({
           id,
           error: ex
         })
-      } finally {
-        getLineImageDataStart = 0
       }
     }
   } catch(ex) {
@@ -803,8 +833,7 @@ const workerCode = function () {
 
 export default class BarDetection {
   worker
-  workerMessageId = 0
-  run = null
+  runId = 0
   canvas;
   ctx;
   catchedDetectBarSizeError = false;
@@ -819,37 +848,49 @@ export default class BarDetection {
   }
 
   clear = () => {
-    this.workerMessageId++; // invalidate current worker processes
+    // console.log(this.runId, 'clear')
+    this.runId++; // invalidate current worker processes
     if(this.worker) {
       this.worker.postMessage({
-        id: this.workerMessageId,
+        id: this.runId,
         type: 'clear'
       })
     }
 
-    this.run = null
-    this.continueAfterRun = false
+    this.running = false
+    if(this.timeout) {
+      clearTimeout(this.timeout)
+      this.timeout = undefined
+    }
+    // this.continueAfterRun = false
+
     this.history = {
       horizontal: [],
       vertical: []
     }
+    this.changes = []
   }
 
   cancel = () => {
-    this.workerMessageId++; // invalidate current worker processes
+    this.runId++; // invalidate current worker processes
     if(this.worker) {
       this.worker.postMessage({
-        id: this.workerMessageId,
+        id: this.runId,
         type: 'cancellation'
       })
     }
 
-    this.run = null
-    this.continueAfterRun = false
-    this.history = {
-      horizontal: [],
-      vertical: []
+    this.running = false
+    if(this.timeout) {
+      clearTimeout(this.timeout)
+      this.timeout = undefined
     }
+    
+    // this.continueAfterRun = false
+    // this.history = {
+    //   horizontal: [],
+    //   vertical: []
+    // }
   }
 
   detect = (buffer, detectColored, offsetPercentage,
@@ -858,12 +899,17 @@ export default class BarDetection {
     ratio, allowedToTransfer, averageHistorySize, 
     allowedAnomaliesPercentage, allowedUnevenBarsPercentage,
     callback) => {
-    if(this.run) {
-      this.continueAfterRun = true
+    if(this.running) {
+      // if(!this.continueAfterRun) {
+      //   console.log('    enable continueAfterRun')
+      //   this.continueAfterRun = true
+      // }
       return
     }
 
-    const run = this.run = {}
+    this.runId++
+    const runId = this.runId
+    this.running = true
 
     if(!this.worker) {
       this.worker = workerFromCode(workerCode)
@@ -891,7 +937,7 @@ export default class BarDetection {
       callback
     }
 
-    requestIdleCallback(async () => await this.idleHandler(run), { timeout: 1 }, true)
+    requestIdleCallback(async () => await this.idleHandler(runId), { timeout: 1 }, true)
   }
 
   averagePercentage(percentage, currentPercentage, history, averageHistorySize) {
@@ -913,13 +959,13 @@ export default class BarDetection {
     if(percentage !== currentPercentage && Math.abs(percentagesOccurrence[percentage] - percentagesOccurrence[currentPercentage]) <= history.length / 2) {
       percentage = currentPercentage
     }
-    // console.log(detectedPercentage, percentage, percentagesOccurrence, history)
+    // console.log('average', detectedPercentage, percentage, percentagesOccurrence, history)
 
     let adjustment = (percentage - currentPercentage)
-    if(percentage !== 0 && adjustment > -1.5 && adjustment <= 0) {
+    if(percentage !== 0 && adjustment > -1 && adjustment <= 0) {
       // Ignore small adjustments
       adjustment = (detectedPercentage - currentPercentage)
-      if(adjustment > -1.5 && adjustment <= 0) {
+      if(adjustment > -1 && adjustment <= 0) {
         percentage = undefined
       } else {
         percentage = currentPercentage // Disable throttling
@@ -932,8 +978,8 @@ export default class BarDetection {
     return percentage
   }
 
-  idleHandler = async (run) => {
-    if(this.run !== run) return
+  idleHandler = async (runId) => {
+    if(this.runId !== runId) return
 
     const {
       buffer, detectColored, offsetPercentage,
@@ -986,33 +1032,32 @@ export default class BarDetection {
           }
         }
       }
-
-      if(!canvasInfo) {
-        this.run = null
-        return
-      }
       
-      if(this.run !== run) {
-        if(canvasInfo.bitmap) {
+      if(this.runId !== runId) {
+        if(canvasInfo?.bitmap) {
           canvasInfo.bitmap.close()
         }
+        return
+      }
+
+      if(!canvasInfo) {
+        this.running = false
         return
       }
       
       this.ambientlight.stats.updateBarDetectionImage(canvasInfo.bitmap ?? canvasInfo.canvas)
 
-      this.workerMessageId++;
       const stack = new Error().stack
       const onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
         this.worker.onerror = (err) => reject(err)
         this.worker.onmessage = async (e) => {
           try {
             if(
-              this.run !== run || 
-              e.data.id !== this.workerMessageId
+              e.data.id !== this.runId
             ) {
               // console.warn('Ignoring old bar detection percentage:', 
-              //   this.workerMessageId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
+              //   this.runId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
+              console.log(e.data.id, 'onmessage but discarded')
               resolve()
               return
             }
@@ -1040,27 +1085,48 @@ export default class BarDetection {
               barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo
             )
 
+            if(
+              e.data.id !== this.runId
+            ) {
+              // console.warn('Ignoring old bar detection percentage:', 
+              //   this.runId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
+              // console.log(e.data.id, 'onmessage but discarded after updateBarDetectionResult')
+              resolve()
+              return
+            }
+
             if(firstDetection) {
               if(horizontalPercentage === undefined) horizontalPercentage = 0
               if(verticalPercentage === undefined) verticalPercentage = 0
               barsFound = true
             }
 
-            if(
-              barsFound ||
-              (horizontalBarSizeInfo.percentage !== undefined && Math.abs(horizontalBarSizeInfo.percentage - currentHorizontalPercentage) > 0.5) || 
-              (verticalBarSizeInfo.percentage !== undefined && Math.abs(verticalBarSizeInfo.percentage - currentVerticalPercentage) > 0.5)
-            ) {
-              const barsChanged = (
-                (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
-                (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
+            const barsChanged = (
+              barsFound &&
+              (horizontalPercentage !== undefined && horizontalPercentage !== currentHorizontalPercentage) || 
+              (verticalPercentage !== undefined && verticalPercentage !== currentVerticalPercentage)
+            )
+
+            const detectedLargeChange = (
+              (
+                horizontalBarSizeInfo.percentage !== undefined && 
+                Math.abs(horizontalBarSizeInfo.percentage - (currentHorizontalPercentage || 0)) > 0.5
+              ) || 
+              (
+                verticalBarSizeInfo.percentage !== undefined && 
+                Math.abs(verticalBarSizeInfo.percentage - (currentVerticalPercentage || 0)) > 0.5
               )
-              if(barsChanged) {
-                this.changes.push(performance.now())
-                callback(horizontalPercentage, verticalPercentage)
-              }
+            )
+
+            if(barsChanged || detectedLargeChange) {
+              this.changes.push(performance.now())
             }
 
+            if(barsChanged) {
+              callback(horizontalPercentage, verticalPercentage)
+            }
+
+            // console.log(e.data.id, 'onmessage received', barsChanged, horizontalPercentage, verticalPercentage)
             resolve()
           } catch(ex) {
             reject(ex)
@@ -1069,7 +1135,7 @@ export default class BarDetection {
       }.bind(this))
       this.worker.postMessage(
         {
-          id: this.workerMessageId,
+          id: runId,
           canvasInfo,
           detectColored, offsetPercentage,
           detectHorizontal, currentHorizontalPercentage,
@@ -1082,10 +1148,7 @@ export default class BarDetection {
         canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
       )
       await onMessagePromise;
-      if(canvasInfo.bitmap) {
-        canvasInfo.bitmap.close()
-      }
-      if(this.run !== run) return
+      if(this.runId !== runId) return
       
       const now = performance.now()
       const duration = now - start
@@ -1095,10 +1158,10 @@ export default class BarDetection {
         const minuteAgo = performance.now() - 60000
         this.changes = this.changes.filter(change => change > minuteAgo)
       } else if(!this.changes.length) {
-        this.changes.push(now)
+        this.changes.push(now - 3001)
       }
 
-      const lastChange = (this.changes.length > 0 && this.changes.length < 5)
+      const lastChange = this.changes.length < 5
         ? this.changes[this.changes.length - 1]
         : now
       const minThrottle = lastChange + 15000 < now
@@ -1108,16 +1171,18 @@ export default class BarDetection {
           : 0
         )
       const throttle = Math.max(minThrottle, Math.min(5000, Math.pow(duration, 1.2) - 250))
-      this.ambientlight.stats.setBarDetectionThrottle(throttle)
+      this.ambientlight.stats.updateBarDetectionInfo(throttle, this.changes[this.changes.length - 1])
 
-      setTimeout(wrapErrorHandler(() => {
-        if(this.run !== run) return
+      this.timeout = setTimeout(wrapErrorHandler(() => {
+        this.timeout = undefined
+        if(this.runId !== runId) return
 
-        this.run = null
-        if(!this.continueAfterRun) return
+        this.running = false
+      //   if(!this.continueAfterRun) return
         
-        this.continueAfterRun = false
-        this.ambientlight.scheduleBarSizeDetection()
+      //   console.log('    continueAfterRun, retrigger')
+      //   this.continueAfterRun = false
+      //   this.ambientlight.scheduleBarSizeDetection()
       }), throttle)
     } catch(ex) {
        // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
@@ -1158,10 +1223,13 @@ export default class BarDetection {
         }
       }
 
-      if(canvasInfo?.bitmap) {
-        canvasInfo.bitmap.close()
+      if(this.runId === runId) {
+        if(canvasInfo?.bitmap) {
+          canvasInfo.bitmap.close()
+        }
+        this.running = false
       }
-      this.run = null
+
       if (this.catchedDetectBarSizeError || isKnownError) return
 
       this.catchedDetectBarSizeError = true

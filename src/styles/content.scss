@@ -180,7 +180,9 @@
     bottom: 3px;
   }
 }
-
+.ambientlight__ambientlight-bar-detection-duration {
+  white-space: pre;
+}
 .ambientlight__ambientlight-bar-detection-graph {
   pointer-events: auto;
   background: rgba(0, 0, 0, .85);

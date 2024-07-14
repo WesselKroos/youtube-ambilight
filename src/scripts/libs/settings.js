@@ -632,7 +632,9 @@ export default class Settings {
             }
             this.updateVisibility()
 
-            this.ambientlight.barDetection.cancel()
+            if(setting.name !== 'videoScale') {
+              this.ambientlight.barDetection.clear()
+            }
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -648,7 +650,7 @@ export default class Settings {
               'barSizeDetectionAllowedUnevenBarsPercentage',
             ].includes(setting.name)
           ) {
-            this.ambientlight.barDetection.cancel()
+            this.ambientlight.barDetection.clear()
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -781,7 +783,6 @@ export default class Settings {
             'detectHorizontalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
             'detectVerticalBarSizeEnabled',
-            'detectColoredVerticalBarSizeEnabled',
             'detectVideoFillScaleEnabled',
             'directionTopEnabled',
             'directionRightEnabled',
@@ -907,10 +908,11 @@ export default class Settings {
             'detectHorizontalBarSizeEnabled',
             'detectVerticalBarSizeEnabled',
             'detectColoredHorizontalBarSizeEnabled',
-            'detectColoredVerticalBarSizeEnabled',
             'detectVideoFillScaleEnabled',
           ].some(name => name === setting.name)) {
-            this.ambientlight.barDetection.cancel()
+            if(setting.name !== 'detectVideoFillScaleEnabled') {
+              this.ambientlight.barDetection.clear()
+            }
             if(this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }

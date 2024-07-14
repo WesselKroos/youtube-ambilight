@@ -75,6 +75,7 @@ export default class Stats {
 
     this.barDetectionDurationElem = appendFPSItem('ambientlight__ambientlight-bar-detection-duration')
     this.barDetectionFPSElem = appendFPSItem('ambientlight__ambientlight-bar-detection-fps')
+    this.barDetectionLastChangeElem = appendFPSItem('ambientlight__ambientlight-bar-detection-last-change')
     this.barDetectionResultElem = appendFPSItem('ambientlight__ambientlight-bar-detection-result')
     this.barDetectionGraphElem = appendFPSItem('ambientlight__ambientlight-bar-detection-graph')
     this.barDetectionGraphElem.style.height = '256px'
@@ -102,6 +103,7 @@ export default class Stats {
     if(!onlyDisabled || !this.settings.showBarDetectionStats) {
       this.barDetectionDurationElem.childNodes[0].nodeValue = ''
       this.barDetectionFPSElem.childNodes[0].nodeValue = ''
+      this.barDetectionLastChangeElem.childNodes[0].nodeValue = ''
       this.barDetectionResultElem.childNodes[0].nodeValue = ''
       
       if(this.barDetectionCanvas?.parentNode) {
@@ -596,6 +598,12 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
         this.barDetectionDurationElem.childNodes[0].nodeValue = ''
         this.barDetectionDurationElem.style.color = ''
       }
+
+      if(this.barDetectionLastChangeElem?.parentNode) {
+        this.barDetectionLastChangeElem.childNodes[0].nodeValue = ''
+        this.barDetectionLastChangeElem.style.color = ''
+      }
+
       if(this.barDetectionResultElem?.parentNode) {
         this.barDetectionResultElem.childNodes[0].nodeValue = ''
         this.barDetectionResultElem.style.color = ''
@@ -632,18 +640,22 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
 
     const duration = Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length).toFixed(1)
 
-    this.barDetectionDurationElem.childNodes[0].nodeValue = `BAR DETECTION DURATION: ${duration}ms`
+    this.barDetectionDurationElem.childNodes[0].nodeValue = `BAR DETECTION\nDURATION: ${duration}ms`
     this.barDetectionDurationElem.style.color = '#fff'
-
-    const barDetectionFPS = this.barDetectionThrottle
-      ? Math.round(1000 / this.barDetectionThrottle).toFixed(2)
-      : 'VIDEO'
-    this.barDetectionFPSElem.childNodes[0].nodeValue = `BAR DETECTION FRAMERATE: ${barDetectionFPS} FPS`
-    this.barDetectionFPSElem.style.color = '#fff'
   }
 
-  setBarDetectionThrottle = (throttle) => {
-    this.barDetectionThrottle = throttle
+  updateBarDetectionInfo = (throttle, lastChange) => {
+    const barDetectionFPS = throttle
+      ? Math.round(1000 / throttle).toFixed(2)
+      : 'VIDEO'
+    this.barDetectionFPSElem.childNodes[0].nodeValue = `FRAMERATE: ${barDetectionFPS} FPS`
+    this.barDetectionFPSElem.style.color = '#fff'
+    
+    const barDetectionLastChange = lastChange
+      ? `${((performance.now() - lastChange) / 1000).toFixed(1)}s ago`
+      : ''
+    this.barDetectionLastChangeElem.childNodes[0].nodeValue = `LAST CHANGE: ${barDetectionLastChange}`
+    this.barDetectionLastChangeElem.style.color = '#fff'
   }
 
   updateBarDetectionImage = (image) => {
@@ -692,7 +704,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${ambientlightBudge
   updateBarDetectionResult = async (barsFound, horizontalPercentage, verticalPercentage, horizontalBarSizeInfo, verticalBarSizeInfo) => {
     if(!this.settings.showBarDetectionStats || !this.barDetectionCtx) return
 
-    this.barDetectionResultElem.childNodes[0].nodeValue = `DETECTED BARS: ${
+    this.barDetectionResultElem.childNodes[0].nodeValue = `RESULT: ${
       [
         this.settings.detectHorizontalBarSizeEnabled ? `H ${(horizontalBarSizeInfo.percentage ?? horizontalPercentage ?? 0).toFixed(2)}%` : '',
         this.settings.detectVerticalBarSizeEnabled ? `V ${(verticalBarSizeInfo.percentage ?? verticalPercentage ?? 0).toFixed(2)}%` : ''
