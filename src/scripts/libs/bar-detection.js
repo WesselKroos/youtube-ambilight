@@ -158,18 +158,34 @@ const workerCode = function () {
 
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
+  const enhancedCertainty = false // Todo: create setting?
   const getCertainty = (() => {
     let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,hueDeviation, 
       brightnessDeviation, deviationScore, within, length, certainty
-    return function getCertainty(point, yAxis, yDirection, color) {
-      x = point.x - edgePointXRange
+    return function getCertainty(point, yAxis, yDirection, color, imageLine) {
+      x = point.x - (enhancedCertainty ? edgePointXRange : 1)
       y = point.y - edgePointYRange * 2 * (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter)
-      xLength = 1 + edgePointXRange * 2;
+      xLength = 1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
       yLength = 1 + edgePointYRange * 2;
-      data = ctx.getImageData(...(yAxis === 'height'
-        ? [x, y, xLength, yLength]
-        : [y, x, yLength, xLength]
-      )).data
+
+      data = enhancedCertainty
+        ? ctx.getImageData(...(yAxis === 'height'
+          ? [x, y, xLength, yLength]
+          : [y, x, yLength, xLength]
+        )).data
+        : []
+      if(!enhancedCertainty) {
+        let start = y * channels
+        let length = yLength * channels
+        if(start < 0) {
+          data = new Array(-start).fill(0)
+          length += start
+          start = 0
+          data = data.concat(...imageLine.data.slice(start, start + length))
+        } else {
+          data = imageLine.data.slice(start, start + length)
+        }
+      }
 
       // console.log(point, yAxis, yDirection, color)
       // console.log(x, y, xLength, yLength)
@@ -195,7 +211,7 @@ const workerCode = function () {
               hueDeviation = getHueDeviation(iColor, color)
               brightnessDeviation = getBrightnessDeviation(iColor, color)
               deviationScore = Math.max(0, Math.min(.75, (hueDeviation + brightnessDeviation) / maxDeviationScore / .05))
-              // console.log(dx, dy, deviationScore)
+              // console.log(dx, dy, deviationScore, iColor, color, hueDeviation, brightnessDeviation)
               score += .25 + deviationScore
             } else {
               within = isColorWithinMaxDeviation(iColor, color)
@@ -205,10 +221,9 @@ const workerCode = function () {
           // }
         }
       }
-      data.length = 0
       length = (xLength * yLength)
       certainty = (score - length / 2) / (length / 2)
-      // console.log('edges', certainty, JSON.stringify(certainties)) //, JSON.stringify(edges))
+      data.length = 0
 
       return easeInOutQuad(certainty)
     }
@@ -216,8 +231,11 @@ const workerCode = function () {
 
   const largeStep = 4
   const ignoreEdge = 2
-  const minCertainty = .65
   const middleIndexOffset = channels * 10
+
+  const minCertainty = .65
+  const maxCertaintyChecks = enhancedCertainty ? 3 : 5
+  const sureCertainty = enhancedCertainty ? .65 : .65
 
   function detectEdges(imageLines, color, yAxis) {
     const middleIndex = imageLines[0].data.length / 2
@@ -244,7 +262,8 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
-        if(!limitNotReached || detectedEdges > 3) {
+        if(!limitNotReached || detectedEdges > maxCertaintyChecks) {
+          // console.log(xIndex, i, mostCertainEdge, JSON.parse(JSON.stringify(topEdges)))
           if(mostCertainEdge?.certainty > minCertainty) {
             topEdges
               .find(edge => (
@@ -285,9 +304,9 @@ const workerCode = function () {
           continue
         }
 
-        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color)
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, 1, color, imageLine)
         detectedEdges++;
-        if(limitNotReached && certainty < minCertainty) {
+        if(limitNotReached && certainty < sureCertainty) {
           // console.log('uncertain top', xIndex, i / channels, certainty)
           // step = largeStep
           wasUncertain = true
@@ -308,6 +327,7 @@ const workerCode = function () {
           continue
         }
 
+        // console.log('found', certainty)
         // Found the first video pixel, add to topEdges
         topEdges.push({
           xIndex,
@@ -331,7 +351,7 @@ const workerCode = function () {
 
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
-        if(!limitNotReached || detectedEdges > 3) {
+        if(!limitNotReached || detectedEdges > maxCertaintyChecks) {
           if(mostCertainEdge?.certainty > minCertainty) {
             bottomEdges
               .find(edge => (
@@ -371,9 +391,9 @@ const workerCode = function () {
           continue
         }
 
-        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color)
+        const certainty = getCertainty({ x: xIndex, y: i / channels }, yAxis, -1, color, imageLine)
         detectedEdges++;
-        if(limitNotReached && certainty < minCertainty) {
+        if(limitNotReached && certainty < sureCertainty) {
           // console.log('uncertain bottom', xIndex, i / channels, certainty)
           // step = largeStep
           wasUncertain = true
@@ -394,6 +414,7 @@ const workerCode = function () {
           continue
         }
 
+        // console.log('found', certainty)
         // Found the first video pixel, add to bottomEdges
         bottomEdges.push({
           xIndex,
@@ -517,21 +538,21 @@ const workerCode = function () {
 
   function getPercentage(exceedsDeviationLimit, maxSize, scale, edges, imageLines, currentPercentage = 0, offsetPercentage = 0) {
     const minSize = maxSize * (0.01 * scale)
-    const lowerSizeThreshold = maxSize * ((currentPercentage - 4) / 100)
+    const lowerSizeThreshold = maxSize * ((currentPercentage - 2) / 100)
     const baseOffsetPercentage = (0.3 * ((1 + scale) / 2))
 
     let size;
     if(exceedsDeviationLimit) {
-      const semiCertainLowerSizes = edges
-        .filter(e => e.certainty > .5 && e.yIndex < lowerSizeThreshold)
+      const uncertainLowerSizes = edges
+        .filter(e => e.certainty > .075 && e.yIndex < lowerSizeThreshold)
         .map(e => e.yIndex)
-      if(semiCertainLowerSizes.length / (imageLines.length * 2) < .3) return
+      if(uncertainLowerSizes.length / (imageLines.length * 2) < .3) return
       
-      const lowestSize = Math.min(...semiCertainLowerSizes)
+      const lowestSize = Math.min(...uncertainLowerSizes)
       // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
       // // console.log(lowestPercentage, lowestSize, currentPercentage)
-      // if(lowestPercentage >= currentPercentage - 4) {
-      //   return // deviating lowest percentage is way higher than the current percentage
+      // if(lowestPercentage >= currentPercentage - 2) {
+      //   return // deviating lowest percentage is higher than the current percentage
       // }
   
       // console.log('semi-certain lower percentage', lowestSize, lowerSizeThreshold, semiCertainLowerSizes, edges)
@@ -652,16 +673,20 @@ const workerCode = function () {
       // //   - Stars and 2 centered squared objects: https://www.youtube.com/watch?v=hL4IfoQzSSE&t=351s
       // //   - logo & squared: https://www.youtube.com/watch?v=UsWh21rFzh8&t=120s
       // //   - old video with vague bars: https://www.youtube.com/watch?v=YoLJ4CWSLSI
-      // //   - Dismiss/reset black bars to content: https://youtu.be/oCmNbNhppHo?t=381
-      // //   - Flickering small bars https://youtu.be/K-D5wThCPRw?si=4fa1WL3sioN02QEl&t=82
-      // //   - Detect non-bars on white sides https://youtu.be/K-D5wThCPRw?si=90p34xMcTAboCbNb&t=850
+      // //   - Dismiss/reset black bars to content: 
+      // //       https://youtu.be/oCmNbNhppHo?t=381
+      // //       https://www.youtube.com/watch?v=Xhi2FdES8yI&t=215s
+      // //       https://youtu.be/K-D5wThCPRw?si=90p34xMcTAboCbNb&t=850
+
+      // //   - Moving bars: https://www.youtube.com/watch?v=9O-yCnQKYhM
       
-      // //   - Not detecting the blue square at the sides: https://www.youtube.com/watch?v=Xhi2FdES8yI&t=215s
       // //   - Moves a lot while seeking through video: https://www.youtube.com/watch?v=f2fzjhyCOcM
+      // //   - Flickering small bars https://youtu.be/K-D5wThCPRw?si=4fa1WL3sioN02QEl&t=82
       // //   - Vertical bar constantly switching: https://www.youtube.com/watch?v=aJWAfvS__Ts&t=200
-      // //   - Horizontal basr soncstanlty switching: https://www.youtube.com/watch?v=iqdhphwLWAU&t=45
-      // //                                            https://www.youtube.com/watch?v=laxrPE8qPzI
-      
+      // //   - Horizontal bars constantly switching: 
+      // //       https://www.youtube.com/watch?v=iqdhphwLWAU&t=45
+      // //       https://www.youtube.com/watch?v=laxrPE8qPzI
+      // //   - Vertical bars detected to the 2nd column: https://www.youtube.com/watch?v=Y8p-C327wAw&t=13s
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
       // console.log(topEdges, bottomEdges)
