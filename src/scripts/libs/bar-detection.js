@@ -579,7 +579,7 @@ const workerCode = function () {
 
   try {
     const workerDetectBarSize = async (id, xLength, yAxis, scale, detectColored, offsetPercentage, currentPercentage, allowedAnomaliesPercentage, allowedUnevenBarsPercentage, xOffset) => {
-      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? 1 : .1
+      const partSizeBorderMultiplier = allowedAnomaliesPercentage > 20 ? .6 : .1
       // xOffset = partSizeBorderMultiplier ? xOffset * .5 : xOffset
 
       const partSize = Math.floor(canvas[xLength] / (scanlinesAmount + (partSizeBorderMultiplier * 2)))
@@ -944,7 +944,10 @@ export default class BarDetection {
   }
 
   averagePercentage(percentage, currentPercentage, history, averageHistorySize) {
-    if(percentage === undefined) return
+    if(percentage === undefined) {
+      if(!history.length && !currentPercentage) history.push(0)
+      return
+    }
 
     const detectedPercentage = percentage
 
