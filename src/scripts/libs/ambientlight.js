@@ -978,7 +978,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       if (
         inputs.indexOf(tag) !== -1 || 
         (
-          el.getAttribute('contenteditable') !== null && 
+          el.getAttribute('contenteditable') != null && 
           el.getAttribute('contenteditable') !== 'false'
         )
       ) {
@@ -1401,7 +1401,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
       return VIEW_POPUP
 
     if(this.ytdWatchElemFromVideo
-      ? this.ytdWatchElemFromVideo.getAttribute('theater') !== null
+      ? this.ytdWatchElemFromVideo.getAttribute('theater') != null
       : this.playerTheaterContainerElemFromVideo
     ) {
       return VIEW_THEATER

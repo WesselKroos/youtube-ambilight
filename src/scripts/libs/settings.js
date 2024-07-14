@@ -63,7 +63,7 @@ export default class Settings {
     setWarning()
 
     // Migrate old settings
-    if(Settings.storedSettingsCached['setting-blur'] !== null) {
+    if(Settings.storedSettingsCached['setting-blur'] != null) {
       const value = (Math.round(Settings.storedSettingsCached['setting-blur'] + 30) * 10) / 10 // Prevent rounding error
       
       delete Settings.storedSettingsCached['setting-blur']
@@ -72,7 +72,7 @@ export default class Settings {
       Settings.storedSettingsCached['setting-blur2'] = value
       await contentScript.setStorageEntry('setting-blur2', value, false)
     }
-    if(Settings.storedSettingsCached['setting-bloom'] !== null) {
+    if(Settings.storedSettingsCached['setting-bloom'] != null) {
       const value = Math.round((Settings.storedSettingsCached['setting-bloom'] + 7) * 10) / 10 // Prevent rounding error
       delete Settings.storedSettingsCached['setting-bloom']
       await contentScript.setStorageEntry('setting-bloom', undefined, false)
@@ -80,12 +80,12 @@ export default class Settings {
       Settings.storedSettingsCached['setting-spreadFadeStart'] = value
       await contentScript.setStorageEntry('setting-spreadFadeStart', value, false)
     }
-    if(Settings.storedSettingsCached['setting-fadeOutEasing'] !== null) {
+    if(Settings.storedSettingsCached['setting-fadeOutEasing'] != null) {
       Settings.storedSettingsCached['setting-spreadFadeCurve'] = Settings.storedSettingsCached['setting-fadeOutEasing']
       delete Settings.storedSettingsCached['setting-fadeOutEasing']
       await contentScript.setStorageEntry('setting-fadeOutEasing', undefined, false)
     }
-    if(Settings.storedSettingsCached['setting-frameFading'] !== null) {
+    if(Settings.storedSettingsCached['setting-frameFading'] != null) {
       const value = Settings.storedSettingsCached['setting-frameFading']
       const max = SettingsConfig.find(setting => setting.name === 'frameFading').max
       if(value > max) {
@@ -97,7 +97,7 @@ export default class Settings {
 
     const webGLEnabled = (
       Settings.storedSettingsCached['setting-webGL'] === true ||
-      (Settings.storedSettingsCached['setting-webGL'] === null && supportsWebGL())
+      (Settings.storedSettingsCached['setting-webGL'] == null && supportsWebGL())
     )
     if(webGLEnabled) {
       // Disable enabled WebGL setting if not supported anymore
@@ -141,7 +141,7 @@ export default class Settings {
 
       if(setting.defaultKey !== undefined) {
         let key = storedSettings[`setting-${setting.name}-key`]
-        if(key === null) key = setting.defaultKey
+        if(key == null) key = setting.defaultKey
         setting.key = key
       }
     }
@@ -1433,7 +1433,7 @@ export default class Settings {
 
   processStorageEntry(name, value) {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
-    if (value === null || value === undefined) {
+    if (value == null) {
       value = setting.default
 
     } else if (setting.type === 'checkbox' || setting.type === 'section') {

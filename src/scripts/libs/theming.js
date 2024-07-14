@@ -94,7 +94,7 @@ export default class Theming {
     return THEME_LIGHT
   }
 
-  isDarkTheme = () => (document.documentElement.getAttribute('dark') !== null)
+  isDarkTheme = () => (document.documentElement.getAttribute('dark') != null)
   
   shouldBeDarkTheme = () => {
     const toTheme = (!this.settings.enabled || this.ambientlight.isHidden || this.settings.theme === THEME_DEFAULT)
