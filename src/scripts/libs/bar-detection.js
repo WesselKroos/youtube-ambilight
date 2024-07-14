@@ -245,7 +245,7 @@ const workerCode = function () {
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i < (middleIndex - middleIndexOffset) - channels // Below the top limit
         if(!limitNotReached || detectedEdges > 3) {
-          if(mostCertainEdge > minCertainty) {
+          if(mostCertainEdge?.certainty > minCertainty) {
             topEdges
               .find(edge => (
                 xIndex === edge.xIndex && 
@@ -332,7 +332,7 @@ const workerCode = function () {
         const iColor = [data[i], data[i+1], data[i+2]]
         const limitNotReached = i > (middleIndex + middleIndexOffset) // Above the bottom limit
         if(!limitNotReached || detectedEdges > 3) {
-          if(mostCertainEdge > minCertainty) {
+          if(mostCertainEdge?.certainty > minCertainty) {
             bottomEdges
               .find(edge => (
                 xIndex === edge.xIndex && 
@@ -417,9 +417,12 @@ const workerCode = function () {
       return true
     }
 
-    const threshold = (1 - ((allowedAnomaliesPercentage - 10) / 100))
+    const threshold = (imageLines.length * 2) * (1 - ((allowedAnomaliesPercentage - 10) / 100))
+    if(edges.filter(e => !e.deviates).length <= threshold) {
+      return true
+    }
 
-    while(edges.filter(e => !e.deviates).length > (imageLines.length * 2) * threshold) {
+    while(edges.filter(e => !e.deviates).length > threshold) {
       const nonDeviatingEdges = edges.filter(e => !e.deviates)
       const averageSize = reduceAverageSize(nonDeviatingEdges)
       nonDeviatingEdges
@@ -430,7 +433,7 @@ const workerCode = function () {
         })
     }
 
-    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > (imageLines.length * 2) * threshold) {
+    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > threshold) {
     //   const nonDeviatingEdges = topEdges.filter(e => !e.deviates && !e.deviatesTop)
     //   const averageSize = reduceAverageSize(nonDeviatingEdges)
     //   nonDeviatingEdges
@@ -441,7 +444,7 @@ const workerCode = function () {
     //     })
     // }
 
-    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > (imageLines.length * 2) * threshold) {
+    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > threshold) {
     //   const nonDeviatingEdges = bottomEdges.filter(e => !e.deviates && !e.deviatesBottom)
     //   const averageSize = reduceAverageSize(nonDeviatingEdges)
     //   nonDeviatingEdges
@@ -1057,7 +1060,7 @@ export default class BarDetection {
             ) {
               // console.warn('Ignoring old bar detection percentage:', 
               //   this.runId, e.data.id, e.data.horizontalPercentage,  e.data.verticalPercentage)
-              console.log(e.data.id, 'onmessage but discarded')
+              // console.log(e.data.id, 'onmessage but discarded')
               resolve()
               return
             }
