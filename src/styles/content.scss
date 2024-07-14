@@ -91,7 +91,7 @@
   opacity: 0.00001;
   pointer-events: none;
   display: flex;
-  * {
+  canvas {
     width: 1px;
     height: 1px;
   }
@@ -121,7 +121,7 @@
 .ambientlight__ambientlight-bar-detection-duration {
   margin-top: 10px;
 }
-.ambientlight__fps-list > *:not(.ambientlight__ambientlight-ft),
+.ambientlight__fps-list > :not(.ambientlight__ambientlight-ft),
 .ambientlight__ambientlight-ft-legend,
 .ambientlight__ambientlight-ft-axis-legend {
   filter: drop-shadow(1px 0 0 rgba(0,0,0,.75)) drop-shadow(-1px 0 0 rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.75)) drop-shadow(0 -1px 0 rgba(0,0,0,.75));
@@ -425,6 +425,7 @@ html[data-ambientlight-enabled="true"] {
   #player-wide-container, // Second old theater view
   #full-bleed-container,
   #player-full-bleed-container,
+  #player,
   #player-container,
   #ytd-player,
   .html5-video-player,
@@ -432,13 +433,14 @@ html[data-ambientlight-enabled="true"] {
     background: none !important;
   }
   
-  @supports selector(:has(*)) {
-    @include ytd-watch {
-      div:has(.html5-main-video) {
-        background: none !important;
-      }
-    }
-  }
+  // // Covers any future updates to the html structure, but is expensive
+  // @supports selector(:has(*)) {
+  //   @include ytd-watch {
+  //     div:has(.html5-main-video) {
+  //       background: none !important;
+  //     }
+  //   }
+  // }
 
   ytd-app {
     --ytal-page-background: #fff;
@@ -503,11 +505,12 @@ html[data-ambientlight-enabled="true"] {
     transition: background-color 0s .01s;
   }
 
-  @supports selector(:has(*)) {
-    ytd-app > div:has(ytd-player) { // Covers any future updates to the html structure
-      transition: background-color 0s .01s;
-    }
-  }
+  // // Covers any future updates to the html structure, but is expensive
+  // @supports selector(:has(*)) {
+  //   ytd-app > div:has(ytd-player) {
+  //     transition: background-color 0s .01s;
+  //   }
+  // }
 
   /* Video */
 
@@ -1274,7 +1277,7 @@ html[data-ambientlight-enabled="true"] {
   }
   body[data-ambientlight-fixed="true"] {
     .ambientlight {
-      position: fixed;
+      position: fixed !important;
       height: 100svh;
     }
   }
@@ -1412,17 +1415,17 @@ html[data-ambientlight-enabled="true"] {
       }
     }
 
-    // Predicts any future changes to: ytd-watch-flexy[full-bleed-player] div#full-bleed-container
-    @supports selector(:has(*)) {
-      ytd-watch-flexy {
-        &[theater]
-        &[full-bleed-player] {
-          > div:has(ytd-player) {
-            @include theater;
-          }
-        }
-      }
-    }
+    // // Covers any future updates to the html structure, but is expensive, for ytd-watch-flexy[full-bleed-player] div#full-bleed-container
+    // @supports selector(:has(*)) {
+    //   ytd-watch-flexy {
+    //     &[theater]
+    //     &[full-bleed-player] {
+    //       > div:has(ytd-player) {
+    //         @include theater;
+    //       }
+    //     }
+    //   }
+    // }
 
     #masthead-container {
       // &:not(.ytal-header-transparent) {
