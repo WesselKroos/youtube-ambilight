@@ -159,6 +159,7 @@ const workerCode = function () {
   const easeInOutQuad = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
 
   const enhancedCertainty = false // Todo: create setting?
+  const minDeviationScore = enhancedCertainty ? .25 : .4
   const getCertainty = (() => {
     let x, y, xLength, yLength, data, score, ix, dx, dy, dy2, iy, i, iColor, expectWithinDeviation,hueDeviation, 
       brightnessDeviation, deviationScore, within, length, certainty
@@ -210,9 +211,9 @@ const workerCode = function () {
             if(!expectWithinDeviation) {
               hueDeviation = getHueDeviation(iColor, color)
               brightnessDeviation = getBrightnessDeviation(iColor, color)
-              deviationScore = Math.max(0, Math.min(.75, (hueDeviation + brightnessDeviation) / maxDeviationScore / .05))
+              deviationScore = Math.max(0, Math.min(1 - minDeviationScore, (hueDeviation + brightnessDeviation) / maxDeviationScore / .05))
               // console.log(dx, dy, deviationScore, iColor, color, hueDeviation, brightnessDeviation)
-              score += .25 + deviationScore
+              score += minDeviationScore + deviationScore
             } else {
               within = isColorWithinMaxDeviation(iColor, color)
               if(within)
@@ -976,11 +977,11 @@ export default class BarDetection {
 
     const detectedPercentage = percentage
 
-    // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the largest of the last 5 percentages
+    // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the most occuring of the last percentages
     // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
     const percentagesOccurrence = [...history, detectedPercentage]
-      .reduce((percentages, precentage) => {
-        percentages[precentage] = (percentages[precentage] ?? 0) + 1
+      .reduce((percentages, percentage) => {
+        percentages[percentage] = (percentages[percentage] ?? 0) + 1
         return percentages
       }, {})
     percentage = parseFloat(Object.keys(percentagesOccurrence).reduce(
@@ -1003,9 +1004,19 @@ export default class BarDetection {
       }
     }
 
+    // Reduce recurring flickering to one flicker
+    const ignoreRecurringLowerPercentage = (
+      percentage < currentPercentage - .5 &&
+      history.some(previousPercentage => Math.abs(currentPercentage - previousPercentage) < .5) &&
+      history.some(previousPercentage => Math.abs(detectedPercentage - previousPercentage) < .5)
+    )
+    
     history.push(detectedPercentage)
     if(history.length > averageHistorySize) history.splice(0, history.length - averageHistorySize)
 
+    if(ignoreRecurringLowerPercentage) {
+      return
+    }
     return percentage
   }
 
