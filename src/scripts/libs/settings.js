@@ -63,7 +63,7 @@ export default class Settings {
     setWarning()
 
     // Migrate old settings
-    if(Settings.storedSettingsCached['setting-blur'] !== null) {
+    if(Settings.storedSettingsCached['setting-blur'] != null) {
       const value = (Math.round(Settings.storedSettingsCached['setting-blur'] + 30) * 10) / 10 // Prevent rounding error
       
       delete Settings.storedSettingsCached['setting-blur']
@@ -72,7 +72,7 @@ export default class Settings {
       Settings.storedSettingsCached['setting-blur2'] = value
       await contentScript.setStorageEntry('setting-blur2', value, false)
     }
-    if(Settings.storedSettingsCached['setting-bloom'] !== null) {
+    if(Settings.storedSettingsCached['setting-bloom'] != null) {
       const value = Math.round((Settings.storedSettingsCached['setting-bloom'] + 7) * 10) / 10 // Prevent rounding error
       delete Settings.storedSettingsCached['setting-bloom']
       await contentScript.setStorageEntry('setting-bloom', undefined, false)
@@ -80,12 +80,12 @@ export default class Settings {
       Settings.storedSettingsCached['setting-spreadFadeStart'] = value
       await contentScript.setStorageEntry('setting-spreadFadeStart', value, false)
     }
-    if(Settings.storedSettingsCached['setting-fadeOutEasing'] !== null) {
+    if(Settings.storedSettingsCached['setting-fadeOutEasing'] != null) {
       Settings.storedSettingsCached['setting-spreadFadeCurve'] = Settings.storedSettingsCached['setting-fadeOutEasing']
       delete Settings.storedSettingsCached['setting-fadeOutEasing']
       await contentScript.setStorageEntry('setting-fadeOutEasing', undefined, false)
     }
-    if(Settings.storedSettingsCached['setting-frameFading'] !== null) {
+    if(Settings.storedSettingsCached['setting-frameFading'] != null) {
       const value = Settings.storedSettingsCached['setting-frameFading']
       const max = SettingsConfig.find(setting => setting.name === 'frameFading').max
       if(value > max) {
@@ -97,7 +97,7 @@ export default class Settings {
 
     const webGLEnabled = (
       Settings.storedSettingsCached['setting-webGL'] === true ||
-      (Settings.storedSettingsCached['setting-webGL'] === null && supportsWebGL())
+      (Settings.storedSettingsCached['setting-webGL'] == null && supportsWebGL())
     )
     if(webGLEnabled) {
       // Disable enabled WebGL setting if not supported anymore
@@ -141,7 +141,7 @@ export default class Settings {
 
       if(setting.defaultKey !== undefined) {
         let key = storedSettings[`setting-${setting.name}-key`]
-        if(key === null) key = setting.defaultKey
+        if(key == null) key = setting.defaultKey
         setting.key = key
       }
     }
@@ -209,6 +209,363 @@ export default class Settings {
     }
     descriptionElem.textContent = descriptionText
   }
+
+  createMenuElement() {
+    const elem = document.createElement('div')
+    elem.className = `ytp-popup ytp-settings-menu ytp-rounded-menu ytpa-ambientlight-settings-menu ${
+      this.advancedSettings ? 'ytpa-ambientlight-settings-menu--advanced' : ''}`
+    elem.id ='ytp-id-190'
+
+    const panel = document.createElement('div')
+    panel.className = 'ytp-panel'
+    elem.appendChild(panel)
+
+    const menu = document.createElement('div')
+    menu.className = 'ytp-panel-menu'
+    menu.role = 'menu'
+    panel.appendChild(menu)
+
+    // panelMenu.innerHTML `<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
+    //   <div class="ytp-menuitem-label" rowspan="2">
+    //     <span class="ytpa-updates">${''
+    //       }<b>Changes in version ${version}:</b>
+    //       <ul>
+    //         ${getBrowser() === 'Firefox'
+    //           ? ''
+    //           : `<li>${''
+    //               }The ambient light now also supports VR/180/360 videos.\n ${''
+    //               }(Let me know when support fails on your device through the feedback link.)
+    //             </li>`}
+    //         <li>${''
+    //           }The following hotkeys have changed to prevent conflicts with the AWSD keys in VR/180/360 videos: \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
+    //         </li>
+    //     </ul></span>
+    //   </div>
+    // </div>`
+
+
+    const warning = document.createElement('div')
+    warning.className = 'ytp-menuitem ytpa-menuitem--warning'
+    warning.style.display = 'none'
+    menu.appendChild(warning)
+
+    const warningLabel = document.createElement('div')
+    warningLabel.className = 'ytp-menuitem-label'
+    warningLabel.rowspan = '2'
+    warning.appendChild(warningLabel)
+
+    const warningSpan = document.createElement('span')
+    warningSpan.className = 'ytpa-warning'
+    warningSpan.rowspan = '2'
+    warningLabel.appendChild(warningSpan)
+    
+
+    const info = document.createElement('div')
+    info.className = 'ytp-menuitem ytpa-menuitem--info'
+    info.style.display = 'none'
+    menu.appendChild(info)
+
+    const infoLabel = document.createElement('div')
+    infoLabel.className = 'ytp-menuitem-label'
+    infoLabel.rowspan = '2'
+    info.appendChild(infoLabel)
+
+    const infoSpan = document.createElement('span')
+    infoSpan.className = 'ytpa-info'
+    infoSpan.rowspan = '2'
+    infoLabel.appendChild(infoSpan)
+
+    
+    const header1 = document.createElement('div')
+    header1.className = 'ytp-menuitem ytpa-menuitem--header'
+    menu.appendChild(header1)
+
+    const header1Label = document.createElement('div')
+    header1Label.className = 'ytp-menuitem-label'
+    header1.appendChild(header1Label)
+
+    const header1Content = document.createElement('div')
+    header1Content.className = 'ytp-menuitem-content'
+    header1.appendChild(header1Content)
+
+
+    const troubleshootLink = document.createElement('a')
+    troubleshootLink.className = 'ytpa-feedback-link'
+    troubleshootLink.href = "https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md"
+    troubleshootLink.target = "_blank" 
+    troubleshootLink.rel = "noopener"
+    header1Label.appendChild(troubleshootLink)
+
+    const troubleshootLinkText = document.createElement('span')
+    troubleshootLinkText.className = 'ytpa-feedback-link__text'
+    troubleshootLinkText.textContent = 'Troubleshoot performance problems'
+    troubleshootLink.appendChild(troubleshootLinkText)
+
+
+    const toolbar = document.createElement('div')
+    toolbar.className = 'ytpa-settings-toolbar'
+    header1Content.appendChild(toolbar)
+
+    const importBtn = document.createElement('button')
+    importBtn.className = 'ytpa-export-import-settings-btn'
+    importBtn.type = "button"
+    toolbar.appendChild(importBtn)
+
+    const importTooltip = document.createElement('span')
+    importTooltip.className = 'ytpa-export-import-settings-btn__tooltip'
+    importTooltip.textContent = `How to export or import settings: 
+1. Click on the extension icon to open the option. 
+2. Scroll down to "Import / Export settings"`
+    importBtn.appendChild(importTooltip)
+    
+
+    const resetBtn = document.createElement('button')
+    resetBtn.className = 'ytpa-reset-settings-btn'
+    resetBtn.type = "button"
+    resetBtn.title = "Reset all settings"
+    toolbar.appendChild(resetBtn)
+
+    
+    const header2 = document.createElement('div')
+    header2.className = 'ytp-menuitem ytpa-menuitem--header'
+    menu.appendChild(header2)
+
+    const header2Label = document.createElement('div')
+    header2Label.className = 'ytp-menuitem-label'
+    header2.appendChild(header2Label)
+
+    const header2Content = document.createElement('div')
+    header2Content.className = 'ytp-menuitem-content'
+    header2.appendChild(header2Content)
+
+
+    const feedbackLink = document.createElement('a')
+    feedbackLink.className = 'ytpa-feedback-link'
+    feedbackLink.href = feedbackFormLink
+    feedbackLink.target = "_blank" 
+    feedbackLink.rel = "noopener"
+    header2Label.appendChild(feedbackLink)
+
+    const feedbackLinkText = document.createElement('span')
+    feedbackLinkText.className = 'ytpa-feedback-link__text'
+    feedbackLinkText.textContent = 'Give feedback or a rating'
+    feedbackLink.appendChild(feedbackLinkText)
+
+
+    const donateLink = document.createElement('a')
+    donateLink.className = 'ytpa-donate-link'
+    donateLink.href = 'https://ko-fi.com/G2G59EK8L'
+    donateLink.target = "_blank" 
+    donateLink.rel = "noopener"
+    header2Content.appendChild(donateLink)
+
+    const donateLinkImage = document.createElement('img')
+    donateLinkImage.className = 'ytpa-donate-link__image'
+    donateLinkImage.alt = 'Support me via a donation'
+    donateLinkImage.title = 'Support me via a donation'
+    donateLinkImage.src = `${baseUrl}images/donate.svg`
+    donateLinkImage.height = "23"
+    donateLink.appendChild(donateLinkImage)
+
+    let sectionContent;
+
+    for(const i in SettingsConfig) {
+      const setting = SettingsConfig[i]
+
+      const value = this[setting.name]
+
+      let classes = 'ytp-menuitem'
+      if(setting.advanced) classes += ' ytpa-menuitem--advanced'
+      if(setting.hdr) classes += ' ytpa-menuitem--hdr'
+      if(setting.new) classes += ' ytpa-menuitem--new'
+      if(setting.experimental) classes += ' ytpa-menuitem--experimental'
+      
+      const labelElems = []
+      labelElems.push(document.createTextNode(setting.label))
+
+      if(setting.key) {
+        labelElems.push(document.createTextNode('['))
+
+        const labelKey = document.createElement('span')
+        labelKey.contentEditable = true
+        labelKey.className = 'ytpa-menuitem-key'
+        labelKey.title = 'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)'
+        labelKey.textContent = setting.key
+        labelElems.push(labelKey)
+
+        labelElems.push(document.createTextNode(']'))
+      }
+
+      if(setting.questionMark) {
+        const questionMark = document.createElement('a')
+        questionMark.title = setting.questionMark.title
+        questionMark.style.padding = '0 5px'
+        questionMark.textContent = '?'
+        if(setting.questionMark.href) {
+          questionMark.href = setting.questionMark.href
+          questionMark.target = '_blank'
+          questionMark.rel = 'noopener'
+        } else {
+          questionMark.href = "#"
+          questionMark.addEventListener('click', () => false)
+        }
+        labelElems.push(questionMark)
+      }
+
+      if(setting.description) {
+        labelElems.push(document.createElement('br'))
+        const labelDescription= document.createElement('span')
+        labelDescription.className = 'ytpa-menuitem-description'
+        labelDescription.textContent = setting.description
+        labelElems.push(labelDescription)
+      }
+      
+      if (setting.type === 'section') {
+        const section = document.createElement('div')
+        section.className = `ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}`
+        section.dataset.name = setting.name
+        menu.appendChild(section)
+
+        const cell1 = document.createElement('div')
+        cell1.className = 'ytpa-section__cell'
+        section.appendChild(cell1)
+
+        const label = document.createElement('div')
+        label.className = 'ytpa-section__label'
+        label.replaceChildren(...labelElems)
+        cell1.appendChild(label)
+
+        const cell2 = document.createElement('div')
+        cell2.className = 'ytpa-section__cell'
+        section.appendChild(cell2)
+
+        const fill = document.createElement('div')
+        fill.className = 'ytpa-section__fill'
+        fill.textContent = '-'
+        cell2.appendChild(fill)
+
+        sectionContent = document.createElement('div')
+        sectionContent.className = 'ytpa-section-content'
+        menu.appendChild(sectionContent)
+      }
+      
+      if (setting.type === 'checkbox') {
+        const checkbox = document.createElement('div')
+        checkbox.id = `setting-${setting.name}`
+        checkbox.className = classes
+        checkbox.role = "menuitemcheckbox"
+        checkbox.ariaChecked = value ? 'true' : 'false'
+        if(setting.disabled) {
+          checkbox.ariaDisabled = "true"
+          checkbox.title = "This setting is unavailable"
+        } else {
+          checkbox.title = "Right click to reset"
+          checkbox.tabindex = "0"
+        }
+        sectionContent.appendChild(checkbox)
+
+        const label = document.createElement('div')
+        label.className = 'ytp-menuitem-label'
+        checkbox.appendChild(label)
+        
+        label.replaceChildren(...labelElems)
+
+        if(setting.disabled) {
+          const description = document.createElement('span')
+          description.className = 'ytpa-menuitem-description'
+          description.style.color = '#fa0'
+          description.textContent = setting.disabled
+          label.appendChild(description)
+        }
+
+        const content = document.createElement('div')
+        content.className = "ytp-menuitem-content"
+        checkbox.appendChild(content)
+
+        const toggle = document.createElement('div')
+        toggle.className = "ytp-menuitem-toggle-checkbox"
+        content.appendChild(toggle)
+      } 
+      
+      if (setting.type === 'list') {
+        const wrapper = document.createElement('div')
+        wrapper.id = `setting-${setting.name}`
+        wrapper.className = "ytp-menuitem-range-wrapper"
+        sectionContent.appendChild(wrapper)
+
+        const list = document.createElement('div')
+        list.className = classes
+        list.ariaHasPopup = 'false'
+        list.role = 'menuitemrange'
+        list.tabIndex = 0
+        wrapper.appendChild(list)
+
+        const label = document.createElement('div')
+        label.className = 'ytp-menuitem-label'
+        label.replaceChildren(...labelElems)
+        list.appendChild(label)
+
+        const content = document.createElement('div')
+        content.className = "ytp-menuitem-content"
+        list.appendChild(content)
+
+        if(setting.manualinput !== false) {
+          const manualInput = document.createElement('input')
+          manualInput.id = `setting-${setting.name}-manualinput`
+          manualInput.className = 'ytpa-menuitem-input'
+          manualInput.type = "text"
+          manualInput.value = value
+          content.appendChild(manualInput)
+        }
+
+        const valueElem = document.createElement('div')
+        valueElem.id = `setting-${setting.name}-value`
+        valueElem.className = 'ytp-menuitem-value'
+        valueElem.textContent = this.getSettingListDisplayText(setting)
+        content.appendChild(valueElem)
+
+        const range = document.createElement('div')
+        range.className = `ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}`
+        range.setAttribute('rowspan', '2')
+        range.title = 'Right click to reset'
+        wrapper.appendChild(range)
+
+        const input = document.createElement('input')
+        input.id = `setting-${setting.name}-range`
+        input.type = 'range'
+        input.setAttribute('colspan', '2')
+        input.value = this.getInputRangeValue(setting.name)
+        if(setting.min !== undefined) input.min = setting.min.toString()
+        if(setting.max !== undefined) input.max = setting.max.toString()
+        if(setting.valuePoints) {
+          input.min = '0'
+          input.max = (setting.valuePoints.length - 1).toString()
+        }
+        if(setting.step || setting.valuePoints) input.step = setting.step || 1
+        range.appendChild(input)
+
+        if(setting.snapPoints) {
+          const datalist = document.createElement('datalist')
+          datalist.className = 'setting-range-datalist'
+          datalist.id = `snap-points-${setting.name}`
+          wrapper.appendChild(datalist)
+
+          for(const { label, hiddenLabel, value, flip } of setting.snapPoints) {
+            const option = document.createElement('option')
+            option.className = `setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}`
+            option.title = `Set to ${hiddenLabel || label}`
+            option.style.marginLeft = `${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%`
+            option.value = value.toString()
+            option.label = label || ''
+            option.textContent = option.label
+            datalist.appendChild(option)
+          }
+        }
+      }
+    }
+
+    return elem
+  }
   
   initMenu() {
     this.menuBtn = this.createMenuButton()
@@ -238,181 +595,7 @@ export default class Settings {
       this.menuBtnParent.prepend(this.menuBtn)
     }
 
-    this.menuElem = document.createElement('div')
-    this.menuElem.className = `ytp-popup ytp-settings-menu ytp-rounded-menu ytpa-ambientlight-settings-menu ${
-      this.advancedSettings ? 'ytpa-ambientlight-settings-menu--advanced' : ''}`
-    this.menuElem.id ='ytp-id-190'
-    this.menuElem.innerHTML = `
-      <div class="ytp-panel">
-        <div class="ytp-panel-menu" role="menu">
-          ${'' /*<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
-            <div class="ytp-menuitem-label" rowspan="2">
-              <span class="ytpa-updates">${''
-               }<b>Changes in version ${version}:</b>
-                <ul>
-                  ${getBrowser() === 'Firefox'
-                    ? ''
-                    : `<li>${''
-                        }The ambient light now also supports VR/180/360 videos.\n ${''
-                        }(Let me know when support fails on your device through the feedback link.)
-                      </li>`}
-                  <li>${''
-                    }The following hotkeys have changed to prevent conflicts with the AWSD keys in VR/180/360 videos: \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H] 
-                  </li>
-              </ul></span>
-            </div>
-          </div>*/}
-          <div class="ytp-menuitem ytpa-menuitem--warning" style="display: none">
-            <div class="ytp-menuitem-label" rowspan="2">
-              <span class="ytpa-warning"></span>
-            </div>
-          </div>
-          <div class="ytp-menuitem ytpa-menuitem--info" style="display: none">
-            <div class="ytp-menuitem-label" rowspan="2">
-              <span class="ytpa-info"></span>
-            </div>
-          </div>
-          <div class="ytp-menuitem ytpa-menuitem--header">
-            <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank" rel="noopener">
-                <span class="ytpa-feedback-link__text">Troubleshoot performance problems</span>
-              </a>
-            </div>
-            <div class="ytp-menuitem-content">
-              <div class="ytpa-settings-toolbar">
-                <button
-                  class="ytpa-export-import-settings-btn"
-                  type="button"
-                >
-                  <span class="ytpa-export-import-settings-btn__tooltip">How to export or import settings:<br/>1. Click on the extension icon to open the option.<br/>2. Scroll down to "Import / Export settings"</span>
-                </button>
-                <button
-                  class="ytpa-reset-settings-btn"
-                  title="Reset all settings"
-                  type="button"
-                ></button>
-              </div>
-            </div>
-          </div>
-          <div class="ytp-menuitem ytpa-menuitem--header">
-            <div class="ytp-menuitem-label">
-              <a class="ytpa-feedback-link" href="${feedbackFormLink}" target="_blank" rel="noopener">
-                <span class="ytpa-feedback-link__text">Give feedback or a rating</span>
-              </a>
-            </div>
-            <div class="ytp-menuitem-content">
-              <a class="ytpa-donate-link" href="https://ko-fi.com/G2G59EK8L" target="_blank" rel="noopener">
-                <img class="ytpa-donate-link__image" alt="Support me via a donation"" title="Support me via a donation"" height="23" src="${baseUrl}images/donate.svg" />
-              </a>
-            </div>
-          </div>
-          ${
-      SettingsConfig.map((setting, i) => {
-        let classes = 'ytp-menuitem'
-        if(setting.advanced) classes += ' ytpa-menuitem--advanced'
-        if(setting.hdr) classes += ' ytpa-menuitem--hdr'
-        if(setting.new) classes += ' ytpa-menuitem--new'
-        if(setting.experimental) classes += ' ytpa-menuitem--experimental'
-        
-        const label = `${setting.label}
-          ${setting.key ? ` [<span contenteditable="true" class="ytpa-menuitem-key" title="Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)">${setting.key}</span>]` : ''}
-          ${setting.questionMark 
-            ? `<a
-            title="${setting.questionMark.title}" 
-            ${setting.questionMark.href ? `href="${setting.questionMark.href}" target="_blank"` : 'href="#" onclick="return false"' }
-            style="padding: 0 5px;">
-              ?
-            </a>`
-            : ''
-          }
-          ${setting.description ? `<br/><span class="ytpa-menuitem-description">${setting.description}</span>` : ''}
-        `
-        const value = this[setting.name];
-        
-        if (setting.type === 'section') {
-          return `
-            ${i !== 0 ? '</div>' : ''}
-            <div 
-              class="ytpa-section ${value ? 'is-collapsed' : ''} ${setting.advanced ? 'ytpa-section--advanced' : ''} ${setting.hdr ? 'ytpa-section--hdr' : ''}" 
-              data-name="${setting.name}">
-              <div class="ytpa-section__cell">
-                <div class="ytpa-section__label">${label}</div>
-              </div>
-              <div class="ytpa-section__cell">
-                <div class="ytpa-section__fill">-</div>
-              </div>
-            </div>
-            <div class="ytpa-section-content">
-          `
-        } else if (setting.type === 'checkbox') {
-          return `
-            <div id="setting-${setting.name}" 
-              class="${classes}" 
-              role="menuitemcheckbox" 
-              aria-checked="${value ? 'true' : 'false'}" 
-              ${setting.disabled ? 'aria-disabled="true" title="This setting is unavailable"' : 'title="Right click to reset" tabindex="0"'}
-            >
-              <div class="ytp-menuitem-label">${label}${setting.disabled ? `<span class="ytpa-menuitem-description" style="color: #fa0">${setting.disabled}</span>` :''}</div>
-              <div class="ytp-menuitem-content">
-                <div class="ytp-menuitem-toggle-checkbox"></div>
-              </div>
-            </div>
-          `
-        } else if (setting.type === 'list') {
-          return `
-            <div id="setting-${setting.name}" class="ytp-menuitem-range-wrapper">
-              <div class="${classes}" aria-haspopup="false" role="menuitemrange" tabindex="0">
-                <div class="ytp-menuitem-label">${label}</div>
-                <div class="ytp-menuitem-content">
-                  ${(setting.manualinput !== false)
-                    ? `<input id="setting-${setting.name}-manualinput" type="text" class="ytpa-menuitem-input" value="${value}" />`
-                    : ''
-                  }
-                  <div class="ytp-menuitem-value" id="setting-${setting.name}-value">${this.getSettingListDisplayText(setting)}</div>
-                </div>
-              </div>
-              <div 
-              class="ytp-menuitem-range ${setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''}" 
-              rowspan="2" 
-              title="Right click to reset">
-                <input 
-                  id="setting-${setting.name}-range" 
-                  type="range" 
-                  colspan="2" 
-                  value="${this.getInputRangeValue(setting.name)}" 
-                  ${setting.min !== undefined ? `min="${setting.min}"` : ''} 
-                  ${setting.max !== undefined ? `max="${setting.max}"` : ''} 
-                  ${setting.valuePoints 
-                    ? `min="0" max="${setting.valuePoints.length - 1}"` 
-                    : ''}
-                  ${(setting.step || setting.valuePoints) ? `step="${setting.step || 1}"` : ''}
-              />
-              </div>
-              ${!setting.snapPoints ? '' : `
-                <datalist class="setting-range-datalist" id="snap-points-${setting.name}">
-                  ${setting.snapPoints.map(({ label, hiddenLabel, value, flip }) => {
-                    return `
-                      <option 
-                        value="${value}" 
-                        class="setting-range-datalist__label ${flip ? 'setting-range-datalist__label--flip' : ''}" 
-                        style="margin-left: ${(value + (-setting.min)) * (100 / (setting.max - setting.min))}%"
-                        label="${label || ''}"
-                        title="Set to ${hiddenLabel || label}"
-                      >
-                        ${label || ''}
-                      </option>
-                    `;
-                  }).join('')}
-                </datalist>
-              `}
-            </div>
-          `
-        }
-      }).join('')
-          }
-          </div>
-        </div>
-      </div>`
+    this.menuElem = this.createMenuElement()
 
     this.updateItemElem = this.menuElem.querySelector('.ytpa-menuitem--updates')
     if(this.updateItemElem) {
@@ -1433,7 +1616,7 @@ export default class Settings {
 
   processStorageEntry(name, value) {
     const setting = SettingsConfig.find(setting => setting.name === name) || {}
-    if (value === null || value === undefined) {
+    if (value == null) {
       value = setting.default
 
     } else if (setting.type === 'checkbox' || setting.type === 'section') {
