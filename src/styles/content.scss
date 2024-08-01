@@ -184,23 +184,19 @@
 .ambientlight__ambientlight-bar-detection-graph {
   pointer-events: auto;
   background: rgba(0, 0, 0, .85);
-  width: auto;
-  height: 258px;
-  border: 1px solid #000;
+  width: fit-content;
   max-width: 100%;
   max-height: 100%;
-  aspect-ratio: 1;
   overflow: hidden;
   resize: vertical;
-  container-name: bar-detection-graph;
-  container-type: size;
 
   canvas {
     display: block;
     height: 100%;
+    border: 1px solid #000;
     cursor: help;
 
-    @container bar-detection-graph (min-width: 514px) {
+    @at-root .ambientlight__ambientlight-bar-detection-graph:not([style*="height: 1"]) canvas {
       image-rendering: pixelated;
     }
   }
