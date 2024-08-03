@@ -47,23 +47,33 @@ const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
     errorHandler(ex)
 }
 
-const withErrorHandler = (callback, reportOnce, stack, reported) =>
-  function errorHandler(...args) {
-    try {
-      return callback(...args)
-    } catch(ex) {
-      wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
+const withErrorHandler = (callback, reportOnce, stack, reported) => {
+  const callbackName = callback.name || 'anonymous'
+  const container = {
+    [callbackName]: (...args) => {
+      try {
+        return callback(...args)
+      } catch(ex) {
+        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
+      }
     }
   }
+  return container[callbackName]
+}
 
-const withAsyncErrorHandler = (callback, reportOnce, stack, reported) => 
-  async function asyncErrorHandler(...args) {
-    try {
-      return await callback(...args)
-    } catch(ex) {
-      wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
+const withAsyncErrorHandler = (callback, reportOnce, stack, reported) => {
+  const callbackName = callback.name || 'anonymous'
+  const container = {
+    [callbackName]: async (...args) => {
+      try {
+        return await callback(...args)
+      } catch(ex) {
+        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported)
+      }
     }
   }
+  return container[callbackName]
+}
 
 export const wrapErrorHandler = (callback, reportOnce = false) =>
   (callback.constructor.name === 'AsyncFunction'

@@ -925,13 +925,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`)
     })
   })
 
-  measureResizeDuration = wrapErrorHandler(function measureResizeDuration(start) {
+  measureResizeDuration = (start) => {
     const duration = Math.min(1000, performance.now() - start)
     this.resizeDurations.push(duration)
     if(this.resizeDurations.length > 4) this.resizeDurations.splice(0, 1)
     const averageDuration = this.resizeDurations.reduce((a, b) => a + b) / this.resizeDurations.length
     this.delayResizes = averageDuration >= this.resizeDurationThreshold
-  }.bind(this))
+  }
 
   handleDocumentVisibilityChange = async () => {
     if(this.handlePageVisibilityTimeout) {
