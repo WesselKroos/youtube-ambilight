@@ -343,7 +343,7 @@ const SettingsConfig = [
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166'
     },
     type: 'checkbox',
-    default: false,
+    default: true,
     advanced: true,
     experimental: true
   },
