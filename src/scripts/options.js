@@ -132,7 +132,7 @@ importWarnings.length ? `\n\nWith ${importWarnings.length} warnings:\n- ${import
     }
     importWarnings = []
 
-    importExportStatusDetails.textContent = `View imported settings (Click)\nNote: The blur setting is internally converted to blur2\n\n${
+    importExportStatusDetails.textContent = `View imported settings (Click to view)\nNote: The blur setting is internally converted to blur2\n\n${
       Object.keys(settings).map(key => `${key.substring('setting-'.length)}: ${JSON.stringify(settings[key])}`).join('\n')
     }`
   } catch(ex) {
@@ -175,7 +175,7 @@ const exportSettings = async (storageName, exportJson) => {
     const jsonString = JSON.stringify(exportObject, null, 2)
     await exportJson(jsonString)
     importExportStatus.textContent = `Exported ${Object.keys(exportObject).length} settings to ${storageName}`
-    importExportStatusDetails.textContent = `View exported settings (Click)\n\n${
+    importExportStatusDetails.textContent = `View exported settings (Click to view)\n\n${
       Object.keys(exportObject).map(key => `${key}: ${JSON.stringify(exportObject[key])}`).join('\n')
     }`
   } catch(ex) {
@@ -205,17 +205,23 @@ importFileInput.addEventListener('change', async () => {
 })
 importFileButton.addEventListener('click', () => importFileInput.click())
 
+let exportedSettingsLink;
 const exportFileButton = document.querySelector('#exportFileBtn')
 exportFileButton.addEventListener('click', async () => {
-  await exportSettings('a file', (jsonString) => {
+  await exportSettings('', (jsonString) => {
     const blob = new Blob([jsonString], { type: 'text/plain' })
 
-    const link = document.createElement("a");
+    const link = exportedSettingsLink = exportedSettingsLink ?? document.createElement("a")
     link.setAttribute('href', URL.createObjectURL(blob))
     link.setAttribute('download', 'ambient-light-for-youtube-settings.json')
-    link.click()
+    link.setAttribute('title', 'If the automatic download was blocked:\n1. Right click on this link \n2. Click on "Save link as..."')
+    link.style.display = 'block'
+    link.style.marginTop = '0'
+    link.style.marginBottom = '4px'
+    link.textContent = 'ambient-light-for-youtube-settings.json'
+    importExportStatusDetails.parentElement.insertBefore(link, importExportStatusDetails)
 
-    URL.revokeObjectURL(link.href)
+    link.click()
   })
 })
 
