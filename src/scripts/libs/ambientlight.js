@@ -342,14 +342,7 @@ export default class Ambientlight {
           isPlaying &&
           !this.isHidden &&
           !this.videoIsHidden &&
-          !(this.settings.spread === 0 && this.settings.blur2 === 0) &&
-          !(
-            this.atTop &&
-            this.isFillingFullscreen && 
-            !this.settings.detectHorizontalBarSizeEnabled &&
-            !this.settings.detectVerticalBarSizeEnabled &&
-            !this.settings.videoOverlayEnabled
-          )
+          !(this.settings.spread === 0 && this.settings.blur2 === 0)
         )
 
         if(enable && elem.parentElement !== this.elem) {
