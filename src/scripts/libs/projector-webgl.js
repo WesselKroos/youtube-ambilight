@@ -6,7 +6,7 @@ import {
   wrapErrorHandler,
 } from './generic';
 import ProjectorShadow from './projector-shadow';
-import { contentScript } from './messaging/content';
+import { storage } from './storage';
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL';
@@ -378,11 +378,7 @@ export default class ProjectorWebGL {
 
   async getMajorPerformanceCaveatDetected() {
     try {
-      return (
-        (await contentScript.getStorageEntryOrEntries(
-          'majorPerformanceCaveatDetected'
-        )) || false
-      );
+      return (await storage.get('majorPerformanceCaveatDetected')) || false;
     } catch (ex) {
       SentryReporter.captureException(ex);
     }
@@ -398,7 +394,7 @@ export default class ProjectorWebGL {
     // console.warn(`ProjectorWebGL: ${message}`)
     this.setWarning(message, true);
     this.settings.set('resolution', 25, true);
-    await contentScript.setStorageEntry('majorPerformanceCaveatDetected', true);
+    await storage.set('majorPerformanceCaveatDetected', true);
   }
 
   async noMajorPerformanceCaveatDetected() {
@@ -406,10 +402,7 @@ export default class ProjectorWebGL {
     const detected = await this.getMajorPerformanceCaveatDetected();
     if (detected === false) return;
 
-    await contentScript.setStorageEntry(
-      'majorPerformanceCaveatDetected',
-      false
-    );
+    await storage.set('majorPerformanceCaveatDetected', false);
   }
 
   onCtxLost = wrapErrorHandler(

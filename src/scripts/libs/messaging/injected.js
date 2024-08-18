@@ -35,7 +35,8 @@ class InjectedScript {
 
         // console.log('injected message!', type)
         handler(event.data?.message);
-      }.bind(this)
+      }.bind(this),
+      true
     );
 
     this.listeners.push(listener);

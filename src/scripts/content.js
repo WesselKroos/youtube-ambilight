@@ -1,4 +1,4 @@
-import { getFeedbackFormLink, getVersion } from './libs/utils';
+import { getVersion } from './libs/utils';
 import { setErrorHandler, setWarning, wrapErrorHandler } from './libs/generic';
 import { defaultCrashOptions, storage } from './libs/storage';
 import SentryReporter, {
@@ -102,43 +102,6 @@ wrapErrorHandler(async function loadContentScript() {
     injectedScript.postMessage('crashOptions', crashOptions);
   });
 
-  injectedScript.addMessageListener(
-    'get-storage-entries',
-    async function getStorageEntry({ id, nameOrNames }) {
-      try {
-        if (!chrome.runtime?.id) throw new Error('uninstalled');
-        let valueOrValues = await storage.get(nameOrNames);
-        if (Array.isArray(nameOrNames)) {
-          for (const name of nameOrNames) {
-            valueOrValues[name] =
-              valueOrValues[name] === undefined ? null : valueOrValues[name]; // Backward compatibility with localStorage
-          }
-        } else {
-          valueOrValues = valueOrValues === undefined ? null : valueOrValues; // Backward compatibility with localStorage
-        }
-        injectedScript.postMessage('get-storage-entries', {
-          id,
-          valueOrValues,
-        });
-      } catch (error) {
-        injectedScript.postMessage('get-storage-entries', { id, error });
-      }
-    }
-  );
-
-  injectedScript.addMessageListener(
-    'set-storage-entry',
-    async function setStorageEntry({ id, name, value }) {
-      try {
-        if (!chrome.runtime?.id) throw new Error('uninstalled');
-        await storage.set(name, value);
-        injectedScript.postMessage('set-storage-entry', { id });
-      } catch (error) {
-        injectedScript.postMessage('set-storage-entry', { id, error });
-      }
-    }
-  );
-
   await waitForHtmlElement();
   await waitForHeadElement();
 
@@ -155,30 +118,56 @@ wrapErrorHandler(async function loadContentScript() {
   // }
   // addWebGLLint()
 
-  const loaded = await new Promise((resolve) => {
-    const style = document.createElement('link');
-    style.rel = 'stylesheet';
-    style.href = chrome.runtime.getURL('styles/content.css');
-    style.onerror = async function injectStyleOnError(event) {
-      await captureResourceLoadingException(style.href, event);
-      resolve(false);
-    }.bind(this);
-    style.onload = function injectStyleOnLoad() {
+  let loaded = await new Promise((resolve) => {
+    const url = chrome.runtime.getURL('styles/content.css');
+    if (document.head.querySelector(`link[href="${url}"]`)) {
       resolve(true);
-    }.bind(this);
+      return;
+    }
+
+    const style = document.createElement('link');
+    style.href = url;
+    style.rel = 'stylesheet';
+    style.addEventListener(
+      'error',
+      async function injectStyleOnError(event) {
+        await captureResourceLoadingException(style.href, event);
+        resolve(false);
+      }.bind(this)
+    );
+    style.addEventListener(
+      'load',
+      function injectStyleOnLoad() {
+        resolve(true);
+      }.bind(this)
+    );
     document.head.appendChild(style);
   });
   if (!loaded) return;
 
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = chrome.runtime.getURL('scripts/injected.js');
-  script.setAttribute('data-crash-options', JSON.stringify(crashOptions));
-  script.setAttribute('data-version', version);
-  script.setAttribute('data-feedback-form-link', getFeedbackFormLink());
-  script.setAttribute('data-base-url', chrome.runtime.getURL('') || '');
-  script.onerror = async function injectScriptOnError(event) {
-    await captureResourceLoadingException(script.src, event);
-  }.bind(this);
-  document.head.appendChild(script);
+  loaded = await new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('scripts/injected.js');
+    script.async = true;
+    script.setAttribute('data-crash-options', JSON.stringify(crashOptions));
+    script.setAttribute('data-version', version);
+    script.addEventListener(
+      'error',
+      async function injectScriptOnError(event) {
+        await captureResourceLoadingException(script.src, event);
+        resolve(false);
+      }.bind(this)
+    );
+    script.addEventListener(
+      'load',
+      function injectStyleOnLoad() {
+        resolve(true);
+      }.bind(this)
+    );
+    document.head.appendChild(script);
+  });
+  if (!loaded) return;
+
+  const scriptSrc = chrome.runtime.getURL('scripts/content-main.js');
+  import(scriptSrc);
 })();

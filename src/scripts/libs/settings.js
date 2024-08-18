@@ -1,20 +1,20 @@
 import { on, off, setTimeout, supportsWebGL, raf, setWarning } from './generic';
 import SentryReporter from './sentry-reporter';
-import { contentScript } from './messaging/content';
 import SettingsConfig, {
   prepareSettingsConfigOnce,
   WebGLOnlySettings,
 } from './settings-config';
+import { getFeedbackFormLink, getVersion } from './utils';
+import { storage } from './storage';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
 export const FRAMESYNC_VIDEOFRAMES = 2;
 
-const feedbackFormLink =
-  document.currentScript?.getAttribute('data-feedback-form-link') ||
-  'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform';
-const baseUrl = document.currentScript?.getAttribute('data-base-url') || '';
-const version = document.currentScript?.getAttribute('data-version') || '';
+const feedbackFormLink = getFeedbackFormLink(); // document.currentScript?.getAttribute('data-feedback-form-link')
+//  || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
+const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
+const version = getVersion(); // document.currentScript?.getAttribute('data-version') || ''
 
 export default class Settings {
   saveStorageEntryTimeout = {};
@@ -64,8 +64,7 @@ export default class Settings {
         ),
       5000
     );
-    Settings.storedSettingsCached =
-      (await contentScript.getStorageEntryOrEntries(names, true)) || {};
+    Settings.storedSettingsCached = (await storage.get(names, true)) || {};
     clearTimeout(warningTimeout);
     setWarning();
 
@@ -76,34 +75,26 @@ export default class Settings {
         10; // Prevent rounding error
 
       delete Settings.storedSettingsCached['setting-blur'];
-      await contentScript.setStorageEntry('setting-blur', undefined, false);
+      await storage.set('setting-blur', undefined, false);
 
       Settings.storedSettingsCached['setting-blur2'] = value;
-      await contentScript.setStorageEntry('setting-blur2', value, false);
+      await storage.set('setting-blur2', value, false);
     }
     if (Settings.storedSettingsCached['setting-bloom'] != null) {
       const value =
         Math.round((Settings.storedSettingsCached['setting-bloom'] + 7) * 10) /
         10; // Prevent rounding error
       delete Settings.storedSettingsCached['setting-bloom'];
-      await contentScript.setStorageEntry('setting-bloom', undefined, false);
+      await storage.set('setting-bloom', undefined, false);
 
       Settings.storedSettingsCached['setting-spreadFadeStart'] = value;
-      await contentScript.setStorageEntry(
-        'setting-spreadFadeStart',
-        value,
-        false
-      );
+      await storage.set('setting-spreadFadeStart', value, false);
     }
     if (Settings.storedSettingsCached['setting-fadeOutEasing'] != null) {
       Settings.storedSettingsCached['setting-spreadFadeCurve'] =
         Settings.storedSettingsCached['setting-fadeOutEasing'];
       delete Settings.storedSettingsCached['setting-fadeOutEasing'];
-      await contentScript.setStorageEntry(
-        'setting-fadeOutEasing',
-        undefined,
-        false
-      );
+      await storage.set('setting-fadeOutEasing', undefined, false);
     }
     if (Settings.storedSettingsCached['setting-frameFading'] != null) {
       const value = Settings.storedSettingsCached['setting-frameFading'];
@@ -113,11 +104,7 @@ export default class Settings {
       if (value > max) {
         const newValue = Math.min(max, Math.round(Math.sqrt(value) * 50) / 50);
         Settings.storedSettingsCached['setting-frameFading'] = newValue;
-        await contentScript.setStorageEntry(
-          'setting-frameFading',
-          newValue,
-          false
-        );
+        await storage.set('setting-frameFading', newValue, false);
       }
     }
 
@@ -1892,7 +1879,7 @@ export default class Settings {
 
       const names = Object.keys(this.pendingStorageEntries);
       for (const name of names) {
-        await contentScript.setStorageEntry(
+        await storage.set(
           `setting-${name}`,
           this.pendingStorageEntries[name],
           true
@@ -2004,11 +1991,7 @@ export default class Settings {
 
       let entries;
       try {
-        entries =
-          (await contentScript.getStorageEntryOrEntries(
-            ['shown-version-updates'],
-            true
-          )) || {};
+        entries = (await storage.get(['shown-version-updates'], true)) || {};
       } catch {
         return;
       }
@@ -2040,7 +2023,7 @@ export default class Settings {
     this.menuBtn.classList.toggle('has-updates', false);
     this.menuBtn.title = '';
 
-    contentScript.setStorageEntry('shown-version-updates', version, false);
+    storage.set('shown-version-updates', version, false);
   };
 
   handleDocumentVisibilityChange = () => {

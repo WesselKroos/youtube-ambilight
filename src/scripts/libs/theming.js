@@ -6,8 +6,9 @@ import {
   requestIdleCallback,
   wrapErrorHandler,
 } from './generic';
-import { contentScript } from './messaging/content';
+import { injectedScript } from './messaging/injected';
 import SentryReporter from './sentry-reporter';
+import { storage } from './storage';
 
 const THEME_LIGHT = -1;
 const THEME_DEFAULT = 0;
@@ -43,6 +44,8 @@ export default class Theming {
             function forwardReduxActionToLiveChatIframe() {
               // Fix the theme to the correct color after the process
               if (!this.ambientlight.isOnVideoPage) return;
+              if (e.detail.args?.[0]?.type === 'SET_WATCH_SCROLL_TOP') return;
+
               this.updateLiveChatTheme();
             }.bind(this),
             { timeout: 1 }
@@ -155,9 +158,7 @@ export default class Theming {
                 timeout = undefined;
                 resolve();
               }, 5000);
-              const result = await contentScript.getStorageEntryOrEntries(
-                'last-failed-theme-toggle'
-              );
+              const result = await storage.get('last-failed-theme-toggle');
               if (!timeout) return;
 
               clearTimeout(timeout);
@@ -180,7 +181,7 @@ export default class Theming {
             this.updatingTheme = false;
             return;
           }
-          contentScript.setStorageEntry('last-failed-theme-toggle', undefined);
+          storage.set('last-failed-theme-toggle', undefined);
         }
         if (this.themeToggleFailed) {
           this.settings.setWarning('');
@@ -203,7 +204,7 @@ export default class Theming {
     const wasDark = this.isDarkTheme();
     document.documentElement.toggleAttribute('dark', !wasDark);
     if (!isEmbedPageUrl()) {
-      this.ambientlight.ytdAppElem.setMastheadTheme(); // Required when we go: theater dark -> non-theater dark -> non-theater light
+      injectedScript.postMessage('set-masthead-theme'); // Required when we go: theater dark -> non-theater dark -> non-theater light
       this.updateLiveChatTheme();
     }
 
@@ -211,10 +212,7 @@ export default class Theming {
     if (wasDark !== isDark) return;
 
     this.themeToggleFailed = true;
-    await contentScript.setStorageEntry(
-      'last-failed-theme-toggle',
-      new Date().getTime()
-    );
+    await storage.set('last-failed-theme-toggle', new Date().getTime());
     this.settings.setWarning(
       `Failed to toggle the page theme to from ${
         wasDark ? 'dark' : 'light'
@@ -281,12 +279,26 @@ export default class Theming {
     });
   };
 
+  updateLiveChatThemeThrottle = {};
   updateLiveChatTheme = () => {
     if (!this.liveChat || !this.liveChatIframe) return;
+    if (this.updateLiveChatThemeThrottle.timeout) return;
 
-    const toDark = this.shouldBeDarkTheme();
-    this.liveChat.postToContentWindow({
-      'yt-live-chat-set-dark-theme': toDark,
-    });
+    const update = function updateLiveChatThemeUpdate() {
+      this.updateLiveChatThemeThrottle.updateTime = performance.now();
+      if (!this.ambientlight.isOnVideoPage) return;
+
+      const toDark = this.shouldBeDarkTheme();
+      injectedScript.postMessage('set-live-chat-theme', toDark);
+    }.bind(this);
+
+    if (this.updateLiveChatThemeThrottle.updateTime > performance.now() - 500) {
+      this.updateLiveChatThemeThrottle.timeout = setTimeout(() => {
+        update();
+        this.updateLiveChatThemeThrottle.timeout = undefined;
+      }, 500);
+    } else {
+      update();
+    }
   };
 }

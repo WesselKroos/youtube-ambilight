@@ -18,23 +18,21 @@ import SentryReporter, {
 import Ambientlight from './libs/ambientlight';
 import Settings from './libs/settings';
 import { contentScript } from './libs/messaging/content';
+import { getVersion } from './libs/utils';
+import { defaultCrashOptions, storage } from './libs/storage';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
-wrapErrorHandler(function initVersionAndCrashOptions() {
-  const version = document.currentScript?.getAttribute('data-version') || '';
+wrapErrorHandler(async function initVersionAndCrashOptions() {
+  const version = getVersion(); // document.currentScript?.getAttribute('data-version') || ''
   setVersion(version);
-  const options = JSON.parse(
-    document.currentScript?.getAttribute('data-crash-options')
-  );
-  setCrashOptions(options);
-  contentScript.addMessageListener(
-    'crashOptions',
-    (newCrashOptions) => {
-      setCrashOptions(newCrashOptions);
-    },
-    true
-  );
+  // const options = JSON.parse(document.currentScript?.getAttribute('data-crash-options'))
+  const crashOptions =
+    (await storage.get('crashOptions')) || defaultCrashOptions;
+  setCrashOptions(crashOptions);
+  contentScript.addMessageListener('crashOptions', (newCrashOptions) => {
+    setCrashOptions(newCrashOptions);
+  });
 })();
 
 let errorEvents;

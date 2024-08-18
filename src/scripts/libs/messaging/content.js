@@ -1,4 +1,4 @@
-import { appendErrorStack, wrapErrorHandler } from '../generic';
+import { wrapErrorHandler } from '../generic';
 import { extensionId, isSameWindowMessage } from './utils';
 
 class ContentScript {
@@ -35,7 +35,8 @@ class ContentScript {
 
         // console.log('content message!', type)
         handler(event.data?.message);
-      }.bind(this)
+      }.bind(this),
+      true
     );
 
     this.listeners.push(listener);
@@ -68,104 +69,5 @@ class ContentScript {
       transfer
     );
   };
-
-  getStorageEntriesId = 0;
-  async getStorageEntryOrEntries(nameOrNames, throwOnUninstalled) {
-    const currentId = this.getStorageEntriesId++;
-
-    const stack = new Error().stack;
-    const getStorageEntriesPromise = new Promise(
-      function getStorageEntryOrEntries(resolve, reject) {
-        let listener;
-        try {
-          listener = this.addMessageListener(
-            'get-storage-entries',
-            function getStorageEntryOrEntriesMessageListener({
-              id,
-              valueOrValues,
-              error,
-            }) {
-              try {
-                if (id !== currentId) return;
-
-                this.removeMessageListener(listener);
-
-                if (
-                  error &&
-                  (throwOnUninstalled ||
-                    !(
-                      error.message === 'uninstalled' ||
-                      error.message?.includes('QuotaExceededError')
-                    ))
-                )
-                  throw error;
-
-                resolve(valueOrValues);
-              } catch (ex) {
-                reject(appendErrorStack(stack, ex));
-              }
-            }.bind(this)
-          );
-        } catch (ex) {
-          try {
-            if (listener) {
-              this.removeMessageListener(listener);
-            }
-          } catch {}
-          reject(appendErrorStack(stack, ex));
-        }
-      }.bind(this)
-    );
-
-    this.postMessage('get-storage-entries', { id: currentId, nameOrNames });
-    return await getStorageEntriesPromise;
-  }
-
-  setStorageEntryId = 0;
-  async setStorageEntry(name, value, throwOnUninstalled) {
-    const currentId = this.setStorageEntryId++;
-    const stack = new Error().stack;
-    const setStorageEntryPromise = new Promise(
-      function setStorageEntry(resolve, reject) {
-        let listener;
-        try {
-          listener = this.addMessageListener(
-            'set-storage-entry',
-            function setStorageEntryMessageListener({ id, error }) {
-              try {
-                if (id !== currentId) return;
-
-                this.removeMessageListener(listener);
-
-                if (
-                  error &&
-                  (throwOnUninstalled ||
-                    !(
-                      error.message === 'uninstalled' ||
-                      error.message?.includes('QuotaExceededError')
-                    ))
-                )
-                  throw error;
-
-                resolve();
-              } catch (ex) {
-                reject(appendErrorStack(stack, ex));
-              }
-            }.bind(this)
-          );
-        } catch (ex) {
-          try {
-            if (listener) {
-              this.removeMessageListener(listener);
-            }
-          } catch {}
-          reject(appendErrorStack(stack, ex));
-        }
-      }.bind(this)
-    );
-
-    this.postMessage('set-storage-entry', { id: currentId, name, value });
-    return await setStorageEntryPromise;
-  }
 }
 export const contentScript = new ContentScript();

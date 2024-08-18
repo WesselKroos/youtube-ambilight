@@ -17,7 +17,7 @@ import {
   watchSelectors,
 } from './generic';
 import SettingsConfig from './settings-config';
-import { contentScript } from './messaging/content';
+import { storage } from './storage';
 
 const getNodeSelector = (elem) => {
   if (!elem.tagName) return elem.nodeName; // Document
@@ -186,11 +186,7 @@ let userId;
 let reports;
 const initializeStorageEntries = (async () => {
   try {
-    const entries =
-      (await contentScript.getStorageEntryOrEntries([
-        'reports',
-        'crash-reporter-id',
-      ])) || {};
+    const entries = (await storage.get(['reports', 'crash-reporter-id'])) || {};
     userId = entries['crash-reporter-id'];
     reports = JSON.parse(entries.reports || '[]');
 
@@ -204,11 +200,11 @@ const initializeStorageEntries = (async () => {
       } catch {}
       if (userId) {
         // Migrate from localStorage to storage.local
-        await contentScript.setStorageEntry('crash-reporter-id', userId);
+        await storage.set('crash-reporter-id', userId);
         localStorage.removeItem('ambilight-crash-reporter-id');
       } else {
         userId = uuidv4();
-        await contentScript.setStorageEntry('crash-reporter-id', userId);
+        await storage.set('crash-reporter-id', userId);
       }
     }
   } catch {}
@@ -294,10 +290,7 @@ export default class SentryReporter {
             );
             return;
           }
-          await contentScript.setStorageEntry(
-            'reports',
-            JSON.stringify(reportsThisWeek)
-          );
+          await storage.set('reports', JSON.stringify(reportsThisWeek));
         }
       } catch (ex) {
         console.warn(ex);

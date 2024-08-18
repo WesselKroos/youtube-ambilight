@@ -33,6 +33,7 @@ import {
 import Theming from './theming';
 import Stats from './stats';
 import { getBrowser } from './utils';
+import { injectedScript } from './messaging/injected';
 
 const VIEW_DISABLED = 'DISABLED';
 const VIEW_DETACHED = 'DETACHED';
@@ -41,7 +42,7 @@ const VIEW_THEATER = 'THEATER';
 const VIEW_FULLSCREEN = 'FULLSCREEN';
 const VIEW_POPUP = 'POPUP';
 
-const baseUrl = document.currentScript?.getAttribute('data-base-url') || '';
+const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
 export default class Ambientlight {
   innerStrength = 2;
@@ -243,59 +244,7 @@ export default class Ambientlight {
   applyChromiumBug1142112Workaround() {
     if (!this.enableChromiumBug1142112Workaround) return;
 
-    try {
-      if (this.videoElem.ambientlightGetVideoPlaybackQuality) return;
-
-      Object.defineProperty(
-        this.videoElem,
-        'ambientlightGetVideoPlaybackQuality',
-        {
-          value: this.videoElem.getVideoPlaybackQuality,
-        }
-      );
-
-      this.previousDroppedVideoFrames = 0;
-      this.droppedVideoFramesCorrection = 0;
-      let previousGetVideoPlaybackQualityTime = performance.now();
-
-      const ambientlight = this;
-      const videoElem = this.videoElem;
-      this.videoElem.getVideoPlaybackQuality = function () {
-        // Use scoped properties instead of this from here on
-        const original = videoElem.ambientlightGetVideoPlaybackQuality();
-        let droppedVideoFrames = original.droppedVideoFrames;
-        if (droppedVideoFrames < ambientlight.previousDroppedVideoFrames) {
-          ambientlight.previousDroppedVideoFrames = 0;
-          ambientlight.droppedVideoFramesCorrection = 0;
-        }
-        // Ignore dropped frames for 2 seconds due to requestVideoFrameCallback dropping frames when the video is offscreen
-        if (
-          ambientlight.videoIsHidden ||
-          ambientlight.videoVisibilityChangeTime >
-            previousGetVideoPlaybackQualityTime - 2000
-        ) {
-          ambientlight.droppedVideoFramesCorrection +=
-            droppedVideoFrames - ambientlight.previousDroppedVideoFrames;
-        }
-        ambientlight.previousDroppedVideoFrames = droppedVideoFrames;
-        droppedVideoFrames = Math.max(
-          0,
-          droppedVideoFrames - ambientlight.droppedVideoFramesCorrection
-        );
-        previousGetVideoPlaybackQualityTime = performance.now();
-        return {
-          corruptedVideoFrames: original.corruptedVideoFrames,
-          creationTime: original.creationTime,
-          droppedVideoFrames,
-          totalVideoFrames: original.totalVideoFrames,
-        };
-      };
-    } catch (ex) {
-      console.warn(
-        'applyChromiumBug1142112Workaround error. Continuing ambientlight initialization...'
-      );
-      SentryReporter.captureException(ex);
-    }
+    injectedScript.postMessage('apply-chromium-bug-1142112-workaround');
   }
 
   // Chromium workaround: Force to render the blur originating from the canvasses past the browser window
@@ -651,6 +600,7 @@ export default class Ambientlight {
 
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed(); // Re-check after crossOrigin attribute has been applied
+        this.updateHdr();
         this.initVideoIfSrcChanged();
       },
       playing: async () => {
@@ -731,7 +681,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
             }
             this.videoIsHidden = entry.intersectionRatio === 0;
             this.videoVisibilityChangeTime = performance.now();
-            this.videoElem.getVideoPlaybackQuality(); // Correct dropped frames
+            // this.videoElem.getVideoPlaybackQuality(); // Correct dropped frames
           }
 
           if (this.chromiumBugVideoJitterWorkaround?.update)
@@ -781,24 +731,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         );
       }
       keywords = keywords.join(',');
-      this.videoPlayerElem.updateVideoData({ keywords });
+      injectedScript.postMessage(
+        'video-player-update-video-data-keywords',
+        keywords
+      );
     } catch (ex) {
       SentryReporter.captureException(ex);
     }
   };
 
   updateVideoPlayerSize = () => {
-    try {
-      this.videoPlayerElem.setSize();
-      this.videoPlayerElem.setInternalSize();
-      this.sizesChanged = true;
-    } catch (ex) {
-      console.warn(
-        `Failed to resize the video player${
-          ex?.message ? `: ${ex?.message}` : ''
-        }`
-      );
-    }
+    injectedScript.postMessage('video-player-set-size');
   };
 
   async initListeners() {
@@ -953,6 +896,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       }.bind(this)
     );
     this.videoResizeObserver.observe(this.videoElem);
+
+    injectedScript.addMessageListener('sizes-changed', () => {
+      this.sizesChanged = true;
+    });
 
     // Fix YouTube bug: focus on video element without scrolling to the top
     on(this.videoElem, 'focus', this.handleVideoFocus, true);
@@ -1198,7 +1145,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.settings.displayBezelForSetting('enabled');
   }
 
-  checkGetImageDataAllowed() {
+  async checkGetImageDataAllowed() {
     const isSameOriginVideo =
       !!this.videoElem.src &&
       this.videoElem.src.indexOf(location.origin) !== -1;
@@ -1221,9 +1168,20 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       try {
         const currentTime = this.videoElem.currentTime;
         this.videoElem.crossOrigin = 'use-credentials';
-        this.videoPlayerElem.loadVideoById(
-          this.videoPlayerElem.getVideoData().video_id
-        ); // Refreshes auto quality setting range above 480p
+
+        // Refresh auto quality setting range above 480p
+        const reloadedPromise = new Promise((resolve) => {
+          const listener = injectedScript.addMessageListener(
+            'video-player-reload-video-by-id',
+            () => {
+              injectedScript.removeMessageListener(listener);
+              resolve();
+            }
+          );
+        });
+        injectedScript.postMessage('video-player-reload-video-by-id');
+        await reloadedPromise;
+
         this.videoElem.currentTime = currentTime;
       } catch (ex) {
         console.warn(
@@ -3538,22 +3496,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart)
       return;
 
-    try {
-      const isHdr = this.videoPlayerElem.getVideoData()?.isHdr;
-      if (this.settings.webGL && this.isHdr !== isHdr) {
-        this.isHdr = isHdr;
-        if (isHdr) {
-          this.initWebGLHdrProjectorBuffer();
-          this.projectorBuffer = this.hdrProjectorBuffer;
-        } else if (this.hdrProjectorBuffer) {
-          this.projectorBuffer = this.nonHdrProjectorBuffer;
-        }
-        this.sizesChanged = true;
-      }
-    } catch (ex) {
-      SentryReporter.captureException(ex);
-    }
-
+    await this.updateHdr();
     this.showedCompareWarning = false;
     this.showedDetectBarSizeWarning = false;
     this.nextFrameTime = undefined;
@@ -3584,6 +3527,56 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       // this.disableYouTubeAmbientMode()
     }
   };
+
+  updateHdr = wrapErrorHandler(
+    async function updateHdr() {
+      if (!this.settings.webGL || !(this.videoElem?.readyState > 1)) return;
+
+      try {
+        let isHdr;
+        if (typeof VideoFrame !== 'undefined') {
+          // Not yet supported in Firefox (Stable): https://bugzilla.mozilla.org/show_bug.cgi?id=1749539
+          // eslint-disable-next-line no-undef
+          const videoFrame = new VideoFrame(this.videoElem, { timestamp: 0 });
+          isHdr = videoFrame?.colorSpace?.primaries === 'bt2020'; // https://w3c.github.io/webcodecs/#videocolorspace
+          videoFrame.close();
+        } else {
+          isHdr = await new Promise((resolve, reject) => {
+            try {
+              const listener = injectedScript.addMessageListener(
+                'is-hdr-video',
+                (message) => {
+                  injectedScript.removeMessageListener(listener);
+                  resolve(message);
+                }
+              );
+              injectedScript.postMessage('is-hdr-video');
+            } catch (ex) {
+              reject(ex);
+            }
+          });
+        }
+
+        if (this.isHdr === isHdr) return;
+
+        this.isHdr = isHdr;
+        if (isHdr) {
+          this.initWebGLHdrProjectorBuffer();
+          this.projectorBuffer = this.hdrProjectorBuffer;
+        } else if (this.hdrProjectorBuffer) {
+          this.projectorBuffer = this.nonHdrProjectorBuffer;
+        }
+        this.sizesChanged = true;
+      } catch (ex) {
+        console.log('readyState', this.videoElem?.readyState);
+        alert(
+          `invalid readyState for VideoFrame: ${this.videoElem?.readyState}`
+        );
+        throw ex;
+      }
+    }.bind(this),
+    true
+  );
 
   cancelScheduledRequestVideoFrame = () => {
     if (!this.requestVideoFrameCallbackId) return;
