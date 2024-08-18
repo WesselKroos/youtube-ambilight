@@ -40,9 +40,9 @@
     "build": "run-s build:scripts build:styles build:manifest build:html build:images"
   },
   "engines": {
-    "node": "16.20.2"
+    "node": "22.5.1"
   },
   "volta": {
-    "node": "16.20.2"
+    "node": "22.5.1"
   }
 }
