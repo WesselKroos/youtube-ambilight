@@ -1063,7 +1063,6 @@ export default class Settings {
               'detectHorizontalBarSizeEnabled',
               'detectColoredHorizontalBarSizeEnabled',
               'detectVerticalBarSizeEnabled',
-              'detectColoredVerticalBarSizeEnabled',
               'detectVideoFillScaleEnabled',
               'directionTopEnabled',
               'directionRightEnabled',
@@ -1208,7 +1207,6 @@ export default class Settings {
               'detectHorizontalBarSizeEnabled',
               'detectVerticalBarSizeEnabled',
               'detectColoredHorizontalBarSizeEnabled',
-              'detectColoredVerticalBarSizeEnabled',
               'detectVideoFillScaleEnabled',
             ].some((name) => name === setting.name)
           ) {
