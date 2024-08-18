@@ -86,7 +86,7 @@ const SettingsConfig = [
     name: 'framerateLimit',
     label: 'Limit framerate (per second)',
     type: 'list',
-    default: 0,
+    default: 60,
     min: 0,
     max: 60,
     step: 1,
