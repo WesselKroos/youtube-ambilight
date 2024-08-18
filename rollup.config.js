@@ -26,7 +26,7 @@ const common = {
   ]
 }
 
-const scripts = ['background', 'options', 'content', 'injected']
+const scripts = ['background', 'options', 'content', 'content-main']
 
 export default scripts.map(script => Object.assign({}, {
   input:  `./src/scripts/${script}.js`,
