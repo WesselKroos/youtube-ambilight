@@ -29,7 +29,9 @@ const workerCode = function () {
 
     if (!canvas) {
       canvas = new SafeOffscreenCanvas(bitmap.width, bitmap.height);
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext('2d', {
+        willReadFrequently: true,
+      });
     } else if (
       canvas.width !== bitmap.width ||
       canvas.height !== bitmap.height
