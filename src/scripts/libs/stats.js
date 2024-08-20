@@ -102,6 +102,9 @@ export default class Stats {
       'ambientlight__projector-resolution'
     );
 
+    this.barDetectionFPSElem = appendFPSItem(
+      'ambientlight__ambientlight-bar-detection-fps'
+    );
     this.barDetectionDurationElem = appendFPSItem(
       'ambientlight__ambientlight-bar-detection-duration'
     );
@@ -111,6 +114,8 @@ export default class Stats {
     this.barDetectionGraphElem = appendFPSItem(
       'ambientlight__ambientlight-bar-detection-graph'
     );
+    this.barDetectionGraphElem.style.height = '256px';
+    this.barDetectionGraphElem.style.display = 'none';
   }
 
   hide(onlyDisabled = false) {
@@ -133,6 +138,7 @@ export default class Stats {
 
     if (!onlyDisabled || !this.settings.showBarDetectionStats) {
       this.barDetectionDurationElem.childNodes[0].nodeValue = '';
+      this.barDetectionFPSElem.childNodes[0].nodeValue = '';
       this.barDetectionResultElem.childNodes[0].nodeValue = '';
 
       if (this.barDetectionCanvas?.parentNode) {
@@ -808,9 +814,15 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         this.barDetectionDurationElem.childNodes[0].nodeValue = '';
         this.barDetectionDurationElem.style.color = '';
       }
+
       if (this.barDetectionResultElem?.parentNode) {
         this.barDetectionResultElem.childNodes[0].nodeValue = '';
         this.barDetectionResultElem.style.color = '';
+      }
+
+      if (this.barDetectionFPSElem?.parentNode) {
+        this.barDetectionFPSElem.childNodes[0].nodeValue = '';
+        this.barDetectionFPSElem.style.color = '';
       }
 
       if (this.barDetectionCanvas?.parentNode) {
@@ -853,16 +865,31 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         durations.length
     ).toFixed(1);
 
-    this.barDetectionDurationElem.childNodes[0].nodeValue = `REMOVE BARS DETECTION: ${duration}ms`;
+    this.barDetectionDurationElem.childNodes[0].nodeValue = ` SEARCH DURATION: ${duration}ms`;
     this.barDetectionDurationElem.style.color = '#fff';
+  };
+
+  updateBarDetectionInfo = (throttle, lastChange) => {
+    const barDetectionFPS = throttle
+      ? `${Math.round(1000 / throttle).toFixed(2)} (${(1000 / throttle).toFixed(
+          1
+        )}ms)`
+      : 'VIDEO FPS';
+
+    const barDetectionLastChange = lastChange
+      ? `${((performance.now() - lastChange) / 1000).toFixed(1)}s ago`
+      : '';
+
+    this.barDetectionFPSElem.childNodes[0].nodeValue = `BAR DETECTION: ${barDetectionFPS} / ${barDetectionLastChange}`;
+    this.barDetectionFPSElem.style.color = '#fff';
   };
 
   updateBarDetectionImage = (image) => {
     if (!image) return;
     if (!this.settings.showBarDetectionStats) return;
 
-    const width = image.width ?? 1;
-    const height = image.height ?? 1;
+    const width = 512; // image.width ?? 1
+    const height = 512; // image.height ?? 1
 
     if (!this.barDetectionCanvas) {
       this.barDetectionCanvas = new Canvas(width, height);
@@ -872,7 +899,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
 
       this.barDetectionCanvas.setAttribute(
         'title',
-        `Lines\nGreen: Detected bar \nGray: Scanlines\n\nDots\nGreen: Included points\nOrange: Inconsistent points\nRed: Ignored points`
+        `LINES \nBlue:       Detected bar\nGreen:    Detected edge \nOrange:  Uncertain edge \nGray:       Ignored edge \nRed dotted: Scanline`
       );
       on(
         this.barDetectionCanvas,
@@ -908,84 +935,119 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
       this.barDetectionBufferCanvas.width = width;
       this.barDetectionBufferCanvas.height = height;
     } else {
-      this.barDetectionBufferCtx.clearRect(0, 0, width, height);
+      // this.barDetectionBufferCtx.clearRect(0, 0, width, height) // Causes short flickering to black
     }
     if (!this.barDetectionCanvas?.parentNode) {
       this.barDetectionGraphElem.appendChild(this.barDetectionCanvas);
       this.barDetectionGraphElem.style.display = '';
     }
 
-    this.barDetectionBufferCtx.drawImage(image, 0, 0);
+    this.barDetectionBufferCtx.drawImage(
+      image,
+      0,
+      0,
+      this.barDetectionBufferCanvas.width,
+      this.barDetectionBufferCanvas.height
+    );
   };
 
-  updateBarDetectionResult = (
+  updateBarDetectionResult = async (
     barsFound,
-    horizontalPercentage,
-    verticalPercentage,
     horizontalBarSizeInfo,
-    verticalBarSizeInfo
+    verticalBarSizeInfo,
+    horizontalPercentage,
+    verticalPercentage
   ) => {
     if (!this.settings.showBarDetectionStats || !this.barDetectionCtx) return;
 
-    this.barDetectionResultElem.childNodes[0].nodeValue = `DETECTED BARS: ${[
+    this.barDetectionResultElem.childNodes[0].nodeValue = `${[
       this.settings.detectHorizontalBarSizeEnabled
-        ? `H ${(
-            horizontalBarSizeInfo.percentage ??
-            horizontalPercentage ??
-            0
-          ).toFixed(2)}%`
+        ? ` HORIZONTAL: ${
+            horizontalBarSizeInfo.percentage !== undefined
+              ? `${horizontalBarSizeInfo.percentage
+                  .toFixed(2)
+                  .padStart(5, ' ')}`
+              : '  #.##'
+          }%  ➜ ${horizontalPercentage.toFixed(2).padStart(5, ' ')}%`
+        : '',
+      this.settings.detectHorizontalBarSizeEnabled
+        ? ` COLOR (rgb):       ${horizontalBarSizeInfo.color
+            ?.map((c) => Math.round(c).toString().padStart(3, ' '))
+            ?.join(' ')}`
         : '',
       this.settings.detectVerticalBarSizeEnabled
-        ? `V ${(
-            verticalBarSizeInfo.percentage ??
-            verticalPercentage ??
-            0
-          ).toFixed(2)}%`
+        ? ` VERTICAL:     ${
+            verticalBarSizeInfo.percentage !== undefined
+              ? `${verticalBarSizeInfo.percentage.toFixed(2).padStart(5, ' ')}`
+              : '  #.##'
+          }%  ➜ ${verticalPercentage.toFixed(2).padStart(5, ' ')}%`
+        : '',
+      this.settings.detectVerticalBarSizeEnabled
+        ? ` COLOR (rgb):       ${verticalBarSizeInfo.color
+            ?.map((c) => Math.round(c).toString().padStart(3, ' '))
+            ?.join(' ')}`
         : '',
     ]
       .filter((s) => s)
-      .join(' | ')}`;
+      .join('\n')}`;
     this.barDetectionResultElem.style.color = barsFound ? '#0f0' : '#fff';
 
     const width = this.barDetectionCanvas.width;
     const height = this.barDetectionCanvas.height;
 
+    this.barDetectionCtx.clearRect(
+      0,
+      0,
+      this.barDetectionCanvas.width,
+      this.barDetectionCanvas.height
+    );
+    this.barDetectionCtx.drawImage(this.barDetectionBufferCanvas, 0, 0);
+    this.barDetectionCtx.strokeStyle = '#00000077';
+
     const rects = [];
+    const fillRects = [];
 
     if (horizontalBarSizeInfo.percentage !== undefined) {
-      rects.push([
-        '#00ff0077',
-        0,
-        Math.floor(height * (horizontalBarSizeInfo.percentage / 100)) - 1,
-        width,
-        1,
-      ]);
-      rects.push([
-        '#00ff0077',
-        0,
-        height +
-          1 -
-          Math.ceil(height * (horizontalBarSizeInfo.percentage / 100)),
-        width,
-        1,
-      ]);
+      const xIndex = Math.floor(
+        height * (horizontalBarSizeInfo.percentage / 100)
+      );
+      rects.push(['#0af', 0, xIndex, width, 1]);
+      rects.push(['#0af', 0, height - xIndex - 1, width, 1]);
     }
 
     if (verticalBarSizeInfo.percentage !== undefined) {
-      rects.push([
-        '#00ff0077',
-        Math.floor(width * (verticalBarSizeInfo.percentage / 100)) - 1,
-        0,
-        1,
-        height,
-      ]);
-      rects.push([
-        '#00ff0077',
-        width + 1 - Math.ceil(width * (verticalBarSizeInfo.percentage / 100)),
-        0,
-        1,
-        height,
-      ]);
+      const yIndex = Math.floor(width * (verticalBarSizeInfo.percentage / 100));
+      rects.push(['#0af', yIndex, 0, 1, height]);
+      rects.push(['#0af', width - yIndex - 1, 0, 1, height]);
+    }
+
+    const certaintySize = globalThis.BARDETECTION_EDGE_RANGE;
+    const getEdgeSizes = (yIndex, certainty) => {
+      const length = Math.floor(yIndex - 1);
+      return {
+        length: length < 3 ? 0 : length,
+        radius: Math.floor(certaintySize * certainty),
+        thickness: length < 3 ? 1 : 2,
+      };
+    };
+    const getEdgeColor = (deviates, percentage) =>
+      deviates ? '#555' : percentage === undefined ? '#f80' : '#0c0';
+
+    if (!this.dotsPattern) {
+      const dotsPattern = await createImageBitmap(
+        new ImageData(
+          new Uint8ClampedArray([
+            255, 50, 50, 255, 100, 0, 0, 255, 100, 0, 0, 255, 255, 50, 50, 255,
+          ]),
+          2,
+          2,
+          { colorSpace: 'srgb' }
+        )
+      );
+      this.barDetectionDotsPattern = this.barDetectionCtx.createPattern(
+        dotsPattern,
+        'repeat'
+      );
     }
 
     if (horizontalBarSizeInfo.topEdges && horizontalBarSizeInfo.bottomEdges) {
@@ -994,18 +1056,19 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         yIndex,
         deviates,
         deviatesTop,
+        certainty,
       } of horizontalBarSizeInfo.topEdges) {
-        rects.push(['#555', xIndex, 0, 1, yIndex - 1]);
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty);
+        fillRects.push([this.barDetectionDotsPattern, xIndex, 0, 1, length]);
         rects.push([
-          deviates || deviatesTop
-            ? '#f00'
-            : horizontalBarSizeInfo.percentage !== undefined
-            ? '#0f0'
-            : '#fa0',
-          xIndex - 1,
-          yIndex - 1,
-          3,
-          2,
+          getEdgeColor(
+            deviates || deviatesTop,
+            horizontalBarSizeInfo.percentage
+          ),
+          xIndex - radius,
+          length,
+          1 + radius * 2,
+          thickness,
         ]);
       }
       for (const {
@@ -1013,18 +1076,25 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         yIndex,
         deviates,
         deviatesBottom,
+        certainty,
       } of horizontalBarSizeInfo.bottomEdges) {
-        rects.push(['#555', xIndex, height, 1, -yIndex + 1]);
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty);
+        fillRects.push([
+          this.barDetectionDotsPattern,
+          xIndex,
+          height - length,
+          1,
+          length,
+        ]);
         rects.push([
-          deviates || deviatesBottom
-            ? '#f00'
-            : horizontalBarSizeInfo.percentage !== undefined
-            ? '#0f0'
-            : '#fa0',
-          xIndex - 1,
-          height - yIndex + 1,
-          3,
-          -2,
+          getEdgeColor(
+            deviates || deviatesBottom,
+            horizontalBarSizeInfo.percentage
+          ),
+          xIndex - radius,
+          height - length - thickness,
+          1 + radius * 2,
+          thickness,
         ]);
       }
     }
@@ -1035,18 +1105,16 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         yIndex,
         deviates,
         deviatesTop,
+        certainty,
       } of verticalBarSizeInfo.topEdges) {
-        rects.push(['#555', 0, xIndex, yIndex - 1, 1]);
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty);
+        fillRects.push([this.barDetectionDotsPattern, 0, xIndex, length, 1]);
         rects.push([
-          deviates || deviatesTop
-            ? '#f00'
-            : verticalBarSizeInfo.percentage !== undefined
-            ? '#0f0'
-            : '#fa0',
-          yIndex - 1,
-          xIndex - 1,
-          2,
-          3,
+          getEdgeColor(deviates || deviatesTop, verticalBarSizeInfo.percentage),
+          length,
+          xIndex - radius,
+          thickness,
+          1 + radius * 2,
         ]);
       }
       for (const {
@@ -1054,34 +1122,44 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         yIndex,
         deviates,
         deviatesBottom,
+        certainty,
       } of verticalBarSizeInfo.bottomEdges) {
-        rects.push(['#555', width, xIndex, -yIndex + 1, 1]);
+        const { length, radius, thickness } = getEdgeSizes(yIndex, certainty);
+        fillRects.push([
+          this.barDetectionDotsPattern,
+          width - length,
+          xIndex,
+          length,
+          1,
+        ]);
         rects.push([
-          deviates || deviatesBottom
-            ? '#f00'
-            : verticalBarSizeInfo.percentage !== undefined
-            ? '#0f0'
-            : '#fa0',
-          width - yIndex + 1,
-          xIndex - 1,
-          -2,
-          3,
+          getEdgeColor(
+            deviates || deviatesBottom,
+            verticalBarSizeInfo.percentage
+          ),
+          width - length - thickness,
+          xIndex - radius,
+          thickness,
+          1 + radius * 2,
         ]);
       }
     }
 
-    this.barDetectionCtx.clearRect(
-      0,
-      0,
-      this.barDetectionCanvas.width,
-      this.barDetectionCanvas.height
-    );
-    this.barDetectionCtx.drawImage(this.barDetectionBufferCanvas, 0, 0);
-
-    this.barDetectionCtx.strokeStyle = '#000';
+    for (const rect of fillRects) {
+      this.barDetectionCtx.fillStyle = rect[0];
+      this.barDetectionCtx.fillRect(rect[1], rect[2], rect[3], rect[4]);
+    }
+    for (const rect of rects) {
+      this.barDetectionCtx.strokeRect(
+        rect[1] - 0.5,
+        rect[2] - 0.5,
+        rect[3] + 1,
+        rect[4] + 1
+      );
+    }
     for (const rect of rects) {
       this.barDetectionCtx.fillStyle = rect[0];
-      this.barDetectionCtx.strokeRect(rect[1], rect[2], rect[3], rect[4]);
+
       this.barDetectionCtx.fillRect(rect[1], rect[2], rect[3], rect[4]);
     }
   };

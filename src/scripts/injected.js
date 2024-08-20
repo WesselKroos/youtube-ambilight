@@ -27,7 +27,9 @@ contentScript.addMessageListener(
   'set-masthead-theme',
   function setMastheadTheme() {
     const ytdAppElem = document.querySelector('ytd-app');
-    ytdAppElem?.setMastheadTheme?.();
+    if (!ytdAppElem) return;
+
+    ytdAppElem.setMastheadTheme();
   }
 );
 
@@ -35,7 +37,9 @@ contentScript.addMessageListener(
   'set-live-chat-theme',
   function seLiveChatTheme(toDark) {
     const liveChat = document.querySelector('ytd-app ytd-live-chat-frame');
-    liveChat?.postToContentWindow?.({
+    if (!liveChat) return;
+
+    liveChat.postToContentWindow({
       'yt-live-chat-set-dark-theme': toDark,
     });
   }
@@ -55,6 +59,8 @@ contentScript.addMessageListener(
     const videoPlayerElem = document.querySelector(
       '#ytd-player .html5-video-player'
     );
+    if (!videoPlayerElem) return;
+
     try {
       videoPlayerElem.setSize();
       videoPlayerElem.setInternalSize();
@@ -75,7 +81,9 @@ contentScript.addMessageListener(
     const videoPlayerElem = document.querySelector(
       '#ytd-player .html5-video-player'
     );
-    videoPlayerElem?.updateVideoData?.({ keywords });
+    if (!videoPlayerElem) return;
+
+    videoPlayerElem.updateVideoData({ keywords });
   }
 );
 
@@ -85,9 +93,10 @@ contentScript.addMessageListener(
     const videoPlayerElem = document.querySelector(
       '#ytd-player .html5-video-player'
     );
-    const id = videoPlayerElem?.getVideoData?.()?.video_id;
-    if (id) videoPlayerElem?.loadVideoById?.(id); // Refreshes auto quality setting range above 480p
-
+    if (videoPlayerElem) {
+      const id = videoPlayerElem.getVideoData()?.video_id;
+      if (id) videoPlayerElem.loadVideoById(id); // Refreshes auto quality setting range above 480p
+    }
     contentScript.postMessage('video-player-reload-video-by-id');
   }
 );

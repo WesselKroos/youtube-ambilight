@@ -3309,6 +3309,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         !this.settings.frameBlending,
         this.settings.barSizeDetectionAverageHistorySize || 1,
         this.settings.barSizeDetectionAllowedElementsPercentage || 20,
+        this.settings.barSizeDetectionAllowedUnevenBarsPercentage || 20,
         wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
       );
     } catch (ex) {
