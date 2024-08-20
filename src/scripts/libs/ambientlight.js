@@ -15,6 +15,12 @@ import {
   watchSelectors,
   isEmbedPageUrl,
   isNetworkError,
+  VIEW_DISABLED,
+  VIEW_DETACHED,
+  VIEW_SMALL,
+  VIEW_THEATER,
+  VIEW_FULLSCREEN,
+  VIEW_POPUP,
 } from './generic';
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter';
 import BarDetection from './bar-detection';
@@ -35,13 +41,6 @@ import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
 
-const VIEW_DISABLED = 'DISABLED';
-const VIEW_DETACHED = 'DETACHED';
-const VIEW_SMALL = 'SMALL';
-const VIEW_THEATER = 'THEATER';
-const VIEW_FULLSCREEN = 'FULLSCREEN';
-const VIEW_POPUP = 'POPUP';
-
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
 export default class Ambientlight {
@@ -51,6 +50,7 @@ export default class Ambientlight {
 
   videoOffset = {};
   srcVideoOffset = {};
+  videoScale = 100;
 
   isHidden = true;
   isOnVideoPage = true;
@@ -1472,9 +1472,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           this.optionalFrame();
         }
       }
-      if (this.settings.detectVideoFillScaleEnabled) {
-        this.settings.set('videoScale', 100, true);
-      }
     }
     this.prevVideoPath = videoPath;
     this.settings.updateHdr();
@@ -1549,33 +1546,44 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.scheduleNextFrame();
   }
 
-  detectVideoFillScale() {
-    let videoScale = 100;
-    if (this.videoElem.offsetWidth && this.videoElem.offsetHeight) {
-      if (this.videoPlayerElem) {
-        const videoScaleX =
-          (100 - this.settings.verticalBarsClipPercentage * 2) / 100;
-        const videoScaleY =
-          (100 - this.settings.horizontalBarsClipPercentage * 2) / 100;
-        const videoWidth = this.videoElem.offsetWidth * videoScaleX;
-        const videoHeight = this.videoElem.offsetHeight * videoScaleY;
-        const containerWidth = this.videoPlayerElem.offsetWidth;
-        const containerHeight = this.videoPlayerElem.offsetHeight;
-        const scaleX = containerWidth / videoWidth;
-        const scaleY = containerHeight / videoHeight;
+  updateVideoScale() {
+    const videoScaleKey = `videoScale.${this.view}`;
+    let videoScale = this.settings[videoScaleKey] ?? 100;
 
-        videoScale = Math.round(Math.min(scaleX, scaleY) * 10000) / 100;
-        if (isNaN(videoScale)) {
-          videoScale = 100;
-        }
-        if (videoScale < 100.5) {
-          videoScale = 100;
-        }
+    if (
+      this.settings.detectVideoFillScaleEnabled &&
+      this.videoElem?.offsetWidth &&
+      this.videoElem?.offsetHeight &&
+      this.videoPlayerElem?.offsetWidth &&
+      this.videoPlayerElem?.offsetHeight
+    ) {
+      const barScaleX =
+        (100 - this.settings.verticalBarsClipPercentage * 2) / 100;
+      const barScaleY =
+        (100 - this.settings.horizontalBarsClipPercentage * 2) / 100;
+      const barScaledVideoWidth = this.videoElem.offsetWidth * barScaleX;
+      const barScaledVideoHeight = this.videoElem.offsetHeight * barScaleY;
+
+      const containerWidth =
+        this.videoPlayerElem.offsetWidth * (videoScale / 100);
+      const containerHeight =
+        this.videoPlayerElem.offsetHeight * (videoScale / 100);
+
+      const filledVideoScaleX = containerWidth / barScaledVideoWidth;
+      const filledVideoScaleY = containerHeight / barScaledVideoHeight;
+      const filledVideoScale =
+        Math.round(Math.min(filledVideoScaleX, filledVideoScaleY) * 10000) /
+        100;
+
+      if (
+        !isNaN(filledVideoScale) &&
+        !(filledVideoScale > 100 && filledVideoScale < 100.5)
+      ) {
+        videoScale = filledVideoScale;
       }
     }
-    if (this.settings.videoScale === videoScale) return;
 
-    this.settings.set('videoScale', videoScale, true);
+    this.videoScale = videoScale;
   }
 
   getView = () => {
@@ -1658,17 +1666,18 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.sizesChanged = true;
     }
 
-    const wasView = this.view;
-    this.view = this.getView();
-    if (wasView === this.view) return false;
+    const view = this.getView();
+    if (this.view === view) return false;
 
+    this.view = view;
     const videoPlayerSizeUpdated = this.updateImmersiveMode();
 
-    const isFullscreen = this.view == VIEW_FULLSCREEN;
+    const isFullscreen = view == VIEW_FULLSCREEN;
     const fullscreenChanged = isFullscreen !== this.isFullscreen;
     this.isFullscreen = isFullscreen;
 
     this.updateFixedStyle();
+    this.settings.updateVisibility();
 
     if (fullscreenChanged && this.settings.enabled && this.isOnVideoPage) {
       this.videoPlayerResizeFromFullscreen = !this.isFullscreen;
@@ -1711,15 +1720,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
   async updateSizes() {
     this.updateView();
+    this.updateVideoScale();
 
-    if (this.settings.detectVideoFillScaleEnabled) {
-      this.detectVideoFillScale();
-    }
-    const videoScale = this.settings.videoScale;
     const noClipOrScale =
       this.settings.horizontalBarsClipPercentage == 0 &&
       this.settings.verticalBarsClipPercentage == 0 &&
-      videoScale == 100;
+      this.videoScale == 100;
 
     const videoParentElem = this.videoElem.parentElement;
 
@@ -1759,7 +1765,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       videoParentElem.style.overflow = 'hidden';
       videoParentElem.style.transform = `
         translate(${left}px, ${top}px)
-        scale(${videoScale / 100}) 
+        scale(${this.videoScale / 100}) 
         scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `;
       const VideoClipScale = this.clippedVideoScale.map(
@@ -1803,10 +1809,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       return false; //Not ready
 
     const unscaledWidth = Math.round(
-      this.videoOffset.width / (videoScale / 100)
+      this.videoOffset.width / (this.videoScale / 100)
     );
     const unscaledHeight = Math.round(
-      this.videoOffset.height / (videoScale / 100)
+      this.videoOffset.height / (this.videoScale / 100)
     );
     const unscaledLeft = Math.round(
       this.videoOffset.left +
@@ -1829,7 +1835,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.projectorsElem.style.width = `${unscaledWidth}px`;
     this.projectorsElem.style.height = `${unscaledHeight}px`;
     this.projectorsElem.style.transform = `
-      scale(${videoScale / 100}) 
+      scale(${this.videoScale / 100}) 
       scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
     `;
     if (this.settings.webGL) this.projector.cropped = false;
@@ -1852,7 +1858,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         translate(${unscaledWidth * this.barsClip[0]}px, ${
         unscaledHeight * this.barsClip[1]
       }px)
-        scale(${videoScale / 100})
+        scale(${this.videoScale / 100})
       `;
       this.videoShadowElem.style.borderRadius = this.ytdPlayerElem
         ? getComputedStyle(this.ytdPlayerElem).borderRadius ?? ''
@@ -2285,7 +2291,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // Video scale
     document.body.style.setProperty(
       '--ytal-html5-video-player-overflow',
-      this.settings.videoScale > 100 ? 'visible' : ''
+      this.videoScale > 100 ? 'visible' : ''
     );
 
     // Video Debanding
@@ -2478,7 +2484,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     const noClipOrScale =
       this.settings.horizontalBarsClipPercentage == 0 &&
       this.settings.verticalBarsClipPercentage == 0 &&
-      this.settings.videoScale == 100;
+      this.videoScale == 100;
     if (!noClipOrScale) {
       const videoParentElem = this.videoElem.parentElement;
       if (videoParentElem) {

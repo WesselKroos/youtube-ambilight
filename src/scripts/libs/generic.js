@@ -389,6 +389,13 @@ export const mediaErrorToString = (value) =>
     value) ??
   'UNKNOWN');
 
+export const VIEW_DISABLED = 'DISABLED';
+export const VIEW_DETACHED = 'DETACHED';
+export const VIEW_SMALL = 'SMALL';
+export const VIEW_THEATER = 'THEATER';
+export const VIEW_FULLSCREEN = 'FULLSCREEN';
+export const VIEW_POPUP = 'POPUP';
+
 export const watchSelectors = [
   'ytd-watch-flexy',
   'ytd-watch-fixie',

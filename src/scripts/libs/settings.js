@@ -1,4 +1,14 @@
-import { on, off, setTimeout, supportsWebGL, raf, setWarning } from './generic';
+import {
+  on,
+  off,
+  setTimeout,
+  supportsWebGL,
+  raf,
+  setWarning,
+  VIEW_SMALL,
+  VIEW_THEATER,
+  VIEW_FULLSCREEN,
+} from './generic';
 import SentryReporter from './sentry-reporter';
 import SettingsConfig, {
   prepareSettingsConfigOnce,
@@ -15,6 +25,9 @@ const feedbackFormLink = getFeedbackFormLink(); // document.currentScript?.getAt
 //  || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 const version = getVersion(); // document.currentScript?.getAttribute('data-version') || ''
+
+const getSettingQuerySelector = (name) =>
+  `#setting-${name.replace(/\./g, '\\.')}`;
 
 export default class Settings {
   saveStorageEntryTimeout = {};
@@ -698,7 +711,9 @@ export default class Settings {
       on(label, 'click', (e) => {
         const value = e.target.value;
         const name = e.target.parentNode.id.replace('snap-points-', '');
-        const inputElem = this.menuElem.querySelector(`#setting-${name}-range`);
+        const inputElem = this.menuElem.querySelector(
+          `${getSettingQuerySelector(name)}-range`
+        );
         inputElem.value = value;
         inputElem.dispatchEvent(new Event('change', { bubbles: true }));
       });
@@ -767,7 +782,7 @@ export default class Settings {
 
     for (const setting of SettingsConfig) {
       const settingElem = this.menuElem.querySelector(
-        `#setting-${setting.name}`
+        getSettingQuerySelector(setting.name)
       );
       if (!settingElem) continue;
 
@@ -805,14 +820,14 @@ export default class Settings {
 
       if (setting.type === 'list') {
         const inputElem = this.menuElem.querySelector(
-          `#setting-${setting.name}-range`
+          `${getSettingQuerySelector(setting.name)}-range`
         );
         const valueElem = this.menuElem.querySelector(
-          `#setting-${setting.name}-value`
+          `${getSettingQuerySelector(setting.name)}-value`
         );
 
         const manualInputElem = this.menuElem.querySelector(
-          `#setting-${setting.name}-manualinput`
+          `${getSettingQuerySelector(setting.name)}-manualinput`
         );
         if (manualInputElem) {
           on(manualInputElem, 'keydown keyup keypress', (e) => {
@@ -891,7 +906,6 @@ export default class Settings {
               [
                 'horizontalBarsClipPercentage',
                 'verticalBarsClipPercentage',
-                'videoScale',
               ].some((name) => name === setting.name)
             ) {
               if (!inputElem.dontResetControllerSetting) {
@@ -899,7 +913,6 @@ export default class Settings {
                   horizontalBarsClipPercentage:
                     'detectHorizontalBarSizeEnabled',
                   verticalBarsClipPercentage: 'detectVerticalBarSizeEnabled',
-                  videoScale: 'detectVideoFillScaleEnabled',
                 }[setting.name];
                 if (this[controllerSetting]) {
                   const controllerInput = this.menuElem.querySelector(
@@ -914,9 +927,7 @@ export default class Settings {
               }
               this.updateVisibility();
 
-              if (setting.name !== 'videoScale') {
-                this.ambientlight.barDetection.clear();
-              }
+              this.ambientlight.barDetection.clear();
               if (this.enabled && this.webGL) {
                 this.ambientlight.buffersCleared = true; // Force a buffer redraw because the buffer can be transferred to the bar detection worker
               }
@@ -954,8 +965,8 @@ export default class Settings {
                 'debandingStrength',
                 'videoShadowSize',
                 'videoShadowOpacity',
-                'videoScale',
-              ].some((name) => name === setting.name)
+              ].some((name) => name === setting.name) ||
+              setting.name.startsWith('videoScale.')
             ) {
               this.ambientlight.updateStyles();
             }
@@ -1085,7 +1096,7 @@ export default class Settings {
           ) {
             if (setting.name !== 'webGL') this.set(setting.name, value);
             this.menuElem
-              .querySelector(`#setting-${setting.name}`)
+              .querySelector(getSettingQuerySelector(setting.name))
               .setAttribute('aria-checked', value);
           }
 
@@ -1104,12 +1115,18 @@ export default class Settings {
           ) {
             this.ambientlight.applyChromiumBugDirectVideoOverlayWorkaround();
           }
+          if (
+            ['detectVideoFillScaleEnabled'].some(
+              (name) => name === setting.name
+            )
+          ) {
+            this.displayBezel(setting.key, !value);
+          }
 
           if (
             [
               'detectHorizontalBarSizeEnabled',
               'detectVerticalBarSizeEnabled',
-              'detectVideoFillScaleEnabled',
             ].some((name) => name === setting.name)
           ) {
             this.displayBezel(setting.key, !value);
@@ -1117,7 +1134,6 @@ export default class Settings {
               const controlledSettingName = {
                 detectHorizontalBarSizeEnabled: 'horizontalBarsClipPercentage',
                 detectVerticalBarSizeEnabled: 'verticalBarsClipPercentage',
-                detectVideoFillScaleEnabled: 'videoScale',
               }[setting.name];
               const percentageSetting = SettingsConfig.find(
                 (setting) => setting.name === controlledSettingName
@@ -1195,6 +1211,7 @@ export default class Settings {
           if (
             [
               'videoOverlayEnabled',
+              'detectVideoFillScaleEnabled',
               'directionTopEnabled',
               'directionRightEnabled',
               'directionBottomEnabled',
@@ -1210,12 +1227,9 @@ export default class Settings {
               'detectHorizontalBarSizeEnabled',
               'detectVerticalBarSizeEnabled',
               'detectColoredHorizontalBarSizeEnabled',
-              'detectVideoFillScaleEnabled',
             ].some((name) => name === setting.name)
           ) {
-            if (setting.name !== 'detectVideoFillScaleEnabled') {
-              this.ambientlight.barDetection.clear();
-            }
+            this.ambientlight.barDetection.clear();
             if (this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true; // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
@@ -1555,10 +1569,6 @@ export default class Settings {
 
   controlledSettings = [
     {
-      name: 'videoScale',
-      controllers: ['detectVideoFillScaleEnabled'],
-    },
-    {
       name: 'horizontalBarsClipPercentage',
       controllers: ['detectHorizontalBarSizeEnabled'],
     },
@@ -1658,6 +1668,18 @@ export default class Settings {
         this.detectHorizontalBarSizeEnabled ||
         this.detectVerticalBarSizeEnabled,
     },
+    {
+      names: [`videoScale.${VIEW_SMALL}`],
+      visible: () => this.ambientlight.view === VIEW_SMALL,
+    },
+    {
+      names: [`videoScale.${VIEW_THEATER}`],
+      visible: () => this.ambientlight.view === VIEW_THEATER,
+    },
+    {
+      names: [`videoScale.${VIEW_FULLSCREEN}`],
+      visible: () => this.ambientlight.view === VIEW_FULLSCREEN,
+    },
   ];
   updateVisibility() {
     for (const setting of this.controlledSettings) {
@@ -1669,7 +1691,9 @@ export default class Settings {
         continue; // Skip removed settings
 
       const valueElem = this.menuElem.querySelector(
-        `#setting-${setting.name}.ytp-menuitem, #setting-${setting.name} .ytp-menuitem`
+        `${getSettingQuerySelector(
+          setting.name
+        )}.ytp-menuitem, ${getSettingQuerySelector(setting.name)} .ytp-menuitem`
       );
       const controlledByName = setting.controllers.find((name) => this[name]);
       const controlledByLabel = SettingsConfig.find(
@@ -1692,7 +1716,9 @@ export default class Settings {
 
     for (const optionalGroup of this.optionalSettings) {
       const optionalSettings = optionalGroup.names
-        .map((name) => this.menuElem.querySelector(`#setting-${name}`))
+        .map((name) =>
+          this.menuElem.querySelector(getSettingQuerySelector(name))
+        )
         .filter((setting) => setting);
       const visible = optionalGroup.visible();
       for (const optionalSetting of optionalSettings) {
@@ -1793,7 +1819,9 @@ export default class Settings {
     const setting =
       SettingsConfig.find((setting) => setting.name === name) || {};
     if (setting.type === 'checkbox') {
-      const checkboxInput = this.menuElem.querySelector(`#setting-${name}`);
+      const checkboxInput = this.menuElem.querySelector(
+        getSettingQuerySelector(name)
+      );
       if (checkboxInput) {
         checkboxInput.setAttribute(
           'aria-checked',
@@ -1801,14 +1829,17 @@ export default class Settings {
         );
       }
     } else if (setting.type === 'list') {
-      const rangeInput = this.menuElem.querySelector(`#setting-${name}-range`);
+      const rangeInput = this.menuElem.querySelector(
+        `${getSettingQuerySelector(name)}-range`
+      );
       if (rangeInput) {
         rangeInput.value = this.getInputRangeValue(name);
         rangeInput.setAttribute('data-previous-value', rangeInput.value);
-        this.menuElem.querySelector(`#setting-${name}-value`).textContent =
-          this.getSettingListDisplayText(setting);
+        this.menuElem.querySelector(
+          `${getSettingQuerySelector(name)}-value`
+        ).textContent = this.getSettingListDisplayText(setting);
         const manualInput = this.menuElem.querySelector(
-          `#setting-${name}-manualinput`
+          `${getSettingQuerySelector(name)}-manualinput`
         );
         if (manualInput) {
           manualInput.value = rangeInput.value;
@@ -1828,7 +1859,7 @@ export default class Settings {
   }
 
   clickUI(name) {
-    this.menuElem.querySelector(`#setting-${name}`).click();
+    this.menuElem.querySelector(getSettingQuerySelector(name)).click();
   }
 
   processStorageEntry(name, value) {
