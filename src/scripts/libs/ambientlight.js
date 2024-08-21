@@ -3724,7 +3724,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       );
     }
 
-    (async function showAfterRaf() {
+    this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
+    this.updateVideoPlayerSize();
+    this.updateSizes();
+
+    if (this.chromiumBugVideoJitterWorkaround?.update)
+      this.chromiumBugVideoJitterWorkaround.update();
+
+    (async function afterShow() {
       await new Promise((resolve) => raf(resolve));
 
       const html = document.documentElement;
@@ -3743,9 +3750,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
       this.updateVideoPlayerSize(); // In case the theater player height changed
 
+      await new Promise((resolve) => raf(resolve));
+
       // Recalculate the player menu width to remove the elements on the second row
       try {
-        await new Promise((resolve) => raf(resolve));
         const menu = document.querySelector(
           'ytd-menu-renderer[has-flexible-items]'
         );
@@ -3754,13 +3762,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         }
       } catch {}
     }).bind(this)();
-
-    this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
-    this.updateVideoPlayerSize();
-    this.updateSizes();
-
-    if (this.chromiumBugVideoJitterWorkaround?.update)
-      this.chromiumBugVideoJitterWorkaround.update();
   }
 
   updateAtTop = async () => {
