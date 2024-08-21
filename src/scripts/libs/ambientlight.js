@@ -84,7 +84,7 @@ export default class Ambientlight {
 
   constructor(videoElem, ytdAppElem, ytdWatchElem, mastheadElem) {
     return async function AmbientlightConstructor() {
-      ytdAppElem.dataset.ytalNode = 'ytd-app';
+      ytdAppElem.dataset.ytalElem = 'ytd-app';
       this.ytdAppElem = ytdAppElem; // Not available in embeds
       this.ytdWatchElem = ytdWatchElem; // Not available in embeds
       this.mastheadElem = mastheadElem; // Not available in embeds
@@ -181,7 +181,7 @@ export default class Ambientlight {
     if (!this.videoPlayerElem) {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player');
     }
-    this.videoPlayerElem.dataset.ytalNode = 'video-player';
+    this.videoPlayerElem.dataset.ytalElem = 'video-player';
 
     // ytdPlayerElem is optional and only used on non-embed pages in small view to set the border radius
     this.ytdPlayerElem = videoElem.closest('ytd-player');
@@ -204,7 +204,7 @@ export default class Ambientlight {
   initVideoElem(videoElem, initListeners = true) {
     this.cancelScheduledRequestVideoFrame();
 
-    videoElem.dataset.ytalNode = 'video';
+    videoElem.dataset.ytalElem = 'video';
     this.videoElem = videoElem;
     this.applyChromiumBugDirectVideoOverlayWorkaround();
     if (initListeners) this.initVideoListeners();

@@ -23,46 +23,19 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
   );
 })();
 
-const getYtdAppElem = (() => {
-  let elem;
-  return () => {
-    if (!elem?.isConnected)
-      elem = document.querySelector('[data-ytal-node="ytd-app"]');
-    return elem;
-  };
-})();
-
-const getVideoPlayerElem = (() => {
-  let elem;
-  return () => {
-    if (!elem?.isConnected)
-      elem = document.querySelector('[data-ytal-node="video-player"]');
-    return elem;
-  };
-})();
-
-const getVideoElem = (() => {
-  let elem;
-  return () => {
-    if (!elem?.isConnected)
-      elem = document.querySelector('[data-ytal-node="video"]');
-    return elem;
-  };
-})();
-
-const getLiveChatElem = (() => {
-  let elem;
-  return () => {
-    if (!elem?.isConnected)
-      elem = document.querySelector('[data-ytal-node="live-chat"]');
-    return elem;
+const getElem = (() => {
+  const elems = {};
+  return (name) => {
+    if (!elems[name]?.isConnected)
+      elems[name] = document.querySelector(`[data-ytal-elem="${name}"]`);
+    return elems[name];
   };
 })();
 
 contentScript.addMessageListener(
   'set-masthead-theme',
   function setMastheadTheme() {
-    const ytdAppElem = getYtdAppElem();
+    const ytdAppElem = getElem('ytd-app');
     if (!ytdAppElem) return;
 
     ytdAppElem.setMastheadTheme();
@@ -72,7 +45,7 @@ contentScript.addMessageListener(
 contentScript.addMessageListener(
   'set-live-chat-theme',
   function seLiveChatTheme(toDark) {
-    const liveChatElem = getLiveChatElem();
+    const liveChatElem = getElem('live-chat');
     if (!liveChatElem) return;
 
     liveChatElem.postToContentWindow({
@@ -82,7 +55,7 @@ contentScript.addMessageListener(
 );
 
 contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
-  const videoPlayerElem = getVideoPlayerElem();
+  const videoPlayerElem = getElem('video-player');
   const isHdr = videoPlayerElem?.getVideoData?.()?.isHdr ?? false;
   contentScript.postMessage('is-hdr-video', isHdr);
 });
@@ -90,7 +63,7 @@ contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
 contentScript.addMessageListener(
   'video-player-set-size',
   function videoPlayerSetSize() {
-    const videoPlayerElem = getVideoPlayerElem();
+    const videoPlayerElem = getElem('video-player');
     if (!videoPlayerElem) return;
 
     try {
@@ -110,7 +83,7 @@ contentScript.addMessageListener(
 contentScript.addMessageListener(
   'video-player-update-video-data-keywords',
   function videoPlayerUpdateVideoDataKeywords(keywords) {
-    const videoPlayerElem = getVideoPlayerElem();
+    const videoPlayerElem = getElem('video-player');
     if (!videoPlayerElem) return;
 
     videoPlayerElem.updateVideoData({ keywords });
@@ -120,7 +93,7 @@ contentScript.addMessageListener(
 contentScript.addMessageListener(
   'video-player-reload-video-by-id',
   function videoPlayerReloadVideoById() {
-    const videoPlayerElem = getVideoPlayerElem();
+    const videoPlayerElem = getElem('video-player');
     if (videoPlayerElem) {
       const id = videoPlayerElem.getVideoData()?.video_id;
       if (id) videoPlayerElem.loadVideoById(id); // Refreshes auto quality setting range above 480p
@@ -135,7 +108,7 @@ contentScript.addMessageListener(
   'apply-chromium-bug-1142112-workaround',
   function applyChromiumBug1142112Workaround() {
     try {
-      const videoElem = getVideoElem();
+      const videoElem = getElem('video');
       if (videoObserverElem === videoElem) return;
 
       if (videoObserver) {

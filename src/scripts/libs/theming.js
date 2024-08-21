@@ -257,7 +257,7 @@ export default class Theming {
     const liveChatElem = document.querySelector('ytd-app ytd-live-chat-frame');
     if (!liveChatElem || this.liveChatElem === liveChatElem) return;
 
-    liveChatElem.dataset.ytalNode = 'live-chat';
+    liveChatElem.dataset.ytalElem = 'live-chat';
     this.liveChatElem = liveChatElem;
 
     this.initLiveChatIframe();
@@ -285,6 +285,7 @@ export default class Theming {
 
   updateLiveChatThemeThrottle = {};
   updateLiveChatTheme = () => {
+    if (!this.liveChatElem || !this.liveChatIframeElem) this.initLiveChatElem();
     if (!this.liveChatElem || !this.liveChatIframeElem) return;
     if (this.updateLiveChatThemeThrottle.timeout) return;
 
