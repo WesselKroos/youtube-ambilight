@@ -84,6 +84,7 @@ export default class Ambientlight {
 
   constructor(videoElem, ytdAppElem, ytdWatchElem, mastheadElem) {
     return async function AmbientlightConstructor() {
+      ytdAppElem.dataset.ytalNode = 'ytd-app';
       this.ytdAppElem = ytdAppElem; // Not available in embeds
       this.ytdWatchElem = ytdWatchElem; // Not available in embeds
       this.mastheadElem = mastheadElem; // Not available in embeds
@@ -180,6 +181,7 @@ export default class Ambientlight {
     if (!this.videoPlayerElem) {
       throw new Error('Cannot find videoPlayerElem: .html5-video-player');
     }
+    this.videoPlayerElem.dataset.ytalNode = 'video-player';
 
     // ytdPlayerElem is optional and only used on non-embed pages in small view to set the border radius
     this.ytdPlayerElem = videoElem.closest('ytd-player');
@@ -201,6 +203,8 @@ export default class Ambientlight {
 
   initVideoElem(videoElem, initListeners = true) {
     this.cancelScheduledRequestVideoFrame();
+
+    videoElem.dataset.ytalNode = 'video';
     this.videoElem = videoElem;
     this.applyChromiumBugDirectVideoOverlayWorkaround();
     if (initListeners) this.initVideoListeners();
@@ -3720,7 +3724,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       );
     }
 
-    (async () => {
+    (async function showAfterRaf() {
       await new Promise((resolve) => raf(resolve));
 
       const html = document.documentElement;
@@ -3749,9 +3753,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           menu.onStamperFinished();
         }
       } catch {}
-    })();
+    }).bind(this)();
 
-    this.handleDocumentVisibilityChange(); // In case the visibility had changed while disabled
+    this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
     this.updateVideoPlayerSize();
     this.updateSizes();
 

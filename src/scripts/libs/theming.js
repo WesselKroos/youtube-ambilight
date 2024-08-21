@@ -254,26 +254,30 @@ export default class Theming {
   };
 
   initLiveChatElem = () => {
-    const liveChat = document.querySelector('ytd-app ytd-live-chat-frame');
-    if (!liveChat || this.liveChat === liveChat) return;
+    const liveChatElem = document.querySelector('ytd-app ytd-live-chat-frame');
+    if (!liveChatElem || this.liveChatElem === liveChatElem) return;
 
-    this.liveChat = liveChat;
+    liveChatElem.dataset.ytalNode = 'live-chat';
+    this.liveChatElem = liveChatElem;
+
     this.initLiveChatIframe();
     const observer = new MutationObserver(
       wrapErrorHandler(this.initLiveChatIframe)
     );
-    observer.observe(liveChat, {
+    observer.observe(liveChatElem, {
       childList: true,
     });
   };
 
   initLiveChatIframe = () => {
-    const iframe = document.querySelector('ytd-app ytd-live-chat-frame iframe');
-    if (!iframe || this.liveChatIframe === iframe) return;
+    const iframeElem = document.querySelector(
+      'ytd-app ytd-live-chat-frame iframe'
+    );
+    if (!iframeElem || this.liveChatIframeElem === iframeElem) return;
 
-    this.liveChatIframe = iframe;
+    this.liveChatIframeElem = iframeElem;
     this.updateLiveChatTheme();
-    iframe.addEventListener('load', () => {
+    iframeElem.addEventListener('load', () => {
       this.ambientlight.updateLayoutPerformanceImprovements();
       this.updateLiveChatTheme();
     });
@@ -281,7 +285,7 @@ export default class Theming {
 
   updateLiveChatThemeThrottle = {};
   updateLiveChatTheme = () => {
-    if (!this.liveChat || !this.liveChatIframe) return;
+    if (!this.liveChatElem || !this.liveChatIframeElem) return;
     if (this.updateLiveChatThemeThrottle.timeout) return;
 
     const update = function updateLiveChatThemeUpdate() {
