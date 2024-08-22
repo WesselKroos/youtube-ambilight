@@ -84,7 +84,7 @@ export default class Ambientlight {
 
   constructor(videoElem, ytdAppElem, ytdWatchElem, mastheadElem) {
     return async function AmbientlightConstructor() {
-      ytdAppElem.dataset.ytalElem = 'ytd-app';
+      if (ytdAppElem) ytdAppElem.dataset.ytalElem = 'ytd-app';
       this.ytdAppElem = ytdAppElem; // Not available in embeds
       this.ytdWatchElem = ytdWatchElem; // Not available in embeds
       this.mastheadElem = mastheadElem; // Not available in embeds
@@ -3731,7 +3731,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
-    (async function afterShow() {
+    wrapErrorHandler(async function afterShow() {
       await new Promise((resolve) => raf(resolve));
 
       const html = document.documentElement;
