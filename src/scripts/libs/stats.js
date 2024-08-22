@@ -656,7 +656,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
       receiveToDrawStart: [ft.video?.receive, ft.drawStart - ft.video?.receive],
       drawStartTodrawEnd: [ft.drawStart, ft.drawEnd - ft.drawStart],
       drawEndToDisplay: [ft.drawEnd, ft.display - ft.drawEnd], // Current task on the main thread
-      displayToComplete: [ft.display, ft.complete - ft.display], // All tasks on main thread
+      // displayToComplete: [ft.display, ft.complete - ft.display], // All tasks on main thread
       videoDisplay: ft.video?.display, // All tasks on main thread
       isDrawnBeforeVideoDisplay:
         !isFinite(ft.video?.display) || ft.drawEnd <= ft.video?.display,
@@ -731,8 +731,12 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
       ['#06f', xSize, ...fd.decodeToPresent],
       ['#666', 1, ...fd.composeToReceive],
       ['#f80', 1, ...fd.presentToCompose],
-      // [fd.drawnBeforeVideoDisplay ? '#0f0' : '#ff0', 1, ...fd.displayToComplete],
-      // ['#a0a', 1, ...fd.drawEndToDisplay],
+      // [
+      //   fd.isDrawnBeforeVideoDisplay ? '#0f0' : '#ff0',
+      //   1,
+      //   ...fd.displayToComplete,
+      // ],
+      ['#a0b', 1, ...fd.drawEndToDisplay],
       [
         fd.isDrawnBeforeVideoDisplay ? '#0b0' : '#db0',
         xSize,
