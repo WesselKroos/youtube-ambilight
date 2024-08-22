@@ -3731,8 +3731,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
-    wrapErrorHandler(async function afterShow() {
-      await new Promise((resolve) => raf(resolve));
+    wrapErrorHandler(
+      async function afterShow() {
+        await new Promise((resolve) => raf(resolve));
 
       const html = document.documentElement;
       html.setAttribute('data-ambientlight-enabled', true);
@@ -3761,7 +3762,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           menu.onStamperFinished();
         }
       } catch {}
-    }).bind(this)();
+      }.bind(this)
+    )();
   }
 
   updateAtTop = async () => {
