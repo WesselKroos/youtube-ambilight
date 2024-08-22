@@ -870,6 +870,8 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
   };
 
   updateBarDetectionInfo = (throttle, lastChange) => {
+    if (!this.settings.showBarDetectionStats) return;
+
     const barDetectionFPS = throttle
       ? `${Math.round(1000 / throttle).toFixed(2)} (${(1000 / throttle).toFixed(
           1

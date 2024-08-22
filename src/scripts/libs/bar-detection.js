@@ -1177,24 +1177,25 @@ export default class BarDetection {
     if (this.history.vertical.length === 0)
       currentVerticalPercentage = undefined;
 
-    this.idleHandlerArguments = {
-      buffer,
-      detectColored,
-      offsetPercentage,
-      detectHorizontal,
-      currentHorizontalPercentage,
-      detectVertical,
-      currentVerticalPercentage,
-      ratio,
-      allowedToTransfer,
-      averageHistorySize,
-      allowedAnomaliesPercentage,
-      allowedUnevenBarsPercentage,
-      callback,
-    };
-
     requestIdleCallback(
-      async () => await this.idleHandler(runId),
+      async function detectIdleCallback() {
+        await this.idleHandler(
+          runId,
+          buffer,
+          detectColored,
+          offsetPercentage,
+          detectHorizontal,
+          currentHorizontalPercentage,
+          detectVertical,
+          currentVerticalPercentage,
+          ratio,
+          allowedToTransfer,
+          averageHistorySize,
+          allowedAnomaliesPercentage,
+          allowedUnevenBarsPercentage,
+          callback
+        );
+      }.bind(this),
       { timeout: 1 },
       true
     );
@@ -1274,24 +1275,23 @@ export default class BarDetection {
     return percentage;
   }
 
-  idleHandler = async (runId) => {
+  idleHandler = async (
+    runId,
+    buffer,
+    detectColored,
+    offsetPercentage,
+    detectHorizontal,
+    currentHorizontalPercentage,
+    detectVertical,
+    currentVerticalPercentage,
+    ratio,
+    allowedToTransfer,
+    averageHistorySize,
+    allowedAnomaliesPercentage,
+    allowedUnevenBarsPercentage,
+    callback
+  ) => {
     if (this.runId !== runId) return;
-
-    const {
-      buffer,
-      detectColored,
-      offsetPercentage,
-      detectHorizontal,
-      currentHorizontalPercentage,
-      detectVertical,
-      currentVerticalPercentage,
-      ratio,
-      allowedToTransfer,
-      averageHistorySize,
-      allowedAnomaliesPercentage,
-      allowedUnevenBarsPercentage,
-      callback,
-    } = this.idleHandlerArguments;
 
     let canvasInfo;
     let bufferCtx;
