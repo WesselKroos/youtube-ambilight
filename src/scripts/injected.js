@@ -62,21 +62,21 @@ contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
 
 contentScript.addMessageListener(
   'video-player-set-size',
-  function videoPlayerSetSize() {
+  function videoPlayerSetSize(id) {
     const videoPlayerElem = getElem('video-player');
-    if (!videoPlayerElem) return;
-
-    try {
-      videoPlayerElem.setSize();
-      videoPlayerElem.setInternalSize();
-    } catch (ex) {
-      console.warn(
-        `Failed to resize the video player${
-          ex?.message ? `: ${ex?.message}` : ''
-        }`
-      );
+    if (videoPlayerElem) {
+      try {
+        videoPlayerElem.setSize();
+        videoPlayerElem.setInternalSize();
+      } catch (ex) {
+        console.warn(
+          `Failed to resize the video player${
+            ex?.message ? `: ${ex?.message}` : ''
+          }`
+        );
+      }
     }
-    contentScript.postMessage('sizes-changed');
+    contentScript.postMessage('sizes-changed', id);
   }
 );
 

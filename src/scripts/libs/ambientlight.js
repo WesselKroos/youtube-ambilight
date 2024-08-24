@@ -744,8 +744,37 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
   };
 
-  updateVideoPlayerSize = () => {
-    injectedScript.postMessage('video-player-set-size');
+  videoPlayerSetSizeIndex = 0;
+  updateVideoPlayerSize = async () => {
+    if (this.videoPlayerSetSizePromise) {
+      await this.videoPlayerSetSizePromise;
+      return;
+    }
+
+    this.videoPlayerSetSizeIndex++;
+    const id = this.videoPlayerSetSizeIndex;
+
+    this.videoPlayerSetSizePromise = new Promise((resolve) => {
+      const complete = () => {
+        clearTimeout(timeout);
+        injectedScript.removeMessageListener(changedListener);
+        resolve();
+      };
+      const timeout = setTimeout(complete, 1000); // Fallback in case messaging fails
+      const changedListener = injectedScript.addMessageListener(
+        'sizes-changed',
+        (changedId) => {
+          if (id !== changedId) return;
+
+          complete();
+        }
+      );
+    });
+
+    injectedScript.postMessage('video-player-set-size', id);
+
+    await this.videoPlayerSetSizePromise;
+    this.videoPlayerSetSizePromise = undefined;
   };
 
   async initListeners() {
@@ -3731,37 +3760,37 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
+    await new Promise((resolve) => raf(resolve));
+
     wrapErrorHandler(
       async function afterShow() {
-        await new Promise((resolve) => raf(resolve));
+        const html = document.documentElement;
+        html.setAttribute('data-ambientlight-enabled', true);
+        if (this.settings.hideScrollbar)
+          html.setAttribute('data-ambientlight-hide-scrollbar', true);
+        if (this.settings.relatedScrollbar)
+          html.setAttribute('data-ambientlight-related-scrollbar', true);
 
-      const html = document.documentElement;
-      html.setAttribute('data-ambientlight-enabled', true);
-      if (this.settings.hideScrollbar)
-        html.setAttribute('data-ambientlight-hide-scrollbar', true);
-      if (this.settings.relatedScrollbar)
-        html.setAttribute('data-ambientlight-related-scrollbar', true);
-      if (this.settings.layoutPerformanceImprovements)
-        this.updateLayoutPerformanceImprovements();
+        if (this.settings.layoutPerformanceImprovements)
+          this.updateLayoutPerformanceImprovements();
 
-      // Reset
-      if (this.playerTheaterContainerElem)
-        this.playerTheaterContainerElem.style.background = '';
-      if (this.ytdAppElem) this.ytdAppElem.style.background = '';
+        // Reset
+        if (this.playerTheaterContainerElem)
+          this.playerTheaterContainerElem.style.background = '';
+        if (this.ytdAppElem) this.ytdAppElem.style.background = '';
 
-      this.updateVideoPlayerSize(); // In case the theater player height changed
+        await this.updateVideoPlayerSize(true); // In case the theater player height changed
 
-      await new Promise((resolve) => raf(resolve));
 
-      // Recalculate the player menu width to remove the elements on the second row
-      try {
-        const menu = document.querySelector(
-          'ytd-menu-renderer[has-flexible-items]'
-        );
-        if (menu?.onStamperFinished) {
-          menu.onStamperFinished();
-        }
-      } catch {}
+        // Recalculate the player menu width to remove the elements on the second row
+        try {
+          const menu = document.querySelector(
+            'ytd-menu-renderer[has-flexible-items]'
+          );
+          if (menu?.onStamperFinished) {
+            menu.onStamperFinished();
+          }
+        } catch {}
       }.bind(this)
     )();
   }
@@ -3788,7 +3817,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       html.removeAttribute('data-ambientlight-immersive');
     }
 
-    raf(() => this.updateVideoPlayerSize()); // Because it is incorrect when transitioning from immersive theater to small
+    this.updateVideoPlayerSize(); // Because it is incorrect when transitioning from immersive theater to small
     return true;
   }
 }
