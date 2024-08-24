@@ -581,7 +581,6 @@ export default class Settings {
         input.id = `setting-${setting.name}-range`;
         input.type = 'range';
         input.setAttribute('colspan', '2');
-        input.value = this.getInputRangeValue(setting.name);
         if (setting.min !== undefined) input.min = setting.min.toString();
         if (setting.max !== undefined) input.max = setting.max.toString();
         if (setting.valuePoints) {
@@ -589,6 +588,7 @@ export default class Settings {
           input.max = (setting.valuePoints.length - 1).toString();
         }
         if (setting.step || setting.valuePoints) input.step = setting.step || 1;
+        input.value = this.getInputRangeValue(setting.name);
         range.appendChild(input);
 
         if (setting.snapPoints) {
