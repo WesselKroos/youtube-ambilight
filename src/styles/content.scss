@@ -180,7 +180,8 @@
     bottom: 3px;
   }
 }
-.ambientlight__ambientlight-bar-detection-result {
+.ambientlight__ambientlight-bar-detection-horizontal-result,
+.ambientlight__ambientlight-bar-detection-vertical-result {
   white-space: pre;
 }
 .ambientlight__ambientlight-bar-detection-graph {

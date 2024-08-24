@@ -800,6 +800,7 @@ const workerCode = function () {
           percentage: 0,
           topEdges,
           bottomEdges,
+          color,
         };
       }
 

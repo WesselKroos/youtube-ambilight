@@ -108,8 +108,11 @@ export default class Stats {
     this.barDetectionDurationElem = appendFPSItem(
       'ambientlight__ambientlight-bar-detection-duration'
     );
-    this.barDetectionResultElem = appendFPSItem(
-      'ambientlight__ambientlight-bar-detection-result'
+    this.barDetectionHorizontalResultElem = appendFPSItem(
+      'ambientlight__ambientlight-bar-detection-horizontal-result'
+    );
+    this.barDetectionVerticalResultElem = appendFPSItem(
+      'ambientlight__ambientlight-bar-detection-vertical-result'
     );
     this.barDetectionGraphElem = appendFPSItem(
       'ambientlight__ambientlight-bar-detection-graph'
@@ -136,10 +139,31 @@ export default class Stats {
       this.ambientlightDroppedFramesElem.childNodes[0].nodeValue = '';
     }
 
-    if (!onlyDisabled || !this.settings.showBarDetectionStats) {
+    if (
+      !onlyDisabled ||
+      !this.settings.showBarDetectionStats ||
+      !this.settings.detectHorizontalBarSizeEnabled
+    ) {
+      this.barDetectionHorizontalResultElem.childNodes[0].nodeValue = '';
+    }
+
+    if (
+      !onlyDisabled ||
+      !this.settings.showBarDetectionStats ||
+      !this.settings.detectVerticalBarSizeEnabled
+    ) {
+      this.barDetectionVerticalResultElem.childNodes[0].nodeValue = '';
+    }
+
+    if (
+      !onlyDisabled ||
+      !this.settings.showBarDetectionStats ||
+      (!this.settings.detectHorizontalBarSizeEnabled &&
+        !this.settings.detectVerticalBarSizeEnabled)
+    ) {
+      this.barDetectionDurations = [];
       this.barDetectionDurationElem.childNodes[0].nodeValue = '';
       this.barDetectionFPSElem.childNodes[0].nodeValue = '';
-      this.barDetectionResultElem.childNodes[0].nodeValue = '';
 
       if (this.barDetectionCanvas?.parentNode) {
         if (this.barDetectionCtx) {
@@ -810,7 +834,6 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
   updateBarDetectionDurations = () => {
     if (
       !this.settings.showBarDetectionStats ||
-      !this.barDetectionDurations.length ||
       (!this.settings.detectHorizontalBarSizeEnabled &&
         !this.settings.detectVerticalBarSizeEnabled)
     ) {
@@ -819,9 +842,14 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
         this.barDetectionDurationElem.style.color = '';
       }
 
-      if (this.barDetectionResultElem?.parentNode) {
-        this.barDetectionResultElem.childNodes[0].nodeValue = '';
-        this.barDetectionResultElem.style.color = '';
+      if (this.barDetectionHorizontalResultElem?.parentNode) {
+        this.barDetectionHorizontalResultElem.childNodes[0].nodeValue = '';
+        this.barDetectionHorizontalResultElem.style.color = '';
+      }
+
+      if (this.barDetectionVerticalResultElem?.parentNode) {
+        this.barDetectionVerticalResultElem.childNodes[0].nodeValue = '';
+        this.barDetectionVerticalResultElem.style.color = '';
       }
 
       if (this.barDetectionFPSElem?.parentNode) {
@@ -864,12 +892,16 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
     );
     this.barDetectionDurations = durations;
 
-    const duration = Math.round(
-      durations.reduce((total, duration) => total + duration, 0) /
-        durations.length
-    ).toFixed(1);
+    const duration = durations.length
+      ? Math.round(
+          durations.reduce((total, duration) => total + duration, 0) /
+            durations.length
+        ).toFixed(1)
+      : undefined;
 
-    this.barDetectionDurationElem.childNodes[0].nodeValue = ` SEARCH DURATION: ${duration}ms`;
+    this.barDetectionDurationElem.childNodes[0].nodeValue = duration
+      ? ` SEARCH DURATION: ${duration}ms`
+      : '';
     this.barDetectionDurationElem.style.color = '#fff';
   };
 
@@ -966,7 +998,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
   ) => {
     if (!this.settings.showBarDetectionStats || !this.barDetectionCtx) return;
 
-    this.barDetectionResultElem.childNodes[0].nodeValue = `${[
+    this.barDetectionHorizontalResultElem.childNodes[0].nodeValue = `${[
       this.settings.detectHorizontalBarSizeEnabled
         ? ` HORIZONTAL: ${
             horizontalBarSizeInfo.percentage !== undefined
@@ -981,6 +1013,17 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
             ?.map((c) => Math.round(c).toString().padStart(3, ' '))
             ?.join(' ')}`
         : '',
+    ]
+      .filter((s) => s)
+      .join('\n')}`;
+    this.barDetectionHorizontalResultElem.style.color =
+      horizontalBarSizeInfo.percentage !== undefined
+        ? barsFound
+          ? '#0f0'
+          : '#f80'
+        : '#fff';
+
+    this.barDetectionVerticalResultElem.childNodes[0].nodeValue = `${[
       this.settings.detectVerticalBarSizeEnabled
         ? ` VERTICAL:     ${
             verticalBarSizeInfo.percentage !== undefined
@@ -996,7 +1039,12 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
     ]
       .filter((s) => s)
       .join('\n')}`;
-    this.barDetectionResultElem.style.color = barsFound ? '#0f0' : '#fff';
+    this.barDetectionVerticalResultElem.style.color =
+      verticalBarSizeInfo.percentage !== undefined
+        ? barsFound
+          ? '#0f0'
+          : '#f80'
+        : '#fff';
 
     const width = this.barDetectionCanvas.width;
     const height = this.barDetectionCanvas.height;

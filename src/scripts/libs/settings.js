@@ -1256,6 +1256,8 @@ export default class Settings {
               'showFrametimes',
               'showResolutions',
               'showBarDetectionStats',
+              'detectHorizontalBarSizeEnabled',
+              'detectVerticalBarSizeEnabled',
             ].some((name) => name === setting.name)
           ) {
             if (value) {
@@ -1263,7 +1265,6 @@ export default class Settings {
             } else {
               this.ambientlight.stats.hide(true);
             }
-            return;
           }
 
           if (
