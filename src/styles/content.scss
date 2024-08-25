@@ -113,7 +113,7 @@
   overflow: hidden;
   contain: strict;
 
-  html[data-ambientlight-enabled="true"] & {
+  html[data-ambientlight-enabled] & {
     display: block;
   }
 }
@@ -233,8 +233,17 @@
   }
 }
 
+html {
+  &[data-ambientlight-hide-scrollbar],
+  &[data-ambientlight-immersive] {
+    scrollbar-width: none !important;
+    body::-webkit-scrollbar {
+      display: none !important;
+    }
+  }
+}
 
-html[data-ambientlight-enabled="true"] {
+html[data-ambientlight-enabled] {
   /* General */
 
   body {
@@ -301,14 +310,6 @@ html[data-ambientlight-enabled="true"] {
   &[style],
   body {
     @include scrollbar-light-thin(true);
-    
-    &[data-ambientlight-hide-scrollbar="true"],
-    &[data-ambientlight-immersive="true"] {
-      scrollbar-width: none !important;
-      body::-webkit-scrollbar {
-        display: none !important;
-      }
-    }
   }
 
   &[dark] {
@@ -478,6 +479,7 @@ html[data-ambientlight-enabled="true"] {
     transition: background-color .15s, box-shadow .15s;
   }
   #masthead-container.no-animation {
+    &,
     ytd-masthead,
     #background.ytd-masthead {
       transition: none !important;
@@ -506,12 +508,12 @@ html[data-ambientlight-enabled="true"] {
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
-  #player-theater-container, // Old theater view
-  #player-wide-container, // Second old theater view
-  // #player-full-bleed-container,
-  #full-bleed-container {
-    transition: background-color 0s .01s;
-  }
+  // #player-theater-container, // Old theater view
+  // #player-wide-container, // Second old theater view
+  // // #player-full-bleed-container,
+  // #full-bleed-container {
+  //   transition: background-color 0s .01s;
+  // }
 
   // // Covers any future updates to the html structure, but is expensive
   // @supports selector(:has(*)) {
@@ -1284,7 +1286,7 @@ html[data-ambientlight-enabled="true"] {
       opacity: var(--ytal-debanding-opacity, 0);
     }
   }
-  body[data-ambientlight-fixed="true"] {
+  body[data-ambientlight-fixed] {
     .ambientlight {
       position: fixed !important;
       height: 100svh;
@@ -1373,7 +1375,7 @@ html[data-ambientlight-enabled="true"] {
       transition: opacity .001s;//, margin-top .2s ease-out;
     }
 
-    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
+    @at-root html[data-ambientlight-enabled] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
       // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
       opacity: .9989999; // Chromium
 
@@ -1401,7 +1403,7 @@ html[data-ambientlight-enabled="true"] {
 
   /* Immersive mode */
 
-  &[data-ambientlight-immersive="true"] {
+  &[data-ambientlight-immersive] {
     @mixin theater {
       height: calc(100vh - 169px) !important;
       max-height: calc(100vh - 169px) !important;
@@ -1684,7 +1686,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  html:not([data-ambientlight-enabled="true"]) &,
+  html:not([data-ambientlight-enabled]) &,
   &.is-loading {
     &::after {
       background-color: #555;
@@ -2638,7 +2640,7 @@ html[data-ambientlight-enabled="true"] {
 
 /* injected.js Ambientlight.updateStyles variables */
 
-html[data-ambientlight-enabled="true"] {
+html[data-ambientlight-enabled] {
   // Video shadow
   .ambientlight__video-shadow {
     background: var(--ytal-video-shadow-background, none) !important;
@@ -3102,78 +3104,25 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Load more shorts button
+
+  .button-container.ytd-rich-shelf-renderer {
+    background: none !important;
+    backdrop-filter: blur(5px);
+  }
+}
+
   
-  // Limit related videos to scrollable list with a height of 100vh
+// Limit related videos to scrollable list with a height of 100vh
 
-  &[data-ambientlight-related-scrollbar] {
-    ytd-watch-flexy[flexy][is-two-columns_] {
-      #secondary-inner.ytd-watch-flexy {
-        height: 100%;
-        min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
-      }
-
-      #related.ytd-watch-flexy {
-        position: sticky;
-        top: 80px;
-        height: calc(100vh - 104px);
-        overflow-x: hidden;
-        overflow-y: auto;
-        &:hover {
-          will-change: scroll-position;
-        }
-
-        @include scrollbar-light-thin;
-        &:not(:hover) {
-          &::-webkit-scrollbar-thumb:not(:hover) {
-            background-color: transparent;
-          }
-          scrollbar-color: transparent transparent !important;
-        }
-
-        #left-arrow.yt-horizontal-list-renderer {
-          align-items: flex-start;
-          left: 4px;
-        }
-        #right-arrow.yt-horizontal-list-renderer {
-          align-items: flex-end;
-          right: 4px;
-        }
-      }
-    }
-    &[dark] ytd-watch-flexy[flexy][is-two-columns_] #related.ytd-watch-flexy {
-      @include scrollbar-dark-thin;
-      &:not(:hover) {
-        &::-webkit-scrollbar-thumb:not(:hover) {
-          background-color: transparent;
-        }
-        scrollbar-color: transparent transparent !important;
-      }
+html[data-ambientlight-related-scrollbar] {
+  ytd-watch-flexy[flexy][is-two-columns_] {
+    #secondary-inner.ytd-watch-flexy {
+      height: 100%;
+      min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
     }
 
-    ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
-      position: sticky;
-      bottom: 0;
-      margin-top: auto;
-
-      #below {
-        height: calc(100vh - 56px);
-        overflow-x: hidden;
-        overflow-y: auto;
-        &:hover {
-          will-change: scroll-position;
-        }
-  
-        @include scrollbar-light-thin;
-        &:not(:hover) {
-          &::-webkit-scrollbar-thumb:not(:hover) {
-            background-color: transparent;
-          }
-          scrollbar-color: transparent transparent !important;
-        }
-      }
-    }
-
-    ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    #related.ytd-watch-flexy {
       position: sticky;
       top: 80px;
       height: calc(100vh - 104px);
@@ -3190,10 +3139,41 @@ html[data-ambientlight-enabled="true"] {
         }
         scrollbar-color: transparent transparent !important;
       }
+
+      #left-arrow.yt-horizontal-list-renderer {
+        align-items: flex-start;
+        left: 4px;
+      }
+      #right-arrow.yt-horizontal-list-renderer {
+        align-items: flex-end;
+        right: 4px;
+      }
     }
-    &[dark] ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]),
-    &[dark] ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) #below {
-      @include scrollbar-dark-thin;
+  }
+  &[dark] ytd-watch-flexy[flexy][is-two-columns_] #related.ytd-watch-flexy {
+    @include scrollbar-dark-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
+  }
+
+  ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+
+    #below {
+      height: calc(100vh - 56px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      &:hover {
+        will-change: scroll-position;
+      }
+
+      @include scrollbar-light-thin;
       &:not(:hover) {
         &::-webkit-scrollbar-thumb:not(:hover) {
           background-color: transparent;
@@ -3203,10 +3183,32 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  // Load more shorts button
+  ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 104px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    &:hover {
+      will-change: scroll-position;
+    }
 
-  .button-container.ytd-rich-shelf-renderer {
-    background: none !important;
-    backdrop-filter: blur(5px);
+    @include scrollbar-light-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
+  }
+  &[dark] ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]),
+  &[dark] ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) #below {
+    @include scrollbar-dark-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
   }
 }

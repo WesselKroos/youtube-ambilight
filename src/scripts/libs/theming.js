@@ -123,11 +123,13 @@ export default class Theming {
 
   isDarkTheme = () => document.documentElement.getAttribute('dark') != null;
 
-  shouldBeDarkTheme = () => {
+  shouldBeDarkTheme = (enabledAndVisible) => {
+    const enabled =
+      enabledAndVisible === undefined
+        ? !this.settings.enabled || this.ambientlight.isHidden
+        : !enabledAndVisible;
     const toTheme =
-      !this.settings.enabled ||
-      this.ambientlight.isHidden ||
-      this.settings.theme === THEME_DEFAULT
+      enabled || this.settings.theme === THEME_DEFAULT
         ? this.youtubeTheme
         : this.settings.theme;
     return toTheme === THEME_DARK;
@@ -200,11 +202,33 @@ export default class Theming {
     true
   );
 
+  async updateDocumentTheme(toDark) {
+    const start = performance.now();
+
+    await new Promise((resolve) => {
+      const complete = () => {
+        clearTimeout(timeout);
+        injectedScript.removeMessageListener(changeListener);
+        resolve();
+      };
+      const timeout = setTimeout(complete, 1000); // Fallback
+      const changeListener = injectedScript.addMessageListener(
+        'updated-theme',
+        complete
+      );
+      injectedScript.postMessage('update-theme', toDark);
+    });
+
+    performance.measure('updateDocumentTheme', {
+      start,
+      end: performance.now(),
+    });
+  }
+
   async toggleDarkTheme() {
     const wasDark = this.isDarkTheme();
-    document.documentElement.toggleAttribute('dark', !wasDark);
+    await this.updateDocumentTheme(!wasDark);
     if (!isEmbedPageUrl()) {
-      injectedScript.postMessage('set-masthead-theme'); // Required when we go: theater dark -> non-theater dark -> non-theater light
       this.updateLiveChatTheme();
     }
 

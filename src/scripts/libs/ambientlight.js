@@ -746,8 +746,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
   videoPlayerSetSizeIndex = 0;
   updateVideoPlayerSize = async () => {
+    const start = performance.now();
+
     if (this.videoPlayerSetSizePromise) {
       await this.videoPlayerSetSizePromise;
+
+      performance.measure('updateVideoPlayerSize', {
+        start,
+        end: performance.now(),
+      });
       return;
     }
 
@@ -775,6 +782,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     await this.videoPlayerSetSizePromise;
     this.videoPlayerSetSizePromise = undefined;
+
+    performance.measure('updateVideoPlayerSize', {
+      start,
+      end: performance.now(),
+    });
   };
 
   async initListeners() {
@@ -802,8 +814,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     on(
       document,
       'fullscreenchange',
-      function fullscreenchange() {
-        this.updateSizes();
+      async function fullscreenchange() {
+        await this.updateSizes();
       }.bind(this),
       false
     );
@@ -942,8 +954,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.initAverageVideoFramesDifferenceListeners();
 
     const videoPlayerObserver = new MutationObserver(
-      wrapErrorHandler(() => {
-        const viewChanged = this.updateView();
+      wrapErrorHandler(async () => {
+        const viewChanged = await this.updateView();
         const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage();
         if (!viewChanged && !videoHiddenChanged) return;
 
@@ -976,9 +988,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     // When the video moves between the small and theater views
     const playerContainersObserver = new MutationObserver(
-      wrapErrorHandler(() => {
-        this.updateView();
-        this.optionalFrame();
+      wrapErrorHandler(async () => {
+        await this.updateView();
+        await this.optionalFrame();
       })
     );
     const playerContainersObserverOptions = {
@@ -1000,7 +1012,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       );
     }
 
-    this.updateView();
+    await this.updateView();
   }
 
   updateIsVideoHiddenOnWatchPage = () => {
@@ -1106,7 +1118,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       );
     } else {
       this.pageShownTime = performance.now();
-      this.theming.updateTheme();
+      await this.theming.updateTheme();
       await this.optionalFrame();
     }
   };
@@ -1680,7 +1692,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     return result;
   };
 
-  updateView = () => {
+  updateView = async (skipUpdateImmersiveMode = false) => {
     const isVrVideo = this.videoPlayerElem?.classList.contains(
       'ytp-webgl-spherical'
     );
@@ -1703,7 +1715,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.view === view) return false;
 
     this.view = view;
-    const videoPlayerSizeUpdated = this.updateImmersiveMode();
+
+    // let videoPlayerSizeUpdated = false;
+    if (!skipUpdateImmersiveMode) await this.updateImmersiveMode();
 
     const isFullscreen = view == VIEW_FULLSCREEN;
     const fullscreenChanged = isFullscreen !== this.isFullscreen;
@@ -1723,7 +1737,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     //   this.getAllSettings()
     // }
 
-    if (!videoPlayerSizeUpdated) raf(() => this.updateVideoPlayerSize()); // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
+    // if (videoPlayerSizeUpdated) {
+    //   console.log('videoPlayerSizeUpdated');
+    //   await this.updateVideoPlayerSize(); // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
+    // }
 
     return true;
   };
@@ -1752,7 +1769,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   async updateSizes() {
-    this.updateView();
+    const start = performance.now();
+
+    await this.updateView();
     this.updateVideoScale();
 
     const noClipOrScale =
@@ -2115,6 +2134,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     this.sizesChanged = false;
     this.buffersCleared = true;
+
+    performance.measure('updateSizes', {
+      start,
+      end: performance.now(),
+    });
+
     return true;
   }
 
@@ -2131,16 +2156,23 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   updateFixedStyle() {
-    // Fixed position
-    document.body.setAttribute(
-      'data-ambientlight-fixed',
-      this.settings.fixedPosition ||
-        (this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' &&
-          this.view === VIEW_SMALL)
-    );
+    const start = performance.now();
+
+    const fixedLayout =
+      this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' &&
+      this.view === VIEW_SMALL;
+    const enable = this.settings.fixedPosition || fixedLayout;
+    document.body.toggleAttribute('data-ambientlight-fixed', enable);
+
+    performance.measure('updateFixedStyle', {
+      start,
+      end: performance.now(),
+    });
   }
 
   updateStyles() {
+    const start = performance.now();
+
     this.updateFixedStyle();
 
     // Page background
@@ -2249,11 +2281,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         '--ytal-text-shadow-inverted',
         textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''
       );
-      if (textAndBtnOnly) {
-        this.mastheadElem.setAttribute('data-ambientlight-text-shadow', true);
-      } else {
-        this.mastheadElem.removeAttribute('data-ambientlight-text-shadow');
-      }
+      this.mastheadElem.toggleAttribute(
+        'data-ambientlight-text-shadow',
+        textAndBtnOnly
+      );
     }
 
     // Content shadow
@@ -2293,11 +2324,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       '--ytal-text-shadow-inverted',
       textAndBtnOnly ? getContentTextShadow('255,255,255') : ''
     );
-    if (textAndBtnOnly) {
-      document.body.setAttribute('data-ambientlight-text-shadow', true);
-    } else {
-      document.body.removeAttribute('data-ambientlight-text-shadow');
-    }
+    document.body.toggleAttribute(
+      'data-ambientlight-text-shadow',
+      textAndBtnOnly
+    );
 
     // Video shadow
     const videoShadowSize =
@@ -2391,6 +2421,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       '--ytal-debanding-opacity',
       debandingStrength ? noiseOpacity : ''
     );
+
+    performance.measure('updateStyles', {
+      start,
+      end: performance.now(),
+    });
   }
 
   resizeCanvasses() {
@@ -3033,7 +3068,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     const drawTime = performance.now();
-    if (this.isHidden) await this.show();
+    if (this.isHidden) this.show();
 
     if (
       (this.atTop &&
@@ -3459,9 +3494,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.settings.set('enabled', true, true);
     }
 
-    if (this.mastheadElem) this.mastheadElem.classList.add('no-animation');
     await this.start(initial);
-    if (this.mastheadElem) this.mastheadElem.classList.remove('no-animation');
   }
 
   // async disableYouTubeAmbientMode() {
@@ -3533,6 +3566,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   start = async (initial = false) => {
+    const start = performance.now();
+
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart)
       return;
 
@@ -3546,10 +3581,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.checkGetImageDataAllowed();
     this.resetSettingsIfNeeded();
     this.updateKeywordsToPreventTheaterScaling();
-    this.updateView();
+    await this.updateView(true);
 
     this.pendingStart = true;
-    if (this.shouldShow()) await this.show();
     if (initial) {
       if (document.visibilityState === 'hidden') {
         await new Promise((resolve) => raf(resolve));
@@ -3565,7 +3599,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval;
       await this.nextFrame();
       // this.disableYouTubeAmbientMode()
+    } else {
+      if (this.shouldShow()) await this.show();
     }
+
+    performance.measure('start', {
+      start,
+      end: performance.now(),
+    });
   };
 
   updateHdr = wrapErrorHandler(
@@ -3680,7 +3721,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
-    await this.theming.updateTheme();
+    await new Promise((resolve) => {
+      const complete = () => {
+        injectedScript.removeMessageListener(listener);
+        resolve();
+      };
+      const listener = injectedScript.addMessageListener('hide', complete);
+      const toDark = this.theming.shouldBeDarkTheme(false);
+      injectedScript.postMessage('hide', {
+        toDark,
+        // Todo: Set to the correct pageBackgroundGreyness setting value
+        ytdAppElemBackground: toDark ? '#000' : '#fff',
+      });
+    });
+
+    await this.theming.updateTheme(); // Update livechat theme
 
     if (this.isVrVideo) this.disposeVR();
 
@@ -3695,14 +3750,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.clear();
     this.stats.hide();
 
-    const html = document.documentElement;
-    html.removeAttribute('data-ambientlight-enabled');
-    html.removeAttribute('data-ambientlight-hide-scrollbar');
-    html.removeAttribute('data-ambientlight-related-scrollbar');
-
     this.updateLayoutPerformanceImprovements();
-    this.updateSizes();
-    this.updateVideoPlayerSize();
+    await this.updateSizes();
   }
 
   updateLayoutPerformanceImprovements = wrapErrorHandler(() => {
@@ -3735,52 +3784,82 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   async show() {
     if (!this.isHidden) return;
     this.isHidden = false;
+    const start = performance.now();
 
-    await this.theming.updateTheme();
+    // await new Promise((resolve) => raf(resolve));
 
-    // Pre-style to prevent black/white flashes
-    if (this.ytdAppElem)
-      this.ytdAppElem.style.setProperty(
-        'background',
-        this.theming.shouldBeDarkTheme() ? '#000' : '#fff',
-        'important'
-      );
-    if (this.playerTheaterContainerElem) {
-      this.playerTheaterContainerElem.style.setProperty(
-        'background',
-        'none',
-        'important'
-      );
-    }
+    // // Pre-style to prevent black/white flashes
+    // if (this.ytdAppElem)
+    //   this.ytdAppElem.style.setProperty(
+    //     'background',
+    //     this.theming.shouldBeDarkTheme(true) ? '#000' : '#fff',
+    //     'important'
+    //   );
+    // if (this.playerTheaterContainerElem) {
+    //   this.playerTheaterContainerElem.style.setProperty(
+    //     'background',
+    //     'none',
+    //     'important'
+    //   );
+    // }
 
-    this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
-    this.updateVideoPlayerSize();
-    this.updateSizes();
+    // const html = document.documentElement;
+    // if (this.settings.hideScrollbar)
+    //   html.setAttribute('data-ambientlight-hide-scrollbar', true);
+    // if (this.settings.relatedScrollbar)
+    //   html.setAttribute('data-ambientlight-related-scrollbar', true);
 
-    if (this.chromiumBugVideoJitterWorkaround?.update)
-      this.chromiumBugVideoJitterWorkaround.update();
+    await new Promise((resolve) => {
+      const complete = () => {
+        injectedScript.removeMessageListener(listener);
+        resolve();
+      };
+      const listener = injectedScript.addMessageListener('show', complete);
+      const toDark = this.theming.shouldBeDarkTheme(true);
+      injectedScript.postMessage('show', {
+        // Todo: Set to the correct pageBackgroundGreyness setting value
+        toDark,
+        ytdAppElemBackground: toDark ? '#000' : '#fff',
+        hideScrollbar: this.settings.hideScrollbar,
+        relatedScrollbar: this.settings.relatedScrollbar,
+        immersiveMode: this.shouldEnableImmersiveMode(),
+      });
+    });
 
-    await new Promise((resolve) => raf(resolve));
+    // this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
+    // await this.updateVideoPlayerSize(true);
+    // await this.updateSizes();
 
     wrapErrorHandler(
       async function afterShow() {
-        const html = document.documentElement;
-        html.setAttribute('data-ambientlight-enabled', true);
-        if (this.settings.hideScrollbar)
-          html.setAttribute('data-ambientlight-hide-scrollbar', true);
-        if (this.settings.relatedScrollbar)
-          html.setAttribute('data-ambientlight-related-scrollbar', true);
+        const start = performance.now();
+
+        // await new Promise((resolve) => raf(resolve));
+        // // // eslint-disable-next-line no-unused-vars
+        // // const _1 = this.videoElem.clientWidth;
+
+        // const html = document.documentElement;
+        // html.setAttribute('data-ambientlight-enabled', true);
 
         if (this.settings.layoutPerformanceImprovements)
           this.updateLayoutPerformanceImprovements();
 
+        // Todo: Prevent switching to the incorrect theme
+        const updateDocument = this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
+        // const updateVideoPlayer = this.updateVideoPlayerSize(true); // In case the theater player height changed
+        await this.theming.updateTheme(); // Update livechat theme
+
+        await updateDocument;
+        // await updateVideoPlayer;
+
         // Reset
-        if (this.playerTheaterContainerElem)
-          this.playerTheaterContainerElem.style.background = '';
-        if (this.ytdAppElem) this.ytdAppElem.style.background = '';
+        // if (this.playerTheaterContainerElem)
+        //   this.playerTheaterContainerElem.style.background = '';
+        // if (this.ytdAppElem) this.ytdAppElem.style.background = '';
 
-        await this.updateVideoPlayerSize(true); // In case the theater player height changed
-
+        // // eslint-disable-next-line no-unused-vars
+        // const _2 = this.videoElem.clientWidth;
+        // await new Promise((resolve) => raf(resolve));
 
         // Recalculate the player menu width to remove the elements on the second row
         try {
@@ -3791,33 +3870,61 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
             menu.onStamperFinished();
           }
         } catch {}
+
+        if (this.chromiumBugVideoJitterWorkaround?.update)
+          this.chromiumBugVideoJitterWorkaround.update();
+
+        performance.measure('afterShow', {
+          start,
+          end: performance.now(),
+        });
       }.bind(this)
     )();
+    performance.measure('show', {
+      start,
+      end: performance.now(),
+    });
   }
 
   updateAtTop = async () => {
+    const start = performance.now();
     if (this.mastheadElem)
       this.mastheadElem.classList.toggle('at-top', this.atTop);
 
     if (this.settings.webGL) await this.projector.handleAtTopChange(this.atTop);
+
+    performance.measure('updateAtTop', {
+      start,
+      end: performance.now(),
+    });
   };
 
-  updateImmersiveMode() {
-    this.immersiveTheater =
-      this.settings.immersiveTheaterView && this.view === VIEW_THEATER;
+  shouldEnableImmersiveMode = () =>
+    this.settings.immersiveTheaterView && this.view === VIEW_THEATER;
+
+  async updateImmersiveMode() {
+    const start = performance.now();
+
     const html = document.documentElement;
-    const changed =
-      (html.getAttribute('data-ambientlight-immersive') === 'true') !==
-      this.immersiveTheater;
-    if (!changed) return false;
+    const enabled = html.getAttribute('data-ambientlight-immersive') != null;
+    const enable = this.shouldEnableImmersiveMode();
 
-    if (this.immersiveTheater) {
-      html.setAttribute('data-ambientlight-immersive', true);
-    } else {
-      html.removeAttribute('data-ambientlight-immersive');
-    }
+    if (enabled === enable) return;
 
-    this.updateVideoPlayerSize(); // Because it is incorrect when transitioning from immersive theater to small
-    return true;
+    await new Promise((resolve) => {
+      const listener = injectedScript.addMessageListener(
+        'update-immersive-mode',
+        () => {
+          injectedScript.removeMessageListener(listener);
+          resolve();
+        }
+      );
+      injectedScript.postMessage('update-immersive-mode', enable);
+    });
+
+    performance.measure('updateImmersiveMode', {
+      start,
+      end: performance.now(),
+    });
   }
 }

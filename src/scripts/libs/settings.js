@@ -1180,7 +1180,7 @@ export default class Settings {
           }
 
           if (setting.name === 'immersiveTheaterView' && this.enabled) {
-            this.ambientlight.updateImmersiveMode();
+            await this.ambientlight.updateImmersiveMode();
           }
 
           if (setting.name === 'frameBlending') {

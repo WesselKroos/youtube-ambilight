@@ -1,4 +1,9 @@
-import { setErrorHandler, wrapErrorHandler } from './libs/generic';
+import {
+  raf,
+  setErrorHandler,
+  watchSelectors,
+  wrapErrorHandler,
+} from './libs/generic';
 import { contentScript } from './libs/messaging/content';
 import SentryReporter, {
   setCrashOptions,
@@ -32,13 +37,47 @@ const getElem = (() => {
   };
 })();
 
-contentScript.addMessageListener(
-  'set-masthead-theme',
-  function setMastheadTheme() {
-    const ytdAppElem = getElem('ytd-app');
-    if (!ytdAppElem) return;
+function updateTheme(toDark) {
+  document.documentElement.toggleAttribute('dark', toDark);
 
+  const ytdAppElem = getElem('ytd-app');
+  if (ytdAppElem?.setMastheadTheme) {
     ytdAppElem.setMastheadTheme();
+  }
+}
+
+contentScript.addMessageListener(
+  'update-theme',
+  function onUpdateTheme(toDark) {
+    const start = performance.now();
+
+    updateTheme(toDark);
+
+    contentScript.postMessage('updated-theme');
+    performance.measure('update-theme', { start, end: performance.now() });
+  }
+);
+
+function updateImmersiveMode(enable, skipVideoPlayerSetSize = false) {
+  const html = document.documentElement;
+  const enabled = html.getAttribute('data-ambientlight-immersive') != null;
+  html.toggleAttribute('data-ambientlight-immersive', enable);
+
+  if (!skipVideoPlayerSetSize && enabled !== enable) videoPlayerSetSize();
+}
+
+contentScript.addMessageListener(
+  'update-immersive-mode',
+  function onUpdateImmersiveMode(enable) {
+    const start = performance.now();
+
+    updateImmersiveMode(enable);
+
+    contentScript.postMessage('update-immersive-mode');
+    performance.measure('update-immersive-mode', {
+      start,
+      end: performance.now(),
+    });
   }
 );
 
@@ -60,25 +99,132 @@ contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
   contentScript.postMessage('is-hdr-video', isHdr);
 });
 
+function videoPlayerSetSize(messageId) {
+  const videoPlayerElem = getElem('video-player');
+  if (videoPlayerElem) {
+    try {
+      videoPlayerElem.setSize();
+      videoPlayerElem.setInternalSize();
+    } catch (ex) {
+      console.warn(
+        `Failed to resize the video player${
+          ex?.message ? `: ${ex?.message}` : ''
+        }`
+      );
+    }
+  }
+  contentScript.postMessage('sizes-changed', messageId);
+}
+
 contentScript.addMessageListener(
   'video-player-set-size',
-  function videoPlayerSetSize(id) {
-    const videoPlayerElem = getElem('video-player');
-    if (videoPlayerElem) {
-      try {
-        videoPlayerElem.setSize();
-        videoPlayerElem.setInternalSize();
-      } catch (ex) {
-        console.warn(
-          `Failed to resize the video player${
-            ex?.message ? `: ${ex?.message}` : ''
-          }`
-        );
-      }
-    }
-    contentScript.postMessage('sizes-changed', id);
+  function onVideoPlayerSetSize(id) {
+    const start = performance.now();
+
+    videoPlayerSetSize(id);
+
+    performance.measure('video-player-set-size', {
+      start,
+      end: performance.now(),
+    });
   }
 );
+
+contentScript.addMessageListener(
+  'show',
+  function show({
+    ytdAppElemBackground,
+    toDark,
+    hideScrollbar,
+    relatedScrollbar,
+    immersiveMode,
+  }) {
+    const start = performance.now();
+
+    const mastheadElem = getElem('ytd-app #masthead-container');
+    if (mastheadElem) mastheadElem.classList.add('no-animation');
+
+    const ytdAppElem = getElem('ytd-app');
+    const playerTheaterContainerElem = getElem(
+      watchSelectors
+        .map((selector) => `${selector} #full-bleed-container`)
+        .join(', ')
+    );
+
+    // Temporary backgrounds
+    if (playerTheaterContainerElem) {
+      playerTheaterContainerElem.style.setProperty(
+        'background',
+        'none',
+        'important'
+      );
+    }
+    if (ytdAppElem)
+      ytdAppElem.style.setProperty(
+        'background',
+        ytdAppElemBackground,
+        'important'
+      );
+
+    const html = document.documentElement;
+    if (hideScrollbar)
+      html.toggleAttribute('data-ambientlight-hide-scrollbar', true);
+    if (relatedScrollbar)
+      html.toggleAttribute('data-ambientlight-related-scrollbar', true);
+    if (immersiveMode) updateImmersiveMode(true, true);
+
+    updateTheme(toDark);
+
+    // await new Promise((resolve) => raf(resolve));
+    // // eslint-disable-next-line no-unused-vars
+    // const _1 = videoElem.clientWidth;
+    html.toggleAttribute('data-ambientlight-enabled', true);
+
+    videoPlayerSetSize();
+
+    // Restore default backgrounds
+    if (playerTheaterContainerElem)
+      playerTheaterContainerElem.style.background = '';
+    if (ytdAppElem) ytdAppElem.style.background = '';
+
+    if (mastheadElem) mastheadElem.classList.remove('no-animation');
+
+    performance.measure('show (injected)', {
+      start,
+      end: performance.now(),
+    });
+
+    contentScript.postMessage('show');
+  }
+);
+
+contentScript.addMessageListener('hide', function hide({ toDark }) {
+  const start = performance.now();
+
+  const mastheadElem = getElem('ytd-app #masthead-container');
+  if (mastheadElem) mastheadElem.classList.add('no-animation');
+
+  const html = document.documentElement;
+  html.toggleAttribute('data-ambientlight-enabled', false);
+
+  html.toggleAttribute('data-ambientlight-hide-scrollbar', false);
+  html.toggleAttribute('data-ambientlight-related-scrollbar', false);
+
+  updateImmersiveMode(false, true);
+
+  updateTheme(toDark);
+
+  videoPlayerSetSize();
+
+  if (mastheadElem) mastheadElem.classList.remove('no-animation');
+
+  performance.measure('hide (injected)', {
+    start,
+    end: performance.now(),
+  });
+
+  contentScript.postMessage('hide');
+});
 
 contentScript.addMessageListener(
   'video-player-update-video-data-keywords',
