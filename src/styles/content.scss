@@ -243,6 +243,14 @@ html {
   }
 }
 
+#masthead-container.no-animation {
+  &,
+  ytd-masthead,
+  #background.ytd-masthead {
+    transition: none !important;
+  }
+}
+
 html[data-ambientlight-enabled] {
   /* General */
 
@@ -477,13 +485,6 @@ html[data-ambientlight-enabled] {
   }
   #masthead-container.ytal-header-transparent ytd-masthead {
     transition: background-color .15s, box-shadow .15s;
-  }
-  #masthead-container.no-animation {
-    &,
-    ytd-masthead,
-    #background.ytd-masthead {
-      transition: none !important;
-    }
   }
   #masthead-container.ytd-app::after {
     display: none;

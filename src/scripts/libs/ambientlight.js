@@ -87,7 +87,9 @@ export default class Ambientlight {
     return async function AmbientlightConstructor() {
       if (ytdAppElem) ytdAppElem.dataset.ytalElem = 'ytd-app';
       this.ytdAppElem = ytdAppElem; // Not available in embeds
+      if (ytdWatchElem) ytdWatchElem.dataset.ytalElem = 'ytd-watch';
       this.ytdWatchElem = ytdWatchElem; // Not available in embeds
+      if (mastheadElem) mastheadElem.dataset.ytalElem = 'masthead';
       this.mastheadElem = mastheadElem; // Not available in embeds
 
       this.detectChromiumBug1142112Workaround();
@@ -511,10 +513,20 @@ export default class Ambientlight {
     if (!this.settings.energySaver || !this.ytdWatchElem) return;
 
     try {
-      // const videoId = this.ytdWatchElem?.playerData?.videoDetails?.videoId
-      const difference = await getAverageVideoFramesDifference(
-        this.ytdWatchElem
-      );
+      const specPromise = new Promise((resolve) => {
+        const listener = injectedScript.addMessageListener(
+          'player-storyboard-spec',
+          (spec) => {
+            injectedScript.removeMessageListener(listener);
+            resolve(spec);
+          }
+        );
+      });
+      injectedScript.postMessage('player-storyboard-spec');
+      const spec = await specPromise;
+      if (!spec) return;
+
+      const difference = await getAverageVideoFramesDifference(spec);
       if (difference === undefined) return;
 
       this.averageVideoFramesDifference = difference;

@@ -1,8 +1,8 @@
 import {
-  raf,
+  // raf,
   setErrorHandler,
   setStyleProperty,
-  watchSelectors,
+  // watchSelectors,
   wrapErrorHandler,
 } from './libs/generic';
 import { contentScript } from './libs/messaging/content';
@@ -100,6 +100,16 @@ contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
   contentScript.postMessage('is-hdr-video', isHdr);
 });
 
+contentScript.addMessageListener(
+  'player-storyboard-spec',
+  function playerStoryboardSpec() {
+    const ytdWatchElem = getElem('ytd-watch');
+    const spec =
+      ytdWatchElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
+    contentScript.postMessage('player-storyboard-spec', spec);
+  }
+);
+
 function videoPlayerSetSize(messageId) {
   const videoPlayerElem = getElem('video-player');
   if (videoPlayerElem) {
@@ -142,25 +152,25 @@ contentScript.addMessageListener(
   }) {
     const start = performance.now();
 
-    const mastheadElem = getElem('ytd-app #masthead-container');
+    const mastheadElem = getElem('masthead');
     if (mastheadElem) mastheadElem.classList.add('no-animation');
 
     const ytdAppElem = getElem('ytd-app');
-    const playerTheaterContainerElem = getElem(
-      watchSelectors
-        .map((selector) => `${selector} #full-bleed-container`)
-        .join(', ')
-    );
+    // const playerTheaterContainerElem = getElem(
+    //   watchSelectors
+    //     .map((selector) => `${selector} #full-bleed-container`)
+    //     .join(', ')
+    // );
 
     // Temporary backgrounds
-    if (playerTheaterContainerElem) {
-      setStyleProperty(
-        playerTheaterContainerElem,
-        'background',
-        'none',
-        'important'
-      );
-    }
+    // if (playerTheaterContainerElem) {
+    //   setStyleProperty(
+    //     playerTheaterContainerElem,
+    //     'background',
+    //     'none',
+    //     'important'
+    //   );
+    // }
     if (ytdAppElem)
       setStyleProperty(
         ytdAppElem,
@@ -186,8 +196,8 @@ contentScript.addMessageListener(
     videoPlayerSetSize();
 
     // Restore default backgrounds
-    if (playerTheaterContainerElem)
-      playerTheaterContainerElem.style.background = '';
+    // if (playerTheaterContainerElem)
+    //   playerTheaterContainerElem.style.background = '';
     if (ytdAppElem) ytdAppElem.style.background = '';
 
     if (mastheadElem) mastheadElem.classList.remove('no-animation');
@@ -204,7 +214,7 @@ contentScript.addMessageListener(
 contentScript.addMessageListener('hide', function hide({ toDark }) {
   const start = performance.now();
 
-  const mastheadElem = getElem('ytd-app #masthead-container');
+  const mastheadElem = getElem('masthead');
   if (mastheadElem) mastheadElem.classList.add('no-animation');
 
   const html = document.documentElement;

@@ -260,11 +260,7 @@ const workerCode = function () {
   };
 };
 
-const getStoryboard = (ytdWatchElem) => {
-  const spec =
-    ytdWatchElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
-  if (!spec) return;
-
+const getStoryboard = (spec) => {
   // eslint-disable-next-line no-unused-vars
   const [baseUrl, _1, _2, sb] = spec.split('|').map((i) => i?.split('#'));
   if (!baseUrl?.length || !(sb?.length > 7)) return;
@@ -293,7 +289,7 @@ let lastDifference = {
 let onMessagePromise;
 let nextGetIsWaiting = false;
 
-export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
+export const getAverageVideoFramesDifference = async (spec) => {
   if (onMessagePromise) {
     nextGetIsWaiting = true;
     while (onMessagePromise) {
@@ -302,7 +298,7 @@ export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
     nextGetIsWaiting = false;
   }
 
-  const storyboard = getStoryboard(ytdWatchElem);
+  const storyboard = await getStoryboard(spec);
   if (!storyboard) return; // Failed to retrieve the storyboard data
 
   const alreadyCalculated = lastDifference.baseUrl === storyboard.baseUrl;
