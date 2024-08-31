@@ -1,4 +1,6 @@
 import { Canvas, ctxOptions, SafeOffscreenCanvas } from './generic';
+const WIDTH = 512;
+const HEIGHT = 512;
 
 export default class ProjectorShadow {
   constructor(offscreen = true) {
@@ -13,12 +15,34 @@ export default class ProjectorShadow {
       this.elem.style.transform = `scale(${scale.x + 0.01}, ${scale.y + 0.01})`;
     }
 
+    const {
+      spreadFadeCurve,
+      spreadFadeStart,
+      directionTopEnabled,
+      directionRightEnabled,
+      directionBottomEnabled,
+      directionLeftEnabled,
+    } = settings;
+
+    const cacheKey = JSON.stringify({
+      scale,
+      projectorSize,
+      spreadFadeCurve,
+      spreadFadeStart,
+      directionTopEnabled,
+      directionRightEnabled,
+      directionBottomEnabled,
+      directionLeftEnabled,
+    });
+
     // When cleared because the page was hidden
-    if (this.elem.width !== 512 || this.elem.height !== 512) {
-      this.elem.width = 512;
-      this.elem.height = 512;
+    if (this.elem.width !== WIDTH || this.elem.height !== HEIGHT) {
+      this.elem.width = WIDTH;
+      this.elem.height = HEIGHT;
+    } else if (this.cacheKey !== cacheKey) {
+      this.ctx.clearRect(0, 0, WIDTH, HEIGHT);
     } else {
-      this.ctx.clearRect(0, 0, this.elem.width, this.elem.height);
+      return;
     }
 
     const edge = {
@@ -31,10 +55,10 @@ export default class ProjectorShadow {
     };
 
     const darkest = 1;
-    const easing = 16 / (settings.spreadFadeCurve * 0.64);
+    const easing = 16 / (spreadFadeCurve * 0.64);
     const keyframes = this.plotKeyframes(256, easing, darkest);
 
-    let fadeOutFrom = settings.spreadFadeStart / 100;
+    let fadeOutFrom = spreadFadeStart / 100;
     const fadeOutMinH = -(video.h / 2 / edge.h);
     const fadeOutMinW = -(video.w / 2 / edge.w);
     fadeOutFrom = Math.max(fadeOutFrom, fadeOutMinH, fadeOutMinW);
@@ -60,11 +84,11 @@ export default class ProjectorShadow {
     }
 
     // Directions
-    const scaleW = this.elem.width / (video.w + edge.w + edge.w);
-    const scaleH = this.elem.height / (video.h + edge.h + edge.h);
+    const scaleW = WIDTH / (video.w + edge.w + edge.w);
+    const scaleH = HEIGHT / (video.h + edge.h + edge.h);
     this.ctx.fillStyle = '#000000';
 
-    if (!settings.directionTopEnabled) {
+    if (!directionTopEnabled) {
       this.ctx.beginPath();
 
       this.ctx.moveTo(0, 0);
@@ -79,7 +103,7 @@ export default class ProjectorShadow {
       this.ctx.fill();
     }
 
-    if (!settings.directionRightEnabled) {
+    if (!directionRightEnabled) {
       this.ctx.beginPath();
 
       this.ctx.lineTo(scaleW * (edge.w + video.w + edge.w), 0);
@@ -97,7 +121,7 @@ export default class ProjectorShadow {
       this.ctx.fill();
     }
 
-    if (!settings.directionBottomEnabled) {
+    if (!directionBottomEnabled) {
       this.ctx.beginPath();
 
       this.ctx.moveTo(0, scaleH * (edge.h + video.h + edge.h));
@@ -115,7 +139,7 @@ export default class ProjectorShadow {
       this.ctx.fill();
     }
 
-    if (!settings.directionLeftEnabled) {
+    if (!directionLeftEnabled) {
       this.ctx.beginPath();
 
       this.ctx.moveTo(0, 0);
@@ -129,6 +153,8 @@ export default class ProjectorShadow {
 
       this.ctx.fill();
     }
+
+    this.cacheKey = cacheKey;
   }
 
   plotKeyframes = (length, powerOf, darkest) => {
@@ -146,114 +172,103 @@ export default class ProjectorShadow {
   };
 
   //Shadow gradient
-  cachedGradients = [];
   drawGradient = (...args) => {
-    const cacheKey = JSON.stringify(args);
-    let gradient = this.cachedGradients.find(
-      (gradient) => gradient.key === cacheKey
-    )?.value;
+    const [size, edge, keyframes, fadeOutFrom, darkest, horizontal] = args;
 
-    if (!gradient) {
-      const [size, edge, keyframes, fadeOutFrom, darkest, horizontal] = args;
-
-      const points = [
-        0,
-        ...keyframes.map((e) =>
-          Math.max(0, edge - edge * e.p - edge * fadeOutFrom * (1 - e.p))
+    const points = [
+      0,
+      ...keyframes.map((e) =>
+        Math.max(0, edge - edge * e.p - edge * fadeOutFrom * (1 - e.p))
+      ),
+      edge - edge * fadeOutFrom,
+      edge + size + edge * fadeOutFrom,
+      ...keyframes
+        .reverse()
+        .map((e) =>
+          Math.min(
+            edge + size + edge,
+            edge + size + edge * e.p + edge * fadeOutFrom * (1 - e.p)
+          )
         ),
-        edge - edge * fadeOutFrom,
-        edge + size + edge * fadeOutFrom,
-        ...keyframes
-          .reverse()
-          .map((e) =>
-            Math.min(
-              edge + size + edge,
-              edge + size + edge * e.p + edge * fadeOutFrom * (1 - e.p)
-            )
-          ),
-        edge + size + edge,
-      ];
+      edge + size + edge,
+    ];
 
-      const pointMax = points[points.length - 1];
+    const pointMax = points[points.length - 1];
 
-      let gradientStops = [];
+    let gradientStops = [];
+    gradientStops.push([
+      Math.min(1, points[0] / pointMax),
+      `rgba(0,0,0,${darkest})`,
+    ]);
+    for (let i = 0; i < keyframes.length; i++) {
+      const e = keyframes[i];
       gradientStops.push([
-        Math.min(1, points[0] / pointMax),
-        `rgba(0,0,0,${darkest})`,
+        Math.min(1, points[0 + keyframes.length - i] / pointMax),
+        `rgba(0,0,0,${e.o})`,
+        i,
+        e,
       ]);
-      for (let i = 0; i < keyframes.length; i++) {
-        const e = keyframes[i];
-        gradientStops.push([
-          Math.min(1, points[0 + keyframes.length - i] / pointMax),
-          `rgba(0,0,0,${e.o})`,
+    }
+    gradientStops.push([
+      Math.min(1, points[1 + keyframes.length] / pointMax),
+      `rgba(0,0,0,0)`,
+    ]);
+    gradientStops.push([
+      Math.min(1, points[2 + keyframes.length] / pointMax),
+      `rgba(0,0,0,0)`,
+    ]);
+    keyframes.reverse();
+    for (let i = 0; i < keyframes.length; i++) {
+      const e = keyframes[i];
+      gradientStops.push([
+        Math.min(1, points[2 + keyframes.length * 2 - i] / pointMax),
+        `rgba(0,0,0,${e.o})`,
+        i,
+        e,
+      ]);
+    }
+    gradientStops.push([
+      Math.min(1, points[3 + keyframes.length * 2] / pointMax),
+      `rgba(0,0,0,${darkest})`,
+    ]);
+
+    gradientStops = gradientStops.map((args) => [
+      Math.round(args[0] * 10000) / 10000,
+      args[1],
+      args[2],
+      args[3]?.p,
+      args[3]?.o,
+    ]);
+
+    const gradient = this.ctx.createLinearGradient(
+      0,
+      0,
+      horizontal ? WIDTH : 0,
+      !horizontal ? HEIGHT : 0
+    );
+
+    for (let i = 0; i < gradientStops.length; i++) {
+      const gs = gradientStops[i];
+      try {
+        gradient.addColorStop(...gs);
+      } catch (ex) {
+        ex.details = {
           i,
-          e,
-        ]);
+          gs,
+          size,
+          edge,
+          fadeOutFrom,
+          darkest,
+          horizontal,
+          Ωpoints: JSON.parse(JSON.stringify(points)),
+          Ωkeyframes: JSON.parse(JSON.stringify(keyframes)),
+          ΩgradientStops: JSON.parse(JSON.stringify(gradientStops)),
+        };
+        throw ex;
       }
-      gradientStops.push([
-        Math.min(1, points[1 + keyframes.length] / pointMax),
-        `rgba(0,0,0,0)`,
-      ]);
-      gradientStops.push([
-        Math.min(1, points[2 + keyframes.length] / pointMax),
-        `rgba(0,0,0,0)`,
-      ]);
-      keyframes.reverse();
-      for (let i = 0; i < keyframes.length; i++) {
-        const e = keyframes[i];
-        gradientStops.push([
-          Math.min(1, points[2 + keyframes.length * 2 - i] / pointMax),
-          `rgba(0,0,0,${e.o})`,
-          i,
-          e,
-        ]);
-      }
-      gradientStops.push([
-        Math.min(1, points[3 + keyframes.length * 2] / pointMax),
-        `rgba(0,0,0,${darkest})`,
-      ]);
-
-      gradientStops = gradientStops.map((args) => [
-        Math.round(args[0] * 10000) / 10000,
-        args[1],
-        args[2],
-        args[3]?.p,
-        args[3]?.o,
-      ]);
-
-      gradient = this.ctx.createLinearGradient(
-        0,
-        0,
-        horizontal ? this.elem.width : 0,
-        !horizontal ? this.elem.height : 0
-      );
-
-      for (let i = 0; i < gradientStops.length; i++) {
-        const gs = gradientStops[i];
-        try {
-          gradient.addColorStop(...gs);
-        } catch (ex) {
-          ex.details = {
-            i,
-            gs,
-            size,
-            edge,
-            fadeOutFrom,
-            darkest,
-            horizontal,
-            Ωpoints: JSON.parse(JSON.stringify(points)),
-            Ωkeyframes: JSON.parse(JSON.stringify(keyframes)),
-            ΩgradientStops: JSON.parse(JSON.stringify(gradientStops)),
-          };
-          throw ex;
-        }
-      }
-
-      this.cachedGradients.push({ key: cacheKey, value: gradient });
-      if (this.cachedGradients.length > 6) this.cachedGradients.splice(0, 1);
     }
 
     this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, this.elem.width, this.elem.height);
+    this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
   };
 }

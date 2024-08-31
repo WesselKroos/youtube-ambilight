@@ -1575,16 +1575,8 @@ export default class ProjectorWebGL {
   clearRect() {
     this.invalidateShaderCache();
 
-    if (
-      this.shadow?.ctx &&
-      (!this.shadow.ctx.isContextLost || !this.shadow.ctx.isContextLost())
-    ) {
-      this.shadow.ctx.clearRect(
-        0,
-        0,
-        this.shadow.elem.width,
-        this.shadow.elem.height
-      );
+    if (this.shadow?.elem) {
+      this.shadow.elem.width = 1;
     }
 
     if (this.ctx && !this.ctx.isContextLost() && this.program) {
