@@ -1249,12 +1249,12 @@ export default class ProjectorWebGL {
       const blurCanvasWidth = width + this.blurBound * 2;
       const blurCanvasHeight = height + this.blurBound * 2;
       // Scale down when blur > 1 for a free performance boost on Firefox
-      this.blurCanvas.width = Math.floor(
-        blurCanvasWidth / this.blurCanvasScale
-      );
-      this.blurCanvas.height = Math.floor(
-        blurCanvasHeight / this.blurCanvasScale
-      );
+      const scaledWidth = Math.floor(blurCanvasWidth / this.blurCanvasScale);
+      const scaledHeight = Math.floor(blurCanvasHeight / this.blurCanvasScale);
+      if (this.blurCanvas.width !== scaledWidth)
+        this.blurCanvas.width = scaledWidth;
+      if (this.blurCanvas.height !== scaledHeight)
+        this.blurCanvas.height = scaledHeight;
       this.blurCanvas.style.transform = `scale(${
         this.scale.x + (this.blurBound * 2) / projectorSize.w
       }, ${this.scale.y + (this.blurBound * 2) / projectorSize.h})`;
