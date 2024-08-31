@@ -1,6 +1,7 @@
 import {
   raf,
   setErrorHandler,
+  setStyleProperty,
   watchSelectors,
   wrapErrorHandler,
 } from './libs/generic';
@@ -153,14 +154,16 @@ contentScript.addMessageListener(
 
     // Temporary backgrounds
     if (playerTheaterContainerElem) {
-      playerTheaterContainerElem.style.setProperty(
+      setStyleProperty(
+        playerTheaterContainerElem,
         'background',
         'none',
         'important'
       );
     }
     if (ytdAppElem)
-      ytdAppElem.style.setProperty(
+      setStyleProperty(
+        ytdAppElem,
         'background',
         ytdAppElemBackground,
         'important'

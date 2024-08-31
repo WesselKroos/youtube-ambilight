@@ -474,14 +474,16 @@ export default class Stats {
     this.frameTimes.push(frameTimes);
 
     requestIdleCallback(
-      () => {
+      function addAmbientDisplayFrametime() {
         frameTimes.display = performance.now();
-      },
+      }.bind(this),
       { timeout: 1 }
     );
-    requestIdleCallback(() => {
-      frameTimes.complete = performance.now();
-    });
+    requestIdleCallback(
+      function addAmbientDisplayComplete() {
+        frameTimes.complete = performance.now();
+      }.bind(this)
+    );
   };
 
   updateFrameTimes = () => {

@@ -469,3 +469,11 @@ export const setWarning = (text) => {
 export const isNetworkError = (ex) =>
   ex?.message !== 'Failed to fetch' && // Chromium
   ex?.message !== 'NetworkError when attempting to fetch resource.'; // Firefox
+
+export const setStyleProperty = (elem, name, value, priority = '') => {
+  const currentValue = elem.style.getPropertyValue(name) ?? '';
+  const currentPriority = elem.style.getPropertyPriority(name) ?? '';
+  if (currentValue === value && currentPriority === priority) return; // Prevent MutationObservers from firing
+
+  elem.style.setProperty(name, value, priority);
+};

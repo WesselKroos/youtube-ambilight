@@ -21,6 +21,7 @@ import {
   VIEW_THEATER,
   VIEW_FULLSCREEN,
   VIEW_POPUP,
+  setStyleProperty,
 } from './generic';
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter';
 import BarDetection from './bar-detection';
@@ -1823,12 +1824,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       const VideoClipScale = this.clippedVideoScale.map(
         (scale) => Math.round(1000 * (1 / scale)) / 1000
       );
-      videoParentElem.style.setProperty(
+      setStyleProperty(
+        videoParentElem,
         '--video-transform',
-        `
-        translate(${-left}px, ${-top}px) 
-        scale(${VideoClipScale[0]}, ${VideoClipScale[1]})
-      `
+        `translate(${-left}px, ${-top}px) scale(${VideoClipScale[0]}, ${
+          VideoClipScale[1]
+        })`
       );
     } else {
       this.resetVideoParentElemStyle();
@@ -2083,21 +2084,20 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.videoContainerElemMissingWarning = false;
     }
 
+    const videoElemStyle = this.videoElem.getAttribute('style') || '';
     if (this.videoDebandingElem) {
-      this.videoDebandingElem.setAttribute(
-        'style',
-        this.videoElem.getAttribute('style') || ''
-      );
+      if (this.videoDebandingElem.getAttribute('style') !== videoElemStyle) {
+        this.videoDebandingElem.setAttribute('style', videoElemStyle);
+      }
       if (!this.videoDebandingElem.isConnected) {
         this.videoContainerElem.appendChild(this.videoDebandingElem);
       }
     }
 
     if (videoOverlayEnabled && videoOverlay) {
-      videoOverlay.elem.setAttribute(
-        'style',
-        this.videoElem.getAttribute('style') || ''
-      );
+      if (videoOverlay.elem.getAttribute('style') !== videoElemStyle) {
+        videoOverlay.elem.setAttribute('style', videoElemStyle);
+      }
       let videoOverlayWidth = this.srcVideoOffset.width;
       let videoOverlayHeight = this.srcVideoOffset.height;
       if (this.videoElem.style.width && this.videoElem.style.height) {
@@ -2151,7 +2151,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       videoParentElem.style.overflow = '';
       videoParentElem.style.height = '';
       videoParentElem.style.marginBottom = '';
-      videoParentElem.style.setProperty('--video-transform', '');
+      setStyleProperty(videoParentElem, '--video-transform', '');
     }
   }
 
@@ -2180,7 +2180,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     pageBackgroundGreyness = pageBackgroundGreyness
       ? `${pageBackgroundGreyness}%`
       : '';
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-page-background-greyness',
       pageBackgroundGreyness
     );
@@ -2188,14 +2189,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // Fill transparency
     let fillOpacity = this.settings.surroundingContentFillOpacity;
     fillOpacity = fillOpacity !== 10 ? (fillOpacity + 100) / 200 : '';
-    document.body.style.setProperty('--ytal-fill-opacity', fillOpacity);
+    setStyleProperty(document.body, '--ytal-fill-opacity', fillOpacity);
 
     if (this.mastheadElem) {
       // Header transparency
       let headerFillOpacity = this.settings.headerFillOpacity;
       headerFillOpacity =
         headerFillOpacity !== 100 ? (headerFillOpacity + 100) / 200 : '';
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         '--ytal-fill-opacity',
         headerFillOpacity
       );
@@ -2208,13 +2210,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // Images transparency
     let imageOpacity = this.settings.surroundingContentImagesOpacity;
     imageOpacity = imageOpacity !== 100 ? imageOpacity / 100 : '';
-    document.body.style.setProperty('--ytal-image-opacity', imageOpacity);
+    setStyleProperty(document.body, '--ytal-image-opacity', imageOpacity);
 
     if (this.mastheadElem) {
       // Header transparency
       let headerImageOpacity = this.settings.headerImagesOpacity;
       headerImageOpacity = imageOpacity !== 100 ? headerImageOpacity / 100 : '';
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         '--ytal-image-opacity',
         headerImageOpacity
       );
@@ -2254,30 +2257,36 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         getTextShadow(color, headerShadowSize, headerShadowOpacity);
 
       // Header !textAndBtnOnly
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         `--ytal-filter-shadow`,
         !textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''
       );
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         `--ytal-filter-shadow-inverted`,
         !textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''
       );
 
       // Header textAndBtnOnly
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         `--ytal-button-shadow`,
         textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''
       );
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         `--ytal-button-shadow-inverted`,
         textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''
       );
 
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         '--ytal-text-shadow',
         textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''
       );
-      this.mastheadElem.style.setProperty(
+      setStyleProperty(
+        this.mastheadElem,
         '--ytal-text-shadow-inverted',
         textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''
       );
@@ -2297,30 +2306,36 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       getTextShadow(color, contentShadowSize, contentShadowOpacity);
 
     // Content !textAndBtnOnly
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       `--ytal-filter-shadow`,
       !textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       `--ytal-filter-shadow-inverted`,
       !textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''
     );
 
     // Content textAndBtnOnly
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       `--ytal-button-shadow`,
       textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       `--ytal-button-shadow-inverted`,
       textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''
     );
 
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-text-shadow',
       textAndBtnOnly ? getContentTextShadow('0,0,0') : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-text-shadow-inverted',
       textAndBtnOnly ? getContentTextShadow('255,255,255') : ''
     );
@@ -2335,13 +2350,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       Math.pow(this.settings.videoShadowSize / 5, 1.77); // Chrome limit: 250px | Firefox limit: 100px
     const videoShadowOpacity = this.settings.videoShadowOpacity / 100;
 
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-video-shadow-background',
       videoShadowSize && videoShadowOpacity
         ? `rgba(0,0,0,${videoShadowOpacity})`
         : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-video-shadow-box-shadow',
       videoShadowSize && videoShadowOpacity
         ? `
@@ -2352,7 +2369,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     );
 
     // Video scale
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-html5-video-player-overflow',
       this.videoScale > 100 ? 'visible' : ''
     );
@@ -2388,13 +2406,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         ? 75
         : 50);
 
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-video-debanding-background',
       videoDebandingStrength
         ? `url('${baseUrl}images/noise-${videoNoiseImageIndex}.png')`
         : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-video-debanding-opacity',
       videoDebandingStrength ? videoNoiseOpacity : ''
     );
@@ -2407,17 +2427,20 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       debandingStrength /
       (debandingStrength > 75 ? 100 : debandingStrength > 50 ? 75 : 50);
 
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-debanding-content',
       debandingStrength ? `''` : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-debanding-background',
       debandingStrength
         ? `url('${baseUrl}images/noise-${noiseImageIndex}.png')`
         : ''
     );
-    document.body.style.setProperty(
+    setStyleProperty(
+      document.body,
       '--ytal-debanding-opacity',
       debandingStrength ? noiseOpacity : ''
     );
@@ -2874,7 +2897,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
   };
 
-  afterNextFrame = async () => {
+  afterNextFrame = async function afterNextFrame() {
     try {
       this.afterNextFrameIdleCallback = undefined;
 
@@ -2898,12 +2921,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       ) {
         this.lastUpdateStatsTime = performance.now();
         requestIdleCallback(
-          () => {
+          function afterNextFrameUpdateStats() {
             if (!this.settings.videoOverlayEnabled) {
               this.detectFrameRates();
             }
             this.stats.update();
-          },
+          }.bind(this),
           { timeout: 100 }
         );
       }
@@ -2916,7 +2939,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
       throw ex;
     }
-  };
+  }.bind(this);
 
   // Todo:
   // - Fix frame drops on 60hz monitors with a 50hz video playing?:
@@ -3699,7 +3722,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         );
         return;
       }
-      this.videoElem.requestVideoFrameCallback(() => {}); // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
+      this.videoElem.requestVideoFrameCallback(function prescheduledVFC() {}); // Requesting as soon as possible to prevent skipped video frames on displays with a matching framerate
+
       this.stats.receiveVideoFrametimes(compose, info);
       this.requestVideoFrameCallbackId = undefined;
       this.videoFrameCallbackReceived = true;
@@ -3790,17 +3814,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     // // Pre-style to prevent black/white flashes
     // if (this.ytdAppElem)
-    //   this.ytdAppElem.style.setProperty(
-    //     'background',
+    //   setStyleProperty(this.ytdAppElem, 'background',
     //     this.theming.shouldBeDarkTheme(true) ? '#000' : '#fff',
-    //     'important'
-    //   );
+    //     'important');
     // if (this.playerTheaterContainerElem) {
-    //   this.playerTheaterContainerElem.style.setProperty(
-    //     'background',
+    //   setStyleProperty(this.playerTheaterContainerElem, 'background',
     //     'none',
-    //     'important'
-    //   );
+    //     'important');
     // }
 
     // const html = document.documentElement;
