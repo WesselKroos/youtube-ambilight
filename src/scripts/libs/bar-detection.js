@@ -192,7 +192,6 @@ const workerCode = function () {
   const easeInOutQuad = (x) =>
     x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 
-  // Todo: getImageData for the whole image at once to prevent 1Mb of memory trashing?
   const getCertainty = (point, yAxis, yDirection, color, imageLine) => {
     const x = point.x - (enhancedCertainty ? edgePointXRange : 1);
     const y =
@@ -719,7 +718,9 @@ const workerCode = function () {
         const xIndex = Math.min(
           Math.max(
             0,
-            index + Math.round(xOffset * (partSize / 2) - partSize / 4)
+            Math.round(
+              index + Math.round(xOffset * (partSize / 2) - partSize / 4)
+            )
           ),
           canvas[xLength] - 1
         );
@@ -982,6 +983,8 @@ const workerCode = function () {
           ctx = canvasInfo.ctx;
         }
 
+        // Todo: Rewrite bardetection code to use a single ImageData
+        // Because every call to getImageData creates a new copy of the pixel buffer
         globalXOffsetIndex++;
         if (globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0;
         // const xOffset = xOffsetSize === 1 ? .5 : (globalXOffsetIndex / (xOffsetSize - 1))
