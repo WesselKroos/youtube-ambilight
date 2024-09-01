@@ -192,108 +192,86 @@ const workerCode = function () {
   const easeInOutQuad = (x) =>
     x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 
-  const getCertainty = (() => {
-    let x,
-      y,
-      xLength,
-      yLength,
-      data,
-      score,
-      ix,
-      dx,
-      dy,
-      dy2,
-      iy,
-      i,
-      iColor,
-      expectWithinDeviation,
-      hueDeviation,
-      brightnessDeviation,
-      deviationScore,
-      within,
-      length,
-      certainty;
-    return function getCertainty(point, yAxis, yDirection, color, imageLine) {
-      x = point.x - (enhancedCertainty ? edgePointXRange : 1);
-      y =
-        point.y -
-        edgePointYRange *
-          2 *
-          (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter);
-      xLength = 1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
-      yLength = 1 + edgePointYRange * 2;
+  // Todo: getImageData for the whole image at once to prevent 1Mb of memory trashing?
+  const getCertainty = (point, yAxis, yDirection, color, imageLine) => {
+    const x = point.x - (enhancedCertainty ? edgePointXRange : 1);
+    const y =
+      point.y -
+      edgePointYRange *
+        2 *
+        (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter);
+    const xLength = 1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
+    const yLength = 1 + edgePointYRange * 2;
 
-      data = enhancedCertainty
-        ? ctx.getImageData(
-            ...(yAxis === 'height'
-              ? [x, y, xLength, yLength]
-              : [y, x, yLength, xLength])
-          ).data
-        : [];
-      if (!enhancedCertainty) {
-        let start = y * channels;
-        let length = yLength * channels;
-        if (start < 0) {
-          data = new Array(-start).fill(0);
-          length += start;
-          start = 0;
-          data = data.concat(...imageLine.data.slice(start, start + length));
+    let data = enhancedCertainty
+      ? ctx.getImageData(
+          ...(yAxis === 'height'
+            ? [x, y, xLength, yLength]
+            : [y, x, yLength, xLength])
+        ).data
+      : [];
+    if (!enhancedCertainty) {
+      let start = y * channels;
+      let length = yLength * channels;
+      if (start < 0) {
+        data = new Array(-start).fill(0);
+        length += start;
+        start = 0;
+        data = data.concat(...imageLine.data.slice(start, start + length));
+      } else {
+        data = imageLine.data.slice(start, start + length);
+      }
+    }
+
+    // console.log(point, yAxis, yDirection, color)
+    // console.log(x, y, xLength, yLength)
+    // console.log(data)
+
+    let score = 0;
+    for (let dx = 0; dx < xLength; dx++) {
+      const ix = dx * (yAxis === 'height' ? 1 : yLength);
+
+      for (let dy = 0; dy < yLength; dy++) {
+        const dy2 = yDirection === 1 ? dy : yLength - 1 - dy;
+        const iy = dy2 * (yAxis === 'height' ? xLength : 1);
+        const i = ix * channels + iy * channels;
+
+        const iColor =
+          data[i + 3] === 0
+            ? color // Outside canvas bounds
+            : [data[i], data[i + 1], data[i + 2]];
+        const expectWithinDeviation =
+          dy < Math.floor(1 + edgePointYRange * 2 * edgePointYCenter);
+        // const within = isColorWithinMaxDeviation(iColor, color)
+        // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
+        // if (within === expectWithinDeviation) {
+
+        if (!expectWithinDeviation) {
+          const maxDeviation = getMaxDeviationLimits(color);
+
+          const hueDeviation = getHueDeviation(iColor, color);
+          const brightnessDeviation = getBrightnessDeviation(iColor, color);
+          const deviationScore = Math.max(
+            0,
+            Math.min(
+              1 - minDeviationScore,
+              (hueDeviation + brightnessDeviation) / maxDeviation.score / 0.05
+            )
+          );
+          // console.log(dx, dy, deviationScore, iColor, color, hueDeviation, brightnessDeviation)
+          score += minDeviationScore + deviationScore;
         } else {
-          data = imageLine.data.slice(start, start + length);
+          const within = isColorWithinMaxDeviation(iColor, color);
+          if (within) score += 1;
         }
+        // }
       }
+    }
+    const length = xLength * yLength;
+    const certainty = (score - length / 2) / (length / 2);
 
-      // console.log(point, yAxis, yDirection, color)
-      // console.log(x, y, xLength, yLength)
-      // console.log(data)
-
-      score = 0;
-      for (dx = 0; dx < xLength; dx++) {
-        ix = dx * (yAxis === 'height' ? 1 : yLength);
-
-        for (dy = 0; dy < yLength; dy++) {
-          dy2 = yDirection === 1 ? dy : yLength - 1 - dy;
-          iy = dy2 * (yAxis === 'height' ? xLength : 1);
-          i = ix * channels + iy * channels;
-
-          iColor =
-            data[i + 3] === 0
-              ? color // Outside canvas bounds
-              : [data[i], data[i + 1], data[i + 2]];
-          expectWithinDeviation =
-            dy < Math.floor(1 + edgePointYRange * 2 * edgePointYCenter);
-          // const within = isColorWithinMaxDeviation(iColor, color)
-          // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
-          // if (within === expectWithinDeviation) {
-
-          if (!expectWithinDeviation) {
-            const maxDeviation = getMaxDeviationLimits(color);
-
-            hueDeviation = getHueDeviation(iColor, color);
-            brightnessDeviation = getBrightnessDeviation(iColor, color);
-            deviationScore = Math.max(
-              0,
-              Math.min(
-                1 - minDeviationScore,
-                (hueDeviation + brightnessDeviation) / maxDeviation.score / 0.05
-              )
-            );
-            // console.log(dx, dy, deviationScore, iColor, color, hueDeviation, brightnessDeviation)
-            score += minDeviationScore + deviationScore;
-          } else {
-            within = isColorWithinMaxDeviation(iColor, color);
-            if (within) score += 1;
-          }
-          // }
-        }
-      }
-      length = xLength * yLength;
-      certainty = (score - length / 2) / (length / 2);
-      data.length = 0;
-
-      return easeInOutQuad(certainty);
-    };
-  })();
+    return easeInOutQuad(certainty);
+  };
 
   const largeStep = 4;
   const ignoreEdge = 2;
