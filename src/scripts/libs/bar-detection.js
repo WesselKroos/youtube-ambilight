@@ -506,7 +506,7 @@ const workerCode = function () {
 
     const threshold =
       imageLines.length * 2 * (1 - (allowedAnomaliesPercentage - 10) / 100);
-    if (edges.filter((e) => !e.deviates).length <= threshold) {
+    if (edges.filter((e) => !e.deviates).length < threshold) {
       return true;
     }
 
