@@ -8,12 +8,107 @@ import SentryReporter from './sentry-reporter';
 import { workerFromCode } from './worker';
 
 const workerCode = function () {
+  class ImageHelper {
+    imageData;
+    channels = 4;
+    // _emptyBit = 0;
+    // _emptyPixel = [0, 0, 0, 0];
+
+    get width() {
+      return this.imageData?.width ?? 0;
+    }
+
+    get height() {
+      return this.imageData?.height ?? 0;
+    }
+
+    getDataOffset(x, y) {
+      return (y * this.width + x) * this.channels;
+    }
+
+    getPixel(x, y, data, dataOffset) {
+      // Throttle worker thread
+      // for (let i = 0; i < 100_000; i++) {}
+      
+      let returnValue = !data;
+      if(returnValue) data = new Uint8Array(4);
+      if(!dataOffset) dataOffset = 0;
+
+      // console.log(x, y);
+      const offset = this.getDataOffset(x, y);
+      if (offset < 0 || offset > (this.imageData?.data?.length ?? 0)) {
+        // return this._emptyPixel;
+        data[dataOffset + 0] = 0;
+        data[dataOffset + 1] = 0;
+        data[dataOffset + 2] = 0;
+        data[dataOffset + 3] = 0;
+      } else {
+        // return this.imageData?.data?.slice?.(offset, offset + 4);
+        data[dataOffset + 0] = this.imageData?.data?.[offset];
+        data[dataOffset + 1] = this.imageData?.data?.[offset + 1];
+        data[dataOffset + 2] = this.imageData?.data?.[offset + 2];
+        data[dataOffset + 3] = this.imageData?.data?.[offset + 3];
+      }
+
+      if(returnValue) return data;
+      // return [
+      //   this.imageData?.data?.[offset],
+      //   this.imageData?.data?.[offset + 1],
+      //   this.imageData?.data?.[offset + 2],
+      //   this.imageData?.data?.[offset + 3],
+      // ];
+    }
+
+    // getImageData(x, y, width, height) {
+    //   const leftSpillLength = Math.max(0, -x);
+    //   const leftSpillData = new Uint8ClampedArray(
+    //     leftSpillLength * this.channels
+    //   ).fill(this._emptyBit);
+    //   const rightSpillLength = Math.max(
+    //     0,
+    //     x + width - (this.imageData?.data?.length ?? 0) / this.channels
+    //   );
+    //   const rightSpillData = new Uint8ClampedArray(
+    //     rightSpillLength * this.channels
+    //   ).fill(this._emptyBit);
+
+    //   const clampedWidth = width - leftSpillLength - rightSpillLength;
+    //   const clampedX = Math.max(0, x);
+    //   // const clampedLineLength = (clampedWidth - clampedX) * this.channels;
+
+    //   const data = [];
+    //   for (let dy = 0; dy <= height; dy++) {
+    //     const ay = y + dy;
+    //     if (ay < 0 || ay > this.height) {
+    //       data.push(
+    //         ...new Uint8ClampedArray(width * this.channels).fill(this._emptyBit)
+    //       );
+    //     } else {
+    //       const start = (this.width * ay + clampedX) * this.channels;
+    //       const end = start + clampedWidth * this.channels;
+    //       const clampedLineData = this.imageData?.data?.slice?.(start, end);
+    //       data.push(...leftSpillData, ...clampedLineData, ...rightSpillData);
+    //     }
+    //   }
+
+    //   // console.log(this.imageData, data, x, y, width, height);
+    //   return data;
+    //   // const offset = (y * this.width + x) * this.channels;
+    //   // const end = offset + (length - 1) * this.channels;
+    //   // const beforeLength = Math.max(0, -offset);
+    //   // const afterLength = Math.max(0, end - dataLength)
+    //   // const after = new Uint8ClampedArray(afterLength).fill(0)
+    //   // const values = this.imageData?.data?.slice?.(Math.max(0, offset), Math.min(end, dataLength)) ?? this._emptyPixel
+    // }
+  }
+
   let catchedWorkerCreationError = false;
   let canvas;
   let canvasIsCreatedInWorker = false;
   let ctx;
   let globalRunId = 0;
   let globalXOffsetIndex = 0;
+  let image = new ImageHelper();
   const scanlinesAmount = 5; // 10 // 40 // 5
 
   const postError = (ex) => {
@@ -26,63 +121,313 @@ const workerCode = function () {
     }
   };
 
-  let getLineImageDataStart;
-  let getLineImageDataEnd;
-  async function getLineImageData(imageLines, yAxis, xIndex) {
-    const now = performance.now();
-    if (
-      !getLineImageDataStart ||
-      (getLineImageDataEnd && now - getLineImageDataEnd > 2)
-    ) {
-      getLineImageDataStart = now;
-    } else if (now - getLineImageDataStart > 4) {
-      // Give the CPU breathing time to execute other javascript code/internal browser code in between on single core instances
-      // (or GPU cores breathing time to decode the video or prepaint other elements in between)
-      // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
+  // // let getLineImageDataStart;
+  // // let getLineImageDataEnd;
+  // function getLineImageData(imageLines, yAxis, xIndex) {
+  //   // const now = performance.now();
+  //   // if (
+  //   //   !getLineImageDataStart ||
+  //   //   (getLineImageDataEnd && now - getLineImageDataEnd > 2)
+  //   // ) {
+  //   //   getLineImageDataStart = now;
+  //   // } else if (now - getLineImageDataStart > 4) {
+  //   //   // Give the CPU breathing time to execute other javascript code/internal browser code in between on single core instances
+  //   //   // (or GPU cores breathing time to decode the video or prepaint other elements in between)
+  //   //   // Allows 4k60fps with frame blending + video overlay 80fps -> 144fps
 
-      // const delayStart = performance.now()
-      await new Promise((resolve) => setTimeout(resolve, 1)); // 0/1 = 13.5ms in Firefox & 0/1.5 ms in Chromium
-      // console.log(`was busy for ${(delayStart - getLineImageDataStart).toFixed(2)}ms | delayed by ${(performance.now() - delayStart).toFixed(2)}ms`)
-      getLineImageDataStart = now;
-    }
+  //   //   // const delayStart = performance.now()
+  //   //   await new Promise((resolve) => setTimeout(resolve, 1)); // 0/1 = 13.5ms in Firefox & 0/1.5 ms in Chromium
+  //   //   // console.log(`was busy for ${(delayStart - getLineImageDataStart).toFixed(2)}ms | delayed by ${(performance.now() - delayStart).toFixed(2)}ms`)
+  //   //   getLineImageDataStart = now;
+  //   // }
 
-    const params =
-      yAxis === 'height'
-        ? [xIndex, 0, 1, canvas.height]
-        : [0, xIndex, canvas.width, 1];
-
-    // const start = performance.now()
-    // const duration = performance.now() - start
-    imageLines.push({
-      xIndex,
-      data: ctx.getImageData(...params).data,
-    });
-    getLineImageDataEnd = performance.now();
-  }
+  //   const params =
+  //     yAxis === 'height'
+  //       ? [xIndex, 0, 1, canvas.height]
+  //       : [0, xIndex, canvas.width, 1];
+  //   return imageLines.push({
+  //     xIndex,
+  //     data: image.getImageData(...params),
+  //   });
+  //   // // const start = performance.now()
+  //   // // const duration = performance.now() - start
+  //   // imageLines.push({
+  //   //   xIndex,
+  //   //   data: ctx.getImageData(...params).data,
+  //   // });
+  //   // getLineImageDataEnd = performance.now();
+  // }
 
   const sortSizes = (averageSize) => (a, b) => {
     const aGap = Math.abs(averageSize - a.yIndex);
     const bGap = Math.abs(averageSize - b.yIndex);
     return aGap === bGap ? 0 : aGap > bGap ? 1 : -1;
   };
+  
+  //// Quicksort 2
 
-  function sortAverageColors(averageColor, a, b) {
-    const aDiff =
-      Math.abs(averageColor[0] - a[0]) +
-      Math.abs(averageColor[1] - a[1]) +
-      Math.abs(averageColor[2] - a[2]);
-    const bDiff =
-      Math.abs(averageColor[0] - b[0]) +
-      Math.abs(averageColor[1] - b[1]) +
-      Math.abs(averageColor[2] - b[2]);
-    return aDiff === bDiff ? 0 : aDiff > bDiff ? 1 : -1;
+  // const quickSort = (arr, weights) => {
+  //   if (arr.length <= 1) {
+  //     return arr;
+  //   }
+  
+  //   let pivot = arr[0];
+  //   let leftArr = [];
+  //   let rightArr = [];
+  
+  //   for (let i = 1; i < arr.length; i++) {
+  //     if (weights[arr[i]] < weights[pivot]) {
+  //       leftArr.push(arr[i]);
+  //     } else {
+  //       rightArr.push(arr[i]);
+  //     }
+  //   }
+  
+  //   return [
+  //     ...quickSort(leftArr, weights),
+  //     pivot,
+  //     ...quickSort(rightArr, weights)
+  //   ];
+  // };
+
+  // QuickSort 3 (working)
+
+  // let partitionPivot;
+  // let partitionI;
+  // let partitionJ;
+  // let partitionTemp;
+  // const partition = (arr, weights, low, high) => {
+  //   partitionPivot = arr[high]; 
+  //   partitionI = low - 1; 
+  
+  //   for (partitionJ = low; partitionJ <= high - 1; partitionJ++) { 
+  //       // If current element is smaller than the pivot 
+  //       if (weights[arr[partitionJ]] < weights[partitionPivot]) { 
+  //           // Increment index of smaller element 
+  //           partitionI++; 
+  //           // Swap elements
+  //           partitionTemp = arr[partitionJ];
+  //           arr[partitionJ] = arr[partitionI];
+  //           arr[partitionI] = partitionTemp;
+  //       } 
+  //   } 
+  //   // Swap pivot to its correct position
+  //   partitionTemp = arr[high];
+  //   arr[high] = arr[partitionI + 1];
+  //   arr[partitionI + 1] = partitionTemp;
+
+  //   return partitionI + 1; // Return the partition index
+  // }
+
+  // let quickSortParitionIndex;
+  // const quickSort = (arr, weights, low = 0, high = arr.length - 1) => {
+  //     if (low >= high) return;
+  //     quickSortParitionIndex = partition(arr, weights, low, high);
+    
+  //     quickSort(arr, weights, low, quickSortParitionIndex - 1);
+  //     quickSort(arr, weights, quickSortParitionIndex + 1, high);
+  // }
+
+  //// Quickshort 1 (crashes because weights are compared instead of indexes)
+
+  // let quickSortPivotIndex;
+  // let tempArr;
+  // let quickSortCallCount = 0;
+  // let loggedError = false;
+  // function quickSort(arr, weights, left = 0, right = arr.length - 1) {
+  //     if(arr !== tempArr) {
+  //       tempArr = arr;
+  //       quickSortCallCount = 1;
+  //     } else {
+  //       quickSortCallCount++;
+  //     }
+  //     if (weights[left] < weights[right]) {
+  //       try {
+  //         quickSortPivotIndex = randomPartition(arr, weights, left, right);
+  //         quickSort(arr, weights, left, quickSortPivotIndex - 1);
+  //         quickSort(arr, weights, quickSortPivotIndex + 1, right);
+  //       } catch(ex) {
+  //         if(!loggedError) {
+  //           loggedError = true;
+  //           console.error(ex.message)
+  //           console.log(`After ${quickSortCallCount} calls:`)
+  //           console.log(`left: ${left} = ${weights[left]}`)
+  //           console.log(`right: ${right} = ${weights[right]}`)
+  //           console.log(`arr: ${arr.length}`);
+  //           console.log(`weights: ${weights.length}`);
+  //           console.log(`arr values: ${[...arr].join(',')}`);
+  //           console.log(`arr weights: ${[...weights].join(',')}`);
+  //         }
+  //         throw ex;
+  //       }
+  //     }
+  // }
+  
+  // let randomPartitionPivotIndex;
+  // function randomPartition(arr, weights, left, right) {
+  //   randomPartitionPivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
+  //   swap(arr, randomPartitionPivotIndex, right);
+  //   return partition(arr, weights, left, right);
+  // }
+  
+  // let pivot;
+  // let i;
+  // function partition(arr, weights, left, right) {
+  //   pivot = arr[right];
+  //   i = left - 1;
+  
+  //   for (let j = left; j < right; j++) {
+  //     if (weights[arr[j]] < weights[pivot]) {
+  //       i++;
+  //       swap(arr, i, j);
+  //     }
+  //   }
+  
+  //   swap(arr, i + 1, right);
+  //   return i + 1;
+  // }
+  
+  // let swapTemp;
+  // function swap(arr, i, j) {
+  //   swapTemp = arr[i];
+  //   arr[i] = arr[j];
+  //   arr[j] = swapTemp;
+  // }
+
+
+  //// BubbleSort
+
+  // let bubbleSortN;
+  // let bubbleSortSwapped;
+  // let bubbleSortTemp;
+  // function bubbleSort(arr, weights) {
+  //   bubbleSortN = arr.length;
+  //   do {
+  //     bubbleSortSwapped = false;
+  //       for (let i = 0; i < bubbleSortN - 1; i++) {
+  //         if (weights[arr[i]] > weights[arr[i + 1]]) {
+  //           // Swap elements
+  //           bubbleSortTemp = arr[i];
+  //           arr[i] = arr[i + 1];
+  //           arr[i + 1] = bubbleSortTemp;
+  //           bubbleSortSwapped = true;
+  //         }
+  //       }
+  //       bubbleSortN--;
+  //   } while (bubbleSortSwapped);
+  //   return arr;
+  // }
+
+  //// GnomeSort
+
+  // function gnomeSort(arr, weights) {
+  //   let pos = 0;
+  //   while (pos < arr.length) {
+  //       if (pos === 0 || weights[arr[pos]] >= weights[arr[pos - 1]]) {
+  //           pos++;
+  //       } else {
+  //           // Swap elements
+  //           let temp = arr[pos];
+  //           arr[pos] = arr[pos - 1];
+  //           arr[pos - 1] = temp;
+
+  //           // Step back
+  //           pos--;
+  //       }
+  //   }
+  //   return arr;
+  // }
+
+  // function insertionSort(arr, weights) {
+  //   for (let i = 1; i < arr.length; i++) {
+  //       let key = arr[i];
+  //       let j = i - 1;
+
+  //       /* Move elements of arr[0..i-1], that are
+  //         greater than key, to one position ahead
+  //         of their current position */
+  //       while (j >= 0 && weights[arr[j]] > weights[key]) {
+  //           arr[j + 1] = arr[j];
+  //           j = j - 1;
+  //       }
+  //       arr[j + 1] = key;
+  //   }
+  // }
+
+  const colorChannels = image.channels - 1;
+  const colorsLength = 128;
+  const averageColorColorsData = new Uint8Array(colorsLength * colorChannels); // 552 = amount of pixels being stored
+  const averageColor = new Uint32Array(colorChannels);
+  const averageColorsIndex = new Uint16Array(colorsLength);
+  const averageColorsIndexDiffs = new Uint16Array(colorsLength);
+  const averageColorsIndexExcludedFromSorting = new Uint16Array(colorsLength);
+  const averageColorsLength = Math.floor(colorsLength * 0.25);
+
+  function sortAverageColors(ai, bi) {
+    return averageColorsIndexDiffs[ai] - averageColorsIndexDiffs[bi];
+    // return Math.random() * 2 - 1;
+    // if(
+    //   averageColorsIndexExcludedFromSorting.includes(ai) || 
+    //   averageColorsIndexExcludedFromSorting.includes(bi)
+    // ) return 0;
+
+    // const aDiff =
+    //   Math.abs(averageColor[0] - averageColorColorsData[ai]) +
+    //   Math.abs(averageColor[1] - averageColorColorsData[ai + 1]) +
+    //   Math.abs(averageColor[2] - averageColorColorsData[ai + 2]);
+    // const bDiff =
+    //   Math.abs(averageColor[0] - averageColorColorsData[bi]) +
+    //   Math.abs(averageColor[1] - averageColorColorsData[bi + 1]) +
+    //   Math.abs(averageColor[2] - averageColorColorsData[bi + 2]);
+    // const result = aDiff - bDiff;
+    // // console.log('sort', '|', 
+    // //   `avg: ${averageColor[0]}, ${averageColor[1]}, ${averageColor[2]}`,
+    // //   `a: ${averageColorColorsData[ai]}, ${averageColorColorsData[ai + 1]}, ${averageColorColorsData[ai + 2]}`,
+    // //   `b: ${averageColorColorsData[bi]}, ${averageColorColorsData[bi + 1]}, ${averageColorColorsData[bi + 2]}`,
+    // //   `aDiff: ${aDiff}`, 
+    // //   `bDiff: ${bDiff}`, 
+    // //   '|', result);
+    // return result;
   }
 
-  function getAverageColor(_imageLines, perpendicularImageLines) {
+  function getAverageColor(linesX, yAxis) {
+    // return [0,0,0];
     // const topOffsetIndex = channels * 2
     // const bottomOffsetIndex = imageLines[0].data.length - channels - topOffsetIndex
+    // const xMax = image[yAxis === 'height' ? 'width' : 'height'];
+    // const topOffsetIndex = 3;
+    // const bottomOffsetIndex = xMax - 1 - topOffsetIndex;
+    let colorsIndex = 0;
+    const colors = averageColorColorsData;
 
-    let colors = [];
+    // const colors = avarageColorData;
+
+    // Pick 30 colors
+    // for (const x of linesX) {
+    //   for (let y = topOffsetIndex; y <= topOffsetIndex + 4; y += 2) {
+    //     if(yAxis === 'height') {
+    //       image.getPixel(x, y, colors, colorsIndex);
+    //       // image.getPixel(x, y);
+    //     } else {
+    //       image.getPixel(y, x, colors, colorsIndex);
+    //       // image.getPixel(y, x);
+    //     }
+    //     colorsIndex += colorChannels;
+    //     // colors.push(image.getPixel(...(yAxis === 'height' ? [x, y] : [y, x]))); // , xi, i])
+    //   }
+    //   for (let y = bottomOffsetIndex; y >= bottomOffsetIndex - 4; y -= 2) {
+    //     if(yAxis === 'height') {
+    //       image.getPixel(x, y, colors, colorsIndex);
+    //       // image.getPixel(x, y);
+    //     } else {
+    //       image.getPixel(y, x, colors, colorsIndex);
+    //       // image.getPixel(y, x);
+    //     }
+    //     colorsIndex += colorChannels;
+    //     // colors.push(image.getPixel(...(yAxis === 'height' ? [x, y] : [y, x]))); // , xi, i])
+    //   }
+    // }
+
     // for(const imageLine of imageLines) {
     // // for(const xi in imageLines) {
     //   const data = imageLine.data
@@ -93,39 +438,205 @@ const workerCode = function () {
     //     colors.push([data[i], data[i + 1], data[i + 2]]) //, xi, i])
     //   }
     // }
-    for (const imageLine of perpendicularImageLines) {
-      // for(const xi in perpendicularImageLines) {
-      const data = imageLine.data;
-      const max = data.length / channels;
-      for (let i = 0; i <= max; i += 4 * channels) {
-        colors.push([data[i], data[i + 1], data[i + 2]]); // , xi, i])
+
+    const yMax = image[yAxis];
+    const linesY = [2, 4, yMax - 4, yMax - 2];
+    const xStep = 16;
+    for (let i = 0; i < linesY.length; i++) {
+      const y = linesY[i];
+      const offset = Math.floor((i % 2) * (xStep / 2))
+      for (let x = offset; x < yMax; x += xStep) {
+        if(yAxis === 'height') {
+          image.getPixel(x, y, colors, colorsIndex);
+          // image.getPixel(x, y);
+        } else {
+          image.getPixel(y, x, colors, colorsIndex);
+          // image.getPixel(y, x);
+        }
+        colorsIndex += colorChannels;
+        // colors.push(image.getPixel(...(yAxis === 'height' ? [x, y] : [y, x])));
       }
     }
+    // console.log('Picked', colorsIndex / colorChannels, 'colors');
 
-    const averageColorLength = colors.length * 0.1;
-    let averageColor;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      averageColor = [
-        colors.reduce((average, color) => average + color[0], 0) /
-          colors.length,
-        colors.reduce((average, color) => average + color[1], 0) /
-          colors.length,
-        colors.reduce((average, color) => average + color[2], 0) /
-          colors.length,
-      ];
-      if (colors.length < averageColorLength) break;
+    // return [0,0,0];
 
-      colors.sort((a, b) => sortAverageColors(averageColor, a, b));
-      colors.splice(0, 1);
-      colors.splice(-1, 1);
+    // for(const xi in perpendicularImageLines) {
+    // const data = imageLine.data;
+    // const max = data.length / channels;
+    // for (let i = 0; i <= max; i += 4 * channels) {
+    //   colors.push([data[i], data[i + 1], data[i + 2]]); // , xi, i])
+    // }
+
+    // console.log('color', colors.length); // 552
+
+    // Reset indexes
+    for (let i = 0; i < averageColorsIndex.length; i++) {
+      averageColorsIndex[i] = i;
+      averageColorsIndexExcludedFromSorting[i] = -1;
     }
 
-    // console.log(
+    // let iternations = 0;
+    // let summedLength = 0;
+    for(let i = colorsLength; i >= averageColorsLength; i -= Math.floor(averageColorsLength / 2)) { // Omits 2 colors after every sort
+      // iternations++;
+      // summedLength = i;
+      // Exclude old indexes from sorting
+      for(let j = 0; j < colorsLength - i; j++) {
+        averageColorsIndexExcludedFromSorting[j] = averageColorsIndex[colorsLength - 1 - j];
+      }
+      // console.log(`exluded ${colorsLength - i} colors:`,
+      //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
+      //   [...averageColorsIndexExcludedFromSorting.slice(0, colorsLength - i)].map(i => {
+      //     const c = [
+      //       Math.abs(averageColor[0] - colors[i]) +
+      //       Math.abs(averageColor[1] - colors[i + 1]) +
+      //       Math.abs(averageColor[2] - colors[i + 2]),
+      //       colors[i],
+      //       colors[i + 1],
+      //       colors[i + 2]
+      //     ];
+      //     return c.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|');
+      //   })
+      // )
+
+      // set averageColor
+      for(let iRGB = 0; iRGB < colorChannels; iRGB++) {
+        averageColor[iRGB] = 0;
+        for(let i2 = 0; i2 < i; i2++) {
+          const averageColorIndex = averageColorsIndex[i2];
+          const offset = averageColorIndex * colorChannels + iRGB;
+          averageColor[iRGB] += colors[offset]; // Take color based on indexed colors
+        }
+        averageColor[iRGB] = Math.round(averageColor[iRGB] / i);
+      }
+
+      for(let i2 = 0; i2 < i; i2++) {
+        const averageColorIndex = averageColorsIndex[i2];
+        const offset = averageColorIndex * colorChannels;
+        const diff = (
+          Math.abs(averageColor[0] - colors[offset]) +
+          Math.abs(averageColor[1] - colors[offset + 1]) +
+          Math.abs(averageColor[2] - colors[offset + 2])
+        );
+        averageColorsIndexDiffs[i2] = diff;
+      }
+
+      // order color indexes based on averageColor
+      // console.log('average color', averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'));
+
+      // if (i === colorsLength) {
+        // First pass
+        averageColorsIndex.sort(sortAverageColors);
+      // } else {
+      //   // Almost sorted pass
+      //   insertionSort(averageColorsIndex, averageColorsIndexDiffs);
+      // }
+
+      // const originalIndex = JSON.parse(JSON.stringify([...averageColorsIndex]))
+      // const originalWeights = JSON.parse(JSON.stringify([...averageColorsIndexDiffs]))
+      // try {
+      //   quickSort(averageColorsIndex, averageColorsIndexDiffs);
+      // } catch(ex) {
+      //   console.log(ex.message);
+      //   // console.log(originalIndex)
+      //   // console.log(originalWeights)
+      //   // debugger;
+      //   // const redoIndex = JSON.parse(JSON.stringify([...originalIndex]))
+      //   // const redoWeights = JSON.parse(JSON.stringify([...originalWeights]))
+      //   // quickSort(redoIndex, redoWeights);
+      //   throw new Error('SortError')
+      // }
+      // for (let i = 0; i < averageColorsIndex.length; i++) {
+      //   averageColorsIndex[i] = i;
+      // }
+    }
+    // console.log('iternations', iternations, 'from', colorsLength, 'to', summedLength, 'maximum is', averageColorsLength)
+    
+
+    // console.log(averageColorsLength, 
     //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
-    //   JSON.parse(JSON.stringify(colors.map(c => c.map(c => c.toString().padStart(3,' ')).join('|'))))
+    //   // averageColorsIndex,
+    //   // averageColorsIndexExcludedFromSorting,
+    //   [...averageColorsIndex].map(i => {
+    //     const c = [
+    //       Math.abs(averageColor[0] - colors[i]) +
+    //       Math.abs(averageColor[1] - colors[i + 1]) +
+    //       Math.abs(averageColor[2] - colors[i + 2]),
+    //       colors[i],
+    //       colors[i + 1],
+    //       colors[i + 2]
+    //     ];
+    //     return c.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|');
+    //   })
+    // );
+
+
+    //     //   colors.r.length
+    // const averageColorLength = colors.length * 0.1;
+    //   averageColor = [
+    //     // colors.r.reduce((average, value) => average + value, 0) /
+    //     //   colors.r.length,
+    //     // colors.g.reduce((average, value) => average + value, 0) /
+    //     //   colors.g.length,
+    //     // colors.b.reduce((average, value) => average + value, 0) /
+    //     //   colors.b.length,
+    //     colors.reduce((average, color) => average + color[0], 0) /
+    //       colors.length,
+    //     colors.reduce((average, color) => average + color[1], 0) /
+    //       colors.length,
+    //     colors.reduce((average, color) => average + color[2], 0) /
+    //       colors.length,
+    //   ];
+    //   if (colors.length < averageColorLength) break;
+
+    //   // const rgb = [colors.r, colors.g, colors.b];
+    //   // for(const values of rgb) {
+    //   //   values.sort((a, b) => sortAverageColors(averageColor, a, b));
+    //   //   values.splice(0, 1);
+    //   //   values.splice(-1, 1);
+    //   // }
+    //   colors.sort((a, b) => sortAverageColors(averageColor, a, b));
+    //   colors.splice(0, 1);
+    //   colors.splice(-1, 1);
+    // }
+
+      
+    // // eslint-disable-next-line no-constant-condition
+    // while (true) {
+    //   averageColor = [
+    //     // colors.r.reduce((average, value) => average + value, 0) /
+    //     //   colors.r.length,
+    //     // colors.g.reduce((average, value) => average + value, 0) /
+    //     //   colors.g.length,
+    //     // colors.b.reduce((average, value) => average + value, 0) /
+    //     //   colors.b.length,
+    //     colors.reduce((average, color) => average + color[0], 0) /
+    //       colors.length,
+    //     colors.reduce((average, color) => average + color[1], 0) /
+    //       colors.length,
+    //     colors.reduce((average, color) => average + color[2], 0) /
+    //       colors.length,
+    //   ];
+    //   if (colors.length < averageColorLength) break;
+
+    //   // const rgb = [colors.r, colors.g, colors.b];
+    //   // for(const values of rgb) {
+    //   //   values.sort((a, b) => sortAverageColors(averageColor, a, b));
+    //   //   values.splice(0, 1);
+    //   //   values.splice(-1, 1);
+    //   // }
+    //   colors.sort((a, b) => sortAverageColors(averageColor, a, b));
+    //   colors.splice(0, 1);
+    //   colors.splice(-1, 1);
+    // }
+
+    // console.log(
+    //   'averageColor',
+    //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
+    //   // JSON.parse(JSON.stringify(colors.map(c => c.map(c => c.toString().padStart(3,' ')).join('|'))))
     // )
-    colors.length = 0;
+    // colors.length = 0;
     return averageColor;
   }
 
@@ -182,7 +693,7 @@ const workerCode = function () {
     );
   }
 
-  const channels = 4;
+  // const channels = 4;
   const enhancedCertainty = true; // Todo: create setting?
   const minDeviationScore = enhancedCertainty ? 0.25 : 0.4;
   const edgePointXRange = globalThis.BARDETECTION_EDGE_RANGE;
@@ -192,53 +703,67 @@ const workerCode = function () {
   const easeInOutQuad = (x) =>
     x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 
-  const getCertainty = (point, yAxis, yDirection, color, imageLine) => {
-    const x = point.x - (enhancedCertainty ? edgePointXRange : 1);
+  const getCertaintyColorData = new Uint8Array(4);
+  const getCertainty = (pointX, pointY, yAxis, yDirection, color) => {
+    // return .8;
+    //, linesX) => {
+    const x = pointX - (enhancedCertainty ? edgePointXRange : 1);
     const y =
-      point.y -
+      pointY -
       edgePointYRange *
         2 *
         (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter);
     const xLength = 1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
     const yLength = 1 + edgePointYRange * 2;
 
-    let data = enhancedCertainty
-      ? ctx.getImageData(
-          ...(yAxis === 'height'
-            ? [x, y, xLength, yLength]
-            : [y, x, yLength, xLength])
-        ).data
-      : [];
-    if (!enhancedCertainty) {
-      let start = y * channels;
-      let length = yLength * channels;
-      if (start < 0) {
-        data = new Array(-start).fill(0);
-        length += start;
-        start = 0;
-        data = data.concat(...imageLine.data.slice(start, start + length));
-      } else {
-        data = imageLine.data.slice(start, start + length);
-      }
-    }
+    // let data = enhancedCertainty
+    //   ? ctx.getImageData(
+    //       ...(yAxis === 'height'
+    //         ? [x, y, xLength, yLength]
+    //         : [y, x, yLength, xLength])
+    //     ).data
+    //   : [];
+    // if (!enhancedCertainty) {
+    //   let start = y;
+    //   let length = yLength;
+    //   if (start < 0) {
+    //     data = new Array(-start).fill(0);
+    //     length += start;
+    //     start = 0;
+    //     data = data.concat(...imageLine.data.slice(start, start + length));
+    //   } else {
+    //     data = imageLine.data.slice(start, start + length);
+    //   }
+    // }
 
     // console.log(point, yAxis, yDirection, color)
     // console.log(x, y, xLength, yLength)
     // console.log(data)
 
     let score = 0;
-    for (let dx = 0; dx < xLength; dx++) {
-      const ix = dx * (yAxis === 'height' ? 1 : yLength);
+    // let iColor = getCertaintyColorData;
+    
+    for (let dx = 0; dx < xLength; dx += 2) {
+      // const ix = dx * (yAxis === 'height' ? 1 : yLength);
 
-      for (let dy = 0; dy < yLength; dy++) {
+      for (let dy = 0; dy < yLength; dy += 2) {
         const dy2 = yDirection === 1 ? dy : yLength - 1 - dy;
-        const iy = dy2 * (yAxis === 'height' ? xLength : 1);
-        const i = ix * channels + iy * channels;
-
-        const iColor =
-          data[i + 3] === 0
-            ? color // Outside canvas bounds
-            : [data[i], data[i + 1], data[i + 2]];
+        // const iy = dy2 * (yAxis === 'height' ? xLength : 1);
+        // const i = ix + iy;
+        let iColor = getCertaintyColorData;
+        if(yAxis === 'height') {
+          image.getPixel(
+            x + dx, y + dy2, iColor
+          );
+        } else {
+          image.getPixel(
+            y + dy2, x + dx, iColor
+          );
+        }
+        if (iColor[3] === 0) iColor = color;
+        // data[i + 3] === 0
+        //   ? color // Outside canvas bounds
+        //   : [data[i], data[i + 1], data[i + 2]];
         const expectWithinDeviation =
           dy < Math.floor(1 + edgePointYRange * 2 * edgePointYCenter);
         // const within = isColorWithinMaxDeviation(iColor, color)
@@ -266,7 +791,7 @@ const workerCode = function () {
         // }
       }
     }
-    const length = xLength * yLength;
+    const length = (1 + (xLength - 1) / 2) * (1 + (yLength - 1) / 2);
     const certainty = (score - length / 2) / (length / 2);
 
     return easeInOutQuad(certainty);
@@ -274,19 +799,23 @@ const workerCode = function () {
 
   const largeStep = 4;
   const ignoreEdge = 2;
-  const middleIndexOffset = channels * 10;
+  const middleYOffset = 10;
 
   const minCertainty = 0.65;
   const maxCertaintyChecks = enhancedCertainty ? 3 : 5;
   const sureCertainty = enhancedCertainty ? 0.65 : 0.65;
 
-  function detectEdges(imageLines, color, yAxis) {
-    const middleIndex = imageLines[0].data.length / 2;
+  const detectEdgesColorData = new Uint8Array(4);
+  function detectEdges(linesX, color, yAxis) {
+    const maxY = image[yAxis];
+    const middleY = maxY / 2; // imageLines[0].data.length / 2;
     const topEdges = [];
     const bottomEdges = [];
+    // console.log('detectEdges', maxY, yAxis, linesX, color);
+    const iColor = detectEdgesColorData;
 
-    for (const imageLine of imageLines) {
-      const { xIndex, data } = imageLine;
+    for (const x of linesX) {
+      // const { xIndex, data } = imageLine;
       let step = largeStep;
       let wasDeviating = false;
       let wasUncertain = false;
@@ -294,24 +823,27 @@ const workerCode = function () {
       let mostCertainEdge;
       let detectedEdges = 0;
       // Example video of a lot of uncertain edges: https://www.youtube.com/watch?v=mTmet4jAkEA
-      for (
-        let i = channels * ignoreEdge;
-        i < data.length;
-        i += channels * step
-      ) {
+      for (let y = ignoreEdge; y < maxY; y += step) {
         if (wasUncertain) {
           wasUncertain = false;
           step = 1;
         }
 
-        const iColor = [data[i], data[i + 1], data[i + 2]];
-        const limitNotReached = i < middleIndex - middleIndexOffset - channels; // Below the top limit
+        if(yAxis === 'height') {
+          image.getPixel(x, y, iColor);
+        } else {
+          image.getPixel(y, x, iColor);
+        }
+        // image.getPixel(
+        //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
+        // ); // [data[i], data[i + 1], data[i + 2]];
+        const limitNotReached = y < middleY - middleYOffset - 1; // Below the top limit
         if (!limitNotReached || detectedEdges > maxCertaintyChecks) {
           // console.log(xIndex, i, mostCertainEdge, JSON.parse(JSON.stringify(topEdges)))
           if (mostCertainEdge?.certainty > minCertainty) {
             topEdges.find(
               (edge) =>
-                xIndex === edge.xIndex && mostCertainEdge.yIndex === edge.yIndex
+                x === edge.xIndex && mostCertainEdge.yIndex === edge.yIndex
             ).deviates = false;
             // topEdges.push({
             //   xIndex,
@@ -321,7 +853,7 @@ const workerCode = function () {
             // })
           } else {
             topEdges.push({
-              xIndex,
+              xIndex: x,
               yIndex: 0,
               certainty: 0,
               deviates: true,
@@ -340,18 +872,19 @@ const workerCode = function () {
         if (limitNotReached && wasDeviating === isDeviating) continue;
 
         // Change the step from large to 1 pixel
-        if (i !== 0 && step === largeStep) {
-          i = Math.max(-channels, i - channels * step);
+        if (y !== 0 && step === largeStep) {
+          y = Math.max(-1, y - 1 * step);
           step = Math.ceil(1, Math.floor(step / 2));
           continue;
         }
 
         const certainty = getCertainty(
-          { x: xIndex, y: i / channels },
+          x, 
+          y / 1,
           yAxis,
           1,
           color,
-          imageLine
+          linesX
         );
         detectedEdges++;
         if (limitNotReached && certainty < sureCertainty) {
@@ -362,13 +895,13 @@ const workerCode = function () {
           if (!(mostCertainEdge?.certainty >= certainty)) {
             mostCertainEdge = {
               // i,
-              yIndex: i / channels,
+              yIndex: y,
               certainty,
             };
           }
           topEdges.push({
-            xIndex,
-            yIndex: i / channels,
+            xIndex: x,
+            yIndex: y,
             certainty: certainty,
             deviates: true,
           });
@@ -378,8 +911,8 @@ const workerCode = function () {
         // console.log('found', certainty)
         // Found the first video pixel, add to topEdges
         topEdges.push({
-          xIndex,
-          yIndex: i / channels,
+          xIndex: x,
+          yIndex: y,
           certainty,
         });
         break;
@@ -391,23 +924,26 @@ const workerCode = function () {
       mostCertainEdge = undefined;
       detectedEdges = 0;
       // From the bottom up
-      for (
-        let i = data.length - channels * (1 + ignoreEdge);
-        i >= 0;
-        i -= channels * step
-      ) {
+      for (let y = maxY - 1 + ignoreEdge; y >= 0; y -= step) {
         if (wasUncertain) {
           wasUncertain = false;
           step = 1;
         }
 
-        const iColor = [data[i], data[i + 1], data[i + 2]];
-        const limitNotReached = i > middleIndex + middleIndexOffset; // Above the bottom limit
+        if(yAxis === 'height') {
+          image.getPixel(x, y, iColor);
+        } else {
+          image.getPixel(y, x, iColor);
+        }
+        // image.getPixel(
+        //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
+        // ); // [data[i], data[i + 1], data[i + 2]];
+        const limitNotReached = y > middleY + middleYOffset; // Above the bottom limit
         if (!limitNotReached || detectedEdges > maxCertaintyChecks) {
           if (mostCertainEdge?.certainty > minCertainty) {
             bottomEdges.find(
               (edge) =>
-                xIndex === edge.xIndex && mostCertainEdge.yIndex === edge.yIndex
+                x === edge.xIndex && mostCertainEdge.yIndex === edge.yIndex
             ).deviates = false;
             // bottomEdges.push({
             //   xIndex,
@@ -417,7 +953,7 @@ const workerCode = function () {
             // })
           } else {
             bottomEdges.push({
-              xIndex,
+              xIndex: x,
               yIndex: 0,
               certainty: 0,
               deviates: true,
@@ -435,19 +971,13 @@ const workerCode = function () {
         if (limitNotReached && wasDeviating === isDeviating) continue;
 
         // Change the step from large to 1 pixel
-        if (i !== data.length - channels && step === largeStep) {
-          i = Math.min(data.length - channels, i + channels * step);
+        if (y !== maxY - 1 && step === largeStep) {
+          y = Math.min(maxY - 1, y + step);
           step = Math.ceil(1, Math.floor(step / 2));
           continue;
         }
 
-        const certainty = getCertainty(
-          { x: xIndex, y: i / channels },
-          yAxis,
-          -1,
-          color,
-          imageLine
-        );
+        const certainty = getCertainty(x, y, yAxis, -1, color, linesX);
         detectedEdges++;
         if (limitNotReached && certainty < sureCertainty) {
           // console.log('uncertain bottom', xIndex, i / channels, certainty)
@@ -456,14 +986,14 @@ const workerCode = function () {
           wasDeviating = true;
           if (!(mostCertainEdge?.certainty >= certainty)) {
             mostCertainEdge = {
-              yIndex: (data.length - i) / channels,
+              yIndex: maxY - y,
               // i,
               certainty,
             };
           }
           bottomEdges.push({
-            xIndex,
-            yIndex: (data.length - i) / channels,
+            xIndex: x,
+            yIndex: maxY - y,
             certainty: certainty,
             deviates: true,
           });
@@ -473,8 +1003,8 @@ const workerCode = function () {
         // console.log('found', certainty)
         // Found the first video pixel, add to bottomEdges
         bottomEdges.push({
-          xIndex,
-          yIndex: (data.length - i) / channels,
+          xIndex: x,
+          yIndex: maxY - y,
           certainty,
         });
         break;
@@ -491,7 +1021,7 @@ const workerCode = function () {
     edges,
     topEdges,
     bottomEdges,
-    imageLines,
+    linesX,
     maxSize,
     scale,
     allowedAnomaliesPercentage,
@@ -505,8 +1035,8 @@ const workerCode = function () {
     }
 
     const threshold =
-      imageLines.length * 2 * (1 - (allowedAnomaliesPercentage - 10) / 100);
-    if (edges.filter((e) => !e.deviates).length < threshold) {
+      linesX.length * 2 * (1 - (allowedAnomaliesPercentage - 10) / 100);
+    if (edges.filter((e) => !e.deviates).length <= threshold) {
       return true;
     }
 
@@ -618,30 +1148,35 @@ const workerCode = function () {
     maxSize,
     scale,
     edges,
-    imageLines,
+    linesX,
     currentPercentage = 0,
     offsetPercentage = 0
   ) {
     const minSize = maxSize * (0.01 * scale);
     const lowerSizeThreshold = maxSize * ((currentPercentage - 2) / 100);
     const baseOffsetPercentage = 0.3 * ((1 + scale) / 2);
+    let certainty = 1;
 
     let size;
     if (exceedsDeviationLimit) {
-      const uncertainLowerSizes = edges
-        .filter((e) => e.certainty > 0.075 && e.yIndex < lowerSizeThreshold)
-        .map((e) => e.yIndex);
-      if (uncertainLowerSizes.length / (imageLines.length * 2) < 0.3) return;
+      const uncertainLowerEdges = edges
+        .filter((e) => e.certainty > 0.02 && e.yIndex < lowerSizeThreshold);
+      if (uncertainLowerEdges.length / (linesX.length * 2) < 0.3) return {
+        percentage: undefined,
+        certainty: 0,
+      };
 
-      const lowestSize = Math.min(...uncertainLowerSizes);
+      certainty = uncertainLowerEdges.reduce((sum, edge) => sum + edge.certainty, 0) / uncertainLowerEdges.length;
+      const lowestEdge = uncertainLowerEdges.sort((a, b) => a.yIndex - b.yIndex)[0];
+      // const lowestSize = Math.min(...uncertainLowerSizes.map((e) => e.yIndex));
       // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
       // // console.log(lowestPercentage, lowestSize, currentPercentage)
       // if(lowestPercentage >= currentPercentage - 2) {
       //   return // deviating lowest percentage is higher than the current percentage
       // }
 
-      // console.log('semi-certain lower percentage', lowestSize, lowerSizeThreshold, semiCertainLowerSizes, edges)
-      size = lowestSize;
+      // console.log('semi-certain lower percentage', lowestEdge, certainty, edges)
+      size = lowestEdge.yIndex;
       if (size < minSize) {
         size = 0;
       } else {
@@ -681,11 +1216,15 @@ const workerCode = function () {
     const maxPercentage = 38;
     percentage = Math.min(percentage, maxPercentage);
     // console.log('percentage', percentage, edges)
-    return percentage;
+    return {
+      percentage,
+      certainty
+    };
   }
 
+  const workerDetectBarSizeLinesX = new Uint16Array(5);
   try {
-    const workerDetectBarSize = async (
+    const workerDetectBarSize = (
       id,
       xLength,
       yAxis,
@@ -704,17 +1243,20 @@ const workerCode = function () {
       const partSize = Math.floor(
         canvas[xLength] / (scanlinesAmount + partSizeBorderMultiplier * 2)
       );
-      const imageLines = [];
+      // const imageLines = [];
+      // const linesX = new Uint16Array(5);
+      const linesX = workerDetectBarSizeLinesX;
+      let linesXIndex = 0;
       for (
         let index =
           Math.ceil(partSize / 2) - 1 + partSizeBorderMultiplier * partSize;
         index < canvas[xLength] - partSizeBorderMultiplier * partSize;
         index += partSize
       ) {
-        if (id < globalRunId) {
-          imageLines.length = 0;
-          return;
-        }
+        // if (id < globalRunId) {
+        //   imageLines.length = 0;
+        //   return;
+        // }
         const xIndex = Math.min(
           Math.max(
             0,
@@ -724,37 +1266,46 @@ const workerCode = function () {
           ),
           canvas[xLength] - 1
         );
-        await getLineImageData(imageLines, yAxis, xIndex);
+        linesX[linesXIndex] = xIndex;
+        linesXIndex++;
+        // await getLineImageData(imageLines, yAxis, xIndex);
       }
+
+      // > Used 2000kb untill now
 
       // console.log(imageSquare.length)
 
       // console.log(`scanned ${imageLines.length} lines`)
-      if (id < globalRunId) {
-        imageLines.length = 0;
-        return;
-      }
+      // if (id < globalRunId) {
+      //   imageLines.length = 0;
+      //   return;
+      // }
 
-      const perpendicularImageLines = [];
-      await getLineImageData(perpendicularImageLines, xLength, 3);
-      await getLineImageData(perpendicularImageLines, xLength, 6);
-      await getLineImageData(
-        perpendicularImageLines,
-        xLength,
-        canvas[xLength] - 3
-      );
-      await getLineImageData(
-        perpendicularImageLines,
-        xLength,
-        canvas[xLength] - 6
-      );
+      // const perpendicularImageLines = [];
+      // await getLineImageData(perpendicularImageLines, xLength, 3);
+      // await getLineImageData(perpendicularImageLines, xLength, 6);
+      // await getLineImageData(
+      //   perpendicularImageLines,
+      //   xLength,
+      //   canvas[xLength] - 3
+      // );
+      // await getLineImageData(
+      //   perpendicularImageLines,
+      //   xLength,
+      //   canvas[xLength] - 6
+      // );
 
-      if (id < globalRunId) {
-        imageLines.length = 0;
-        return;
-      }
+      // if (id < globalRunId) {
+      //   imageLines.length = 0;
+      //   return;
+      // }
 
-      const color = getAverageColor(imageLines, perpendicularImageLines, yAxis);
+      let start = performance.now();
+      const color = getAverageColor(linesX, yAxis);
+      performance.measure('getAverageColor', { start, end: performance.now() })
+      // > Used 3600kb untill now
+
+      // console.log('average color', color, linesX);
       if (
         !detectColored &&
         (color[0] + color[1] + color[2] > 16 ||
@@ -762,19 +1313,19 @@ const workerCode = function () {
           Math.abs(color[1] - color[2]) > 3 ||
           Math.abs(color[2] - color[0]) > 3)
       ) {
-        const topEdges = imageLines.map((line) => ({
-          xIndex: line.xIndex,
+        const topEdges = linesX.map((x) => ({
+          xIndex: x,
           yIndex: 0,
           deviates: true,
         }));
-        const bottomEdges = imageLines.map((line) => ({
-          xIndex: line.xIndex,
+        const bottomEdges = linesX.map((x) => ({
+          xIndex: x,
           yIndex: 0,
           deviates: true,
         }));
-        imageLines.length = 0;
+        // imageLines.length = 0;
 
-        // console.log('edge case', topEdges, bottomEdges, percentage)
+        // console.log('no valid color found', color, topEdges, bottomEdges, percentage);
         return {
           percentage: 0,
           topEdges,
@@ -783,9 +1334,11 @@ const workerCode = function () {
         };
       }
 
-      const { topEdges, bottomEdges } = detectEdges(imageLines, color, yAxis);
+      start = performance.now();
+      const { topEdges, bottomEdges } = detectEdges(linesX, color, yAxis);
+      performance.measure('detectEdges', { start, end: performance.now() })
 
-      const maxSize = imageLines[0].data.length / channels;
+      const maxSize = image[yAxis]; // imageLines[0].data.length / channels;
 
       // // TODO:
       // // 1. Figure out if needed: Prevents small objects in bars form reducing the bar like in Zig Zag,
@@ -844,7 +1397,7 @@ const workerCode = function () {
         edges,
         topEdges,
         bottomEdges,
-        imageLines,
+        linesX,
         maxSize,
         scale,
         allowedAnomaliesPercentage,
@@ -853,12 +1406,12 @@ const workerCode = function () {
 
       // console.log(JSON.stringify(edges), exceedsDeviationLimit)
 
-      const percentage = getPercentage(
+      const { percentage, certainty } = getPercentage(
         exceedsDeviationLimit,
         maxSize,
         scale,
         edges,
-        imageLines,
+        linesX,
         currentPercentage,
         offsetPercentage
       );
@@ -867,7 +1420,7 @@ const workerCode = function () {
       if (
         !(percentage < currentPercentage) &&
         [...topEdges, ...bottomEdges].filter((edge) => !edge.deviates).length /
-          (imageLines.length * 2) <
+          (linesX.length * 2) <
           (100 - allowedAnomaliesPercentage) / 100
       ) {
         // console.log(`Discarded. Found ${topEdges.length + bottomEdges.length} of ${imageLines.length * 2}. Required: ${(100 - allowedAnomaliesPercentage)}%`)
@@ -877,7 +1430,7 @@ const workerCode = function () {
         bottomEdges.forEach((edge) => {
           edge.deviates = true;
         });
-        imageLines.length = 0;
+        // imageLines.length = 0;
 
         return {
           topEdges,
@@ -886,9 +1439,10 @@ const workerCode = function () {
         };
       }
 
-      imageLines.length = 0;
+      // imageLines.length = 0;
       return {
         percentage,
+        certainty,
         topEdges,
         bottomEdges,
         color,
@@ -985,6 +1539,9 @@ const workerCode = function () {
 
         // Todo: Rewrite bardetection code to use a single ImageData
         // Because every call to getImageData creates a new copy of the pixel buffer
+        image.imageData = ctx.getImageData(0, 0, 512, 512);
+        // > Used 1.400kb up until now
+
         globalXOffsetIndex++;
         if (globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0;
         // const xOffset = xOffsetSize === 1 ? .5 : (globalXOffsetIndex / (xOffsetSize - 1))
@@ -997,6 +1554,7 @@ const workerCode = function () {
               (xOffsetSize - 1);
         // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
 
+        const start = performance.now();
         let horizontalBarSizeInfo = detectHorizontal
           ? await workerDetectBarSize(
               id,
@@ -1025,6 +1583,8 @@ const workerCode = function () {
               xOffset
             )
           : undefined;
+
+        performance.measure('detect', { start, end: performance.now() })
 
         if (id !== globalRunId) {
           return;
@@ -1185,12 +1745,18 @@ export default class BarDetection {
 
   averagePercentage(
     percentage,
+    certainty,
     currentPercentage,
     history,
     averageHistorySize
   ) {
     if (percentage === undefined) {
-      if (!history.length && !currentPercentage) history.push(0);
+      if (!history.length && !currentPercentage) {
+        history.push({
+          percentage: 0,
+          certainty: 1
+        });
+      }
       return;
     }
 
@@ -1198,18 +1764,46 @@ export default class BarDetection {
 
     // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the most occuring of the last percentages
     // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
-    const percentagesOccurrence = [...history, detectedPercentage].reduce(
-      (percentages, percentage) => {
-        percentages[percentage] = (percentages[percentage] ?? 0) + 1;
+    const percentagesOccurrence = [
+      ...history, 
+      {
+        percentage: detectedPercentage,
+        certainty,
+      }
+    ]
+      .reduce((groups, { percentage, certainty }) => {
+        // certainty = certainty === 1 ? 1 : certainty;
+        const similarGroup = groups.find(group => 
+          group.percentages.some((groupPercentage) => 
+            Math.abs(groupPercentage - percentage) < .3));
+
+        if(certainty < 1) (2 / averageHistorySize) + certainty
+        if(similarGroup) {
+          // if(similarGroup.certainty < 1 && certainty < 1) {
+          //   similarGroup.certainty += (2 / averageHistorySize);
+          // } else {
+            similarGroup.certainty += certainty;
+          // }
+          similarGroup.percentages.push(percentage)
+        } else {
+          groups.push({
+            certainty,
+            percentages: [percentage]
+          })
+        }
+
+        return groups;
+      }, [])
+      .reduce((percentages, group) => {
+        percentages[Math.max(...group.percentages)] = group.certainty;
         return percentages;
-      },
-      {}
-    );
+      }, {});
     percentage = parseFloat(
       Object.keys(percentagesOccurrence).reduce((a, b) =>
         percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b
       )
     );
+    // console.log('averaging', percentage, percentagesOccurrence, history)
 
     // Is the difference less than 2 occurences? Then prevent flickering
     if (
@@ -1239,15 +1833,15 @@ export default class BarDetection {
     const ignoreRecurringLowerPercentage =
       percentage < currentPercentage &&
       history.some(
-        (previousPercentage) =>
+        ({ percentage: previousPercentage }) =>
           Math.abs(currentPercentage - previousPercentage) < 0.5
       ) &&
       history.some(
-        (previousPercentage) =>
+        ({ percentage: previousPercentage }) =>
           Math.abs(detectedPercentage - previousPercentage) < 0.5
       );
 
-    history.push(detectedPercentage);
+    history.push({ percentage: detectedPercentage, certainty });
     if (history.length > averageHistorySize)
       history.splice(0, history.length - averageHistorySize);
 
@@ -1380,12 +1974,14 @@ export default class BarDetection {
 
               let horizontalPercentage = this.averagePercentage(
                 horizontalBarSizeInfo.percentage,
+                horizontalBarSizeInfo.certainty ?? 1,
                 currentHorizontalPercentage || 0,
                 this.history.horizontal,
                 averageHistorySize
               );
               let verticalPercentage = this.averagePercentage(
                 verticalBarSizeInfo.percentage,
+                horizontalBarSizeInfo.certainty ?? 1,
                 currentVerticalPercentage || 0,
                 this.history.vertical,
                 averageHistorySize
