@@ -11,11 +11,11 @@ class ContentScript {
       // console.log('content addMessageListenerGlobal')
       this.globalListener = wrapErrorHandler(
         function contentScriptMessageListenerGlobal(event) {
-          // console.log('content message? global', event.data?.type)
+          // console.log('received in injectedScript', event.detail?.type, event.detail?.contentScript, event, '|', event.detail?.injectedScript);
           if (
             !isSameWindowMessage ||
-            event.data?.contentScript !== extensionId ||
-            !event.data?.type
+            event.detail?.contentScript !== extensionId ||
+            !event.detail?.type
           )
             return;
 
@@ -25,16 +25,17 @@ class ContentScript {
         }.bind(this),
         true
       );
-      window.addEventListener('message', this.globalListener, true);
+      document.addEventListener('ytal-message', this.globalListener);
+      // window.addEventListener('message', this.globalListener, true);
     }
 
     const listener = wrapErrorHandler(
       function contentScriptMessageListener(event) {
-        // console.log('content message?', type, event.data?.type)
-        if (event.data.type !== type) return;
+        // console.log('content message?', type, event.detail?.type)
+        if (event.detail.type !== type) return;
 
         // console.log('content message!', type)
-        handler(event.data?.message);
+        handler(event.detail?.message);
       }.bind(this),
       true
     );
@@ -57,17 +58,16 @@ class ContentScript {
     }
   };
 
-  postMessage = (type, message, transfer) => {
-    // console.log('content postMessage', type)
-    window.postMessage(
-      {
-        message,
+  postMessage = (type, message) => {
+    const event = new CustomEvent('ytal-message', {
+      detail: {
         type,
+        message,
         injectedScript: extensionId,
       },
-      origin,
-      transfer
-    );
+    });
+    // console.log('dispatched from injectedScript', type, extensionId);
+    return document.dispatchEvent(event);
   };
 }
 export const contentScript = new ContentScript();

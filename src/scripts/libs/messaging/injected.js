@@ -11,11 +11,11 @@ class InjectedScript {
       // console.log('injected addMessageListenerGlobal')
       this.globalListener = wrapErrorHandler(
         function injectedScriptMessageListenerGlobal(event) {
-          // console.log('injected message? global', event.data?.type)
+          // console.log('received in contentScript', event.detail?.type, event.detail?.injectedScript, event, '|', event.detail?.contentScript);
           if (
             !isSameWindowMessage ||
-            event.data?.injectedScript !== extensionId ||
-            !event.data?.type
+            event.detail?.injectedScript !== extensionId ||
+            !event.detail?.type
           )
             return;
 
@@ -25,16 +25,16 @@ class InjectedScript {
         }.bind(this),
         true
       );
-      window.addEventListener('message', this.globalListener, true);
+      document.addEventListener('ytal-message', this.globalListener);
     }
 
     const listener = wrapErrorHandler(
       function injectedScriptMessageListener(event) {
-        // console.log('injected message?', type, event.data?.type)
-        if (event.data.type !== type) return;
+        // console.log('injected message?', type, event.detail?.type)
+        if (event.detail.type !== type) return;
 
         // console.log('injected message!', type)
-        handler(event.data?.message);
+        handler(event.detail?.message);
       }.bind(this),
       true
     );
@@ -52,20 +52,22 @@ class InjectedScript {
 
     if (this.globalListener && this.listeners.length === 0) {
       // console.log('injected removeMessageListenerGlobal', this.globalListener)
-      window.removeEventListener('message', this.globalListener, true);
+      document.documentElement.removeEventListener('ytal-message', this.globalListener);
       this.globalListener = undefined;
     }
   }
 
   postMessage(type, message) {
-    return window.postMessage(
-      {
-        message,
+    const event = new CustomEvent('ytal-message', {
+      // bubbles: true,
+      detail: {
         type,
+        message,
         contentScript: extensionId,
       },
-      origin
-    );
+    });
+    // console.log('dispatched from contentScript', type, extensionId);
+    return document.dispatchEvent(event);
   }
 }
 export const injectedScript = new InjectedScript();
