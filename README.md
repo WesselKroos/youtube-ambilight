@@ -33,7 +33,7 @@ Check your video card's score here:
 https://www.videocardbenchmark.net/gpu_list.php
 
 With a score lower than 1000 the extension will still work but it is likely that the YouTube video page will be slow and/or stuttering.
-> To troubleshoot performance problems or maximze the performance you can follow the checks and steps in the [Troubleshoot guide](https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md)
+> To troubleshoot performance problems or maximize the performance you can follow the checks and steps in the [Troubleshoot guide](https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md)
 
 
 ### Browser versions
