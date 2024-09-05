@@ -17,6 +17,7 @@
     },
     "rules": {
         "no-unused-vars": "warn",
+        "no-unreachable": "warn",
         "no-irregular-whitespace": ["error", { "skipTemplates": true } ],
         "require-await": "error",
         "no-empty": "off"
