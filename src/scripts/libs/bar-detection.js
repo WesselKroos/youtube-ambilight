@@ -637,7 +637,7 @@ const workerCode = function () {
     //   // JSON.parse(JSON.stringify(colors.map(c => c.map(c => c.toString().padStart(3,' ')).join('|'))))
     // )
     // colors.length = 0;
-    return averageColor;
+    return [...averageColor];
   }
 
   function getHueDeviation(a, b) {
@@ -1036,7 +1036,7 @@ const workerCode = function () {
 
     const threshold =
       linesX.length * 2 * (1 - (allowedAnomaliesPercentage - 10) / 100);
-    if (edges.filter((e) => !e.deviates).length <= threshold) {
+    if (edges.filter((e) => !e.deviates).length < threshold) {
       return true;
     }
 
@@ -1537,8 +1537,6 @@ const workerCode = function () {
           ctx = canvasInfo.ctx;
         }
 
-        // Todo: Rewrite bardetection code to use a single ImageData
-        // Because every call to getImageData creates a new copy of the pixel buffer
         image.imageData = ctx.getImageData(0, 0, 512, 512);
         // > Used 1.400kb up until now
 
@@ -1622,6 +1620,10 @@ export default class BarDetection {
     horizontal: [],
     vertical: [],
   };
+  current = {
+    horizontal: undefined,
+    vertical: undefined,
+  };
 
   constructor(ambientlight) {
     this.ambientlight = ambientlight;
@@ -1647,6 +1649,10 @@ export default class BarDetection {
     this.history = {
       horizontal: [],
       vertical: [],
+    };
+    this.current = {
+      horizontal: undefined,
+      vertical: undefined,
     };
     this.changes = [];
   };
@@ -1744,18 +1750,66 @@ export default class BarDetection {
   };
 
   averagePercentage(
-    percentage,
-    certainty,
-    currentPercentage,
+    barSizeInfo = {},
+    currentInfo = {},
     history,
     averageHistorySize
   ) {
+    // Todo: 
+    // Doesn't reset to 0% when the detected color changed without found percentage with a good certainty
+    // - [ ] Attach color data to the detected percentage, just like certainty. 
+    // - [ ] Reset to 0% if color changed a lot
+    // Example: https://www.youtube.com/watch?v=sLpFyDQiuK4&t=208
+    // Problem (casues shaking): https://www.youtube.com/watch?v=kt9Xbsg4HKM&t=23
+    
+    let { percentage, color, certainty } = barSizeInfo;
+    let { 
+      percentage: currentPercentage, 
+      color: currentColor
+    } = currentInfo;
+
+    // console.log(currentPercentage, currentColor, '->', percentage, certainty, color)
+    // Reset to zero when the color changed a lot
+    let colorChanged = false;
+    if(currentColor && color) {
+      if(
+        // [...history.map(info => info.color), color].every(color => (
+        //   Math.abs(currentColor[0] - color[0]) +
+        //   Math.abs(currentColor[1] - color[1]) +
+        //   Math.abs(currentColor[2] - color[2])
+        // ) > 50)
+        (
+          Math.abs(currentColor[0] - color[0]) +
+          Math.abs(currentColor[1] - color[1]) +
+          Math.abs(currentColor[2] - color[2])
+        ) > 50
+      ) {
+        // console.log('color changed', currentColor, 
+        //   [...history.map(info => info.color), color]
+        // );
+        // console.log('color changed', currentColor.join(','), '->', color.join(','), percentage, certainty)
+        if(percentage === undefined || certainty < .8) percentage = 0
+        certainty = 1;
+        colorChanged = true;
+        // history.push({
+        //   percentage: 0,
+        //   certainty: 1,
+        //   color,
+        // });
+        // return 0;
+      }
+    }
+
+    // if (certainty === undefined) certainty = 1
+
     if (percentage === undefined) {
       if (!history.length && !currentPercentage) {
         history.push({
           percentage: 0,
-          certainty: 1
+          certainty: 1,
+          color,
         });
+        return 0;
       }
       return;
     }
@@ -1764,61 +1818,69 @@ export default class BarDetection {
 
     // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the most occuring of the last percentages
     // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
-    const percentagesOccurrence = [
+    let percentages = [
       ...history, 
       {
         percentage: detectedPercentage,
         certainty,
+        color,
       }
-    ]
-      .reduce((groups, { percentage, certainty }) => {
-        // certainty = certainty === 1 ? 1 : certainty;
-        const similarGroup = groups.find(group => 
-          group.percentages.some((groupPercentage) => 
-            Math.abs(groupPercentage - percentage) < .3));
+    ];
+    percentages.forEach((info) => {
+      info.occurrences = percentages.filter(({ percentage }) => Math.abs(info.percentage - percentage) < .5).length
+    });
+      // .reduce((groups, { percentage, certainty }) => {
+      //   // certainty = certainty === 1 ? 1 : certainty;
+      //   const similarGroup = groups.find(group => 
+      //     group.percentages.some((groupPercentage) => 
+      //       Math.abs(groupPercentage - percentage) < .3));
 
-        if(certainty < 1) (2 / averageHistorySize) + certainty
-        if(similarGroup) {
-          // if(similarGroup.certainty < 1 && certainty < 1) {
-          //   similarGroup.certainty += (2 / averageHistorySize);
-          // } else {
-            similarGroup.certainty += certainty;
-          // }
-          similarGroup.percentages.push(percentage)
-        } else {
-          groups.push({
-            certainty,
-            percentages: [percentage]
-          })
-        }
+      //   if(certainty < 1) (2 / averageHistorySize) + certainty
+      //   if(similarGroup) {
+      //     // if(similarGroup.certainty < 1 && certainty < 1) {
+      //     //   similarGroup.certainty += (2 / averageHistorySize);
+      //     // } else {
+      //       similarGroup.certainty += certainty;
+      //     // }
+      //     similarGroup.percentages.push(percentage)
+      //   } else {
+      //     groups.push({
+      //       certainty,
+      //       percentages: [percentage]
+      //     })
+      //   }
 
-        return groups;
-      }, [])
-      .reduce((percentages, group) => {
-        percentages[Math.max(...group.percentages)] = group.certainty;
-        return percentages;
-      }, {});
-    percentage = parseFloat(
-      Object.keys(percentagesOccurrence).reduce((a, b) =>
-        percentagesOccurrence[a] > percentagesOccurrence[b] ? a : b
-      )
-    );
-    // console.log('averaging', percentage, percentagesOccurrence, history)
+      //   return groups;
+      // }, [])
+      // .reduce((percentages, group) => {
+      //   percentages[Math.max(...group.percentages)] = group.certainty;
+      //   return percentages;
+      // }, {});
+    if(!colorChanged) {
+      percentage = parseFloat(
+        percentages.reduce((a, b) =>
+          a.occurrences > b.occurrences ? a : b
+        ).percentage
+      );
+      // console.log('averaging', percentage, percentagesOccurrence, history)
 
-    // Is the difference less than 2 occurences? Then prevent flickering
-    if (
-      percentage !== currentPercentage &&
-      Math.abs(
-        percentagesOccurrence[percentage] -
-          percentagesOccurrence[currentPercentage]
-      ) <=
-        history.length / 2
-    ) {
-      percentage = currentPercentage;
+      // Is the occurences difference is less than half the history length ? Then prevent flickering
+      if (
+        percentage !== currentPercentage &&
+        // Math.abs(
+          (percentages.find(info => info.percentage === percentage)?.occurrences ?? 0) -
+          (percentages.find(info => info.percentage === currentPercentage)?.occurrences ?? 0)
+        // )
+        <=
+          history.length / 2
+      ) {
+        percentage = currentPercentage;
+      }
     }
     // console.log('average', detectedPercentage, percentage, percentagesOccurrence, history)
 
     let adjustment = percentage - currentPercentage;
+    // console.log('percentage check', currentPercentage, '->', percentage, '[', adjustment, '] (', detectedPercentage, ')') // history)
     if (percentage !== 0 && adjustment > -1 && adjustment <= 0) {
       // Ignore small adjustments
       adjustment = detectedPercentage - currentPercentage;
@@ -1841,13 +1903,14 @@ export default class BarDetection {
           Math.abs(detectedPercentage - previousPercentage) < 0.5
       );
 
-    history.push({ percentage: detectedPercentage, certainty });
+    history.push({ percentage: detectedPercentage, certainty, color });
     if (history.length > averageHistorySize)
       history.splice(0, history.length - averageHistorySize);
 
     if (ignoreRecurringLowerPercentage) {
       return;
     }
+    // console.log('percentage', percentage)
     return percentage;
   }
 
@@ -1973,16 +2036,14 @@ export default class BarDetection {
                 this.history.vertical.length === 0;
 
               let horizontalPercentage = this.averagePercentage(
-                horizontalBarSizeInfo.percentage,
-                horizontalBarSizeInfo.certainty ?? 1,
-                currentHorizontalPercentage || 0,
+                horizontalBarSizeInfo,
+                this.current.horizontal,
                 this.history.horizontal,
                 averageHistorySize
               );
               let verticalPercentage = this.averagePercentage(
-                verticalBarSizeInfo.percentage,
-                horizontalBarSizeInfo.certainty ?? 1,
-                currentVerticalPercentage || 0,
+                verticalBarSizeInfo,
+                this.current.vertical,
                 this.history.vertical,
                 averageHistorySize
               );
@@ -2032,9 +2093,24 @@ export default class BarDetection {
                     verticalBarSizeInfo.percentage -
                       (currentVerticalPercentage || 0)
                   ) > 0.5);
-
               if (barsChanged || detectedLargeChange) {
-                this.changes.push(performance.now());
+                const now = performance.now();
+                if(barsChanged || this.changes[this.changes.length - 1] < now - 3000) {
+                  this.changes.push(now);
+                }
+              }
+
+              if(horizontalPercentage !== undefined) {
+                this.current.horizontal = {
+                  percentage: horizontalPercentage,
+                  color: horizontalBarSizeInfo.color // Can desync with percentage, return from averagePercentage as well?
+                }
+              }
+              if(verticalPercentage !== undefined) {
+                this.current.vertical = {
+                  percentage: verticalPercentage,
+                  color: verticalBarSizeInfo.color // Can desync with percentage, return from averagePercentage as well?
+                }
               }
 
               if (barsChanged) {
@@ -2080,10 +2156,18 @@ export default class BarDetection {
         this.changes.push(now - 3001);
       }
 
-      const lastChange =
-        this.changes.length < 5 ? this.changes[this.changes.length - 1] : now;
-      const minThrottle =
-        lastChange + 15000 < now ? 1000 : lastChange + 3000 < now ? 500 : 0;
+      let minThrottle;
+      const lastChange = this.changes[this.changes.length - 1]
+      if(this.changes.length >= 5) {
+        minThrottle = lastChange + 60000 < now ? 1000 
+          : lastChange + 8000 < now ? 500 
+          : 0;
+      } else {
+        minThrottle = lastChange + 15000 < now ? 1000 
+          : lastChange + 3000 < now ? 500 
+          : 0;
+      }
+
       const throttle = Math.max(
         minThrottle,
         Math.min(5000, Math.pow(duration, 1.2) - 250)
