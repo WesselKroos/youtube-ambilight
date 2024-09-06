@@ -296,6 +296,12 @@ export default class ProjectorWebGL {
       this.blurLost = true;
       this.blurLostCount++;
       this.invalidateShaderCache();
+
+      // Invalidate shadow
+      if (this.shadow?.elem) {
+        this.shadow.elem.width = 1;
+      }
+
       console.log(`ProjectorWebGL blur context lost (${this.blurLostCount})`);
       this.setWebGLWarning('restore');
 

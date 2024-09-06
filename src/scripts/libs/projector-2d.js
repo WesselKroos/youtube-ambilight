@@ -28,6 +28,12 @@ export default class Projector2d {
     console.warn('Lost 2d projector');
     this.lostCount++;
     // event.preventDefault(); // Prevents restoration
+    
+    // Invalidate shadow
+    if (this.shadow?.elem) {
+      this.shadow.elem.width = 1;
+    }
+
     this.settings.setWarning(
       'Failed to restore the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.'
     );
