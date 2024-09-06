@@ -1667,31 +1667,33 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   initVR = () => {
-    this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas');
-    this.vrVideoCtx = this.vrVideoElem.getContext('webgl');
-    if (this.vrVideoCtx) {
-      if (this.vrVideoCtx.drawArrays !== this.drawVR) {
-        this.vrVideoCtxDrawArrays = this.vrVideoCtx.drawArrays;
-        this.vrVideoCtx.drawArrays = this.drawVR;
-      }
-    }
     if (getBrowser() === 'Firefox') {
       this.settings.setWarning(
         'Ambient light does not support VR videos',
         false,
         false
       );
+    } else {
+      this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas');
+      this.vrVideoElem.dataset.ytalElem = 'vr-video';
+      this.nextVrFrameListener = injectedScript.addMessageListener(
+        'next-vr-frame',
+        this.drawVR
+      );
+      injectedScript.postMessage('init-vr-video');
     }
 
     this.settings.updateVisibility();
   };
 
   disposeVR = () => {
-    this.vrVideoElem = undefined;
-    if (this.vrVideoCtx) {
-      this.vrVideoCtx.drawArrays = this.vrVideoCtxDrawArrays;
+    if (this.nextVrFrameListener) {
+      injectedScript.removeMessageListener(this.nextVrFrameListener);
+      this.nextVrFrameListener = undefined;
     }
-    this.vrVideoCtx = undefined;
+    injectedScript.postMessage('dispose-vr-video');
+
+    this.vrVideoElem = undefined;
     if (getBrowser() === 'Firefox') {
       this.settings.setWarning();
     }
@@ -1699,10 +1701,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.settings.updateVisibility();
   };
 
-  drawVR = (...args) => {
-    const result = this.vrVideoCtxDrawArrays.bind(this.vrVideoCtx)(...args);
+  drawVR = () => {
     this.nextFrame();
-    return result;
   };
 
   updateView = async (skipUpdateImmersiveMode = false) => {

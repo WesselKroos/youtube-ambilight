@@ -141,6 +141,32 @@ contentScript.addMessageListener(
   }
 );
 
+let vrVideoCtx;
+let vrVideoCtxDrawArrays;
+const drawVR = (...args) => {
+  const result = vrVideoCtxDrawArrays.bind(vrVideoCtx)(...args);
+  contentScript.postMessage('next-vr-frame');
+  return result;
+};
+
+contentScript.addMessageListener('init-vr-video', function initVrVideo() {
+  const vrVideoElem = getElem('vr-video');
+  vrVideoCtx = vrVideoElem.getContext('webgl');
+  if (vrVideoCtx) {
+    if (vrVideoCtx.drawArrays !== drawVR) {
+      vrVideoCtxDrawArrays = vrVideoCtx.drawArrays;
+      vrVideoCtx.drawArrays = drawVR;
+    }
+  }
+});
+
+contentScript.addMessageListener('dispose-vr-video', function disposeVrVideo() {
+  if (!vrVideoCtx) return;
+
+  vrVideoCtx.drawArrays = vrVideoCtxDrawArrays;
+  vrVideoCtx = undefined;
+});
+
 contentScript.addMessageListener(
   'show',
   function show({
