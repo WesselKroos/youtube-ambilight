@@ -1752,7 +1752,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     // if (videoPlayerSizeUpdated) {
     //   console.log('videoPlayerSizeUpdated');
-    //   await this.updateVideoPlayerSize(); // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
+    if(!skipUpdateImmersiveMode) {
+      raf(() => this.updateVideoPlayerSize()); // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
+    }
     // }
 
     return true;
@@ -3895,6 +3897,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
         // Recalculate the player menu width to remove the elements on the second row
         try {
+          await new Promise((resolve) => raf(resolve))
           const menu = document.querySelector(
             'ytd-menu-renderer[has-flexible-items]'
           );
