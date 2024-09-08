@@ -596,7 +596,7 @@ export default class Ambientlight {
 
         await this.optionalFrame();
       },
-      loadeddata: () => {
+      loadeddata: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return;
 
         this.sizesChanged = true;
@@ -609,7 +609,7 @@ export default class Ambientlight {
 
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed(); // Re-check after crossOrigin attribute has been applied
-        this.updateHdr();
+        await this.updateHdr();
         this.initVideoIfSrcChanged();
       },
       playing: async () => {
@@ -1478,7 +1478,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     };
   }
 
-  resetSettingsIfNeeded() {
+  async resetSettingsIfNeeded() {
     const videoPath = location.search;
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.settings.horizontalBarsClipPercentageReset) {
@@ -1491,7 +1491,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       }
     }
     this.prevVideoPath = videoPath;
-    this.settings.updateHdr();
+    await this.settings.updateHdr();
   }
 
   setHorizontalBars(percentage) {
@@ -3575,7 +3575,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.buffersCleared = true; // Prevent old frame from preventing the new frame from being drawn
 
     this.checkGetImageDataAllowed();
-    this.resetSettingsIfNeeded();
+    await this.resetSettingsIfNeeded();
     this.updateKeywordsToPreventTheaterScaling();
     await this.updateView(true);
 
