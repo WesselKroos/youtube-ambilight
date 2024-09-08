@@ -2332,6 +2332,10 @@ html[data-ambientlight-enabled] {
     flex-grow: 1;
   }
 
+  &.ytp-settings-menu .ytp-menuitem-value {
+    white-space: pre;
+  }
+
   .ytp-menuitem {
     &.is-controlled-by-setting {
       &::before {

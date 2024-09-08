@@ -104,6 +104,13 @@ const SettingsConfig = [
     min: 0,
     max: 2,
     step: 1,
+    snapPoints: [
+      { value: 0, label: 'Decoded' },
+      { value: 1, label: 'Display' },
+      { value: 2, label: 'Video' },
+    ],
+    manualinput: false,
+  },
     manualinput: false,
     advanced: true,
   },
