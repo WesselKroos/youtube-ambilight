@@ -513,7 +513,9 @@ export default class Ambientlight {
     if (!this.settings.energySaver || !this.ytdWatchElem) return;
 
     try {
-      const spec = await injectedScript.postAndReceiveMessage('player-storyboard-spec');
+      const spec = await injectedScript.postAndReceiveMessage(
+        'player-storyboard-spec'
+      );
       if (!spec) return;
 
       const difference = await getAverageVideoFramesDifference(spec);
@@ -760,7 +762,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       return;
     }
 
-    await injectedScript.postAndReceiveMessage('video-player-set-size'); 
+    await injectedScript.postAndReceiveMessage('video-player-set-size');
     performance.measure('updateVideoPlayerSize', {
       start,
       end: performance.now(),
@@ -1193,7 +1195,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.videoElem.crossOrigin = 'use-credentials';
 
         // Refresh auto quality setting range above 480p
-        await injectedScript.postAndReceiveMessage('video-player-reload-video-by-id');
+        await injectedScript.postAndReceiveMessage(
+          'video-player-reload-video-by-id'
+        );
 
         this.videoElem.currentTime = currentTime;
       } catch (ex) {
@@ -1707,7 +1711,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     // if (videoPlayerSizeUpdated) {
     //   console.log('videoPlayerSizeUpdated');
-    if(!skipUpdateImmersiveMode) {
+    if (!skipUpdateImmersiveMode) {
       raf(() => this.updateVideoPlayerSize()); // Always force youtube to recalculate the size because it caches the size per view without invalidation based on ambient light enabled/disabled
     }
     // }
@@ -3825,7 +3829,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
         // Recalculate the player menu width to remove the elements on the second row
         try {
-          await new Promise((resolve) => raf(resolve))
+          await new Promise((resolve) => raf(resolve));
           const menu = document.querySelector(
             'ytd-menu-renderer[has-flexible-items]'
           );

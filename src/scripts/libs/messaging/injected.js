@@ -83,7 +83,9 @@ class InjectedScript {
         }.bind(this);
 
         const receiveMessageTimeout = function receiveMessageTimeout() {
-          console.warn(`Never received a response message for "${type}" after ${timeout}ms`);
+          console.warn(
+            `Never received a response message for "${type}" after ${timeout}ms`
+          );
           receivedMessage();
         }.bind(this);
 

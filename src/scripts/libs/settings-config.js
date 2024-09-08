@@ -63,6 +63,7 @@ const SettingsConfig = [
   {
     name: 'webGL',
     label: 'WebGL renderer (uses less power)',
+    description: 'Changing this reloads the webpage',
     type: 'checkbox',
     default: true,
     advanced: true,
@@ -244,7 +245,6 @@ const SettingsConfig = [
     min: 0,
     max: 100,
     step: 0.1,
-    new: true,
   },
   {
     name: 'immersiveTheaterView',
@@ -331,7 +331,6 @@ const SettingsConfig = [
     max: 100,
     step: 1,
     advanced: true,
-    new: true,
   },
   {
     name: 'videoOverlayEnabled',
@@ -720,7 +719,6 @@ Click on the questionmark for more and updated information about these artifacts
     step: 1,
     manualinput: false,
     advanced: true,
-    new: true,
   },
   {
     name: 'frameBlending',

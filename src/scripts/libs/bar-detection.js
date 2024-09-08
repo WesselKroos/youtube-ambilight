@@ -29,10 +29,10 @@ const workerCode = function () {
     getPixel(x, y, data, dataOffset) {
       // Throttle worker thread
       // for (let i = 0; i < 100_000; i++) {}
-      
+
       let returnValue = !data;
-      if(returnValue) data = new Uint8Array(4);
-      if(!dataOffset) dataOffset = 0;
+      if (returnValue) data = new Uint8Array(4);
+      if (!dataOffset) dataOffset = 0;
 
       // console.log(x, y);
       const offset = this.getDataOffset(x, y);
@@ -50,7 +50,7 @@ const workerCode = function () {
         data[dataOffset + 3] = this.imageData?.data?.[offset + 3];
       }
 
-      if(returnValue) return data;
+      if (returnValue) return data;
       // return [
       //   this.imageData?.data?.[offset],
       //   this.imageData?.data?.[offset + 1],
@@ -163,18 +163,18 @@ const workerCode = function () {
     const bGap = Math.abs(averageSize - b.yIndex);
     return aGap === bGap ? 0 : aGap > bGap ? 1 : -1;
   };
-  
+
   //// Quicksort 2
 
   // const quickSort = (arr, weights) => {
   //   if (arr.length <= 1) {
   //     return arr;
   //   }
-  
+
   //   let pivot = arr[0];
   //   let leftArr = [];
   //   let rightArr = [];
-  
+
   //   for (let i = 1; i < arr.length; i++) {
   //     if (weights[arr[i]] < weights[pivot]) {
   //       leftArr.push(arr[i]);
@@ -182,7 +182,7 @@ const workerCode = function () {
   //       rightArr.push(arr[i]);
   //     }
   //   }
-  
+
   //   return [
   //     ...quickSort(leftArr, weights),
   //     pivot,
@@ -197,20 +197,20 @@ const workerCode = function () {
   // let partitionJ;
   // let partitionTemp;
   // const partition = (arr, weights, low, high) => {
-  //   partitionPivot = arr[high]; 
-  //   partitionI = low - 1; 
-  
-  //   for (partitionJ = low; partitionJ <= high - 1; partitionJ++) { 
-  //       // If current element is smaller than the pivot 
-  //       if (weights[arr[partitionJ]] < weights[partitionPivot]) { 
-  //           // Increment index of smaller element 
-  //           partitionI++; 
+  //   partitionPivot = arr[high];
+  //   partitionI = low - 1;
+
+  //   for (partitionJ = low; partitionJ <= high - 1; partitionJ++) {
+  //       // If current element is smaller than the pivot
+  //       if (weights[arr[partitionJ]] < weights[partitionPivot]) {
+  //           // Increment index of smaller element
+  //           partitionI++;
   //           // Swap elements
   //           partitionTemp = arr[partitionJ];
   //           arr[partitionJ] = arr[partitionI];
   //           arr[partitionI] = partitionTemp;
-  //       } 
-  //   } 
+  //       }
+  //   }
   //   // Swap pivot to its correct position
   //   partitionTemp = arr[high];
   //   arr[high] = arr[partitionI + 1];
@@ -223,7 +223,7 @@ const workerCode = function () {
   // const quickSort = (arr, weights, low = 0, high = arr.length - 1) => {
   //     if (low >= high) return;
   //     quickSortParitionIndex = partition(arr, weights, low, high);
-    
+
   //     quickSort(arr, weights, low, quickSortParitionIndex - 1);
   //     quickSort(arr, weights, quickSortParitionIndex + 1, high);
   // }
@@ -262,38 +262,37 @@ const workerCode = function () {
   //       }
   //     }
   // }
-  
+
   // let randomPartitionPivotIndex;
   // function randomPartition(arr, weights, left, right) {
   //   randomPartitionPivotIndex = Math.floor(Math.random() * (right - left + 1)) + left;
   //   swap(arr, randomPartitionPivotIndex, right);
   //   return partition(arr, weights, left, right);
   // }
-  
+
   // let pivot;
   // let i;
   // function partition(arr, weights, left, right) {
   //   pivot = arr[right];
   //   i = left - 1;
-  
+
   //   for (let j = left; j < right; j++) {
   //     if (weights[arr[j]] < weights[pivot]) {
   //       i++;
   //       swap(arr, i, j);
   //     }
   //   }
-  
+
   //   swap(arr, i + 1, right);
   //   return i + 1;
   // }
-  
+
   // let swapTemp;
   // function swap(arr, i, j) {
   //   swapTemp = arr[i];
   //   arr[i] = arr[j];
   //   arr[j] = swapTemp;
   // }
-
 
   //// BubbleSort
 
@@ -367,7 +366,7 @@ const workerCode = function () {
     return averageColorsIndexDiffs[ai] - averageColorsIndexDiffs[bi];
     // return Math.random() * 2 - 1;
     // if(
-    //   averageColorsIndexExcludedFromSorting.includes(ai) || 
+    //   averageColorsIndexExcludedFromSorting.includes(ai) ||
     //   averageColorsIndexExcludedFromSorting.includes(bi)
     // ) return 0;
 
@@ -380,12 +379,12 @@ const workerCode = function () {
     //   Math.abs(averageColor[1] - averageColorColorsData[bi + 1]) +
     //   Math.abs(averageColor[2] - averageColorColorsData[bi + 2]);
     // const result = aDiff - bDiff;
-    // // console.log('sort', '|', 
+    // // console.log('sort', '|',
     // //   `avg: ${averageColor[0]}, ${averageColor[1]}, ${averageColor[2]}`,
     // //   `a: ${averageColorColorsData[ai]}, ${averageColorColorsData[ai + 1]}, ${averageColorColorsData[ai + 2]}`,
     // //   `b: ${averageColorColorsData[bi]}, ${averageColorColorsData[bi + 1]}, ${averageColorColorsData[bi + 2]}`,
-    // //   `aDiff: ${aDiff}`, 
-    // //   `bDiff: ${bDiff}`, 
+    // //   `aDiff: ${aDiff}`,
+    // //   `bDiff: ${bDiff}`,
     // //   '|', result);
     // return result;
   }
@@ -444,9 +443,9 @@ const workerCode = function () {
     const xStep = 16;
     for (let i = 0; i < linesY.length; i++) {
       const y = linesY[i];
-      const offset = Math.floor((i % 2) * (xStep / 2))
+      const offset = Math.floor((i % 2) * (xStep / 2));
       for (let x = offset; x < yMax; x += xStep) {
-        if(yAxis === 'height') {
+        if (yAxis === 'height') {
           image.getPixel(x, y, colors, colorsIndex);
           // image.getPixel(x, y);
         } else {
@@ -478,12 +477,18 @@ const workerCode = function () {
 
     // let iternations = 0;
     // let summedLength = 0;
-    for(let i = colorsLength; i >= averageColorsLength; i -= Math.floor(averageColorsLength / 2)) { // Omits 2 colors after every sort
+    for (
+      let i = colorsLength;
+      i >= averageColorsLength;
+      i -= Math.floor(averageColorsLength / 2)
+    ) {
+      // Omits 2 colors after every sort
       // iternations++;
       // summedLength = i;
       // Exclude old indexes from sorting
-      for(let j = 0; j < colorsLength - i; j++) {
-        averageColorsIndexExcludedFromSorting[j] = averageColorsIndex[colorsLength - 1 - j];
+      for (let j = 0; j < colorsLength - i; j++) {
+        averageColorsIndexExcludedFromSorting[j] =
+          averageColorsIndex[colorsLength - 1 - j];
       }
       // console.log(`exluded ${colorsLength - i} colors:`,
       //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
@@ -501,9 +506,9 @@ const workerCode = function () {
       // )
 
       // set averageColor
-      for(let iRGB = 0; iRGB < colorChannels; iRGB++) {
+      for (let iRGB = 0; iRGB < colorChannels; iRGB++) {
         averageColor[iRGB] = 0;
-        for(let i2 = 0; i2 < i; i2++) {
+        for (let i2 = 0; i2 < i; i2++) {
           const averageColorIndex = averageColorsIndex[i2];
           const offset = averageColorIndex * colorChannels + iRGB;
           averageColor[iRGB] += colors[offset]; // Take color based on indexed colors
@@ -511,14 +516,13 @@ const workerCode = function () {
         averageColor[iRGB] = Math.round(averageColor[iRGB] / i);
       }
 
-      for(let i2 = 0; i2 < i; i2++) {
+      for (let i2 = 0; i2 < i; i2++) {
         const averageColorIndex = averageColorsIndex[i2];
         const offset = averageColorIndex * colorChannels;
-        const diff = (
+        const diff =
           Math.abs(averageColor[0] - colors[offset]) +
           Math.abs(averageColor[1] - colors[offset + 1]) +
-          Math.abs(averageColor[2] - colors[offset + 2])
-        );
+          Math.abs(averageColor[2] - colors[offset + 2]);
         averageColorsIndexDiffs[i2] = diff;
       }
 
@@ -526,8 +530,8 @@ const workerCode = function () {
       // console.log('average color', averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'));
 
       // if (i === colorsLength) {
-        // First pass
-        averageColorsIndex.sort(sortAverageColors);
+      // First pass
+      averageColorsIndex.sort(sortAverageColors);
       // } else {
       //   // Almost sorted pass
       //   insertionSort(averageColorsIndex, averageColorsIndexDiffs);
@@ -552,9 +556,8 @@ const workerCode = function () {
       // }
     }
     // console.log('iternations', iternations, 'from', colorsLength, 'to', summedLength, 'maximum is', averageColorsLength)
-    
 
-    // console.log(averageColorsLength, 
+    // console.log(averageColorsLength,
     //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
     //   // averageColorsIndex,
     //   // averageColorsIndexExcludedFromSorting,
@@ -570,7 +573,6 @@ const workerCode = function () {
     //     return c.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|');
     //   })
     // );
-
 
     //     //   colors.r.length
     // const averageColorLength = colors.length * 0.1;
@@ -601,7 +603,6 @@ const workerCode = function () {
     //   colors.splice(-1, 1);
     // }
 
-      
     // // eslint-disable-next-line no-constant-condition
     // while (true) {
     //   averageColor = [
@@ -742,7 +743,7 @@ const workerCode = function () {
 
     let score = 0;
     // let iColor = getCertaintyColorData;
-    
+
     for (let dx = 0; dx < xLength; dx += 2) {
       // const ix = dx * (yAxis === 'height' ? 1 : yLength);
 
@@ -751,14 +752,10 @@ const workerCode = function () {
         // const iy = dy2 * (yAxis === 'height' ? xLength : 1);
         // const i = ix + iy;
         let iColor = getCertaintyColorData;
-        if(yAxis === 'height') {
-          image.getPixel(
-            x + dx, y + dy2, iColor
-          );
+        if (yAxis === 'height') {
+          image.getPixel(x + dx, y + dy2, iColor);
         } else {
-          image.getPixel(
-            y + dy2, x + dx, iColor
-          );
+          image.getPixel(y + dy2, x + dx, iColor);
         }
         if (iColor[3] === 0) iColor = color;
         // data[i + 3] === 0
@@ -829,7 +826,7 @@ const workerCode = function () {
           step = 1;
         }
 
-        if(yAxis === 'height') {
+        if (yAxis === 'height') {
           image.getPixel(x, y, iColor);
         } else {
           image.getPixel(y, x, iColor);
@@ -878,14 +875,7 @@ const workerCode = function () {
           continue;
         }
 
-        const certainty = getCertainty(
-          x, 
-          y / 1,
-          yAxis,
-          1,
-          color,
-          linesX
-        );
+        const certainty = getCertainty(x, y / 1, yAxis, 1, color, linesX);
         detectedEdges++;
         if (limitNotReached && certainty < sureCertainty) {
           // console.log('uncertain top', xIndex, i / channels, certainty)
@@ -930,7 +920,7 @@ const workerCode = function () {
           step = 1;
         }
 
-        if(yAxis === 'height') {
+        if (yAxis === 'height') {
           image.getPixel(x, y, iColor);
         } else {
           image.getPixel(y, x, iColor);
@@ -1159,15 +1149,21 @@ const workerCode = function () {
 
     let size;
     if (exceedsDeviationLimit) {
-      const uncertainLowerEdges = edges
-        .filter((e) => e.certainty > 0.02 && e.yIndex < lowerSizeThreshold);
-      if (uncertainLowerEdges.length / (linesX.length * 2) < 0.3) return {
-        percentage: undefined,
-        certainty: 0,
-      };
+      const uncertainLowerEdges = edges.filter(
+        (e) => e.certainty > 0.02 && e.yIndex < lowerSizeThreshold
+      );
+      if (uncertainLowerEdges.length / (linesX.length * 2) < 0.3)
+        return {
+          percentage: undefined,
+          certainty: 0,
+        };
 
-      certainty = uncertainLowerEdges.reduce((sum, edge) => sum + edge.certainty, 0) / uncertainLowerEdges.length;
-      const lowestEdge = uncertainLowerEdges.sort((a, b) => a.yIndex - b.yIndex)[0];
+      certainty =
+        uncertainLowerEdges.reduce((sum, edge) => sum + edge.certainty, 0) /
+        uncertainLowerEdges.length;
+      const lowestEdge = uncertainLowerEdges.sort(
+        (a, b) => a.yIndex - b.yIndex
+      )[0];
       // const lowestSize = Math.min(...uncertainLowerSizes.map((e) => e.yIndex));
       // let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
       // // console.log(lowestPercentage, lowestSize, currentPercentage)
@@ -1218,7 +1214,7 @@ const workerCode = function () {
     // console.log('percentage', percentage, edges)
     return {
       percentage,
-      certainty
+      certainty,
     };
   }
 
@@ -1302,7 +1298,7 @@ const workerCode = function () {
 
       let start = performance.now();
       const color = getAverageColor(linesX, yAxis);
-      performance.measure('getAverageColor', { start, end: performance.now() })
+      performance.measure('getAverageColor', { start, end: performance.now() });
       // > Used 3600kb untill now
 
       // console.log('average color', color, linesX);
@@ -1336,7 +1332,7 @@ const workerCode = function () {
 
       start = performance.now();
       const { topEdges, bottomEdges } = detectEdges(linesX, color, yAxis);
-      performance.measure('detectEdges', { start, end: performance.now() })
+      performance.measure('detectEdges', { start, end: performance.now() });
 
       const maxSize = image[yAxis]; // imageLines[0].data.length / channels;
 
@@ -1385,8 +1381,11 @@ const workerCode = function () {
 
       // //   - Black lines, not closing bars to smaller values while even detecting smaller values:
       // //       https://www.youtube.com/watch?v=UnQvpQtYxow
-      // //   - Constant flickering:
-      // //       https://www.youtube.com/watch?v=37-6GeQg2xY
+
+      // // Vertical colored bars flickering:
+      // // https://www.youtube.com/watch?v=6VjYFdHMC3A&t=867s
+      // // https://www.youtube.com/watch?v=64FVUoGCxWw
+      // // https://www.youtube.com/watch?v=37-6GeQg2xY
 
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
@@ -1582,7 +1581,7 @@ const workerCode = function () {
             )
           : undefined;
 
-        performance.measure('detect', { start, end: performance.now() })
+        performance.measure('detect', { start, end: performance.now() });
 
         if (id !== globalRunId) {
           return;
@@ -1755,40 +1754,36 @@ export default class BarDetection {
     history,
     averageHistorySize
   ) {
-    // Todo: 
+    // Todo:
     // Doesn't reset to 0% when the detected color changed without found percentage with a good certainty
-    // - [ ] Attach color data to the detected percentage, just like certainty. 
+    // - [ ] Attach color data to the detected percentage, just like certainty.
     // - [ ] Reset to 0% if color changed a lot
     // Example: https://www.youtube.com/watch?v=sLpFyDQiuK4&t=208
     // Problem (casues shaking): https://www.youtube.com/watch?v=kt9Xbsg4HKM&t=23
-    
+
     let { percentage, color, certainty } = barSizeInfo;
-    let { 
-      percentage: currentPercentage, 
-      color: currentColor
-    } = currentInfo;
+    let { percentage: currentPercentage, color: currentColor } = currentInfo;
 
     // console.log(currentPercentage, currentColor, '->', percentage, certainty, color)
     // Reset to zero when the color changed a lot
     let colorChanged = false;
-    if(currentColor && color) {
-      if(
+    if (currentColor && color) {
+      if (
         // [...history.map(info => info.color), color].every(color => (
         //   Math.abs(currentColor[0] - color[0]) +
         //   Math.abs(currentColor[1] - color[1]) +
         //   Math.abs(currentColor[2] - color[2])
         // ) > 50)
-        (
-          Math.abs(currentColor[0] - color[0]) +
+        Math.abs(currentColor[0] - color[0]) +
           Math.abs(currentColor[1] - color[1]) +
-          Math.abs(currentColor[2] - color[2])
-        ) > 50
+          Math.abs(currentColor[2] - color[2]) >
+        50
       ) {
-        // console.log('color changed', currentColor, 
+        // console.log('color changed', currentColor,
         //   [...history.map(info => info.color), color]
         // );
         // console.log('color changed', currentColor.join(','), '->', color.join(','), percentage, certainty)
-        if(percentage === undefined || certainty < .8) percentage = 0
+        if (percentage === undefined || certainty < 0.8) percentage = 0;
         certainty = 1;
         colorChanged = true;
         // history.push({
@@ -1819,48 +1814,49 @@ export default class BarDetection {
     // Detected a small adjustment in percentages but could be caused by an artifact in the video. Pick the most occuring of the last percentages
     // percentage = [...history, detectedPercentage].sort((a, b) => b - a)[Math.floor(history.length / 2)]
     let percentages = [
-      ...history, 
+      ...history,
       {
         percentage: detectedPercentage,
         certainty,
         color,
-      }
+      },
     ];
     percentages.forEach((info) => {
-      info.occurrences = percentages.filter(({ percentage }) => Math.abs(info.percentage - percentage) < .5).length
+      info.occurrences = percentages.filter(
+        ({ percentage }) => Math.abs(info.percentage - percentage) < 0.5
+      ).length;
     });
-      // .reduce((groups, { percentage, certainty }) => {
-      //   // certainty = certainty === 1 ? 1 : certainty;
-      //   const similarGroup = groups.find(group => 
-      //     group.percentages.some((groupPercentage) => 
-      //       Math.abs(groupPercentage - percentage) < .3));
+    // .reduce((groups, { percentage, certainty }) => {
+    //   // certainty = certainty === 1 ? 1 : certainty;
+    //   const similarGroup = groups.find(group =>
+    //     group.percentages.some((groupPercentage) =>
+    //       Math.abs(groupPercentage - percentage) < .3));
 
-      //   if(certainty < 1) (2 / averageHistorySize) + certainty
-      //   if(similarGroup) {
-      //     // if(similarGroup.certainty < 1 && certainty < 1) {
-      //     //   similarGroup.certainty += (2 / averageHistorySize);
-      //     // } else {
-      //       similarGroup.certainty += certainty;
-      //     // }
-      //     similarGroup.percentages.push(percentage)
-      //   } else {
-      //     groups.push({
-      //       certainty,
-      //       percentages: [percentage]
-      //     })
-      //   }
+    //   if(certainty < 1) (2 / averageHistorySize) + certainty
+    //   if(similarGroup) {
+    //     // if(similarGroup.certainty < 1 && certainty < 1) {
+    //     //   similarGroup.certainty += (2 / averageHistorySize);
+    //     // } else {
+    //       similarGroup.certainty += certainty;
+    //     // }
+    //     similarGroup.percentages.push(percentage)
+    //   } else {
+    //     groups.push({
+    //       certainty,
+    //       percentages: [percentage]
+    //     })
+    //   }
 
-      //   return groups;
-      // }, [])
-      // .reduce((percentages, group) => {
-      //   percentages[Math.max(...group.percentages)] = group.certainty;
-      //   return percentages;
-      // }, {});
-    if(!colorChanged) {
+    //   return groups;
+    // }, [])
+    // .reduce((percentages, group) => {
+    //   percentages[Math.max(...group.percentages)] = group.certainty;
+    //   return percentages;
+    // }, {});
+    if (!colorChanged) {
       percentage = parseFloat(
-        percentages.reduce((a, b) =>
-          a.occurrences > b.occurrences ? a : b
-        ).percentage
+        percentages.reduce((a, b) => (a.occurrences > b.occurrences ? a : b))
+          .percentage
       );
       // console.log('averaging', percentage, percentagesOccurrence, history)
 
@@ -1868,10 +1864,11 @@ export default class BarDetection {
       if (
         percentage !== currentPercentage &&
         // Math.abs(
-          (percentages.find(info => info.percentage === percentage)?.occurrences ?? 0) -
-          (percentages.find(info => info.percentage === currentPercentage)?.occurrences ?? 0)
-        // )
-        <=
+        (percentages.find((info) => info.percentage === percentage)
+          ?.occurrences ?? 0) -
+          (percentages.find((info) => info.percentage === currentPercentage)
+            ?.occurrences ?? 0) <=
+          // )
           history.length / 2
       ) {
         percentage = currentPercentage;
@@ -2095,22 +2092,25 @@ export default class BarDetection {
                   ) > 0.5);
               if (barsChanged || detectedLargeChange) {
                 const now = performance.now();
-                if(barsChanged || this.changes[this.changes.length - 1] < now - 3000) {
+                if (
+                  barsChanged ||
+                  this.changes[this.changes.length - 1] < now - 3000
+                ) {
                   this.changes.push(now);
                 }
               }
 
-              if(horizontalPercentage !== undefined) {
+              if (horizontalPercentage !== undefined) {
                 this.current.horizontal = {
                   percentage: horizontalPercentage,
-                  color: horizontalBarSizeInfo.color // Can desync with percentage, return from averagePercentage as well?
-                }
+                  color: horizontalBarSizeInfo.color, // Can desync with percentage, return from averagePercentage as well?
+                };
               }
-              if(verticalPercentage !== undefined) {
+              if (verticalPercentage !== undefined) {
                 this.current.vertical = {
                   percentage: verticalPercentage,
-                  color: verticalBarSizeInfo.color // Can desync with percentage, return from averagePercentage as well?
-                }
+                  color: verticalBarSizeInfo.color, // Can desync with percentage, return from averagePercentage as well?
+                };
               }
 
               if (barsChanged) {
@@ -2157,15 +2157,13 @@ export default class BarDetection {
       }
 
       let minThrottle;
-      const lastChange = this.changes[this.changes.length - 1]
-      if(this.changes.length >= 5) {
-        minThrottle = lastChange + 60000 < now ? 1000 
-          : lastChange + 8000 < now ? 500 
-          : 0;
+      const lastChange = this.changes[this.changes.length - 1];
+      if (this.changes.length >= 5) {
+        minThrottle =
+          lastChange + 60000 < now ? 1000 : lastChange + 8000 < now ? 500 : 0;
       } else {
-        minThrottle = lastChange + 15000 < now ? 1000 
-          : lastChange + 3000 < now ? 500 
-          : 0;
+        minThrottle =
+          lastChange + 15000 < now ? 1000 : lastChange + 3000 < now ? 500 : 0;
       }
 
       const throttle = Math.max(

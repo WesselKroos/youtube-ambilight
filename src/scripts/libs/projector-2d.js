@@ -28,7 +28,7 @@ export default class Projector2d {
     console.warn('Lost 2d projector');
     this.lostCount++;
     // event.preventDefault(); // Prevents restoration
-    
+
     // Invalidate shadow
     if (this.shadow?.elem) {
       this.shadow.elem.width = 1;
