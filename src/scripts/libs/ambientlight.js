@@ -513,17 +513,7 @@ export default class Ambientlight {
     if (!this.settings.energySaver || !this.ytdWatchElem) return;
 
     try {
-      const specPromise = new Promise((resolve) => {
-        const listener = injectedScript.addMessageListener(
-          'player-storyboard-spec',
-          (spec) => {
-            injectedScript.removeMessageListener(listener);
-            resolve(spec);
-          }
-        );
-      });
-      injectedScript.postMessage('player-storyboard-spec');
-      const spec = await specPromise;
+      const spec = await injectedScript.postAndReceiveMessage('player-storyboard-spec');
       if (!spec) return;
 
       const difference = await getAverageVideoFramesDifference(spec);
@@ -757,7 +747,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
   };
 
-  videoPlayerSetSizeIndex = 0;
   updateVideoPlayerSize = async () => {
     const start = performance.now();
 
@@ -771,31 +760,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       return;
     }
 
-    this.videoPlayerSetSizeIndex++;
-    const id = this.videoPlayerSetSizeIndex;
-
-    this.videoPlayerSetSizePromise = new Promise((resolve) => {
-      const complete = () => {
-        clearTimeout(timeout);
-        injectedScript.removeMessageListener(changedListener);
-        resolve();
-      };
-      const timeout = setTimeout(complete, 1000); // Fallback in case messaging fails
-      const changedListener = injectedScript.addMessageListener(
-        'sizes-changed',
-        (changedId) => {
-          if (id !== changedId) return;
-
-          complete();
-        }
-      );
-    });
-
-    injectedScript.postMessage('video-player-set-size', id);
-
-    await this.videoPlayerSetSizePromise;
-    this.videoPlayerSetSizePromise = undefined;
-
+    await injectedScript.postAndReceiveMessage('video-player-set-size'); 
     performance.measure('updateVideoPlayerSize', {
       start,
       end: performance.now(),
@@ -1228,17 +1193,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.videoElem.crossOrigin = 'use-credentials';
 
         // Refresh auto quality setting range above 480p
-        const reloadedPromise = new Promise((resolve) => {
-          const listener = injectedScript.addMessageListener(
-            'video-player-reload-video-by-id',
-            () => {
-              injectedScript.removeMessageListener(listener);
-              resolve();
-            }
-          );
-        });
-        injectedScript.postMessage('video-player-reload-video-by-id');
-        await reloadedPromise;
+        await injectedScript.postAndReceiveMessage('video-player-reload-video-by-id');
 
         this.videoElem.currentTime = currentTime;
       } catch (ex) {
@@ -3659,20 +3614,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           isHdr = videoFrame?.colorSpace?.primaries === 'bt2020'; // https://w3c.github.io/webcodecs/#videocolorspace
           videoFrame.close();
         } else {
-          isHdr = await new Promise((resolve, reject) => {
-            try {
-              const listener = injectedScript.addMessageListener(
-                'is-hdr-video',
-                (message) => {
-                  injectedScript.removeMessageListener(listener);
-                  resolve(message);
-                }
-              );
-              injectedScript.postMessage('is-hdr-video');
-            } catch (ex) {
-              reject(ex);
-            }
-          });
+          isHdr = await injectedScript.postAndReceiveMessage('is-hdr-video');
         }
 
         if (this.isHdr === isHdr) return;
@@ -3759,18 +3701,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
-    await new Promise((resolve) => {
-      const complete = () => {
-        injectedScript.removeMessageListener(listener);
-        resolve();
-      };
-      const listener = injectedScript.addMessageListener('hide', complete);
-      const toDark = this.theming.shouldBeDarkTheme(false);
-      injectedScript.postMessage('hide', {
-        toDark,
-        // Todo: Set to the correct pageBackgroundGreyness setting value
-        ytdAppElemBackground: toDark ? '#000' : '#fff',
-      });
+    const toDark = this.theming.shouldBeDarkTheme(false);
+    await injectedScript.postAndReceiveMessage('hide', {
+      toDark,
+      // Todo: Set to the correct pageBackgroundGreyness setting value
+      ytdAppElemBackground: toDark ? '#000' : '#fff',
     });
 
     await this.theming.updateTheme(); // Update livechat theme
@@ -3843,21 +3778,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // if (this.settings.relatedScrollbar)
     //   html.setAttribute('data-ambientlight-related-scrollbar', true);
 
-    await new Promise((resolve) => {
-      const complete = () => {
-        injectedScript.removeMessageListener(listener);
-        resolve();
-      };
-      const listener = injectedScript.addMessageListener('show', complete);
-      const toDark = this.theming.shouldBeDarkTheme(true);
-      injectedScript.postMessage('show', {
-        // Todo: Set to the correct pageBackgroundGreyness setting value
-        toDark,
-        ytdAppElemBackground: toDark ? '#000' : '#fff',
-        hideScrollbar: this.settings.hideScrollbar,
-        relatedScrollbar: this.settings.relatedScrollbar,
-        immersiveMode: this.shouldEnableImmersiveMode(),
-      });
+    const toDark = this.theming.shouldBeDarkTheme(true);
+    await injectedScript.postAndReceiveMessage('show', {
+      // Todo: Set to the correct pageBackgroundGreyness setting value
+      toDark,
+      ytdAppElemBackground: toDark ? '#000' : '#fff',
+      hideScrollbar: this.settings.hideScrollbar,
+      relatedScrollbar: this.settings.relatedScrollbar,
+      immersiveMode: this.shouldEnableImmersiveMode(),
     });
 
     // this.handleDocumentVisibilityChange(); // In case the visibility had changed while being disabled
@@ -3946,17 +3874,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     if (enabled === enable) return;
 
-    await new Promise((resolve) => {
-      const listener = injectedScript.addMessageListener(
-        'update-immersive-mode',
-        () => {
-          injectedScript.removeMessageListener(listener);
-          resolve();
-        }
-      );
-      injectedScript.postMessage('update-immersive-mode', enable);
-    });
-
+    await injectedScript.postAndReceiveMessage('update-immersive-mode', enable);
     performance.measure('updateImmersiveMode', {
       start,
       end: performance.now(),

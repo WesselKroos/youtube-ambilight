@@ -205,19 +205,7 @@ export default class Theming {
   async updateDocumentTheme(toDark) {
     const start = performance.now();
 
-    await new Promise((resolve) => {
-      const complete = () => {
-        clearTimeout(timeout);
-        injectedScript.removeMessageListener(changeListener);
-        resolve();
-      };
-      const timeout = setTimeout(complete, 1000); // Fallback
-      const changeListener = injectedScript.addMessageListener(
-        'updated-theme',
-        complete
-      );
-      injectedScript.postMessage('update-theme', toDark);
-    });
+    await injectedScript.postAndReceiveMessage('update-theme', toDark);
 
     performance.measure('updateDocumentTheme', {
       start,

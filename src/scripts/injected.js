@@ -54,7 +54,7 @@ contentScript.addMessageListener(
 
     updateTheme(toDark);
 
-    contentScript.postMessage('updated-theme');
+    contentScript.postMessage('update-theme');
     performance.measure('update-theme', { start, end: performance.now() });
   }
 );
@@ -110,7 +110,7 @@ contentScript.addMessageListener(
   }
 );
 
-function videoPlayerSetSize(messageId) {
+function videoPlayerSetSize() {
   const videoPlayerElem = getElem('video-player');
   if (videoPlayerElem) {
     try {
@@ -124,20 +124,22 @@ function videoPlayerSetSize(messageId) {
       );
     }
   }
-  contentScript.postMessage('sizes-changed', messageId);
+  contentScript.postMessage('sizes-changed');
 }
 
 contentScript.addMessageListener(
   'video-player-set-size',
-  function onVideoPlayerSetSize(id) {
+  function onVideoPlayerSetSize() {
     const start = performance.now();
 
-    videoPlayerSetSize(id);
+    videoPlayerSetSize();
 
     performance.measure('video-player-set-size', {
       start,
       end: performance.now(),
     });
+
+    contentScript.postMessage('video-player-set-size');
   }
 );
 
