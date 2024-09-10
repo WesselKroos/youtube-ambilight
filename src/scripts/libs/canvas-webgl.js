@@ -1,7 +1,6 @@
 import { AmbientlightError } from './sentry-reporter';
 import {
   canvasWebGLCrashTips,
-  ctxOptions,
   requestIdleCallback,
   wrapErrorHandler,
 } from './generic';
@@ -26,6 +25,7 @@ import {
 
 export class WebGLOffscreenCanvas {
   constructor(width, height, ambientlight, settings) {
+    // Remove to display drawing buffers
     if (typeof OffscreenCanvas !== 'undefined') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
@@ -57,6 +57,7 @@ export class WebGLOffscreenCanvas {
 
 export class WebGLContext {
   lostCount = 0;
+  emptyPixel = new Uint8Array([0, 0, 0, 255]);
 
   constructor(canvas, type, options, ambientlight, settings) {
     return async function WebGLContextConstructor() {
@@ -143,6 +144,26 @@ export class WebGLContext {
     );
   }
 
+  get texInternalFormat() {
+    return {
+      8: this.ctx.RGBA,
+      10: this.ctx.RGB10_A2,
+      16: this.ctx.RGBA16F,
+      32: this.ctx.RGBA32F,
+    }[this.settings.getColorBitDepth()];
+  }
+  get texFormat() {
+    return this.ctx.RGBA;
+  }
+  get texFormatType() {
+    return {
+      8: this.ctx.UNSIGNED_BYTE,
+      10: this.ctx.UNSIGNED_INT_2_10_10_10_REV,
+      16: this.ctx.HALF_FLOAT,
+      32: this.ctx.FLOAT,
+    }[this.settings.getColorBitDepth()];
+  }
+
   webglcontextcreationerrors = [];
   // syncCompilation prevents black flickering while settings are changed
   async initCtx(syncCompilation = false) {
@@ -199,9 +220,30 @@ export class WebGLContext {
       'drawingBufferColorSpace' in this.ctx &&
       'unpackColorSpace' in this.ctx
     ) {
-      this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace;
+      const colorSpace = this.settings.getColorSpace();
+      this.ctx.drawingBufferColorSpace = colorSpace;
       // // unpacking to another color space seems to be way to expensive on the GPU - dropped support for now
+      this.ctx.unpackColorSpace = colorSpace;
       // this.ctx.unpackColorSpace = ctxOptions.extendedColorSpace === 'rec2020' ? 'srgb' : ctxOptions.colorSpace // Compensate when a rec2020 display is used to compensate the lack of rec2020 support in canvas
+    }
+
+    this.noMipmapSupport = this.webGLVersion === 1;
+    if (this.webGLVersion === 2) {
+      const bitDepth = this.settings.getColorBitDepth();
+      if (bitDepth > 8) {
+        this.emptyPixel =
+          bitDepth === 10
+            ? new Uint32Array([0, 0, 0, 255])
+            : bitDepth === 16
+            ? new Uint16Array([0, 0, 0, 255])
+            : new Float32Array([0, 0, 0, 1]);
+
+        this.noMipmapSupport = true;
+        // if (bitDepth == 32) {
+        //   const ext = this.ctx.getExtension('EXT_color_buffer_float');
+        //   console.log('EXT_color_buffer_float', ext);
+        // }
+      }
     }
 
     let flickerReductionDifference;
@@ -239,11 +281,11 @@ export class WebGLContext {
           this.settings.flickerReduction
             ? `
         vec4 currentColor = texture2D(textureSampler[0], fUV${
-          this.webGLVersion !== 1 ? ', fMipmapLevel' : ''
+          !this.noMipmapSupport ? ', fMipmapLevel' : ''
         });
         if(fPreviousCleared < .5) {
           vec4 previousColor = texture2D(textureSampler[1], fUV${
-            this.webGLVersion !== 1 ? ', fMipmapLevel' : ''
+            !this.noMipmapSupport ? ', fMipmapLevel' : ''
           });
           
           float difference = abs(
@@ -261,8 +303,8 @@ export class WebGLContext {
             : ''
         }
         gl_FragColor = texture2D(textureSampler[0], fUV${
-          this.webGLVersion !== 1 ? ', fMipmapLevel' : ''
-        });
+          !this.noMipmapSupport ? ', fMipmapLevel' : ''
+        }); // * vec4(2., 2., 2., 1.);
       }
     `
       .replace(/\n {6}/g, '\n')
@@ -584,13 +626,13 @@ export class WebGLContext {
       this.ctx.texImage2D(
         this.ctx.TEXTURE_2D,
         0,
-        this.ctx.RGBA,
+        this.texInternalFormat,
         1,
         1,
         0,
-        this.ctx.RGBA,
-        this.ctx.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255])
+        this.texFormat,
+        this.texFormatType,
+        this.emptyPixel
       );
       this.textures.push(texture);
     }
@@ -627,13 +669,13 @@ export class WebGLContext {
     this.ctx.texImage2D(
       this.ctx.TEXTURE_2D,
       0,
-      this.ctx.RGBA,
+      this.texInternalFormat,
       1,
       1,
       0,
-      this.ctx.RGBA,
-      this.ctx.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
+      this.texFormat,
+      this.texFormatType,
+      this.emptyPixel
     );
 
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
@@ -653,13 +695,13 @@ export class WebGLContext {
     this.ctx.texImage2D(
       this.ctx.TEXTURE_2D,
       0,
-      this.ctx.RGBA,
+      this.texInternalFormat,
       1,
       1,
       0,
-      this.ctx.RGBA,
-      this.ctx.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
+      this.texFormat,
+      this.texFormatType,
+      this.emptyPixel
     );
     this.ctx.activeTexture(this.ctx['TEXTURE0']);
 
@@ -692,10 +734,6 @@ export class WebGLContext {
     destHeight
   ) => {
     if (this.ctxIsInvalid || this.lost) return;
-
-    const internalFormat = this.ctx.RGBA;
-    const format = this.ctx.RGBA;
-    const formatType = this.ctx.UNSIGNED_BYTE;
 
     if (destX === undefined) {
       destX = srcX;
@@ -747,14 +785,14 @@ export class WebGLContext {
     this.ctx.texImage2D(
       this.ctx.TEXTURE_2D,
       0,
-      internalFormat,
-      format,
-      formatType,
+      this.texInternalFormat,
+      this.texFormat,
+      this.texFormatType,
       src
     );
 
     // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
-    if (this.webGLVersion !== 1) {
+    if (!this.noMipmapSupport) {
       this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
     }
     if (this.settings.showResolutions)
@@ -777,12 +815,12 @@ export class WebGLContext {
       this.ctx.texImage2D(
         this.ctx.TEXTURE_2D,
         0,
-        internalFormat,
-        format,
-        formatType,
+        this.texInternalFormat,
+        this.texFormat,
+        this.texFormatType,
         this.canvas
       );
-      if (this.webGLVersion !== 1) {
+      if (!this.noMipmapSupport) {
         this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
       }
       this.ctx.activeTexture(this.ctx['TEXTURE0']);
@@ -826,8 +864,8 @@ export class WebGLContext {
       y,
       width,
       height,
-      this.ctx.RGBA,
-      this.ctx.UNSIGNED_BYTE,
+      this.texFormat,
+      this.texFormatType,
       buffer.data
     );
 

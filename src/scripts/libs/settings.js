@@ -25,6 +25,22 @@ export const FRAMESYNC_VIDEOFRAMES = 2;
 export const DEBANDING_BLEND_MODE_LCD = 0;
 export const DEBANDING_BLEND_MODE_OLED = 1;
 
+export const COLORSPACE_AUTO = 0;
+export const COLORSPACE_SRGB = 1;
+export const COLORSPACE_DISPLAY_P3 = 2;
+export const COLORSPACE_REC_2020_PQ = 3;
+export const COLORSPACE_REC_2020_HLG = 4;
+
+export const COLORBITDEPTH_AUTO = 0;
+export const COLORBITDEPTH_8 = 1;
+export const COLORBITDEPTH_10 = 2;
+export const COLORBITDEPTH_16 = 3;
+export const COLORBITDEPTH_32 = 4;
+
+export const COLORCONVERSIONPATCH_AUTO = 0;
+export const COLORCONVERSIONPATCH_ENABLED = 1;
+export const COLORCONVERSIONPATCH_DISABLED = 2;
+
 const feedbackFormLink = getFeedbackFormLink(); // document.currentScript?.getAttribute('data-feedback-form-link')
 //  || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
@@ -153,6 +169,24 @@ export default class Settings {
 
     return Settings.storedSettingsCached;
   };
+
+  getColorSpace = () =>
+    ({
+      [COLORSPACE_AUTO]: 'srgb',
+      [COLORSPACE_SRGB]: 'srgb',
+      [COLORSPACE_DISPLAY_P3]: 'display-p3',
+      [COLORSPACE_REC_2020_PQ]: 'rec2100-pq',
+      [COLORSPACE_REC_2020_HLG]: 'rec2100-hlg',
+    }[this.colorSpace ?? 0]);
+
+  getColorBitDepth = () =>
+    ({
+      [COLORBITDEPTH_AUTO]: 8,
+      [COLORBITDEPTH_8]: 8,
+      [COLORBITDEPTH_10]: 10,
+      [COLORBITDEPTH_16]: 16,
+      [COLORBITDEPTH_32]: 32,
+    }[this.colorBitDepth ?? 0]);
 
   async getAll() {
     let storedSettings = {};
@@ -895,6 +929,10 @@ export default class Settings {
               return;
             }
 
+            if (setting.name === 'colorConversionPatch') {
+              this.ambientlight.updateHdr();
+            }
+
             if (!this.advancedSettings) {
               if (setting.name === 'blur2') {
                 const edgeValue =
@@ -1051,6 +1089,18 @@ export default class Settings {
               ].some((name) => name === setting.name)
             ) {
               this.updateVisibility();
+            }
+
+            if (
+              ['colorSpace', 'colorBitDepth'].some(
+                (name) => name === setting.name
+              )
+            ) {
+              this.saveStorageEntry(setting.name, value);
+              await this.flushPendingStorageEntries();
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              this.reloadPage();
+              return;
             }
 
             this.ambientlight.sizesChanged = true;
@@ -1452,6 +1502,30 @@ export default class Settings {
       return {
         [DEBANDING_BLEND_MODE_LCD]: 'LCD',
         [DEBANDING_BLEND_MODE_OLED]: 'OLED',
+      }[value];
+    }
+    if (setting.name === 'colorSpace') {
+      return {
+        [COLORSPACE_AUTO]: 'Auto',
+        [COLORSPACE_SRGB]: 'sRGB',
+        [COLORSPACE_DISPLAY_P3]: 'Display P3 D65',
+        [COLORSPACE_REC_2020_PQ]: 'Rec. 2100 PQ\n(Rec. 2020 / HDR10)',
+        [COLORSPACE_REC_2020_HLG]: 'Rec. 2100 HLG\n(Rec. 2020 / HDR10)',
+      }[value];
+    }
+    if (setting.name === 'colorBitDepth') {
+      return {
+        [COLORBITDEPTH_AUTO]: 'Auto',
+        [COLORBITDEPTH_8]: '8 bits',
+        [COLORBITDEPTH_16]: '16 bits',
+        [COLORBITDEPTH_32]: '32 bits',
+      }[value];
+    }
+    if (setting.name === 'colorConversionPatch') {
+      return {
+        [COLORCONVERSIONPATCH_AUTO]: 'Auto',
+        [COLORCONVERSIONPATCH_ENABLED]: 'Enabled',
+        [COLORCONVERSIONPATCH_DISABLED]: 'Disabled',
       }[value];
     }
     if (setting.name === 'barSizeDetectionAverageHistorySize') {

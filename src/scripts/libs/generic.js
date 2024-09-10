@@ -319,6 +319,7 @@ export class Canvas {
 
 export class SafeOffscreenCanvas {
   constructor(width, height, pixelated) {
+    // Remove to display drawing buffers
     if (typeof OffscreenCanvas !== 'undefined') {
       return new OffscreenCanvas(width, height);
     } else {

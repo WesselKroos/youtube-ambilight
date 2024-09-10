@@ -247,6 +247,9 @@ export default class SentryReporter {
         console.error(ex.details);
       }
 
+      alert(`Ambient light error: ${ex?.message ?? ''} (See the DevTools javascript console (F12) for more information)`);
+      return;
+      
       if (this.overflowProtection === 3) {
         console.warn('Exception overflow protection enabled');
       }

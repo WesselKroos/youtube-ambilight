@@ -3,11 +3,18 @@ const WIDTH = 512;
 const HEIGHT = 512;
 
 export default class ProjectorShadow {
-  constructor(offscreen = true) {
+  constructor(settings, offscreen = true) {
     this.elem = offscreen
       ? new SafeOffscreenCanvas(512, 512, true)
       : new Canvas(512, 512);
-    this.ctx = this.elem.getContext('2d', { ...ctxOptions, alpha: true });
+    this.settings = settings;
+
+    const colorSpace = this.settings.getColorSpace();
+    this.ctx = this.elem.getContext('2d', {
+      ...ctxOptions,
+      colorSpace,
+      alpha: true,
+    });
   }
 
   rescale(scale, projectorSize, settings) {

@@ -17,6 +17,7 @@ export default class ProjectorWebGL {
   projectors = [];
   static subProjectorDimensionMax = 3;
   atTop = true;
+  emptyPixel = new Uint8Array([0, 0, 0, 255]);
 
   constructor(ambientlight, containerElem, initProjectorListeners, settings) {
     return async function ProjectorWebGLConstructor() {
@@ -82,11 +83,31 @@ export default class ProjectorWebGL {
   }
 
   initShadow() {
-    this.shadow = new ProjectorShadow();
+    this.shadow = new ProjectorShadow(this.settings);
     this.projectors[2] = {
       elem: this.shadow.elem,
       ctx: this.blurCtx,
     };
+  }
+
+  get texInternalFormat() {
+    return {
+      8: this.ctx.RGBA,
+      10: this.ctx.RGB10_A2,
+      16: this.ctx.RGBA16F,
+      32: this.ctx.RGBA32F,
+    }[this.settings.getColorBitDepth()];
+  }
+  get texFormat() {
+    return this.ctx.RGBA;
+  }
+  get texFormatType() {
+    return {
+      8: this.ctx.UNSIGNED_BYTE,
+      10: this.ctx.UNSIGNED_INT_2_10_10_10_REV,
+      16: this.ctx.HALF_FLOAT,
+      32: this.ctx.FLOAT,
+    }[this.settings.getColorBitDepth()];
   }
 
   drawIndex = 0;
@@ -149,10 +170,6 @@ export default class ProjectorWebGL {
     const blurCanvasHeightMinBounds =
       this.blurCanvas.height - blurCanvasBound * 2;
 
-    const internalFormat = this.ctx.RGBA;
-    const format = this.ctx.RGBA;
-    const formatType = this.ctx.UNSIGNED_BYTE;
-
     let start = this.settings.showResolutions ? performance.now() : undefined;
     if (this.projectorsCount > 1) {
       if (updateTextureSize) {
@@ -207,12 +224,12 @@ export default class ProjectorWebGL {
         this.ctx.texImage2D(
           this.ctx.TEXTURE_2D,
           0,
-          internalFormat,
+          this.texInternalFormat,
           textureSize.width,
           textureSize.height,
           0,
-          format,
-          formatType,
+          this.texFormat,
+          this.texFormatType,
           null
         );
       }
@@ -221,19 +238,19 @@ export default class ProjectorWebGL {
         0,
         x,
         y,
-        format,
-        formatType,
+        this.texFormat,
+        this.texFormatType,
         src
       );
-      this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
+      if (!this.noMipmapSupport) this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
     } else {
       if (updateTextureSize) {
         this.ctx.texImage2D(
           this.ctx.TEXTURE_2D,
           0,
-          internalFormat,
-          format,
-          formatType,
+          this.texInternalFormat,
+          this.texFormat,
+          this.texFormatType,
           src
         );
       } else {
@@ -242,12 +259,12 @@ export default class ProjectorWebGL {
           0,
           0,
           0,
-          format,
-          formatType,
+          this.texFormat,
+          this.texFormatType,
           src
         );
       }
-      this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
+      if (!this.noMipmapSupport) this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
     }
     if (this.settings.showResolutions)
       this.loadTime = performance.now() - start;
@@ -361,8 +378,11 @@ export default class ProjectorWebGL {
     this.boundaryElem = this.blurCanvas;
     this.blurCanvas.addEventListener('contextlost', this.onBlurCtxLost);
     this.blurCanvas.addEventListener('contextrestored', this.onBlurCtxRestored);
+
+    const colorSpace = this.settings.getColorSpace();
     this.blurCtx = this.blurCanvas.getContext('2d', {
       ...ctxOptions,
+      colorSpace,
       alpha: true,
       desynchronized: false, // true: Does not work when canvas elements are not hardware accelerated
     });
@@ -572,8 +592,25 @@ export default class ProjectorWebGL {
       'drawingBufferColorSpace' in this.ctx &&
       'unpackColorSpace' in this.ctx
     ) {
-      this.ctx.drawingBufferColorSpace = ctxOptions.colorSpace;
-      this.ctx.unpackColorSpace = ctxOptions.colorSpace;
+      const colorSpace = this.settings.getColorSpace();
+      this.ctx.drawingBufferColorSpace = colorSpace;
+      this.ctx.unpackColorSpace = colorSpace;
+
+      const bitDepth = this.settings.getColorBitDepth();
+      if (bitDepth > 8) {
+        this.emptyPixel =
+          bitDepth === 10
+            ? new Uint32Array([0, 0, 0, 255])
+            : bitDepth === 16
+            ? new Uint16Array([0, 0, 0, 255])
+            : new Float32Array([0, 0, 0, 1]);
+
+        this.noMipmapSupport = true;
+        // if (bitDepth == 32) {
+        //   const ext = this.ctx.getExtension('EXT_color_buffer_float');
+        //   console.log('EXT_color_buffer_float', ext);
+        // }
+      }
     }
 
     this.projectors[1] = {
@@ -624,13 +661,13 @@ export default class ProjectorWebGL {
     this.ctx.texImage2D(
       this.ctx.TEXTURE_2D,
       0,
-      this.ctx.RGBA,
+      this.texInternalFormat,
       1,
       1,
       0,
-      this.ctx.RGBA,
-      this.ctx.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
+      this.texFormat,
+      this.texFormatType,
+      this.emptyPixel
     );
 
     // Texture - Projectors
@@ -665,7 +702,7 @@ export default class ProjectorWebGL {
       this.ctx.texParameteri(
         this.ctx.TEXTURE_2D,
         this.ctx.TEXTURE_MIN_FILTER,
-        this.ctx.LINEAR_MIPMAP_LINEAR
+        this.noMipmapSupport ? this.ctx.LINEAR : this.ctx.LINEAR_MIPMAP_LINEAR
       );
       this.ctx.texParameteri(
         this.ctx.TEXTURE_2D,
@@ -699,15 +736,15 @@ export default class ProjectorWebGL {
       this.ctx.texImage2D(
         this.ctx.TEXTURE_2D,
         0,
-        this.ctx.RGBA,
+        this.texInternalFormat,
         1,
         1,
         0,
-        this.ctx.RGBA,
-        this.ctx.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255])
+        this.texFormat,
+        this.texFormatType,
+        this.emptyPixel
       );
-      this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
+      if (!this.noMipmapSupport) this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
     }
 
     // Shaders
@@ -820,11 +857,15 @@ export default class ProjectorWebGL {
                   const subIndex = i % this.subProjectorsCount;
 
                   // Todo: Ommit the drawBorder by calculating the rescale caused by: .5 - drawBorder
-                  return `(fTextureOpacity[${i}] * texture2D(textureSampler[${projectorIndex}], uv${subIndex}, fTextureMipmapLevel))`;
+                  return `(fTextureOpacity[${i}] * texture2D(textureSampler[${projectorIndex}], uv${subIndex}${
+                    this.noMipmapSupport ? '' : ', fTextureMipmapLevel'
+                  }))`;
                 })
                 .join('\n+ ')};`;
             } else {
-              return `texture2D(textureSampler[0], croppedUV, fTextureMipmapLevel);`;
+              return `texture2D(textureSampler[0], croppedUV${
+                this.noMipmapSupport ? '' : ', fTextureMipmapLevel'
+              });`;
             }
           })()}
         }
@@ -1172,11 +1213,13 @@ export default class ProjectorWebGL {
       this.projectorsTexture.map((_, i) => 1 + i)
     );
 
-    this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(
-      this.program,
-      'fTextureMipmapLevel'
-    );
-    this.ctx.uniform1f(this.fTextureMipmapLevelLoc, 0);
+    if (!this.noMipmapSupport) {
+      this.fTextureMipmapLevelLoc = this.ctx.getUniformLocation(
+        this.program,
+        'fTextureMipmapLevel'
+      );
+      this.ctx.uniform1f(this.fTextureMipmapLevelLoc, 0);
+    }
 
     if (this.settings.vibrance !== 100) {
       this.fVibranceLoc = this.ctx.getUniformLocation(
@@ -1225,6 +1268,7 @@ export default class ProjectorWebGL {
   }
 
   rescale(scales, lastScale, projectorSize, crop, settings) {
+    let start = performance.now();
     if (this.shadow) {
       this.shadow.rescale(lastScale, projectorSize, settings);
     }
@@ -1266,7 +1310,10 @@ export default class ProjectorWebGL {
       this.blurCtx.filter = `blur(${blurPx / this.blurCanvasScale}px)`;
     }
 
+    performance.measure('rescale', { start, end: performance.now() });
+    start = performance.now();
     this.updateCtx();
+    performance.measure('updateCtx', { start, end: performance.now() });
   }
 
   async updateVibrance() {
@@ -1588,13 +1635,13 @@ export default class ProjectorWebGL {
       this.ctx.texImage2D(
         this.ctx.TEXTURE_2D,
         0,
-        this.ctx.RGBA,
+        this.texInternalFormat,
         1,
         1,
         0,
-        this.ctx.RGBA,
-        this.ctx.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255])
+        this.texFormat,
+        this.texFormatType,
+        this.emptyPixel
       );
       // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.ALPHA, this.ctx.ALPHA, this.ctx.UNSIGNED_BYTE, null)
 
@@ -1604,16 +1651,16 @@ export default class ProjectorWebGL {
         this.ctx.texImage2D(
           this.ctx.TEXTURE_2D,
           0,
-          this.ctx.RGBA,
+          this.texInternalFormat,
           1,
           1,
           0,
-          this.ctx.RGBA,
-          this.ctx.UNSIGNED_BYTE,
-          new Uint8Array([0, 0, 0, 255])
+          this.texFormat,
+          this.texFormatType,
+          this.emptyPixel
         );
-        this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
-        // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.ctx.RGBA, this.ctx.RGBA, this.ctx.UNSIGNED_BYTE, null)
+        if (!this.noMipmapSupport) this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
+        // this.ctx.texImage2D(this.ctx.TEXTURE_2D, 0, this.texInternalFormat, this.texFormat, this.texFormatType, null)
       }
 
       this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);

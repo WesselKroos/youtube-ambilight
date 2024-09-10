@@ -13,7 +13,7 @@ export default class Projector2d {
     this.initProjectorListeners = initProjectorListeners;
     this.settings = settings;
 
-    this.shadow = new ProjectorShadow(false);
+    this.shadow = new ProjectorShadow(this.settings, false);
     this.shadow.elem.classList.add('ambientlight__shadow');
     this.containerElem.appendChild(this.shadow.elem);
 

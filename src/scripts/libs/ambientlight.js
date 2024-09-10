@@ -28,6 +28,7 @@ import BarDetection from './bar-detection';
 import Settings, {
   DEBANDING_BLEND_MODE_LCD,
   DEBANDING_BLEND_MODE_OLED,
+  COLORCONVERSIONPATCH_DISABLED,
   FRAMESYNC_DECODEDFRAMES,
   FRAMESYNC_DISPLAYFRAMES,
   FRAMESYNC_VIDEOFRAMES,
@@ -1386,6 +1387,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.hdrProjectorBuffer) return;
 
     const hdrProjectorsBufferElem = new SafeOffscreenCanvas(1, 1, true);
+    // const hdrProjectorsBufferElem = new Canvas(1, 1, true);
     const hdrProjectorsBufferCtx = hdrProjectorsBufferElem.getContext(
       '2d',
       ctxOptions
@@ -3629,10 +3631,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           isHdr = await injectedScript.postAndReceiveMessage('is-hdr-video');
         }
 
-        if (this.isHdr === isHdr) return;
+        // if (this.isHdr === isHdr) return;
 
         this.isHdr = isHdr;
-        if (isHdr) {
+        const useHdrColorConversionPatch =
+          isHdr &&
+          this.settings.colorConversionPatch !== COLORCONVERSIONPATCH_DISABLED;
+
+        if (useHdrColorConversionPatch) {
           this.initWebGLHdrProjectorBuffer();
           this.projectorBuffer = this.hdrProjectorBuffer;
         } else if (this.hdrProjectorBuffer) {
