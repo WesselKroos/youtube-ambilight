@@ -11,16 +11,18 @@ class InjectedScript {
       // console.log('injected addMessageListenerGlobal')
       this.globalListener = wrapErrorHandler(
         function injectedScriptMessageListenerGlobal(event) {
+          if (!event.detail || typeof event.detail !== 'string') return;
+          const detail = JSON.parse(event.detail);
           // console.log('received in contentScript', event.detail?.type, event.detail?.injectedScript, event, '|', event.detail?.contentScript);
           if (
             !isSameWindowMessage ||
-            event.detail?.injectedScript !== extensionId ||
-            !event.detail?.type
+            detail?.injectedScript !== extensionId ||
+            !detail?.type
           )
             return;
 
           for (const listener of this.listeners) {
-            listener(event);
+            listener(detail);
           }
         }.bind(this),
         true
@@ -29,12 +31,12 @@ class InjectedScript {
     }
 
     const listener = wrapErrorHandler(
-      function injectedScriptMessageListener(event) {
+      function injectedScriptMessageListener(detail) {
         // console.log('injected message?', type, event.detail?.type)
-        if (event.detail.type !== type) return;
+        if (detail.type !== type) return;
 
         // console.log('injected message!', type)
-        handler(event.detail?.message);
+        handler(detail?.message);
       }.bind(this),
       true
     );
@@ -63,11 +65,11 @@ class InjectedScript {
   postMessage(type, message) {
     const event = new CustomEvent('ytal-message', {
       // bubbles: true,
-      detail: {
+      detail: JSON.stringify({
         type,
         message,
         contentScript: extensionId,
-      },
+      }),
     });
     // console.log('dispatched from contentScript', type, extensionId);
     return document.dispatchEvent(event);
