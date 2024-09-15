@@ -423,6 +423,31 @@ const workerCode = function () {
   const maxCertaintyChecks = enhancedCertainty ? 3 : 5;
   const sureCertainty = enhancedCertainty ? 0.65 : 0.65;
 
+  const getAverageLineColorRange = 9;
+  const getAverageLineColorRangeOffset = (getAverageLineColorRange - 1) / 2;
+  const getAverageLineColorData = new Uint8Array(4 * getAverageLineColorRange);
+  function getAverageLineColor(x, y, yAxis, iColor) {
+    const iColors = getAverageLineColorData;
+    const range = getAverageLineColorRange;
+    const rangeOffset = getAverageLineColorRangeOffset;
+    for (let i = 0; i < range; i++) {
+      const x2 = x + (i - rangeOffset) * 2;
+      const iColorsOffset = i * 4;
+      if (yAxis === 'height') {
+        image.getPixel(x2, y, iColors, iColorsOffset);
+      } else {
+        image.getPixel(y, x2, iColors, iColorsOffset);
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      let sum = 0;
+      for (let j = 0; j < range; j++) {
+        sum += iColors[j * 4 + i];
+      }
+      iColor[i] = Math.round(sum / range);
+    }
+  }
+
   const detectEdgesColorData = new Uint8Array(4);
   function detectEdges(linesX, color, yAxis) {
     const maxY = image[yAxis];
@@ -447,11 +472,8 @@ const workerCode = function () {
           step = 1;
         }
 
-        if (yAxis === 'height') {
-          image.getPixel(x, y, iColor);
-        } else {
-          image.getPixel(y, x, iColor);
-        }
+        getAverageLineColor(x, y, yAxis, iColor);
+
         // image.getPixel(
         //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
         // ); // [data[i], data[i + 1], data[i + 2]];
@@ -541,11 +563,8 @@ const workerCode = function () {
           step = 1;
         }
 
-        if (yAxis === 'height') {
-          image.getPixel(x, y, iColor);
-        } else {
-          image.getPixel(y, x, iColor);
-        }
+        getAverageLineColor(x, y, yAxis, iColor);
+
         // image.getPixel(
         //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
         // ); // [data[i], data[i + 1], data[i + 2]];
