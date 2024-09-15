@@ -24,7 +24,7 @@ const workerCode = function () {
       return (y * this.width + x) * this.channels;
     }
 
-    getPixel(x, y, data, dataOffset) {
+    getPixel(x, y, data, dataOffset, alpha = true) {
       // Throttle worker thread
       // for (let i = 0; i < 100_000; i++) {}
 
@@ -37,12 +37,12 @@ const workerCode = function () {
         data[dataOffset + 0] = 0;
         data[dataOffset + 1] = 0;
         data[dataOffset + 2] = 0;
-        data[dataOffset + 3] = 0;
+        if (alpha) data[dataOffset + 3] = 0;
       } else {
         data[dataOffset + 0] = this.imageData?.data?.[offset];
         data[dataOffset + 1] = this.imageData?.data?.[offset + 1];
         data[dataOffset + 2] = this.imageData?.data?.[offset + 2];
-        data[dataOffset + 3] = this.imageData?.data?.[offset + 3];
+        if (alpha) data[dataOffset + 3] = this.imageData?.data?.[offset + 3];
       }
 
       if (returnValue) return data;
@@ -75,12 +75,12 @@ const workerCode = function () {
   };
 
   const colorChannels = image.channels - 1;
-  const colorsLength = 128;
+  const colorsLength = 116;
   const averageColorColorsData = new Uint8Array(colorsLength * colorChannels);
-  const averageColor = new Uint32Array(colorChannels);
   const averageColorsIndexes = new Uint8Array(colorsLength);
   const averageColorsIndexesDiffs = new Uint16Array(colorsLength);
   const averageColorsLength = Math.floor(colorsLength * 0.25);
+  const averageColor = new Uint32Array(colorChannels);
 
   function sortAverageColors(ai, bi) {
     return averageColorsIndexesDiffs[ai] - averageColorsIndexesDiffs[bi];
@@ -104,9 +104,9 @@ const workerCode = function () {
     ) {
       for (let x = offset, y = linesY[i]; x <= xMax - offset; x += xStep) {
         if (yAxis === 'height') {
-          image.getPixel(x, y, colors, colorsOffset);
+          image.getPixel(x, y, colors, colorsOffset, false);
         } else {
-          image.getPixel(y, x, colors, colorsOffset);
+          image.getPixel(y, x, colors, colorsOffset, false);
         }
         colorsOffset += colorChannels;
       }
@@ -117,16 +117,11 @@ const workerCode = function () {
       colorsIndexes[i] = i;
     }
 
-    // console.log(
-    //   'Average start',
-    //   JSON.parse(JSON.stringify(colorsIndexes)),
-    //   JSON.parse(JSON.stringify(colors))
-    // );
-
+    const shrinkBy = Math.floor(averageColorsLength / 2);
     for (
       let includedColorsLength = colorsLength;
       includedColorsLength >= averageColorsLength;
-      includedColorsLength -= Math.floor(averageColorsLength / 2)
+      includedColorsLength -= shrinkBy
     ) {
       // Update averageColor
       for (let iRGB = 0; iRGB < colorChannels; iRGB++) {
@@ -140,124 +135,55 @@ const workerCode = function () {
           averageColor[iRGB] / includedColorsLength
         );
       }
-      // console.log('averageColor', [...averageColor].join('|'));
+
+      if (includedColorsLength - shrinkBy < averageColorsLength) break;
 
       // Update color vs averageColor difference in indexes
       for (let i = 0; i < colorsIndexesDiffs.length; i++) {
+        const colorsIndex = colorsIndexes[i];
         if (i < includedColorsLength) {
-          const pixelOffset = i * colorChannels;
+          const pixelOffset = colorsIndex * colorChannels;
           const diff =
             Math.abs(averageColor[0] - colors[pixelOffset]) +
             Math.abs(averageColor[1] - colors[pixelOffset + 1]) +
             Math.abs(averageColor[2] - colors[pixelOffset + 2]);
-
-          // const color = [
-          //   colors[pixelOffset],
-          //   colors[pixelOffset + 1],
-          //   colors[pixelOffset + 2],
-          // ];
-          // console.log(
-          //   'Update diff',
-          //   colorsIndex,
-          //   pixelOffset,
-          //   color.join('|'),
-          //   diff
-          // );
-
-          colorsIndexesDiffs[i] = diff;
+          colorsIndexesDiffs[colorsIndex] = diff;
         } else {
-          colorsIndexesDiffs[i] = 65535;
+          colorsIndexesDiffs[colorsIndex] += 1000;
         }
       }
 
-      // console.log(
-      //   'average color',
-      //   includedColorsLength,
-      //   averageColor
-      //     .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-      //     .join('|')
-      // );
-
       // Sort indexes based on colorsIndexesDiffs
-
-      // console.log(
-      //   'before sort',
-      //   includedColorsLength,
-      //   averageColor
-      //     .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-      //     .join('|'),
-      //   new Array(colorsIndexes.length).fill(undefined).map((_, i) => {
-      //     const colorsIndex = colorsIndexes[i];
-      //     const pixelOffset = colorsIndex * colorChannels;
-
-      //     const color = [
-      //       colors[pixelOffset],
-      //       colors[pixelOffset + 1],
-      //       colors[pixelOffset + 2],
-      //     ];
-
-      //     const info = [
-      //       colorsIndex,
-      //       color
-      //         .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-      //         .join('|'),
-      //       colorsIndexesDiffs[i],
-      //       Math.abs(averageColor[0] - color[0]) +
-      //         Math.abs(averageColor[1] - color[1]) +
-      //         Math.abs(averageColor[2] - color[2]),
-      //     ];
-
-      //     return info;
-      //   })
-      // );
-
       colorsIndexes.sort(sortAverageColors);
-
-      // console.log(
-      //   'after sort',
-      //   includedColorsLength,
-      //   averageColor
-      //     .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-      //     .join('|'),
-      //   new Array(colorsIndexes.length).fill(undefined).map((_, i) => {
-      //     const colorsIndex = colorsIndexes[i];
-      //     const pixelOffset = colorsIndex * colorChannels;
-
-      //     const color = [
-      //       colors[pixelOffset],
-      //       colors[pixelOffset + 1],
-      //       colors[pixelOffset + 2],
-      //     ];
-
-      //     const info = [
-      //       colorsIndex,
-      //       // colorsIndexesDiffs[i],
-      //       // Math.abs(averageColor[0] - color[0]) +
-      //       //   Math.abs(averageColor[1] - color[1]) +
-      //       //   Math.abs(averageColor[2] - color[2]),
-      //       color
-      //         .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-      //         .join('|'),
-      //     ];
-
-      //     return info;
-      //   })
-      // );
     }
 
     // console.log(
-    //   'Average end',
-    //   JSON.parse(JSON.stringify(colorsIndexes)),
-    //   JSON.parse(JSON.stringify(colors))
+    //   'average color',
+    //   averageColor
+    //     .map((c) => c.toFixed(0).toString().padStart(3, ' '))
+    //     .join('|'),
+    //   new Array(colorsIndexes.length).fill(undefined).map((_, i) => {
+    //     const colorsIndex = colorsIndexes[i];
+    //     const pixelOffset = colorsIndex * colorChannels;
+
+    //     const color = [
+    //       colors[pixelOffset],
+    //       colors[pixelOffset + 1],
+    //       colors[pixelOffset + 2],
+    //     ];
+
+    //     const info = [
+    //       // colorsIndex,
+    //       color.map((c) => c.toFixed(0).toString().padStart(3, ' ')).join('|'),
+    //       Math.abs(averageColor[0] - color[0]) +
+    //         Math.abs(averageColor[1] - color[1]) +
+    //         Math.abs(averageColor[2] - color[2]),
+    //       colorsIndexesDiffs[colorsIndex],
+    //     ];
+
+    //     return info;
+    //   })
     // );
-
-    // console.log('iternations', iternations, 'from', colorsLength, 'to', summedLength, 'maximum is', averageColorsLength)
-
-    // console.log(
-    //   'averageColor',
-    //   averageColor.map(c => c.toFixed(0).toString().padStart(3,' ')).join('|'),
-    //   // JSON.parse(JSON.stringify(colors.map(c => c.map(c => c.toString().padStart(3,' ')).join('|'))))
-    // )
 
     return [...averageColor];
   }
