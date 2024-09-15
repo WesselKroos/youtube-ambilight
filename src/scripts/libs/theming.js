@@ -53,7 +53,6 @@ export default class Theming {
         }
       },
       undefined,
-      undefined,
       true
     );
 

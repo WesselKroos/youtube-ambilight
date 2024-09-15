@@ -480,7 +480,6 @@ export default class Ambientlight {
           this.resetAverageVideoFramesDifference();
         },
         undefined,
-        undefined,
         true
       );
       on(
@@ -491,7 +490,6 @@ export default class Ambientlight {
 
           this.calculateAverageVideoFramesDifference();
         },
-        undefined,
         undefined,
         true
       );

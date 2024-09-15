@@ -350,7 +350,6 @@ const detectPageTransitions = (ytdAppElem) => {
       }
     },
     undefined,
-    undefined,
     true
   );
 };

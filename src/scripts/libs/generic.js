@@ -87,12 +87,12 @@ export const setTimeout = (handler, timeout) => {
   return window.setTimeout(wrapErrorHandler(handler), timeout);
 };
 
+const eventListenerCallbacks = [];
 export function on(
   elem,
   eventNames,
   callback,
   options,
-  getListenerCallback,
   reportOnce = false
 ) {
   try {
@@ -168,13 +168,36 @@ export function on(
       },
     };
     const eventListenerCallback = namedCallbacks[callbacksName];
+    const eventNamesList = eventNames.split(' ');
+    
+    const existingEventListenerCallback = eventListenerCallbacks.find(e => (
+      e.args.elem === elem &&
+      e.args.callback === callback &&
+      JSON.stringify(e.args.options) === JSON.stringify(options)
+    ));
 
-    const list = eventNames.split(' ');
-    list.forEach(function eventNamesAddEventListener(eventName) {
+    eventNamesList.forEach(function eventNamesAddEventListener(eventName) {
+      if(existingEventListenerCallback) {
+        if(existingEventListenerCallback.args.eventNamesList.includes(eventName)) {
+          return;
+        } else {
+          existingEventListenerCallback.args.eventNamesList.push(eventName);
+        }
+      }
       elem.addEventListener(eventName, eventListenerCallback, options);
     });
 
-    if (getListenerCallback) getListenerCallback(eventListenerCallback);
+    if(!existingEventListenerCallback) {
+      eventListenerCallbacks.push({
+        args: {
+          elem,
+          eventNamesList,
+          callback,
+          options,
+        },
+        callback: eventListenerCallback
+      });
+    }
   } catch (ex) {
     ex.details = {
       eventNames,
@@ -204,7 +227,20 @@ export function off(elem, eventNames, callback) {
   try {
     const list = eventNames.split(' ');
     list.forEach(function eventNamesRemoveEventListener(eventName) {
-      elem.removeEventListener(eventName, callback);
+      const eventListenerCallback = eventListenerCallbacks.find(e => (
+        e.args.elem === elem &&
+        e.args.callback === callback &&
+        e.args.eventNamesList.includes(eventName)
+      ));
+      if(!eventListenerCallback) return;
+      
+      eventListenerCallback.args.eventNamesList.splice(eventListenerCallback.args.eventNamesList.indexOf(eventName), 1);
+      
+      if (eventListenerCallback.args.eventNamesList.length === 0) {
+        eventListenerCallbacks.splice(eventListenerCallbacks.indexOf(eventListenerCallback), 1);
+      }
+
+      elem.removeEventListener(eventName, eventListenerCallback.callback, eventListenerCallback.args.options);
     });
   } catch (ex) {
     ex.details = {

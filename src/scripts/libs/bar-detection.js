@@ -1274,6 +1274,9 @@ export default class BarDetection {
     if (!this.worker) {
       this.worker = workerFromCode(workerCode);
       this.worker.onmessage = (e) => {
+        if(this.onWorkerMessageListener) {
+          return this.onWorkerMessageListener(e);
+        }
         if (e.data.id !== -1) {
           // console.warn('Ignoring old bar detection message:', e.data)
           return;
@@ -1282,6 +1285,12 @@ export default class BarDetection {
           SentryReporter.captureException(e.data.error);
         }
       };
+      this.worker.onerror = (err) => {
+        if(this.onWorkerRejectListener) {
+          return this.onWorkerRejectListener(err);
+        }
+        SentryReporter.captureException(err);
+      }
     }
 
     // Ignore previous percentages in cases: new video src, seeked or setting changed
@@ -1570,8 +1579,8 @@ export default class BarDetection {
       const stack = new Error().stack;
       const onMessagePromise = new Promise(
         function onMessagePromise(resolve, reject) {
-          this.worker.onerror = (err) => reject(err);
-          this.worker.onmessage = async (e) => {
+          this.onWorkerRejectListener = (err) => reject(err);
+          this.onWorkerMessageListener = async (e) => {
             try {
               if (e.data.id !== this.runId) {
                 // console.warn('Ignoring old bar detection percentage:',
