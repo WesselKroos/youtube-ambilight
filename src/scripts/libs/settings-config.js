@@ -110,8 +110,6 @@ const SettingsConfig = [
       { value: 2, label: 'Video' },
     ],
     manualinput: false,
-  },
-    manualinput: false,
     advanced: true,
   },
   {
