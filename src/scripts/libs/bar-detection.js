@@ -145,8 +145,7 @@ const workerCode = function () {
       // Update color vs averageColor difference in indexes
       for (let i = 0; i < colorsIndexesDiffs.length; i++) {
         if (i < includedColorsLength) {
-          const colorsIndex = colorsIndexes[i]; // Wrong?
-          const pixelOffset = colorsIndex * colorChannels;
+          const pixelOffset = i * colorChannels;
           const diff =
             Math.abs(averageColor[0] - colors[pixelOffset]) +
             Math.abs(averageColor[1] - colors[pixelOffset + 1]) +
