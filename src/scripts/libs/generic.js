@@ -41,6 +41,11 @@ export const setErrorHandler = (handler) => {
   errorHandler = handler;
 };
 
+let displayErrorHandler;
+export const setDisplayErrorHandler = (handler) => {
+  displayErrorHandler = handler;
+};
+
 const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
   if (reportOnce) {
     if (reported.includes(ex.message)) return;
@@ -48,6 +53,7 @@ const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
   }
   appendErrorStack(stack, ex);
   if (errorHandler) errorHandler(ex);
+  if (displayErrorHandler) displayErrorHandler(ex);
 };
 
 const withErrorHandler = (callback, reportOnce, stack, reported) => {

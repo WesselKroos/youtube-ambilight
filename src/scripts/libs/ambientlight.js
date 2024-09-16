@@ -133,12 +133,9 @@ export default class Ambientlight {
       );
 
       if (this.settings.enabled) {
-        try {
+        await wrapErrorHandler(async () => {
           await this.enable(true);
-        } catch (ex) {
-          console.warn('Failed to enable on launch');
-          SentryReporter.captureException(ex);
-        }
+        })();
       }
 
       return this;

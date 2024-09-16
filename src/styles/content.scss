@@ -1694,6 +1694,10 @@ html[data-ambientlight-enabled] {
     }
   }
 
+  .ytp-tooltip-text {
+    white-space: pre;
+  }
+
   svg {
     transition: transform .1s cubic-bezier(0.4,0.0,1,1);
   }
@@ -2173,6 +2177,7 @@ html[data-ambientlight-enabled] {
   .ytpa-menuitem--updates,
   .ytpa-menuitem--info,
   .ytpa-menuitem--warning {
+    position: relative;
     margin-top: -8px;
     margin-bottom: 8px;
     padding-top: 20px;
@@ -2250,6 +2255,55 @@ html[data-ambientlight-enabled] {
   .ytpa-updates {
     color: #fff;
     white-space: pre-line;
+  }
+
+  .ytpa-warning {
+    display: block;
+    width: calc(100% - 14px);
+    .ytp-big-mode & {
+      width: calc(100% - 20px);
+    }
+  }
+  .ytpa-warning-close-btn {
+    appearance: none;
+    position: absolute;
+    top: 17px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: 0;
+    padding: 2px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    border-radius: 2px;
+    
+    .ytp-big-mode & {
+      top: 25px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+    }
+
+    &::before,
+    &::after {
+      content: '';
+      height: 100%;
+      width: 2px;
+      margin: 0 -1px;
+      border-radius: 2px;
+      background: #fff;
+      transform: rotate(45deg);
+    }
+    &::after {
+      transform: rotate(-45deg);
+    }
+
+    &:hover,
+    &:focus {
+      background: rgba(0, 0, 0, .75);
+    }
   }
 
   ul {

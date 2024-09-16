@@ -8,6 +8,7 @@ import {
   VIEW_SMALL,
   VIEW_THEATER,
   VIEW_FULLSCREEN,
+  setDisplayErrorHandler,
 } from './generic';
 import SentryReporter from './sentry-reporter';
 import SettingsConfig, {
@@ -307,6 +308,11 @@ export default class Settings {
     warningSpan.className = 'ytpa-warning';
     warningSpan.rowspan = '2';
     warningLabel.appendChild(warningSpan);
+
+    const warningCloseButton = document.createElement('button');
+    warningCloseButton.className = 'ytpa-warning-close-btn';
+    warningCloseButton.title = 'Close warning';
+    warning.appendChild(warningCloseButton);
 
     const info = document.createElement('div');
     info.className = 'ytp-menuitem ytpa-menuitem--info';
@@ -660,6 +666,7 @@ export default class Settings {
     } else {
       this.menuBtnParent.prepend(this.menuBtn);
     }
+    setDisplayErrorHandler(this.onError);
 
     this.menuElem = this.createMenuElement();
 
@@ -674,6 +681,13 @@ export default class Settings {
       '.ytpa-menuitem--warning'
     );
     this.warningElem = this.warningItemElem.querySelector('.ytpa-warning');
+    this.warningCloseBtn = this.warningItemElem.querySelector(
+      '.ytpa-warning-close-btn'
+    );
+    if (this.warningCloseBtn) {
+      on(this.warningCloseBtn, 'click', () => this.setWarning());
+    }
+
     this.infoItemElem = this.menuElem.querySelector('.ytpa-menuitem--info');
     this.infoElem = this.infoItemElem.querySelector('.ytpa-info');
 
@@ -1544,6 +1558,16 @@ export default class Settings {
     this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings';
 
     this.showUpdatesMessage();
+  };
+
+  onError = (ex) => {
+    const message = ex?.message ?? typeof ex;
+    if (this.menuBtn?.classList?.contains?.('is-loading')) {
+      this.menuBtn.classList.add('has-warning');
+      this.settingsMenuBtnTooltipText.textContent = `Ambient light failed to load:\n${message}`;
+    } else {
+      this.setWarning(`An error occured:\n${message}`);
+    }
   };
 
   controlledSettings = [
