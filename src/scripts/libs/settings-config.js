@@ -522,7 +522,6 @@ Click on the questionmark for more and updated information about these artifacts
     min: 0,
     max: 200,
     step: 1,
-    advanced: true,
   },
   {
     name: 'contrast',
