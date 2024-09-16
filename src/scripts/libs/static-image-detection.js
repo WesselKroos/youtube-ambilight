@@ -1,4 +1,4 @@
-import { appendErrorStack, isNetworkError } from './generic';
+import { appendErrorStack } from './generic';
 import { workerFromCode } from './worker';
 
 const workerCode = function () {
@@ -239,18 +239,6 @@ const workerCode = function () {
         difference,
       });
     } catch (ex) {
-      if (
-        isNetworkError(ex) ||
-        ['InvalidStateError', 'SecurityError'].includes(ex?.name)
-      ) {
-        this.postMessage({
-          id,
-          baseUrl,
-          difference: 1,
-        });
-        return;
-      }
-
       this.postMessage({
         id,
         baseUrl,

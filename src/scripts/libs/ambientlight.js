@@ -525,7 +525,10 @@ export default class Ambientlight {
       if (this.chromiumBugVideoJitterWorkaround?.update)
         this.chromiumBugVideoJitterWorkaround.update();
     } catch (ex) {
-      if (!isNetworkError(ex)) {
+      if (
+        !['InvalidStateError', 'SecurityError'].includes(ex?.name) &&
+        !isNetworkError(ex)
+      ) {
         SentryReporter.captureException(ex);
       }
     }
