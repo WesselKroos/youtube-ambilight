@@ -625,11 +625,7 @@ export default class Settings {
 
   initMenu() {
     this.menuBtn = this.createMenuButton();
-    on(
-      this.menuBtn,
-      'click',
-      this.onSettingsBtnClicked
-    );
+    on(this.menuBtn, 'click', this.onSettingsBtnClicked);
 
     const settingsMenuBtnTooltip = document.createElement('div');
     settingsMenuBtnTooltip.className =
@@ -1457,10 +1453,9 @@ export default class Settings {
   menuOnCloseScrollBottom = -1;
   menuOnCloseScrollHeight = 1;
   onSettingsBtnClicked = async () => {
-    const isOpen = (
-      this.menuElem.classList.contains('is-visible') || 
-      this.menuElem.classList.contains('fade-out')
-    );
+    const isOpen =
+      this.menuElem.classList.contains('is-visible') ||
+      this.menuElem.classList.contains('fade-out');
     if (isOpen) return;
 
     while (!this.ambientlight.initializedTime) {
@@ -1486,13 +1481,8 @@ export default class Settings {
         'ytp-ambientlight-settings-shown'
       );
     }
-    
-    on(
-      document.body,
-      'click',
-      this.onCloseMenu,
-      { capture: true }
-    );
+
+    on(document.body, 'click', this.onCloseMenu, { capture: true });
 
     setTimeout(() => {
       this.scrollToWarning();
@@ -1500,12 +1490,11 @@ export default class Settings {
   };
 
   onCloseMenu = (e) => {
-    const isOpen = (
-      this.menuElem.classList.contains('is-visible') || 
-      this.menuElem.classList.contains('fade-out')
-    );
+    const isOpen =
+      this.menuElem.classList.contains('is-visible') ||
+      this.menuElem.classList.contains('fade-out');
     if (!isOpen) return;
-    
+
     if (this.menuElem === e.target || this.menuElem.contains(e.target)) return;
 
     e.stopPropagation();
@@ -1517,13 +1506,9 @@ export default class Settings {
         this.menuElem.scrollTop;
     this.menuOnCloseScrollHeight = this.menuElem.scrollHeight;
 
-    on(
-      this.menuElem,
-      'animationend',
-      this.onSettingsFadeOutEnd
-    );
+    on(this.menuElem, 'animationend', this.onSettingsFadeOutEnd);
     this.onSettingsFadeOutEndTimeout = setTimeout(() => {
-      if(!this.onSettingsFadeOutEndTimeout) return;
+      if (!this.onSettingsFadeOutEndTimeout) return;
       this.onSettingsFadeOutEndTimeout = undefined;
       this.onSettingsFadeOutEnd();
     }, 500);
@@ -2095,11 +2080,7 @@ export default class Settings {
   }
 
   scrollToWarning() {
-    if (
-      !this.warningElem.textContent ||
-      !this.scrollToWarningQueued
-    )
-      return;
+    if (!this.warningElem.textContent || !this.scrollToWarningQueued) return;
 
     this.scrollToWarningQueued = false;
     this.menuElem.scrollTo({
