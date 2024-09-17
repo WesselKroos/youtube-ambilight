@@ -26,6 +26,8 @@ import {
 import SentryReporter, { parseSettingsToSentry } from './sentry-reporter';
 import BarDetection from './bar-detection';
 import Settings, {
+  DEBANDING_BLEND_MODE_LCD,
+  DEBANDING_BLEND_MODE_OLED,
   FRAMESYNC_DECODEDFRAMES,
   FRAMESYNC_DISPLAYFRAMES,
   FRAMESYNC_VIDEOFRAMES,
@@ -2414,6 +2416,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       document.body,
       '--ytal-debanding-opacity',
       debandingStrength ? noiseOpacity : ''
+    );
+    setStyleProperty(
+      document.body,
+      '--ytal-debanding-blend-mode',
+      {
+        [DEBANDING_BLEND_MODE_LCD]: '',
+        [DEBANDING_BLEND_MODE_OLED]: 'overlay',
+      }[this.settings.debandingBlendMode]
     );
 
     performance.measure('updateStyles', {

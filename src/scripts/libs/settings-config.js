@@ -148,6 +148,25 @@ const SettingsConfig = [
     advanced: true,
   },
   {
+    name: 'debandingBlendMode',
+    label: 'Optimize debanding for',
+    questionMark: {
+      title:
+        "The normal blend mode is usefull to fix banding in dark colors on LCD's.\nBut on OLED's it's better to use the \"overlay\" blend mode to retain pure blacks.",
+    },
+    type: 'list',
+    default: 0,
+    min: 0,
+    max: 1,
+    step: 1,
+    snapPoints: [
+      { value: 0, label: 'LCD (normal)' },
+      { value: 1, label: 'OLED (overlay)' },
+    ],
+    manualinput: false,
+    advanced: true,
+  },
+  {
     type: 'section',
     label: 'Page header',
     name: 'sectionOtherPageHeaderCollapsed',
@@ -327,7 +346,8 @@ const SettingsConfig = [
     name: 'videoDebandingStrength',
     label: 'Debanding (noise)',
     questionMark: {
-      title: 'Click for more information about Dithering',
+      title:
+        'Click for more information about debanding (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.',
       href: 'https://www.lifewire.com/what-is-dithering-4686105',
     },
     type: 'list',
@@ -685,7 +705,8 @@ Click on the questionmark for more and updated information about these artifacts
     name: 'debandingStrength',
     label: 'Debanding (noise)',
     questionMark: {
-      title: 'Click for more information about Dithering',
+      title:
+        'Click for more information about (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.',
       href: 'https://www.lifewire.com/what-is-dithering-4686105',
     },
     type: 'list',

@@ -22,6 +22,9 @@ export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
 export const FRAMESYNC_VIDEOFRAMES = 2;
 
+export const DEBANDING_BLEND_MODE_LCD = 0;
+export const DEBANDING_BLEND_MODE_OLED = 1;
+
 const feedbackFormLink = getFeedbackFormLink(); // document.currentScript?.getAttribute('data-feedback-form-link')
 //  || 'https://docs.google.com/forms/d/e/1FAIpQLSe5lenJCbDFgJKwYuK_7U_s5wN3D78CEP5LYf2lghWwoE9IyA/viewform'
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
@@ -971,6 +974,7 @@ export default class Settings {
                 'pageBackgroundGreyness',
                 'videoDebandingStrength',
                 'debandingStrength',
+                'debandingBlendMode',
                 'videoShadowSize',
                 'videoShadowOpacity',
               ].some((name) => name === setting.name) ||
@@ -1442,6 +1446,12 @@ export default class Settings {
         [FRAMESYNC_DECODEDFRAMES]: 'Decoded framerate',
         [FRAMESYNC_DISPLAYFRAMES]: 'Display framerate',
         [FRAMESYNC_VIDEOFRAMES]: 'Video framerate',
+      }[value];
+    }
+    if (setting.name === 'debandingBlendMode') {
+      return {
+        [DEBANDING_BLEND_MODE_LCD]: 'LCD',
+        [DEBANDING_BLEND_MODE_OLED]: 'OLED',
       }[value];
     }
     if (setting.name === 'barSizeDetectionAverageHistorySize') {
