@@ -111,6 +111,7 @@ const SettingsConfig = [
     ],
     manualinput: false,
     advanced: true,
+    experimental: true,
   },
   {
     name: 'energySaver',
@@ -165,6 +166,7 @@ const SettingsConfig = [
     ],
     manualinput: false,
     advanced: true,
+    new: true,
   },
   {
     type: 'section',
@@ -305,6 +307,7 @@ const SettingsConfig = [
     min: 25,
     max: 200,
     step: 0.1,
+    new: true,
   },
   {
     name: 'videoScale.THEATER',
@@ -314,6 +317,7 @@ const SettingsConfig = [
     min: 25,
     max: 200,
     step: 0.1,
+    new: true,
   },
   {
     name: 'videoScale.FULLSCREEN',
@@ -323,6 +327,7 @@ const SettingsConfig = [
     min: 25,
     max: 200,
     step: 0.1,
+    new: true,
   },
   {
     name: 'videoShadowSize',
@@ -488,6 +493,7 @@ Click on the questionmark for more and updated information about these artifacts
     max: 50,
     step: 1,
     advanced: true,
+    new: true,
   },
   {
     name: 'horizontalBarsClipPercentage',

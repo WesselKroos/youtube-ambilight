@@ -101,12 +101,11 @@ contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
 });
 
 contentScript.addMessageListener(
-  'player-storyboard-spec',
+  'player-storyboard-format',
   function playerStoryboardSpec() {
-    const ytdWatchElem = getElem('ytd-watch');
-    const spec =
-      ytdWatchElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
-    contentScript.postMessage('player-storyboard-spec', spec);
+    const player = getElem('video-player');
+    const format = player?.getStoryboardFormat?.();
+    contentScript.postMessage('player-storyboard-format', format);
   }
 );
 

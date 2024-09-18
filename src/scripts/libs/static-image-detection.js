@@ -248,9 +248,9 @@ const workerCode = function () {
   };
 };
 
-const getStoryboard = (spec) => {
+const getStoryboard = (format) => {
   // eslint-disable-next-line no-unused-vars
-  const [baseUrl, _1, _2, sb] = spec.split('|').map((i) => i?.split('#'));
+  const [baseUrl, _1, _2, sb] = format.split('|').map((i) => i?.split('#'));
   if (!baseUrl?.length || !(sb?.length > 7)) return;
 
   const decodedBaseUrl = `${baseUrl[0]
@@ -277,7 +277,7 @@ let lastDifference = {
 let onMessagePromise;
 let nextGetIsWaiting = false;
 
-export const getAverageVideoFramesDifference = async (spec) => {
+export const getAverageVideoFramesDifference = async (format) => {
   if (onMessagePromise) {
     nextGetIsWaiting = true;
     while (onMessagePromise) {
@@ -286,7 +286,7 @@ export const getAverageVideoFramesDifference = async (spec) => {
     nextGetIsWaiting = false;
   }
 
-  const storyboard = await getStoryboard(spec);
+  const storyboard = await getStoryboard(format);
   if (!storyboard) return; // Failed to retrieve the storyboard data
 
   const alreadyCalculated = lastDifference.baseUrl === storyboard.baseUrl;

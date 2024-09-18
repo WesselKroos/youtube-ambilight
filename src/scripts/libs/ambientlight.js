@@ -507,15 +507,15 @@ export default class Ambientlight {
   };
 
   calculateAverageVideoFramesDifference = async () => {
-    if (!this.settings.energySaver || !this.ytdWatchElem) return;
+    if (!this.settings.energySaver || !this.videoPlayerElem) return;
 
     try {
-      const spec = await injectedScript.postAndReceiveMessage(
-        'player-storyboard-spec'
+      const format = await injectedScript.postAndReceiveMessage(
+        'player-storyboard-format'
       );
-      if (!spec) return;
+      if (!format) return;
 
-      const difference = await getAverageVideoFramesDifference(spec);
+      const difference = await getAverageVideoFramesDifference(format);
       if (difference === undefined) return;
 
       this.averageVideoFramesDifference = difference;
