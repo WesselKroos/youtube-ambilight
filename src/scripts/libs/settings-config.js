@@ -66,7 +66,6 @@ const SettingsConfig = [
     description: 'Changing this reloads the webpage',
     type: 'checkbox',
     default: true,
-    advanced: true,
   },
   {
     name: 'resolution',

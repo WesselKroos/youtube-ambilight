@@ -1,5 +1,10 @@
 import { AmbientlightError } from './sentry-reporter';
-import { ctxOptions, requestIdleCallback, wrapErrorHandler } from './generic';
+import {
+  canvasWebGLCrashTips,
+  ctxOptions,
+  requestIdleCallback,
+  wrapErrorHandler,
+} from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {
@@ -132,13 +137,9 @@ export class WebGLContext {
     }.bind(this)();
   }
 
-  setWebGLWarning(action = 'restore', reloadTip = true) {
+  setWebGLWarning(action = 'restore') {
     this.setWarning(
-      `Failed to ${action} the WebGL renderer from a GPU crash.${
-        reloadTip
-          ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.'
-          : ''
-      }\nA possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`
+      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`
     );
   }
 

@@ -1,4 +1,4 @@
-import { Canvas, ctxOptions, raf } from './generic';
+import { Canvas, canvas2DCrashTips, ctxOptions, raf } from './generic';
 import ProjectorShadow from './projector-shadow';
 
 export default class Projector2d {
@@ -35,7 +35,7 @@ export default class Projector2d {
     }
 
     this.settings.setWarning(
-      'Failed to restore the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.'
+      `Failed to restore the renderer from a GPU crash.${canvas2DCrashTips}`
     );
   };
 
@@ -44,7 +44,7 @@ export default class Projector2d {
       console.error('Projector2D context restore failed 3 times');
 
       this.settings.setWarning(
-        'Failed to restore 3 times the renderer from a GPU crash.\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.\nYou can additionallyt undo the last changed setting or reset all the settings to the default values.'
+        `Failed to restore 3 times the renderer from a GPU crash.${canvas2DCrashTips}`
       );
       return;
     }

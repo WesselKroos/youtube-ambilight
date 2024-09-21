@@ -247,7 +247,7 @@ export default class Settings {
       descriptionElem.className = 'ytpa-menuitem-description';
       labelElem.appendChild(descriptionElem);
     }
-    descriptionElem.style.color = '#fa0';
+    descriptionElem.classList.add('ytpa-menuitem-description--warning');
 
     let descriptionText = disabledText;
     if (this.webGLCrashDate) {
@@ -1680,6 +1680,10 @@ export default class Settings {
       visible: () =>
         this.detectHorizontalBarSizeEnabled ||
         this.detectVerticalBarSizeEnabled,
+    },
+    {
+      names: [`webGL`],
+      visible: () => this.advancedSettings || !this.webGL,
     },
     {
       names: [`videoScale.${VIEW_SMALL}`],

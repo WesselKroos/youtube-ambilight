@@ -2375,6 +2375,10 @@ html[data-ambientlight-enabled] {
     color: #ffffff88;
     white-space: pre-line;
 
+    &--warning {
+      color: #fa0;
+    }
+
     .ytp-fullscreen & {
       line-height: 15px;
       font-size: 13px;
@@ -2692,7 +2696,7 @@ html[data-ambientlight-enabled] {
       }
     }
   }
-  .ytpa-menuitem-description {
+  .ytpa-menuitem-description:not(.ytpa-menuitem-description--warning) {
     display: none;
   }
 }

@@ -1,5 +1,6 @@
 import SentryReporter, { AmbientlightError } from './sentry-reporter';
 import {
+  canvasWebGLCrashTips,
   ctxOptions,
   requestIdleCallback,
   SafeOffscreenCanvas,
@@ -280,13 +281,9 @@ export default class ProjectorWebGL {
       this.projectorsCount;
   };
 
-  setWebGLWarning(action = 'restore', reloadTip = true) {
+  setWebGLWarning(action = 'restore') {
     this.setWarning(
-      `Failed to ${action} the WebGL renderer from a GPU crash.${
-        reloadTip
-          ? '\nReload the page to try it again.\nOr the memory on your GPU is in use by another process.'
-          : ''
-      }\nAnother possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`
+      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`
     );
   }
 

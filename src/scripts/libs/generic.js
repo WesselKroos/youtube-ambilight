@@ -527,3 +527,16 @@ export const setStyleProperty = (elem, name, value, priority = '') => {
 
   elem.style.setProperty(name, value, priority);
 };
+
+export const canvas2DCrashTips = `
+
+Reload the webpage to try it again.
+
+Possible causes:
+- The memory of your GPU is fully used by another application.
+- You have to many YouTube webpages visible at the same time. You GPU can only render a limit amount of ambient lights at the same time.
+- You have changed a setting to a value that is incompatible with your GPU. Undo your last change and refresh the webpage. Or reset all settings with the reset button at the top right.`;
+
+export const canvasWebGLCrashTips = `${canvas2DCrashTips}
+
+Another possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`;
