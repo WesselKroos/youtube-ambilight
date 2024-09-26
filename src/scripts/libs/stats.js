@@ -991,7 +991,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
     );
   };
 
-  updateBarDetectionResult = async (
+  updateBarDetectionResult = (
     barsFound,
     horizontalBarSizeInfo,
     verticalBarSizeInfo,
@@ -1090,18 +1090,17 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
       deviates ? '#555' : percentage === undefined ? '#f80' : '#0c0';
 
     if (!this.dotsPattern) {
-      const dotsPattern = await createImageBitmap(
-        new ImageData(
-          new Uint8ClampedArray([
-            255, 50, 50, 255, 100, 0, 0, 255, 100, 0, 0, 255, 255, 50, 50, 255,
-          ]),
-          2,
-          2,
-          { colorSpace: 'srgb' }
-        )
-      );
+      const dotsCanvas = new SafeOffscreenCanvas(2, 2);
+      const dotsCtx = dotsCanvas.getContext('2d', { alpha: true });
+      dotsCtx.fillStyle = 'rgba(255, 50, 50, 255)';
+      dotsCtx.fillRect(0, 0, 1, 1);
+      dotsCtx.fillRect(1, 1, 1, 1);
+      dotsCtx.fillStyle = 'rgba(0, 0, 255, 100)';
+      dotsCtx.fillRect(0, 1, 1, 1);
+      dotsCtx.fillRect(1, 0, 1, 1);
+      this.dotsPattern = dotsCanvas.transferToImageBitmap();
       this.barDetectionDotsPattern = this.barDetectionCtx.createPattern(
-        dotsPattern,
+        this.dotsPattern,
         'repeat'
       );
     }
