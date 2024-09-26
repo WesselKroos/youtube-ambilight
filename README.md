@@ -23,6 +23,47 @@ Go to the extensions site of your browser and add the extension:
 
 [![Opera addons](https://github.com/WesselKroos/youtube-ambilight/blob/master/assets/browsers/Opera.png?raw=true)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
+## Getting Started
+### Quality
+Resolution: Adjusts the resolution of the video colors from 6.25% to 400%. Default is 100%.  
+Limit framerate (per second): Limits the framerate of the colors from 1fps to 60fps. Can also be left unlimited.  
+
+### Page header
+Shadow size: Adjust the shadow size of the page header from 0% to 100%.  
+Shadow opacity: Adjusts the opacity of the page header shadow from 0% to 100%. Only required if shadow size is enabled.
+Images opacity: Adjusts the opacity of the page header images from 0% to 100%.
+
+### Page content
+Shadow size: Adjust the shadow size of the page content from 0% to 100%.  
+Shadow opacity: Adjusts the opacity of the page content shadow from 0% to 100%. Only required if shadow size is enabled.
+Images opacity: Adjusts the opacity of the page content images from 0% to 100%.
+Buttons & boxes background opacity: Adjusts the opacity of the page content buttons and boxes background from -100% to 100%.  
+Background greyness: Adjusts the greyness of the background page content from 0% to 100%.
+Hide everything in theater mode: Removes the background youtube content when in theatre mode. Disabled by default.
+
+### Video
+Size: Adjusts the size of the video from 25% to 200% where 100% is the default size of a youtube video.  
+Shadow size: Adjust the shadow size of the video from 0% to 100%.  
+Shadow opacity: Adjusts the opacity of the video shadow from 0% to 100%. Only required if shadow size is enabled.
+
+### Remove black & colored bars
+Remove black bars[B]: Removes horizontal black bars found on the top and bottom of videos which are not the same resolution.  
+Remove black sidebars[V]: Removes vertical black bars found on the sides of videos which are not the same resolution.  
+Fill video to removed bars[H]: Fills the video to take up the whole screen to hide any black bars. Will result in a loss of certain amount of the original video screen.
+
+### Filters
+Colors: Adjust the intensity of the ambient light color from 0% to 200%
+
+### Ambient light
+Blur: Adjusts the intensity of the blurring of the ambient light from 0% to 100.  
+Spread: Adjusts how far the ambient light spreads from the video from 0% to 400%.  
+Fade in duration: Adjusts the time spent fading in between changes in the ambient light from 0 seconds to 15 seconds.  
+
+### View modes
+Enable in layouts: Adjust when the ambient light settings takes effect. Can be changed from all youtube video modes or specific ones such as theatre or fullscreen as required.
+### General
+Appearance (theme): Changes the look and feel of youtube from the light and dark modes.  
+Enabled[G]: Enable or disable the ambient light settings.
 
 ## Minimum requirements
 
