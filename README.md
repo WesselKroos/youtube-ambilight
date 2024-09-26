@@ -30,7 +30,7 @@ Limit framerate (per second): Limits the framerate of the colors from 1fps to 60
 
 ### Page header
 Shadow size: Adjust the shadow size of the page header from 0% to 100%.  
-Shadow opacity: Adjusts the opacity of the page header shadow from 0% to 100%. Only required if shadow size is enabled.
+Shadow opacity: Adjusts the opacity of the page header shadow from 0% to 100%. Only required if shadow size is enabled.  
 Images opacity: Adjusts the opacity of the page header images from 0% to 100%.
 
 ### Page content
