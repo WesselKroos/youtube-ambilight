@@ -32,8 +32,15 @@ wrapErrorHandler(function initVersionAndCrashOptions() {
 const getElem = (() => {
   const elems = {};
   return (name) => {
-    if (!elems[name]?.isConnected)
+    if (!elems[name]?.isConnected) {
+      if (elems[name] && !elems[name].isConnected) {
+        elems[name].dataset.ytalElem = name;
+      }
       elems[name] = document.querySelector(`[data-ytal-elem="${name}"]`);
+      if (elems[name]) {
+        delete elems[name].dataset.ytalElem;
+      }
+    }
     return elems[name];
   };
 })();
