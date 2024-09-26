@@ -35,10 +35,10 @@ Images opacity: Adjusts the opacity of the page header images from 0% to 100%.
 
 ### Page content
 Shadow size: Adjust the shadow size of the page content from 0% to 100%.  
-Shadow opacity: Adjusts the opacity of the page content shadow from 0% to 100%. Only required if shadow size is enabled.
+Shadow opacity: Adjusts the opacity of the page content shadow from 0% to 100%. Only required if shadow size is enabled.  
 Images opacity: Adjusts the opacity of the page content images from 0% to 100%.
 Buttons & boxes background opacity: Adjusts the opacity of the page content buttons and boxes background from -100% to 100%.  
-Background greyness: Adjusts the greyness of the background page content from 0% to 100%.
+Background greyness: Adjusts the greyness of the background page content from 0% to 100%.  
 Hide everything in theater mode: Removes the background youtube content when in theatre mode. Disabled by default.
 
 ### Video
@@ -61,6 +61,7 @@ Fade in duration: Adjusts the time spent fading in between changes in the ambien
 
 ### View modes
 Enable in layouts: Adjust when the ambient light settings takes effect. Can be changed from all youtube video modes or specific ones such as theatre or fullscreen as required.
+
 ### General
 Appearance (theme): Changes the look and feel of youtube from the light and dark modes.  
 Enabled[G]: Enable or disable the ambient light settings.
