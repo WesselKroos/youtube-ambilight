@@ -20,7 +20,7 @@
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-eslint": "^9.0.4",
     "@rollup/plugin-node-resolve": "^15.0.2",
-    "@sentry/browser": "^7.51.0",
+    "@sentry/browser": "^8.33.0",
     "babel-plugin-transform-replace-expressions": "^0.2.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.57.0",
