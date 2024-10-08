@@ -470,14 +470,14 @@ Click on the questionmark for more and updated information about these artifacts
     label: 'Detection: Certainty threshold',
     questionMark: {
       title:
-        'At 10% only full sized bars are removed.\nA higher percentage can also remove bars with squared elements in the corners \nor crop to a squared element in the center.',
+        'At 10% only clear bars are removed.\nA higher percentage can also remove bars with some elements.\nAnd an even higher percentage can crop to a squared element in the center.',
     },
     type: 'list',
-    default: 30,
+    default: 20,
     min: 10,
     max: 90,
     step: 10,
-    advanced: true,
+    // advanced: true,
   },
   {
     name: 'barSizeDetectionAllowedUnevenBarsPercentage',

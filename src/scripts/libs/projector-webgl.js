@@ -515,7 +515,7 @@ export default class ProjectorWebGL {
     if (!this.ctx) {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: true,
-        preserveDrawingBuffer: false,
+        preserveDrawingBuffer: false, // Allows the browser to swap the visible- and drawbuffers, which is faster
         premultipliedAlpha: false,
         alpha: true,
         depth: false,

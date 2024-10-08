@@ -799,7 +799,8 @@ const workerCode = function () {
       xOffset
     ) => {
       const partSizeBorderMultiplier =
-        allowedAnomaliesPercentage > 20 ? 0.6 : 0.1;
+        -0.1 + (2 * allowedAnomaliesPercentage) / 100;
+      // .1 .6 .6 .6
       // xOffset = partSizeBorderMultiplier ? xOffset * .5 : xOffset
 
       const partSize = Math.floor(
@@ -952,6 +953,9 @@ const workerCode = function () {
       // // https://www.youtube.com/watch?v=6VjYFdHMC3A&t=867s // Takes the wrong average color at 14:42 ? Not completely black
       // // https://www.youtube.com/watch?v=64FVUoGCxWw
       // // https://www.youtube.com/watch?v=37-6GeQg2xY
+
+      // Bars keep cropping long texts in the next 4 graphs (because the white space between text and orange/red bar is not seen as different?)
+      // https://youtu.be/CIQe2jdYAJ0?si=yFWu2SD5eVRSG9CB&t=366
 
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
 
@@ -1274,7 +1278,7 @@ export default class BarDetection {
     if (!this.worker) {
       this.worker = workerFromCode(workerCode);
       this.worker.onmessage = (e) => {
-        if(this.onWorkerMessageListener) {
+        if (this.onWorkerMessageListener) {
           return this.onWorkerMessageListener(e);
         }
         if (e.data.id !== -1) {
@@ -1286,11 +1290,11 @@ export default class BarDetection {
         }
       };
       this.worker.onerror = (err) => {
-        if(this.onWorkerRejectListener) {
+        if (this.onWorkerRejectListener) {
           return this.onWorkerRejectListener(err);
         }
         SentryReporter.captureException(err);
-      }
+      };
     }
 
     // Ignore previous percentages in cases: new video src, seeked or setting changed

@@ -159,7 +159,7 @@ export class WebGLContext {
     if (!this.ctx) {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
-        preserveDrawingBuffer: false,
+        preserveDrawingBuffer: false, // Allows the browser to swap the visible- and drawbuffers, which is faster
         // alpha: false, // Decreases performance on some platforms
         depth: false,
         antialias: false,
