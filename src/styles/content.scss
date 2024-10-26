@@ -1723,6 +1723,7 @@ html[data-ambientlight-enabled] {
   opacity: 0 !important;
   transition: none !important;
   pointer-events: none;
+  user-select: none;
 
   .ytp-big-mode & {
     margin-top: -8px;
