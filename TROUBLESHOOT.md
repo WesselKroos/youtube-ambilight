@@ -194,7 +194,7 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
    2. Then open the NVIDIA control panel and go to: 3D Settings > Manage 3D settings > Global settings (Or for example "Program settings > Google Chrome (chrome.exe)" if you have custom settings defined for Google Chrome. This can also be customized for other browsers)
    3. Change the setting: "Power management mode" to "Prefer maximum performance" and click on the Apply button.
    4. Restart your PC (Because sometimes changes in the NVIDIA control panel settings are not applied at runtime. This makes it impossible to fix this issue reliably without a restart.)
-   5. Open the video url: https://www.youtube.com/watch?v=rqJDO3TWnac and set the video quality to 4K 60FPS
+   5. Open the video url: https://www.youtube.com/watch?v=dIZTaFa3HUg and set the video quality to 4K 60FPS
    6. Let the video play for at least 30 seconds to validate that there is no jitter and are no frame drops anymore.
 
 2. Are you using multiple graphics cards? (For example: The integrated AMD/Intel GPU of your CPU and a dedicated NVidia/AMD/Intel GPU) Then try them one by one to see which one works the best. You can select a GPU per application in the settings of the operating system.
