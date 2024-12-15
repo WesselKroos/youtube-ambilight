@@ -487,7 +487,7 @@ Click on the questionmark for more and updated information about these artifacts
         'Higher percentages detect a more uneven bar.\nFor example: A bar is uneven when the top bar is smaller than the bottem bar.\nBut with a high percentage you also increase the risk that straight objects or lines are seen as bars.',
     },
     type: 'list',
-    default: 15,
+    default: 10,
     min: 1,
     max: 50,
     step: 1,
