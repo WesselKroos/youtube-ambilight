@@ -3581,6 +3581,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.nextFrameTime = undefined;
     this.ambientlightVideoDroppedFrameCount = 0;
     this.buffersCleared = true; // Prevent old frame from preventing the new frame from being drawn
+    this.barDetection.reset();
 
     this.checkGetImageDataAllowed();
     await this.resetSettingsIfNeeded();

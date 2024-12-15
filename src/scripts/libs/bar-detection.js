@@ -1198,8 +1198,21 @@ export default class BarDetection {
     this.ambientlight = ambientlight;
   }
 
+  reset = () => {
+    this.clear();
+
+    this.history = {
+      horizontal: [],
+      vertical: [],
+    };
+    this.current = {
+      horizontal: undefined,
+      vertical: undefined,
+    };
+    this.changes = [];
+  };
+
   clear = () => {
-    // console.log(this.runId, 'clear')
     this.runId++; // invalidate current worker processes
     if (this.worker) {
       this.worker.postMessage({
@@ -1213,17 +1226,6 @@ export default class BarDetection {
       clearTimeout(this.timeout);
       this.timeout = undefined;
     }
-    // this.continueAfterRun = false
-
-    this.history = {
-      horizontal: [],
-      vertical: [],
-    };
-    this.current = {
-      horizontal: undefined,
-      vertical: undefined,
-    };
-    this.changes = [];
   };
 
   cancel = () => {
@@ -1240,12 +1242,6 @@ export default class BarDetection {
       clearTimeout(this.timeout);
       this.timeout = undefined;
     }
-
-    // this.continueAfterRun = false
-    // this.history = {
-    //   horizontal: [],
-    //   vertical: []
-    // }
   };
 
   detect = (
@@ -1264,10 +1260,6 @@ export default class BarDetection {
     callback
   ) => {
     if (this.running) {
-      // if(!this.continueAfterRun) {
-      //   console.log('    enable continueAfterRun')
-      //   this.continueAfterRun = true
-      // }
       return;
     }
 
@@ -1760,11 +1752,6 @@ export default class BarDetection {
           if (this.runId !== runId) return;
 
           this.running = false;
-          //   if(!this.continueAfterRun) return
-
-          //   console.log('    continueAfterRun, retrigger')
-          //   this.continueAfterRun = false
-          //   this.ambientlight.scheduleBarSizeDetection()
         }),
         throttle
       );
