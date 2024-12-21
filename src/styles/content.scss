@@ -551,8 +551,34 @@ html[data-ambientlight-enabled] {
 
   /* Cosmetics - Chapters & Transcriptions & Side comments */
 
-  #header.ytd-engagement-panel-title-header-renderer {
+  #header.ytd-engagement-panel-title-header-renderer,
+  #subheader.ytd-engagement-panel-title-header-renderer {
     background: none !important;
+  }
+
+  .ytwTimelineChapterViewModelHost {
+    background: none !important;
+    backdrop-filter: blur(4px);
+  }
+
+  .ytwTimelineItemViewModelTimestamp,
+  .ytwTranscriptSegmentViewModelHost {
+    color: var(--yt-spec-text-secondary) !important;
+  }
+
+  .shelf-header-layout-wiz__title,
+  .ytChipShapeInactive,
+  .ytwTimelineItemViewModelTimestampActive,
+  .ytwTranscriptSegmentViewModelHostActive,
+  .ytwTimelineChapterViewModelTitle {
+    color: var(--yt-spec-text-primary) !important;
+  }
+  
+  .ytwTimelineItemViewModelTimestamp {
+    background-color: rgba(255,255,255,.1) !important;
+  }
+  &[dark] .ytwTimelineItemViewModelTimestamp {
+    background-color: rgba(0,0,0,.1) !important;
   }
 
   #content.ytd-engagement-panel-section-list-renderer {
@@ -634,25 +660,32 @@ html[data-ambientlight-enabled] {
     }
   }
 
-  ytd-searchbox {
-    #container.ytd-searchbox,
-    #search-icon-legacy {
+  ytd-searchbox,
+  yt-searchbox {
+    .ytSearchboxComponentSuggestionsContainer,
+    #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+    #search-icon-legacy, .ytSearchboxComponentSearchButton {
       transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s, fill .15s;
+      box-shadow: none !important;
     }
     #search,
     #search::-webkit-input-placeholder,
-    #search-clear-button yt-icon,
-    #search-icon-legacy yt-icon {
+    .ytSearchboxComponentInput::-webkit-input-placeholder,
+    #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+    #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
       transition: color .15s;
     }
     .gsst_e {
       transition: opacity .15s, filter .15s;
     }
   }
-  #masthead-container.at-top ytd-searchbox {
-    #container.ytd-searchbox,
-    #search-icon-legacy {
-      transition: color .15s, fill .15s;
+  #masthead-container.at-top {
+    ytd-searchbox,
+    yt-searchbox {
+      #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+      #search-icon-legacy, .ytSearchboxComponentSearchButton {
+        transition: color .15s, fill .15s;
+      }
     }
   }
 
@@ -664,6 +697,7 @@ html[data-ambientlight-enabled] {
     #voice-search-button,
     #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
     #buttons.ytd-masthead ytd-notification-topbar-button-renderer,
+    #buttons.ytd-masthead ytd-button-renderer,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
       &:not(:hover) button:not(:focus) yt-icon {
         @content;
@@ -673,13 +707,15 @@ html[data-ambientlight-enabled] {
 
   #masthead-container {
     #search-button-narrow,
-    ytd-notification-topbar-button-renderer {
+    ytd-notification-topbar-button-renderer,
+    ytd-button-renderer {
       color: var(--yt-spec-icon-active-other);
       
       .yt-icon-button,
       .yt-spec-icon-badge-shape,
       .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon,
-      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
+      .yt-spec-button-shape-next
       {
         color: inherit;
       }
@@ -710,24 +746,35 @@ html[data-ambientlight-enabled] {
     &.ytal-header-transparent,
     &.at-top {
       .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
+      .yt-spec-button-shape-next,
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
         color: inherit;
       }
     }
 
-    ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) #container.ytd-searchbox {
-      background: none !important;
-    }
-    ytd-searchbox:not([has-focus]):not(:focus-within) #container.ytd-searchbox {
-      // Fix short flicker from white on input focus
-      border-right: 0px solid transparent;
+    ytd-searchbox,
+    yt-searchbox {
+      &:not([has-focus]):not(:focus-within):not(:hover) {
+        #container.ytd-searchbox, .ytSearchboxComponentInputBox {
+          background: none !important;
+        }
+      }
+      &:not([has-focus]):not(:focus-within) {
+        #container.ytd-searchbox, .ytSearchboxComponentInputBox {
+          // Fix short flicker from white on input focus
+          border-right: 0px solid transparent;
+        }
+      }
     }
 
     &.at-top {
-      ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
-        .gsst_e {
-          opacity: .4;
-        }
+      ytd-searchbox,
+      yt-searchbox {
+          &:not([has-focus]):not(:focus-within):not(:hover) {
+          .gsst_e {
+            opacity: .4;
+          }
+        } 
       }
     }
   }
@@ -738,7 +785,8 @@ html[data-ambientlight-enabled] {
     &.at-top {
       --yt-button-color: #000;
       #search-button-narrow,
-      ytd-notification-topbar-button-renderer {
+      ytd-notification-topbar-button-renderer,
+      ytd-button-renderer {
         color: inherit;
       }
 
@@ -785,6 +833,7 @@ html[data-ambientlight-enabled] {
 
       ytd-topbar-menu-button-renderer,
       ytd-notification-topbar-button-renderer,
+      ytd-button-renderer,
       #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
         color: rgba(0,0,0,.4) !important;
         &:hover,
@@ -873,23 +922,48 @@ html[data-ambientlight-enabled] {
   &:not([dark]) #masthead-container {
     &.ytal-header-transparent,
     &.at-top {
-      ytd-searchbox:not(:hover):not(:focus-within) {
-        #container.ytd-searchbox {
-          box-shadow: none !important;
+      ytd-searchbox,
+      yt-searchbox {
+        &:not(:hover):not(:focus-within) {
+          .ytSearchboxComponentSuggestionsContainer,
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: transparent !important;
+            border-color: rgba(0,0,0,.1) !important;
+          }
+          #search,
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
+            color: rgba(0,0,0,.4) !important;
+          }
+          #search,
+          .ytSearchboxComponentInput {
+            &::-webkit-input-placeholder {
+              color: rgba(0,0,0,.4) !important;
+            }
+          }
         }
-        #container.ytd-searchbox,
-        #search-icon-legacy {
-          background-color: transparent !important;
-          border-color: rgba(0,0,0,.1) !important;
+          
+        &:hover,
+        &:focus-within {
+          .ytSearchboxComponentSuggestionsContainer,
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            border-color: rgba(0,0,0,.1) !important;
+          }
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: rgb(248,248,248) !important;
+          }
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon {
+            color: rgb(15,15,15) !important;
+          }
         }
-        #search,
-        #search-clear-button yt-icon,
-        #search-icon-legacy yt-icon {
-          color: rgba(0,0,0,.4) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(0,0,0,.4) !important;
-        }
+      }
+      .ytSearchboxComponentSuggestionsContainer {
+        background-color: rgb(255,255,255) !important;
+      }
+      .ytSuggestionComponentSuggestion {
+        color: rgb(15,15,15) !important;
       }
 
       #search-button-narrow {
@@ -901,20 +975,27 @@ html[data-ambientlight-enabled] {
       }
 
       ytd-masthead[dark] {
-        ytd-searchbox {
+        ytd-searchbox,
+        yt-searchbox {
           &:not(:hover):not(:focus-within) .gsst_e {
             filter: none;
           }
           
           &:hover,
           &:focus-within {
-            #search-icon-legacy {
+            #search-icon-legacy, .ytSearchboxComponentSearchButton {
               background-color: rgb(44,44,44) !important;
             }
-            #search-clear-button yt-icon {
+            #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon {
               color: rgba(255,255,255) !important;
             }
           }
+        }
+        .ytSearchboxComponentSuggestionsContainer {
+          background-color: rgb(33,33,33) !important;
+        }
+        .ytSuggestionComponentSuggestion {
+          color: rgb(241,241,241) !important;
         }
       }
     }
@@ -923,32 +1004,42 @@ html[data-ambientlight-enabled] {
   &[dark] #masthead-container {
     &.ytal-header-transparent,
     &.at-top {
-      ytd-searchbox {
+      ytd-searchbox,
+      yt-searchbox {
         &:not(:hover):not(:focus-within) {
-          #container.ytd-searchbox {
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox {
             box-shadow: none !important;
           }
-          #container.ytd-searchbox,
-          #search-icon-legacy {
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
             background-color: transparent !important;
             border-color: rgba(255,255,255,.1) !important;
           }
           #search,
-          #search-clear-button yt-icon,
-          #search-icon-legacy yt-icon {
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon, 
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
             color: rgba(255,255,255,.4) !important;
           }
-          #search::-webkit-input-placeholder {
-            color: rgba(255,255,255,.4) !important;
+          #search,
+          .ytSearchboxComponentInput {
+            &::-webkit-input-placeholder {
+              color: rgba(255,255,255,.4) !important;
+            }
           }
         }
         
         &:hover,
         &:focus-within {
-          #search-icon-legacy {
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
             background-color: rgb(44,44,44) !important;
           }
         }
+      }
+      .ytSearchboxComponentSuggestionsContainer {
+        background-color: rgb(33,33,33) !important;
+      }
+      .ytSuggestionComponentSuggestion {
+        color: rgb(241,241,241) !important;
       }
     }
   }
@@ -1447,7 +1538,7 @@ html[data-ambientlight-enabled] {
           transition: opacity .15s ease-out;
           opacity: 0;
         }
-        &.at-top:not(:hover):has(:focus-visible):not(:has(ytd-searchbox:focus-within)) {
+        &.at-top:not(:hover):has(:focus-visible):not(:has(ytd-searchbox:focus-within, yt-searchbox:focus-within)) {
           opacity: 1;
           transition: none;
           animation: masthead-focus-visible-fade-out 3s forwards;
@@ -2956,7 +3047,8 @@ html[data-ambientlight-enabled] {
     }
     
     #masthead-container.ytal-header-shadow[data-ambientlight-text-shadow] {
-      ytd-searchbox {
+      ytd-searchbox,
+      yt-searchbox {
         transition: filter .15s;
       }
       
@@ -2968,7 +3060,9 @@ html[data-ambientlight-enabled] {
         yt-icon.ytd-logo,
         yt-icon-button yt-icon svg,
         ytd-searchbox:not(:hover):not(:focus-within) #search,
+        yt-searchbox:not(:hover):not(:focus-within) #search,
         ytd-searchbox:not(:hover):not(:focus-within) yt-icon svg,
+        yt-searchbox:not(:hover):not(:focus-within) yt-icon svg,
         ytd-button-renderer yt-icon svg {
           @content;
           text-shadow: none !important;
