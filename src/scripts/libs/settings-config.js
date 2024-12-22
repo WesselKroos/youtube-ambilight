@@ -386,14 +386,14 @@ const SettingsConfig = [
   {
     name: 'chromiumBugVideoJitterWorkaround',
     label: 'Video jitter workaround',
-    description: '',
+    description: 'Uses: CPU & GPU power',
     questionMark: {
       title:
-        'Chromium has a bug that jitters the video playback when a display has a higher framerate than 60Hz.\nThis workaround prevents the jittering by forcing the browser to run at the framerate of your display instead.\nClick the questionmark for more information about this bug in Chromium browsers.\n(Btw, this workaround is only applied when a display framerate above 60Hz is detected.)',
+        'Chromium has a bug that jitters the video playback when your display \nhas a higher framerate than 60Hz. This workaround prevents the jittering \nby forcing the browser to run at the framerate of your display instead. \nClick the questionmark for more information about this bug in Chromium browsers.',
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166',
     },
     type: 'checkbox',
-    default: true,
+    default: false, // Should not be enabled by default because it also adds CPU & GPU overhead on 60Hz displays. (60Hz+ detection keeps toggling between off/on when VRR is enabled in the OS.)
     advanced: true,
   },
   {

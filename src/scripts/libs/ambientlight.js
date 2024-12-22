@@ -323,41 +323,16 @@ export default class Ambientlight {
 
       const elem = document.createElement('div');
       elem.classList.add('ambientlight__chromium-bug-video-jitter-workaround');
-      if (this.videoPlayerElem.classList.contains('playing-mode')) {
-        this.elem.appendChild(elem);
-      }
 
-      let previousDisplayFrameRateIsStableCount = 0;
-      let previousDisplayFrameRate = -1;
-      let displayFrameRateHasBeenAbove60 = false;
       const update = wrapErrorHandler(
         function chromiumBugVideoJitterWorkaroundUpdate(isPlaying) {
           if (isPlaying === undefined) {
             isPlaying = this.videoPlayerElem.classList.contains('playing-mode');
           }
 
-          if (
-            this.chromiumBugVideoJitterWorkaround?.detectingDisplayFrameRate &&
-            previousDisplayFrameRate !== this.displayFrameRate
-          ) {
-            if (previousDisplayFrameRate > this.displayFrameRate - 0.5) {
-              previousDisplayFrameRateIsStableCount++;
-            }
-
-            if (
-              this.displayFrameRate > 70 ||
-              previousDisplayFrameRateIsStableCount > 3
-            ) {
-              this.chromiumBugVideoJitterWorkaround.detectingDisplayFrameRate = false;
-              displayFrameRateHasBeenAbove60 = this.displayFrameRate > 60;
-            } else {
-              previousDisplayFrameRate = this.displayFrameRate;
-            }
-          }
-
           const enable =
-            displayFrameRateHasBeenAbove60 &&
-            this.averageVideoFramesDifference >= 0.0175 &&
+            this.averageVideoFramesDifference >=
+              this.averageVideoFramesDifference1SecondThreshold &&
             isPlaying &&
             !this.isHidden &&
             !this.videoIsHidden &&
@@ -398,11 +373,12 @@ export default class Ambientlight {
       });
 
       this.chromiumBugVideoJitterWorkaround = {
-        detectingDisplayFrameRate: true,
         elem,
         observer,
         update,
       };
+
+      update(this.videoPlayerElem.classList.contains('playing-mode'));
     } catch (ex) {
       console.warn(
         'applyChromiumBugVideoJitterWorkaround error. Continuing ambientlight initialization...'
@@ -2635,8 +2611,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
       !this.settings.frameFading &&
-      !this.settings.showFrametimes &&
-      !this.chromiumBugVideoJitterWorkaround?.detectingDisplayFrameRate
+      !this.settings.showFrametimes
     )
       return;
 
@@ -2726,10 +2701,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     );
   };
 
-  getRealFramerateLimit() {
+  averageVideoFramesDifference5SecondsThreshold = 0.002;
+  averageVideoFramesDifference1SecondThreshold = 0.0175;
+
+  getRealFramerateLimit = () => {
     if (this.limitFramerateToSaveEnergy()) {
-      if (this.averageVideoFramesDifference < 0.002) return 0.2; // 5 seconds
-      if (this.averageVideoFramesDifference < 0.0175) return 1; // 1 seconds
+      if (
+        this.averageVideoFramesDifference <
+        this.averageVideoFramesDifference5SecondsThreshold
+      )
+        return 0.2; // 5 seconds
+      if (
+        this.averageVideoFramesDifference <
+        this.averageVideoFramesDifference1SecondThreshold
+      )
+        return 1; // 1 seconds
     }
 
     const frameFading = this.settings.frameFading
@@ -2745,10 +2731,11 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           )
         : this.settings.framerateLimit;
     return realFramerateLimit;
-  }
+  };
 
   limitFramerateToSaveEnergy = () =>
-    this.averageVideoFramesDifference < 0.0175 &&
+    this.averageVideoFramesDifference <
+      this.averageVideoFramesDifference1SecondThreshold &&
     !this.sizesInvalidated &&
     !this.buffersCleared &&
     this.videoElem.currentTime > 5 &&
