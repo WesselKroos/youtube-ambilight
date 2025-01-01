@@ -938,7 +938,7 @@ export default class Settings {
               }
               this.updateVisibility();
 
-              this.ambientlight.barDetection.clear();
+              this.ambientlight.barDetection.reset();
               if (this.enabled && this.webGL) {
                 this.ambientlight.buffersCleared = true; // Force a buffer redraw because the buffer can be transferred to the bar detection worker
               }
@@ -955,7 +955,7 @@ export default class Settings {
                 'barSizeDetectionAllowedUnevenBarsPercentage',
               ].includes(setting.name)
             ) {
-              this.ambientlight.barDetection.clear();
+              this.ambientlight.barDetection.reset();
               if (this.enabled && this.webGL) {
                 this.ambientlight.buffersCleared = true; // Force a buffer redraw because the buffer can be transferred to the bar detection worker
               }
@@ -1241,7 +1241,7 @@ export default class Settings {
               'detectColoredHorizontalBarSizeEnabled',
             ].some((name) => name === setting.name)
           ) {
-            this.ambientlight.barDetection.clear();
+            this.ambientlight.barDetection.reset();
             if (this.enabled && this.webGL) {
               this.ambientlight.buffersCleared = true; // Force a buffer redraw because the buffer can be transferred to the bar detection worker
             }
