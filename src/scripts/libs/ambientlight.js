@@ -338,8 +338,8 @@ export default class Ambientlight {
             !this.videoIsHidden &&
             !(this.settings.spread === 0 && this.settings.blur2 === 0);
 
-          if (enable && elem.parentElement !== this.elem) {
-            this.elem.appendChild(elem);
+          if (enable && elem.parentElement !== this.containerElem) {
+            this.containerElem.appendChild(elem);
           } else if (!enable && elem.parentElement) {
             elem.parentElement.removeChild(elem);
           }
@@ -817,20 +817,20 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       Math.abs(rect.y - (pRect?.y || 0)) <= 2 &&
       Math.abs(rect.width - (pRect?.width || 0)) <= 2 &&
       Math.abs(rect.height - (pRect?.height || 0)) <= 2;
-    // Only triggers when the body width changes because the height is 0
-    let previousBodyRect;
-    this.bodyResizeObserver = new ResizeObserver(
-      function bodyResize(e) {
+    // Only triggers when the html width changes because the height is 0
+    let previousHtmlRect;
+    this.htmlResizeObserver = new ResizeObserver(
+      function htmlResize(e) {
         if (!this.settings.enabled || !this.isOnVideoPage) return;
 
         const rect = e[0].contentRect;
-        if (resizeTooSmall(previousBodyRect, rect)) return;
+        if (resizeTooSmall(previousHtmlRect, rect)) return;
 
-        previousBodyRect = rect;
+        previousHtmlRect = rect;
         this.resize(); // Because the video position could be shifted
       }.bind(this)
     );
-    this.bodyResizeObserver.observe(document.body);
+    this.htmlResizeObserver.observe(document.documentElement);
 
     // Makes sure the player size is recalculated after the scrollbar has been hidden
     // and the styles are recalculated.
@@ -1192,36 +1192,29 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   async initAmbientlightElems() {
     this.elem = document.createElement('div');
     this.elem.classList.add('ambientlight');
-    this.elem.style.position = 'absolute';
+
+    this.containerElem = document.createElement('div');
+    this.containerElem.classList.add('ambientlight__container');
+    this.containerElem.style.position = 'absolute';
+    this.elem.prepend(this.containerElem);
 
     if (this.mastheadElem) {
       this.topElem = document.createElement('div');
       this.topElem.classList.add('ambientlight__top');
+      this.elem.prepend(this.topElem);
     }
 
     this.clearfixElem = document.createElement('div');
     this.clearfixElem.classList.add('ambientlight__clearfix');
-
-    const contentElem = this.ytdAppElem
-      ? this.ytdAppElem.querySelector('#content.ytd-app')
-      : this.videoPlayerElem; // In embed view
-    if (contentElem.__shady_native_prepend) {
-      contentElem.__shady_native_prepend(this.elem);
-      if (this.topElem) contentElem.__shady_native_prepend(this.topElem);
-      contentElem.__shady_native_prepend(this.clearfixElem);
-    } else {
-      contentElem.prepend(this.elem);
-      if (this.topElem) contentElem.prepend(this.topElem);
-      contentElem.prepend(this.clearfixElem);
-    }
+    this.elem.prepend(this.clearfixElem);
 
     this.videoShadowElem = document.createElement('div');
     this.videoShadowElem.classList.add('ambientlight__video-shadow');
-    this.elem.prepend(this.videoShadowElem);
+    this.containerElem.prepend(this.videoShadowElem);
 
     this.filterElem = document.createElement('div');
     this.filterElem.classList.add('ambientlight__filter');
-    this.elem.prepend(this.filterElem);
+    this.containerElem.prepend(this.filterElem);
 
     if (this.enableChromiumBug1123708Workaround) {
       this.chromiumBug1123708WorkaroundElem = new Canvas(1, 1, true);
@@ -1243,7 +1236,39 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.projectorListElem.classList.add('ambientlight__projector-list');
     this.projectorsElem.prepend(this.projectorListElem);
 
+    this.appendElemToContentElem();
+
     await this.initProjector();
+  }
+
+  getContentElem = () =>
+    this.ytdAppElem
+      ? this.ytdAppElem.querySelector('#content.ytd-app')
+      : this.videoPlayerElem; // In embed view
+
+  getFullscreenContentElem() {
+    let elem = this.getContentElem();
+    if (document.fullscreenElement) {
+      if (!document.fullscreenElement.contains(elem)) {
+        elem = document.fullscreenElement;
+      }
+    }
+    return elem;
+  }
+
+  appendElemToContentElem() {
+    const contentElem = this.getContentElem();
+    if (this.elem.parentElement === contentElem) return;
+
+    contentElem.prepend(this.elem);
+  }
+
+  appendElemToFullscreenElem() {
+    const fullscreenContentElem = this.getFullscreenContentElem();
+
+    if (this.elem.parentElement === fullscreenContentElem) return;
+
+    fullscreenContentElem.prepend(this.elem);
   }
 
   initProjector = async () => {
@@ -1306,7 +1331,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   initBuffersWrapper() {
     this.buffersWrapperElem = document.createElement('div');
     this.buffersWrapperElem.classList.add('ambientlight__buffers-wrapper');
-    this.elem.appendChild(this.buffersWrapperElem);
+    this.containerElem.appendChild(this.buffersWrapperElem);
   }
 
   async initProjectorBuffers() {
@@ -1540,8 +1565,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   updateVideoScale() {
-    const videoScaleKey = `videoScale.${this.view}`;
-    let videoScale = this.settings[videoScaleKey] ?? 100;
+    let videoScale = this.isVrVideo
+      ? 100
+      : this.settings[`videoScale.${this.view}`] ?? 100;
 
     if (
       this.settings.detectVideoFillScaleEnabled &&
@@ -1550,10 +1576,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.videoPlayerElem?.offsetWidth &&
       this.videoPlayerElem?.offsetHeight
     ) {
-      const barScaleX =
-        (100 - this.settings.verticalBarsClipPercentage * 2) / 100;
-      const barScaleY =
-        (100 - this.settings.horizontalBarsClipPercentage * 2) / 100;
+      const barScaleX = this.isVrVideo
+        ? 1
+        : (100 - this.settings.verticalBarsClipPercentage * 2) / 100;
+      const barScaleY = this.isVrVideo
+        ? 1
+        : (100 - this.settings.horizontalBarsClipPercentage * 2) / 100;
       const barScaledVideoWidth = this.videoElem.offsetWidth * barScaleX;
       const barScaledVideoHeight = this.videoElem.offsetHeight * barScaleY;
 
@@ -1584,7 +1612,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     if (!document.contains(this.videoPlayerElem)) return VIEW_DETACHED;
 
-    if (this.videoPlayerElem.classList.contains('ytp-fullscreen'))
+    if (
+      document.fullscreenElement &&
+      this.videoPlayerElem.classList.contains('ytp-fullscreen')
+    )
       return VIEW_FULLSCREEN;
 
     if (this.videoPlayerElem.classList.contains('ytp-player-minimized'))
@@ -1679,6 +1710,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.videoPlayerResizeToFullscreen = this.isFullscreen;
     }
 
+    if (fullscreenChanged) {
+      if (this.isFullscreen) {
+        this.appendElemToFullscreenElem();
+      } else {
+        this.appendElemToContentElem();
+      }
+    }
+
     // Todo: Set the settings for the specific view
     // if(prevView !== this.view) {
     //   console.log('VIEW CHANGED: ', this.view)
@@ -1725,9 +1764,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.updateVideoScale();
 
     const noClipOrScale =
-      this.settings.horizontalBarsClipPercentage == 0 &&
-      this.settings.verticalBarsClipPercentage == 0 &&
-      this.videoScale == 100;
+      this.isVrVideo ||
+      (this.settings.horizontalBarsClipPercentage == 0 &&
+        this.settings.verticalBarsClipPercentage == 0 &&
+        this.videoScale == 100);
 
     const videoParentElem = this.videoElem.parentElement;
 
@@ -1747,8 +1787,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     this.barsClip = [
-      this.settings.verticalBarsClipPercentage,
-      this.settings.horizontalBarsClipPercentage,
+      this.isVrVideo ? 0 : this.settings.verticalBarsClipPercentage,
+      this.isVrVideo ? 0 : this.settings.horizontalBarsClipPercentage,
     ].map((percentage) => percentage / 100);
     this.clippedVideoScale = this.barsClip.map((clip) => 1 - clip * 2);
     this.shouldStyleVideoParentElem =
@@ -1770,14 +1810,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         scale(${this.videoScale / 100}) 
         scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `;
-      const VideoClipScale = this.clippedVideoScale.map(
+      const videoClipScale = this.clippedVideoScale.map(
         (scale) => Math.round(1000 * (1 / scale)) / 1000
       );
       setStyleProperty(
         videoParentElem,
         '--video-transform',
-        `translate(${-left}px, ${-top}px) scale(${VideoClipScale[0]}, ${
-          VideoClipScale[1]
+        `translate(${-left}px, ${-top}px) scale(${videoClipScale[0]}, ${
+          videoClipScale[1]
         })`
       );
     } else {
@@ -2530,9 +2570,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     const noClipOrScale =
-      this.settings.horizontalBarsClipPercentage == 0 &&
-      this.settings.verticalBarsClipPercentage == 0 &&
-      this.videoScale == 100;
+      this.isVrVideo ||
+      (this.settings.horizontalBarsClipPercentage == 0 &&
+        this.settings.verticalBarsClipPercentage == 0 &&
+        this.videoScale == 100);
     if (!noClipOrScale) {
       const videoParentElem = this.videoElem.parentElement;
       if (videoParentElem) {
@@ -2555,14 +2596,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     if (checkPosition) {
       const projectorsElemRect = this.getElemRect(this.projectorsElem);
-      const videoElemRect = this.getElemRect(this.videoElem);
-      const topExtraOffset = this.settings.horizontalBarsClipPercentage
-        ? videoElemRect.height *
-          (this.settings.horizontalBarsClipPercentage / 100)
-        : 0;
-      const leftExtraOffset = this.settings.verticalBarsClipPercentage
-        ? videoElemRect.width * (this.settings.verticalBarsClipPercentage / 100)
-        : 0;
+      const videoElemRect = this.getElemRect(
+        this.vrVideoElem || this.videoElem
+      );
+      const topExtraOffset =
+        !this.isVrVideo && this.settings.horizontalBarsClipPercentage
+          ? videoElemRect.height *
+            (this.settings.horizontalBarsClipPercentage / 100)
+          : 0;
+      const leftExtraOffset =
+        !this.isVrVideo && this.settings.verticalBarsClipPercentage
+          ? videoElemRect.width *
+            (this.settings.verticalBarsClipPercentage / 100)
+          : 0;
       const expectedProjectorsRect = {
         width: videoElemRect.width - leftExtraOffset * 2,
         height: videoElemRect.height - topExtraOffset * 2,
@@ -2584,13 +2630,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   getElemRect(elem) {
-    const scrollableRect = this.isFullscreen
-      ? (
-          this.ytdWatchElemFromVideo ||
-          this.playerTheaterContainerElemFromVideo ||
-          document.body
-        ).getBoundingClientRect()
-      : document.body.getBoundingClientRect();
+    const scrollableRect = (
+      this.clearfixElem.offsetParent ||
+      (this.isFullscreen ? document.fullscreenElement : document.body)
+    ).getBoundingClientRect();
     const elemRect = elem.getBoundingClientRect();
 
     return {
@@ -3344,7 +3387,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     if (this.enableMozillaBug1606251Workaround) {
-      this.elem.style.transform = `translateZ(${
+      this.containerElem.style.transform = `translateZ(${
         this.ambientlightFrameCount % 10
       }px)`;
     }

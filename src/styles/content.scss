@@ -65,8 +65,9 @@
 
 
 .ambientlight,
-.ambientlight__top,
 .ambientlight__clearfix,
+.ambientlight__top,
+.ambientlight__container,
 .ambientlight__fps-list,
 .ambientlight__video-overlay,
 .ambientlight__video-debanding,
@@ -466,7 +467,7 @@ html[data-ambientlight-enabled] {
     }
 
     &,
-    .ambientlight {
+    .ambientlight__container {
       background: #fff !important;
       background: var(--ytal-page-background) !important;
       background-color: var(--ytal-page-background) !important;
@@ -479,7 +480,7 @@ html[data-ambientlight-enabled] {
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
     }
     &,
-    .ambientlight {
+    .ambientlight__container {
       background: #000 !important;
       background: var(--ytal-page-background) !important;
       background-color: var(--ytal-page-background) !important;
@@ -1331,7 +1332,11 @@ html[data-ambientlight-enabled] {
 
   /* Ambientlight */
 
-  .ambientlight,
+  .ambientlight {
+    display: contents;
+  }
+
+  .ambientlight__container,
   .ambientlight__video-shadow,
   .ambientlight__filter,
   .ambientlight__projector-list,
@@ -1350,7 +1355,7 @@ html[data-ambientlight-enabled] {
     }
   }
 
-  .ambientlight {
+  .ambientlight__container {
     z-index: -1; // Fixes glitching in some video's in the small view in Firefox
     top: 0;
     left: 0;
@@ -1376,7 +1381,7 @@ html[data-ambientlight-enabled] {
     }
   }
   body[data-ambientlight-fixed] {
-    .ambientlight {
+    .ambientlight__container {
       position: fixed !important;
       height: 100svh;
     }
