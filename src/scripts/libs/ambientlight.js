@@ -1613,7 +1613,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (!document.contains(this.videoPlayerElem)) return VIEW_DETACHED;
 
     if (
-      document.fullscreenElement &&
+      document.fullscreenElement ||
       this.videoPlayerElem.classList.contains('ytp-fullscreen')
     )
       return VIEW_FULLSCREEN;
@@ -1710,7 +1710,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.videoPlayerResizeToFullscreen = this.isFullscreen;
     }
 
-    if (fullscreenChanged) {
+    const fullscreenElemChanged =
+      document.fullscreenElement !== this.fullscreenElem;
+    this.fullscreenElem = document.fullscreenElement;
+    if (fullscreenChanged || fullscreenElemChanged) {
       if (this.isFullscreen) {
         this.appendElemToFullscreenElem();
       } else {
@@ -2632,7 +2635,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   getElemRect(elem) {
     const scrollableRect = (
       this.clearfixElem.offsetParent ||
-      (this.isFullscreen ? document.fullscreenElement : document.body)
+      (this.isFullscreen
+        ? document.fullscreenElement || document.body
+        : document.body)
     ).getBoundingClientRect();
     const elemRect = elem.getBoundingClientRect();
 
