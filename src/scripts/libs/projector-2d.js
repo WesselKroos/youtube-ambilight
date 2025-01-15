@@ -1,4 +1,4 @@
-import { Canvas, canvas2DCrashTips, ctxOptions, raf } from './generic';
+import { Canvas, canvas2DCrashTips, ctxOptions, on, raf } from './generic';
 import ProjectorShadow from './projector-shadow';
 
 export default class Projector2d {
@@ -88,11 +88,8 @@ export default class Projector2d {
     for (let i = this.projectors.length; i < levels; i++) {
       const projectorElem = new Canvas(this.width, this.height);
       projectorElem.classList.add('ambientlight__projector');
-      projectorElem.addEventListener('contextlost', this.onProjectorCtxLost);
-      projectorElem.addEventListener(
-        'contextrestored',
-        this.onProjectorCtxRestored
-      );
+      on(projectorElem, 'contextlost', this.onProjectorCtxLost);
+      on(projectorElem, 'contextrestored', this.onProjectorCtxRestored);
 
       const projectorCtx = projectorElem.getContext('2d', ctxOptions);
       this.containerElem.prepend(projectorElem);

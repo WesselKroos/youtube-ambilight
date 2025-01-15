@@ -281,7 +281,7 @@ export default class Theming {
 
     this.liveChatIframeElem = iframeElem;
     this.updateLiveChatTheme();
-    iframeElem.addEventListener('load', () => {
+    on(iframeElem, 'load', () => {
       this.ambientlight.updateLayoutPerformanceImprovements();
       this.updateLiveChatTheme();
     });

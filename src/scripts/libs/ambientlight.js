@@ -806,11 +806,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     if (this.settings.webGL)
-      window.addEventListener(
-        'resize',
-        this.projector.handleWindowResize,
-        false
-      );
+      on(window, 'resize', this.projector.handleWindowResize, false);
 
     const resizeTooSmall = (pRect, rect) =>
       Math.abs(rect.x - (pRect?.x || 0)) <= 2 &&
@@ -2865,7 +2861,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       const message =
         ex.name === 'SecurityError'
           ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
-          : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video.\n\nError: ${ex.name}\nReason: ${ex.message}`;
+          : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`;
       this.settings.setWarning(
         `Failed to display the ambient light\n\n${message}`
       );

@@ -28,7 +28,6 @@ class ContentScript {
         true
       );
       document.addEventListener('ytal-message', this.globalListener);
-      // window.addEventListener('message', this.globalListener, true);
     }
 
     const listener = wrapErrorHandler(
@@ -55,7 +54,7 @@ class ContentScript {
 
     if (this.globalListener && this.listeners.length === 0) {
       // console.log('content removeMessageListenerGlobal', this.globalListener)
-      window.removeEventListener('message', this.globalListener, true);
+      document.removeEventListener('ytal-message', this.globalListener, true);
       this.globalListener = undefined;
     }
   };

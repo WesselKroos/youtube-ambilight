@@ -490,7 +490,7 @@ export const setWarning = (text) => {
     closeButton.style.color = '#000';
     closeButton.style.cursor = 'pointer';
     closeButton.textContent = 'x';
-    closeButton.addEventListener('click', () => setWarning(''));
+    on(closeButton, 'click', () => setWarning(''));
     elem.appendChild(closeButton);
 
     const titleElem = document.createElement('div');

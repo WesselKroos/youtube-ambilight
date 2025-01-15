@@ -54,10 +54,7 @@ class InjectedScript {
 
     if (this.globalListener && this.listeners.length === 0) {
       // console.log('injected removeMessageListenerGlobal', this.globalListener)
-      document.documentElement.removeEventListener(
-        'ytal-message',
-        this.globalListener
-      );
+      document.removeEventListener('ytal-message', this.globalListener);
       this.globalListener = undefined;
     }
   };

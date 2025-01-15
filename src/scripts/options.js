@@ -2,6 +2,7 @@ import { defaultCrashOptions, storage } from './libs/storage';
 import { syncStorage } from './libs/sync-storage';
 import { getFeedbackFormLink, getPrivacyPolicyLink } from './libs/utils';
 import SettingsConfig from './libs/settings-config';
+import { on } from './libs/generic';
 
 document.querySelector('#feedbackFormLink').href = getFeedbackFormLink();
 document.querySelector('#privacyPolicyLink').href = getPrivacyPolicyLink();
@@ -41,7 +42,7 @@ const updateCrashReportOptions = () => {
 })();
 [...document.querySelectorAll('.expandable__toggle')].forEach(
   function addExpendableToggleClickEventListener(elem) {
-    elem.addEventListener('click', () => {
+    on(elem, 'click', () => {
       elem.closest('.expandable').classList.toggle('expanded');
     });
   }
@@ -237,14 +238,14 @@ const exportSettings = async (storageName, exportJson) => {
 
 const importFileButton = document.querySelector('#importFileBtn');
 const importFileInput = document.querySelector('[name="import-settings-file"]');
-importFileInput.addEventListener('change', async () => {
+on(importFileInput, 'change', async () => {
   if (!importFileInput.files.length) return;
 
   await importSettings('a file', async () => {
     return await new Promise((resolve, reject) => {
       try {
         const reader = new FileReader();
-        reader.addEventListener('load', (e) => resolve(e.target.result));
+        on(reader, 'load', (e) => resolve(e.target.result));
         reader.readAsText(importFileInput.files[0]);
       } catch (ex) {
         reject(ex);
@@ -253,11 +254,11 @@ importFileInput.addEventListener('change', async () => {
     });
   });
 });
-importFileButton.addEventListener('click', () => importFileInput.click());
+on(importFileButton, 'click', () => importFileInput.click());
 
 let exportedSettingsLink;
 const exportFileButton = document.querySelector('#exportFileBtn');
-exportFileButton.addEventListener('click', async () => {
+on(exportFileButton, 'click', async () => {
   await exportSettings('', (jsonString) => {
     const blob = new Blob([jsonString], { type: 'text/plain' });
 
@@ -283,14 +284,14 @@ exportFileButton.addEventListener('click', async () => {
 });
 
 const importAccountButton = document.querySelector('#importAccountBtn');
-importAccountButton.addEventListener('click', async () => {
+on(importAccountButton, 'click', async () => {
   await importSettings('cloud storage', async () => {
     return await syncStorage.get('settings');
   });
 });
 
 const exportAccountButton = document.querySelector('#exportAccountBtn');
-exportAccountButton.addEventListener('click', async () => {
+on(exportAccountButton, 'click', async () => {
   await exportSettings('cloud storage', async (jsonString) => {
     await syncStorage.set('settings', jsonString);
     await syncStorage.set('settings-date', new Date().toJSON());
@@ -315,7 +316,7 @@ updateImportableAccountStatus();
 
 if (chrome?.storage?.sync?.onChanged) {
   syncStorage.addListener(updateImportableAccountStatus);
-  window.addEventListener('beforeunload', () => {
+  on(window, 'beforeunload', () => {
     syncStorage.removeListener(updateImportableAccountStatus);
   });
 }
