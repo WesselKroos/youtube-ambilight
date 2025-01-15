@@ -1106,6 +1106,16 @@ html[data-ambientlight-enabled] {
     background: var(--ytal-background) !important;
   }
 
+  /* Live chat replay panel */
+
+  .ytVideoMetadataCarouselViewModelHost {
+    background: var(--ytal-background) !important;
+  }
+  .ytCarouselTitleViewModelTitle,
+  .ytTextCarouselItemViewModelHost {
+    color: var(--yt-spec-text-primary);
+  }
+
   /* Live chat (Iframe styling in live-chat.css */
 
   ytd-live-chat-frame,
@@ -3003,6 +3013,7 @@ html[data-ambientlight-enabled] {
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
+      .ytVideoMetadataCarouselViewModelHost,
       ytd-subscription-notification-toggle-button-renderer,
 
       #{$chapters-header} yt-icon,

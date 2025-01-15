@@ -36,6 +36,7 @@ const scripts = [
   'content',
   'content-main',
   'injected',
+  'live-chat',
 ];
 
 export default scripts.map((script) =>
