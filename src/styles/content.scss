@@ -2244,10 +2244,9 @@ html[data-ambientlight-enabled] {
     }
 
     &.ytpa-menuitem--header {
-      margin-top: 0;
-      margin-bottom: 0;
-      padding-top: 5px;
-      padding-bottom: 8px;
+      margin-top: -8px;
+      margin-bottom: 8px;
+      padding: 13px 0 3px;
       cursor: default;
       &,
       &:hover {
@@ -2255,15 +2254,15 @@ html[data-ambientlight-enabled] {
       }
 
       .ytp-fullscreen & {
-        padding: 6px 0 12px;
+        padding: 18px 0 8px;
       }
 
       &:nth-child(4) {
-        margin-top: -8px;
-        padding-top: 15px;
+        margin-bottom: 0;
+        padding-bottom: 8px;
 
         .ytp-fullscreen & {
-          padding-top: 20px;
+          padding-bottom: 15px;
         }
       }
     }
