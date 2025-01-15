@@ -2089,9 +2089,10 @@ export default class Settings {
     }, 1); // Give ambient light the time to clear existing warnings
   };
 
-  setWarning = (message, optional = false, icon = true) => {
+  setWarning = (message, optional = false, icon = true, type = undefined) => {
     if (!this.menuElem || this.ambientlight.isPageHidden) {
-      this.pendingWarning = () => this.setWarning(message, optional);
+      this.pendingWarning = () =>
+        this.setWarning(message, optional, icon, type);
       return;
     } else {
       this.pendingWarning = undefined;
@@ -2099,9 +2100,11 @@ export default class Settings {
 
     if (optional && this.warningElem.textContent.length) return;
     if (this.warningElem.textContent === message) return;
+    if (!message && type && this.warningType !== type) return;
 
     this.warningItemElem.style.display = message ? '' : 'none';
     this.warningElem.textContent = message;
+    this.warningType = type;
     this.menuBtn.classList.toggle('has-warning', icon && !!message);
     this.scrollToWarningQueued = !!message;
     if (!message) return;

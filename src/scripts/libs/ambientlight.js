@@ -572,6 +572,17 @@ export default class Ambientlight {
 
         await this.optionalFrame();
       },
+      loadstart: () => {
+        this.settings.setWarning(undefined, undefined, undefined, 'encrypted');
+      },
+      encrypted: () => {
+        this.settings.setWarning(
+          'Unable to display an ambient light because YouTube has applied DRM protection to this video',
+          true,
+          true,
+          'encrypted'
+        );
+      },
       loadeddata: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return;
 
@@ -3636,11 +3647,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         }
         this.sizesChanged = true;
       } catch (ex) {
-        console.log('readyState', this.videoElem?.readyState);
-        alert(
-          `invalid readyState for VideoFrame: ${this.videoElem?.readyState}`
+        if (ex?.name === 'InvalidStateError') return;
+
+        console.warn(
+          `Failed to detect video color space:\n${
+            ex.message
+          }\n${''}(ReadyState: ${readyStateToString(
+            this.videoElem?.readyState
+          )})`
         );
-        throw ex;
       }
     }.bind(this),
     true

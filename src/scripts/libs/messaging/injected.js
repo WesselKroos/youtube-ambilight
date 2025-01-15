@@ -75,7 +75,7 @@ class InjectedScript {
     return document.dispatchEvent(event);
   }
 
-  receiveMessage = (type, timeout = 2000) =>
+  receiveMessage = (type, timeout = 3000) =>
     new Promise(function receiveMessagePromise(resolve, reject) {
       try {
         const receivedMessage = function reveicedMessage(message) {
