@@ -863,9 +863,7 @@ const workerCode = function () {
       //   return;
       // }
 
-      let start = performance.now();
       const color = getAverageColor(yAxis);
-      performance.measure('getAverageColor', { start, end: performance.now() });
       // > Used 3600kb untill now
 
       // console.log('average color', color, linesX);
@@ -897,9 +895,7 @@ const workerCode = function () {
         };
       }
 
-      start = performance.now();
       const { topEdges, bottomEdges } = detectEdges(linesX, color, yAxis);
-      performance.measure('detectEdges', { start, end: performance.now() });
 
       const maxSize = image[yAxis]; // imageLines[0].data.length / channels;
 
@@ -1121,7 +1117,6 @@ const workerCode = function () {
               (xOffsetSize - 1);
         // console.log(xOffsetSize, globalXOffsetIndex, xOffset)
 
-        const start = performance.now();
         let horizontalBarSizeInfo = detectHorizontal
           ? await workerDetectBarSize(
               id,
@@ -1150,9 +1145,6 @@ const workerCode = function () {
               xOffset
             )
           : undefined;
-
-        performance.measure('detect', { start, end: performance.now() });
-
         if (id !== globalRunId) {
           return;
         }

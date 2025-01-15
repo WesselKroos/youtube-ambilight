@@ -57,12 +57,8 @@ function updateTheme(toDark) {
 contentScript.addMessageListener(
   'update-theme',
   function onUpdateTheme(toDark) {
-    const start = performance.now();
-
     updateTheme(toDark);
-
     contentScript.postMessage('update-theme');
-    performance.measure('update-theme', { start, end: performance.now() });
   }
 );
 
@@ -77,15 +73,8 @@ function updateImmersiveMode(enable, skipVideoPlayerSetSize = false) {
 contentScript.addMessageListener(
   'update-immersive-mode',
   function onUpdateImmersiveMode(enable) {
-    const start = performance.now();
-
     updateImmersiveMode(enable);
-
     contentScript.postMessage('update-immersive-mode');
-    performance.measure('update-immersive-mode', {
-      start,
-      end: performance.now(),
-    });
   }
 );
 
@@ -136,15 +125,7 @@ function videoPlayerSetSize() {
 contentScript.addMessageListener(
   'video-player-set-size',
   function onVideoPlayerSetSize() {
-    const start = performance.now();
-
     videoPlayerSetSize();
-
-    performance.measure('video-player-set-size', {
-      start,
-      end: performance.now(),
-    });
-
     contentScript.postMessage('video-player-set-size');
   }
 );
@@ -184,8 +165,6 @@ contentScript.addMessageListener(
     relatedScrollbar,
     immersiveMode,
   }) {
-    const start = performance.now();
-
     const mastheadElem = getElem('masthead');
     if (mastheadElem) mastheadElem.classList.add('no-animation');
 
@@ -235,19 +214,11 @@ contentScript.addMessageListener(
     if (ytdAppElem) ytdAppElem.style.background = '';
 
     if (mastheadElem) mastheadElem.classList.remove('no-animation');
-
-    performance.measure('show (injected)', {
-      start,
-      end: performance.now(),
-    });
-
     contentScript.postMessage('show');
   }
 );
 
 contentScript.addMessageListener('hide', function hide({ toDark }) {
-  const start = performance.now();
-
   const mastheadElem = getElem('masthead');
   if (mastheadElem) mastheadElem.classList.add('no-animation');
 
@@ -264,12 +235,6 @@ contentScript.addMessageListener('hide', function hide({ toDark }) {
   videoPlayerSetSize();
 
   if (mastheadElem) mastheadElem.classList.remove('no-animation');
-
-  performance.measure('hide (injected)', {
-    start,
-    end: performance.now(),
-  });
-
   contentScript.postMessage('hide');
 });
 

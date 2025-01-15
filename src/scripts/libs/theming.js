@@ -202,14 +202,7 @@ export default class Theming {
   );
 
   async updateDocumentTheme(toDark) {
-    const start = performance.now();
-
     await injectedScript.postAndReceiveMessage('update-theme', toDark);
-
-    performance.measure('updateDocumentTheme', {
-      start,
-      end: performance.now(),
-    });
   }
 
   async toggleDarkTheme() {

@@ -726,23 +726,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   updateVideoPlayerSize = async () => {
-    const start = performance.now();
-
     if (this.videoPlayerSetSizePromise) {
       await this.videoPlayerSetSizePromise;
-
-      performance.measure('updateVideoPlayerSize', {
-        start,
-        end: performance.now(),
-      });
       return;
     }
 
     await injectedScript.postAndReceiveMessage('video-player-set-size');
-    performance.measure('updateVideoPlayerSize', {
-      start,
-      end: performance.now(),
-    });
   };
 
   async initListeners() {
@@ -1761,8 +1750,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   async updateSizes() {
-    const start = performance.now();
-
     await this.updateView();
     this.updateVideoScale();
 
@@ -2126,12 +2113,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     this.sizesChanged = false;
     this.buffersCleared = true;
-
-    performance.measure('updateSizes', {
-      start,
-      end: performance.now(),
-    });
-
     return true;
   }
 
@@ -2148,23 +2129,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   updateFixedStyle() {
-    const start = performance.now();
-
     const fixedLayout =
       this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' &&
       this.view === VIEW_SMALL;
     const enable = this.settings.fixedPosition || fixedLayout;
     document.body.toggleAttribute('data-ambientlight-fixed', enable);
-
-    performance.measure('updateFixedStyle', {
-      start,
-      end: performance.now(),
-    });
   }
 
   updateStyles() {
-    const start = performance.now();
-
     this.updateFixedStyle();
 
     // Page background
@@ -2444,11 +2416,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         [DEBANDING_BLEND_MODE_OLED]: 'overlay',
       }[this.settings.debandingBlendMode]
     );
-
-    performance.measure('updateStyles', {
-      start,
-      end: performance.now(),
-    });
   }
 
   resizeCanvasses() {
@@ -3605,8 +3572,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   start = async (initial = false) => {
-    const start = performance.now();
-
     if (!this.isOnVideoPage || !this.settings.enabled || this.pendingStart)
       return;
 
@@ -3642,11 +3607,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     } else {
       if (this.shouldShow()) await this.show();
     }
-
-    performance.measure('start', {
-      start,
-      end: performance.now(),
-    });
   };
 
   updateHdr = wrapErrorHandler(
@@ -3805,8 +3765,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   async show() {
     if (!this.isHidden) return;
     this.isHidden = false;
-    const start = performance.now();
-
     // await new Promise((resolve) => raf(resolve));
 
     // // Pre-style to prevent black/white flashes
@@ -3842,8 +3800,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     wrapErrorHandler(
       async function afterShow() {
-        const start = performance.now();
-
         // await new Promise((resolve) => raf(resolve));
         // // // eslint-disable-next-line no-unused-vars
         // // const _1 = this.videoElem.clientWidth;
@@ -3884,38 +3840,21 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
         if (this.chromiumBugVideoJitterWorkaround?.update)
           this.chromiumBugVideoJitterWorkaround.update();
-
-        performance.measure('afterShow', {
-          start,
-          end: performance.now(),
-        });
       }.bind(this)
     )();
-    performance.measure('show', {
-      start,
-      end: performance.now(),
-    });
   }
 
   updateAtTop = async () => {
-    const start = performance.now();
     if (this.mastheadElem)
       this.mastheadElem.classList.toggle('at-top', this.atTop);
 
     if (this.settings.webGL) await this.projector.handleAtTopChange(this.atTop);
-
-    performance.measure('updateAtTop', {
-      start,
-      end: performance.now(),
-    });
   };
 
   shouldEnableImmersiveMode = () =>
     this.settings.immersiveTheaterView && this.view === VIEW_THEATER;
 
   async updateImmersiveMode() {
-    const start = performance.now();
-
     const html = document.documentElement;
     const enabled = html.getAttribute('data-ambientlight-immersive') != null;
     const enable = this.shouldEnableImmersiveMode();
@@ -3923,9 +3862,5 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (enabled === enable) return;
 
     await injectedScript.postAndReceiveMessage('update-immersive-mode', enable);
-    performance.measure('updateImmersiveMode', {
-      start,
-      end: performance.now(),
-    });
   }
 }
