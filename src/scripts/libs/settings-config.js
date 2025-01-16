@@ -888,6 +888,10 @@ export const prepareSettingsConfigOnce = () => {
       if (!HTMLVideoElement.prototype.requestVideoFrameCallback) {
         setting.max = 1;
         setting.default = 0;
+      } else if (getBrowser() === 'Firefox') {
+        // FireFox workaround: requestVideoFrameCallback is limited to 24fps. Use decoded video frames by default instead
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1935256
+        setting.default = 0;
       }
     }
   }
