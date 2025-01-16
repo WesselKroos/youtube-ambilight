@@ -279,23 +279,37 @@ export default class Settings {
     menu.role = 'menu';
     panel.appendChild(menu);
 
-    // panelMenu.innerHTML `<div class="ytp-menuitem ytpa-menuitem--updates" title="Click to dismiss" style="display: none">
-    //   <div class="ytp-menuitem-label" rowspan="2">
-    //     <span class="ytpa-updates">${''
-    //       }<b>Changes in version ${version}:</b>
-    //       <ul>
-    //         ${getBrowser() === 'Firefox'
-    //           ? ''
-    //           : `<li>${''
-    //               }The ambient light now also supports VR/180/360 videos.\n ${''
-    //               }(Let me know when support fails on your device through the feedback link.)
-    //             </li>`}
-    //         <li>${''
-    //           }The following hotkeys have changed to prevent conflicts with the AWSD keys in VR/180/360 videos: \n- Enable/disable [A] -> [G] \n- Fill video [S] -> [H]
-    //         </li>
-    //     </ul></span>
-    //   </div>
-    // </div>`
+    const updates = document.createElement('div');
+    updates.className = 'ytp-menuitem ytpa-menuitem--updates';
+    updates.style.display = 'none';
+    updates.title = 'Click to dismiss';
+    menu.appendChild(updates);
+
+    const updatesLabel = document.createElement('div');
+    updatesLabel.className = 'ytp-menuitem-label';
+    updatesLabel.rowspan = '2';
+    updates.appendChild(updatesLabel);
+
+    const updatesSpan = document.createElement('span');
+    updatesSpan.className = 'ytpa-updates';
+    updatesLabel.appendChild(updatesSpan);
+
+    const updatesTitle = document.createElement('b');
+    updatesTitle.textContent = `Important changes in version ${version}:`;
+    updatesSpan.appendChild(updatesTitle);
+
+    const updatesList = document.createElement('ul');
+    updatesSpan.appendChild(updatesList);
+
+    const addUpdatesListItem = (text) => {
+      const updatesListItem = document.createElement('li');
+      updatesListItem.textContent = text;
+      updatesList.appendChild(updatesListItem);
+    };
+
+    addUpdatesListItem(
+      'The "Video: size" setting has been split into a size setting per view (small, theater, fullscreen)'
+    );
 
     const warning = document.createElement('div');
     warning.className = 'ytp-menuitem ytpa-menuitem--warning';
