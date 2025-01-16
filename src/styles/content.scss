@@ -65,8 +65,9 @@
 
 
 .ambientlight,
-.ambientlight__top,
 .ambientlight__clearfix,
+.ambientlight__top,
+.ambientlight__container,
 .ambientlight__fps-list,
 .ambientlight__video-overlay,
 .ambientlight__video-debanding,
@@ -113,12 +114,12 @@
   overflow: hidden;
   contain: strict;
 
-  html[data-ambientlight-enabled="true"] & {
+  html[data-ambientlight-enabled] & {
     display: block;
   }
 }
 .ambientlight__video-resolution,
-.ambientlight__ambientlight-bar-detection-duration {
+.ambientlight__ambientlight-bar-detection-fps {
   margin-top: 10px;
 }
 .ambientlight__fps-list > :not(.ambientlight__ambientlight-ft),
@@ -180,23 +181,31 @@
     bottom: 3px;
   }
 }
-
+.ambientlight__ambientlight-bar-detection-horizontal-result,
+.ambientlight__ambientlight-bar-detection-vertical-result {
+  white-space: pre;
+}
 .ambientlight__ambientlight-bar-detection-graph {
   pointer-events: auto;
   background: rgba(0, 0, 0, .85);
-  width: fit-content;
+  width: auto;
+  height: 258px;
+  border: 1px solid #000;
   max-width: 100%;
   max-height: 100%;
+  aspect-ratio: 1;
   overflow: hidden;
   resize: vertical;
+  container-name: bar-detection-graph;
+  container-type: size;
 
   canvas {
     display: block;
     height: 100%;
-    border: 1px solid #000;
+
     cursor: help;
 
-    @at-root .ambientlight__ambientlight-bar-detection-graph:not([style*="height: 1"]) canvas {
+    @container bar-detection-graph (min-width: 514px) {
       image-rendering: pixelated;
     }
   }
@@ -225,8 +234,25 @@
   }
 }
 
+html {
+  &[data-ambientlight-hide-scrollbar],
+  &[data-ambientlight-immersive] {
+    scrollbar-width: none !important;
+    body::-webkit-scrollbar {
+      display: none !important;
+    }
+  }
+}
 
-html[data-ambientlight-enabled="true"] {
+#masthead-container.no-animation {
+  &,
+  ytd-masthead,
+  #background.ytd-masthead {
+    transition: none !important;
+  }
+}
+
+html[data-ambientlight-enabled] {
   /* General */
 
   body {
@@ -293,14 +319,6 @@ html[data-ambientlight-enabled="true"] {
   &[style],
   body {
     @include scrollbar-light-thin(true);
-    
-    &[data-ambientlight-hide-scrollbar="true"],
-    &[data-ambientlight-immersive="true"] {
-      scrollbar-width: none !important;
-      body::-webkit-scrollbar {
-        display: none !important;
-      }
-    }
   }
 
   &[dark] {
@@ -447,9 +465,13 @@ html[data-ambientlight-enabled="true"] {
     @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
     }
-    background: #fff !important;
-    background: var(--ytal-page-background) !important;
-    background-color: var(--ytal-page-background) !important;
+
+    &,
+    .ambientlight__container {
+      background: #fff !important;
+      background: var(--ytal-page-background) !important;
+      background-color: var(--ytal-page-background) !important;
+    }
   }
 
   &[dark] ytd-app {
@@ -457,9 +479,12 @@ html[data-ambientlight-enabled="true"] {
     @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
     }
-    background: #000 !important;
-    background: var(--ytal-page-background) !important;
-    background-color: var(--ytal-page-background) !important;
+    &,
+    .ambientlight__container {
+      background: #000 !important;
+      background: var(--ytal-page-background) !important;
+      background-color: var(--ytal-page-background) !important;
+    }
   }
 
   ytd-masthead,
@@ -468,12 +493,6 @@ html[data-ambientlight-enabled="true"] {
   }
   #masthead-container.ytal-header-transparent ytd-masthead {
     transition: background-color .15s, box-shadow .15s;
-  }
-  #masthead-container.no-animation {
-    ytd-masthead,
-    #background.ytd-masthead {
-      transition: none !important;
-    }
   }
   #masthead-container.ytd-app::after {
     display: none;
@@ -498,12 +517,12 @@ html[data-ambientlight-enabled="true"] {
   }
   
   //Reduce theater mode flicker when switching between enabled and disabled
-  #player-theater-container, // Old theater view
-  #player-wide-container, // Second old theater view
-  // #player-full-bleed-container,
-  #full-bleed-container {
-    transition: background-color 0s .01s;
-  }
+  // #player-theater-container, // Old theater view
+  // #player-wide-container, // Second old theater view
+  // // #player-full-bleed-container,
+  // #full-bleed-container {
+  //   transition: background-color 0s .01s;
+  // }
 
   // // Covers any future updates to the html structure, but is expensive
   // @supports selector(:has(*)) {
@@ -533,8 +552,34 @@ html[data-ambientlight-enabled="true"] {
 
   /* Cosmetics - Chapters & Transcriptions & Side comments */
 
-  #header.ytd-engagement-panel-title-header-renderer {
+  #header.ytd-engagement-panel-title-header-renderer,
+  #subheader.ytd-engagement-panel-title-header-renderer {
     background: none !important;
+  }
+
+  .ytwTimelineChapterViewModelHost {
+    background: none !important;
+    backdrop-filter: blur(4px);
+  }
+
+  .ytwTimelineItemViewModelTimestamp,
+  .ytwTranscriptSegmentViewModelHost {
+    color: var(--yt-spec-text-secondary) !important;
+  }
+
+  .shelf-header-layout-wiz__title,
+  .ytChipShapeInactive,
+  .ytwTimelineItemViewModelTimestampActive,
+  .ytwTranscriptSegmentViewModelHostActive,
+  .ytwTimelineChapterViewModelTitle {
+    color: var(--yt-spec-text-primary) !important;
+  }
+  
+  .ytwTimelineItemViewModelTimestamp {
+    background-color: rgba(255,255,255,.1) !important;
+  }
+  &[dark] .ytwTimelineItemViewModelTimestamp {
+    background-color: rgba(0,0,0,.1) !important;
   }
 
   #content.ytd-engagement-panel-section-list-renderer {
@@ -616,25 +661,32 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  ytd-searchbox {
-    #container.ytd-searchbox,
-    #search-icon-legacy {
+  ytd-searchbox,
+  yt-searchbox {
+    .ytSearchboxComponentSuggestionsContainer,
+    #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+    #search-icon-legacy, .ytSearchboxComponentSearchButton {
       transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s, fill .15s;
+      box-shadow: none !important;
     }
     #search,
     #search::-webkit-input-placeholder,
-    #search-clear-button yt-icon,
-    #search-icon-legacy yt-icon {
+    .ytSearchboxComponentInput::-webkit-input-placeholder,
+    #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+    #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
       transition: color .15s;
     }
     .gsst_e {
       transition: opacity .15s, filter .15s;
     }
   }
-  #masthead-container.at-top ytd-searchbox {
-    #container.ytd-searchbox,
-    #search-icon-legacy {
-      transition: color .15s, fill .15s;
+  #masthead-container.at-top {
+    ytd-searchbox,
+    yt-searchbox {
+      #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+      #search-icon-legacy, .ytSearchboxComponentSearchButton {
+        transition: color .15s, fill .15s;
+      }
     }
   }
 
@@ -646,6 +698,7 @@ html[data-ambientlight-enabled="true"] {
     #voice-search-button,
     #buttons.ytd-masthead ytd-topbar-menu-button-renderer,
     #buttons.ytd-masthead ytd-notification-topbar-button-renderer,
+    #buttons.ytd-masthead ytd-button-renderer,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
       &:not(:hover) button:not(:focus) yt-icon {
         @content;
@@ -655,13 +708,15 @@ html[data-ambientlight-enabled="true"] {
 
   #masthead-container {
     #search-button-narrow,
-    ytd-notification-topbar-button-renderer {
+    ytd-notification-topbar-button-renderer,
+    ytd-button-renderer {
       color: var(--yt-spec-icon-active-other);
       
       .yt-icon-button,
       .yt-spec-icon-badge-shape,
       .yt-spec-icon-badge-shape--style-overlay .yt-spec-icon-badge-shape__icon,
-      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text
+      .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
+      .yt-spec-button-shape-next
       {
         color: inherit;
       }
@@ -692,24 +747,35 @@ html[data-ambientlight-enabled="true"] {
     &.ytal-header-transparent,
     &.at-top {
       .yt-spec-button-shape-next--overlay.yt-spec-button-shape-next--text,
+      .yt-spec-button-shape-next,
       #{$account-btn}:not(.yt-spec-button-shape-next--call-to-action) {
         color: inherit;
       }
     }
 
-    ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) #container.ytd-searchbox {
-      background: none !important;
-    }
-    ytd-searchbox:not([has-focus]):not(:focus-within) #container.ytd-searchbox {
-      // Fix short flicker from white on input focus
-      border-right: 0px solid transparent;
+    ytd-searchbox,
+    yt-searchbox {
+      &:not([has-focus]):not(:focus-within):not(:hover) {
+        #container.ytd-searchbox, .ytSearchboxComponentInputBox {
+          background: none !important;
+        }
+      }
+      &:not([has-focus]):not(:focus-within) {
+        #container.ytd-searchbox, .ytSearchboxComponentInputBox {
+          // Fix short flicker from white on input focus
+          border-right: 0px solid transparent;
+        }
+      }
     }
 
     &.at-top {
-      ytd-searchbox:not([has-focus]):not(:focus-within):not(:hover) {
-        .gsst_e {
-          opacity: .4;
-        }
+      ytd-searchbox,
+      yt-searchbox {
+          &:not([has-focus]):not(:focus-within):not(:hover) {
+          .gsst_e {
+            opacity: .4;
+          }
+        } 
       }
     }
   }
@@ -720,7 +786,8 @@ html[data-ambientlight-enabled="true"] {
     &.at-top {
       --yt-button-color: #000;
       #search-button-narrow,
-      ytd-notification-topbar-button-renderer {
+      ytd-notification-topbar-button-renderer,
+      ytd-button-renderer {
         color: inherit;
       }
 
@@ -767,6 +834,7 @@ html[data-ambientlight-enabled="true"] {
 
       ytd-topbar-menu-button-renderer,
       ytd-notification-topbar-button-renderer,
+      ytd-button-renderer,
       #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
         color: rgba(0,0,0,.4) !important;
         &:hover,
@@ -855,23 +923,48 @@ html[data-ambientlight-enabled="true"] {
   &:not([dark]) #masthead-container {
     &.ytal-header-transparent,
     &.at-top {
-      ytd-searchbox:not(:hover):not(:focus-within) {
-        #container.ytd-searchbox {
-          box-shadow: none !important;
+      ytd-searchbox,
+      yt-searchbox {
+        &:not(:hover):not(:focus-within) {
+          .ytSearchboxComponentSuggestionsContainer,
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: transparent !important;
+            border-color: rgba(0,0,0,.1) !important;
+          }
+          #search,
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
+            color: rgba(0,0,0,.4) !important;
+          }
+          #search,
+          .ytSearchboxComponentInput {
+            &::-webkit-input-placeholder {
+              color: rgba(0,0,0,.4) !important;
+            }
+          }
         }
-        #container.ytd-searchbox,
-        #search-icon-legacy {
-          background-color: transparent !important;
-          border-color: rgba(0,0,0,.1) !important;
+          
+        &:hover,
+        &:focus-within {
+          .ytSearchboxComponentSuggestionsContainer,
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            border-color: rgba(0,0,0,.1) !important;
+          }
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: rgb(248,248,248) !important;
+          }
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon {
+            color: rgb(15,15,15) !important;
+          }
         }
-        #search,
-        #search-clear-button yt-icon,
-        #search-icon-legacy yt-icon {
-          color: rgba(0,0,0,.4) !important;
-        }
-        #search::-webkit-input-placeholder {
-          color: rgba(0,0,0,.4) !important;
-        }
+      }
+      .ytSearchboxComponentSuggestionsContainer {
+        background-color: rgb(255,255,255) !important;
+      }
+      .ytSuggestionComponentSuggestion {
+        color: rgb(15,15,15) !important;
       }
 
       #search-button-narrow {
@@ -883,20 +976,27 @@ html[data-ambientlight-enabled="true"] {
       }
 
       ytd-masthead[dark] {
-        ytd-searchbox {
+        ytd-searchbox,
+        yt-searchbox {
           &:not(:hover):not(:focus-within) .gsst_e {
             filter: none;
           }
           
           &:hover,
           &:focus-within {
-            #search-icon-legacy {
+            #search-icon-legacy, .ytSearchboxComponentSearchButton {
               background-color: rgb(44,44,44) !important;
             }
-            #search-clear-button yt-icon {
+            #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon {
               color: rgba(255,255,255) !important;
             }
           }
+        }
+        .ytSearchboxComponentSuggestionsContainer {
+          background-color: rgb(33,33,33) !important;
+        }
+        .ytSuggestionComponentSuggestion {
+          color: rgb(241,241,241) !important;
         }
       }
     }
@@ -905,32 +1005,42 @@ html[data-ambientlight-enabled="true"] {
   &[dark] #masthead-container {
     &.ytal-header-transparent,
     &.at-top {
-      ytd-searchbox {
+      ytd-searchbox,
+      yt-searchbox {
         &:not(:hover):not(:focus-within) {
-          #container.ytd-searchbox {
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox {
             box-shadow: none !important;
           }
-          #container.ytd-searchbox,
-          #search-icon-legacy {
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
             background-color: transparent !important;
             border-color: rgba(255,255,255,.1) !important;
           }
           #search,
-          #search-clear-button yt-icon,
-          #search-icon-legacy yt-icon {
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon, 
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
             color: rgba(255,255,255,.4) !important;
           }
-          #search::-webkit-input-placeholder {
-            color: rgba(255,255,255,.4) !important;
+          #search,
+          .ytSearchboxComponentInput {
+            &::-webkit-input-placeholder {
+              color: rgba(255,255,255,.4) !important;
+            }
           }
         }
         
         &:hover,
         &:focus-within {
-          #search-icon-legacy {
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
             background-color: rgb(44,44,44) !important;
           }
         }
+      }
+      .ytSearchboxComponentSuggestionsContainer {
+        background-color: rgb(33,33,33) !important;
+      }
+      .ytSuggestionComponentSuggestion {
+        color: rgb(241,241,241) !important;
       }
     }
   }
@@ -996,6 +1106,16 @@ html[data-ambientlight-enabled="true"] {
     background: var(--ytal-background) !important;
   }
 
+  /* Live chat replay panel */
+
+  .ytVideoMetadataCarouselViewModelHost {
+    background: var(--ytal-background) !important;
+  }
+  .ytCarouselTitleViewModelTitle,
+  .ytTextCarouselItemViewModelHost {
+    color: var(--yt-spec-text-primary);
+  }
+
   /* Live chat (Iframe styling in live-chat.css */
 
   ytd-live-chat-frame,
@@ -1045,28 +1165,17 @@ html[data-ambientlight-enabled="true"] {
   }
 
   /* Like button icon (gets an incorrect theme after switching device themes 2 times) */
-  @mixin like-btn {
-    segmented-like-dislike-button-view-model,
-    ytd-segmented-like-dislike-button-renderer {
-      lottie-component path {
-        &[fill="rgb(255,255,255)"],
-        &[stroke="rgb(255,255,255)"],
-        &[fill="rgb(0,0,0)"],
-        &[stroke="rgb(0,0,0)"]
-        {
-          @content;
-        }
+  segmented-like-dislike-button-view-model,
+  ytd-segmented-like-dislike-button-renderer {
+    lottie-component path {
+      &[fill="rgb(255,255,255)"],
+      &[stroke="rgb(255,255,255)"],
+      &[fill="rgb(0,0,0)"],
+      &[stroke="rgb(0,0,0)"]
+      {
+        fill: inherit;
+        stroke: inherit;
       }
-    }
-  }
-  @include like-btn() {
-    stroke: rgba(0,0,0);
-    fill: rgba(0,0,0);
-  }
-  &[dark] {
-    @include like-btn() {
-      stroke: rgba(255,255,255);
-      fill: rgba(255,255,255);
     }
   }
 
@@ -1233,7 +1342,11 @@ html[data-ambientlight-enabled="true"] {
 
   /* Ambientlight */
 
-  .ambientlight,
+  .ambientlight {
+    display: contents;
+  }
+
+  .ambientlight__container,
   .ambientlight__video-shadow,
   .ambientlight__filter,
   .ambientlight__projector-list,
@@ -1252,7 +1365,7 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  .ambientlight {
+  .ambientlight__container {
     z-index: -1; // Fixes glitching in some video's in the small view in Firefox
     top: 0;
     left: 0;
@@ -1274,10 +1387,11 @@ html[data-ambientlight-enabled="true"] {
       top: 0;
       background: var(--ytal-debanding-background, none);
       opacity: var(--ytal-debanding-opacity, 0);
+      mix-blend-mode: var(--ytal-debanding-blend-mode, none);
     }
   }
-  body[data-ambientlight-fixed="true"] {
-    .ambientlight {
+  body[data-ambientlight-fixed] {
+    .ambientlight__container {
       position: fixed !important;
       height: 100svh;
     }
@@ -1365,7 +1479,7 @@ html[data-ambientlight-enabled="true"] {
       transition: opacity .001s;//, margin-top .2s ease-out;
     }
 
-    @at-root html[data-ambientlight-enabled="true"] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
+    @at-root html[data-ambientlight-enabled] .html5-main-video.ambientlight__chromium-bug-direct-video-overlay-workaround + .ambientlight__video-overlay {
       // Prevent Chromium from reporting dropped video frames and YouTube from lowering the video quality
       opacity: .9989999; // Chromium
 
@@ -1389,11 +1503,12 @@ html[data-ambientlight-enabled="true"] {
     
     background: var(--ytal-video-debanding-background, none);
     opacity: var(--ytal-video-debanding-opacity, 0);
+    mix-blend-mode: var(--ytal-debanding-blend-mode, none);
   }
 
   /* Immersive mode */
 
-  &[data-ambientlight-immersive="true"] {
+  &[data-ambientlight-immersive] {
     @mixin theater {
       height: calc(100vh - 169px) !important;
       max-height: calc(100vh - 169px) !important;
@@ -1438,7 +1553,7 @@ html[data-ambientlight-enabled="true"] {
           transition: opacity .15s ease-out;
           opacity: 0;
         }
-        &.at-top:not(:hover):has(:focus-visible):not(:has(ytd-searchbox:focus-within)) {
+        &.at-top:not(:hover):has(:focus-visible):not(:has(ytd-searchbox:focus-within, yt-searchbox:focus-within)) {
           opacity: 1;
           transition: none;
           animation: masthead-focus-visible-fade-out 3s forwards;
@@ -1676,11 +1791,15 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  html:not([data-ambientlight-enabled="true"]) &,
+  html:not([data-ambientlight-enabled]) &,
   &.is-loading {
     &::after {
       background-color: #555;
     }
+  }
+
+  .ytp-tooltip-text {
+    white-space: pre;
   }
 
   svg {
@@ -1699,6 +1818,7 @@ html[data-ambientlight-enabled="true"] {
   opacity: 0 !important;
   transition: none !important;
   pointer-events: none;
+  user-select: none;
 
   .ytp-big-mode & {
     margin-top: -8px;
@@ -2134,10 +2254,9 @@ html[data-ambientlight-enabled="true"] {
     }
 
     &.ytpa-menuitem--header {
-      margin-top: 0;
-      margin-bottom: 0;
-      padding-top: 5px;
-      padding-bottom: 8px;
+      margin-top: -8px;
+      margin-bottom: 8px;
+      padding: 13px 0 3px;
       cursor: default;
       &,
       &:hover {
@@ -2145,15 +2264,15 @@ html[data-ambientlight-enabled="true"] {
       }
 
       .ytp-fullscreen & {
-        padding: 6px 0 12px;
+        padding: 18px 0 8px;
       }
 
-      &:nth-child(4) {
-        margin-top: -8px;
-        padding-top: 15px;
+      &:nth-child(5) {
+        margin-bottom: 0;
+        padding-bottom: 8px;
 
         .ytp-fullscreen & {
-          padding-top: 20px;
+          padding-bottom: 15px;
         }
       }
     }
@@ -2162,6 +2281,7 @@ html[data-ambientlight-enabled="true"] {
   .ytpa-menuitem--updates,
   .ytpa-menuitem--info,
   .ytpa-menuitem--warning {
+    position: relative;
     margin-top: -8px;
     margin-bottom: 8px;
     padding-top: 20px;
@@ -2241,6 +2361,55 @@ html[data-ambientlight-enabled="true"] {
     white-space: pre-line;
   }
 
+  .ytpa-warning {
+    display: block;
+    width: calc(100% - 14px);
+    .ytp-big-mode & {
+      width: calc(100% - 20px);
+    }
+  }
+  .ytpa-warning-close-btn {
+    appearance: none;
+    position: absolute;
+    top: 17px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: 0;
+    padding: 2px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    border-radius: 2px;
+    
+    .ytp-big-mode & {
+      top: 25px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+    }
+
+    &::before,
+    &::after {
+      content: '';
+      height: 100%;
+      width: 2px;
+      margin: 0 -1px;
+      border-radius: 2px;
+      background: #fff;
+      transform: rotate(45deg);
+    }
+    &::after {
+      transform: rotate(-45deg);
+    }
+
+    &:hover,
+    &:focus {
+      background: rgba(0, 0, 0, .75);
+    }
+  }
+
   ul {
     margin: 0;
     padding: 0;
@@ -2301,6 +2470,10 @@ html[data-ambientlight-enabled="true"] {
     color: #ffffff88;
     white-space: pre-line;
 
+    &--warning {
+      color: #fa0;
+    }
+
     .ytp-fullscreen & {
       line-height: 15px;
       font-size: 13px;
@@ -2319,6 +2492,10 @@ html[data-ambientlight-enabled="true"] {
   }
   .ytpa-menuitem--header .ytp-menuitem-content {
     flex-grow: 1;
+  }
+
+  &.ytp-settings-menu .ytp-menuitem-value {
+    white-space: pre;
   }
 
   .ytp-menuitem {
@@ -2614,7 +2791,7 @@ html[data-ambientlight-enabled="true"] {
       }
     }
   }
-  .ytpa-menuitem-description {
+  .ytpa-menuitem-description:not(.ytpa-menuitem-description--warning) {
     display: none;
   }
 }
@@ -2630,7 +2807,7 @@ html[data-ambientlight-enabled="true"] {
 
 /* injected.js Ambientlight.updateStyles variables */
 
-html[data-ambientlight-enabled="true"] {
+html[data-ambientlight-enabled] {
   // Video shadow
   .ambientlight__video-shadow {
     background: var(--ytal-video-shadow-background, none) !important;
@@ -2836,6 +3013,7 @@ html[data-ambientlight-enabled="true"] {
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
+      .ytVideoMetadataCarouselViewModelHost,
       ytd-subscription-notification-toggle-button-renderer,
 
       #{$chapters-header} yt-icon,
@@ -2884,7 +3062,8 @@ html[data-ambientlight-enabled="true"] {
     }
     
     #masthead-container.ytal-header-shadow[data-ambientlight-text-shadow] {
-      ytd-searchbox {
+      ytd-searchbox,
+      yt-searchbox {
         transition: filter .15s;
       }
       
@@ -2896,7 +3075,9 @@ html[data-ambientlight-enabled="true"] {
         yt-icon.ytd-logo,
         yt-icon-button yt-icon svg,
         ytd-searchbox:not(:hover):not(:focus-within) #search,
+        yt-searchbox:not(:hover):not(:focus-within) #search,
         ytd-searchbox:not(:hover):not(:focus-within) yt-icon svg,
+        yt-searchbox:not(:hover):not(:focus-within) yt-icon svg,
         ytd-button-renderer yt-icon svg {
           @content;
           text-shadow: none !important;
@@ -3094,78 +3275,25 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
+  // Load more shorts button
+
+  .button-container.ytd-rich-shelf-renderer {
+    background: none !important;
+    backdrop-filter: blur(5px);
+  }
+}
+
   
-  // Limit related videos to scrollable list with a height of 100vh
+// Limit related videos to scrollable list with a height of 100vh
 
-  &[data-ambientlight-related-scrollbar] {
-    ytd-watch-flexy[flexy][is-two-columns_] {
-      #secondary-inner.ytd-watch-flexy {
-        height: 100%;
-        min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
-      }
-
-      #related.ytd-watch-flexy {
-        position: sticky;
-        top: 80px;
-        height: calc(100vh - 104px);
-        overflow-x: hidden;
-        overflow-y: auto;
-        &:hover {
-          will-change: scroll-position;
-        }
-
-        @include scrollbar-light-thin;
-        &:not(:hover) {
-          &::-webkit-scrollbar-thumb:not(:hover) {
-            background-color: transparent;
-          }
-          scrollbar-color: transparent transparent !important;
-        }
-
-        #left-arrow.yt-horizontal-list-renderer {
-          align-items: flex-start;
-          left: 4px;
-        }
-        #right-arrow.yt-horizontal-list-renderer {
-          align-items: flex-end;
-          right: 4px;
-        }
-      }
-    }
-    &[dark] ytd-watch-flexy[flexy][is-two-columns_] #related.ytd-watch-flexy {
-      @include scrollbar-dark-thin;
-      &:not(:hover) {
-        &::-webkit-scrollbar-thumb:not(:hover) {
-          background-color: transparent;
-        }
-        scrollbar-color: transparent transparent !important;
-      }
+html[data-ambientlight-related-scrollbar] {
+  ytd-watch-flexy[flexy][is-two-columns_] {
+    #secondary-inner.ytd-watch-flexy {
+      height: 100%;
+      min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
     }
 
-    ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
-      position: sticky;
-      bottom: 0;
-      margin-top: auto;
-
-      #below {
-        height: calc(100vh - 56px);
-        overflow-x: hidden;
-        overflow-y: auto;
-        &:hover {
-          will-change: scroll-position;
-        }
-  
-        @include scrollbar-light-thin;
-        &:not(:hover) {
-          &::-webkit-scrollbar-thumb:not(:hover) {
-            background-color: transparent;
-          }
-          scrollbar-color: transparent transparent !important;
-        }
-      }
-    }
-
-    ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    #related.ytd-watch-flexy {
       position: sticky;
       top: 80px;
       height: calc(100vh - 104px);
@@ -3182,10 +3310,41 @@ html[data-ambientlight-enabled="true"] {
         }
         scrollbar-color: transparent transparent !important;
       }
+
+      #left-arrow.yt-horizontal-list-renderer {
+        align-items: flex-start;
+        left: 4px;
+      }
+      #right-arrow.yt-horizontal-list-renderer {
+        align-items: flex-end;
+        right: 4px;
+      }
     }
-    &[dark] ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]),
-    &[dark] ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) #below {
-      @include scrollbar-dark-thin;
+  }
+  &[dark] ytd-watch-flexy[flexy][is-two-columns_] #related.ytd-watch-flexy {
+    @include scrollbar-dark-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
+  }
+
+  ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+
+    #below {
+      height: calc(100vh - 56px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      &:hover {
+        will-change: scroll-position;
+      }
+
+      @include scrollbar-light-thin;
       &:not(:hover) {
         &::-webkit-scrollbar-thumb:not(:hover) {
           background-color: transparent;
@@ -3195,10 +3354,32 @@ html[data-ambientlight-enabled="true"] {
     }
   }
 
-  // Load more shorts button
+  ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) {
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 104px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    &:hover {
+      will-change: scroll-position;
+    }
 
-  .button-container.ytd-rich-shelf-renderer {
-    background: none !important;
-    backdrop-filter: blur(5px);
+    @include scrollbar-light-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
+  }
+  &[dark] ytd-watch-grid:not([default-layout]) #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]),
+  &[dark] ytd-watch-grid[default-layout] #primary.ytd-watch-grid:has(ytd-watch-next-secondary-results-renderer[is-watch-next-grid]) #below {
+    @include scrollbar-dark-thin;
+    &:not(:hover) {
+      &::-webkit-scrollbar-thumb:not(:hover) {
+        background-color: transparent;
+      }
+      scrollbar-color: transparent transparent !important;
+    }
   }
 }

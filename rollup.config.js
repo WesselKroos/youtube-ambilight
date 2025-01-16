@@ -1,7 +1,7 @@
-import resolve from '@rollup/plugin-node-resolve'
-import babel from '@rollup/plugin-babel'
-import eslint from '@rollup/plugin-eslint'
-import fs from 'fs'
+import resolve from '@rollup/plugin-node-resolve';
+import babel from '@rollup/plugin-babel';
+import eslint from '@rollup/plugin-eslint';
+import fs from 'fs';
 
 const common = {
   context: 'window',
@@ -15,24 +15,41 @@ const common = {
       plugins: [
         ['@babel/plugin-proposal-class-properties', { loose: true }],
         '@babel/plugin-proposal-optional-chaining',
-        ['babel-plugin-transform-replace-expressions', {
-          replace: {
-            "instrumentFetch()": "window", // Removes Sentry iframe injection
-            "getNativeFetchImplementation()": "window.fetch", // Removes Sentry iframe injection
-          }
-        }]
+        [
+          'babel-plugin-transform-replace-expressions',
+          {
+            replace: {
+              'instrumentFetch()': 'window', // Removes Sentry iframe injection
+              'getNativeFetchImplementation()': 'window.fetch', // Removes Sentry iframe injection
+              'globalThis.BARDETECTION_EDGE_RANGE': '32',
+            },
+          },
+        ],
       ],
-    })
-  ]
-}
+    }),
+  ],
+};
 
-const scripts = ['background', 'options', 'content', 'injected']
+const scripts = [
+  'background',
+  'options',
+  'content',
+  'content-main',
+  'injected',
+  'live-chat',
+];
 
-export default scripts.map(script => Object.assign({}, {
-  input:  `./src/scripts/${script}.js`,
-  output:  {
-    file: `./dist/scripts/${script}.js`,
-    format: 'iife',
-    intro: fs.readFileSync('./src/scripts/intros/console.js', 'utf8')
- }
-}, common))
+export default scripts.map((script) =>
+  Object.assign(
+    {},
+    {
+      input: `./src/scripts/${script}.js`,
+      output: {
+        file: `./dist/scripts/${script}.js`,
+        format: 'iife',
+        intro: fs.readFileSync('./src/scripts/intros/console.js', 'utf8'),
+      },
+    },
+    common
+  )
+);

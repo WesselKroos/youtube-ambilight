@@ -1,20 +1,20 @@
-import { appendErrorStack, isNetworkError } from "./generic";
-import { workerFromCode } from "./worker";
+import { appendErrorStack } from './generic';
+import { workerFromCode } from './worker';
 
 const workerCode = function () {
   // This is a copy of the SafeOffscreenCanvas in generic.js because this is inside a worker
   class SafeOffscreenCanvas {
     constructor(width, height, pixelated) {
-      if(typeof OffscreenCanvas !== 'undefined') {
-        return new OffscreenCanvas(width, height)
+      if (typeof OffscreenCanvas !== 'undefined') {
+        return new OffscreenCanvas(width, height);
       } else {
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
         if (pixelated) {
-          canvas.style.imageRendering = 'pixelated'
+          canvas.style.imageRendering = 'pixelated';
         }
-        return canvas
+        return canvas;
       }
     }
   }
@@ -27,32 +27,41 @@ const workerCode = function () {
     const blob = await response.blob();
     const bitmap = await createImageBitmap(blob);
 
-    if(!canvas) {
+    if (!canvas) {
       canvas = new SafeOffscreenCanvas(bitmap.width, bitmap.height);
-      ctx = canvas.getContext('2d');
-    } else if(
+      ctx = canvas.getContext('2d', {
+        willReadFrequently: true,
+      });
+    } else if (
       canvas.width !== bitmap.width ||
       canvas.height !== bitmap.height
     ) {
-      canvas.width = bitmap.width
-      canvas.height = bitmap.height
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
     }
     ctx.drawImage(bitmap, 0, 0);
 
     // const width = bitmap.width / storyboard.x
     // const height = bitmap.height / storyboard.y
-    const imageDatas = []
-    for(let yi = 0; yi < storyboard.y; yi++) {
-      for(let xi = 0; xi < storyboard.x; xi++) {
-        const i = (storyboard.x * storyboard.y * page) + (storyboard.x * yi) + xi;
-        if(i >= storyboard.images) break;
+    const imageDatas = [];
+    for (let yi = 0; yi < storyboard.y; yi++) {
+      for (let xi = 0; xi < storyboard.x; xi++) {
+        const i = storyboard.x * storyboard.y * page + storyboard.x * yi + xi;
+        if (i >= storyboard.images) break;
 
-        imageDatas.push(ctx.getImageData(xi * storyboard.width, yi * storyboard.height, storyboard.width, storyboard.height));
+        imageDatas.push(
+          ctx.getImageData(
+            xi * storyboard.width,
+            yi * storyboard.height,
+            storyboard.width,
+            storyboard.height
+          )
+        );
       }
     }
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     return imageDatas;
-  }
+  };
 
   // // On a scale from 0 till 1
   // const getImageDataDifference = (image1, image2) => {
@@ -92,7 +101,7 @@ const workerCode = function () {
   //   let diffSum = 0;
   //   for(let i = 0; i < image1.data.length; i += 4) {
   //     const diff = Math.abs(
-  //       rgbToLuminance(image1.data[i] / 255, image1.data[i+1] / 255, image1.data[i+2] / 255) 
+  //       rgbToLuminance(image1.data[i] / 255, image1.data[i+1] / 255, image1.data[i+2] / 255)
   //       - rgbToLuminance(image2.data[i] / 255, image2.data[i+1] / 255, image2.data[i+2] / 255)
   //     );
   //     diffSum += diff;
@@ -116,7 +125,7 @@ const workerCode = function () {
   // };
   const getImageDataDifference = (image1, image2) => {
     const diffs = [];
-    for(let i = 0; i < image1.data.length; i += 4) {
+    for (let i = 0; i < image1.data.length; i += 4) {
       // let diff = Math.max(
       //   Math.abs(sRGBtoLin(image1.data[i]   / 255) - sRGBtoLin(image2.data[i]   / 255)),
       //   Math.abs(sRGBtoLin(image1.data[i+1] / 255) - sRGBtoLin(image2.data[i+1] / 255)),
@@ -128,9 +137,23 @@ const workerCode = function () {
       //   0.0722 * Math.abs(sRGBtoLin(image1.data[i+2] / 255) - sRGBtoLin(image2.data[i+2] / 255))
       // )
       diffs.push(
-        0.2126 * Math.max(0, Math.abs(image1.data[i]   / 255 - image2.data[i]   / 255) - .03) +
-        0.7152 * Math.max(0, Math.abs(image1.data[i+1] / 255 - image2.data[i+1] / 255) - .03) +
-        0.0722 * Math.max(0, Math.abs(image1.data[i+2] / 255 - image2.data[i+2] / 255) - .03)
+        0.2126 *
+          Math.max(
+            0,
+            Math.abs(image1.data[i] / 255 - image2.data[i] / 255) - 0.03
+          ) +
+          0.7152 *
+            Math.max(
+              0,
+              Math.abs(image1.data[i + 1] / 255 - image2.data[i + 1] / 255) -
+                0.03
+            ) +
+          0.0722 *
+            Math.max(
+              0,
+              Math.abs(image1.data[i + 2] / 255 - image2.data[i + 2] / 255) -
+                0.03
+            )
       );
       // diffs.push(
       //   0.2126 * Math.max(0, Math.abs(sRGBtoLin(image1.data[i]   / 255) - sRGBtoLin(image2.data[i]   / 255)) - .03) +
@@ -143,9 +166,9 @@ const workerCode = function () {
     //   .sort((a, b) => a - b)
     //   .slice(Math.floor(diffs.length / 8), Math.floor((diffs.length / 8) * 7))
     //   .reduce((i, sum) => sum + i, 0)
-    
+
     let diffSum = 0;
-    for(let diff of diffs) {
+    for (let diff of diffs) {
       diffSum += diff;
     }
     const diff = diffSum / diffs.length;
@@ -154,7 +177,7 @@ const workerCode = function () {
 
   const getStoryboardPageDifferences = (imageDatas) => {
     const diffs = [];
-    for(let i = 1; i < imageDatas.length; i++) {
+    for (let i = 1; i < imageDatas.length; i++) {
       diffs.push(getImageDataDifference(imageDatas[i - 1], imageDatas[i]));
     }
     return diffs;
@@ -163,157 +186,159 @@ const workerCode = function () {
   const getAverageVideoFramesDifference = async (storyboard) => {
     let pages = (storyboard.images - 1) / (storyboard.x * storyboard.y);
     // Only pick the last page if >= 67% is filled with images
-    if(pages > 3) {
-      if(pages % Math.floor(pages) >= 0.67) pages -= 1;
+    if (pages > 3) {
+      if (pages % Math.floor(pages) >= 0.67) pages -= 1;
       pages = Math.floor(pages);
     } else {
-      pages = Math.ceil(pages)
+      pages = Math.ceil(pages);
     }
 
-    const secondPage = pages > 3 ? Math.min(1, pages) : 0
-    const middlePage = Math.floor((pages - 1) / 2)
-    const secondlastPage = pages > 4 ? (pages - 2): (pages - 1)
+    const secondPage = pages > 3 ? Math.min(1, pages) : 0;
+    const middlePage = Math.floor((pages - 1) / 2);
+    const secondlastPage = pages > 4 ? pages - 2 : pages - 1;
 
-    const secondPageImageDatasPromise = getStoryboardPageImageDatas(storyboard, secondPage);
-    const middlePageImageDatasPromise = (middlePage > secondPage && middlePage < secondlastPage) ? getStoryboardPageImageDatas(storyboard, middlePage) : [];
-    const secondlastPageImageDatasPromise = (secondlastPage >= middlePage) ? getStoryboardPageImageDatas(storyboard, secondlastPage): [];
-    
+    const secondPageImageDatasPromise = getStoryboardPageImageDatas(
+      storyboard,
+      secondPage
+    );
+    const middlePageImageDatasPromise =
+      middlePage > secondPage && middlePage < secondlastPage
+        ? getStoryboardPageImageDatas(storyboard, middlePage)
+        : [];
+    const secondlastPageImageDatasPromise =
+      secondlastPage >= middlePage
+        ? getStoryboardPageImageDatas(storyboard, secondlastPage)
+        : [];
+
     const secondPageImageDatas = await secondPageImageDatasPromise;
     const middlePageImageDatas = await middlePageImageDatasPromise;
     const secondlastPageImageDatas = await secondlastPageImageDatasPromise;
 
-    const imageDatas = [...secondPageImageDatas, ...middlePageImageDatas, ...secondlastPageImageDatas];
+    const imageDatas = [
+      ...secondPageImageDatas,
+      ...middlePageImageDatas,
+      ...secondlastPageImageDatas,
+    ];
     const differences = getStoryboardPageDifferences(imageDatas);
 
-    const averageDifference = differences.reduce((diffs, diff) => diffs + diff, 0) / differences.length;
+    const averageDifference =
+      differences.reduce((diffs, diff) => diffs + diff, 0) / differences.length;
     return averageDifference;
-  }
+  };
 
   this.onmessage = async (e) => {
     const id = e.data.id;
     const baseUrl = e.data.storyboard.baseUrl;
     try {
-      const difference = await getAverageVideoFramesDifference(e.data.storyboard)
-      this.postMessage({ 
-        id,
-        baseUrl,
-        difference
-      })
-    } catch(ex) {
-      if (
-        isNetworkError(ex) ||
-        [
-          'InvalidStateError', 
-          'SecurityError'
-        ].includes(ex?.name)
-      ) {
-        this.postMessage({
-          id,
-          baseUrl,
-          difference: 1
-        })
-        return
-      }
-
+      const difference = await getAverageVideoFramesDifference(
+        e.data.storyboard
+      );
       this.postMessage({
         id,
         baseUrl,
-        error: ex
-      })
+        difference,
+      });
+    } catch (ex) {
+      this.postMessage({
+        id,
+        baseUrl,
+        error: ex,
+      });
     }
-  }
+  };
 };
 
-const getStoryboard = (ytdWatchElem) => {
-  const spec = ytdWatchElem?.playerData?.storyboards?.playerStoryboardSpecRenderer?.spec;
-  if(!spec) return
-
+const getStoryboard = (format) => {
   // eslint-disable-next-line no-unused-vars
-  const [baseUrl, _1, _2, sb] = spec
-    .split('|')
-    .map(i => i?.split('#'));
-  if(!baseUrl?.length || !(sb?.length > 7)) return
+  const [baseUrl, _1, _2, sb] = format.split('|').map((i) => i?.split('#'));
+  if (!baseUrl?.length || !(sb?.length > 7)) return;
 
-  const decodedBaseUrl = `${baseUrl[0].replace('$L','2').replace('$N', sb[6])}&sigh=${decodeURIComponent(sb[7])}`;
-  const width = Math.round(parseInt(sb[0], 10) / 10) * 10 // Round because it's sometimes for example 159 or 161 instead of 160
-  const height = Math.round(parseInt(sb[1], 10) / 10) * 10
+  const decodedBaseUrl = `${baseUrl[0]
+    .replace('$L', '2')
+    .replace('$N', sb[6])}&sigh=${decodeURIComponent(sb[7])}`;
+  const width = Math.round(parseInt(sb[0], 10) / 10) * 10; // Round because it's sometimes for example 159 or 161 instead of 160
+  const height = Math.round(parseInt(sb[1], 10) / 10) * 10;
   return {
     baseUrl: decodedBaseUrl,
     width,
     height,
     images: parseInt(sb[2], 10),
     x: parseInt(sb[3], 10),
-    y: parseInt(sb[4], 10)
-  }
-}
+    y: parseInt(sb[4], 10),
+  };
+};
 
 let worker;
 let workerMessageId = 0;
 let lastDifference = {
   baseUrl: undefined,
-  value: 1
+  value: 1,
 };
 let onMessagePromise;
 let nextGetIsWaiting = false;
 
-export const getAverageVideoFramesDifference = async (ytdWatchElem) => {
-  if(onMessagePromise) {
+export const getAverageVideoFramesDifference = async (format) => {
+  if (onMessagePromise) {
     nextGetIsWaiting = true;
-    while(onMessagePromise) {
+    while (onMessagePromise) {
       await onMessagePromise;
     }
     nextGetIsWaiting = false;
   }
 
-  const storyboard = getStoryboard(ytdWatchElem);
-  if(!storyboard) return // Failed to retrieve the storyboard data
+  const storyboard = await getStoryboard(format);
+  if (!storyboard) return; // Failed to retrieve the storyboard data
 
   const alreadyCalculated = lastDifference.baseUrl === storyboard.baseUrl;
-  if(alreadyCalculated) return lastDifference.value
+  if (alreadyCalculated) return lastDifference.value;
 
-  if(!worker) {
-    worker = workerFromCode(workerCode)
+  if (!worker) {
+    worker = workerFromCode(workerCode);
   }
 
   workerMessageId++;
   const id = workerMessageId;
 
-  const stack = new Error().stack
-  onMessagePromise = new Promise(function onMessagePromise(resolve, reject) {
-    worker.onerror = (err) => reject(err)
-    worker.onmessage = function onMessage(e) {
-      try {
-        if(e.data.id !== workerMessageId) return
+  const stack = new Error().stack;
+  onMessagePromise = new Promise(
+    function onMessagePromise(resolve, reject) {
+      worker.onerror = (err) => reject(err);
+      worker.onmessage = function onMessage(e) {
+        try {
+          if (e.data.id !== workerMessageId) return;
 
-        if(e.data.error) {
-          // Readable name for the worker script
-          if(e.data.error.stack?.replace) {
-            e.data.error.stack = e.data.error.stack
-            .replace(/blob:.+?:\/.+?:/g, 'extension://scripts/static-image-detection-worker.js:')
+          if (e.data.error) {
+            // Readable name for the worker script
+            if (e.data.error.stack?.replace) {
+              e.data.error.stack = e.data.error.stack.replace(
+                /blob:.+?:\/.+?:/g,
+                'extension://scripts/static-image-detection-worker.js:'
+              );
+            }
+            appendErrorStack(stack, e.data.error);
+            throw e.data.error;
           }
-          appendErrorStack(stack, e.data.error)
-          throw e.data.error
-        }
 
-        lastDifference = {
-          baseUrl: e.data.baseUrl,
-          value: e.data.difference
+          lastDifference = {
+            baseUrl: e.data.baseUrl,
+            value: e.data.difference,
+          };
+          resolve(e.data.difference);
+        } catch (ex) {
+          reject(ex);
         }
-        resolve(e.data.difference)
-      } catch(ex) {
-        reject(ex)
-      }
+      }.bind(this);
     }.bind(this)
-  }.bind(this))
+  );
   worker.postMessage({
     id,
-    storyboard
-  })
+    storyboard,
+  });
   const difference = await onMessagePromise;
   onMessagePromise = undefined;
   return nextGetIsWaiting ? undefined : difference;
-}
+};
 
 export const cancelGetAverageVideoFramesDifference = () => {
   workerMessageId++;
-}
+};

@@ -1,85 +1,131 @@
-import { appendErrorStack, wrapErrorHandler } from './generic'
+import { appendErrorStack, wrapErrorHandler } from './generic';
 
 class Storage {
-  async set(nameOrNamesAndValues, value = undefined) {
-    const multiple = typeof nameOrNamesAndValues !== 'string'
-    const namesAndValues = multiple ? nameOrNamesAndValues : { [nameOrNamesAndValues]: value }
+  async set(
+    nameOrNamesAndValues,
+    value = undefined,
+    throwOnUninstalled = false
+  ) {
+    try {
+      const multiple = typeof nameOrNamesAndValues !== 'string';
+      const namesAndValues = multiple
+        ? nameOrNamesAndValues
+        : { [nameOrNamesAndValues]: value };
 
-    const stack = new Error().stack
-    return await new Promise(function storageSet(resolve, reject) {
-      try {
-        const setCallback = () => {
-          try {
-            if (chrome.runtime.lastError) throw chrome.runtime.lastError
-            resolve()
-          } catch(ex) {
-            reject(appendErrorStack(stack, ex))
+      const stack = new Error().stack;
+      return await new Promise(function storageSet(resolve, reject) {
+        try {
+          if (!chrome.runtime?.id) throw new Error('uninstalled');
+          const setCallback = () => {
+            try {
+              if (chrome.runtime.lastError) throw chrome.runtime.lastError;
+              resolve();
+            } catch (ex) {
+              reject(appendErrorStack(stack, ex));
+            }
+          };
+          if (!multiple && value === undefined) {
+            chrome.storage.local.remove([nameOrNamesAndValues], setCallback);
+          } else {
+            chrome.storage.local.set(namesAndValues, setCallback);
           }
+        } catch (ex) {
+          reject(appendErrorStack(stack, ex));
         }
-        if(!multiple && value === undefined) {
-          chrome.storage.local.remove([nameOrNamesAndValues], setCallback)
-        } else {
-          chrome.storage.local.set(namesAndValues, setCallback)
-        }
-      } catch(ex) {
-        reject(appendErrorStack(stack, ex))
-      }
-    })
+      });
+    } catch (ex) {
+      if (
+        ex &&
+        (throwOnUninstalled ||
+          !(
+            ex.message === 'uninstalled' ||
+            ex.message?.includes('QuotaExceededError')
+          ))
+      )
+        throw ex;
+    }
   }
 
-  async get(nameOrNames) {
-    const multiple = typeof nameOrNames !== 'string'
-    const names = multiple ? nameOrNames : [nameOrNames]
-    const stack = new Error().stack
-    return await new Promise(function storageGet(resolve, reject) {
-      try {
-        chrome.storage.local.get(names, function getCallback(result) {
-          try {
-            if (chrome.runtime.lastError) throw chrome.runtime.lastError
-            resolve(multiple ? result : (
-              result[nameOrNames] === undefined ? null : result[nameOrNames]
-            ))
-          } catch(ex) {
-            reject(appendErrorStack(stack, ex))
-          }
-        })
-      } catch(ex) {
-        reject(appendErrorStack(stack, ex))
-      }
-    })
+  async get(nameOrNames, throwOnUninstalled = false) {
+    try {
+      const multiple = typeof nameOrNames !== 'string';
+      const names = multiple ? nameOrNames : [nameOrNames];
+      const stack = new Error().stack;
+      return await new Promise(function storageGet(resolve, reject) {
+        if (!chrome.runtime?.id) throw new Error('uninstalled');
+
+        try {
+          chrome.storage.local.get(names, function getCallback(result) {
+            try {
+              if (chrome.runtime.lastError) throw chrome.runtime.lastError;
+              resolve(
+                multiple
+                  ? result
+                  : result[nameOrNames] === undefined
+                  ? null
+                  : result[nameOrNames]
+              );
+            } catch (ex) {
+              reject(appendErrorStack(stack, ex));
+            }
+          });
+        } catch (ex) {
+          reject(appendErrorStack(stack, ex));
+        }
+      });
+    } catch (ex) {
+      if (
+        ex &&
+        (throwOnUninstalled ||
+          !(
+            ex.message === 'uninstalled' ||
+            ex.message?.includes('QuotaExceededError')
+          ))
+      )
+        throw ex;
+    }
   }
 
-  onChangedListeners = []
+  onChangedListeners = [];
 
   addListener(handler) {
     try {
-      const wrappedHandler = wrapErrorHandler(handler, true)
-      chrome.storage.local.onChanged.addListener(wrappedHandler)
-      this.onChangedListeners.push({ handler, wrappedHandler })
-    } catch(ex) {
-      console.warn('Failed to listen to storage changes. If any setting changes you\'ll have to manually refresh the page to update them.')
-      console.debug(ex)
+      const wrappedHandler = wrapErrorHandler(handler, true);
+      chrome.storage.local.onChanged.addListener(wrappedHandler);
+      this.onChangedListeners.push({ handler, wrappedHandler });
+    } catch (ex) {
+      console.warn(
+        "Failed to listen to storage changes. If any setting changes you'll have to manually refresh the page to update them."
+      );
+      console.debug(ex);
     }
   }
 
   removeListener(handler) {
     try {
-      const entry = this.onChangedListeners.find((entry) => entry.handler === handler)
-      if(!entry) throw new Error('Cannot remove a storage.local.onChange listener that has never been added')
+      const entry = this.onChangedListeners.find(
+        (entry) => entry.handler === handler
+      );
+      if (!entry)
+        throw new Error(
+          'Cannot remove a storage.local.onChange listener that has never been added'
+        );
 
-      chrome.storage.local.onChanged.removeListener(entry.wrappedHandler)
+      chrome.storage.local.onChanged.removeListener(entry.wrappedHandler);
 
-      this.onChangedListeners.splice(this.onChangedListeners.indexOf(entry), 1)
-    } catch(ex) {
-      console.warn('Failed to listen to storage changes. If any setting changes you\'ll have to manually refresh the page to update them.')
+      this.onChangedListeners.splice(this.onChangedListeners.indexOf(entry), 1);
+    } catch (ex) {
+      console.warn(
+        "Failed to listen to storage changes. If any setting changes you'll have to manually refresh the page to update them."
+      );
     }
   }
 }
 
-export const storage = new Storage()
+export const storage = new Storage();
 
 export const defaultCrashOptions = {
   video: false,
   technical: true,
-  crash: true
-}
+  crash: true,
+};

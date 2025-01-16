@@ -37,7 +37,8 @@ body yt-live-chat-app {
   --yt-live-chat-header-bottom-border: 1px solid var(--yt-spec-10-percent-layer);
   --yt-live-chat-panel-pages-border-color: var(--yt-spec-10-percent-layer);
 
-  html[dark] & {
+  html[dark] &,
+  &[dark] {
     --yt-spec-icon-inactive: rgba(255, 255, 255, .3);
     --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
   }
@@ -55,7 +56,8 @@ yt-live-chat-renderer[has-action-panel-renderer] #action-panel.yt-live-chat-rend
   background: none !important;
 }
 
-yt-icon-button.yt-live-chat-header-renderer yt-icon.yt-live-chat-header-renderer {
+yt-icon-button.yt-live-chat-header-renderer yt-icon.yt-live-chat-header-renderer,
+.yt-spec-button-shape-next--mono.yt-spec-button-shape-next--text {
   color: var(--iron-icon-fill-color, currentcolor) !important;
 }
 
