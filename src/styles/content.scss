@@ -3246,6 +3246,16 @@ html[data-ambientlight-enabled] {
       }
     }
 
+    .ytd-comment-engagement-bar {
+      tp-yt-paper-tooltip {
+        margin-top: -88px !important;
+      }
+    }
+
+    tp-yt-paper-tooltip.ytd-creator-heart-renderer {
+      margin-top: -94px !important;
+    }
+
 
     // Improve scrolling smoothness
 
