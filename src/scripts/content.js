@@ -9,6 +9,17 @@ import { injectedScript } from './libs/messaging/injected';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
+const setResourceWarning = (url) => {
+  setWarning(
+    `Failed to load a resource. Refresh the webpage to try it again. 
+This can happen after you have updated the extension. 
+
+Or if this happens often, view the error in your browser's DevTools javascript console panel.${
+      url ? `\nTip: Look for errors about this url: ${url}` : ''
+    }`
+  );
+};
+
 const waitForHtmlElement = async () => {
   if (document.documentElement) return;
 
@@ -76,9 +87,7 @@ const captureResourceLoadingException = async (url, event) => {
     error.details = event;
     SentryReporter.captureException(error);
 
-    setWarning(
-      `Failed to load a resource. Refresh the webpage to try it again. ${'\n'}This can happen after you have updated the extension. ${'\n\n'}Or if this happens often, view the error in your browser's DevTools javascript console panel. ${'\n'}Tip: Look for errors about this url: ${url}`
-    );
+    setResourceWarning(url);
   }
 };
 
@@ -118,6 +127,11 @@ wrapErrorHandler(async function loadContentScript() {
   // }
   // addWebGLLint()
 
+  if (!chrome?.runtime) {
+    setResourceWarning();
+    return;
+  }
+
   let loaded = await new Promise((resolve) => {
     const url = chrome.runtime.getURL('styles/content.css');
     if (document.head.querySelector(`link[href="${url}"]`)) {
@@ -144,6 +158,10 @@ wrapErrorHandler(async function loadContentScript() {
     document.head.appendChild(style);
   });
   if (!loaded) return;
+  if (!chrome?.runtime) {
+    setResourceWarning();
+    return;
+  }
 
   loaded = await new Promise((resolve) => {
     const script = document.createElement('script');
@@ -167,6 +185,10 @@ wrapErrorHandler(async function loadContentScript() {
     document.head.appendChild(script);
   });
   if (!loaded) return;
+  if (!chrome?.runtime) {
+    setResourceWarning();
+    return;
+  }
 
   const scriptSrc = chrome.runtime.getURL('scripts/content-main.js');
   import(scriptSrc);
