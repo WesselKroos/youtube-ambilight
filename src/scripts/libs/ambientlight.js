@@ -1668,7 +1668,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   updateView = async (skipUpdateImmersiveMode = false) => {
-    const isVrVideo = this.videoPlayerElem?.classList.contains(
+    const isVrVideo = this.videoPlayerElem?.classList?.contains(
       'ytp-webgl-spherical'
     );
     if (isVrVideo != this.isVrVideo) {
