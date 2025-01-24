@@ -1601,6 +1601,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
 
     this.videoScale = videoScale;
+
+    // Video scale
+    setStyleProperty(
+      document.body,
+      '--ytal-html5-video-player-overflow',
+      this.videoScale > 100 ? 'visible' : ''
+    );
   }
 
   getView = () => {
@@ -2337,13 +2344,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           rgba(0,0,0,${videoShadowOpacity}) 0 0 ${videoShadowSize}px
         `
         : ''
-    );
-
-    // Video scale
-    setStyleProperty(
-      document.body,
-      '--ytal-html5-video-player-overflow',
-      this.videoScale > 100 ? 'visible' : ''
     );
 
     // Video Debanding
