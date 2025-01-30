@@ -75,16 +75,6 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
             otherAppElems.map((elem) => elem.tagName).join(',')
           )
         : undefined,
-    bodyTree: getSelectorTreeString('body'),
-    ytdAppTree: getSelectorTreeString('ytd-app'),
-    ytdAppContentTree: getSelectorTreeString('#content.ytd-app'),
-    ytdWatchTree: (() => {
-      return watchSelectors
-        .filter((selector) => document.querySelector(selector))
-        .map((selector) => getSelectorTreeString(selector))
-        .find(() => true);
-    })(),
-    ytdPlayerTree: getSelectorTreeString('ytd-player'),
     ΩTree: getSelectorTreeString(allSelector),
   };
 
