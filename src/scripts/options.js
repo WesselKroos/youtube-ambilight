@@ -19,34 +19,32 @@ const updateCrashReportOptions = () => {
     crashOptions.crash && crashOptions.video;
 };
 
-[...document.querySelectorAll('[type="checkbox"]')].forEach(
-  function addCheckboxInputChangeEventListener(input) {
-    input.addEventListener('change', async () => {
-      try {
-        crashOptions[input.name] = input.checked;
-        await storage.set('crashOptions', crashOptions);
-      } catch (ex) {
-        alert(
-          'Crash reports options changed to many times. Please wait a few seconds.'
-        );
-        input.checked = !input.checked;
-        crashOptions[input.name] = input.checked;
-      }
-      updateCrashReportOptions();
-    });
-  }
-);
+const checkboxInputs = document.querySelectorAll('[type="checkbox"]');
+for (const input of checkboxInputs) {
+  input.addEventListener('change', async () => {
+    try {
+      crashOptions[input.name] = input.checked;
+      await storage.set('crashOptions', crashOptions);
+    } catch (ex) {
+      alert(
+        'Crash reports options changed to many times. Please wait a few seconds.'
+      );
+      input.checked = !input.checked;
+      crashOptions[input.name] = input.checked;
+    }
+    updateCrashReportOptions();
+  });
+}
 (async function initCrashReportOptions() {
   crashOptions = (await storage.get('crashOptions')) || defaultCrashOptions;
   updateCrashReportOptions();
 })();
-[...document.querySelectorAll('.expandable__toggle')].forEach(
-  function addExpendableToggleClickEventListener(elem) {
-    on(elem, 'click', () => {
-      elem.closest('.expandable').classList.toggle('expanded');
-    });
-  }
-);
+const toggles = document.querySelectorAll('.expandable__toggle');
+for (const elem of toggles) {
+  on(elem, 'click', () => {
+    elem.closest('.expandable').classList.toggle('expanded');
+  });
+}
 
 if (!chrome?.storage?.local?.onChanged) {
   const synchronizationWarning = document.createElement('div');
@@ -192,17 +190,21 @@ const exportSettings = async (storageName, exportJson) => {
     importExportStatusDetails.textContent = '';
     importExportStatusDetails.scrollTo(0, 0);
 
-    const storedSettings = await storage.get(null);
+    const storageData = await storage.get(null);
 
     let exportObject = {};
-    Object.keys(storedSettings)
-      .filter((key) => key.startsWith('setting-'))
-      .forEach((key) => {
-        const name = key.substring('setting-'.length);
-        if (!SettingsConfig.some((setting) => setting.name === name)) return;
+    const settings = Object.keys(storageData).filter((key) =>
+      key.startsWith('setting-')
+    );
+    for (const key of settings) {
+      const name = key.substring('setting-'.length);
+      const existsInConfig = SettingsConfig.some(
+        (setting) => setting.name === name
+      );
+      if (!existsInConfig) continue;
 
-        exportObject[name] = storedSettings[key];
-      });
+      exportObject[name] = storageData[key];
+    }
     if (!Object.keys(exportObject).length)
       throw new Error(
         'Nothing to export. All settings still have their default values.'

@@ -24,7 +24,7 @@ const getNodeSelector = (elem) => {
 
   const idSelector = elem.id ? `#${elem.id}` : '';
   const classSelector = elem.classList?.length
-    ? `.${[...elem.classList].sort().join('.')}`
+    ? `.${Array.from(elem.classList).sort().join('.')}`
     : '';
   return `${elem.tagName.toLowerCase()}${idSelector}${classSelector}`;
 };
@@ -60,21 +60,21 @@ const createNodeEntry = (node, level) => ({
 // }
 const entryToString = (entry) => {
   let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`];
-  entry.children.forEach((childEntry) => {
+  for (const childEntry of entry.children) {
     lines.push(entryToString(childEntry));
-  });
+  }
   return lines.join('\n');
 };
 export const getSelectorTreeString = (selector) => {
-  const trees = [...document.querySelectorAll(selector)].map((elem) =>
+  const trees = Array.from(document.querySelectorAll(selector)).map((elem) =>
     getNodeTree(elem)
   );
 
   const documentTrees = [];
-  trees.forEach((nodeTree) => {
+  for (const nodeTree of trees) {
     let documentTree;
     let previousEntry;
-    nodeTree.forEach((node) => {
+    for (const node of nodeTree) {
       if (!previousEntry) {
         documentTree = documentTrees.find((dt) => dt.node === node);
         if (!documentTree) {
@@ -82,7 +82,7 @@ export const getSelectorTreeString = (selector) => {
           documentTrees.push(documentTree);
         }
         previousEntry = documentTree;
-        return;
+        continue;
       }
 
       const existingEntry = previousEntry.children.find(
@@ -90,14 +90,14 @@ export const getSelectorTreeString = (selector) => {
       );
       if (existingEntry) {
         previousEntry = existingEntry;
-        return;
+        continue;
       }
 
       const entry = createNodeEntry(node, previousEntry.level + 1);
       previousEntry.children.push(entry);
       previousEntry = entry;
-    });
-  });
+    }
+  }
 
   return documentTrees
     .map((documentTree) =>
@@ -340,7 +340,7 @@ export default class SentryReporter {
           };
           if (ambientlightExtra.initialized) {
             ambientlightExtra.now = performance.now();
-            const keys = [
+            const propertyNames = [
               'initializedTime',
               'ambientlightFrameCount',
               'ambientlightFrameRate',
@@ -421,15 +421,16 @@ export default class SentryReporter {
               'projector.ctx.drawingBufferColorSpace',
               'projector.ctx.unpackColorSpace',
             ];
-            keys.forEach((key) => {
+            for (const propertyName of propertyNames) {
               try {
                 let value = ambientlight;
-                key
-                  .split('.')
-                  .forEach((key) => (value = value ? value[key] : undefined)); // Find multi depth values
-                ambientlightExtra[key] = value;
+                const propertyPath = propertyName.split('.');
+                for (const propertyName of propertyPath) {
+                  value = value ? value[propertyName] : undefined; // Find multi depth values
+                }
+                ambientlightExtra[propertyName] = value;
               } catch (ex) {}
-            });
+            }
           }
           setExtra('Ambientlight', ambientlightExtra);
         }
@@ -440,12 +441,12 @@ export default class SentryReporter {
       try {
         if (settings) {
           const settingsExtra = {};
-          SettingsConfig.forEach((setting) => {
-            if (!setting || !setting.name) return;
+          for (const setting of SettingsConfig) {
+            if (!setting || !setting.name) continue;
             settingsExtra[setting.name] = settings[setting.name];
-            if (!setting.key) return;
+            if (!setting.key) continue;
             settingsExtra[`${setting.name}-key`] = setting.key;
-          });
+          }
           settingsExtra.webGLCrashDate = settings.webGLCrashDate;
           settingsExtra.webGLCrashVersion = settings.webGLCrashVersion;
           setExtra('Settings', settingsExtra);
@@ -558,9 +559,9 @@ export default class SentryReporter {
               'drm',
               'resolution',
             ];
-            Object.keys(stats).forEach((key) => {
+            for (const key of Object.keys(stats)) {
               if (!relevantStats.includes(key)) delete stats[key];
-            });
+            }
             setExtra('Player', stats);
           }
         } catch (ex) {
@@ -676,7 +677,7 @@ export class ErrorEvents {
     const firstEvent = this.list.splice(0, 1);
     const details = {
       firstEvent,
-      events: [...this.list.reverse()],
+      events: this.list.reverse(),
     };
     this.list = [];
 

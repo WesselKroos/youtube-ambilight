@@ -185,7 +185,7 @@ const workerCode = function () {
     //   })
     // );
 
-    return [...averageColor];
+    return Array.from(averageColor);
   }
 
   function getHueDeviation(a, b) {
@@ -599,12 +599,9 @@ const workerCode = function () {
     while (edges.filter((e) => !e.deviates).length > threshold) {
       const nonDeviatingEdges = edges.filter((e) => !e.deviates);
       const averageSize = reduceAverageSize(nonDeviatingEdges);
-      nonDeviatingEdges
-        .sort(sortSizes(averageSize))
-        .slice(nonDeviatingEdges.length - 1)
-        .forEach((e) => {
-          e.deviates = true;
-        });
+      nonDeviatingEdges.sort(sortSizes(averageSize));
+      const deviatingEdge = nonDeviatingEdges[nonDeviatingEdges.length - 1];
+      deviatingEdge.deviates = true;
     }
 
     // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > threshold) {
@@ -957,7 +954,7 @@ const workerCode = function () {
 
       // console.log(topEdges, bottomEdges)
 
-      const edges = [...topEdges, ...bottomEdges];
+      const edges = topEdges.concat(bottomEdges);
       const exceedsDeviationLimit = getExceedsDeviationLimit(
         edges,
         topEdges,
@@ -984,17 +981,16 @@ const workerCode = function () {
 
       if (
         !(percentage < currentPercentage) &&
-        [...topEdges, ...bottomEdges].filter((edge) => !edge.deviates).length /
-          (linesX.length * 2) <
+        edges.filter((edge) => !edge.deviates).length / (linesX.length * 2) <
           (100 - allowedAnomaliesPercentage) / 100
       ) {
         // console.log(`Discarded. Found ${topEdges.length + bottomEdges.length} of ${imageLines.length * 2}. Required: ${(100 - allowedAnomaliesPercentage)}%`)
-        topEdges.forEach((edge) => {
+        for (const edge of topEdges) {
           edge.deviates = true;
-        });
-        bottomEdges.forEach((edge) => {
+        }
+        for (const edge of bottomEdges) {
           edge.deviates = true;
-        });
+        }
         // imageLines.length = 0;
 
         return {
@@ -1384,11 +1380,11 @@ export default class BarDetection {
         color,
       },
     ];
-    percentages.forEach((info) => {
+    for (const info of percentages) {
       info.occurrences = percentages.filter(
         ({ percentage }) => Math.abs(info.percentage - percentage) < 0.5
       ).length;
-    });
+    }
     // .reduce((groups, { percentage, certainty }) => {
     //   // certainty = certainty === 1 ? 1 : certainty;
     //   const similarGroup = groups.find(group =>

@@ -177,18 +177,18 @@ export function on(elem, eventNames, callback, options, reportOnce = false) {
         JSON.stringify(e.args.options) === JSON.stringify(options)
     );
 
-    eventNamesList.forEach(function eventNamesAddEventListener(eventName) {
+    for (const eventName of eventNamesList) {
       if (existingEventListenerCallback) {
         if (
           existingEventListenerCallback.args.eventNamesList.includes(eventName)
         ) {
-          return;
+          continue;
         } else {
           existingEventListenerCallback.args.eventNamesList.push(eventName);
         }
       }
       elem.addEventListener(eventName, eventListenerCallback, options);
-    });
+    }
 
     if (!existingEventListenerCallback) {
       eventListenerCallbacks.push({
@@ -229,14 +229,14 @@ export function on(elem, eventNames, callback, options, reportOnce = false) {
 export function off(elem, eventNames, callback) {
   try {
     const list = eventNames.split(' ');
-    list.forEach(function eventNamesRemoveEventListener(eventName) {
+    for (const eventName of list) {
       const eventListenerCallback = eventListenerCallbacks.find(
         (e) =>
           e.args.elem === elem &&
           e.args.callback === callback &&
           e.args.eventNamesList.includes(eventName)
       );
-      if (!eventListenerCallback) return;
+      if (!eventListenerCallback) continue;
 
       eventListenerCallback.args.eventNamesList.splice(
         eventListenerCallback.args.eventNamesList.indexOf(eventName),
@@ -255,7 +255,7 @@ export function off(elem, eventNames, callback) {
         eventListenerCallback.callback,
         eventListenerCallback.args.options
       );
-    });
+    }
   } catch (ex) {
     ex.details = {
       eventNames,

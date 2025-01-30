@@ -41,8 +41,8 @@ wrapErrorHandler(function initErrorEvents() {
 })();
 
 const getOtherUnknownAppElems = () =>
-  [...document.querySelectorAll('body > *')].filter(function getAppElems(elem) {
-    return (
+  Array.from(document.body?.children ?? []).filter(
+    (elem) =>
       elem.tagName.endsWith('-APP') &&
       ![
         'YTD-APP',
@@ -51,8 +51,7 @@ const getOtherUnknownAppElems = () =>
         'YTLR-APP',
         'DAILY-COMPANION-APP',
       ].includes(elem.tagName)
-    );
-  });
+  );
 
 const logErrorEventWithPageTrees = (message, details = {}) => {
   if (!isWatchPageUrl()) return;
