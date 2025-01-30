@@ -310,7 +310,7 @@ export const getAverageVideoFramesDifference = async (format) => {
           if (e.data.error) {
             // Readable name for the worker script
             if (e.data.error.stack?.replace) {
-              e.data.error.stack = e.data.error.stack.replace(
+              e.data.error.stack = e.data.error.stack?.replace(
                 /blob:.+?:\/.+?:/g,
                 'extension://scripts/static-image-detection-worker.js:'
               );

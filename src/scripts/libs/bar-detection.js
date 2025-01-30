@@ -1576,7 +1576,7 @@ export default class BarDetection {
               if (e.data.error) {
                 const error = e.data.error;
                 // Readable name for the worker script
-                error.stack = error.stack.replace(
+                error.stack = error.stack?.replace(
                   /blob:.+?:\/.+?:/g,
                   'extension://scripts/bar-detection-worker.js:'
                 );

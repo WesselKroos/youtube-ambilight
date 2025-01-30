@@ -344,9 +344,9 @@ export function requestIdleCallback(callback, options, reportOnce = false) {
 
 export const appendErrorStack = (stack, ex) => {
   try {
-    const stackToAppend = stack.substring(stack.indexOf('\n') + 1);
-    const stackToSearch = stackToAppend.substring(
-      stackToAppend.indexOf('\n') + 1
+    const stackToAppend = stack?.substring(stack?.indexOf('\n') + 1);
+    const stackToSearch = stackToAppend?.substring(
+      stackToAppend?.indexOf('\n') + 1
     ); // The first line in the stack trace can contain an extra function name
     const alreadyContainsStack =
       (ex.stack || ex.message).indexOf(stackToSearch) !== -1;
