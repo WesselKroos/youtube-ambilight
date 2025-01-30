@@ -939,7 +939,7 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
 
       this.barDetectionCanvas.setAttribute(
         'title',
-        `LINES \nBlue:        Detected bar\nGreen:     Detected edge \nOrange:  Diverging edge \nGray:       Small edge \nRed:        Scanline`
+        `LINES \nBlue:        Detected bar\nGreen:     Detected edge \nOrange:  Diverging edge \nGray:       Ignored edge \nRed:        Scanline`
       );
       on(
         this.barDetectionCanvas,
