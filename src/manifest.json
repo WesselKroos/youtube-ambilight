@@ -24,30 +24,49 @@
     },
     "default_popup": "options.html"
   },
-  "background" : {
-    "scripts" : ["scripts/background.js"],
+  "background": {
+    "scripts": [
+      "scripts/background.js"
+    ],
     "persistent": false
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
-      "exclude_matches": ["https://www.youtube.com/live_chat*", "https://www.youtube.com/embed/*"],
-      "js": ["scripts/content.js"],
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "exclude_matches": [
+        "https://www.youtube.com/live_chat*",
+        "https://www.youtube.com/embed/*"
+      ],
+      "js": [
+        "scripts/content.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.youtube.com/embed/*"],
-      "js": ["scripts/content.js"],
+      "matches": [
+        "https://www.youtube.com/embed/*"
+      ],
+      "js": [
+        "scripts/content.js"
+      ],
       "all_frames": true,
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.youtube.com/live_chat*"],
-      "exclude_matches": ["https://www.youtube.com/live_chat?is_popout=1*"],
+      "matches": [
+        "https://www.youtube.com/live_chat*"
+      ],
+      "exclude_matches": [
+        "https://www.youtube.com/live_chat?is_popout=1*"
+      ],
       "css": [
         "styles/live-chat.css"
       ],
-      "js": ["scripts/live-chat.js"],
+      "js": [
+        "scripts/live-chat.js"
+      ],
       "all_frames": true,
       "run_at": "document_start"
     }
