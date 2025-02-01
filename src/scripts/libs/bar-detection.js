@@ -893,67 +893,10 @@ const workerCode = function () {
       }
 
       const { topEdges, bottomEdges } = detectEdges(linesX, color, yAxis);
-
-      const maxSize = image[yAxis]; // imageLines[0].data.length / channels;
-
-      // // TODO:
-      // // 1. Figure out if needed: Prevents small objects in bars form reducing the bar like in Zig Zag,
-      // // but also prevents squares in the bars from reducing the bar like in cams/screenshots
-      // // 2. Cutting off way to far:
-      // //   - The first frame: https://www.youtube.com/watch?v=liuotbjjsHw
-      // //   - https://www.youtube.com/watch?v=0MfHJmHjGxs&t=110
-      // //   - https://youtu.be/a54V6U-Nb0I?si=upIe0WDg0SblmIxY&t=403
-      // //   - Flickers back and forth to 0%: https://www.youtube.com/watch?v=TiQ7iWgY1fI&t=33s
-      // //   - Cut out elements into bars: https://www.youtube.com/watch?v=W9aNGyXt294
-      // //   - Vertical colored bars removed to often at the start:
-      // //     https://www.youtube.com/watch?v=sDIi95CqTiM
-      // //     gradients? https://www.youtube.com/watch?v=aWhro47QBm8
-      // //   - Stars and 2 centered squared objects: https://www.youtube.com/watch?v=hL4IfoQzSSE&t=351s
-      // //   - logo & squared: https://www.youtube.com/watch?v=UsWh21rFzh8&t=120s
-      // //   - old video with vague bars: https://www.youtube.com/watch?v=YoLJ4CWSLSI
-      // //   - Dismiss/reset black bars to content:
-      // //       https://youtu.be/oCmNbNhppHo?t=381
-      // //       https://www.youtube.com/watch?v=Xhi2FdES8yI&t=215s
-      // //       https://youtu.be/K-D5wThCPRw?si=90p34xMcTAboCbNb&t=850
-
-      // //   - Moving bars: https://www.youtube.com/watch?v=9O-yCnQKYhM
-
-      // //   - Black bars dark content https://www.youtube.com/watch?v=_QJjk--Wyvo
-      // //   - Moves a lot while seeking through video: https://www.youtube.com/watch?v=f2fzjhyCOcM
-      // //   - Flickering small bars https://youtu.be/K-D5wThCPRw?si=4fa1WL3sioN02QEl&t=82
-      // //   - Vertical bar constantly switching:
-      // //       https://www.youtube.com/watch?v=aJWAfvS__Ts&t=200
-      // //       https://www.youtube.com/watch?v=iqdhphwLWAU&t=45
-      // //   - Horizontal bars constantly switching:
-      // //       https://www.youtube.com/watch?v=laxrPE8qPzI
-      // //   - Vertical bars detected to the 2nd column: https://www.youtube.com/watch?v=Y8p-C327wAw&t=13s
-      // //   - Flickering bars:
-      // //       https://www.youtube.com/watch?v=1FqAoADnId4
-      // //       https://www.youtube.com/watch?v=OH4CyqUMdhU
-      // //       https://www.youtube.com/watch?v=DJIQStz_rkU
-      // //       https://www.youtube.com/watch?v=7r_WRY-dT9Y
-      // //       https://www.youtube.com/watch?v=_raGfRmNJ4s
-      // //       https://www.youtube.com/watch?v=z7XtNeDlzhw
-      // //       https://www.youtube.com/watch?v=Ieq5sNEoc1E&t=752s
-
-      // //   - Uneven bars, black line below (caused by sloping bottom bar):
-      // //       https://www.youtube.com/watch?v=_jTlyYtzieE
-
-      // //   - Black lines, not closing bars to smaller values while even detecting smaller values:
-      // //       https://www.youtube.com/watch?v=UnQvpQtYxow
-
-      // // Vertical colored bars flickering:
-      // // https://www.youtube.com/watch?v=6VjYFdHMC3A&t=867s // Takes the wrong average color at 14:42 ? Not completely black
-      // // https://www.youtube.com/watch?v=64FVUoGCxWw
-      // // https://www.youtube.com/watch?v=37-6GeQg2xY
-
-      // Bars keep cropping long texts in the next 4 graphs (because the white space between text and orange/red bar is not seen as different?)
-      // https://youtu.be/CIQe2jdYAJ0?si=yFWu2SD5eVRSG9CB&t=366
-
       // console.log(JSON.stringify(topEdges), JSON.stringify(bottomEdges))
-
       // console.log(topEdges, bottomEdges)
 
+      const maxSize = image[yAxis]; // imageLines[0].data.length / channels;
       const edges = topEdges.concat(bottomEdges);
       const exceedsDeviationLimit = getExceedsDeviationLimit(
         edges,
