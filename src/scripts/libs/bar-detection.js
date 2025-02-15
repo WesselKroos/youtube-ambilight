@@ -705,7 +705,6 @@ const workerCode = function () {
     currentPercentage = 0,
     offsetPercentage = 0
   ) {
-    const minSize = maxSize * (0.01 * scale);
     const lowerSizeThreshold = maxSize * ((currentPercentage - 2) / 100);
     const baseOffsetPercentage = 0.3 * ((1 + scale) / 2);
     let certainty = 1;
@@ -736,7 +735,7 @@ const workerCode = function () {
 
       // console.log('semi-certain lower percentage', lowestEdge, certainty, edges)
       size = lowestEdge.yIndex;
-      if (size < minSize) {
+      if (size < 0) {
         size = 0;
       } else {
         size += maxSize * (offsetPercentage / 100);
@@ -749,27 +748,12 @@ const workerCode = function () {
       );
       // size = reduceAverageSize(edges.filter(e => !e.deviates))
       // console.log(size, currentPercentage)
-      if (size < minSize) {
+      if (size < 0) {
         size = 0;
       } else {
         size += maxSize * ((baseOffsetPercentage + offsetPercentage) / 100);
       }
     }
-
-    // if(size > (maxSize * 0.49)) {
-    //   console.log('size beyond half', size, maxSize)
-    //   alert('never happens?')
-    //   let lowestSize = Math.min(...edges.map(e => e.yIndex))
-    //   if(lowestSize >= minSize) {
-    //     lowestSize += (maxSize * (offsetPercentage/100))
-    //   }
-    //   let lowestPercentage = Math.round((lowestSize / maxSize) * 10000) / 100
-    //   if(lowestPercentage < currentPercentage) {
-    //     // console.log('lowestPercentage', lowestPercentage, edges)
-    //     return lowestPercentage // Almost filled with a single color but found content outside the current detected percentage
-    //   }
-    //   return // Filled with a almost single color
-    // }
 
     let percentage = Math.round((size / maxSize) * 10000) / 100;
     const maxPercentage = 38;
@@ -1250,6 +1234,10 @@ export default class BarDetection {
     );
   };
 
+  minPercentage = 1;
+  maxDivergencePercentage = 1;
+  groupByPercentage = 0.5;
+
   averagePercentage(
     barSizeInfo = {},
     currentInfo = {},
@@ -1325,7 +1313,8 @@ export default class BarDetection {
     ];
     for (const info of percentages) {
       info.occurrences = percentages.filter(
-        ({ percentage }) => Math.abs(info.percentage - percentage) < 0.5
+        ({ percentage }) =>
+          Math.abs(info.percentage - percentage) < this.groupByPercentage
       ).length;
     }
     // .reduce((groups, { percentage, certainty }) => {
@@ -1380,10 +1369,14 @@ export default class BarDetection {
 
     let adjustment = percentage - currentPercentage;
     // console.log('percentage check', currentPercentage, '->', percentage, '[', adjustment, '] (', detectedPercentage, ')') // history)
-    if (percentage !== 0 && adjustment > -1 && adjustment <= 0) {
+    if (
+      percentage !== 0 &&
+      adjustment > -this.maxDivergencePercentage &&
+      adjustment <= 0
+    ) {
       // Ignore small adjustments
       adjustment = detectedPercentage - currentPercentage;
-      if (adjustment > -1 && adjustment <= 0) {
+      if (adjustment > -this.maxDivergencePercentage && adjustment <= 0) {
         percentage = undefined;
       } else {
         percentage = currentPercentage; // Disable throttling
@@ -1395,11 +1388,13 @@ export default class BarDetection {
       percentage < currentPercentage &&
       history.some(
         ({ percentage: previousPercentage }) =>
-          Math.abs(currentPercentage - previousPercentage) < 0.5
+          Math.abs(currentPercentage - previousPercentage) <
+          this.groupByPercentage
       ) &&
       history.some(
         ({ percentage: previousPercentage }) =>
-          Math.abs(detectedPercentage - previousPercentage) < 0.5
+          Math.abs(detectedPercentage - previousPercentage) <
+          this.groupByPercentage
       );
 
     history.push({ percentage: detectedPercentage, certainty, color });
@@ -1410,7 +1405,7 @@ export default class BarDetection {
       return;
     }
     // console.log('percentage', percentage)
-    return percentage;
+    return percentage < this.minPercentage ? 0 : percentage;
   }
 
   idleHandler = async (
@@ -1582,12 +1577,12 @@ export default class BarDetection {
                   verticalPercentage !== currentVerticalPercentage);
 
               const detectedLargeChange =
-                (horizontalBarSizeInfo.percentage !== undefined &&
+                (horizontalBarSizeInfo.percentage > this.minPercentage &&
                   Math.abs(
                     horizontalBarSizeInfo.percentage -
                       (currentHorizontalPercentage || 0)
                   ) > 0.5) ||
-                (verticalBarSizeInfo.percentage !== undefined &&
+                (verticalBarSizeInfo.percentage > this.minPercentage &&
                   Math.abs(
                     verticalBarSizeInfo.percentage -
                       (currentVerticalPercentage || 0)
