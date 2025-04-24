@@ -2829,6 +2829,8 @@ html[data-ambientlight-enabled] {
     ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
     ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail,
     ytd-watch-next-secondary-results-renderer ytd-reel-item-renderer#{$not-hover} #thumbnail,
+    ytd-watch-next-secondary-results-renderer .yt-lockup-view-model-wiz#{$not-hover} .yt-lockup-view-model-wiz__content-image,
+    ytd-watch-next-secondary-results-renderer ytm-shorts-lockup-view-model#{$not-hover} .shortsLockupViewModelHostThumbnail,
     ytd-rich-item-renderer#{$not-hover} #thumbnail {
       opacity: var(--ytal-image-opacity) !important;
     }
