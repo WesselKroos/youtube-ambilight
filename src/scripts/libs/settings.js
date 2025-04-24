@@ -192,7 +192,7 @@ export default class Settings {
     await this.flushPendingStorageEntries(); // Complete migrations
 
     if (this.enabled)
-      document.documentElement.setAttribute(
+      document.documentElement.toggleAttribute(
         'data-ambientlight-hide-scrollbar',
         this.hideScrollbar
       );
@@ -661,8 +661,7 @@ export default class Settings {
     settingsMenuBtnTooltip.prepend(settingsMenuBtnTooltipTextWrapper);
 
     this.settingsMenuBtnTooltipText = document.createElement('span');
-    this.settingsMenuBtnTooltipText.className =
-      'ytp-tooltip-text ytp-tooltip-text-no-title';
+    this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-bottom-text';
     this.settingsMenuBtnTooltipText.appendChild(
       document.createTextNode('Ambient light loading is paused.')
     );

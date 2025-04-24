@@ -563,7 +563,8 @@ html[data-ambientlight-enabled] {
   }
 
   .ytwTimelineItemViewModelTimestamp,
-  .ytwTranscriptSegmentViewModelHost {
+  .ytwTranscriptSegmentViewModelHost,
+  .shortsLockupViewModelHostOutsideMetadataSubhead {
     color: var(--yt-spec-text-secondary) !important;
   }
 
@@ -2849,8 +2850,9 @@ html[data-ambientlight-enabled] {
     @include ytd-watch {
       // #below,
       #title.ytd-watch-metadata,
+      ytd-info-panel-container-renderer,
       ytd-video-owner-renderer.ytd-watch-metadata,
-      #above-the-fold.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
       #middle-row.ytd-watch-metadata,
       #description-inner.ytd-watch-metadata,
       ytd-comments,
@@ -2912,8 +2914,8 @@ html[data-ambientlight-enabled] {
   }
 
   > body[data-ambientlight-text-shadow] {
-    // Remove default title text-shadow
-    .title.ytd-video-primary-info-renderer {
+    .title.ytd-video-primary-info-renderer // Remove default title text-shadow
+    {
       text-shadow: inherit !important;
     }
 
@@ -3009,7 +3011,7 @@ html[data-ambientlight-enabled] {
       #{$info} ytd-toggle-button-renderer button,
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
-      #above-the-fold.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+      #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
@@ -3041,6 +3043,7 @@ html[data-ambientlight-enabled] {
       #emoji-button.ytd-commentbox yt-icon, // Reply form emoticon button
       #panel-button.ytd-comments-header-renderer yt-icon, // Show comments on the side
       #sort-menu.ytd-comments-header-renderer #trigger tp-yt-paper-button,
+      ytd-live-chat-frame #show-hide-button.ytd-live-chat-frame .yt-spec-button-shape-next__button-text-content,
 
       paper-toggle-button.ytd-compact-autoplay-renderer,
       paper-menu-button,
