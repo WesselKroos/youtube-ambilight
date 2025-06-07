@@ -113,6 +113,11 @@ wrapErrorHandler(async function loadContentScript() {
 
   await waitForHtmlElement();
   await waitForHeadElement();
+  // if (document.readyState !== 'complete') {
+  //   await new Promise((resolve) =>
+  //     window.addEventListener('load', resolve, { once: true })
+  //   );
+  // }
 
   // const addWebGLLint = () => {
   //   const s = document.createElement('script')
@@ -132,30 +137,37 @@ wrapErrorHandler(async function loadContentScript() {
     return;
   }
 
-  let loaded = await new Promise((resolve) => {
+  // eslint-disable-next-line no-async-promise-executor
+  let loaded = await new Promise(async (resolve) => {
     const url = chrome.runtime.getURL('styles/content.css');
     if (document.head.querySelector(`link[href="${url}"]`)) {
       resolve(true);
       return;
     }
 
-    const style = document.createElement('link');
-    style.href = url;
-    style.rel = 'stylesheet';
-    style.addEventListener(
-      'error',
-      async function injectStyleOnError(event) {
-        await captureResourceLoadingException(style.href, event);
-        resolve(false);
-      }.bind(this)
-    );
-    style.addEventListener(
-      'load',
-      function injectStyleOnLoad() {
-        resolve(true);
-      }.bind(this)
-    );
+    const response = await fetch(url);
+    const content = await response.text();
+    const style = document.createElement('style');
+    style.textContent = content;
+
+    // const style = document.createElement('style');
+    // style.href = url;
+    // style.rel = 'stylesheet';
+    // style.addEventListener(
+    //   'error',
+    //   async function injectStyleOnError(event) {
+    //     await captureResourceLoadingException(style.href, event);
+    //     resolve(false);
+    //   }.bind(this)
+    // );
+    // style.addEventListener(
+    //   'load',
+    //   function injectStyleOnLoad() {
+    //     resolve(true);
+    //   }.bind(this)
+    // );
     document.head.appendChild(style);
+    resolve(true);
   });
   if (!loaded) return;
   if (!chrome?.runtime) {
