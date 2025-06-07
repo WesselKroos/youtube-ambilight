@@ -1234,13 +1234,13 @@ export default class BarDetection {
     );
   };
 
-  minPercentage = 1;
-  maxDivergencePercentage = 1;
+  maxDivergencePercentage = 0.75;
   groupByPercentage = 0.5;
-
+  // Todo: with 40% certainty + colors: Fix 11 11 11 -> 0 -> 11 -> 0 0 0 at https://www.youtube.com/watch?v=bPNL6nmc-pA&t=46s
   averagePercentage(
     barSizeInfo = {},
     currentInfo = {},
+    minPercentage,
     history,
     averageHistorySize
   ) {
@@ -1362,6 +1362,12 @@ export default class BarDetection {
           // )
           history.length / 2
       ) {
+        // console.log(
+        //   'prevent flickering. Reset to currentPercentage:',
+        //   percentage,
+        //   '->',
+        //   currentPercentage
+        // );
         percentage = currentPercentage;
       }
     }
@@ -1379,6 +1385,16 @@ export default class BarDetection {
       if (adjustment > -this.maxDivergencePercentage && adjustment <= 0) {
         percentage = undefined;
       } else {
+        // console.log(
+        //   'medium change, reset to currentpercentage',
+        //   percentage,
+        //   '->',
+        //   currentPercentage,
+        //   '[',
+        //   adjustment,
+        //   '] (',
+        //   detectedPercentage,
+        //   ')'
         percentage = currentPercentage; // Disable throttling
       }
     }
@@ -1397,6 +1413,28 @@ export default class BarDetection {
           this.groupByPercentage
       );
 
+    // console.log(
+    //   'percentage:',
+    //   percentage,
+    //   'ignore lower recurring:',
+    //   ignoreRecurringLowerPercentage,
+    //   'colorchange:',
+    //   colorChanged,
+    //   JSON.parse(JSON.stringify(history))
+    // );
+
+    if (colorChanged && percentage !== currentPercentage) {
+      // console.log('colorChanged, clearing history with deviating percentages');
+      const nonDeviatingPercentages = history.filter(
+        (info) =>
+          Math.abs(info.percentage - percentage) < this.maxDivergencePercentage
+      );
+      if (history.length !== nonDeviatingPercentages.length) {
+        history.splice(0, history.length);
+        history.push(...nonDeviatingPercentages);
+      }
+    }
+
     history.push({ percentage: detectedPercentage, certainty, color });
     if (history.length > averageHistorySize)
       history.splice(0, history.length - averageHistorySize);
@@ -1404,8 +1442,8 @@ export default class BarDetection {
     if (ignoreRecurringLowerPercentage) {
       return;
     }
-    // console.log('percentage', percentage)
-    return percentage < this.minPercentage ? 0 : percentage;
+
+    return percentage < minPercentage ? 0 : percentage;
   }
 
   idleHandler = async (
@@ -1522,6 +1560,7 @@ export default class BarDetection {
                 throw error;
               }
 
+              const minPercentage = 1.25 + offsetPercentage;
               const { horizontalBarSizeInfo = {}, verticalBarSizeInfo = {} } =
                 e.data;
 
@@ -1532,12 +1571,14 @@ export default class BarDetection {
               let horizontalPercentage = this.averagePercentage(
                 horizontalBarSizeInfo,
                 this.current.horizontal,
+                minPercentage,
                 this.history.horizontal,
                 averageHistorySize
               );
               let verticalPercentage = this.averagePercentage(
                 verticalBarSizeInfo,
                 this.current.vertical,
+                minPercentage,
                 this.history.vertical,
                 averageHistorySize
               );
@@ -1577,12 +1618,12 @@ export default class BarDetection {
                   verticalPercentage !== currentVerticalPercentage);
 
               const detectedLargeChange =
-                (horizontalBarSizeInfo.percentage > this.minPercentage &&
+                (horizontalBarSizeInfo.percentage > minPercentage &&
                   Math.abs(
                     horizontalBarSizeInfo.percentage -
                       (currentHorizontalPercentage || 0)
                   ) > 0.5) ||
-                (verticalBarSizeInfo.percentage > this.minPercentage &&
+                (verticalBarSizeInfo.percentage > minPercentage &&
                   Math.abs(
                     verticalBarSizeInfo.percentage -
                       (currentVerticalPercentage || 0)
