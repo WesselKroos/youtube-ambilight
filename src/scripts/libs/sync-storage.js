@@ -83,7 +83,7 @@ class SyncStorage {
       chrome.storage.sync.onChanged.removeListener(entry.wrappedHandler);
 
       this.onChangedListeners.splice(this.onChangedListeners.indexOf(entry), 1);
-    } catch (ex) {
+    } catch {
       console.warn(
         "Failed to listen to sync-storage changes. If any setting changes you'll have to manually refresh the page to update them."
       );

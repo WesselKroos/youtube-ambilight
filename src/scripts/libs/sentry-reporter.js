@@ -429,7 +429,7 @@ export default class SentryReporter {
                   value = value ? value[propertyName] : undefined; // Find multi depth values
                 }
                 ambientlightExtra[propertyName] = value;
-              } catch (ex) {}
+              } catch {}
             }
           }
           setExtra('Ambientlight', ambientlightExtra);

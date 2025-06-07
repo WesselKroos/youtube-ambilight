@@ -25,7 +25,7 @@ for (const input of checkboxInputs) {
     try {
       crashOptions[input.name] = input.checked;
       await storage.set('crashOptions', crashOptions);
-    } catch (ex) {
+    } catch {
       alert(
         'Crash reports options changed to many times. Please wait a few seconds.'
       );

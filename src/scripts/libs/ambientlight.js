@@ -1172,7 +1172,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         );
 
         this.videoElem.currentTime = currentTime;
-      } catch (ex) {
+      } catch {
         console.warn(
           `Detected cross origin video. Failed to apply workaround...  ${this.videoElem.src}, ${this.videoElem.crossOrigin}`
         );
@@ -3665,7 +3665,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.videoElem.cancelVideoFrameCallback(
           this.requestVideoFrameCallbackId
         );
-      } catch (ex) {
+      } catch {
         console.warn(
           `Failed to cancel current requested videoFrameCallback: ${this.requestVideoFrameCallbackId}`
         );

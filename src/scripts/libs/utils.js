@@ -12,7 +12,7 @@ const getOS = () => {
     const ua = window.navigator.userAgent;
     const os = list.find((os) => ua.toLowerCase().indexOf(os.match) >= 0);
     return os ? os.name : '';
-  } catch (ex) {
+  } catch {
     return null;
   }
 };
@@ -31,7 +31,7 @@ export const getBrowser = () => {
       (browser) => ua.indexOf(browser.ua) >= 0
     );
     return browser ? browser.name : '';
-  } catch (ex) {
+  } catch {
     return null;
   }
 };
@@ -45,7 +45,7 @@ const getBrowserVersion = () => {
     const ua = window.navigator.userAgent;
     const matches = ua.match(`${browserUA}/([0-9.]+)`);
     return matches.length === 2 ? matches[1] : ua;
-  } catch (ex) {
+  } catch {
     return null;
   }
 };
@@ -53,7 +53,7 @@ const getBrowserVersion = () => {
 export const getVersion = () => {
   try {
     return (chrome.runtime.getManifest() || {}).version;
-  } catch (ex) {
+  } catch {
     return null;
   }
 };
