@@ -1510,11 +1510,13 @@ html[data-ambientlight-enabled] {
   /* Immersive mode */
 
   &[data-ambientlight-immersive] {
+    #page-manager.ytd-app {
+      margin-top: 85px;
+    }
     @mixin theater {
-      height: calc(100vh - 169px) !important;
-      max-height: calc(100vh - 169px) !important;
-      padding-top: 29px;
-      padding-bottom: 84px;
+      height: calc(100vh - 169px);
+      max-height: calc(100vh - 169px);
+      margin-bottom: 84px;
     }
 
     @include ytd-watch {

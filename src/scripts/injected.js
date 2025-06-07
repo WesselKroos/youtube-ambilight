@@ -65,7 +65,24 @@ contentScript.addMessageListener(
 function updateImmersiveMode(enable, skipVideoPlayerSetSize = false) {
   const html = document.documentElement;
   const enabled = html.getAttribute('data-ambientlight-immersive') != null;
+  if (enabled === enable) return;
+
+  const scroll = {
+    x: window.scrollX,
+    y: window.scrollY,
+  };
+
   html.toggleAttribute('data-ambientlight-immersive', enable);
+  const shift = enable ? 29 : -29;
+  if (scroll.y > 50 && scroll.y < 100) {
+    window.scrollTo(scroll.x, (scroll.y += shift));
+  }
+
+  const ytdApp = getElem('ytd-app');
+  if (ytdApp?.mastheadHeight) {
+    ytdApp.mastheadHeight += shift;
+    ytdApp.updateMastheadCssHeight?.();
+  }
 
   if (!skipVideoPlayerSetSize && enabled !== enable) videoPlayerSetSize();
 }
