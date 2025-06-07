@@ -16,10 +16,10 @@ let console;
   };
 
   console = {
-    log: (...args) => window.console.log(...enrich(...args)),
-    debug: (...args) => window.console.debug(...enrich(...args)),
-    warn: (...args) => window.console.warn(...enrich(...args)),
-    error: (...args) => window.console.error(...enrich(...args)),
-    dir: (...args) => window.console.dir(...args),
+    log: (...args) => globalThis.console.log(...enrich(...args)),
+    debug: (...args) => globalThis.console.debug(...enrich(...args)),
+    warn: (...args) => globalThis.console.warn(...enrich(...args)),
+    error: (...args) => globalThis.console.error(...enrich(...args)),
+    dir: (...args) => globalThis.console.dir(...args),
   };
 })();
