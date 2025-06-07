@@ -641,6 +641,16 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.videoIsPictureInPicture = false;
         await this.optionalFrame();
       },
+      transitionstart: () => {
+        this.videoSizeTransitioning = true;
+        this.sizesChanged = true;
+      },
+      transitionend: () => {
+        this.videoSizeTransitioning = false;
+      },
+      transitioncancel: () => {
+        this.videoSizeTransitioning = false;
+      },
     };
     for (const name in this.videoListeners) {
       off(this.videoElem, name, this.videoListeners[name]);
@@ -1802,27 +1812,19 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       !noClipOrScale &&
       !this.isControlledByAnotherExtension;
     if (this.shouldStyleVideoParentElem) {
-      const top = Math.max(0, parseInt(this.videoElem.style.top) || 0);
-      const left = Math.max(0, parseInt(this.videoElem.style.left) || 0);
-      const width = Math.max(0, parseInt(this.videoElem.style.width) || 0);
-      videoParentElem.style.width = `${width}px`;
-      videoParentElem.style.height = this.videoElem.style.height || '100%';
-      videoParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`;
-      videoParentElem.style.overflow = 'hidden';
-      videoParentElem.style.transform = `
-        translate(${left}px, ${top}px)
-        scale(${this.videoScale / 100}) 
-        scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
-      `;
-      const videoClipScale = this.clippedVideoScale.map(
-        (scale) => Math.round(1000 * (1 / scale)) / 1000
+      setStyleProperty(
+        videoParentElem,
+        '--video-scale',
+        `${Math.round(this.videoScale * 10) / 1000}`
+      );
+
+      const videoClip = this.barsClip.map(
+        (scale) => Math.round(100000 * scale) / 1000
       );
       setStyleProperty(
         videoParentElem,
-        '--video-transform',
-        `translate(${-left}px, ${-top}px) scale(${videoClipScale[0]}, ${
-          videoClipScale[1]
-        })`
+        '--video-clip-path',
+        `inset(${videoClip[1]}% ${videoClip[0]}%)`
       );
     } else {
       this.resetVideoParentElemStyle();
@@ -2125,7 +2127,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.resizeCanvasses();
     this.stats.initElems();
 
-    this.sizesChanged = false;
+    if (!this.videoSizeTransitioning) {
+      this.sizesChanged = false;
+    }
     this.buffersCleared = true;
     return true;
   }
@@ -2134,11 +2138,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.shouldStyleVideoParentElem = false;
     const videoParentElem = this.videoElem.parentElement;
     if (videoParentElem) {
-      videoParentElem.style.transform = '';
-      videoParentElem.style.overflow = '';
-      videoParentElem.style.height = '';
-      videoParentElem.style.marginBottom = '';
-      setStyleProperty(videoParentElem, '--video-transform', '');
+      setStyleProperty(videoParentElem, '--video-scale', '');
+      setStyleProperty(videoParentElem, '--video-clip-path', '');
     }
   }
 

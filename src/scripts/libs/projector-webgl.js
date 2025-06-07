@@ -114,8 +114,11 @@ export default class ProjectorWebGL {
 
     if (!this.cropped) this.updateCrop();
 
-    const srcWidth = src.videoWidth || src.width;
-    const srcHeight = src.videoHeight || src.height;
+    const srcWidth =
+      src instanceof HTMLVideoElement ? src.videoWidth : src.width;
+    const srcHeight =
+      src instanceof HTMLVideoElement ? src.videoHeight : src.height;
+    if (!srcWidth || !srcHeight) return;
 
     const textureMipmapLevel = Math.max(
       0,
@@ -1370,9 +1373,9 @@ export default class ProjectorWebGL {
       );
     }
 
-    if (!this.cropped) {
-      this.updateCrop();
-    }
+    // if (!this.cropped) {
+    this.updateCrop();
+    // }
 
     if (!this.vPosition || !this.vUV) {
       this.updatePositionAndUvCoordinates();
@@ -1388,13 +1391,27 @@ export default class ProjectorWebGL {
     )
       return;
 
-    const videoBoundingElem = this.ambientlight.shouldStyleVideoParentElem
-      ? this.ambientlight.videoContainerElem
-      : this.ambientlight.videoElem;
+    const videoBoundingElem =
+      // this.ambientlight.shouldStyleVideoParentElem
+      //   ? this.ambientlight.videoContainerElem
+      //   :
+      this.ambientlight.videoElem;
     if (!videoBoundingElem) return;
 
     let videoRect = videoBoundingElem.getBoundingClientRect();
     if (!videoRect?.width || !videoRect?.height) return;
+    const verticalClipSize =
+      videoRect.height *
+      ((1 - this.ambientlight.clippedVideoScale?.[1] ?? 1) / 2);
+    const horizontalClipSize =
+      videoRect.width *
+      ((1 - this.ambientlight.clippedVideoScale?.[0] ?? 1) / 2);
+    videoRect = {
+      top: videoRect.top + verticalClipSize,
+      bottom: videoRect.bottom - verticalClipSize,
+      left: videoRect.left + horizontalClipSize,
+      right: videoRect.right - horizontalClipSize,
+    };
 
     const canvasRect = this.blurCanvas.getBoundingClientRect();
     if (!canvasRect?.width || !canvasRect?.height) return;
