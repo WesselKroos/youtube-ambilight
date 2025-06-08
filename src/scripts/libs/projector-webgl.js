@@ -260,15 +260,23 @@ export default class ProjectorWebGL {
       this.drawTextureSize.width === 0 && this.drawTextureSize.height === 0;
     if (isNewTextureUpload) {
       // Only do this once for the first texture. Because getError takes 0.3 to 20ms
-      const error = this.ctx.getError();
+      const webGLError = this.ctx.getError();
 
-      if (error !== this.ctx.NO_ERROR) {
+      if (webGLError !== this.ctx.NO_ERROR) {
         // Reset cpu-memory cached texture data
         this.drawInitial = true;
 
-        throw new AmbientlightError(
-          `WebGL error: ${webGLErrorToString(error)}`
+        const error = new AmbientlightError(
+          `WebGL error: ${webGLErrorToString(webGLError)}`,
+          {
+            program: this.program?.toString(),
+            webGLVersion: this.webGLVersion,
+            majorPerformanceCaveat: this.majorPerformanceCaveat,
+            ctxOptions: this.ctxOptions,
+          }
         );
+        error.name = 'ProjectorWebGLDrawError';
+        throw error;
       } else {
         this.setWarning('');
       }
