@@ -6,8 +6,10 @@ import fs from 'fs';
 const common = {
   context: 'window',
   plugins: [
-    eslint(),
     resolve(),
+    eslint({
+      overrideConfigFile: './eslint.config.js',
+    }),
     babel({
       babelHelpers: 'bundled',
       comments: false,

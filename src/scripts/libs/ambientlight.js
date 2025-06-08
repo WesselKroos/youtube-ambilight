@@ -3633,7 +3633,6 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         let isHdr;
         if (typeof VideoFrame !== 'undefined') {
           // Not yet supported in Firefox (Stable): https://bugzilla.mozilla.org/show_bug.cgi?id=1749539
-          // eslint-disable-next-line no-undef
           const videoFrame = new VideoFrame(this.videoElem, { timestamp: 0 });
           isHdr = videoFrame?.colorSpace?.primaries === 'bt2020'; // https://w3c.github.io/webcodecs/#videocolorspace
           videoFrame.close();
