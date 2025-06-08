@@ -301,15 +301,15 @@ export default class Settings {
     const updatesList = document.createElement('ul');
     updatesSpan.appendChild(updatesList);
 
-    const addUpdatesListItem = (text) => {
-      const updatesListItem = document.createElement('li');
-      updatesListItem.textContent = text;
-      updatesList.appendChild(updatesListItem);
-    };
+    // const addUpdatesListItem = (text) => {
+    //   const updatesListItem = document.createElement('li');
+    //   updatesListItem.textContent = text;
+    //   updatesList.appendChild(updatesListItem);
+    // };
 
-    addUpdatesListItem(
-      'The "Video: size" setting has been split into a size setting per view (small, theater, fullscreen)'
-    );
+    // addUpdatesListItem(
+    //   'The "Video: size" setting has been split into a size setting per view (small, theater, fullscreen)'
+    // );
 
     const warning = document.createElement('div');
     warning.className = 'ytp-menuitem ytpa-menuitem--warning';
