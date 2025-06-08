@@ -4,6 +4,7 @@ import {
   ctxOptions,
   requestIdleCallback,
   SafeOffscreenCanvas,
+  webGLErrorToString,
   wrapErrorHandler,
 } from './generic';
 import ProjectorShadow from './projector-shadow';
@@ -254,6 +255,25 @@ export default class ProjectorWebGL {
 
     if (this.settings.showResolutions) start = performance.now();
     this.ctx.drawArrays(this.ctx.TRIANGLES, 0, this.vPosition.length / 2);
+
+    const isNewTextureUpload =
+      this.drawTextureSize.width === 0 && this.drawTextureSize.height === 0;
+    if (isNewTextureUpload) {
+      // Only do this once for the first texture. Because getError takes 0.3 to 20ms
+      const error = this.ctx.getError();
+
+      if (error !== this.ctx.NO_ERROR) {
+        // Reset cpu-memory cached texture data
+        this.drawInitial = true;
+
+        throw new AmbientlightError(
+          `WebGL error: ${webGLErrorToString(error)}`
+        );
+      } else {
+        this.setWarning('');
+      }
+    }
+
     if (this.settings.showResolutions)
       this.drawTime = performance.now() - start;
 

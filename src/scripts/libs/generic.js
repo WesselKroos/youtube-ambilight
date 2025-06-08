@@ -439,6 +439,18 @@ export const mediaErrorToString = (value) =>
     value) ??
   'UNKNOWN');
 
+export const webGLErrorToString = (value) =>
+  (({
+    1280: 'GL_INVALID_ENUM',
+    1281: 'GL_INVALID_VALUE',
+    1282: 'GL_INVALID_OPERATION',
+    1285: 'GL_OUT_OF_MEMORY',
+    1286: 'GL_INVALID_FRAMEBUFFER_OPERATION',
+    1287: 'GL_CONTEXT_LOST_WEBGL',
+  }[value] ||
+    value) ??
+  'UNKNOWN');
+
 export const VIEW_DISABLED = 'DISABLED';
 export const VIEW_DETACHED = 'DETACHED';
 export const VIEW_SMALL = 'SMALL';

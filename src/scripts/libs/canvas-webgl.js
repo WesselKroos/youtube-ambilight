@@ -3,6 +3,7 @@ import {
   canvasWebGLCrashTips,
   ctxOptions,
   requestIdleCallback,
+  webGLErrorToString,
   wrapErrorHandler,
 } from './generic';
 
@@ -726,11 +727,12 @@ export class WebGLContext {
       this.scaleY = scaleY;
     }
 
-    if (
+    const resolutionChanged =
       !this.viewport ||
       this.viewport.width !== destWidth ||
-      this.viewport.height !== destHeight
-    ) {
+      this.viewport.height !== destHeight;
+
+    if (resolutionChanged) {
       this.ctx.viewport(0, 0, destWidth, destHeight);
       this.viewport = { width: destWidth, height: destHeight };
     }
@@ -786,6 +788,22 @@ export class WebGLContext {
         this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
       }
       this.ctx.activeTexture(this.ctx['TEXTURE0']);
+    }
+
+    if (resolutionChanged) {
+      // Only do this once for the first texture. Because getError takes 0.3 to 20ms
+      const error = this.ctx.getError();
+
+      if (error !== this.ctx.NO_ERROR) {
+        // Reset cpu-memory cached texture data
+        this.viewport = undefined;
+
+        throw new AmbientlightError(
+          `WebGL error: ${webGLErrorToString(error)}`
+        );
+      } else {
+        this.setWarning('');
+      }
     }
 
     if (this.settings.showResolutions)

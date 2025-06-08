@@ -431,16 +431,16 @@ export default class Ambientlight {
   }
 
   lastVideoElemSrc = '';
-  initVideoIfSrcChanged() {
+  initVideoIfSrcChanged = async () => {
     if (this.lastVideoElemSrc === this.videoElem.src) {
       return false;
     }
 
     this.lastVideoElemSrc = this.videoElem.src;
-    this.start();
+    await this.start();
 
     return true;
-  }
+  };
 
   initAverageVideoFramesDifferenceListeners() {
     if (!this.ytdWatchElem) return;
@@ -545,7 +545,7 @@ export default class Ambientlight {
         }
 
         // When the video is paused this is the first event. Else [loadeddata] is first
-        if (this.initVideoIfSrcChanged()) return;
+        if (await this.initVideoIfSrcChanged()) return;
 
         this.previousPresentedFrames = 0;
         this.videoFrameCounts = [];
@@ -597,7 +597,7 @@ export default class Ambientlight {
         // Whent the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed(); // Re-check after crossOrigin attribute has been applied
         await this.updateHdr();
-        this.initVideoIfSrcChanged();
+        await this.initVideoIfSrcChanged();
       },
       playing: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return;
@@ -3095,8 +3095,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended ||
       this.videoElem.readyState === 0 || // HAVE_NOTHING
-      (this.videoElem.readyState === 1 && !this.buffersCleared) // HAVE_METADATA can also happen while seeking. In that case draw the ambient light once if the projector is currently cleared
-      // Todo: (this.videoElem.readyState === 1 && firstSrc) // Video knows the videoWidth and videoHeight, but has no frame data yet. When it also has no previous frame data yet this will cause multiple WebGL warnings on resizes: [.WebGL-0000772807FD7100] GL_INVALID_OPERATION: Texture format does not support mipmap generation.
+      this.videoElem.readyState === 1 // HAVE_METADATA
+      // The video contains metadata about the resolution so videoWidth and videoHeight are set.
+      // But the video could have no framedata yet. On Firefox this can result in a failed draw call
+      // to WebGL into a texture with a 0x0 resolution.
+      // And then the next videoframes will also fail because they are drawn into a 0x0 texture.
+      // This can result in any of the following WebGL warnings:
+      // - [.WebGL-0000772807FD7100] GL_INVALID_OPERATION: Texture format does not support mipmap generation.
+      // - tex(Sub)Image[23]D: Resource has no data (yet?). Uploading zeros.
+      // - texSubImage: source cannot be null.
+      // - generateMipmap: The texture's base level must be complete.
+      // - drawArraysInstanced: TEXTURE_2D at unit 1 is incomplete: The dimensions of level_base are not all positive.
     )
       return;
 
