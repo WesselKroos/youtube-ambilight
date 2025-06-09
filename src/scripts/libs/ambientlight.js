@@ -2858,13 +2858,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         { timeout: 1000 / 30 }
       );
     } catch (ex) {
-      const message =
-        ex.name === 'SecurityError'
-          ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
-          : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`;
-      this.settings.setWarning(
-        `Failed to display the ambient light\n\n${message}`
-      );
+      this.setDrawWarning(ex);
       if (this.catchedErrors[ex.name]) {
         console.error(ex);
         return;
@@ -2885,6 +2879,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
       throw ex;
     }
+  };
+
+  setDrawWarning = (ex) => {
+    const message =
+      ex.name === 'SecurityError'
+        ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
+        : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`;
+
+    this.settings.setWarning(
+      `Failed to display the ambient light\n\n${message}`
+    );
   };
 
   afterNextFrame = async function afterNextFrame() {
@@ -3698,7 +3703,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   onVideoFrame = wrapErrorHandler(
-    function onVideoFrame(compose, info) {
+    async function onVideoFrame(compose, info) {
       if (!this.requestVideoFrameCallbackId) {
         console.warn(
           `Old rvfc fired. Ignoring a possible duplicate. ${this.requestVideoFrameCallbackId} | ${compose} | ${info}`
@@ -3716,7 +3721,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       if (this.scheduledNextFrame) return;
       this.scheduledNextFrame = true;
 
-      this.onNextFrame();
+      await this.onNextFrame();
     }.bind(this),
     true
   );

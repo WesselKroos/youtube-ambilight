@@ -259,27 +259,7 @@ export default class ProjectorWebGL {
     const isNewTextureUpload =
       this.drawTextureSize.width === 0 && this.drawTextureSize.height === 0;
     if (isNewTextureUpload) {
-      // Only do this once for the first texture. Because getError takes 0.3 to 20ms
-      const webGLError = this.ctx.getError();
-
-      if (webGLError !== this.ctx.NO_ERROR) {
-        // Reset cpu-memory cached texture data
-        this.drawInitial = true;
-
-        const error = new AmbientlightError(
-          `WebGL error: ${webGLErrorToString(webGLError)}`,
-          {
-            program: this.program?.toString(),
-            webGLVersion: this.webGLVersion,
-            majorPerformanceCaveat: this.majorPerformanceCaveat,
-            ctxOptions: this.ctxOptions,
-          }
-        );
-        error.name = 'ProjectorWebGLDrawError';
-        throw error;
-      } else {
-        this.setWarning('');
-      }
+      this.checkForDrawErrors();
     }
 
     if (this.settings.showResolutions)
@@ -307,6 +287,42 @@ export default class ProjectorWebGL {
     this.drawIndex =
       (this.drawIndex + 1 + Math.round(Math.random() * 0.5)) %
       this.projectorsCount;
+  };
+
+  drawErrors = [];
+  checkForDrawErrors = () => {
+    // Only do this once for the first texture. Because getError takes 0.3 to 20ms
+    const webGLError = this.ctx.getError();
+
+    if (webGLError === this.ctx.NO_ERROR) {
+      this.drawErrors.length = 0;
+      this.setWarning('');
+      return;
+    }
+
+    // Reset cpu-memory cached texture data
+    this.drawInitial = true;
+
+    const error = new AmbientlightError(
+      `WebGL error: ${webGLErrorToString(webGLError)}`,
+      {
+        program: this.program?.toString(),
+        webGLVersion: this.webGLVersion,
+        majorPerformanceCaveat: this.majorPerformanceCaveat,
+        ctxOptions: this.ctxOptions,
+      }
+    );
+    error.name = 'ProjectorWebGLDrawError';
+
+    this.drawErrors.push(error);
+    if (this.drawErrors.length < 3) {
+      console.warn(error);
+      this.ambientlight.setDrawWarning(error);
+      return;
+    }
+
+    error.details.previousErrors = this.drawErrors.slice(0, -1);
+    throw error;
   };
 
   setWebGLWarning(action = 'restore') {

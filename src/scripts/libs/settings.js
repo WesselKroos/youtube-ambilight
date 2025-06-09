@@ -1589,7 +1589,7 @@ export default class Settings {
       this.menuBtn.classList.add('has-warning');
       this.settingsMenuBtnTooltipText.textContent = `Ambient light failed to load:\n${message}`;
     } else {
-      this.setWarning(`An error occured:\n${message}`);
+      this.setWarning(`An error occured:\n${message}`, true);
     }
   };
 
