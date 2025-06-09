@@ -279,27 +279,27 @@ export default class Settings {
     menu.role = 'menu';
     panel.appendChild(menu);
 
-    const updates = document.createElement('div');
-    updates.className = 'ytp-menuitem ytpa-menuitem--updates';
-    updates.style.display = 'none';
-    updates.title = 'Click to dismiss';
-    menu.appendChild(updates);
+    // const updates = document.createElement('div');
+    // updates.className = 'ytp-menuitem ytpa-menuitem--updates';
+    // updates.style.display = 'none';
+    // updates.title = 'Click to dismiss';
+    // menu.appendChild(updates);
 
-    const updatesLabel = document.createElement('div');
-    updatesLabel.className = 'ytp-menuitem-label';
-    updatesLabel.rowspan = '2';
-    updates.appendChild(updatesLabel);
+    // const updatesLabel = document.createElement('div');
+    // updatesLabel.className = 'ytp-menuitem-label';
+    // updatesLabel.rowspan = '2';
+    // updates.appendChild(updatesLabel);
 
-    const updatesSpan = document.createElement('span');
-    updatesSpan.className = 'ytpa-updates';
-    updatesLabel.appendChild(updatesSpan);
+    // const updatesSpan = document.createElement('span');
+    // updatesSpan.className = 'ytpa-updates';
+    // updatesLabel.appendChild(updatesSpan);
 
-    const updatesTitle = document.createElement('b');
-    updatesTitle.textContent = `Important changes in version ${version}:`;
-    updatesSpan.appendChild(updatesTitle);
+    // const updatesTitle = document.createElement('b');
+    // updatesTitle.textContent = `Important changes in version ${version}:`;
+    // updatesSpan.appendChild(updatesTitle);
 
-    const updatesList = document.createElement('ul');
-    updatesSpan.appendChild(updatesList);
+    // const updatesList = document.createElement('ul');
+    // updatesSpan.appendChild(updatesList);
 
     // const addUpdatesListItem = (text) => {
     //   const updatesListItem = document.createElement('li');
