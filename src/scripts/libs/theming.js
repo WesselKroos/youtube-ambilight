@@ -7,7 +7,7 @@ import {
   wrapErrorHandler,
 } from './generic';
 import { injectedScript } from './messaging/injected';
-import SentryReporter from './sentry-reporter';
+import SentryReporter from './errors/sentry-reporter';
 import { storage } from './storage';
 
 const THEME_LIGHT = -1;

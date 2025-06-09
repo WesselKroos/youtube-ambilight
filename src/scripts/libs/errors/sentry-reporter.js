@@ -11,114 +11,17 @@ import {
   isEmbedPageUrl,
   mediaErrorToString,
   networkStateToString,
-  on,
   readyStateToString,
   uuidv4,
   watchSelectors,
-} from './generic';
-import SettingsConfig from './settings-config';
-import { storage } from './storage';
-
-const getNodeSelector = (elem) => {
-  if (!elem.tagName) return elem.nodeName; // Document
-
-  const idSelector = elem.id ? `#${elem.id}` : '';
-  const classSelector = elem.classList?.length
-    ? `.${Array.from(elem.classList).sort().join('.')}`
-    : '';
-  return `${elem.tagName.toLowerCase()}${idSelector}${classSelector}`;
-};
-
-const getNodeTree = (elem) => {
-  if (!elem) return [];
-
-  const tree = [];
-  tree.push(elem);
-  while (elem.parentNode && elem.parentNode.tagName) {
-    tree.unshift(elem.parentNode);
-    elem = elem.parentNode;
-  }
-  return tree;
-};
-
-export const getNodeTreeString = (elem) =>
-  getNodeTree(elem)
-    .map((node, i) => `${' '.repeat(i)}${getNodeSelector(node)}`)
-    .join('\n');
-
-const createNodeEntry = (node, level) => ({
-  level,
-  node,
-  children: [],
-});
-// const findEntry = (node, entry) => {
-//   if(entry.node === node) return entry
-//   for (entry of entry.children) {
-//     const foundEntry = findEntry(node, entry)
-//     if(foundEntry) return foundEntry
-//   }
-// }
-const entryToString = (entry) => {
-  let lines = [`${' '.repeat(entry.level)}${getNodeSelector(entry.node)}`];
-  for (const childEntry of entry.children) {
-    lines.push(entryToString(childEntry));
-  }
-  return lines.join('\n');
-};
-export const getSelectorTreeString = (selector) => {
-  const trees = Array.from(document.querySelectorAll(selector)).map((elem) =>
-    getNodeTree(elem)
-  );
-
-  const documentTrees = [];
-  for (const nodeTree of trees) {
-    let documentTree;
-    let previousEntry;
-    for (const node of nodeTree) {
-      if (!previousEntry) {
-        documentTree = documentTrees.find((dt) => dt.node === node);
-        if (!documentTree) {
-          documentTree = createNodeEntry(node, 0);
-          documentTrees.push(documentTree);
-        }
-        previousEntry = documentTree;
-        continue;
-      }
-
-      const existingEntry = previousEntry.children.find(
-        (entry) => entry.node === node
-      );
-      if (existingEntry) {
-        previousEntry = existingEntry;
-        continue;
-      }
-
-      const entry = createNodeEntry(node, previousEntry.level + 1);
-      previousEntry.children.push(entry);
-      previousEntry = entry;
-    }
-  }
-
-  return documentTrees
-    .map((documentTree) =>
-      documentTree
-        ? entryToString(documentTree)
-        : `No nodes found for selector: '${selector}'`
-    )
-    .join('\n');
-};
+} from '../generic';
+import SettingsConfig from '../settings-config';
+import { storage } from '../storage';
 
 let settings;
 export const parseSettingsToSentry = (newSettings) => {
   settings = newSettings;
 };
-
-export class AmbientlightError extends Error {
-  constructor(message, details) {
-    super(message);
-    this.details = details;
-  }
-}
 
 let version = '';
 export const setVersion = (newVersion) => {
@@ -623,105 +526,4 @@ export default class SentryReporter {
       console.error(ex);
     }
   }
-}
-
-export class ErrorEvents {
-  list = [];
-
-  constructor() {
-    on(
-      window,
-      'beforeunload',
-      () => {
-        if (!this.list.length) return;
-
-        this.add('tab beforeunload');
-        this.send();
-      },
-      false
-    );
-
-    on(
-      window,
-      'pagehide',
-      () => {
-        if (!this.list.length) return;
-
-        this.add('tab pagehide');
-      },
-      false
-    );
-
-    on(
-      document,
-      'visibilitychange',
-      () => {
-        if (document.visibilityState !== 'hidden') return;
-        if (!this.list.length) return;
-
-        this.add('tab visibilitychange hidden');
-        this.send();
-      },
-      false
-    );
-  }
-
-  send = (message, force) => {
-    const lastEvent = this.list[this.list.length - 1];
-    const lastTime = lastEvent.time;
-    const firstTime = this.list[0].firstTime || this.list[0].time;
-    if (!force && lastTime - firstTime < 5) {
-      return; // Give the site 5 seconds to load the watch page or move the video element
-    }
-
-    const firstEvent = this.list.splice(0, 1);
-    const details = {
-      firstEvent,
-      events: this.list.reverse(),
-    };
-    this.list = [];
-
-    SentryReporter.captureException(
-      new AmbientlightError(
-        message ?? 'Closed or hid the page with pending errors',
-        details
-      )
-    );
-  };
-
-  add = (type, details = {}) => {
-    if (!crashOptions?.technical) {
-      details = undefined;
-    }
-    const time = Math.round(performance.now()) / 1000;
-
-    if (this.list.length) {
-      const last = this.list.slice(-1)[0];
-      const {
-        count: lastCount,
-        time: lastTime,
-        firstTime,
-        type: lastType,
-        ...lastDetails
-      } = last;
-
-      if (
-        lastType === type &&
-        JSON.stringify(lastDetails) === JSON.stringify(details)
-      ) {
-        last.count = lastCount ? lastCount + 1 : 2;
-        last.time = time;
-        last.firstTime = firstTime || lastTime;
-        return;
-      }
-    }
-
-    let event = {
-      type,
-      time,
-      ...details,
-    };
-    event.time = time;
-    this.list.push(event);
-  };
 }

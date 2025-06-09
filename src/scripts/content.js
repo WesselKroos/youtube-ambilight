@@ -4,7 +4,7 @@ import { defaultCrashOptions, storage } from './libs/storage';
 import SentryReporter, {
   setCrashOptions,
   setVersion,
-} from './libs/sentry-reporter';
+} from './libs/errors/sentry-reporter';
 import { injectedScript } from './libs/messaging/injected';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));

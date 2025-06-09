@@ -10,7 +10,7 @@ import {
   VIEW_FULLSCREEN,
   setDisplayErrorHandler,
 } from './generic';
-import SentryReporter from './sentry-reporter';
+import SentryReporter from './errors/sentry-reporter';
 import SettingsConfig, {
   prepareSettingsConfigOnce,
   WebGLOnlySettings,

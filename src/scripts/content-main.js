@@ -8,14 +8,13 @@ import {
   setWarning,
   off,
 } from './libs/generic';
+import { ErrorEvents } from './libs/errors/events';
+import { getNodeTreeString, getSelectorTreeString } from './libs/errors/dom';
+import { AmbientlightError } from './libs/errors/ambient-light-error';
 import SentryReporter, {
-  getSelectorTreeString,
-  getNodeTreeString,
-  AmbientlightError,
-  ErrorEvents,
   setVersion,
   setCrashOptions,
-} from './libs/sentry-reporter';
+} from './libs/errors/sentry-reporter';
 import Ambientlight from './libs/ambientlight';
 import Settings from './libs/settings';
 import { contentScript } from './libs/messaging/content';

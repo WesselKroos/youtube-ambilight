@@ -9,7 +9,7 @@ import { contentScript } from './libs/messaging/content';
 import SentryReporter, {
   setCrashOptions,
   setVersion,
-} from './libs/sentry-reporter';
+} from './libs/errors/sentry-reporter';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 

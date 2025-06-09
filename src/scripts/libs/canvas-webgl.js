@@ -1,4 +1,4 @@
-import { AmbientlightError } from './sentry-reporter';
+import { AmbientlightError } from './errors/ambient-light-error';
 import {
   canvasWebGLCrashTips,
   ctxOptions,

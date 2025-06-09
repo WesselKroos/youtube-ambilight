@@ -23,7 +23,9 @@ import {
   VIEW_POPUP,
   setStyleProperty,
 } from './generic';
-import SentryReporter, { parseSettingsToSentry } from './sentry-reporter';
+import SentryReporter, {
+  parseSettingsToSentry,
+} from './errors/sentry-reporter';
 import BarDetection from './bar-detection';
 import Settings, {
   DEBANDING_BLEND_MODE_LCD,

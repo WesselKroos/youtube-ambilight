@@ -4,7 +4,7 @@ import {
   SafeOffscreenCanvas,
   wrapErrorHandler,
 } from './generic';
-import SentryReporter from './sentry-reporter';
+import SentryReporter from './errors/sentry-reporter';
 import { workerFromCode } from './worker';
 
 const workerCode = function () {
