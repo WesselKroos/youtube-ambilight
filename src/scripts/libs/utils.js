@@ -9,7 +9,7 @@ const getOS = () => {
       { match: 'ios', name: 'iOS' },
       { match: 'x11', name: 'Linux' },
     ];
-    const ua = window.navigator.userAgent;
+    const ua = globalThis.navigator.userAgent;
     const os = list.find((os) => ua.toLowerCase().indexOf(os.match) >= 0);
     return os ? os.name : '';
   } catch {
@@ -26,7 +26,7 @@ const browsersUAList = [
 
 export const getBrowser = () => {
   try {
-    const ua = window.navigator.userAgent;
+    const ua = globalThis.navigator.userAgent;
     const browser = browsersUAList.find(
       (browser) => ua.indexOf(browser.ua) >= 0
     );
@@ -42,7 +42,7 @@ const getBrowserVersion = () => {
     const browserUA = browsersUAList.find(
       (browser) => browserName === browser.name
     ).ua;
-    const ua = window.navigator.userAgent;
+    const ua = globalThis.navigator.userAgent;
     const matches = ua.match(`${browserUA}/([0-9.]+)`);
     return matches.length === 2 ? matches[1] : ua;
   } catch {

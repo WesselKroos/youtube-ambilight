@@ -115,7 +115,7 @@ const initializeStorageEntries = (async () => {
 
 let sessionId;
 export default class SentryReporter {
-  static script = window.yt ? 'injected' : 'content';
+  static script = globalThis.yt ? 'injected' : 'content';
   static overflowProtection = 0;
   static async captureException(ex) {
     try {
@@ -145,9 +145,10 @@ export default class SentryReporter {
         console.warn(ex);
       }
 
-      console.error(ex);
       if (ex.details) {
-        console.error(ex.details);
+        console.error(ex, ex.details);
+      } else {
+        console.error(ex);
       }
 
       if (this.overflowProtection === 3) {
@@ -237,7 +238,7 @@ export default class SentryReporter {
       }
 
       try {
-        if (window.yt) {
+        if (globalThis.yt) {
           const ambientlightExtra = {
             initialized: typeof ambientlight !== 'undefined',
           };
@@ -370,8 +371,8 @@ export default class SentryReporter {
         try {
           setExtra('YouTube', {
             dark: !!document.documentElement?.attributes?.dark,
-            loggedIn: window.yt
-              ? !!window.yt?.config_?.LOGGED_IN
+            loggedIn: globalThis.yt
+              ? !!globalThis.yt?.config_?.LOGGED_IN
               : document.querySelector('ytd-topbar-menu-button-renderer')
               ? !!document.querySelector('#avatar-btn')
               : undefined,
@@ -405,7 +406,7 @@ export default class SentryReporter {
         }
 
         try {
-          const videoElem = window.ambientlight?.videoElem;
+          const videoElem = globalThis.ambientlight?.videoElem;
           if (videoElem) {
             setExtra('Video state', {
               mediaError: videoElem.error
@@ -423,30 +424,36 @@ export default class SentryReporter {
         }
 
         try {
-          setExtra('Window', {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            scrollY: window.scrollY,
-            devicePixelRatio: window.devicePixelRatio,
-            fullscreen: document.fullscreen,
-          });
-        } catch (ex) {
-          setExtra('Window (exception)', ex);
-        }
+          if (globalThis.window) {
+            try {
+              setExtra('Window', {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                scrollY: window.scrollY,
+                devicePixelRatio: window.devicePixelRatio,
+                fullscreen: document.fullscreen,
+              });
+            } catch (ex) {
+              setExtra('Window (exception)', ex);
+            }
 
-        try {
-          if (window.screen) {
-            setExtra('Screen', {
-              width: screen.width,
-              height: screen.height,
-              availWidth: screen.availWidth,
-              availHeight: screen.availHeight,
-              colorDepth: screen.colorDepth,
-              pixelDepth: screen.pixelDepth,
-            });
+            try {
+              if (window.screen) {
+                setExtra('Screen', {
+                  width: screen.width,
+                  height: screen.height,
+                  availWidth: screen.availWidth,
+                  availHeight: screen.availHeight,
+                  colorDepth: screen.colorDepth,
+                  pixelDepth: screen.pixelDepth,
+                });
+              }
+            } catch (ex) {
+              setExtra('Screen (exception)', ex);
+            }
           }
         } catch (ex) {
-          setExtra('Screen (exception)', ex);
+          setExtra('Window (exception)', ex);
         }
 
         try {

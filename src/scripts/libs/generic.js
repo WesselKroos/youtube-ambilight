@@ -90,7 +90,7 @@ export const wrapErrorHandler = (callback, reportOnce = false) =>
     : withErrorHandler)(callback, reportOnce, new Error().stack, []);
 
 export const setTimeout = (handler, timeout) => {
-  return window.setTimeout(wrapErrorHandler(handler), timeout);
+  return globalThis.setTimeout(wrapErrorHandler(handler), timeout);
 };
 
 const eventListenerCallbacks = [];
@@ -283,17 +283,17 @@ export const raf = (callback) =>
 
 const colorSpace =
   // rec2020 in canvas is not yet supported
-  // window.matchMedia('(color-gamut: rec2020)').matches
+  // globalThis.matchMedia('(color-gamut: rec2020)').matches
   //   ? 'rec2020'
   //   : (
-  window.matchMedia('(color-gamut: p3)').matches ? 'display-p3' : 'srgb';
+  globalThis.matchMedia('(color-gamut: p3)').matches ? 'display-p3' : 'srgb';
 //  )
 
 const extendedColorSpace =
   // rec2020 in canvas is not yet supported
-  window.matchMedia('(color-gamut: rec2020)').matches
+  globalThis.matchMedia('(color-gamut: rec2020)').matches
     ? 'rec2020'
-    : window.matchMedia('(color-gamut: p3)').matches
+    : globalThis.matchMedia('(color-gamut: p3)').matches
     ? 'display-p3'
     : 'srgb';
 
@@ -334,12 +334,12 @@ export class SafeOffscreenCanvas {
 }
 
 export function requestIdleCallback(callback, options, reportOnce = false) {
-  return window.requestIdleCallback
-    ? window.requestIdleCallback(
+  return globalThis.requestIdleCallback
+    ? globalThis.requestIdleCallback(
         wrapErrorHandler(callback, reportOnce),
         options
       )
-    : window.setTimeout(wrapErrorHandler(callback, reportOnce), 1); // Safari (not supported but there are users that try)
+    : globalThis.setTimeout(wrapErrorHandler(callback, reportOnce), 1); // Safari (not supported but there are users that try)
 }
 
 export const appendErrorStack = (stack, ex) => {
@@ -364,7 +364,7 @@ export const supportsWebGL = () => {
   if (_supportsWebGL === undefined) {
     try {
       _supportsWebGL =
-        !!window.WebGLRenderingContext &&
+        !!globalThis.WebGLRenderingContext &&
         (!!document.createElement('canvas')?.getContext('webgl') ||
           !!document.createElement('canvas')?.getContext('webgl2'));
     } catch {
@@ -395,7 +395,7 @@ export const isWatchPageUrl = () =>
 export const isEmbedPageUrl = () => location.pathname?.startsWith('/embed/');
 
 export const getCookie = async (name) =>
-  window.cookieStore
+  globalThis.cookieStore
     ? await cookieStore.get(name)
     : document.cookie
         .split('; ')

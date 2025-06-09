@@ -58,7 +58,7 @@ export default class Theming {
 
     try {
       // Firefox does not support the cookieStore
-      if (window.cookieStore?.addEventListener) {
+      if (globalThis.cookieStore?.addEventListener) {
         cookieStore.addEventListener(
           'change',
           wrapErrorHandler(async (e) => {
