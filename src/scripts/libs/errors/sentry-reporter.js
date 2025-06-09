@@ -1,11 +1,12 @@
 import {
   BrowserClient,
+  dedupeIntegration,
+  functionToStringIntegration,
+  extraErrorDataIntegration,
   defaultStackParser,
-  makeFetchTransport,
-} from '@sentry/browser/esm';
-import { Dedupe as DedupeIntegration } from '@sentry/browser/esm/integrations/dedupe';
-import { Hub, makeMain, getCurrentHub } from '@sentry/core/esm/hub';
-import { Scope } from '@sentry/core/esm/scope';
+  Scope,
+  createTransport,
+} from '@sentry/browser';
 
 import {
   isEmbedPageUrl,
@@ -28,20 +29,49 @@ export const setVersion = (newVersion) => {
   version = newVersion;
 };
 
-let crashOptions = null;
+export let crashOptions = null;
 export const setCrashOptions = (newCrashOptions) => {
   crashOptions = newCrashOptions;
 };
 
-let client;
-let hub;
-function initClient() {
-  client = new BrowserClient({
+let scope;
+function initClientAndScope() {
+  // Custom fetch transport to prevent iframe injection by Sentry's makeFetchTransport
+  // Copied from: https://docs.sentry.io/platforms/javascript/configuration/transports/#custom-transport
+  function makeFetchTransport(options) {
+    function makeRequest(request) {
+      const requestOptions = {
+        body: request.body,
+        method: 'POST',
+        referrerPolicy: 'origin',
+        headers: options.headers,
+        ...options.fetchOptions,
+      };
+      return fetch(options.url, requestOptions).then((response) => {
+        return {
+          statusCode: response.status,
+          headers: {
+            'x-sentry-rate-limits': response.headers.get(
+              'X-Sentry-Rate-Limits'
+            ),
+            'retry-after': response.headers.get('Retry-After'),
+          },
+        };
+      });
+    }
+    return createTransport(options, makeRequest);
+  }
+
+  const client = new BrowserClient({
     enabled: true,
-    dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@sentry.io/1524536',
+    dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@o288593.ingest.us.sentry.io/1524536',
     transport: makeFetchTransport,
     stackParser: defaultStackParser,
-    integrations: [new DedupeIntegration()],
+    integrations: [
+      dedupeIntegration(), // Reduces duplicate reports
+      functionToStringIntegration(), // Names functions
+      extraErrorDataIntegration(), // Captures all properties of an error object
+    ],
     release: version || 'pending',
     attachStacktrace: true,
     maxValueLength: 500,
@@ -51,20 +81,27 @@ function initClient() {
         event.request = {};
         if (navigator.doNotTrack !== '1' && crashOptions?.video) {
           event.request.url = location.href;
+          event.request.headers = {
+            Referer: globalThis.window?.document?.referrer,
+          };
         }
         if (crashOptions?.technical) {
           event.request.headers = {
+            ...(event.request.headers || {}),
             'User-Agent': navigator.userAgent, // Add UserAgent
           };
         }
+
         // Normalize stacktrace domain of all browsers
         for (const value of event.exception.values) {
           if (value.stacktrace && value.stacktrace.frames) {
             for (const frame of value.stacktrace.frames) {
+              // Conversion to app:/// is required to display stacktraces from source on sentry.io
               frame.filename = frame.filename.replace(
                 /[a-z]+?-extension:\/\/[a-z|0-9|-]+?\//g,
-                'extension://'
+                'app:///' // chrome-extension://cokcldclnicoojbmfmbeoiajibcoilgn/
               );
+
               frame.filename = frame.filename.replace(
                 /\/[a-z|0-9]+?\/jsbin\//g,
                 '/_hash_/jsbin/'
@@ -82,7 +119,9 @@ function initClient() {
       return event;
     },
   });
-  hub = new Hub(client);
+  scope = new Scope();
+  scope.setClient(client);
+  client.init();
 }
 
 let userId;
@@ -119,10 +158,6 @@ export default class SentryReporter {
   static overflowProtection = 0;
   static async captureException(ex) {
     try {
-      if (!client || !hub) {
-        initClient();
-      }
-
       this.overflowProtection++;
       if (this.overflowProtection > 3) {
         return;
@@ -201,7 +236,9 @@ export default class SentryReporter {
         return;
       }
 
-      const scope = new Scope();
+      if (!scope) initClientAndScope();
+      scope.clear();
+
       try {
         scope.setUser({ id: userId });
       } catch {
@@ -524,10 +561,7 @@ export default class SentryReporter {
         }
       }
 
-      const previousHub = getCurrentHub();
-      makeMain(hub);
-      client.captureException(ex, {}, scope);
-      makeMain(previousHub);
+      scope.captureException(ex);
       scope.clear();
     } catch (ex) {
       console.error(ex);

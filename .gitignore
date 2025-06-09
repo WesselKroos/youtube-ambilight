@@ -2,3 +2,5 @@
 /dist
 /releases
 /sourcecodes
+/sourcemaps
+.env

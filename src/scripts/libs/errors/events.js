@@ -1,5 +1,5 @@
 import { on } from '../generic';
-import SentryReporter, { setCrashOptions } from './sentry-reporter';
+import SentryReporter, { crashOptions } from './sentry-reporter';
 import { AmbientlightError } from './ambient-light-error';
 
 export class ErrorEvents {
@@ -67,7 +67,7 @@ export class ErrorEvents {
   };
 
   add = (type, details = {}) => {
-    if (!setCrashOptions?.technical) {
+    if (!crashOptions?.technical) {
       details = undefined;
     }
     const time = Math.round(performance.now()) / 1000;

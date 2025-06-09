@@ -1,5 +1,10 @@
 import { getVersion } from './libs/utils';
-import { setErrorHandler, setWarning, wrapErrorHandler } from './libs/generic';
+import {
+  appendErrorStack,
+  setErrorHandler,
+  setWarning,
+  wrapErrorHandler,
+} from './libs/generic';
 import { defaultCrashOptions, storage } from './libs/storage';
 import SentryReporter, {
   setCrashOptions,
@@ -23,6 +28,7 @@ Or if this happens often, view the error in your browser's DevTools javascript c
 const waitForHtmlElement = async () => {
   if (document.documentElement) return;
 
+  const stack = new Error().stack;
   await new Promise((resolve, reject) => {
     try {
       const observer = new MutationObserver(() => {
@@ -33,6 +39,7 @@ const waitForHtmlElement = async () => {
       });
       observer.observe(document, { childList: true });
     } catch (ex) {
+      appendErrorStack(stack, ex);
       reject(ex);
     }
   });
@@ -41,6 +48,7 @@ const waitForHtmlElement = async () => {
 const waitForHeadElement = async () => {
   if (document.head) return;
 
+  const stack = new Error().stack;
   await new Promise((resolve, reject) => {
     try {
       const observer = new MutationObserver(() => {
@@ -51,6 +59,7 @@ const waitForHeadElement = async () => {
       });
       observer.observe(document.documentElement, { childList: true });
     } catch (ex) {
+      appendErrorStack(stack, ex);
       reject(ex);
     }
   });
@@ -59,6 +68,7 @@ const waitForHeadElement = async () => {
 const captureResourceLoadingException = async (url, event) => {
   let error;
   try {
+    const stack = new Error().stack;
     await new Promise((resolve, reject) => {
       try {
         const req = new XMLHttpRequest();
@@ -68,6 +78,7 @@ const captureResourceLoadingException = async (url, event) => {
               error = new Error(
                 `Cannot load ${url} (Status: ${req.statusText} ${req.status})`
               );
+              appendErrorStack(stack, error);
               resolve();
             }
           } catch (ex) {
@@ -77,6 +88,7 @@ const captureResourceLoadingException = async (url, event) => {
         req.open('GET', url, true);
         req.send();
       } catch (ex) {
+        appendErrorStack(stack, ex);
         reject(ex);
       }
     });
