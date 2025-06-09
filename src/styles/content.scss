@@ -2269,14 +2269,15 @@ html[data-ambientlight-enabled] {
       .ytp-fullscreen & {
         padding: 18px 0 8px;
       }
+    }
+    
+    &:first-child:not(.ytpa-menuitem--updates) ~ .ytpa-menuitem--header:nth-child(4),
+    &:first-child.ytpa-menuitem--updates ~ .ytpa-menuitem--header:nth-child(5) {
+      margin-bottom: 0;
+      padding-bottom: 8px;
 
-      &:nth-child(5) {
-        margin-bottom: 0;
-        padding-bottom: 8px;
-
-        .ytp-fullscreen & {
-          padding-bottom: 15px;
-        }
+      .ytp-fullscreen & {
+        padding-bottom: 15px;
       }
     }
   }
