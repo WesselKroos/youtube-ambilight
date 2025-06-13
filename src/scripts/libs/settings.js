@@ -1067,7 +1067,7 @@ export default class Settings {
             }
 
             this.ambientlight.sizesChanged = true;
-            this.ambientlight.optionalFrame(true);
+            await this.ambientlight.optionalFrame(true);
           }
         );
       } else if (setting.type === 'checkbox') {
@@ -1298,7 +1298,7 @@ export default class Settings {
             )
           ) {
             this.ambientlight.updateStyles();
-            this.ambientlight.optionalFrame(true);
+            await this.ambientlight.optionalFrame(true);
             return;
           }
 
@@ -1311,7 +1311,7 @@ export default class Settings {
           }
 
           this.ambientlight.sizesInvalidated = true;
-          this.ambientlight.optionalFrame(true);
+          await this.ambientlight.optionalFrame(true);
         });
       }
     }

@@ -45,6 +45,7 @@ import Theming from './theming';
 import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
+import { getPageElems } from './errors/dom';
 
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
@@ -183,7 +184,11 @@ export default class Ambientlight {
   initElems(videoElem) {
     this.videoPlayerElem = videoElem.closest('.html5-video-player');
     if (!this.videoPlayerElem) {
-      throw new Error('Cannot find videoPlayerElem: .html5-video-player');
+      const error = new Error(
+        'Cannot find videoPlayerElem: .html5-video-player'
+      );
+      error.details = getPageElems();
+      throw error;
     }
     this.videoPlayerElem.dataset.ytalElem = 'video-player';
 
@@ -197,9 +202,11 @@ export default class Ambientlight {
       '.ytp-right-controls, .ytp-chrome-controls > *:last-child'
     );
     if (!this.settingsMenuBtnParent) {
-      throw new Error(
+      const error = new Error(
         'Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child'
       );
+      error.details = getPageElems();
+      throw error;
     }
 
     this.initVideoElem(videoElem, false);
@@ -795,7 +802,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           // When the video is filled and paused in fullscreen the ambientlight is out of sync with the video
           if (this.isFillingFullscreen && !this.atTop) {
             this.buffersCleared = true;
-            this.optionalFrame();
+            await this.optionalFrame();
           }
         }, true),
         {
@@ -818,15 +825,18 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // Only triggers when the html width changes because the height is 0
     let previousHtmlRect;
     this.htmlResizeObserver = new ResizeObserver(
-      function htmlResize(e) {
-        if (!this.settings.enabled || !this.isOnVideoPage) return;
+      wrapErrorHandler(
+        function htmlResize(e) {
+          if (!this.settings.enabled || !this.isOnVideoPage) return;
 
-        const rect = e[0].contentRect;
-        if (resizeTooSmall(previousHtmlRect, rect)) return;
+          const rect = e[0].contentRect;
+          if (resizeTooSmall(previousHtmlRect, rect)) return;
 
-        previousHtmlRect = rect;
-        this.resize(); // Because the video position could be shifted
-      }.bind(this)
+          previousHtmlRect = rect;
+          this.resize(); // Because the video position could be shifted
+        }.bind(this),
+        true
+      )
     );
     this.htmlResizeObserver.observe(document.documentElement);
 
@@ -835,64 +845,70 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     // YouTube does this incorrect by calculating it before the styles are recalculated.
     let previousVideoPlayerRect;
     this.videoPlayerResizeObserver = new ResizeObserver(
-      function videoPlayerResize(e) {
-        if (!this.settings.enabled || !this.isOnVideoPage) {
-          previousVideoPlayerRect = undefined;
-          return;
-        }
+      wrapErrorHandler(
+        function videoPlayerResize(e) {
+          if (!this.settings.enabled || !this.isOnVideoPage) {
+            previousVideoPlayerRect = undefined;
+            return;
+          }
 
-        const rect = e[0].contentRect;
-        if (resizeTooSmall(previousVideoPlayerRect, rect)) return;
+          const rect = e[0].contentRect;
+          if (resizeTooSmall(previousVideoPlayerRect, rect)) return;
 
-        // if(!this.isFullscreen) {
-        //   try {
-        //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
-        //     this.videoPlayerElem.setSize()
-        //     this.videoPlayerElem.setInternalSize()
-        //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
-        //     this.sizesChanged = true
-        //   } catch(ex) {
-        //     console.warn('Failed to resize the video player')
-        //   }
-        // }
-        if (!this.settings.enabled) return;
+          // if(!this.isFullscreen) {
+          //   try {
+          //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
+          //     this.videoPlayerElem.setSize()
+          //     this.videoPlayerElem.setInternalSize()
+          //     await new Promise(resolve => raf(resolve)) // Wait for all layout style recalculations
+          //     this.sizesChanged = true
+          //   } catch(ex) {
+          //     console.warn('Failed to resize the video player')
+          //   }
+          // }
+          if (!this.settings.enabled) return;
 
-        previousVideoPlayerRect = rect;
-        this.resize(
-          this.videoPlayerResizeToFullscreen
-            ? 0
-            : this.videoPlayerResizeFromFullscreen
-            ? 0
-            : 0
-        );
-        this.videoPlayerResizeFromFullscreen = false;
-        this.videoPlayerResizeToFullscreen = false;
-      }.bind(this)
+          previousVideoPlayerRect = rect;
+          this.resize(
+            this.videoPlayerResizeToFullscreen
+              ? 0
+              : this.videoPlayerResizeFromFullscreen
+              ? 0
+              : 0
+          );
+          this.videoPlayerResizeFromFullscreen = false;
+          this.videoPlayerResizeToFullscreen = false;
+        }.bind(this),
+        true
+      )
     );
     this.videoPlayerResizeObserver.observe(this.videoPlayerElem);
 
     // // Deprecated: Moved to videoPlayerResizeObserver
-    // this.videoContainerResizeObserver = new ResizeObserver(function videoContainerResize() {
+    // this.videoContainerResizeObserver = new ResizeObserver(wrapErrorHandler(function videoContainerResize() {
     //   this.resize()
-    // }.bind(this))
+    // }.bind(this), true))
     // this.videoContainerResizeObserver.observe(this.videoContainerElem)
 
     let previousVideoRect;
     this.videoResizeObserver = new ResizeObserver(
-      function videoResize(e) {
-        if (!this.settings.enabled || !this.isOnVideoPage) {
-          previousVideoRect = undefined;
-          return;
-        }
+      wrapErrorHandler(
+        function videoResize(e) {
+          if (!this.settings.enabled || !this.isOnVideoPage) {
+            previousVideoRect = undefined;
+            return;
+          }
 
-        const rect = e[0].contentRect;
-        if (resizeTooSmall(previousVideoRect, rect)) {
-          return;
-        }
+          const rect = e[0].contentRect;
+          if (resizeTooSmall(previousVideoRect, rect)) {
+            return;
+          }
 
-        previousVideoRect = rect;
-        this.resize();
-      }.bind(this)
+          previousVideoRect = rect;
+          this.resize();
+        }.bind(this),
+        true
+      )
     );
     this.videoResizeObserver.observe(this.videoElem);
 
@@ -908,24 +924,27 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.initAverageVideoFramesDifferenceListeners();
 
     const videoPlayerObserver = new MutationObserver(
-      wrapErrorHandler(async () => {
-        const viewChanged = await this.updateView();
-        const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage();
-        if (!viewChanged && !videoHiddenChanged) return;
+      wrapErrorHandler(
+        async function videoPlayerMutation() {
+          const viewChanged = await this.updateView();
+          const videoHiddenChanged = this.updateIsVideoHiddenOnWatchPage();
+          if (!viewChanged && !videoHiddenChanged) return;
 
-        if (videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
-          if (this.clearTime < performance.now() - 500) this.clear();
-          this.resetVideoParentElemStyle();
-          return;
-        }
+          if (videoHiddenChanged && this.isVideoHiddenOnWatchPage) {
+            if (this.clearTime < performance.now() - 500) this.clear();
+            this.resetVideoParentElemStyle();
+            return;
+          }
 
-        if (
-          viewChanged ||
-          (videoHiddenChanged && !this.isVideoHiddenOnWatchPage)
-        ) {
-          this.optionalFrame();
-        }
-      })
+          if (
+            viewChanged ||
+            (videoHiddenChanged && !this.isVideoHiddenOnWatchPage)
+          ) {
+            await this.optionalFrame();
+          }
+        }.bind(this),
+        true
+      )
     );
     this.updateIsVideoHiddenOnWatchPage();
 
@@ -942,10 +961,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     // When the video moves between the small and theater views
     const playerContainersObserver = new MutationObserver(
-      wrapErrorHandler(async () => {
-        await this.updateView();
-        await this.optionalFrame();
-      })
+      wrapErrorHandler(
+        async function playerContainerMutation() {
+          await this.updateView();
+          await this.optionalFrame();
+        }.bind(this),
+        true
+      )
     );
     const playerContainersObserverOptions = {
       childList: true,
@@ -992,7 +1014,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   ];
 
   resizeAfterFrames = 0;
-  resize = wrapErrorHandler((afterFrames = 0) => {
+  resize = wrapErrorHandler(async (afterFrames = 0) => {
     if (!this.settings.enabled || !this.isOnVideoPage || this.pendingStart) {
       this.resizeAfterFrames = 0;
       if (this.scheduledResize) cancelAnimationFrame(this.scheduledResize);
@@ -1013,7 +1035,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.resizeAfterFrames === 0) {
       this.sizesInvalidated = true;
       const start = performance.now();
-      this.optionalFrame();
+      await this.optionalFrame();
       requestIdleCallback(() => this.measureResizeDuration(start), {
         timeout: 1000,
       });
@@ -1309,13 +1331,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
     if (!this.ambientlightObserver) {
       this.ambientlightObserver = new IntersectionObserver(
-        wrapErrorHandler((entries) => {
+        wrapErrorHandler(async (entries) => {
           for (const entry of entries) {
             this.isAmbientlightHiddenOnWatchPage =
               entry.intersectionRatio === 0;
             if (this.isAmbientlightHiddenOnWatchPage) continue;
 
-            this.optionalFrame();
+            await this.optionalFrame();
           }
         }, true),
         {
@@ -1485,7 +1507,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         const verticalBarChanged = this.setVerticalBars(0);
         if (horizontalBarChanged || verticalBarChanged) {
           this.sizesChanged = true;
-          this.optionalFrame();
+          await this.optionalFrame();
         }
       }
     }

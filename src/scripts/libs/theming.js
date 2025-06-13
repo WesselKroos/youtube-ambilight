@@ -84,13 +84,16 @@ export default class Theming {
 
     let themeCorrections = 0;
     this.themeObserver = new MutationObserver(
-      wrapErrorHandler(() => {
-        if (!this.shouldToggleTheme()) return;
+      wrapErrorHandler(
+        function themeMutation() {
+          if (!this.shouldToggleTheme()) return;
 
-        themeCorrections++;
-        this.updateTheme();
-        if (themeCorrections === 5) this.themeObserver.disconnect();
-      })
+          themeCorrections++;
+          this.updateTheme();
+          if (themeCorrections === 5) this.themeObserver.disconnect();
+        }.bind(this),
+        true
+      )
     );
     this.themeObserver.observe(document.documentElement, {
       attributes: true,
@@ -231,12 +234,15 @@ export default class Theming {
     if (this.secondaryElem) return;
 
     const observer = new MutationObserver(
-      wrapErrorHandler(() => {
-        this.initLiveChatSecondaryElem();
-        if (!this.secondaryElem) return;
+      wrapErrorHandler(
+        function initLiveChatMutation() {
+          this.initLiveChatSecondaryElem();
+          if (!this.secondaryElem) return;
 
-        observer.disconnect();
-      })
+          observer.disconnect();
+        }.bind(this),
+        true
+      )
     );
     observer.observe(this.ambientlight.ytdAppElem, {
       childList: true,

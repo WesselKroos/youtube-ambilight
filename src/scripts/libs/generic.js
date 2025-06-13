@@ -13,13 +13,16 @@ export const waitForDomElement = (check, container, timeout) =>
       resolve();
     } else {
       let timeoutId;
-      const observer = new MutationObserver((mutationsList, observer) => {
-        if (!check()) return;
+      const observer = new MutationObserver(
+        function domElementMutation(mutationsList, observer) {
+          if (!check()) return;
 
-        if (timeoutId) clearTimeout(timeoutId);
-        observer.disconnect();
-        resolve();
-      });
+          if (timeoutId) clearTimeout(timeoutId);
+          observer.disconnect();
+          resolve();
+        }.bind(this),
+        true
+      );
       if (timeout) {
         timeoutId = setTimeout(() => {
           observer.disconnect();

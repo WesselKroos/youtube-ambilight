@@ -31,12 +31,17 @@ const waitForHtmlElement = async () => {
   const stack = new Error().stack;
   await new Promise((resolve, reject) => {
     try {
-      const observer = new MutationObserver(() => {
-        if (!document.documentElement) return;
+      const observer = new MutationObserver(
+        wrapErrorHandler(
+          function onHtmlElementMutation() {
+            if (!document.documentElement) return;
 
-        observer.disconnect();
-        resolve();
-      });
+            observer.disconnect();
+            resolve();
+          }.bind(this),
+          true
+        )
+      );
       observer.observe(document, { childList: true });
     } catch (ex) {
       appendErrorStack(stack, ex);
@@ -51,12 +56,17 @@ const waitForHeadElement = async () => {
   const stack = new Error().stack;
   await new Promise((resolve, reject) => {
     try {
-      const observer = new MutationObserver(() => {
-        if (!document.head) return;
+      const observer = new MutationObserver(
+        wrapErrorHandler(
+          function onHeadElementMutation() {
+            if (!document.head) return;
 
-        observer.disconnect();
-        resolve();
-      });
+            observer.disconnect();
+            resolve();
+          }.bind(this),
+          true
+        )
+      );
       observer.observe(document.documentElement, { childList: true });
     } catch (ex) {
       appendErrorStack(stack, ex);

@@ -89,3 +89,38 @@ export const getSelectorTreeString = (selector) => {
     )
     .join('\n');
 };
+
+export const getOtherUnknownAppElems = () =>
+  Array.from(document.body?.children ?? []).filter(
+    (elem) =>
+      elem.tagName.endsWith('-APP') &&
+      ![
+        'YTD-APP',
+        'YTVP-APP',
+        'YTCP-APP',
+        'YTLR-APP',
+        'DAILY-COMPANION-APP',
+      ].includes(elem.tagName)
+  );
+
+export const getPageElems = () => {
+  const allSelector =
+    'html, body, ytd-app, #content.ytd-app, ytd-watch-flexy, ytd-watch-fixie, ytd-watch-grid, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
+  const otherAppElems = getOtherUnknownAppElems();
+
+  return {
+    counts: allSelector.split(',').reduce((counts, selector) => {
+      selector = selector.trim();
+      counts[selector] = document.querySelectorAll(selector).length;
+      return counts;
+    }, {}),
+    otherApps: otherAppElems.map((elem) => elem.tagName),
+    otherAppsTree:
+      otherAppElems.length > 0
+        ? getSelectorTreeString(
+            otherAppElems.map((elem) => elem.tagName).join(',')
+          )
+        : undefined,
+    ΩTree: getSelectorTreeString(allSelector),
+  };
+};
