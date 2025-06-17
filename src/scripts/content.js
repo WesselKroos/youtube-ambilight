@@ -16,12 +16,14 @@ setErrorHandler((ex) => SentryReporter.captureException(ex));
 
 const setResourceWarning = (url) => {
   setWarning(
-    `Failed to load a resource. Refresh the webpage to try it again. 
+    url
+      ? `Failed to load a resource. Reload the webpage to try it again. 
 This can happen after you have updated the extension. 
 
-Or if this happens often, view the error in your browser's DevTools javascript console panel.${
-      url ? `\nTip: Look for errors about this url: ${url}` : ''
-    }`
+Or if this happens often, view the error in your browser's DevTools javascript console panel. 
+Tip: Look for errors about this url: ${url}`
+      : `Failed to load the extension on this webpage because it has been updated, reloaded or uninstalled. 
+Reload the webpage to reload the extension.`
   );
 };
 
@@ -76,6 +78,11 @@ const waitForHeadElement = async () => {
 };
 
 const captureResourceLoadingException = async (url, event) => {
+  if (!chrome?.runtime?.id) {
+    setResourceWarning();
+    return;
+  }
+
   let error;
   try {
     const stack = new Error().stack;
@@ -149,13 +156,21 @@ wrapErrorHandler(async function loadContentScript() {
   // }
   // addWebGLLint()
 
-  if (!chrome?.runtime) {
+  if (!chrome?.runtime?.id) {
     setResourceWarning();
     return;
   }
 
   let loaded = await new Promise((resolve) => {
-    const url = chrome.runtime.getURL('styles/content.css');
+    let url;
+    try {
+      url = chrome.runtime.getURL('styles/content.css');
+    } catch {
+      setResourceWarning();
+      resolve(false);
+      return;
+    }
+
     if (document.head.querySelector(`link[href="${url}"]`)) {
       resolve(true);
       return;
@@ -179,15 +194,24 @@ wrapErrorHandler(async function loadContentScript() {
     );
     document.head.appendChild(style);
   });
-  if (!loaded) return;
-  if (!chrome?.runtime) {
+  if (!chrome?.runtime?.id) {
     setResourceWarning();
     return;
   }
+  if (!loaded) return;
 
   loaded = await new Promise((resolve) => {
+    let url;
+    try {
+      url = chrome.runtime.getURL('scripts/injected.js');
+    } catch {
+      setResourceWarning();
+      resolve(false);
+      return;
+    }
+
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('scripts/injected.js');
+    script.src = url;
     script.async = true;
     script.setAttribute('data-crash-options', JSON.stringify(crashOptions));
     script.setAttribute('data-version', version);
@@ -206,12 +230,23 @@ wrapErrorHandler(async function loadContentScript() {
     );
     document.head.appendChild(script);
   });
+  if (!chrome?.runtime?.id) {
+    setResourceWarning();
+    return;
+  }
   if (!loaded) return;
-  if (!chrome?.runtime) {
+
+  let scriptUrl;
+  try {
+    scriptUrl = chrome.runtime.getURL('scripts/content-main.js');
+  } catch {
     setResourceWarning();
     return;
   }
 
-  const scriptSrc = chrome.runtime.getURL('scripts/content-main.js');
-  import(scriptSrc);
+  try {
+    await import(scriptUrl);
+  } catch (error) {
+    await captureResourceLoadingException(scriptUrl, error);
+  }
 })();

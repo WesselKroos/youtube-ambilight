@@ -15,7 +15,7 @@ class Storage {
       const stack = new Error().stack;
       return await new Promise(function storageSet(resolve, reject) {
         try {
-          if (!chrome.runtime?.id) throw new Error('uninstalled');
+          if (!chrome?.runtime?.id) throw new Error('uninstalled');
 
           const setCallback = () => {
             try {
@@ -54,7 +54,7 @@ class Storage {
       const stack = new Error().stack;
       return await new Promise(function storageGet(resolve, reject) {
         try {
-          if (!chrome.runtime?.id) throw new Error('uninstalled');
+          if (!chrome?.runtime?.id) throw new Error('uninstalled');
 
           chrome.storage.local.get(names, function getCallback(result) {
             try {
