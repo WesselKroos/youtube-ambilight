@@ -134,12 +134,16 @@ const initializeStorageEntries = (async () => {
 
     try {
       localStorage.removeItem('ambilight-reports');
-    } catch {}
+    } catch (ex) {
+      console.warn(ex);
+    }
 
     if (!userId) {
       try {
         userId = localStorage.getItem('ambilight-crash-reporter-id');
-      } catch {}
+      } catch (ex) {
+        console.warn(ex);
+      }
       if (userId) {
         // Migrate from localStorage to storage.local
         await storage.set('crash-reporter-id', userId);
@@ -149,7 +153,9 @@ const initializeStorageEntries = (async () => {
         await storage.set('crash-reporter-id', userId);
       }
     }
-  } catch {}
+  } catch (ex) {
+    console.warn(ex);
+  }
 })();
 
 let sessionId;
@@ -204,7 +210,9 @@ export default class SentryReporter {
 
       try {
         await initializeStorageEntries;
-      } catch {}
+      } catch (ex) {
+        console.warn(ex);
+      }
 
       try {
         if (reports) {

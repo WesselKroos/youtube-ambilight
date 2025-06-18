@@ -77,11 +77,23 @@ export default class Settings {
     const warningTimeout = setTimeout(
       () =>
         setWarning(
-          `It is taking more than 5 seconds to load your previous settings. Something might be wrong.${'\n'}Refresh the webpage to try it again. ${'\n\n'}This can happen after you have updated the extension.`
+          `It is taking more than 5 seconds to load your previous settings.
+If this is your first warning and it does not disappear, then the extension might have updated. 
+You can reload the webpage to complete the update.
+
+But if this happens frequently, here are some possible causes:
+- Another extension is blocking javascript execution on this webpage for a very long duration.
+- If your computer is very slow or frequently freezing in other applications as well,
+  there could be a problem with your hardware, likely the memory (DDR).`
         ),
       5000
     );
-    Settings.storedSettingsCached = (await storage.get(names, true)) || {};
+    try {
+      Settings.storedSettingsCached = (await storage.get(names, true)) || {};
+    } catch (ex) {
+      clearTimeout(warningTimeout);
+      throw ex;
+    }
     clearTimeout(warningTimeout);
     setWarning();
 
@@ -2057,7 +2069,8 @@ export default class Settings {
       let entries;
       try {
         entries = (await storage.get(['shown-version-updates'], true)) || {};
-      } catch {
+      } catch (ex) {
+        console.warn(ex);
         return;
       }
       const installedVersion = entries['shown-version-updates'];

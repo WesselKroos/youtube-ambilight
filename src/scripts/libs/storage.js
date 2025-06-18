@@ -22,6 +22,7 @@ class Storage {
               if (chrome.runtime.lastError) throw chrome.runtime.lastError;
               resolve();
             } catch (ex) {
+              if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
               reject(appendErrorStack(stack, ex));
             }
           };
@@ -31,6 +32,7 @@ class Storage {
             chrome.storage.local.set(namesAndValues, setCallback);
           }
         } catch (ex) {
+          if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
           reject(appendErrorStack(stack, ex));
         }
       });
@@ -67,10 +69,12 @@ class Storage {
                   : result[nameOrNames]
               );
             } catch (ex) {
+              if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
               reject(appendErrorStack(stack, ex));
             }
           });
         } catch (ex) {
+          if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
           reject(appendErrorStack(stack, ex));
         }
       });
