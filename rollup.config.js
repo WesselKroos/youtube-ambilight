@@ -2,8 +2,12 @@ import fs from 'fs';
 import resolve from '@rollup/plugin-node-resolve';
 import babel from '@rollup/plugin-babel';
 import eslint from '@rollup/plugin-eslint';
-// import dotenv from 'dotenv';
-// dotenv.config();
+import dotenv from 'dotenv';
+dotenv.config();
+dotenv.config({
+  path: '.env.local',
+  override: true,
+});
 // import { sentryRollupPlugin } from '@sentry/rollup-plugin';
 // import packageJson from './package.json' with { type: 'json' };
 

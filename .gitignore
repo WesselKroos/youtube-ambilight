@@ -3,4 +3,4 @@
 /releases
 /sourcecodes
 /sourcemaps
-.env
+.env.local
