@@ -82,7 +82,8 @@ If this is your first warning and it does not disappear, then the extension migh
 You can reload the webpage to complete the update.
 
 But if this happens frequently, here are some possible causes:
-- Another extension is blocking javascript execution on this webpage for a very long duration.
+- Another extension is blocking code execution on this webpage for a long duration.
+  Disable other extensions temporarely to find out which one it is.
 - If your computer is very slow or frequently freezing in other applications as well,
   there could be a problem with your hardware, likely the memory (DDR).`
         ),
