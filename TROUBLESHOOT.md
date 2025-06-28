@@ -206,9 +206,13 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
 
    __To enable support for NVidia RTX Video follow these steps:__
    1. Open the Ambient light settings
-   2. Enable the setting: Settings > Advanced
-   3. Disable the setting: Settings > Video > Video artifacts workaround
-   4. [Optional] Re-disable the setting: Settings > Advanced
+   2. Enable the setting: `Advanced`
+   3. Disable the setting: `Video > Video artifacts workaround`
+   4. Choose one of the following 2 steps:
+      - Set this setting to `0%`: `Video > Debanding`
+      - Set this setting to `LCD (normal)`: `Quality > Optimized debanding for` \
+      (Because a combination of `OLED (overlay)` with `Video > debanding` is incompatible with NVidia RTX VSR)
+   5. [Optional] Re-disable the setting: Advanced
 
 > ⚠️ Firefox always disables RTX VSR/HDR when any black bars are removed from the video. Because any transformation on a video disables Window's Multi-Plane Overlay feature.
 
