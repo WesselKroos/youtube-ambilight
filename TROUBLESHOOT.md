@@ -216,7 +216,9 @@ Make sure to leave your CPU and GPU configuration in this Chromium bug report so
 
 > ⚠️ Firefox always disables RTX VSR/HDR when any black bars are removed from the video. Because any transformation on a video disables Window's Multi-Plane Overlay feature.
 
-> ⚠️ NVidia RTX Video requires Window's Multi-Plane Overlay feature. But this feature causes artifacts on some devices. That's the reason why this feature is disabled by default via the "Video artifacts workaround" setting.
+> ⚠️ NVidia RTX Video requires Window's Multi-Plane Overlay feature. But this feature causes artifacts on some devices. \
+> If you experience artifacts you can prevent these by enabling the `Video > Video artifacts workaround` setting. This will disable Window's Multi-Pane Overlay feature.
+> 
 > For more info about the possible artifacts you could encounter, visit these reported issues:
 > - [Chromium: Occasionally checkered artifacts when using drawImage directly in the video.requestVideoFrameCallback callback](https://bugs.chromium.org/p/chromium/issues/detail?id=1155285)
 > - [Chromium: Video is incorrectly scaled in fullscreen modus (and via the F11 key)](https://issues.chromium.org/issues/338237034)
