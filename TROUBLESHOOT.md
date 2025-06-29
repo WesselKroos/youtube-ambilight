@@ -7,9 +7,16 @@ This is a performance guide that helps you get the best performance (and reduced
 The best way to debug troubleshoot problems is to first set the Ambient light extension settings to their optimal values and then start to optimize your browser settings.
 
 ## But first, check these things:
->  1. Make sure you are on a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
+  1. Before you might waste your time on tweaking all these settings, make sure that other extensions are not interfering with the loadtime and synchronisation between the video and ambient light. So make sure to test if any other extension are causing performance problems. \
+    \
+     You can do this by temporarely disabling other extensions. \
+     Tip: If you have not allowed (m)any extensions in incognito windows, it might be faster to only allow the Ambient light extension in incognito windows and temporarely test it in an incognito window. Because extensions are by default disabled in incognito mode. \
+    \
+    Alternatively you could also profile the performance via the devtools of your browser. A step by step instruction for Firefox can be found in [this issue, were 2 other extensions were the cause of performance problems](https://github.com/WesselKroos/youtube-ambilight/issues/288#issuecomment-2971333406).
 
->  2. Because issues can suddenly appear when a browser has been updated to a new version or a graphics card has been updated to a new driver version, make sure that you aren't suffering from any known issues listed at: [Known issues and solutions](#known-issues-and-solutions)
+  2. Make sure you are on a device with an integrated or dedicated graphics card. The ambient light effect won't run well on a device without hardware acceleration.
+
+  3. Because issues can suddenly appear when a browser has been updated to a new version or a graphics card has been updated to a new driver version, make sure that you aren't suffering from any known issues listed at: [Known issues and solutions](#known-issues-and-solutions)
 
 ### Index
 - [Ambient light extension settings](#ambient-light-extension-settings)
