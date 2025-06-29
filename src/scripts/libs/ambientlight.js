@@ -629,7 +629,7 @@ export default class Ambientlight {
       error: (ex) => {
         const videoElem = ex?.target;
         const error = videoElem?.error;
-        console.warn(`Restoring the ambient light after a video error...
+        console.log(`Restoring the ambient light after a video error...
 Video error: ${mediaErrorToString(error?.code)} ${
           error?.message ? `(${error?.message})` : ''
         }
