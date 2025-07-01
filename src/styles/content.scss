@@ -572,7 +572,8 @@ html[data-ambientlight-enabled] {
   .ytChipShapeInactive,
   .ytwTimelineItemViewModelTimestampActive,
   .ytwTranscriptSegmentViewModelHostActive,
-  .ytwTimelineChapterViewModelTitle {
+  .ytwTimelineChapterViewModelTitle,
+  .shortsLockupViewModelHostOutsideMetadataEndpoint {
     color: var(--yt-spec-text-primary) !important;
   }
   
@@ -1271,13 +1272,12 @@ html[data-ambientlight-enabled] {
     }
   }
 
-  yt-chip-cloud-chip-renderer:not([selected]) {
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip {
     background: var(--ytal-background) !important;
-    // outline: 1px solid var(--yt-spec-10-percent-layer) !important;
-    
-    &:hover {
-      background-color: var(--yt-spec-mono-tonal-hover, rgba(0,0,0,.1)) !important;
-    }
+  }
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
+    background: var(--yt-spec-inverted-background) !important;
+    color: var(--yt-spec-text-primary-inverse) !important;
   }
   
   ytd-watch-metadata {
@@ -1295,8 +1295,12 @@ html[data-ambientlight-enabled] {
         ) !important;
       }
     }
-    
   }
+
+  .ytd-menu-title-renderer.ytd-add-to-playlist-renderer {
+    color: var(--yt-spec-text-primary) !important;
+  }
+
   #primary #description.ytd-watch-metadata,
   #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
     background: var(--ytal-background) !important;
@@ -1308,12 +1312,6 @@ html[data-ambientlight-enabled] {
   }
     
   &[dark] {
-    yt-chip-cloud-chip-renderer:not([selected]) {
-      &:hover {
-        background-color: var(--yt-spec-mono-tonal-hover, rgba(255,255,255,.2)) !important;
-      }
-    }
-
     .playlist-items.ytd-playlist-panel-renderer {
       @include scrollbar-dark-thin();
     }
@@ -2873,8 +2871,7 @@ html[data-ambientlight-enabled] {
       ytd-engagement-panel-section-list-renderer > *,
       ytd-playlist-panel-video-renderer > *,
       yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
-      yt-chip-cloud-chip-renderer.selected,
-      yt-chip-cloud-chip-renderer:not([selected]) > *,
+      yt-chip-cloud-chip-renderer .ytChipShapeChip,
       ytd-watch-next-secondary-results-renderer,
 
       #bottom-grid {
@@ -2926,7 +2923,7 @@ html[data-ambientlight-enabled] {
 
     #subscribe-button ytd-button-renderer:not([subscribed]) button,
     tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
-    yt-chip-cloud-chip-renderer[selected],
+    yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
     ytd-button-renderer.style-primary[is-paper-button] button,
     .product-item-button.ytd-merch-shelf-item-renderer,
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
@@ -2962,7 +2959,6 @@ html[data-ambientlight-enabled] {
     // Collapsable comment
     #expander[collapsed].ytd-comment-renderer,
 
-    yt-formatted-string.yt-chip-cloud-chip-renderer,
     #container.ytd-channel-name,
     #channel-name.long-byline.ytd-video-meta-block {
       overflow: initial !important;
