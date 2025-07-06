@@ -92,10 +92,12 @@ const captureResourceLoadingException = async (url, event) => {
         req.onreadystatechange = () => {
           try {
             if (req.readyState == XMLHttpRequest.DONE) {
-              error = new Error(
-                `Cannot load ${url} (Status: ${req.statusText} ${req.status})`
-              );
-              appendErrorStack(stack, error);
+              if (req.status !== 200) {
+                error = new Error(
+                  `Cannot load ${url} (Status: ${req.statusText} ${req.status})`
+                );
+                appendErrorStack(stack, error);
+              }
               resolve();
             }
           } catch (ex) {
@@ -112,9 +114,10 @@ const captureResourceLoadingException = async (url, event) => {
   } catch (ex) {
     error = ex;
   } finally {
-    error = error ?? new Error(`Cannot load ${url} (Status: unknown)`);
-    error.details = event;
-    SentryReporter.captureException(error);
+    if (error) {
+      error.details = event;
+      SentryReporter.captureException(error);
+    }
 
     setResourceWarning(url);
   }
