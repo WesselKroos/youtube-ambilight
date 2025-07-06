@@ -22,6 +22,7 @@ import {
   VIEW_FULLSCREEN,
   VIEW_POPUP,
   setStyleProperty,
+  setWarning,
 } from './generic';
 import SentryReporter, {
   parseSettingsToSentry,
@@ -45,7 +46,7 @@ import Theming from './theming';
 import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
-import { getPageElems } from './errors/dom';
+import { getNodeTreeString, getPageElems } from './errors/dom';
 
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
@@ -188,6 +189,10 @@ export default class Ambientlight {
         'Cannot find videoPlayerElem: .html5-video-player'
       );
       error.details = getPageElems();
+      error.details.videoIsInDocument = document.contains(videoElem);
+      error.details.videoIsInBody = document.body.contains(videoElem);
+      error.details.videoTree = getNodeTreeString(videoElem);
+      setWarning(`Failed to load.\n${error.message}`);
       throw error;
     }
     this.videoPlayerElem.dataset.ytalElem = 'video-player';
@@ -206,6 +211,7 @@ export default class Ambientlight {
         'Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child'
       );
       error.details = getPageElems();
+      setWarning(`Failed to load.\n${error.message}`);
       throw error;
     }
 
