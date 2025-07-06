@@ -216,6 +216,8 @@ const tryInitAmbientlight = async () => {
     }
 
     await waitForVideoInteraction(videoElem);
+    if (!document.body?.contains(videoElem)) return;
+
     window.ambientlight = await new Ambientlight(videoElem);
 
     errorEvents.list = [];
