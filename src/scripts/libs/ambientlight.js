@@ -3647,17 +3647,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
     this.pendingStart = undefined;
 
-    // Continue only if still enabled after await
-    if (this.settings.enabled && this.isOnVideoPage) {
-      this.calculateAverageVideoFramesDifference();
+    if (this.shouldShow()) await this.show();
 
-      // Prevent incorrect stats from showing
-      this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval;
-      await this.nextFrame();
-      // this.disableYouTubeAmbientMode()
-    } else {
-      if (this.shouldShow()) await this.show();
-    }
+    // Continue only if still enabled after await
+    if (!this.settings.enabled || !this.isOnVideoPage) return;
+
+    this.calculateAverageVideoFramesDifference();
+
+    // Prevent incorrect stats from showing
+    this.lastUpdateStatsTime = performance.now() + this.updateStatsInterval;
+    await this.nextFrame();
+    // this.disableYouTubeAmbientMode()
   };
 
   updateHdr = wrapErrorHandler(
