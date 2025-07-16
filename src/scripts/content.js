@@ -14,6 +14,15 @@ import { injectedScript } from './libs/messaging/injected';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
+injectedScript.addMessageListener('error', (injectedEx) => {
+  const ex = new Error(injectedEx.message);
+  ex.name = injectedEx.name;
+  ex.stack = injectedEx.stack;
+  if (injectedEx.details) ex.details = injectedEx.details;
+
+  SentryReporter.captureException(ex);
+});
+
 const setResourceWarning = (url) => {
   setWarning(
     url
@@ -140,7 +149,6 @@ wrapErrorHandler(async function loadContentScript() {
 
     const crashOptions = changes.crashOptions.newValue;
     setCrashOptions(crashOptions);
-    injectedScript.postMessage('crashOptions', crashOptions);
   });
 
   await waitForHtmlElement();

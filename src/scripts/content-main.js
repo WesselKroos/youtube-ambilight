@@ -38,6 +38,13 @@ wrapErrorHandler(async function initVersionAndCrashOptions() {
   contentScript.addMessageListener('crashOptions', (newCrashOptions) => {
     setCrashOptions(newCrashOptions);
   });
+
+  storage.addListener(function storageListener(changes) {
+    if (!changes.crashOptions?.newValue) return;
+
+    const crashOptions = changes.crashOptions.newValue;
+    setCrashOptions(crashOptions);
+  });
 })();
 
 let errorEvents;

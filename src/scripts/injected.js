@@ -1,33 +1,24 @@
-import {
-  // raf,
-  setErrorHandler,
-  setStyleProperty,
-  // watchSelectors,
-  wrapErrorHandler,
-} from './libs/generic';
+import { setErrorHandler, setStyleProperty } from './libs/generic';
 import { contentScript } from './libs/messaging/content';
-import SentryReporter, {
-  setCrashOptions,
-  setVersion,
-} from './libs/errors/sentry-reporter';
 
-setErrorHandler((ex) => SentryReporter.captureException(ex));
+let reporting = false; // Prevent infinite loops
+setErrorHandler((ex) => {
+  if (reporting) return;
 
-wrapErrorHandler(function initVersionAndCrashOptions() {
-  const version = document.currentScript?.getAttribute('data-version') || '';
-  setVersion(version);
-  const options = JSON.parse(
-    document.currentScript?.getAttribute('data-crash-options')
-  );
-  setCrashOptions(options);
-  contentScript.addMessageListener(
-    'crashOptions',
-    (newCrashOptions) => {
-      setCrashOptions(newCrashOptions);
-    },
-    true
-  );
-})();
+  try {
+    reporting = true;
+    contentScript.postMessage('error', {
+      name: ex.name,
+      message: ex.message,
+      stack: ex.stack,
+      details: ex.details,
+    });
+  } catch (reportEx) {
+    console.warn('Failed to report error:', ex, 'innerError:', reportEx);
+  } finally {
+    reporting = false;
+  }
+});
 
 const getElem = (() => {
   const elems = {};
@@ -62,7 +53,10 @@ contentScript.addMessageListener(
   }
 );
 
-function updateImmersiveMode(enable, skipVideoPlayerSetSize = false) {
+const updateImmersiveMode = function updateImmersiveMode(
+  enable,
+  skipVideoPlayerSetSize = false
+) {
   const html = document.documentElement;
   const enabled = html.getAttribute('data-ambientlight-immersive') != null;
   if (enabled === enable) return;
@@ -85,7 +79,7 @@ function updateImmersiveMode(enable, skipVideoPlayerSetSize = false) {
   }
 
   if (!skipVideoPlayerSetSize && enabled !== enable) videoPlayerSetSize();
-}
+};
 
 contentScript.addMessageListener(
   'update-immersive-mode',
@@ -348,7 +342,7 @@ contentScript.addMessageListener(
       console.warn(
         'Failed to apply getVideoPlaybackQuality workaround. Continuing ambientlight initialization...'
       );
-      SentryReporter.captureException(ex);
+      throw ex;
     }
   }.bind(this)
 );

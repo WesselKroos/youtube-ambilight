@@ -132,26 +132,9 @@ const initializeStorageEntries = (async () => {
     userId = entries['crash-reporter-id'];
     reports = JSON.parse(entries.reports || '[]');
 
-    try {
-      localStorage.removeItem('ambilight-reports');
-    } catch (ex) {
-      console.warn(ex);
-    }
-
     if (!userId) {
-      try {
-        userId = localStorage.getItem('ambilight-crash-reporter-id');
-      } catch (ex) {
-        console.warn(ex);
-      }
-      if (userId) {
-        // Migrate from localStorage to storage.local
-        await storage.set('crash-reporter-id', userId);
-        localStorage.removeItem('ambilight-crash-reporter-id');
-      } else {
-        userId = uuidv4();
-        await storage.set('crash-reporter-id', userId);
-      }
+      userId = uuidv4();
+      await storage.set('crash-reporter-id', userId);
     }
   } catch (ex) {
     console.warn(ex);
