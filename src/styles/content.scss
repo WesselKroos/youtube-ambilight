@@ -1706,6 +1706,7 @@ html[data-ambientlight-enabled] {
   font-size: calc(100% / 1.09) !important;
   line-height: normal !important;
   contain: size;
+
   &::after {
     content: '';
     position: absolute;
@@ -1734,6 +1735,12 @@ html[data-ambientlight-enabled] {
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,0.6);
       pointer-events: none;
+    }
+
+    /* is2025PlayerUI */
+    &:has(svg[viewBox="0 0 24 24"])::after {
+      top: 4px;
+      right: 5px;
     }
   }
 
