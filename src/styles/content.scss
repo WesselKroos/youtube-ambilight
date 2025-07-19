@@ -3001,7 +3001,8 @@ html[data-ambientlight-enabled] {
     #video-title.ytd-playlist-panel-video-renderer,
     #video-title.ytd-compact-video-renderer,
     ytd-video-meta-block #text.ytd-channel-name,
-    #metadata-line.ytd-video-meta-block {
+    #metadata-line.ytd-video-meta-block,
+    .yt-lockup-metadata-view-model-wiz__title {
       margin-left: -10px !important;
       margin-top: -10px !important;
       margin-right: -10px !important;
