@@ -365,10 +365,10 @@ html[data-ambientlight-enabled] {
     color: var(--yt-spec-text-secondary) !important;
   }
 
-  .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+  .yt-spec-button-shape-next--outline:not(.yt-spec-button-shape-next--call-to-action:hover) {
     border-color: rgba(0,0,0, .2) !important;
   }
-  &[dark] .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+  &[dark] .yt-spec-button-shape-next--outline:not(.yt-spec-button-shape-next--call-to-action:hover) {
     border-color: rgba(255,255,255, .2) !important;
   }
 
@@ -562,10 +562,8 @@ html[data-ambientlight-enabled] {
     backdrop-filter: blur(4px);
   }
 
-  .ytwTimelineItemViewModelTimestamp,
-  .ytwTranscriptSegmentViewModelHost,
-  .shortsLockupViewModelHostOutsideMetadataSubhead {
-    color: var(--yt-spec-text-secondary) !important;
+  .yt-core-attributed-string--link-inherit-color {
+    color: inherit !important;
   }
 
   .shelf-header-layout-wiz__title,
@@ -573,8 +571,25 @@ html[data-ambientlight-enabled] {
   .ytwTimelineItemViewModelTimestampActive,
   .ytwTranscriptSegmentViewModelHostActive,
   .ytwTimelineChapterViewModelTitle,
-  .shortsLockupViewModelHostOutsideMetadataEndpoint {
+  .shortsLockupViewModelHostOutsideMetadataEndpoint,
+  .yt-video-attribute-view-model__title,
+  .yt-lockup-metadata-view-model-wiz__title,
+  .badge-shape-wiz--ad,
+  .ytwAdAvatarLockupViewModelHostIsClickableAdComponentTextsStyleCompactHeadlineWidthUnlocked,
+  .ytwAdAvatarLockupViewModelHostTextsStyleCompactHeadlineWidthUnlocked {
     color: var(--yt-spec-text-primary) !important;
+  }
+
+  .ytwTimelineItemViewModelTimestamp,
+  .ytwTranscriptSegmentViewModelHost,
+  .shortsLockupViewModelHostOutsideMetadataSubhead,
+  .yt-video-attribute-view-model__subtitle,
+  .yt-video-attribute-view-model__secondary-subtitle,
+  .yt-lockup-metadata-view-model-wiz__metadata,
+  .badge-shape-wiz--default,
+  .ytwAdDetailsLineViewModelHostIsClickableAdComponentTextStyleStandard,
+  .ytwAdDetailsLineViewModelHostTextStyleStandard {
+    color: var(--yt-spec-text-secondary) !important;
   }
   
   .ytwTimelineItemViewModelTimestamp {

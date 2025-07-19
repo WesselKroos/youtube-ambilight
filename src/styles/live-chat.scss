@@ -73,6 +73,10 @@ html[dark] {
   #unfocused.yt-live-chat-text-input-field-renderer {
     background: rgba(255, 255, 255, .1);
   }
+  .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(255, 255, 255, .1) !important;
+    color: #fff !important;
+  }
 }
 
 html:not([dark]) {
@@ -81,6 +85,10 @@ html:not([dark]) {
   }
   #unfocused.yt-live-chat-text-input-field-renderer {
     background: rgba(0, 0, 0, .1);
+  }
+  .yt-spec-button-shape-next--mono.yt-spec-button-shape-next--outline {
+    border-color: rgba(0, 0, 0, .1) !important;
+    color: #000 !important;
   }
 }
 
