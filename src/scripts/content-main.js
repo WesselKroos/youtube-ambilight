@@ -386,7 +386,15 @@ const loadAmbientlight = async () => {
     setWarning(
       `Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'}This can happen after you have updated the extension. ${'\n\n'}${ex?.toString()}`
     );
-    console.error(ex);
+
+    if (
+      !(
+        ex.message === 'uninstalled' ||
+        ex.message?.includes('QuotaExceededError')
+      )
+    ) {
+      console.error(ex);
+    }
   }
 
   // Listen to DOM changes

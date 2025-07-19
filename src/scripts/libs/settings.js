@@ -106,26 +106,26 @@ But if this happens frequently, here are some possible causes:
         10; // Prevent rounding error
 
       delete Settings.storedSettingsCached['setting-blur'];
-      await storage.set('setting-blur', undefined, false);
+      await storage.set('setting-blur', undefined);
 
       Settings.storedSettingsCached['setting-blur2'] = value;
-      await storage.set('setting-blur2', value, false);
+      await storage.set('setting-blur2', value);
     }
     if (Settings.storedSettingsCached['setting-bloom'] != null) {
       const value =
         Math.round((Settings.storedSettingsCached['setting-bloom'] + 7) * 10) /
         10; // Prevent rounding error
       delete Settings.storedSettingsCached['setting-bloom'];
-      await storage.set('setting-bloom', undefined, false);
+      await storage.set('setting-bloom', undefined);
 
       Settings.storedSettingsCached['setting-spreadFadeStart'] = value;
-      await storage.set('setting-spreadFadeStart', value, false);
+      await storage.set('setting-spreadFadeStart', value);
     }
     if (Settings.storedSettingsCached['setting-fadeOutEasing'] != null) {
       Settings.storedSettingsCached['setting-spreadFadeCurve'] =
         Settings.storedSettingsCached['setting-fadeOutEasing'];
       delete Settings.storedSettingsCached['setting-fadeOutEasing'];
-      await storage.set('setting-fadeOutEasing', undefined, false);
+      await storage.set('setting-fadeOutEasing', undefined);
     }
     if (Settings.storedSettingsCached['setting-frameFading'] != null) {
       const value = Settings.storedSettingsCached['setting-frameFading'];
@@ -135,7 +135,7 @@ But if this happens frequently, here are some possible causes:
       if (value > max) {
         const newValue = Math.min(max, Math.round(Math.sqrt(value) * 50) / 50);
         Settings.storedSettingsCached['setting-frameFading'] = newValue;
-        await storage.set('setting-frameFading', newValue, false);
+        await storage.set('setting-frameFading', newValue);
       }
     }
 
@@ -2102,7 +2102,7 @@ But if this happens frequently, here are some possible causes:
       try {
         entries = (await storage.get(['shown-version-updates'], true)) || {};
       } catch (ex) {
-        console.warn(ex);
+        console.log(ex);
         return;
       }
       const installedVersion = entries['shown-version-updates'];
@@ -2133,7 +2133,7 @@ But if this happens frequently, here are some possible causes:
     this.menuBtn.classList.toggle('has-updates', false);
     this.menuBtn.title = '';
 
-    storage.set('shown-version-updates', version, false);
+    storage.set('shown-version-updates', version);
   };
 
   handleDocumentVisibilityChange = () => {
