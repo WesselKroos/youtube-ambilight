@@ -2884,6 +2884,7 @@ html[data-ambientlight-enabled] {
       #header.ytd-comments-entry-point-header-renderer, // fixie
       #content.ytd-comments-entry-point-header-renderer, // fixie
       ytd-watch-metadata ytd-rich-metadata-renderer > *,
+      ytd-expandable-metadata-renderer,
 
       // #secondary,
       #secondary-inner > *:not(ytd-playlist-panel-renderer):not(#panels):not(#related),
@@ -2986,6 +2987,11 @@ html[data-ambientlight-enabled] {
       overflow: initial !important;
     }
 
+    // New info-container
+    #info-container.ytd-watch-info-text {
+      mask-image: none !important;
+    }
+
     // New video description
     #description-inner.ytd-watch-metadata .yt-formatted-string {
       &[style="color: rgb(170, 170, 170);"], // Dark theme
@@ -3041,6 +3047,8 @@ html[data-ambientlight-enabled] {
       #description-inline-expander.ytd-watch-metadata,
       .ytVideoMetadataCarouselViewModelHost,
       ytd-subscription-notification-toggle-button-renderer,
+      #left-section.ytd-expandable-metadata-renderer,
+      ytd-expandable-metadata-renderer .yt-icon-shape,
 
       #{$chapters-header} yt-icon,
       #{$chapters-header} #title-container,
