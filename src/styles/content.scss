@@ -1638,7 +1638,7 @@ html[data-ambientlight-enabled] {
     transform: rotate(-45deg);
     background: #fff;
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       height: 4px;
       top: calc(50% - 2px);
     }
@@ -1673,7 +1673,7 @@ html[data-ambientlight-enabled] {
     will-change: scroll-position !important; // Improves scrolling performance
   }
 
-  .ytp-fullscreen & {
+  .ytp-big-mode & {
     width: 490px;
     max-height: calc(100% - 140px);
   }
@@ -1868,7 +1868,7 @@ html[data-ambientlight-enabled] {
       text-decoration: underline;
     }
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       padding: 15px 20px;
       font-size: 16px;
     }
@@ -1898,7 +1898,7 @@ html[data-ambientlight-enabled] {
       border-color: #30acf3;
       border-top-color: transparent;
     }
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       width: 20px;
       height: 20px;
       border-width: 2px;
@@ -1930,7 +1930,7 @@ html[data-ambientlight-enabled] {
       border-top-width: 1px;
       border-left-width: 1px;
       transform: rotate(45deg);
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         width: 7px;
         height: 7px;
         margin-left: 3px;
@@ -1944,7 +1944,7 @@ html[data-ambientlight-enabled] {
       margin-top: 1px;
       margin-left: 6px;
       border-left-width: 1px;
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         height: 11px;
         margin-left: 7px;
         border-left-width: 2px;
@@ -1996,7 +1996,7 @@ html[data-ambientlight-enabled] {
       border-color: #30acf3;
       border-top-color: transparent;
     }
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       width: 20px;
       height: 20px;
       border-width: 2px;
@@ -2012,7 +2012,7 @@ html[data-ambientlight-enabled] {
       height: 6px;
       margin: -6px 0 0 9px;
       background: #ffffff99;
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         width: 2px;
         height: 6px;
         margin: -6px 0 0 12px;
@@ -2029,7 +2029,7 @@ html[data-ambientlight-enabled] {
       width: 5px;
       height: 1px;
       margin: -6px 0px 0px 10px;
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         width: 8px;
         height: 2px;
         margin: -8px 0px 0px 12px;
@@ -2046,7 +2046,7 @@ html[data-ambientlight-enabled] {
       margin-top: -4px;
       margin-bottom: -6px;
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         margin-top: -8px;
         margin-bottom: -8px;
         height: 33px;
@@ -2074,7 +2074,7 @@ html[data-ambientlight-enabled] {
       border-right: 5px solid #0000;
       content: '';
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         margin-top: 11px;
         margin-right: 0;
         border-left-width: 8px;
@@ -2095,7 +2095,7 @@ html[data-ambientlight-enabled] {
         border-top: 5px solid #5e5e5e;
         border-bottom: none;
         content: '';
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           margin-top: 12px;
           border-top-width: 8px;
         }
@@ -2130,7 +2130,7 @@ html[data-ambientlight-enabled] {
       line-height: 21px;
       background: #444d;
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         padding: 0px 20px;
         height: 30px;
         line-height: 30px;
@@ -2179,7 +2179,7 @@ html[data-ambientlight-enabled] {
         opacity: .25;
         transition: transform .25s .25s ease-out;
 
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           width: 14px;
           height: 14px;
           left: 5px;
@@ -2212,7 +2212,7 @@ html[data-ambientlight-enabled] {
         opacity: 0;
         transition: visibility 1s, opacity .125s .125s ease-in, max-width .25s ease-out;
 
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           max-width: 6px;
           height: 14px;
           border-radius: 7px;
@@ -2228,7 +2228,7 @@ html[data-ambientlight-enabled] {
         transform: translateY(-14px);
         transition: transform .35s .625s ease-in-out;
 
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           transform: translateY(-18px);
         }
       }
@@ -2237,7 +2237,7 @@ html[data-ambientlight-enabled] {
         opacity: 1;
         max-width: 28px;
         transition: visibility 0s .75s, opacity .125s .9s ease-out, max-width .5s 1s ease-out;
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           max-width: 34px;
         }
       }
@@ -2258,7 +2258,7 @@ html[data-ambientlight-enabled] {
     &:hover .ytp-menuitem-label {
       &::after {
         max-width: 67px;
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           max-width: 85px;
         }
       }
@@ -2272,7 +2272,7 @@ html[data-ambientlight-enabled] {
     margin: 0;
     padding: 6px 0;
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       padding: 9px 0;
     }
 
@@ -2286,7 +2286,7 @@ html[data-ambientlight-enabled] {
         background: rgba(0,0,0,.4);
       }
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         padding: 18px 0 8px;
       }
     }
@@ -2296,7 +2296,7 @@ html[data-ambientlight-enabled] {
       margin-bottom: 0;
       padding-bottom: 8px;
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         padding-bottom: 15px;
       }
     }
@@ -2317,7 +2317,7 @@ html[data-ambientlight-enabled] {
       background: #e40 !important;
     }
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       padding-top: 25px;
       padding-bottom: 20px;
     }
@@ -2335,7 +2335,7 @@ html[data-ambientlight-enabled] {
       margin-right: -6px;
       filter: drop-shadow(1.5px 1px 0px #fff8) drop-shadow(-.5px 1px 0px #fff8) drop-shadow(-.5px -.5px 0px #fffb) drop-shadow(1.5px -.5px 0px #fffb);
       
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         margin-top: 4px;
         width: 21px;
         height: 21px;
@@ -2498,7 +2498,7 @@ html[data-ambientlight-enabled] {
       color: #fa0;
     }
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       line-height: 15px;
       font-size: 13px;
     }
@@ -2576,7 +2576,7 @@ html[data-ambientlight-enabled] {
       opacity: 1;
     }
 
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       right: 35.5px;
       width: 80px;
     }
@@ -2584,7 +2584,7 @@ html[data-ambientlight-enabled] {
     &#setting-framerateLimit-manualinput {
       margin-right: 11px;
 
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         margin-right: 17.5px;
       }
     }
@@ -2618,7 +2618,7 @@ html[data-ambientlight-enabled] {
     padding-bottom: 3px;
     position: relative;
     z-index: 2;
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       height: 23px;
     }
     input[type="range"] {
@@ -2632,7 +2632,7 @@ html[data-ambientlight-enabled] {
       margin: -7px 14px 0;
       outline: 0;
       overflow: hidden;
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         height: 22px;
         margin: -11px 22px 0;
         width: calc(100% - 44px);
@@ -2643,7 +2643,7 @@ html[data-ambientlight-enabled] {
         background: rgba(255,255,255,0.3);
         height: 3px;
         outline: none;
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           height: 4px;
         }
       }
@@ -2668,7 +2668,7 @@ html[data-ambientlight-enabled] {
           background: #fff !important;
         }
 
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           width: 20px;
           height: 20px;
           margin-top: -8px;
@@ -2685,7 +2685,7 @@ html[data-ambientlight-enabled] {
     &--has-snap-points {
       margin: 8px 0 3px;
       padding-bottom: 0;
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         margin: 8px 0 3px;
         padding-bottom: 0;
       }
@@ -2706,7 +2706,7 @@ html[data-ambientlight-enabled] {
           }
           box-shadow: $shadow;
   
-          .ytp-fullscreen & {
+          .ytp-big-mode & {
             $shadow: 0 1px 5px 0 rgba(0,0,0,0.6);
             @for $i from 1 through 220 {
               $shadow: #{$shadow}, #{(-2 * $i)}px 0 0px -8px #007cc3;
@@ -2728,7 +2728,7 @@ html[data-ambientlight-enabled] {
     left: 20.5px;
     font-size: 10px;
     pointer-events: none;
-    .ytp-fullscreen & {
+    .ytp-big-mode & {
       left: 32px;
       width: calc(100% - 64px);
       height: 12px;
@@ -2761,7 +2761,7 @@ html[data-ambientlight-enabled] {
         background: #666;
         pointer-events: none;
       }
-      .ytp-fullscreen & {
+      .ytp-big-mode & {
         transform: translate(-8.5px, -5px);
         &::before {
           width: 2px;
@@ -2777,7 +2777,7 @@ html[data-ambientlight-enabled] {
         &::before {
           transform: translate(8.5px, 11px);
         }
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           transform: translate(-8.5px, -38px);
           &::before {
             transform: translate(8.5px, 13px);
@@ -2790,7 +2790,7 @@ html[data-ambientlight-enabled] {
         &::before {
           transform: translate(-8.5px, -12px);
         }
-        .ytp-fullscreen & {
+        .ytp-big-mode & {
           &::before {
             transform: translate(-8.5px, -20px);
           }
