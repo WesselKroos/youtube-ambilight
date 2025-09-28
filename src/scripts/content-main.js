@@ -65,35 +65,47 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
 };
 
 const isVideoInKnownInvalidLocation = () => {
-  const ytdAppPlayerVideoElem = document.querySelector(
+  const ytdAppPlayerVideoElem = () => document.querySelector(
     'ytd-app > #container.ytd-player video.html5-main-video'
   );
-  const playerApiVideoElem = document.querySelector(
+  const playerApiVideoElem = () => document.querySelector(
     '#player-api video.html5-main-video'
   );
-  const ytPlayerManagerVideoElem = document.querySelector(
+  const ytPlayerManagerVideoElem = () => document.querySelector(
     'yt-player-manager video.html5-main-video'
   );
-  const ytdInlinePreviewPlayerVideoElem = document.querySelector(
+  const ytdInlinePreviewPlayerVideoElem = () => document.querySelector(
     '#inline-preview-player video.html5-main-video'
   );
-  const ytdMiniplayerVideoElem = document.querySelector(
+  const ytdBrowseVideoElem = () => document.querySelector(
+    'ytd-browse video.html5-main-video'
+  );
+  const ytdMiniplayerVideoElem = () => document.querySelector(
     'ytd-miniplayer video.html5-main-video'
   );
-  const channelPlayerVideoElem = document.querySelector(
+  const channelPlayerVideoElem = () => document.querySelector(
     'ytd-channel-video-player-renderer video.html5-main-video'
   );
-  const outsideYtdAppVideoElem = document.querySelector(
+  const isInShorts = () => document.querySelector(
+    'ytd-shorts video.html5-main-video'
+  );
+  const isControlledByAnotherExtension = () => document.querySelector(
+    '.html5-video-container video.stefanvdvideotop'
+  );
+  const outsideYtdAppVideoElem = () => document.querySelector(
     'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
   );
   return !!(
-    ytdAppPlayerVideoElem ||
-    playerApiVideoElem ||
-    ytPlayerManagerVideoElem ||
-    ytdInlinePreviewPlayerVideoElem ||
-    ytdMiniplayerVideoElem ||
-    channelPlayerVideoElem ||
-    outsideYtdAppVideoElem
+    ytdAppPlayerVideoElem() ||
+    playerApiVideoElem() ||
+    ytPlayerManagerVideoElem() ||
+    ytdInlinePreviewPlayerVideoElem() ||
+    ytdBrowseVideoElem() ||
+    ytdMiniplayerVideoElem() ||
+    channelPlayerVideoElem() ||
+    isInShorts() ||
+    isControlledByAnotherExtension() ||
+    outsideYtdAppVideoElem()
   );
 };
 

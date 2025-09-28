@@ -1716,7 +1716,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension;
     this.isControlledByAnotherExtension =
-      document.body.classList.contains('efyt-mini-player'); // Enhancer for YouTube
+      document.body.classList.contains('efyt-mini-player') ||
+      this.videoElem?.classList.contains('stefanvdvideotop'); // Enhancer for YouTube
     if (
       wasControlledByAnotherExtension !== this.isControlledByAnotherExtension
     ) {
