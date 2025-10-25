@@ -1649,12 +1649,15 @@ html[data-ambientlight-enabled] {
   }
 }
 
-.ytp-ambientlight-settings-shown .ytp-chrome-bottom {
-  opacity: 1 !important;
-}
-.ytp-ambientlight-settings-shown .ytp-gradient-bottom {
-  opacity: 1 !important;
-  display: block !important;
+
+.html5-video-player:not(.ytp-delhi-modern).ytp-ambientlight-settings-shown {
+  .ytp-chrome-bottom {
+    opacity: 1 !important;
+  }
+  .ytp-gradient-bottom {
+    opacity: 1 !important;
+    display: block !important;
+  }
 }
 
 .ytpa-ambientlight-settings-menu {
@@ -1671,6 +1674,10 @@ html[data-ambientlight-enabled] {
   transition: none;
   &:hover {
     will-change: scroll-position !important; // Improves scrolling performance
+  }
+
+  .ytp-delhi-modern  {
+    max-height: calc(100% - 80px);
   }
 
   .ytp-big-mode & {
@@ -1855,6 +1862,8 @@ html[data-ambientlight-enabled] {
 .ytpa-ambientlight-settings-menu {
   .ytp-panel-menu {
     display: block;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .ytpa-feedback-link__text {
@@ -3332,7 +3341,11 @@ html[data-ambientlight-enabled] {
 // Limit related videos to scrollable list with a height of 100vh
 
 html[data-ambientlight-related-scrollbar] {
-  ytd-watch-flexy[flexy][is-two-columns_] {
+  ytd-app:not([scrolling]) {
+    overflow: visible;
+  }
+
+  ytd-watch-flexy[is-two-columns_] {
     #secondary-inner.ytd-watch-flexy {
       height: 100%;
       min-height: calc(3000px + 100vh); // Must at least be high enough to fit the panels + related list
@@ -3366,7 +3379,7 @@ html[data-ambientlight-related-scrollbar] {
       }
     }
   }
-  &[dark] ytd-watch-flexy[flexy][is-two-columns_] #related.ytd-watch-flexy {
+  &[dark] ytd-watch-flexy[is-two-columns_] #related.ytd-watch-flexy {
     @include scrollbar-dark-thin;
     &:not(:hover) {
       &::-webkit-scrollbar-thumb:not(:hover) {
