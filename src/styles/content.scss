@@ -1676,14 +1676,15 @@ html[data-ambientlight-enabled] {
     will-change: scroll-position !important; // Improves scrolling performance
   }
 
-  .ytp-delhi-modern  {
-    max-height: calc(100% - 80px);
+  .ytp-delhi-modern & {
+    max-height: calc(100% - 90px);
   }
 
   .ytp-big-mode & {
     width: 490px;
     max-height: calc(100% - 140px);
   }
+
   &.is-visible {
     opacity: 1;
     animation: ytpa-ambientlight-settings-menu-fade-in .2s 1 normal forwards;
@@ -1699,6 +1700,7 @@ html[data-ambientlight-enabled] {
       }
     }
   }
+
   &.is-visible.fade-out {
     animation: ytpa-ambientlight-settings-menu-fade-out .15s 1 reverse forwards;
     @keyframes ytpa-ambientlight-settings-menu-fade-out {
@@ -1711,6 +1713,7 @@ html[data-ambientlight-enabled] {
     }
     opacity: 0;
   }
+
   &:not(.is-visible) {
     display: none;
   }
@@ -1862,8 +1865,8 @@ html[data-ambientlight-enabled] {
 .ytpa-ambientlight-settings-menu {
   .ytp-panel-menu {
     display: block;
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .ytpa-feedback-link__text {
