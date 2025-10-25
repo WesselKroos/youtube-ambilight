@@ -1771,55 +1771,55 @@ html[data-ambientlight-enabled] {
 
   &.has-warning {
     &::before {
-      content: '';
-      position: absolute;
-      z-index: 1;
-      top: 16px;
-      left: 11px;
-      display: block;
-      width: 14px;
-      height: 14px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='100' width='100'%3E%3Cpolygon points='50,0 0,90 100,90' class='triangle' fill='%23884400ff' /%3E%3Cpolygon points='48.25,3 3,85 94,85' fill='%23f60' /%3E%3Ctext x='56' y='79' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%2300000000'%3E!%3C/text%3E%3Ctext x='50' y='65' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%23fff'%3E!%3C/text%3E%3C/svg%3E");
-      background-size: contain;
-      background-position: center;
-      background-repeat: no-repeat;
-      pointer-events: none;
+      content: '' !important;
+      position: absolute !important;
+      z-index: 1 !important;
+      top: 16px !important;
+      left: 11px !important;
+      display: block !important;
+      width: 14px !important;
+      height: 14px !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='100' width='100'%3E%3Cpolygon points='50,0 0,90 100,90' class='triangle' fill='%23884400ff' /%3E%3Cpolygon points='48.25,3 3,85 94,85' fill='%23f60' /%3E%3Ctext x='56' y='79' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%2300000000'%3E!%3C/text%3E%3Ctext x='50' y='65' dominant-baseline='middle' text-anchor='middle' font-weight='bold' font-size='70px' fill='%23fff'%3E!%3C/text%3E%3C/svg%3E") !important;
+      background-size: contain !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+      pointer-events: none !important;
       
       .ytp-large-width-mode & {
-        left: 17px;
+        left: 17px !important;
       }
 
       .ytp-big-mode & {
-        left: 17px;
-        top: 16px;
-        width: 16px;
-        height: 16px;
+        left: 17px !important;
+        top: 16px !important;
+        width: 16px !important;
+        height: 16px !important;
       }
     }
   }
 
   &.has-updates:not(.has-warning) {
     &::before {
-      content: '';
-      position: absolute;
-      z-index: 1;
-      left: 13px;
-      top: 13px;
-      display: block;
-      width: 7px;
-      height: 7px;
-      border-radius: 3.5px;
-      background: #22ff00;
-      box-shadow: rgba(0, 0, 0, 0.6) 0px 0px 0px 1px;
-      pointer-events: none;
+      content: '' !important;
+      position: absolute !important;
+      z-index: 1 !important;
+      left: 13px !important;
+      top: 13px !important;
+      display: block !important;
+      width: 7px !important;
+      height: 7px !important;
+      border-radius: 3.5px !important;
+      background: #22ff00 !important;
+      box-shadow: rgba(0, 0, 0, 0.6) 0px 0px 0px 1px !important;
+      pointer-events: none !important;
 
       .ytp-big-mode & {
-        left: 12px;
-        top: 13px;
-        width: 10px;
-        height: 10px;
-        border-radius: 5px;
-        box-shadow: rgba(0, 0, 0, .7) 0 0 2px 1px;
+        left: 12px !important;
+        top: 13px !important;
+        width: 10px !important;
+        height: 10px !important;
+        border-radius: 5px !important;
+        box-shadow: rgba(0, 0, 0, .7) 0 0 2px 1px !important;
       }
     }
   }
