@@ -352,14 +352,14 @@ export const appendErrorStack = (stack, ex) => {
       stackToAppend?.indexOf('\n') + 1
     ); // The first line in the stack trace can contain an extra function name
     const alreadyContainsStack =
-      (ex.stack || ex.message).indexOf(stackToSearch) !== -1;
+      (ex?.stack || ex?.message || ex?.toString())?.indexOf(stackToSearch) !==
+      -1;
     if (!alreadyContainsStack) {
-      ex.stack = `${ex.stack || ex.message}\n${stackToAppend}`;
+      ex.stack = `${ex.stack || ex.message || ex.toString()}\n${stackToAppend}`;
     }
   } catch (ex) {
     console.warn(ex);
   }
-  return ex;
 };
 
 let _supportsWebGL;

@@ -23,7 +23,8 @@ class Storage {
               resolve();
             } catch (ex) {
               if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-              reject(appendErrorStack(stack, ex));
+              appendErrorStack(stack, ex);
+              reject(ex);
             }
           };
           if (!multiple && value === undefined) {
@@ -33,7 +34,8 @@ class Storage {
           }
         } catch (ex) {
           if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-          reject(appendErrorStack(stack, ex));
+          appendErrorStack(stack, ex);
+          reject(ex);
         }
       });
     } catch (ex) {
@@ -70,12 +72,14 @@ class Storage {
               );
             } catch (ex) {
               if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-              reject(appendErrorStack(stack, ex));
+              appendErrorStack(stack, ex);
+              reject(ex);
             }
           });
         } catch (ex) {
           if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-          reject(appendErrorStack(stack, ex));
+          appendErrorStack(stack, ex);
+          reject(ex);
         }
       });
     } catch (ex) {

@@ -15,7 +15,8 @@ class SyncStorage {
             if (chrome.runtime.lastError) throw chrome.runtime.lastError;
             resolve();
           } catch (ex) {
-            reject(appendErrorStack(stack, ex));
+            appendErrorStack(stack, ex);
+            reject(ex);
           }
         };
         if (!multiple && value === undefined) {
@@ -24,7 +25,8 @@ class SyncStorage {
           chrome.storage.sync.set(namesAndValues, setCallback);
         }
       } catch (ex) {
-        reject(appendErrorStack(stack, ex));
+        appendErrorStack(stack, ex);
+        reject(ex);
       }
     });
   }
@@ -46,11 +48,13 @@ class SyncStorage {
                 : result[nameOrNames]
             );
           } catch (ex) {
-            reject(appendErrorStack(stack, ex));
+            appendErrorStack(stack, ex);
+            reject(ex);
           }
         });
       } catch (ex) {
-        reject(appendErrorStack(stack, ex));
+        appendErrorStack(stack, ex);
+        reject(ex);
       }
     });
   }
