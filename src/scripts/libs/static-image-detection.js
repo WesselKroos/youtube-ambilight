@@ -308,7 +308,18 @@ export const getAverageVideoFramesDifference = async (format) => {
   const stack = new Error().stack;
   onMessagePromise = new Promise(
     function onMessagePromise(resolve, reject) {
-      worker.onerror = (err) => reject(err);
+      worker.onerror = (err) => {
+        if (!(err instanceof Error)) {
+          const details = err;
+          err = new Error(
+            `static-image-detection-worker.js: ${
+              err.message ?? 'Unknown error'
+            }`
+          );
+          err.details = details;
+        }
+        reject(err);
+      };
       worker.onmessage = function onMessage(e) {
         try {
           if (e.data.id !== workerMessageId) return;

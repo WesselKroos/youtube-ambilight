@@ -1086,7 +1086,7 @@ const workerCode = function () {
         });
       } catch (ex) {
         if (id === globalRunId) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx?.clearRect?.(0, 0, canvas?.width ?? 0, canvas?.height ?? 0);
         }
         this.postMessage({
           id,
@@ -1190,6 +1190,7 @@ export default class BarDetection {
 
     if (!this.worker) {
       this.worker = await workerFromCode(workerCode);
+      const stack = new Error().stack;
       this.worker.onmessage = (e) => {
         if (this.onWorkerMessageListener) {
           return this.onWorkerMessageListener(e);
@@ -1199,10 +1200,19 @@ export default class BarDetection {
           return;
         }
         if (e.data.error) {
+          appendErrorStack(stack, e.data.error);
           SentryReporter.captureException(e.data.error);
         }
       };
       this.worker.onerror = (err) => {
+        if (!(err instanceof Error)) {
+          const details = err;
+          err = new Error(
+            `bar-detection-worker.js: ${err.message ?? 'Unknown error'}`
+          );
+          err.details = details;
+        }
+
         if (this.onWorkerRejectListener) {
           return this.onWorkerRejectListener(err);
         }
@@ -1735,6 +1745,7 @@ export default class BarDetection {
         ex.name === 'DataCloneError'; // Firefox
       if (!isKnownError) {
         ex.details = {
+          ...(ex.details ? { details: ex.details } : {}),
           detectColored,
           offsetPercentage,
           detectHorizontal,
