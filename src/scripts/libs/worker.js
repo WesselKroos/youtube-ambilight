@@ -7,6 +7,7 @@ export const workerFromCode = async (func) => {
     }
 
     let created = () => undefined;
+    let timeout;
     try {
       const promise = new Promise((resolve, reject) => {
         created = (error) => {
@@ -33,17 +34,17 @@ export const workerFromCode = async (func) => {
         }
       };
       worker.postMessage(false);
-      const timeout = setTimeout(
+      timeout = setTimeout(
         () => created(new Error('Worker creation timed-out after 5 seconds')),
         5000
       );
       await promise;
-      clearTimeout(timeout);
 
       worker.onerror = undefined;
       worker.onmessage = undefined;
       return worker;
     } finally {
+      clearTimeout(timeout);
       created = undefined;
     }
   } catch (error) {
