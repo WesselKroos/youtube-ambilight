@@ -2859,7 +2859,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.scheduleNextFrame();
 
       if (results?.detectBarSize) {
-        this.scheduleBarSizeDetection();
+        await this.scheduleBarSizeDetection();
       }
 
       if (
@@ -3419,12 +3419,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     return { hasNewFrame, detectBarSize };
   }
 
-  scheduleBarSizeDetection = () => {
+  scheduleBarSizeDetection = async () => {
     try {
       this.checkGetImageDataAllowed();
       if (!this.getImageDataAllowed) return;
 
-      this.barDetection.detect(
+      await this.barDetection.detect(
         this.shouldDrawDirectlyFromVideoElem() ||
           ((this.projectorBuffer.elem.height < 256 ||
             this.projectorBuffer.elem.width < 256) &&

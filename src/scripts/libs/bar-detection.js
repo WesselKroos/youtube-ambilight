@@ -972,6 +972,12 @@ const workerCode = function () {
     };
 
     this.onmessage = async (e) => {
+      if (e.data === false) {
+        // Signal that the worker was successfully created
+        this.postMessage(false);
+        return;
+      }
+
       const id = e.data.id;
       globalRunId = id;
 
@@ -1159,7 +1165,7 @@ export default class BarDetection {
     }
   };
 
-  detect = (
+  detect = async (
     buffer,
     detectColored,
     offsetPercentage,
@@ -1183,7 +1189,7 @@ export default class BarDetection {
     this.running = true;
 
     if (!this.worker) {
-      this.worker = workerFromCode(workerCode);
+      this.worker = await workerFromCode(workerCode);
       this.worker.onmessage = (e) => {
         if (this.onWorkerMessageListener) {
           return this.onWorkerMessageListener(e);

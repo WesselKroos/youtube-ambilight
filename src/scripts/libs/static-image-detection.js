@@ -227,6 +227,12 @@ const workerCode = function () {
   };
 
   this.onmessage = async (e) => {
+    if (e.data === false) {
+      // Signal that the worker was successfully created
+      this.postMessage(false);
+      return;
+    }
+
     const id = e.data.id;
     const baseUrl = e.data.storyboard.baseUrl;
     try {
@@ -293,7 +299,7 @@ export const getAverageVideoFramesDifference = async (format) => {
   if (alreadyCalculated) return lastDifference.value;
 
   if (!worker) {
-    worker = workerFromCode(workerCode);
+    worker = await workerFromCode(workerCode);
   }
 
   workerMessageId++;
