@@ -1846,7 +1846,7 @@ html[data-ambientlight-enabled] {
 .ytp-ambientlight-settings-button-tooltip {
   white-space: nowrap;
   left: 50%;
-  margin-top: -14px;
+  margin-top: -23px;
   transform: translateX(-50%) translateY(-100%) !important;
   opacity: 0 !important;
   transition: none !important;
@@ -1854,7 +1854,7 @@ html[data-ambientlight-enabled] {
   user-select: none;
 
   .ytp-big-mode & {
-    margin-top: -8px;
+    margin-top: -37px;
   }
 
   .ytp-ambientlight-settings-button:not([aria-expanded="true"]):hover & {
