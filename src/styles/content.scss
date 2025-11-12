@@ -1527,9 +1527,9 @@ html[data-ambientlight-enabled] {
       margin-top: 85px;
     }
     @mixin theater {
-      height: calc(100vh - 169px);
-      max-height: calc(100vh - 169px);
-      margin-bottom: 84px;
+      height: calc(100vh - 169px) !important;
+      max-height: calc(100vh - 169px) !important;
+      margin-bottom: 84px !important;
     }
 
     @include ytd-watch {
@@ -1539,7 +1539,7 @@ html[data-ambientlight-enabled] {
         #player-wide-container, // Second old theater view
         // #player-full-bleed-container // Third old theater view
         #full-bleed-container,
-        #player-full-bleed-container.ytd-watch-grid, // kevlar_watch_grid: true
+        #player-full-bleed-container,
         #player.ytd-watch-fixie // kevlar_watch_fixie: true
         {
           @include theater;
