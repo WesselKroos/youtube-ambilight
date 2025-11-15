@@ -147,7 +147,7 @@ export default class SentryReporter {
   static overflowProtection = 0;
   static async captureException(ex) {
     try {
-      // Ignore errors we cannot fix
+      // Ignore errors that cannot be fixed
       if (ex?.message?.includes?.(`can't access dead object`))
         // Firefox has destroyed the webpage but the extensions javascript not yet
         return;

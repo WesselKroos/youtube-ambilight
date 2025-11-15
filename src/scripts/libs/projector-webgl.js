@@ -1140,7 +1140,7 @@ export default class ProjectorWebGL {
       throw programCompilationError;
     }
 
-    //// Probably can be removed because we already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
+    //// Probably can be removed because has already check if the program is linked and both shaders have been compiled. There is also no use that reported this error in the last 2 weeks
     // this.ctx.validateProgram(this.program)
     // const programValidated = this.ctx.getProgramParameter(this.program, this.ctx.VALIDATE_STATUS)
     // if(!programValidated) {

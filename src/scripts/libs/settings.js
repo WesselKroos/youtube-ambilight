@@ -272,7 +272,7 @@ But if this happens frequently, here are some possible causes:
       } at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`;
       descriptionText += `\r\n\r\nCheck the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`;
       if (!disabledText)
-        descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again we will update the time at which it failed.`;
+        descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again the time at which it failed will be updated.`;
     }
     descriptionElem.textContent = descriptionText;
   };

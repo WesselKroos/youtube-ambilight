@@ -65,36 +65,32 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
 };
 
 const isVideoInKnownInvalidLocation = () => {
-  const ytdAppPlayerVideoElem = () => document.querySelector(
-    'ytd-app > #container.ytd-player video.html5-main-video'
-  );
-  const playerApiVideoElem = () => document.querySelector(
-    '#player-api video.html5-main-video'
-  );
-  const ytPlayerManagerVideoElem = () => document.querySelector(
-    'yt-player-manager video.html5-main-video'
-  );
-  const ytdInlinePreviewPlayerVideoElem = () => document.querySelector(
-    '#inline-preview-player video.html5-main-video'
-  );
-  const ytdBrowseVideoElem = () => document.querySelector(
-    'ytd-browse video.html5-main-video'
-  );
-  const ytdMiniplayerVideoElem = () => document.querySelector(
-    'ytd-miniplayer video.html5-main-video'
-  );
-  const channelPlayerVideoElem = () => document.querySelector(
-    'ytd-channel-video-player-renderer video.html5-main-video'
-  );
-  const isInShorts = () => document.querySelector(
-    'ytd-shorts video.html5-main-video'
-  );
-  const isControlledByAnotherExtension = () => document.querySelector(
-    '.html5-video-container video.stefanvdvideotop'
-  );
-  const outsideYtdAppVideoElem = () => document.querySelector(
-    'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
-  );
+  const ytdAppPlayerVideoElem = () =>
+    document.querySelector(
+      'ytd-app > #container.ytd-player video.html5-main-video'
+    );
+  const playerApiVideoElem = () =>
+    document.querySelector('#player-api video.html5-main-video');
+  const ytPlayerManagerVideoElem = () =>
+    document.querySelector('yt-player-manager video.html5-main-video');
+  const ytdInlinePreviewPlayerVideoElem = () =>
+    document.querySelector('#inline-preview-player video.html5-main-video');
+  const ytdBrowseVideoElem = () =>
+    document.querySelector('ytd-browse video.html5-main-video');
+  const ytdMiniplayerVideoElem = () =>
+    document.querySelector('ytd-miniplayer video.html5-main-video');
+  const channelPlayerVideoElem = () =>
+    document.querySelector(
+      'ytd-channel-video-player-renderer video.html5-main-video'
+    );
+  const isInShorts = () =>
+    document.querySelector('ytd-shorts video.html5-main-video');
+  const isControlledByAnotherExtension = () =>
+    document.querySelector('.html5-video-container video.stefanvdvideotop');
+  const outsideYtdAppVideoElem = () =>
+    document.querySelector(
+      'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
+    );
   return !!(
     ytdAppPlayerVideoElem() ||
     playerApiVideoElem() ||
@@ -160,7 +156,10 @@ const detectDetachedVideo = () => {
             oldVideoTree: getNodeTreeString(videoElem),
           };
           logErrorEventWithPageTrees('detectDetachedYtdApp', details);
-          return; // We do not support this, because if we do we have to move or re-create the settings menu, canvasses and other elements as well
+          return;
+          // Migrating to a new ytd-app element is not supported,
+          // because it will also require moving or re-creating the
+          // settings menu, canvasses and other elements
         }
       }
 

@@ -178,9 +178,9 @@ export default class Theming {
           const withinThresshold = now - 10000 < lastFailedThemeToggle;
           if (withinThresshold) {
             this.settings.setWarning(
-              `Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${
+              `Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the ${
                 this.isDarkTheme() ? 'light' : 'dark'
-              } appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+              } appearance has been disabled for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
             );
             this.updatingTheme = false;
             return;

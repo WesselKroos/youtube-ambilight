@@ -3128,7 +3128,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         !this.settings.videoOverlayEnabled) ||
       this.isControlledByAnotherExtension ||
       this.isVideoHiddenOnWatchPage ||
-      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
+      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead handle this in the canScheduleNextFrame check
       this.videoElem.ended ||
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1 // HAVE_METADATA
@@ -3212,7 +3212,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.initVideoOverlayWithFrameBlending();
       }
 
-      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambientlightFrameRate
+      // Prevents unnessecary frames from being drawn.
+      // But when frameBlending is enabled also draw:
+      // - when there is a new frame (hasNewFrame) or...
+      // - when the current frame is not yet fully drawn (!previousDrawFullAlpha)
       if (hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
