@@ -14,7 +14,16 @@
   "browser_specific_settings": {
     "gecko": {
       "strict_min_version": "121.0",
-      "id": "{60493d8c-aec8-448e-a247-5d2cfa047d69}"
+      "id": "{60493d8c-aec8-448e-a247-5d2cfa047d69}",
+      "data_collection_permissions": {
+        "required": [
+          "locationInfo"
+        ],
+        "optional": [
+          "technicalAndInteraction",
+          "browsingActivity"
+        ]
+      }
     }
   },
   "action": {
@@ -90,6 +99,10 @@
     "open_in_tab": false
   },
   "permissions": [
-    "storage"
+    "storage",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
   ]
 }
