@@ -13,7 +13,8 @@
   "minimum_chrome_version": "121",
   "browser_specific_settings": {
     "gecko": {
-      "strict_min_version": "121.0"
+      "strict_min_version": "121.0",
+      "id": "{60493d8c-aec8-448e-a247-5d2cfa047d69}",
     }
   },
   "action": {
