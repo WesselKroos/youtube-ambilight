@@ -1,11 +1,4 @@
-export const uuidv4 = () => {
-  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
-    (
-      c ^
-      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
-    ).toString(16)
-  );
-};
+import { appendErrorStack, getErrorHandler } from './errors/base';
 
 export const waitForDomElement = (check, container, timeout) =>
   new Promise((resolve, reject) => {
@@ -36,65 +29,6 @@ export const waitForDomElement = (check, container, timeout) =>
       return observer;
     }
   });
-
-let errorHandler = (ex) => {
-  console.error(ex);
-};
-export const setErrorHandler = (handler) => {
-  errorHandler = handler;
-};
-
-let displayErrorHandler;
-export const setDisplayErrorHandler = (handler) => {
-  displayErrorHandler = handler;
-};
-
-const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
-  if (reportOnce) {
-    if (reported.includes(ex.message)) return;
-    reported.push(ex.message);
-  }
-  appendErrorStack(stack, ex);
-  if (errorHandler) errorHandler(ex);
-  if (displayErrorHandler) displayErrorHandler(ex);
-};
-
-const withErrorHandler = (callback, reportOnce, stack, reported) => {
-  const callbackName = callback.name || 'anonymous';
-  const container = {
-    [callbackName]: (...args) => {
-      try {
-        return callback(...args);
-      } catch (ex) {
-        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported);
-      }
-    },
-  };
-  return container[callbackName];
-};
-
-const withAsyncErrorHandler = (callback, reportOnce, stack, reported) => {
-  const callbackName = callback.name || 'anonymous';
-  const container = {
-    [callbackName]: async (...args) => {
-      try {
-        return await callback(...args);
-      } catch (ex) {
-        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported);
-      }
-    },
-  };
-  return container[callbackName];
-};
-
-export const wrapErrorHandler = (callback, reportOnce = false) =>
-  (callback.constructor.name === 'AsyncFunction'
-    ? withAsyncErrorHandler
-    : withErrorHandler)(callback, reportOnce, new Error().stack, []);
-
-export const setTimeout = (handler, timeout) => {
-  return globalThis.setTimeout(wrapErrorHandler(handler), timeout);
-};
 
 const eventListenerCallbacks = [];
 export function on(elem, eventNames, callback, options, reportOnce = false) {
@@ -166,6 +100,7 @@ export function on(elem, eventNames, callback, options, reportOnce = false) {
           };
 
           appendErrorStack(stack, ex);
+          const errorHandler = getErrorHandler();
           if (errorHandler) errorHandler(ex);
         }
       },
@@ -281,9 +216,6 @@ export function off(elem, eventNames, callback) {
   }
 }
 
-export const raf = (callback) =>
-  requestAnimationFrame(wrapErrorHandler(callback));
-
 const colorSpace =
   // rec2020 in canvas is not yet supported
   // globalThis.matchMedia('(color-gamut: rec2020)').matches
@@ -336,67 +268,6 @@ export class SafeOffscreenCanvas {
   }
 }
 
-export function requestIdleCallback(callback, options, reportOnce = false) {
-  return globalThis.requestIdleCallback
-    ? globalThis.requestIdleCallback(
-        wrapErrorHandler(callback, reportOnce),
-        options
-      )
-    : globalThis.setTimeout(wrapErrorHandler(callback, reportOnce), 1); // Safari (not supported but there are users that try)
-}
-
-export const appendErrorStack = (stack, ex) => {
-  try {
-    const stackToAppend = stack?.substring(stack?.indexOf('\n') + 1);
-    const stackToSearch = stackToAppend?.substring(
-      stackToAppend?.indexOf('\n') + 1
-    ); // The first line in the stack trace can contain an extra function name
-    const alreadyContainsStack =
-      (ex?.stack || ex?.message || ex?.toString())?.indexOf(stackToSearch) !==
-      -1;
-    if (!alreadyContainsStack) {
-      ex.stack = `${ex.stack || ex.message || ex.toString()}\n${stackToAppend}`;
-    }
-  } catch (ex) {
-    console.warn(ex);
-  }
-};
-
-let _supportsWebGL;
-export const supportsWebGL = () => {
-  if (_supportsWebGL === undefined) {
-    try {
-      _supportsWebGL =
-        !!globalThis.WebGLRenderingContext &&
-        (!!document.createElement('canvas')?.getContext('webgl') ||
-          !!document.createElement('canvas')?.getContext('webgl2'));
-    } catch {
-      _supportsWebGL = false;
-    }
-  }
-  return _supportsWebGL;
-};
-
-let _supportsColorMix;
-export const supportsColorMix = () => {
-  if (_supportsColorMix === undefined) {
-    try {
-      _supportsColorMix = CSS.supports(
-        'background-color: color-mix(in srgb, #000 0%, #000)'
-      );
-    } catch {
-      _supportsColorMix = false;
-    }
-  }
-  return _supportsColorMix;
-};
-
-export const isWatchPageUrl = () =>
-  ['/watch', '/live/'].some((path) => location.pathname.startsWith(path)) ||
-  isEmbedPageUrl();
-
-export const isEmbedPageUrl = () => location.pathname?.startsWith('/embed/');
-
 export const getCookie = async (name) =>
   globalThis.cookieStore
     ? await cookieStore.get(name)
@@ -411,61 +282,12 @@ export const getCookie = async (name) =>
         })
         .find((cookie) => cookie.name === name);
 
-export const networkStateToString = (value) =>
-  (({
-    0: 'NETWORK_EMPTY',
-    1: 'NETWORK_IDLE',
-    2: 'NETWORK_LOADING',
-    3: 'NETWORK_NO_SOURCE',
-  }[value] ||
-    value) ??
-  'UNKNOWN');
-
-export const readyStateToString = (value) =>
-  (({
-    0: 'HAVE_NOTHING',
-    1: 'HAVE_METADATA',
-    2: 'HAVE_CURRENT_DATA',
-    3: 'HAVE_FUTURE_DATA',
-    4: 'HAVE_ENOUGH_DATA',
-  }[value] ||
-    value) ??
-  'UNKNOWN');
-
-export const mediaErrorToString = (value) =>
-  (({
-    1: 'MEDIA_ERR_ABORTED',
-    2: 'MEDIA_ERR_NETWORK',
-    3: 'MEDIA_ERR_DECODE',
-    4: 'MEDIA_ERR_SRC_NOT_SUPPORTED',
-  }[value] ||
-    value) ??
-  'UNKNOWN');
-
-export const webGLErrorToString = (value) =>
-  (({
-    1280: 'GL_INVALID_ENUM',
-    1281: 'GL_INVALID_VALUE',
-    1282: 'GL_INVALID_OPERATION',
-    1285: 'GL_OUT_OF_MEMORY',
-    1286: 'GL_INVALID_FRAMEBUFFER_OPERATION',
-    1287: 'GL_CONTEXT_LOST_WEBGL',
-  }[value] ||
-    value) ??
-  'UNKNOWN');
-
 export const VIEW_DISABLED = 'DISABLED';
 export const VIEW_DETACHED = 'DETACHED';
 export const VIEW_SMALL = 'SMALL';
 export const VIEW_THEATER = 'THEATER';
 export const VIEW_FULLSCREEN = 'FULLSCREEN';
 export const VIEW_POPUP = 'POPUP';
-
-export const watchSelectors = [
-  'ytd-watch-flexy',
-  'ytd-watch-fixie',
-  'ytd-watch-grid',
-];
 
 let warningElem;
 let warningElemText;
@@ -530,10 +352,6 @@ export const setWarning = (text) => {
     elem.remove();
   }
 };
-
-export const isNetworkError = (ex) =>
-  ex?.message === 'Failed to fetch' || // Chromium
-  ex?.message === 'NetworkError when attempting to fetch resource.'; // Firefox
 
 export const setStyleProperty = (elem, name, value, priority = '') => {
   const currentValue = elem.style.getPropertyValue(name) ?? '';

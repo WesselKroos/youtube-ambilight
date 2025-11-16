@@ -1,13 +1,4 @@
-import {
-  on,
-  wrapErrorHandler,
-  isWatchPageUrl,
-  setErrorHandler,
-  watchSelectors,
-  isEmbedPageUrl,
-  setWarning,
-  off,
-} from './libs/generic';
+import { on, setWarning, off } from './libs/generic';
 import { ErrorEvents } from './libs/errors/events';
 import {
   getNodeTreeString,
@@ -25,6 +16,13 @@ import Settings from './libs/settings';
 import { contentScript } from './libs/messaging/content';
 import { getVersion } from './libs/utils';
 import { defaultCrashOptions, storage } from './libs/storage';
+import {
+  isEmbedPageUrl,
+  isWatchPageUrl,
+  setErrorHandler,
+  watchSelectors,
+  wrapErrorHandler,
+} from './libs/errors/base';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 

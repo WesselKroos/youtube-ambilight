@@ -1,4 +1,4 @@
-import { supportsColorMix, supportsWebGL } from './generic';
+import { supportsColorMix, supportsWebGL } from './errors/base';
 import { getBrowser } from './utils';
 
 const SettingsConfig = [

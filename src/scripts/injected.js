@@ -1,4 +1,5 @@
-import { setErrorHandler, setStyleProperty } from './libs/generic';
+import { setErrorHandler } from './libs/errors/base';
+import { setStyleProperty } from './libs/generic';
 import { contentScript } from './libs/messaging/content';
 
 let reporting = false; // Prevent infinite loops

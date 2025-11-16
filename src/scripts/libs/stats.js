@@ -1,9 +1,5 @@
-import {
-  Canvas,
-  SafeOffscreenCanvas,
-  on,
-  requestIdleCallback,
-} from './generic';
+import { requestIdleCallback } from './errors/base';
+import { Canvas, SafeOffscreenCanvas, on } from './generic';
 
 export default class Stats {
   frametimesHistoryMax = 120;

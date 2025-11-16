@@ -1,4 +1,4 @@
-import { wrapErrorHandler } from '../generic';
+import { wrapErrorHandler } from '../errors/base';
 import { extensionId, isSameWindowMessage } from './utils';
 
 class InjectedScript {

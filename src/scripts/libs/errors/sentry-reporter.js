@@ -7,17 +7,15 @@ import {
   Scope,
   createTransport,
 } from '@sentry/browser';
-
+import SettingsConfig from '../settings-config';
+import { storage } from '../storage';
 import {
   isEmbedPageUrl,
   mediaErrorToString,
   networkStateToString,
   readyStateToString,
-  uuidv4,
   watchSelectors,
-} from '../generic';
-import SettingsConfig from '../settings-config';
-import { storage } from '../storage';
+} from './base';
 
 let settings;
 export const parseSettingsToSentry = (newSettings) => {
@@ -32,6 +30,15 @@ export const setVersion = (newVersion) => {
 export let crashOptions = null;
 export const setCrashOptions = (newCrashOptions) => {
   crashOptions = newCrashOptions;
+};
+
+const uuidv4 = () => {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
+  );
 };
 
 let scope;

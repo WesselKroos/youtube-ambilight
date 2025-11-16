@@ -1,4 +1,5 @@
-import { Canvas, canvas2DCrashTips, ctxOptions, on, raf } from './generic';
+import { raf } from './errors/base';
+import { Canvas, canvas2DCrashTips, ctxOptions, on } from './generic';
 import ProjectorShadow from './projector-shadow';
 
 export default class Projector2d {

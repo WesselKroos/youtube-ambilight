@@ -1,4 +1,4 @@
-import { appendErrorStack } from './generic';
+import { appendErrorStack } from './errors/base';
 import { workerFromCode } from './worker';
 
 const workerCode = function () {

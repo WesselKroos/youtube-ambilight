@@ -3,13 +3,15 @@ import { AmbientlightError } from './errors/ambient-light-error';
 import {
   canvasWebGLCrashTips,
   ctxOptions,
-  requestIdleCallback,
   SafeOffscreenCanvas,
-  webGLErrorToString,
-  wrapErrorHandler,
 } from './generic';
 import ProjectorShadow from './projector-shadow';
 import { storage } from './storage';
+import {
+  requestIdleCallback,
+  webGLErrorToString,
+  wrapErrorHandler,
+} from './errors/base';
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL';

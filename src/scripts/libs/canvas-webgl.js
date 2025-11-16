@@ -1,11 +1,10 @@
 import { AmbientlightError } from './errors/ambient-light-error';
 import {
-  canvasWebGLCrashTips,
-  ctxOptions,
   requestIdleCallback,
   webGLErrorToString,
   wrapErrorHandler,
-} from './generic';
+} from './errors/base';
+import { canvasWebGLCrashTips, ctxOptions } from './generic';
 
 // export class WebGLCanvas {
 //   constructor(width, height) {

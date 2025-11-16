@@ -1,14 +1,13 @@
-import {
-  getCookie,
-  isEmbedPageUrl,
-  isWatchPageUrl,
-  on,
-  requestIdleCallback,
-  wrapErrorHandler,
-} from './generic';
+import { getCookie, on } from './generic';
 import { injectedScript } from './messaging/injected';
 import SentryReporter from './errors/sentry-reporter';
 import { storage } from './storage';
+import {
+  isEmbedPageUrl,
+  isWatchPageUrl,
+  requestIdleCallback,
+  wrapErrorHandler,
+} from './errors/base';
 
 const THEME_LIGHT = -1;
 const THEME_DEFAULT = 0;

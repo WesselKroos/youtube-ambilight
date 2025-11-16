@@ -1,4 +1,4 @@
-import { appendErrorStack, wrapErrorHandler } from './generic';
+import { appendErrorStack, wrapErrorHandler } from './errors/base';
 
 class SyncStorage {
   async set(nameOrNamesAndValues, value = undefined) {

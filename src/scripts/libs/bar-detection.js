@@ -1,11 +1,11 @@
+import { SafeOffscreenCanvas } from './generic';
+import SentryReporter from './errors/sentry-reporter';
+import { workerFromCode } from './worker';
 import {
   appendErrorStack,
   requestIdleCallback,
-  SafeOffscreenCanvas,
-  wrapErrorHandler,
-} from './generic';
-import SentryReporter from './errors/sentry-reporter';
-import { workerFromCode } from './worker';
+  setTimeout,
+} from './errors/base';
 
 const workerCode = function () {
   class ImageHelper {
@@ -1729,15 +1729,12 @@ export default class BarDetection {
         this.changes[this.changes.length - 1]
       );
 
-      this.timeout = setTimeout(
-        wrapErrorHandler(() => {
-          this.timeout = undefined;
-          if (this.runId !== runId) return;
+      this.timeout = setTimeout(() => {
+        this.timeout = undefined;
+        if (this.runId !== runId) return;
 
-          this.running = false;
-        }),
-        throttle
-      );
+        this.running = false;
+      }, throttle);
     } catch (ex) {
       // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
       const isKnownError =

@@ -1,14 +1,10 @@
 import {
   on,
   off,
-  setTimeout,
-  supportsWebGL,
-  raf,
   setWarning,
   VIEW_SMALL,
   VIEW_THEATER,
   VIEW_FULLSCREEN,
-  setDisplayErrorHandler,
 } from './generic';
 import SentryReporter from './errors/sentry-reporter';
 import SettingsConfig, {
@@ -18,6 +14,12 @@ import SettingsConfig, {
 import { getFeedbackFormLink, getVersion } from './utils';
 import { storage } from './storage';
 import { AmbientlightError } from './errors/ambient-light-error';
+import {
+  raf,
+  setDisplayErrorHandler,
+  setTimeout,
+  supportsWebGL,
+} from './errors/base';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;

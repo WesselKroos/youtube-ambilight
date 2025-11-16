@@ -1,16 +1,16 @@
 import { getVersion } from './libs/utils';
-import {
-  appendErrorStack,
-  setErrorHandler,
-  setWarning,
-  wrapErrorHandler,
-} from './libs/generic';
+import { setWarning } from './libs/generic';
 import { defaultCrashOptions, storage } from './libs/storage';
 import SentryReporter, {
   setCrashOptions,
   setVersion,
 } from './libs/errors/sentry-reporter';
 import { injectedScript } from './libs/messaging/injected';
+import {
+  appendErrorStack,
+  setErrorHandler,
+  wrapErrorHandler,
+} from './libs/errors/base';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 

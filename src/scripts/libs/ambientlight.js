@@ -1,20 +1,9 @@
 import {
   on,
   off,
-  raf,
   ctxOptions,
   Canvas,
   SafeOffscreenCanvas,
-  setTimeout,
-  wrapErrorHandler,
-  readyStateToString,
-  networkStateToString,
-  mediaErrorToString,
-  requestIdleCallback,
-  isWatchPageUrl,
-  watchSelectors,
-  isEmbedPageUrl,
-  isNetworkError,
   VIEW_DISABLED,
   VIEW_DETACHED,
   VIEW_SMALL,
@@ -47,6 +36,19 @@ import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
 import { getNodeTreeString, getPageElems } from './errors/dom';
+import {
+  isEmbedPageUrl,
+  isNetworkError,
+  isWatchPageUrl,
+  mediaErrorToString,
+  networkStateToString,
+  raf,
+  readyStateToString,
+  requestIdleCallback,
+  setTimeout,
+  watchSelectors,
+  wrapErrorHandler,
+} from './errors/base';
 
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
