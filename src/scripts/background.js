@@ -26,7 +26,7 @@ chrome.runtime.onStartup.addListener(updateDeclarativeNetRequestRules);
 // Update when extension is installed or reloaded
 chrome.runtime.onInstalled.addListener(updateDeclarativeNetRequestRules);
 
-// Keep checking for possible changes every 10 minutes
+// Keep re-checking for possible changes
 chrome.alarms.create('updateDeclarativeNetRequestRules', {
   periodInMinutes: 30,
 });
