@@ -2543,13 +2543,16 @@ html[data-ambientlight-enabled] {
         right: 0;
         display: inline-block;
         width: 12px;
-        transform: translate(-3px, 1px);
+        transform: translate(3px 1px);
         fill: #eee;
         cursor: help;
+        pointer-events: none;
+        user-select: none;
       }
       .ytp-big-mode & {
         &::before {
           width: 20px;
+          transform: translate(-1px 1px);
         }
       }
     }
