@@ -1,5 +1,4 @@
 import {
-  getCookie,
   isEmbedPageUrl,
   isWatchPageUrl,
   on,
@@ -7,7 +6,6 @@ import {
   wrapErrorHandler,
 } from './generic';
 import { injectedScript } from './messaging/injected';
-import SentryReporter from './errors/sentry-reporter';
 import { storage } from './storage';
 
 const THEME_LIGHT = -1;
@@ -21,23 +19,47 @@ export default class Theming {
   }
 
   initListeners() {
-    // Appearance (theme) changes initiated by the YouTube menu
-    this.youtubeTheme = this.isDarkTheme() ? 1 : -1;
+    // YouTube renders its theme into the html[dark] attribute before the
+    // extension toggles anything, so the page itself is the source of the
+    // YouTube theme. The device theme media query is not a reliable source:
+    // YouTube's theme does not have to match the device theme
+    this.youtubeTheme = this.isDarkTheme() ? THEME_DARK : THEME_LIGHT;
+    // Refine with the explicit appearance choice persisted from the menu
+    this.refreshYoutubeTheme();
     on(
       document,
       'yt-action',
-      async (e) => {
+      (e) => {
         if (!this.settings.enabled) return;
         const name = e?.detail?.actionName;
         if (name === 'yt-signal-action-toggle-dark-theme-off') {
-          this.youtubeTheme = await this.prefCookieToTheme();
+          // An explicit choice that matches the device theme cannot be
+          // derived from the page, so the menu choice is persisted
+          this.youtubeThemeExplicitFromMenu = true;
+          this.youtubeTheme = THEME_LIGHT;
+          storage.set('youtube-theme-explicit', true);
           this.updateTheme();
         } else if (name === 'yt-signal-action-toggle-dark-theme-on') {
-          this.youtubeTheme = await this.prefCookieToTheme();
+          this.youtubeThemeExplicitFromMenu = true;
+          this.youtubeTheme = THEME_DARK;
+          storage.set('youtube-theme-explicit', true);
           this.updateTheme();
         } else if (name === 'yt-signal-action-toggle-dark-theme-device') {
-          this.youtubeTheme = await this.prefCookieToTheme();
-          this.updateTheme();
+          this.youtubeThemeExplicitFromMenu = false;
+          storage.set('youtube-theme-explicit', false);
+          // YouTube applies its device theme in response to this action;
+          // capture the resulting page theme instead of guessing from the
+          // device theme media query
+          this.capturingYoutubeTheme = true;
+          requestAnimationFrame(
+            wrapErrorHandler(() => {
+              this.capturingYoutubeTheme = false;
+              this.youtubeTheme = this.isDarkTheme()
+                ? THEME_DARK
+                : THEME_LIGHT;
+              this.updateTheme();
+            }, true)
+          );
         } else if (name === 'yt-forward-redux-action-to-live-chat-iframe') {
           // Let YouTube change the theme to an incorrect color in this process
           requestIdleCallback(
@@ -56,41 +78,47 @@ export default class Theming {
       true
     );
 
-    try {
-      // Firefox does not support the cookieStore
-      if (globalThis.cookieStore?.addEventListener) {
-        cookieStore.addEventListener(
-          'change',
-          wrapErrorHandler(async (e) => {
-            for (const change of e.changed) {
-              if (change.name !== 'PREF') continue;
-
-              this.youtubeTheme = await this.prefCookieToTheme(change.value);
-              this.updateTheme();
-            }
-          }, true)
-        );
-      }
-      matchMedia('(prefers-color-scheme: dark)').addEventListener(
-        'change',
-        wrapErrorHandler(async () => {
-          this.youtubeTheme = await this.prefCookieToTheme();
-          this.updateTheme();
-        }, true)
-      );
-    } catch (ex) {
-      SentryReporter.captureException(ex);
-    }
-
-    let themeCorrections = 0;
+    // Guard against YouTube overriding html[dark] / html[light] at any point
+    // after a theme toggle (e.g. when YouTube re-applies its stored account
+    // preference asynchronously after a navigation). While the extension is
+    // not controlling the theme, an attribute change is YouTube's own theme
+    // change instead (e.g. the device theme changed) and is captured as the
+    // YouTube theme. MutationObserver callbacks are microtask-queued, so
+    // after our own toggle both attributes are already correct and the
+    // conditions below short-circuit without re-invoking
     this.themeObserver = new MutationObserver(
       wrapErrorHandler(
         function themeMutation() {
-          if (!this.shouldToggleTheme()) return;
+          if (this.capturingYoutubeTheme) return;
 
-          themeCorrections++;
-          this.updateTheme();
-          if (themeCorrections === 5) this.themeObserver.disconnect();
+          const controlling =
+            this.settings.enabled &&
+            !this.ambientlight.isHidden &&
+            this.settings.theme !== THEME_DEFAULT &&
+            !this.youtubeThemeIsExplicit;
+          if (!controlling) {
+            const pageTheme = this.isDarkTheme() ? THEME_DARK : THEME_LIGHT;
+            if (this.youtubeTheme !== pageTheme) {
+              this.youtubeTheme = pageTheme;
+              if (!isEmbedPageUrl()) this.updateLiveChatTheme();
+            }
+            return;
+          }
+
+          if (this.shouldToggleTheme()) {
+            this.updateTheme();
+            return;
+          }
+
+          // The hashed CSS custom properties also depend on html[light], so
+          // re-assert it when it drifts from the applied theme
+          const toDark = this.shouldBeDarkTheme();
+          if (
+            this.isDarkTheme() === toDark &&
+            document.documentElement.hasAttribute('light') === toDark
+          ) {
+            this.updateDocumentTheme(toDark);
+          }
         }.bind(this),
         true
       )
@@ -98,7 +126,7 @@ export default class Theming {
     this.themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeOldValue: true,
-      attributeFilter: ['dark'],
+      attributeFilter: ['dark', 'light'],
     });
 
     if (isEmbedPageUrl()) return;
@@ -106,22 +134,32 @@ export default class Theming {
     this.initLiveChat(); // Depends on this.youtubeTheme set in initListeners
   }
 
-  prefCookieToTheme = async (cookieValue) => {
-    if (!cookieValue) {
-      cookieValue = (await getCookie('PREF'))?.value || '';
-    }
+  // Whether the appearance has explicitly been set to Dark or Light in
+  // YouTube's own settings instead of following the device theme, observed
+  // from the YouTube menu and persisted across page loads
+  youtubeThemeExplicitFromMenu = null;
+  capturingYoutubeTheme = false;
 
-    let f6 = new URLSearchParams(cookieValue)?.get('f6') || null;
-    if (f6 != null && /^[A-Fa-f0-9]+$/.test(f6)) {
-      f6 = parseInt(f6, 16);
-    }
-    f6 = f6 || 0;
+  get youtubeThemeIsExplicit() {
+    return this.youtubeThemeExplicitFromMenu === true;
+  }
 
-    if (f6 & (1 << 165 % 31)) return THEME_DARK;
-    if (f6 & (1 << 174 % 31)) return THEME_LIGHT;
-    if (matchMedia('(prefers-color-scheme: dark)').matches) return THEME_DARK;
-    return THEME_LIGHT;
-  };
+  refreshYoutubeTheme = wrapErrorHandler(
+    async function refreshYoutubeTheme() {
+      const storedExplicit = await storage.get('youtube-theme-explicit');
+      if (
+        this.youtubeThemeExplicitFromMenu === null &&
+        typeof storedExplicit === 'boolean'
+      ) {
+        this.youtubeThemeExplicitFromMenu = storedExplicit;
+      }
+
+      // The page already provided the YouTube theme; updateTheme always runs
+      // because a toggle may already have been applied before this resolved
+      this.updateTheme();
+    }.bind(this),
+    true
+  );
 
   isDarkTheme = () => document.documentElement.getAttribute('dark') != null;
 
@@ -130,8 +168,13 @@ export default class Theming {
       enabledAndVisible === undefined
         ? !this.settings.enabled || this.ambientlight.isHidden
         : !enabledAndVisible;
+    // An appearance explicitly set to Dark or Light in YouTube's own settings
+    // is respected; the extension theme only applies while YouTube follows
+    // the device theme
     const toTheme =
-      enabled || this.settings.theme === THEME_DEFAULT
+      enabled ||
+      this.settings.theme === THEME_DEFAULT ||
+      this.youtubeThemeIsExplicit
         ? this.youtubeTheme
         : this.settings.theme;
     return toTheme === THEME_DARK;
@@ -144,6 +187,19 @@ export default class Theming {
 
   updateTheme = wrapErrorHandler(
     async function updateTheme(fromSettings = false) {
+      if (
+        fromSettings &&
+        this.youtubeThemeIsExplicit &&
+        this.settings.theme !== THEME_DEFAULT &&
+        this.settings.theme !== this.youtubeTheme
+      ) {
+        this.settings.setWarning(
+          `The appearance has been set to ${
+            this.youtubeTheme === THEME_DARK ? 'Dark' : 'Light'
+          } in YouTube's own settings and is being respected.\n\nSelect "Use device theme" in YouTube's appearance settings to let this setting control the appearance.`
+        );
+      }
+
       if (
         this.updatingTheme ||
         (!fromSettings && this.settings.theme === THEME_DEFAULT) ||
