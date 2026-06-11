@@ -3413,6 +3413,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.previousFrameTime = drawTime;
     }
 
+    this.detectHeaderBackdropColor(drawTime);
+
     if (this.enableMozillaBug1606251Workaround) {
       this.containerElem.style.transform = `translateZ(${
         this.ambientlightFrameCount % 10
@@ -3421,6 +3423,205 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     return { hasNewFrame, detectBarSize };
   }
+
+  // While the header is transparent its icons can be displayed on top of the
+  // video (theater mode), so their contrast depends on the video frame
+  // instead of the theme. Samples the video frame region behind each header
+  // section and publishes it as --ytal-header-backdrop-region for
+  // contrast-color() based icon colors. Browsers without contrast-color()
+  // support fall back to the ytal-header-glow-dark/-light classes
+  supportsContrastColor =
+    globalThis.CSS?.supports?.('color', 'contrast-color(red)') ?? false;
+  headerBackdropDetectionTime = 0;
+  headerBackdropColors = new Map();
+  headerGlowIsDark = undefined;
+
+  detectHeaderBackdropColor = (now) => {
+    if (!this.mastheadElem) return;
+    if (now - this.headerBackdropDetectionTime < 500) return;
+    this.headerBackdropDetectionTime = now;
+
+    let samples;
+    if (this.getImageDataAllowed) {
+      try {
+        samples = this.getHeaderBackdropColors();
+      } catch {
+        samples = undefined;
+      }
+    }
+    this.updateHeaderBackdropColors(samples);
+  };
+
+  getHeaderBackdropColors() {
+    // The video is displayed on top of the glow, so it determines the
+    // backdrop wherever it is behind the header (e.g. scrolled down)
+    const videoSource = this.shouldDrawDirectlyFromVideoElem()
+      ? this.videoElem
+      : this.projectorBuffer.elem;
+    const video = {
+      rect: this.videoElem?.getBoundingClientRect(),
+      elem: videoSource,
+      width: videoSource?.videoWidth ?? videoSource?.width,
+      height: videoSource?.videoHeight ?? videoSource?.height,
+      opaque: true,
+    };
+
+    // In the immersive theater view the glow is also projected behind the
+    // header. In the other views the glow never paints behind the header
+    let glow;
+    if (
+      document.documentElement.getAttribute('data-ambientlight-immersive') !=
+      null
+    ) {
+      // The projector canvases are measured instead of their container
+      // because the spread scale transform extends beyond the container.
+      // The last canvas is the most recently drawn one
+      for (const elem of this.projectorsElem?.querySelectorAll('canvas') ??
+        []) {
+        const rect = elem.getBoundingClientRect();
+        if (!rect.width || !rect.height || !elem.width || !elem.height)
+          continue;
+        glow = {
+          rect,
+          elem,
+          width: elem.width,
+          height: elem.height,
+          opaque: false,
+        };
+      }
+    }
+
+    // The backdrop brightness can differ along the header, so each section of
+    // header icons (#start, #center and #end) contrasts with its own local
+    // backdrop color. Browsers without contrast-color() support reduce the
+    // whole header to a single dark/light fallback class instead
+    const regionElems = this.supportsContrastColor
+      ? [...this.mastheadElem.querySelectorAll('#start, #center, #end')]
+      : [];
+    if (!regionElems.length) regionElems.push(this.mastheadElem);
+
+    return regionElems.map((elem) => {
+      const rect = elem.getBoundingClientRect();
+      return {
+        elem,
+        color:
+          this.getBackdropRectColor(rect, video) ??
+          (glow ? this.getBackdropRectColor(rect, glow) : undefined),
+      };
+    });
+  }
+
+  getBackdropRectColor(rect, source) {
+    if (!rect.width || !rect.height) return undefined;
+    if (!source.rect?.width || !source.rect?.height) return undefined;
+    if (!source.width || !source.height) return undefined;
+
+    const left = Math.max(rect.left, source.rect.left);
+    const right = Math.min(rect.right, source.rect.right);
+    const top = Math.max(rect.top, source.rect.top);
+    const bottom = Math.min(rect.bottom, source.rect.bottom);
+    // Without the source behind most of this area, the page background
+    // dominates the backdrop and the theme colors apply (the CSS fallback of
+    // --ytal-header-backdrop-region)
+    const coverage =
+      right > left && bottom > top
+        ? ((right - left) * (bottom - top)) / (rect.width * rect.height)
+        : 0;
+    if (coverage < 0.5) return undefined;
+
+    if (!this.headerBackdropBuffer) {
+      const elem = new SafeOffscreenCanvas(16, 4, true);
+      this.headerBackdropBuffer = {
+        elem,
+        ctx: elem.getContext('2d', {
+          desynchronized: true,
+          willReadFrequently: true,
+        }),
+      };
+    }
+
+    // Sample the part of the source that is displayed behind this area.
+    // The color decisions are made in CSS via contrast-color()
+    const { elem, ctx } = this.headerBackdropBuffer;
+    const scaleX = source.width / source.rect.width;
+    const scaleY = source.height / source.rect.height;
+    ctx.clearRect(0, 0, elem.width, elem.height);
+    ctx.drawImage(
+      source.elem,
+      (left - source.rect.left) * scaleX,
+      (top - source.rect.top) * scaleY,
+      Math.max(1, (right - left) * scaleX),
+      Math.max(1, (bottom - top) * scaleY),
+      0,
+      0,
+      elem.width,
+      elem.height
+    );
+    const data = ctx.getImageData(0, 0, elem.width, elem.height).data;
+    // The spread fade of the glow is stored in the alpha channel and fades
+    // into the theme page background
+    const pageBackground = this.theming.isDarkTheme() ? 0 : 255;
+    const color = [0, 0, 0];
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = source.opaque ? 1 : data[i + 3] / 255;
+      color[0] += data[i] * alpha + pageBackground * (1 - alpha);
+      color[1] += data[i + 1] * alpha + pageBackground * (1 - alpha);
+      color[2] += data[i + 2] * alpha + pageBackground * (1 - alpha);
+    }
+    const pixels = data.length / 4;
+    for (let i = 0; i < 3; i++) {
+      color[i] = Math.round(color[i] / pixels);
+    }
+    return color;
+  }
+
+  updateHeaderBackdropColors = (samples) => {
+    const previousColors = this.headerBackdropColors;
+    const colors = new Map();
+    for (const { elem, color } of samples ?? []) {
+      const previousColor = previousColors.get(elem);
+      const changed =
+        !color !== !previousColor ||
+        (color &&
+          previousColor &&
+          color.some((value, i) => Math.abs(value - previousColor[i]) >= 4));
+      colors.set(elem, changed ? color : previousColor);
+      if (changed && this.supportsContrastColor) {
+        setStyleProperty(
+          elem,
+          '--ytal-header-backdrop-region',
+          color ? `rgb(${color[0]}, ${color[1]}, ${color[2]})` : ''
+        );
+      }
+      previousColors.delete(elem);
+    }
+    // Clear regions that are no longer sampled (e.g. the ambient light is
+    // hidden) so the theme colors apply again
+    for (const [elem] of previousColors) {
+      if (this.supportsContrastColor) {
+        setStyleProperty(elem, '--ytal-header-backdrop-region', '');
+      }
+    }
+    this.headerBackdropColors = colors;
+
+    if (this.supportsContrastColor || !this.mastheadElem) return;
+
+    let isDark;
+    const color = samples?.[0]?.color;
+    if (color) {
+      const luminance =
+        color[0] * 0.2126 + color[1] * 0.7152 + color[2] * 0.0722;
+      // Hysteresis prevents flickering when the luminance hovers around the
+      // threshold
+      isDark = this.headerGlowIsDark === true ? luminance < 120 : luminance < 90;
+    }
+    this.headerGlowIsDark = isDark;
+    this.mastheadElem.classList.toggle('ytal-header-glow-dark', isDark === true);
+    this.mastheadElem.classList.toggle(
+      'ytal-header-glow-light',
+      isDark === false
+    );
+  };
 
   scheduleBarSizeDetection = async () => {
     try {
@@ -3788,6 +3989,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     this.resetVideoParentElemStyle();
     this.clear();
     this.stats.hide();
+    this.updateHeaderBackdropColors(undefined);
 
     this.updateLayoutPerformanceImprovements();
     await this.updateSizes();

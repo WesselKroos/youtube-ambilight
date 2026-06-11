@@ -690,7 +690,7 @@ html[data-ambientlight-enabled] {
     #search::-webkit-input-placeholder,
     .ytSearchboxComponentInput::-webkit-input-placeholder,
     #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
-    #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
+    #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon, #search-icon-legacy .ytIconWrapperHost, .ytSearchboxComponentSearchButton .ytIconWrapperHost {
       transition: color .15s;
     }
     .gsst_e {
@@ -717,7 +717,13 @@ html[data-ambientlight-enabled] {
     #buttons.ytd-masthead ytd-notification-topbar-button-renderer,
     #buttons.ytd-masthead ytd-button-renderer,
     #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
-      &:not(:hover) button:not(:focus) yt-icon {
+      // The ytSpec* selectors cover the new button markup, in which the
+      // button and several descendants carry their own explicit color
+      &:not(:hover) button:not(:focus) yt-icon,
+      &:not(:hover) button:not(:focus).ytSpecButtonShapeNextHost,
+      &:not(:hover) button:not(:focus) .ytIconWrapperHost,
+      &:not(:hover) button:not(:focus) .ytSpecIconBadgeShapeHost,
+      &:not(:hover) button:not(:focus) .ytSpecButtonShapeNextButtonTextContent {
         @content;
       }
     }
@@ -951,7 +957,7 @@ html[data-ambientlight-enabled] {
           }
           #search,
           #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
-          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon, #search-icon-legacy .ytIconWrapperHost, .ytSearchboxComponentSearchButton .ytIconWrapperHost {
             color: rgba(0,0,0,.4) !important;
           }
           #search,
@@ -1035,7 +1041,7 @@ html[data-ambientlight-enabled] {
           }
           #search,
           #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon, 
-          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon {
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon, #search-icon-legacy .ytIconWrapperHost, .ytSearchboxComponentSearchButton .ytIconWrapperHost {
             color: rgba(255,255,255,.4) !important;
           }
           #search,
@@ -1059,6 +1065,194 @@ html[data-ambientlight-enabled] {
       .ytSuggestionComponentSuggestion {
         color: rgb(241,241,241) !important;
       }
+    }
+  }
+
+  /* Header icon colors adapted to the ambient glow */
+
+  // While the header is transparent the icons are displayed on top of the
+  // ambient glow, so their contrast depends on the video frame instead of the
+  // theme. The ytal-header-glow-dark/-light classes are toggled by
+  // detectHeaderGlowBrightness based on the video frame color. Without a
+  // detected brightness (cross-origin video) the theme colors above apply
+  @mixin header-glow-icon-colors($color, $surface: null) {
+    --yt-button-color: #{$color};
+
+    #guide-icon.ytd-masthead,
+    yt-icon.ytd-topbar-logo-renderer, // old design
+    yt-icon.ytd-logo // new design
+    {
+      color: $color;
+    }
+    #country-code.ytd-topbar-logo-renderer {
+      color: color-mix(in srgb, #{$color} 60%, transparent);
+    }
+
+    @include masthead-icon {
+      color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+    }
+
+    #guide-button,
+    #back-button {
+      &:hover,
+      &:focus-within {
+        color: #{$color} !important;
+      }
+    }
+
+    ytd-topbar-menu-button-renderer,
+    ytd-notification-topbar-button-renderer,
+    ytd-button-renderer,
+    #buttons.ytd-masthead .ytd-masthead[is-icon-button] {
+      color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+      &:hover,
+      &:focus-within {
+        color: #{$color} !important;
+        // The new button markup carries its own colors, which resolve
+        // against the masthead's native dark context instead of the theme
+        button.ytSpecButtonShapeNextHost,
+        .ytIconWrapperHost,
+        .ytSpecIconBadgeShapeHost,
+        .ytSpecButtonShapeNextButtonTextContent {
+          color: #{$color} !important;
+        }
+        button.ytSpecButtonShapeNextHost {
+          background-color: color-mix(
+            in srgb,
+            #{$color} 10%,
+            transparent
+          ) !important;
+        }
+      }
+    }
+
+    #voice-search-button {
+      color: color-mix(in srgb, #{$color} 10%, transparent) !important;
+      &:not(:hover) button:not(:focus) yt-icon,
+      &:not(:hover) button:not(:focus).ytSpecButtonShapeNextHost,
+      &:not(:hover) button:not(:focus) .ytIconWrapperHost {
+        color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+      }
+      &:hover,
+      &:focus-within {
+        button {
+          color: #{$color} !important;
+        }
+      }
+    }
+
+    #{$account-btn} {
+      border-color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+      &:not(.yt-spec-button-shape-next--call-to-action) {
+        color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+      }
+    }
+
+    ytd-searchbox,
+    yt-searchbox {
+      &:not(:hover):not(:focus-within) {
+        #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+        #search-icon-legacy, .ytSearchboxComponentSearchButton {
+          border-color: color-mix(in srgb, #{$color} 10%, transparent) !important;
+        }
+        #search,
+        #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+        #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon, #search-icon-legacy .ytIconWrapperHost, .ytSearchboxComponentSearchButton .ytIconWrapperHost {
+          color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+        }
+        #search,
+        .ytSearchboxComponentInput {
+          &::-webkit-input-placeholder {
+            color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+          }
+        }
+      }
+
+      // While hovered or focused, YouTube's own styling would resolve
+      // against the masthead's native dark context instead of the theme.
+      // The backdrop color itself is the input surface, so the text and
+      // icon colors contrast with it by construction
+      @if $surface {
+        &:hover,
+        &:focus-within {
+          // Match YouTube's hover: the input field stays transparent (only a
+          // border), and only the search button gets a subtle fill. A solid
+          // surface on the whole field would look like a heavy block
+          #container.ytd-searchbox, .ytSearchboxComponentInputBox,
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: transparent !important;
+            border-color: color-mix(in srgb, #{$color} 10%, transparent) !important;
+          }
+          #search-icon-legacy, .ytSearchboxComponentSearchButton {
+            background-color: color-mix(in srgb, #{$color} 10%, transparent) !important;
+          }
+          #search,
+          .ytSearchboxComponentInput {
+            color: #{$color} !important;
+            &::-webkit-input-placeholder {
+              color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+            }
+          }
+          #search-clear-button yt-icon, .ytSearchboxComponentClearButton yt-icon,
+          #search-icon-legacy yt-icon, .ytSearchboxComponentSearchButton yt-icon,
+          #search-icon-legacy .ytIconWrapperHost, .ytSearchboxComponentSearchButton .ytIconWrapperHost {
+            color: #{$color} !important;
+          }
+        }
+        .ytSearchboxComponentSuggestionsContainer {
+          background-color: #{$surface} !important;
+        }
+        .ytSuggestionComponentSuggestion {
+          color: #{$color} !important;
+        }
+      }
+    }
+
+    #search-button-narrow {
+      color: color-mix(in srgb, #{$color} 60%, transparent) !important;
+      &:hover,
+      &:focus-within {
+        color: #{$color} !important;
+      }
+    }
+  }
+
+  // ytd-masthead is included to win in specificity over the
+  // ytd-masthead[dark] theme rules above
+  &:not([dark]) #masthead-container.at-top.ytal-header-glow-dark ytd-masthead,
+  &[dark] #masthead-container.at-top.ytal-header-glow-dark ytd-masthead {
+    @include header-glow-icon-colors(#fff);
+  }
+  &:not([dark]) #masthead-container.at-top.ytal-header-glow-light ytd-masthead,
+  &[dark] #masthead-container.at-top.ytal-header-glow-light ytd-masthead {
+    @include header-glow-icon-colors(#000);
+  }
+
+  // With contrast-color() support the icon colors are derived directly from
+  // the backdrop color behind the header (the page background blended with
+  // the glow, published as --ytal-header-backdrop-color by
+  // detectHeaderBackdropColor). Without a published backdrop color
+  // (cross-origin video or the ambient light is hidden) the theme page
+  // background is the fallback, so the icons follow the YouTube/extension
+  // theme. In browsers without contrast-color() support the
+  // ytal-header-glow-dark/-light classes above are used instead
+  @supports (color: contrast-color(red)) {
+    &:not([dark]) #masthead-container.at-top ytd-masthead {
+      --ytal-header-backdrop-fallback: #fff;
+    }
+    &[dark] #masthead-container.at-top ytd-masthead {
+      --ytal-header-backdrop-fallback: #000;
+    }
+    // The ytd-masthead[dark] variants win in specificity over the
+    // ytd-masthead[dark] theme rules above
+    &:not([dark]) #masthead-container.at-top ytd-masthead,
+    &:not([dark]) #masthead-container.at-top ytd-masthead[dark],
+    &[dark] #masthead-container.at-top ytd-masthead,
+    &[dark] #masthead-container.at-top ytd-masthead[dark] {
+      @include header-glow-icon-colors(
+        contrast-color(var(--ytal-header-backdrop-region, var(--ytal-header-backdrop-fallback))),
+        var(--ytal-header-backdrop-region, var(--ytal-header-backdrop-fallback))
+      );
     }
   }
 
@@ -1289,10 +1483,22 @@ html[data-ambientlight-enabled] {
 
   yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip {
     background: var(--ytal-background) !important;
+    color: rgb(
+      var(--ytal-text-rgb),
+      var(--ytal-text-rgb),
+      var(--ytal-text-rgb)
+    ) !important;
   }
+  // YouTube no longer defines --yt-spec-inverted-background and
+  // --yt-spec-text-primary-inverse; without fallbacks the selected chip
+  // becomes transparent with inherited text
   yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
-    background: var(--yt-spec-inverted-background) !important;
-    color: var(--yt-spec-text-primary-inverse) !important;
+    background: var(--yt-spec-inverted-background, #0f0f0f) !important;
+    color: var(--yt-spec-text-primary-inverse, #fff) !important;
+  }
+  &[dark] yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
+    background: var(--yt-spec-inverted-background, #f1f1f1) !important;
+    color: var(--yt-spec-text-primary-inverse, #0f0f0f) !important;
   }
   
   ytd-watch-metadata {

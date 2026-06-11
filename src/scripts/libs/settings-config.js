@@ -177,7 +177,7 @@ const SettingsConfig = [
     name: 'headerShadowSize',
     label: 'Shadows size',
     type: 'list',
-    default: 0,
+    default: 15,
     min: 0,
     max: 100,
     step: 0.1,
