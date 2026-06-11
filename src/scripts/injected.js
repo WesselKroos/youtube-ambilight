@@ -36,14 +36,204 @@ const getElem = (() => {
   };
 })();
 
+// YouTube web component wrappers (yt-attributed-string, yt-page-header-renderer,
+// yt-lockup-view-model) stamp inline color styles from server styleRuns or from
+// ytcfg INNERTUBE_CONTEXT.client.userInterfaceTheme. Toggling html[dark] does not
+// update those inline colors, so the watch page description keeps near-black
+// light-theme text on the dark background.
+const webComponentWrapperSelector =
+  'yt-attributed-string, yt-page-header-renderer, yt-lockup-view-model';
+const ytThemeValue = (toDark) =>
+  toDark ? 'USER_INTERFACE_THEME_DARK' : 'USER_INTERFACE_THEME_LIGHT';
+
+let lastRenderedWebComponentTheme = null;
+let nativeWebComponentTheme = null;
+let webComponentObserver = null;
+
+function renderWebComponentWrapper(element, lateStamped) {
+  const { data } = element.rawProps ?? {};
+  if (
+    !element.isWebComponentWrapper ||
+    data == null ||
+    typeof element.render !== 'function'
+  )
+    return;
+
+  // Re-rendering a wrapper that contains a video element recreates the <video>,
+  // which re-initializes its GPU compositor layer over the masthead
+  if (element.querySelector('video')) return;
+
+  if (element.localName === 'yt-attributed-string' && typeof data === 'function') {
+    // fontColor styleRuns are server-set for the theme the page was requested
+    // with and ignore ytcfg; inherit the colors from the CSS cascade instead
+    element.rawProps.linkInheritColor = () => true;
+    element.rawProps.noStyleRuns = () => true;
+  } else if (lateStamped) {
+    // Late-stamped wrappers already rendered with the updated ytcfg theme
+    return;
+  } else if (
+    typeof data === 'function' &&
+    element.localName !== 'yt-page-header-renderer' &&
+    element.localName !== 'yt-lockup-view-model'
+  ) {
+    // Re-rendering other function-typed wrappers (button shapes, subscribe and
+    // notification renderers) duplicates their structure
+    return;
+  }
+
+  element.replaceChildren();
+  element.render();
+}
+
+// ytd-watch-metadata stamps the --yt-saturated-* hover palette (used by the
+// description box and the views/date line on hover) via updateHoverColor(),
+// which reads its isDark property only at initialization
+function updateSaturatedColors(element, toDark) {
+  if (!('isDark' in element) || typeof element.set !== 'function') return;
+  element.set('isDark', toDark);
+  element.updateHoverColor?.();
+}
+
+// Components such as yt-chip-cloud-renderer, ytd-watch-flexy, yt-icon and
+// yt-formatted-string each carry an independent isDarkTheme Polymer property
+// that is only set when they are stamped. Elements inside ytd-shorts always
+// receive isDarkTheme=true: the Shorts stage has a hardcoded dark background,
+// so its overlay elements need dark-mode styling in both themes
+function updateIsDarkTheme(element, toDark) {
+  if (!('isDarkTheme' in element) || typeof element.set !== 'function') return;
+  element.set('isDarkTheme', element.closest('ytd-shorts') ? true : toDark);
+}
+
+// colorData elements (like ytd-expandable-metadata-renderer) apply their
+// inline --yt-lightsource-* and --yt-basic-* variables through dataChanged(),
+// which reads isDarkTheme() only at data-init time. dataChanged() calls
+// isDarkTheme as a function while polymerController exposes it as a getter,
+// so it is temporarily shadowed with a function
+function updateColorDataElement(element, toDark) {
+  const { polymerController } = element;
+  if (!polymerController?.dataChanged) return;
+
+  // dataChanged() may asynchronously reload a video player (like a channel
+  // trailer); re-pause videos that were paused when playback resumes
+  const pausedVideos = [...element.querySelectorAll('video')].filter(
+    (video) => video.paused
+  );
+  const ownDescriptor = Object.getOwnPropertyDescriptor(
+    polymerController,
+    'isDarkTheme'
+  );
+  polymerController.isDarkTheme = () => toDark;
+  polymerController.dataChanged();
+  delete polymerController.isDarkTheme;
+  if (ownDescriptor) {
+    Object.defineProperty(polymerController, 'isDarkTheme', ownDescriptor);
+  }
+  for (const video of pausedVideos) {
+    video.addEventListener(
+      'play',
+      () => video.closest('.html5-video-player')?.pauseVideo(),
+      { once: true }
+    );
+  }
+}
+
+function onWebComponentMutations(mutations) {
+  const toDark = lastRenderedWebComponentTheme === ytThemeValue(true);
+  for (const { addedNodes } of mutations) {
+    for (const node of addedNodes) {
+      if (node.nodeType !== Node.ELEMENT_NODE) continue;
+      const elements = [node, ...node.querySelectorAll('*')];
+      // Polymer setters run before the wrapper re-renders: they can re-stamp
+      // yt-attributed-string contents, which would undo an earlier render
+      for (const element of elements) {
+        if (element.localName === 'ytd-watch-metadata') {
+          updateSaturatedColors(element, toDark);
+        }
+        updateIsDarkTheme(element, toDark);
+      }
+      for (const element of elements) {
+        if (element.matches(webComponentWrapperSelector)) {
+          renderWebComponentWrapper(element, true);
+        }
+      }
+    }
+  }
+}
+
+function updateWebComponentColors(toDark) {
+  const theme = ytThemeValue(toDark);
+  const client = window.ytcfg?.get?.('INNERTUBE_CONTEXT')?.client;
+  if (client) {
+    if (nativeWebComponentTheme === null) {
+      nativeWebComponentTheme =
+        client.userInterfaceTheme ?? ytThemeValue(false);
+    }
+    client.userInterfaceTheme = theme;
+  }
+
+  if (lastRenderedWebComponentTheme !== theme) {
+    lastRenderedWebComponentTheme = theme;
+    // Polymer setters run before the wrapper re-renders: they can re-stamp
+    // yt-attributed-string contents, which would undo an earlier render
+    for (const element of document.querySelectorAll('*')) {
+      if (element.localName === 'ytd-watch-metadata') {
+        updateSaturatedColors(element, toDark);
+      }
+      updateColorDataElement(element, toDark);
+      updateIsDarkTheme(element, toDark);
+    }
+    for (const element of document.querySelectorAll(
+      webComponentWrapperSelector
+    )) {
+      renderWebComponentWrapper(element, false);
+    }
+  }
+
+  // While the theme differs from the one the page was rendered with, wrappers
+  // stamped after this toggle (the description stamps seconds later) still carry
+  // stale server styleRun colors and must be re-rendered as they appear
+  if (theme !== nativeWebComponentTheme) {
+    if (!webComponentObserver) {
+      webComponentObserver = new MutationObserver(onWebComponentMutations);
+      webComponentObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  } else if (webComponentObserver) {
+    webComponentObserver.disconnect();
+    webComponentObserver = null;
+  }
+}
+
 function updateTheme(toDark) {
+  // YouTube's CSS uses :root defaults and [dark] / [light] attribute
+  // selectors for its hashed CSS custom properties, so both attributes must
+  // be managed together. Without [light] a page that YouTube rendered in dark
+  // mode keeps its dark text colors after the dark attribute is removed
   document.documentElement.toggleAttribute('dark', toDark);
+  document.documentElement.toggleAttribute('light', !toDark);
 
   const ytdAppElem = getElem('ytd-app');
   if (ytdAppElem?.setMastheadTheme) {
     ytdAppElem.setMastheadTheme();
   }
+
+  updateWebComponentColors(toDark);
 }
+
+// After each SPA navigation YouTube stamps new elements and refreshes reused
+// ones with data from the navigation response, which carries the styleRuns of
+// YouTube's own theme. The childList observer cannot see refreshed elements,
+// so the full traversal must run again on the new page
+document.addEventListener('yt-navigate-finish', function onNavigateFinish() {
+  if (lastRenderedWebComponentTheme === null) return;
+  if (lastRenderedWebComponentTheme === nativeWebComponentTheme) return;
+
+  const toDark = document.documentElement.hasAttribute('dark');
+  lastRenderedWebComponentTheme = null;
+  updateWebComponentColors(toDark);
+});
 
 contentScript.addMessageListener(
   'update-theme',
