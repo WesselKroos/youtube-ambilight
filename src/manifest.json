@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Ambient light for YouTube™",
-  "description": "Immerse yourself in YouTube™ videos with ambient light!",
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
   "version": "0.0.0",
   "homepage_url": "https://github.com/WesselKroos/youtube-ambilight",
   "author": "Wessel Kroos",

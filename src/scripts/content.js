@@ -11,6 +11,7 @@ import SentryReporter, {
   setVersion,
 } from './libs/errors/sentry-reporter';
 import { injectedScript } from './libs/messaging/injected';
+import { loadLocale, setLanguagePreference, translate } from './libs/i18n';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
@@ -26,13 +27,13 @@ injectedScript.addMessageListener('error', (injectedEx) => {
 const setResourceWarning = (url) => {
   setWarning(
     url
-      ? `Failed to load a resource. Reload the webpage to try it again. 
-This can happen after you have updated the extension. 
+      ? translate('resourceWarning', `Failed to load a resource. Reload the webpage to try it again.
+This can happen after you have updated the extension.
 
-Or if this happens often, view the error in your browser's DevTools javascript console panel. 
-Tip: Look for errors about this url: ${url}`
-      : `Failed to load the extension on this webpage because it has been updated, reloaded or uninstalled. 
-Reload the webpage to reload the extension.`
+Or if this happens often, view the error in your browser's DevTools javascript console panel.
+Tip: Look for errors about this url: ${url}`, { url })
+      : translate('extensionUnavailable', `Failed to load the extension on this webpage because it has been updated, reloaded or uninstalled.
+Reload the webpage to reload the extension.`)
   );
 };
 
@@ -133,6 +134,7 @@ const captureResourceLoadingException = async (url, event) => {
 };
 
 wrapErrorHandler(async function loadContentScript() {
+  await loadLocale(storage);
   const version = getVersion();
   setVersion(version);
 
@@ -145,10 +147,12 @@ wrapErrorHandler(async function loadContentScript() {
   }
 
   storage.addListener(function storageListener(changes) {
-    if (!changes.crashOptions?.newValue) return;
-
-    const crashOptions = changes.crashOptions.newValue;
-    setCrashOptions(crashOptions);
+    if (changes.crashOptions?.newValue) {
+      setCrashOptions(changes.crashOptions.newValue);
+    }
+    if (changes.uiLanguage) {
+      setLanguagePreference(changes.uiLanguage.newValue);
+    }
   });
 
   await waitForHtmlElement();

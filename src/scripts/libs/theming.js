@@ -9,6 +9,7 @@ import {
 import { injectedScript } from './messaging/injected';
 import SentryReporter from './errors/sentry-reporter';
 import { storage } from './storage';
+import { translate } from './i18n';
 
 const THEME_LIGHT = -1;
 const THEME_DEFAULT = 0;
@@ -177,10 +178,18 @@ export default class Theming {
           const now = new Date().getTime();
           const withinThresshold = now - 10000 < lastFailedThemeToggle;
           if (withinThresshold) {
+            const theme = this.isDarkTheme() ? 'light' : 'dark';
             this.settings.setWarning(
-              `Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the ${
-                this.isDarkTheme() ? 'light' : 'dark'
-              } appearance has been disabled for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+              translate(
+                'themePaused',
+                `Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the ${theme} appearance has been disabled for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`,
+                {
+                  theme: translate(
+                    theme === 'light' ? 'themeLight' : 'themeDark',
+                    theme
+                  ),
+                }
+              )
             );
             this.updatingTheme = false;
             return;
@@ -221,11 +230,24 @@ export default class Theming {
     this.themeToggleFailed = true;
     await storage.set('last-failed-theme-toggle', new Date().getTime());
     this.settings.setWarning(
-      `Failed to toggle the page theme to from ${
-        wasDark ? 'dark' : 'light'
-      } to ${
-        isDark ? 'dark' : 'light'
-      } mode.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+      translate(
+        'themeFailed',
+        `Failed to toggle the page theme to from ${
+          wasDark ? 'dark' : 'light'
+        } to ${
+          isDark ? 'dark' : 'light'
+        } mode.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`,
+        {
+          from: translate(
+            wasDark ? 'themeDark' : 'themeLight',
+            wasDark ? 'dark' : 'light'
+          ),
+          to: translate(
+            isDark ? 'themeDark' : 'themeLight',
+            isDark ? 'dark' : 'light'
+          ),
+        }
+      )
     );
   }
 

@@ -1,7 +1,7 @@
 import SentryReporter from './errors/sentry-reporter';
 import { AmbientlightError } from './errors/ambient-light-error';
 import {
-  canvasWebGLCrashTips,
+  getCanvasWebGLCrashTips,
   ctxOptions,
   requestIdleCallback,
   SafeOffscreenCanvas,
@@ -10,6 +10,7 @@ import {
 } from './generic';
 import ProjectorShadow from './projector-shadow';
 import { storage } from './storage';
+import { translate, translateWebGLWarning } from './i18n';
 
 export default class ProjectorWebGL {
   type = 'ProjectorWebGL';
@@ -327,9 +328,7 @@ export default class ProjectorWebGL {
   };
 
   setWebGLWarning(action = 'restore') {
-    this.setWarning(
-      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`
-    );
+    this.setWarning(translateWebGLWarning(action, getCanvasWebGLCrashTips()));
   }
 
   onBlurCtxLost = wrapErrorHandler(
@@ -437,8 +436,10 @@ export default class ProjectorWebGL {
     const detected = await this.getMajorPerformanceCaveatDetected();
     if (detected) return;
 
-    const message =
-      'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)';
+    const message = translate(
+      'slowDevice',
+      'The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)'
+    );
     // console.warn(`ProjectorWebGL: ${message}`)
     this.setWarning(message, true);
     this.settings.set('resolution', 25, true);

@@ -25,6 +25,11 @@ import Settings from './libs/settings';
 import { contentScript } from './libs/messaging/content';
 import { getVersion } from './libs/utils';
 import { defaultCrashOptions, storage } from './libs/storage';
+import {
+  loadLocale,
+  setLanguagePreference,
+  translate,
+} from './libs/i18n';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
@@ -39,11 +44,15 @@ wrapErrorHandler(async function initVersionAndCrashOptions() {
     setCrashOptions(newCrashOptions);
   });
 
-  storage.addListener(function storageListener(changes) {
-    if (!changes.crashOptions?.newValue) return;
-
-    const crashOptions = changes.crashOptions.newValue;
-    setCrashOptions(crashOptions);
+  storage.addListener(async function storageListener(changes) {
+    if (changes.crashOptions?.newValue) {
+      setCrashOptions(changes.crashOptions.newValue);
+    }
+    if (changes.uiLanguage) {
+      await loadLocale(storage);
+      setLanguagePreference(changes.uiLanguage.newValue);
+      Settings.activeInstance?.refreshLanguage();
+    }
   });
 })();
 
@@ -395,7 +404,11 @@ const loadAmbientlight = async () => {
     await Settings.getStoredSettingsCached();
   } catch (ex) {
     setWarning(
-      `Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'}This can happen after you have updated the extension. ${'\n\n'}${ex?.toString()}`
+      translate(
+        'previousSettingsUnavailable',
+        `Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'}This can happen after you have updated the extension. ${'\n\n'}${ex?.toString()}`,
+        { error: ex?.toString() }
+      )
     );
 
     if (

@@ -1,3 +1,5 @@
+**English** | [繁體中文](README.zh-TW.md)
+
 [![Google Chrome Web rating](https://img.shields.io/chrome-web-store/rating/paponcgjfojgemddooebbgniglhkajkj?logo=googlechrome&color=brightgreen)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj) [![Google Chrome users](https://img.shields.io/chrome-web-store/users/paponcgjfojgemddooebbgniglhkajkj?logo=googlechrome&color=blue)](https://chrome.google.com/webstore/detail/youtube-ambilight/paponcgjfojgemddooebbgniglhkajkj) &nbsp; [![Microsoft Edge rating](https://img.shields.io/badge/dynamic/json?label=rating&suffix=/5&query=%24.averageRating&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fcmggdjjjfembmemhleknmfpakmgggjcf&logo=embarcadero&color=brightgreen)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf) [![Microsoft Edge users](https://img.shields.io/badge/dynamic/json?label=users&query=%24.activeInstallCount&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fcmggdjjjfembmemhleknmfpakmgggjcf&logo=embarcadero&color=blue)](https://microsoftedge.microsoft.com/addons/detail/cmggdjjjfembmemhleknmfpakmgggjcf) &nbsp; [![Firefox rating](https://img.shields.io/amo/rating/ambient-light-for-youtube?logo=firefoxbrowser)](https://addons.mozilla.org/en-US/firefox/addon/ambient-light-for-youtube/) [![Firefox users](https://img.shields.io/amo/users/ambient-light-for-youtube?logo=firefoxbrowser&color=blue)](https://addons.mozilla.org/en-US/firefox/addon/ambient-light-for-youtube/) &nbsp; [![Opera rating](https://img.shields.io/badge/rating-4.4/5-brightgreen?logo=opera)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/) [![Opera users](https://img.shields.io/badge/downloads-20k-blue?logo=opera)](https://addons.opera.com/nl/extensions/details/youtube-ambilight/)
 
 <a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
@@ -71,3 +73,11 @@ Feel free to
 5. After you've modified a file in the `/src` folder follow these steps:
     1. In the terminal/commandline enter `npm run build`
     2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.
+
+## Translations
+
+The extension follows the browser's UI language by default. You can also choose a language from the dropdown in the video player's ambient light settings menu. English and Traditional Chinese are currently available; automatic detection uses Traditional Chinese for `zh-TW`, `zh-Hant`, `zh-HK`, and `zh-MO`. The settings menu updates when you change the language, and an open options page updates too. After selecting Default, refresh any open YouTube tabs.
+
+Extension name and description live in `src/_locales`. In-player setting labels and help text live in `src/scripts/libs/locales/zh-TW.js`. Keep setting names and numeric values unchanged, since they are used as storage keys. After editing translations, run `npm run build` and reload the unpacked extension and YouTube page.
+
+The language dropdown is populated from the locale registry in `src/scripts/libs/i18n.js`. Register a new translation there to make it selectable.

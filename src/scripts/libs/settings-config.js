@@ -1,5 +1,6 @@
 import { supportsColorMix, supportsWebGL } from './generic';
 import { getBrowser } from './utils';
+import { localizeSettingsConfig, translate } from './i18n';
 
 const SettingsConfig = [
   {
@@ -868,6 +869,8 @@ let prepared = false;
 export const prepareSettingsConfigOnce = () => {
   if (prepared) return;
 
+  localizeSettingsConfig(SettingsConfig);
+
   const settingsToRemove = [];
   for (const setting of SettingsConfig) {
     if (supportsWebGL()) {
@@ -880,7 +883,10 @@ export const prepareSettingsConfigOnce = () => {
       }
       if (['webGL'].includes(setting.name)) {
         setting.default = false;
-        setting.disabled = 'You have disabled WebGL in your browser.';
+        setting.disabled = translate(
+          'webglDisabled',
+          'You have disabled WebGL in your browser.'
+        );
       }
     }
 

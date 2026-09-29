@@ -1,3 +1,5 @@
+import { translate } from './i18n';
+
 export const uuidv4 = () => {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
@@ -513,7 +515,7 @@ export const setWarning = (text) => {
     titleElem.style.color = '#008cff';
     titleElem.style.fontSize = '22px';
     titleElem.style.lineHeight = '28px';
-    titleElem.textContent = 'Ambient light for YouTube™\n';
+    titleElem.textContent = `${translate('extensionName', 'Ambient light for YouTube™')}\n`;
     elem.appendChild(titleElem);
 
     const textElem = document.createElement('div');
@@ -543,15 +545,15 @@ export const setStyleProperty = (elem, name, value, priority = '') => {
   elem.style.setProperty(name, value, priority);
 };
 
-export const canvas2DCrashTips = `
+export const getCanvas2DCrashTips = () => translate('canvasCrashTips', `
 
 Reload the webpage to try it again.
 
 Possible causes:
 - The memory of your GPU is fully used by another application.
 - You have to many YouTube webpages visible at the same time. You GPU can only render a limit amount of ambient lights at the same time.
-- You have changed a setting to a value that is incompatible with your GPU. Undo your last change and refresh the webpage. Or reset all settings with the reset button at the top right.`;
+- You have changed a setting to a value that is incompatible with your GPU. Undo your last change and refresh the webpage. Or reset all settings with the reset button at the top right.`);
 
-export const canvasWebGLCrashTips = `${canvas2DCrashTips}
+export const getCanvasWebGLCrashTips = () => `${getCanvas2DCrashTips()}${translate('webglCrashTips', `
 
-Another possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`;
+Another possible workaround could be to turn off the "Quality" > "WebGL renderer" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.`)}`;

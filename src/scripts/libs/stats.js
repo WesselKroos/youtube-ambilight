@@ -4,6 +4,7 @@ import {
   on,
   requestIdleCallback,
 } from './generic';
+import { translate } from './i18n';
 
 export default class Stats {
   frametimesHistoryMax = 120;
@@ -592,7 +593,10 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
 
     if (!this.frameTimesCanvas) {
       this.frameTimesCanvas = new Canvas(width, height);
-      this.frameTimesCanvas.setAttribute('title', 'Click to toggle legend');
+      this.frameTimesCanvas.setAttribute(
+        'title',
+        translate('toggleLegend', 'Click to toggle legend')
+      );
       on(
         this.frameTimesCanvas,
         'click',

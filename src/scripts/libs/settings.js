@@ -18,6 +18,14 @@ import SettingsConfig, {
 import { getFeedbackFormLink, getVersion } from './utils';
 import { storage } from './storage';
 import { AmbientlightError } from './errors/ambient-light-error';
+import {
+  availableLanguages,
+  getLanguagePreference,
+  loadLocale,
+  localizeSettingsConfig,
+  setLanguagePreference,
+  translate,
+} from './i18n';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
@@ -44,7 +52,9 @@ export default class Settings {
       this.menuElemParent = menuElemParent;
 
       await this.getAll();
+      localizeSettingsConfig(SettingsConfig);
       this.initMenu();
+      Settings.activeInstance = this;
       if (this.webGLCrashDate) this.updateWebGLCrashDescription();
       if (this.pendingWarning) this.pendingWarning();
       return this;
@@ -56,6 +66,7 @@ export default class Settings {
       return Settings.storedSettingsCached;
     }
 
+    await loadLocale(storage);
     prepareSettingsConfigOnce();
 
     const names = [];
@@ -78,7 +89,7 @@ export default class Settings {
     const warningTimeout = setTimeout(
       () =>
         setWarning(
-          `It is taking more than 5 seconds to load your previous settings.
+          translate('slowSettings', `It is taking more than 5 seconds to load your previous settings.
 If this is your first warning and it does not disappear, then the extension might have updated. 
 You can reload the webpage to complete the update.
 
@@ -86,7 +97,7 @@ But if this happens frequently, here are some possible causes:
 - Another extension is blocking code execution on this webpage for a long duration.
   Disable other extensions temporarely to find out which one it is.
 - If your computer is very slow or frequently freezing in other applications as well,
-  there could be a problem with your hardware, likely the memory (DDR).`
+  there could be a problem with your hardware, likely the memory (DDR).`)
         ),
       5000
     );
@@ -265,17 +276,173 @@ But if this happens frequently, here are some possible causes:
 
     let descriptionText = disabledText;
     if (this.webGLCrashDate) {
-      descriptionText += `${
+      descriptionText += `${disabledText ? '\r\n' : ''}${translate(
+        disabledText ? 'webglFailedPreviously' : 'webglFailed',
         disabledText
-          ? '\r\nAnd the WebGL renderer previously failed'
-          : 'Failed to load'
-      } at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`;
-      descriptionText += `\r\n\r\nCheck the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`;
+          ? 'And the WebGL renderer previously failed at {time} {date}'
+          : 'Failed to load at {time} {date}',
+        {
+          time: this.webGLCrashDate.toLocaleTimeString(),
+          date: this.webGLCrashDate.toLocaleDateString(),
+        }
+      )}`;
+      descriptionText += `\r\n\r\n${translate(
+        'webglTroubleshoot',
+        'Check the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.'
+      )}`;
       if (!disabledText)
-        descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again the time at which it failed will be updated.`;
+        descriptionText += `\r\n\r\n${translate(
+          'webglRetry',
+          'Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again the time at which it failed will be updated.'
+        )}`;
     }
     descriptionElem.textContent = descriptionText;
   };
+
+  refreshLanguage() {
+    localizeSettingsConfig(SettingsConfig);
+
+    const languageLabel = this.menuElem.querySelector('.ytpa-language-label');
+    languageLabel.firstChild.textContent = translate(
+      'optionsLanguageLabel',
+      'Display language'
+    );
+    languageLabel.querySelector('.ytpa-language-description').textContent =
+      translate(
+        'optionsLanguageHelp',
+        'The browser language is used by default. After selecting Default, refresh any open YouTube tabs.'
+      );
+    const languageSelect = this.menuElem.querySelector('.ytpa-language-select');
+    languageSelect.setAttribute('aria-label', languageLabel.firstChild.textContent);
+    languageSelect.querySelector('[value="auto"]').textContent = translate(
+      'optionsBrowserLanguage',
+      'Default'
+    );
+    languageSelect.value = getLanguagePreference();
+
+    const webGL = SettingsConfig.find((setting) => setting.name === 'webGL');
+    if (webGL?.disabled) {
+      webGL.disabled = translate(
+        'webglDisabled',
+        'You have disabled WebGL in your browser.'
+      );
+    }
+
+    for (const setting of SettingsConfig) {
+      const settingElem =
+        setting.type === 'section'
+          ? [...this.menuElem.querySelectorAll('.ytpa-section')].find(
+              (section) => section.dataset.name === setting.name
+            )
+          : this.menuElem.querySelector(getSettingQuerySelector(setting.name));
+      if (!settingElem) continue;
+
+      const label = settingElem.querySelector(
+        setting.type === 'section'
+          ? '.ytpa-section__label'
+          : '.ytp-menuitem-label'
+      );
+      if (label?.firstChild) label.firstChild.textContent = setting.label;
+      const description = label?.querySelector('.ytpa-menuitem-description');
+      if (description && setting.name !== 'webGL') {
+        description.textContent = setting.description || setting.disabled || '';
+      }
+      const questionMark = label?.querySelector('a');
+      if (questionMark && setting.questionMark) {
+        questionMark.title = setting.questionMark.title;
+      }
+      const key = label?.querySelector('.ytpa-menuitem-key');
+      if (key) {
+        key.title = translate(
+          'hotkeyHelp',
+          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)'
+        );
+      }
+
+      if (setting.type === 'checkbox') {
+        settingElem.title = setting.disabled
+          ? translate('unavailable', 'This setting is unavailable')
+          : translate('resetHint', 'Right click to reset');
+      } else if (setting.type === 'list') {
+        settingElem.querySelector('.ytp-menuitem-range').title = translate(
+          'resetHint',
+          'Right click to reset'
+        );
+        settingElem.querySelector('.ytp-menuitem-value').textContent =
+          this.getSettingListDisplayText(setting);
+        const options = settingElem.querySelectorAll(
+          '.setting-range-datalist option'
+        );
+        setting.snapPoints?.forEach((point, index) => {
+          const option = options[index];
+          if (!option) return;
+          option.label = point.label || '';
+          option.textContent = option.label;
+          option.title = translate(
+            'setTo',
+            `Set to ${point.hiddenLabel || point.label}`,
+            { value: point.hiddenLabel || point.label }
+          );
+        });
+      }
+    }
+
+    const feedbackLinks = this.menuElem.querySelectorAll(
+      '.ytpa-feedback-link__text'
+    );
+    feedbackLinks[0].textContent = translate(
+      'troubleshoot',
+      'Troubleshoot performance problems'
+    );
+    feedbackLinks[1].textContent = translate(
+      'feedback',
+      'Give feedback or a rating'
+    );
+    this.menuElem.querySelector(
+      '.ytpa-export-import-settings-btn__tooltip'
+    ).textContent = translate(
+      'importTooltip',
+      'How to export or import settings:\n1. Click on the extension icon to open the option.\n2. Scroll down to "Import / Export settings"'
+    );
+    this.menuElem.querySelector('.ytpa-reset-settings-btn').title = translate(
+      'resetAll',
+      'Reset all settings'
+    );
+    const donateImage = this.menuElem.querySelector('.ytpa-donate-link__image');
+    donateImage.alt = translate('donate', 'Support me via a donation');
+    donateImage.title = donateImage.alt;
+    this.warningCloseBtn.title = translate('closeWarning', 'Close warning');
+
+    if (this.menuBtn.classList.contains('is-loading')) {
+      if (!this.menuBtn.classList.contains('has-warning')) {
+        this.settingsMenuBtnTooltipText.firstChild.textContent = translate(
+          'loadingPaused',
+          'Ambient light loading is paused.'
+        );
+        this.settingsMenuBtnTooltipText.lastChild.textContent = translate(
+          'waitingForPage',
+          'Waiting for the video and page to be loaded first...'
+        );
+      }
+    } else {
+      this.settingsMenuBtnTooltipText.textContent = translate(
+        'settingsTooltip',
+        'Ambient light settings'
+      );
+    }
+
+    if (this.warningType === 'encrypted' && this.warningElem.textContent) {
+      this.warningElem.textContent = translate(
+        'drmWarning',
+        'Unable to display an ambient light because YouTube has applied DRM protection to this video'
+      );
+    }
+    if (this.webGLCrashDate || webGL?.disabled) {
+      this.updateWebGLCrashDescription();
+    }
+    this.updateAverageVideoFramesDifferenceInfo();
+    this.updateVisibility();
+  }
 
   createMenuElement() {
     const elem = document.createElement('div');
@@ -342,7 +509,7 @@ But if this happens frequently, here are some possible causes:
 
     const warningCloseButton = document.createElement('button');
     warningCloseButton.className = 'ytpa-warning-close-btn';
-    warningCloseButton.title = 'Close warning';
+    warningCloseButton.title = translate('closeWarning', 'Close warning');
     warning.appendChild(warningCloseButton);
 
     const info = document.createElement('div');
@@ -382,7 +549,10 @@ But if this happens frequently, here are some possible causes:
 
     const troubleshootLinkText = document.createElement('span');
     troubleshootLinkText.className = 'ytpa-feedback-link__text';
-    troubleshootLinkText.textContent = 'Troubleshoot performance problems';
+    troubleshootLinkText.textContent = translate(
+      'troubleshoot',
+      'Troubleshoot performance problems'
+    );
     troubleshootLink.appendChild(troubleshootLinkText);
 
     const toolbar = document.createElement('div');
@@ -396,15 +566,16 @@ But if this happens frequently, here are some possible causes:
 
     const importTooltip = document.createElement('span');
     importTooltip.className = 'ytpa-export-import-settings-btn__tooltip';
-    importTooltip.textContent = `How to export or import settings: 
-1. Click on the extension icon to open the option. 
-2. Scroll down to "Import / Export settings"`;
+    importTooltip.textContent = translate(
+      'importTooltip',
+      'How to export or import settings:\n1. Click on the extension icon to open the option.\n2. Scroll down to "Import / Export settings"'
+    );
     importBtn.appendChild(importTooltip);
 
     const resetBtn = document.createElement('button');
     resetBtn.className = 'ytpa-reset-settings-btn';
     resetBtn.type = 'button';
-    resetBtn.title = 'Reset all settings';
+    resetBtn.title = translate('resetAll', 'Reset all settings');
     toolbar.appendChild(resetBtn);
 
     const header2 = document.createElement('div');
@@ -428,7 +599,10 @@ But if this happens frequently, here are some possible causes:
 
     const feedbackLinkText = document.createElement('span');
     feedbackLinkText.className = 'ytpa-feedback-link__text';
-    feedbackLinkText.textContent = 'Give feedback or a rating';
+    feedbackLinkText.textContent = translate(
+      'feedback',
+      'Give feedback or a rating'
+    );
     feedbackLink.appendChild(feedbackLinkText);
 
     const donateLink = document.createElement('a');
@@ -440,11 +614,60 @@ But if this happens frequently, here are some possible causes:
 
     const donateLinkImage = document.createElement('img');
     donateLinkImage.className = 'ytpa-donate-link__image';
-    donateLinkImage.alt = 'Support me via a donation';
-    donateLinkImage.title = 'Support me via a donation';
+    donateLinkImage.alt = translate('donate', 'Support me via a donation');
+    donateLinkImage.title = donateLinkImage.alt;
     donateLinkImage.src = `${baseUrl}images/donate.svg`;
     donateLinkImage.height = '23';
     donateLink.appendChild(donateLinkImage);
+
+    const languageItem = document.createElement('div');
+    languageItem.className = 'ytp-menuitem ytpa-menuitem--language';
+    menu.appendChild(languageItem);
+
+    Settings.nextLanguageControlId = (Settings.nextLanguageControlId || 0) + 1;
+    const languageControlId = `ytpa-language-select-${Settings.nextLanguageControlId}`;
+
+    const languageLabel = document.createElement('label');
+    languageLabel.className = 'ytp-menuitem-label ytpa-language-label';
+    languageLabel.htmlFor = languageControlId;
+    languageLabel.textContent = translate(
+      'optionsLanguageLabel',
+      'Display language'
+    );
+    languageLabel.appendChild(document.createElement('br'));
+    const languageDescription = document.createElement('span');
+    languageDescription.className =
+      'ytpa-menuitem-description ytpa-language-description';
+    languageDescription.textContent = translate(
+      'optionsLanguageHelp',
+      'The browser language is used by default. After selecting Default, refresh any open YouTube tabs.'
+    );
+    languageLabel.appendChild(languageDescription);
+    languageItem.appendChild(languageLabel);
+
+    const languageContent = document.createElement('div');
+    languageContent.className = 'ytp-menuitem-content';
+    languageItem.appendChild(languageContent);
+
+    const languageSelect = document.createElement('select');
+    languageSelect.id = languageControlId;
+    languageSelect.className = 'ytpa-language-select';
+    languageSelect.setAttribute('aria-label', languageLabel.firstChild.textContent);
+    const languages = [
+      {
+        code: 'auto',
+        name: translate('optionsBrowserLanguage', 'Default'),
+      },
+      ...availableLanguages,
+    ];
+    for (const language of languages) {
+      const option = document.createElement('option');
+      option.value = language.code;
+      option.textContent = language.name;
+      languageSelect.appendChild(option);
+    }
+    languageSelect.value = getLanguagePreference();
+    languageContent.appendChild(languageSelect);
 
     let sectionContent;
 
@@ -468,8 +691,10 @@ But if this happens frequently, here are some possible causes:
         const labelKey = document.createElement('span');
         labelKey.contentEditable = true;
         labelKey.className = 'ytpa-menuitem-key';
-        labelKey.title =
-          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)';
+        labelKey.title = translate(
+          'hotkeyHelp',
+          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)'
+        );
         labelKey.textContent = setting.key;
         labelElems.push(labelKey);
 
@@ -539,9 +764,9 @@ But if this happens frequently, here are some possible causes:
         checkbox.ariaChecked = value ? 'true' : 'false';
         if (setting.disabled) {
           checkbox.ariaDisabled = 'true';
-          checkbox.title = 'This setting is unavailable';
+          checkbox.title = translate('unavailable', 'This setting is unavailable');
         } else {
-          checkbox.title = 'Right click to reset';
+          checkbox.title = translate('resetHint', 'Right click to reset');
           checkbox.tabindex = '0';
         }
         sectionContent.appendChild(checkbox);
@@ -611,7 +836,7 @@ But if this happens frequently, here are some possible causes:
           setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''
         }`;
         range.setAttribute('rowspan', '2');
-        range.title = 'Right click to reset';
+        range.title = translate('resetHint', 'Right click to reset');
         wrapper.appendChild(range);
 
         const input = document.createElement('input');
@@ -644,7 +869,9 @@ But if this happens frequently, here are some possible causes:
             option.className = `setting-range-datalist__label ${
               flip ? 'setting-range-datalist__label--flip' : ''
             }`;
-            option.title = `Set to ${hiddenLabel || label}`;
+            option.title = translate('setTo', `Set to ${hiddenLabel || label}`, {
+              value: hiddenLabel || label,
+            });
             option.style.marginLeft = `${
               (value + -setting.min) * (100 / (setting.max - setting.min))
             }%`;
@@ -677,12 +904,17 @@ But if this happens frequently, here are some possible causes:
     this.settingsMenuBtnTooltipText = document.createElement('span');
     this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-bottom-text';
     this.settingsMenuBtnTooltipText.appendChild(
-      document.createTextNode('Ambient light loading is paused.')
+      document.createTextNode(
+        translate('loadingPaused', 'Ambient light loading is paused.')
+      )
     );
     this.settingsMenuBtnTooltipText.appendChild(document.createElement('br'));
     this.settingsMenuBtnTooltipText.appendChild(
       document.createTextNode(
-        'Waiting for the video and page to be loaded first...'
+        translate(
+          'waitingForPage',
+          'Waiting for the video and page to be loaded first...'
+        )
       )
     );
     settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText);
@@ -699,6 +931,29 @@ But if this happens frequently, here are some possible causes:
     setDisplayErrorHandler(this.onError);
 
     this.menuElem = this.createMenuElement();
+
+    const languageSelect = this.menuElem.querySelector('.ytpa-language-select');
+    on(languageSelect, 'change', async () => {
+      const previousLanguage = getLanguagePreference();
+      languageSelect.disabled = true;
+      try {
+        await storage.set('uiLanguage', languageSelect.value, true);
+        setLanguagePreference(languageSelect.value);
+        this.refreshLanguage();
+      } catch (ex) {
+        console.error('Unable to save the language setting', ex);
+        setLanguagePreference(previousLanguage);
+        this.refreshLanguage();
+        this.setWarning(
+          translate(
+            'optionsLanguageSaveFailed',
+            'Unable to save the language setting. Please try again later.'
+          )
+        );
+      } finally {
+        languageSelect.disabled = false;
+      }
+    });
 
     this.updateItemElem = this.menuElem.querySelector(
       '.ytpa-menuitem--updates'
@@ -727,7 +982,10 @@ But if this happens frequently, here are some possible causes:
     on(resetSettingsBtnElem, 'click', async () => {
       if (
         !confirm(
-          'Are you sure you want to reset ALL the settings and reload the watch page?'
+          translate(
+            'resetConfirm',
+            'Are you sure you want to reset ALL the settings and reload the watch page?'
+          )
         )
       )
         return;
@@ -1488,21 +1746,21 @@ But if this happens frequently, here are some possible causes:
   }
 
   frameFadingValueToDuration(value) {
-    if (!value) return 'Off';
+    if (!value) return translate('off', 'Off');
 
     const frames = Math.pow(value, 2);
     const seconds = frames / 30;
     if (seconds < 1) return `${Math.round(seconds * 1000)} ms`;
-    return `${Math.round(seconds * 10) / 10} seconds`;
+    return `${Math.round(seconds * 10) / 10} ${translate('seconds', 'seconds')}`;
   }
 
   getSettingListDisplayText(setting) {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
       return {
-        [FRAMESYNC_DECODEDFRAMES]: 'Decoded framerate',
-        [FRAMESYNC_DISPLAYFRAMES]: 'Display framerate',
-        [FRAMESYNC_VIDEOFRAMES]: 'Video framerate',
+        [FRAMESYNC_DECODEDFRAMES]: translate('decodedFramerate', 'Decoded framerate'),
+        [FRAMESYNC_DISPLAYFRAMES]: translate('displayFramerate', 'Display framerate'),
+        [FRAMESYNC_VIDEOFRAMES]: translate('videoFramerate', 'Video framerate'),
       }[value];
     }
     if (setting.name === 'debandingBlendMode') {
@@ -1513,11 +1771,13 @@ But if this happens frequently, here are some possible causes:
     }
     if (setting.name === 'barSizeDetectionAverageHistorySize') {
       return this.barSizeDetectionAverageHistorySize == 1
-        ? `1 frame`
-        : `${value} frames`;
+        ? `1 ${translate('frame', 'frame')}`
+        : `${value} ${translate('frames', 'frames')}`;
     }
     if (setting.name === 'framerateLimit') {
-      return this.framerateLimit == 0 ? 'max fps' : `${value} fps`;
+      return this.framerateLimit == 0
+        ? translate('maxFps', 'max fps')
+        : `${value} fps`;
     }
     if (setting.name === 'frameFading') {
       return this.frameFadingValueToDuration(value);
@@ -1622,7 +1882,10 @@ But if this happens frequently, here are some possible causes:
     if (!this.menuBtn.classList.contains('is-loading')) return;
 
     this.menuBtn.classList.remove('is-loading');
-    this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings';
+    this.settingsMenuBtnTooltipText.textContent = translate(
+      'settingsTooltip',
+      'Ambient light settings'
+    );
 
     this.showUpdatesMessage();
   };
@@ -1631,9 +1894,16 @@ But if this happens frequently, here are some possible causes:
     const message = ex?.message ?? typeof ex;
     if (this.menuBtn?.classList?.contains?.('is-loading')) {
       this.menuBtn.classList.add('has-warning');
-      this.settingsMenuBtnTooltipText.textContent = `Ambient light failed to load:\n${message}`;
+      this.settingsMenuBtnTooltipText.textContent = translate(
+        'errorTooltip',
+        `Ambient light failed to load:\n${message}`,
+        { message }
+      );
     } else {
-      this.setWarning(`An error occured:\n${message}`, true);
+      this.setWarning(
+        translate('errorOccurred', `An error occured:\n${message}`, { message }),
+        true
+      );
     }
   };
 
@@ -1779,7 +2049,11 @@ But if this happens frequently, here are some possible causes:
         valueElem.classList.add('is-controlled-by-setting');
         valueElem.setAttribute(
           'title',
-          `Controlled by the "${controlledByLabel}" setting.\nManually adjusting this setting will turn off "${controlledByLabel}"`
+          translate(
+            'controlledBy',
+            `Controlled by the "${controlledByLabel}" setting.\nManually adjusting this setting will turn off "${controlledByLabel}"`,
+            { label: controlledByLabel }
+          )
         );
       } else {
         valueElem.classList.remove('is-controlled-by-setting');
@@ -1998,14 +2272,20 @@ But if this happens frequently, here are some possible causes:
     } catch (ex) {
       if (ex.message.includes('QuotaExceededError')) {
         this.setWarning(
-          'The changes could not be saved because the settings have changed too often.\nWait a few seconds...'
+          translate(
+            'saveTooOften',
+            'The changes could not be saved because the settings have changed too often.\nWait a few seconds...'
+          )
         );
         return;
       }
 
       if (ex.message === 'uninstalled') {
         this.setWarning(
-          'The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.'
+          translate(
+            'extensionUpdated',
+            'The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.'
+          )
         );
         return;
       }
@@ -2083,10 +2363,16 @@ But if this happens frequently, here are some possible causes:
     if (this.energySaver) {
       if (this.ambientlight.averageVideoFramesDifference < 0.002) {
         message =
-          'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos';
+          translate(
+            'stillImage',
+            'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
+          );
       } else if (this.ambientlight.averageVideoFramesDifference < 0.0175) {
         message =
-          'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos';
+          translate(
+            'smallMovements',
+            'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos'
+          );
       }
     }
 

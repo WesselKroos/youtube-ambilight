@@ -47,6 +47,7 @@ import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
 import { getNodeTreeString, getPageElems } from './errors/dom';
+import { translate } from './i18n';
 
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
@@ -192,7 +193,9 @@ export default class Ambientlight {
       error.details.videoIsInDocument = document.contains(videoElem);
       error.details.videoIsInBody = document.body.contains(videoElem);
       error.details.videoTree = getNodeTreeString(videoElem);
-      setWarning(`Failed to load.\n${error.message}`);
+      setWarning(translate('failedToLoad', `Failed to load.\n${error.message}`, {
+        message: error.message,
+      }));
       throw error;
     }
     this.videoPlayerElem.dataset.ytalElem = 'video-player';
@@ -211,7 +214,9 @@ export default class Ambientlight {
         'Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child'
       );
       error.details = getPageElems();
-      setWarning(`Failed to load.\n${error.message}`);
+      setWarning(translate('failedToLoad', `Failed to load.\n${error.message}`, {
+        message: error.message,
+      }));
       throw error;
     }
 
@@ -592,7 +597,10 @@ export default class Ambientlight {
       },
       encrypted: () => {
         this.settings.setWarning(
-          'Unable to display an ambient light because YouTube has applied DRM protection to this video',
+          translate(
+            'drmWarning',
+            'Unable to display an ambient light because YouTube has applied DRM protection to this video'
+          ),
           true,
           true,
           'encrypted'
@@ -1668,7 +1676,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   initVR = () => {
     if (getBrowser() === 'Firefox') {
       this.settings.setWarning(
-        'Ambient light does not support VR videos',
+        translate('vrUnsupported', 'Ambient light does not support VR videos'),
         false,
         false
       );
@@ -2094,7 +2102,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         }
         this.videoContainerElemMissingWarning = true;
         this.settings.setWarning(
-          'Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to a update of the YouTube design. This will probably soon be fixed in a new version.'
+          translate(
+            'videoSyncUnavailable',
+            'Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to a update of the YouTube design. This will probably soon be fixed in a new version.'
+          )
         );
       }
     } else if (
@@ -2915,11 +2926,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   setDrawWarning = (ex) => {
     const message =
       ex.name === 'SecurityError'
-        ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
-        : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`;
+        ? translate('drawSecurityWarning', 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.')
+        : translate(
+            'drawGeneralWarning',
+            `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`,
+            { name: ex.name, message: ex.message }
+          );
 
     this.settings.setWarning(
-      `Failed to display the ambient light\n\n${message}`
+      translate('drawFailed', `Failed to display the ambient light\n\n${message}`, {
+        message,
+      })
     );
   };
 
