@@ -410,7 +410,7 @@ Click on the questionmark for more and updated information about these artifacts
       href: 'https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work',
     },
     type: 'checkbox',
-    default: false,
+    default: true,
     advanced: true,
   },
   {

@@ -444,11 +444,17 @@ html[data-ambientlight-enabled] {
   #full-bleed-container,
   #player-full-bleed-container,
   #player,
+  #player-container-outer,
+  #player-container-inner,
   #player-container,
   #ytd-player,
+  ytd-player #container,
   .html5-video-player,
+  #movie_player,
+  .html5-video-container,
   .html5-main-video {
     background: none !important;
+    background-color: transparent !important;
   }
   
   // // Covers any future updates to the html structure, but is expensive
@@ -538,15 +544,17 @@ html[data-ambientlight-enabled] {
   }
   .html5-main-video {
     transform-origin: center center;
-    transform: var(--video-transform);
+    clip-path: inset(0% 0%) !important;
+    filter: opacity(0.99999) !important;
+    transform: var(--video-transform, translate3d(0, 0, 1px) scale(1.003)) !important;
 
     // Disable the direct composition video overlay that can cause artifacts on Windows
     // https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work
     // .html5-video-container[style*="--video-transform"] {
     &.ambientlight__chromium-bug-direct-video-overlay-workaround {
-      clip-path: inset(0% 0%); // Till Chromium 127?
-      filter: opacity(1); // From Chromium 127?
-      transform: var(--video-transform, translate3d(0, 0, 1px)); // Firefox
+      clip-path: inset(0% 0%) !important; // Till Chromium 127?
+      filter: opacity(0.99999) !important; // From Chromium 127?
+      transform: var(--video-transform, translate3d(0, 0, 1px) scale(1.003)) !important; // Firefox
     }
   }
 
@@ -1482,7 +1490,7 @@ html[data-ambientlight-enabled] {
     pointer-events: none;
     user-select: none;
     transform-origin: center center;
-    transform: var(--video-transform);
+    transform: var(--video-transform, scale(1.003)) !important;
     transition: opacity .25s .25s;//, margin-top .2s ease-out;
 
     // Prevent Firefox from stopping the video rendering
