@@ -2954,7 +2954,8 @@ html[data-ambientlight-enabled] {
       // #below,
       #title.ytd-watch-metadata,
       ytd-info-panel-container-renderer,
-      ytd-video-owner-renderer.ytd-watch-metadata,
+      ytd-video-owner-renderer.ytd-watch-metadata #upload-info,
+      ytd-video-owner-renderer.ytd-watch-metadata #avatar,
       #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
       #middle-row.ytd-watch-metadata,
       #description-inner.ytd-watch-metadata,
@@ -2973,7 +2974,7 @@ html[data-ambientlight-enabled] {
       ytd-engagement-panel-section-list-renderer > *,
       ytd-playlist-panel-video-renderer > *,
       yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
-      yt-chip-cloud-chip-renderer .ytChipShapeChip,
+      yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip,
       ytd-watch-next-secondary-results-renderer,
 
       #bottom-grid {
@@ -3021,28 +3022,6 @@ html[data-ambientlight-enabled] {
     .title.ytd-video-primary-info-renderer // Remove default title text-shadow
     {
       text-shadow: inherit !important;
-    }
-
-    #subscribe-button,
-    #subscribe-button *,
-    ytd-subscribe-button-renderer,
-    ytd-subscribe-button-renderer *,
-    #subscribe-button-shape,
-    #subscribe-button-shape *,
-    #subscribe-button ytd-button-renderer:not([subscribed]) button,
-    tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
-    yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
-    ytd-button-renderer.style-primary[is-paper-button] button,
-    .product-item-button.ytd-merch-shelf-item-renderer,
-    .yt-spec-button-shape-next--filled,
-    .yt-spec-button-shape-next--filled *,
-    #action, // Ad button: More info
-    #action-button, // Ad button: Visite website
-    .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
-    ytd-author-comment-badge-renderer,
-    ytd-thumbnail-overlay-time-status-renderer {
-      filter: none !important;
-      text-shadow: none !important;
     }
 
     //// Remove shadow capping
@@ -3216,6 +3195,42 @@ html[data-ambientlight-enabled] {
   &[dark] {
     @include filter-shadow-selectors {
       filter: var(--ytal-button-shadow) !important;
+    }
+  }
+
+  // Solid buttons, badges, and selected chips must never cast drop shadows or text shadows
+  #subscribe-button,
+  #subscribe-button *,
+  ytd-subscribe-button-renderer,
+  ytd-subscribe-button-renderer *,
+  #subscribe-button-shape,
+  #subscribe-button-shape *,
+  #subscribe-button ytd-button-renderer:not([subscribed]) button,
+  tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip *,
+  ytd-button-renderer.style-primary[is-paper-button] button,
+  .product-item-button.ytd-merch-shelf-item-renderer,
+  .yt-spec-button-shape-next--filled,
+  .yt-spec-button-shape-next--filled *,
+  #action, // Ad button: More info
+  #action-button, // Ad button: Visite website
+  .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
+  ytd-author-comment-badge-renderer,
+  ytd-thumbnail-overlay-time-status-renderer {
+    filter: none !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  @include ytd-watch {
+    #top-row.ytd-watch-metadata #subscribe-button,
+    #top-row.ytd-watch-metadata #subscribe-button *,
+    #top-row.ytd-watch-metadata .yt-spec-button-shape-next--filled,
+    #top-row.ytd-watch-metadata .yt-spec-button-shape-next--filled * {
+      filter: none !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
     }
   }
 
