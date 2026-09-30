@@ -1287,12 +1287,75 @@ html[data-ambientlight-enabled] {
     }
   }
 
+  /* Recommendation category chips - Container & Outer Wrappers */
+  yt-chip-cloud-renderer,
+  yt-related-chip-cloud-renderer,
+  ytd-feed-filter-chip-bar-renderer,
+  #chips.yt-chip-cloud-renderer,
+  #chips-wrapper.yt-chip-cloud-renderer,
+  #scroll-container.yt-chip-cloud-renderer,
+  #left-arrow.yt-chip-cloud-renderer,
+  #right-arrow.yt-chip-cloud-renderer,
+  #left-arrow-button.yt-chip-cloud-renderer,
+  #right-arrow-button.yt-chip-cloud-renderer,
+  yt-chip-cloud-chip-renderer {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Recommendation category chips - Single layer glass background */
+  yt-chip-cloud-chip-renderer:not([selected]) yt-chip-shape,
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeButton {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
   yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip {
     background: var(--ytal-background) !important;
   }
+
+  yt-chip-cloud-chip-renderer:not([selected]):hover .ytChipShapeChip,
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip:hover {
+    background: var(--ytal-background-10-percent) !important;
+  }
+
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeInactive,
+  yt-chip-cloud-chip-renderer:not([selected]) yt-formatted-string,
+  yt-chip-cloud-chip-renderer:not([selected]) .yt-formatted-string,
+  yt-chip-cloud-chip-renderer:not([selected]) span {
+    color: var(--yt-spec-text-primary, #f1f1f1) !important;
+  }
+
+  /* Recommendation category chips - Selected Pill */
+  yt-chip-cloud-chip-renderer[selected] yt-chip-shape,
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeButton {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
   yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
-    background: var(--yt-spec-inverted-background) !important;
-    color: var(--yt-spec-text-primary-inverse) !important;
+    background: var(--yt-spec-inverted-background, #f1f1f1) !important;
+    color: var(--yt-spec-text-primary-inverse, #0f0f0f) !important;
+  }
+
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeActive,
+  yt-chip-cloud-chip-renderer[selected] yt-formatted-string,
+  yt-chip-cloud-chip-renderer[selected] .yt-formatted-string,
+  yt-chip-cloud-chip-renderer[selected] span {
+    color: var(--yt-spec-text-primary-inverse, #0f0f0f) !important;
+  }
+
+  /* Chevron arrow icons visibility */
+  #left-arrow-button.yt-chip-cloud-renderer yt-icon,
+  #right-arrow-button.yt-chip-cloud-renderer yt-icon,
+  yt-related-chip-cloud-renderer #left-arrow-button yt-icon,
+  yt-related-chip-cloud-renderer #right-arrow-button yt-icon,
+  ytd-feed-filter-chip-bar-renderer #left-arrow-button yt-icon,
+  ytd-feed-filter-chip-bar-renderer #right-arrow-button yt-icon {
+    color: var(--yt-spec-text-primary, #f1f1f1) !important;
+    fill: var(--yt-spec-text-primary, #f1f1f1) !important;
   }
   
   ytd-watch-metadata {
@@ -2891,7 +2954,8 @@ html[data-ambientlight-enabled] {
       // #below,
       #title.ytd-watch-metadata,
       ytd-info-panel-container-renderer,
-      ytd-video-owner-renderer.ytd-watch-metadata,
+      ytd-video-owner-renderer.ytd-watch-metadata #upload-info,
+      ytd-video-owner-renderer.ytd-watch-metadata #avatar,
       #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
       #middle-row.ytd-watch-metadata,
       #description-inner.ytd-watch-metadata,
@@ -2910,7 +2974,7 @@ html[data-ambientlight-enabled] {
       ytd-engagement-panel-section-list-renderer > *,
       ytd-playlist-panel-video-renderer > *,
       yt-chip-cloud-renderer .yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
-      yt-chip-cloud-chip-renderer .ytChipShapeChip,
+      yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip,
       ytd-watch-next-secondary-results-renderer,
 
       #bottom-grid {
@@ -2958,21 +3022,6 @@ html[data-ambientlight-enabled] {
     .title.ytd-video-primary-info-renderer // Remove default title text-shadow
     {
       text-shadow: inherit !important;
-    }
-
-    #subscribe-button ytd-button-renderer:not([subscribed]) button,
-    tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
-    yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
-    ytd-button-renderer.style-primary[is-paper-button] button,
-    .product-item-button.ytd-merch-shelf-item-renderer,
-    .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
-    #action, // Ad button: More info
-    #action-button, // Ad button: Visite website
-    .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
-    ytd-author-comment-badge-renderer,
-    ytd-thumbnail-overlay-time-status-renderer {
-      filter: none !important;
-      text-shadow: none !important;
     }
 
     //// Remove shadow capping
@@ -3149,6 +3198,42 @@ html[data-ambientlight-enabled] {
     }
   }
 
+  // Solid buttons, badges, and selected chips must never cast drop shadows or text shadows
+  #subscribe-button,
+  #subscribe-button *,
+  ytd-subscribe-button-renderer,
+  ytd-subscribe-button-renderer *,
+  #subscribe-button-shape,
+  #subscribe-button-shape *,
+  #subscribe-button ytd-button-renderer:not([subscribed]) button,
+  tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip *,
+  ytd-button-renderer.style-primary[is-paper-button] button,
+  .product-item-button.ytd-merch-shelf-item-renderer,
+  .yt-spec-button-shape-next--filled,
+  .yt-spec-button-shape-next--filled *,
+  #action, // Ad button: More info
+  #action-button, // Ad button: Visite website
+  .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
+  ytd-author-comment-badge-renderer,
+  ytd-thumbnail-overlay-time-status-renderer {
+    filter: none !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  @include ytd-watch {
+    #top-row.ytd-watch-metadata #subscribe-button,
+    #top-row.ytd-watch-metadata #subscribe-button *,
+    #top-row.ytd-watch-metadata .yt-spec-button-shape-next--filled,
+    #top-row.ytd-watch-metadata .yt-spec-button-shape-next--filled * {
+      filter: none !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
+    }
+  }
+
   // Keep icons within buttons with animated icons clickable
   button yt-animated-icon {
     pointer-events: none !important;
@@ -3279,10 +3364,7 @@ html[data-ambientlight-enabled] {
       content-visibility: auto;
       contain-intrinsic-size: auto 62px;
     }
-    yt-related-chip-cloud-renderer {
-      content-visibility: auto;
-      contain-intrinsic-size: auto 100px;
-    }
+
     ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
       ytd-compact-video-renderer,
       ytd-compact-radio-renderer,
