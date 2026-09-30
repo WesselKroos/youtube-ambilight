@@ -1,7 +1,7 @@
 import { defaultCrashOptions, storage } from './libs/storage';
 import { syncStorage } from './libs/sync-storage';
 import { getFeedbackFormLink, getPrivacyPolicyLink } from './libs/utils';
-import SettingsConfig from './libs/settings-config';
+import SettingsConfig, { KeybindingsConfig } from './libs/settings-config';
 import { on } from './libs/generic';
 
 document.querySelector('#feedbackFormLink').href = getFeedbackFormLink();
@@ -43,6 +43,210 @@ const toggles = document.querySelectorAll('.expandable__toggle');
 for (const elem of toggles) {
   on(elem, 'click', () => {
     elem.closest('.expandable').classList.toggle('expanded');
+  });
+}
+
+// Keyboard shortcuts/keybindings
+// Issue: https://github.com/WesselKroos/youtube-ambilight/issues/326
+const keybindings = KeybindingsConfig.map((keybinding) => ({
+  ...keybinding,
+  key: keybinding.defaultKey,
+}));
+const keybindingsList = document.querySelector('#keybindingsList');
+const keybindingRowElems = {};
+let capturingKeybinding;
+
+const findKeybindingConflict = (key, exceptName) =>
+  keybindings.find(
+    (keybinding) =>
+      keybinding.name !== exceptName &&
+      keybinding.key != null &&
+      keybinding.key !== ' ' &&
+      keybinding.key === key
+  );
+
+const updateKeybindingRow = (keybinding) => {
+  const rowElem = keybindingRowElems[keybinding.name];
+  if (!rowElem) return;
+
+  const keyElem = rowElem.querySelector('.keybinding__key');
+  const statusElem = rowElem.querySelector('.keybinding__status');
+  const resetBtnElem = rowElem.querySelector('.keybinding__reset');
+
+  keyElem.textContent = keybinding.key === ' ' ? '' : keybinding.key;
+  keyElem.classList.toggle(
+    'keybinding__key--disabled',
+    keybinding.key === ' '
+  );
+  keyElem.classList.toggle(
+    'keybinding__key--capturing',
+    capturingKeybinding === keybinding.name
+  );
+
+  resetBtnElem.style.display =
+    keybinding.key === keybinding.defaultKey ? 'none' : '';
+
+  const hints = [];
+  if (capturingKeybinding === keybinding.name) {
+    hints.push('Press any key...');
+    if (keybinding.key === ' ') hints.push('Escape to cancel');
+    else hints.push('Escape to disable');
+  } else if (keybinding.key === ' ') {
+    hints.push('Disabled');
+  }
+  const conflict =
+    keybinding.key != null
+      ? findKeybindingConflict(keybinding.key, keybinding.name)
+      : undefined;
+  if (conflict) {
+    hints.push(`Also used by "${conflict.label}"`);
+  }
+  statusElem.textContent = hints.join(' - ');
+  rowElem.classList.toggle('keybinding--conflict', !!conflict);
+};
+
+const updateAllKeybindingRows = () => {
+  for (const keybinding of keybindings) {
+    updateKeybindingRow(keybinding);
+  }
+};
+
+const captureKey = async (e) => {
+  if (!capturingKeybinding) return;
+  const keybinding = keybindings.find(
+    (keybinding) => keybinding.name === capturingKeybinding
+  );
+  if (!keybinding) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (e.key === 'Escape') {
+    if (keybinding.key === ' ') {
+      // The keybinding is already disabled: cancel capturing
+      capturingKeybinding = undefined;
+      updateAllKeybindingRows();
+      return;
+    }
+    // Disable the keybinding
+    // (A space is stored to keep the keybinding disabled,
+    // because removing the storage entry would make it fallback to its default key)
+    keybinding.key = ' ';
+  } else if (e.key === ' ' || e.key.length !== 1) {
+    // Only single character keys are supported on youtube video pages
+    updateAllKeybindingRows();
+    return;
+  } else {
+    keybinding.key = e.key.toUpperCase();
+  }
+
+  capturingKeybinding = undefined;
+  const storageName = `setting-${keybinding.name}-key`;
+  try {
+    if (keybinding.key === keybinding.defaultKey) {
+      // Clearing the storage entry makes the key follow future default changes
+      await storage.set(storageName, undefined);
+    } else {
+      await storage.set(storageName, keybinding.key);
+    }
+  } catch {
+    keybinding.key = keybinding.defaultKey;
+    alert('Keybinding changed to many times. Please wait a few seconds.');
+  }
+  updateAllKeybindingRows();
+};
+
+const renderKeybindings = () => {
+  keybindingsList.textContent = '';
+
+  for (const keybinding of keybindings) {
+    const rowElem = document.createElement('li');
+    rowElem.className = 'keybinding';
+
+    const labelElem = document.createElement('label');
+    labelElem.className = 'keybinding__label';
+    labelElem.textContent = keybinding.label;
+    rowElem.appendChild(labelElem);
+
+    const keyElem = document.createElement('button');
+    keyElem.type = 'button';
+    keyElem.className = 'keybinding__key';
+    keyElem.title = 'Click here and press a key to change this shortcut';
+    on(keyElem, 'click', () => {
+      capturingKeybinding =
+        capturingKeybinding === keybinding.name ? undefined : keybinding.name;
+      updateAllKeybindingRows();
+    });
+    rowElem.appendChild(keyElem);
+
+    const statusElem = document.createElement('span');
+    statusElem.className = 'keybinding__status';
+    rowElem.appendChild(statusElem);
+
+    const resetBtnElem = document.createElement('button');
+    resetBtnElem.type = 'button';
+    resetBtnElem.className = 'keybinding__reset';
+    resetBtnElem.textContent = 'Reset';
+    resetBtnElem.title = 'Reset this shortcut to its default key';
+    on(resetBtnElem, 'click', async () => {
+      if (capturingKeybinding === keybinding.name) capturingKeybinding = undefined;
+      keybinding.key = keybinding.defaultKey;
+      try {
+        await storage.set(`setting-${keybinding.name}-key`, undefined);
+      } catch {
+        alert('Keybinding changed to many times. Please wait a few seconds.');
+      }
+      updateAllKeybindingRows();
+    });
+    rowElem.appendChild(resetBtnElem);
+
+    keybindingsList.appendChild(rowElem);
+    keybindingRowElems[keybinding.name] = rowElem;
+  }
+
+  updateAllKeybindingRows();
+};
+
+(async function initKeybindings() {
+  const storageNames = keybindings.map(
+    (keybinding) => `setting-${keybinding.name}-key`
+  );
+  const storedKeys = (await storage.get(storageNames)) || {};
+  for (const keybinding of keybindings) {
+    const storedKey = storedKeys[`setting-${keybinding.name}-key`];
+    // A space means the keybinding is disabled
+    if (typeof storedKey === 'string' && storedKey.length === 1) {
+      keybinding.key = storedKey.toUpperCase();
+    }
+  }
+  renderKeybindings();
+})();
+
+on(document, 'keydown', captureKey);
+on(window, 'click', (e) => {
+  if (!capturingKeybinding) return;
+  if (e.target.closest?.('.keybinding__key')) return;
+  capturingKeybinding = undefined;
+  updateAllKeybindingRows();
+});
+
+if (chrome?.storage?.local?.onChanged) {
+  storage.addListener(function keybindingStorageListener(changes) {
+    if (capturingKeybinding) return;
+
+    let updated = false;
+    for (const keybinding of keybindings) {
+      const change = changes[`setting-${keybinding.name}-key`];
+      if (!change) continue;
+      const storedKey = change.newValue;
+      // A space means the keybinding is disabled
+      keybinding.key =
+        typeof storedKey === 'string' && storedKey.length === 1
+          ? storedKey.toUpperCase()
+          : keybinding.defaultKey;
+      updated = true;
+    }
+    if (updated) updateAllKeybindingRows();
   });
 }
 
@@ -92,6 +296,35 @@ const importSettings = async (storageName, importJson) => {
 
       const setting = SettingsConfig.find((setting) => setting.name === name);
       if (!setting) {
+        // Custom keybindings are stored as "<setting name>-key"
+        if (name.endsWith('-key')) {
+          const keySettingName = name.substring(0, name.length - '-key'.length);
+          const keySetting = SettingsConfig.find(
+            (setting) => setting.name === keySettingName
+          );
+          if (keySetting?.defaultKey === undefined) {
+            importWarnings.push(
+              `Skipped "${name}": ${JSON.stringify(
+                value
+              )} is not the key of an existing keybinding.`
+            );
+            continue;
+          }
+          // A space means the keybinding is disabled
+          if (
+            value !== null &&
+            (typeof value !== 'string' ||
+              value.length !== 1 ||
+              value.toUpperCase() !== value)
+          ) {
+            importWarnings.push(
+              `Skipped "${name}": ${JSON.stringify(value)} is not a single uppercase key or a space.`
+            );
+            continue;
+          }
+          settings[`setting-${name}`] = value;
+          continue;
+        }
         importWarnings.push(
           `Skipped "${name}": ${JSON.stringify(
             value
@@ -204,6 +437,13 @@ const exportSettings = async (storageName, exportJson) => {
       if (!existsInConfig) continue;
 
       exportObject[name] = storageData[key];
+    }
+    // Also export the custom keybindings
+    for (const keybinding of KeybindingsConfig) {
+      const storedKey = storageData[`setting-${keybinding.name}-key`];
+      if (storedKey != null) {
+        exportObject[`${keybinding.name}-key`] = storedKey;
+      }
     }
     if (!Object.keys(exportObject).length)
       throw new Error(

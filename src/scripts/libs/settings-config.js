@@ -864,6 +864,17 @@ export const WebGLOnlySettings = [
   'chromiumBugVideoJitterWorkaround',
 ];
 
+// The settings that have a "defaultKey" can be triggered with a keyboard
+// shortcut/hotkey on youtube video pages.
+// Issue: https://github.com/WesselKroos/youtube-ambilight/issues/326
+export const KeybindingsConfig = SettingsConfig
+  .filter((setting) => setting.defaultKey !== undefined)
+  .map((setting) => ({
+    name: setting.name,
+    label: setting.label,
+    defaultKey: setting.defaultKey,
+  }));
+
 let prepared = false;
 export const prepareSettingsConfigOnce = () => {
   if (prepared) return;

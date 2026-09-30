@@ -229,3 +229,75 @@ button:not(.expandable__toggle):focus {
 button:not(.expandable__toggle):active {
   box-shadow: #000 0 1px 2px 0 inset;
 }
+
+.keybindings {
+  margin: 5px 0 15px;
+}
+.keybinding {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  gap: 8px;
+}
+.keybinding__label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.keybinding__key {
+  flex-shrink: 0;
+  min-width: 32px;
+  min-height: 32px;
+  box-sizing: border-box;
+  border: 1px solid #686868;
+  border-radius: 5px;
+  box-shadow: #000 0 1px 2px 0;
+  padding: 5px 10px;
+  background: #000;
+  color: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.keybinding__key:hover,
+.keybinding__key:focus {
+  background: #111;
+}
+.keybinding__key:active {
+  box-shadow: #000 0 1px 2px 0 inset;
+}
+.keybinding__key--disabled {
+  border-style: dashed;
+  color: #777;
+}
+.keybinding__key--capturing {
+  border-color: #008ce3;
+  background: #008ce333;
+  animation: keybinding-capture 1s ease-in-out infinite;
+}
+@keyframes keybinding-capture {
+  0%,
+  100% {
+    box-shadow: #008ce3 0 0 0 1px inset;
+  }
+  50% {
+    box-shadow: #008ce388 0 0 0 3px inset;
+  }
+}
+.keybinding__status {
+  flex-shrink: 2;
+  min-width: 0;
+  font-size: 12px;
+  font-style: italic;
+  color: #aaa;
+}
+.keybinding--conflict .keybinding__status {
+  color: #fa0;
+}
+.keybinding__reset {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 3px 6px;
+}
