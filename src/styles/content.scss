@@ -1287,12 +1287,75 @@ html[data-ambientlight-enabled] {
     }
   }
 
+  /* Recommendation category chips - Container & Outer Wrappers */
+  yt-chip-cloud-renderer,
+  yt-related-chip-cloud-renderer,
+  ytd-feed-filter-chip-bar-renderer,
+  #chips.yt-chip-cloud-renderer,
+  #chips-wrapper.yt-chip-cloud-renderer,
+  #scroll-container.yt-chip-cloud-renderer,
+  #left-arrow.yt-chip-cloud-renderer,
+  #right-arrow.yt-chip-cloud-renderer,
+  #left-arrow-button.yt-chip-cloud-renderer,
+  #right-arrow-button.yt-chip-cloud-renderer,
+  yt-chip-cloud-chip-renderer {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Recommendation category chips - Single layer glass background */
+  yt-chip-cloud-chip-renderer:not([selected]) yt-chip-shape,
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeButton {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
   yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip {
     background: var(--ytal-background) !important;
   }
+
+  yt-chip-cloud-chip-renderer:not([selected]):hover .ytChipShapeChip,
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip:hover {
+    background: var(--ytal-background-10-percent) !important;
+  }
+
+  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeInactive,
+  yt-chip-cloud-chip-renderer:not([selected]) yt-formatted-string,
+  yt-chip-cloud-chip-renderer:not([selected]) .yt-formatted-string,
+  yt-chip-cloud-chip-renderer:not([selected]) span {
+    color: var(--yt-spec-text-primary, #f1f1f1) !important;
+  }
+
+  /* Recommendation category chips - Selected Pill */
+  yt-chip-cloud-chip-renderer[selected] yt-chip-shape,
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeButton {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
   yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
-    background: var(--yt-spec-inverted-background) !important;
-    color: var(--yt-spec-text-primary-inverse) !important;
+    background: var(--yt-spec-inverted-background, #f1f1f1) !important;
+    color: var(--yt-spec-text-primary-inverse, #0f0f0f) !important;
+  }
+
+  yt-chip-cloud-chip-renderer[selected] .ytChipShapeActive,
+  yt-chip-cloud-chip-renderer[selected] yt-formatted-string,
+  yt-chip-cloud-chip-renderer[selected] .yt-formatted-string,
+  yt-chip-cloud-chip-renderer[selected] span {
+    color: var(--yt-spec-text-primary-inverse, #0f0f0f) !important;
+  }
+
+  /* Chevron arrow icons visibility */
+  #left-arrow-button.yt-chip-cloud-renderer yt-icon,
+  #right-arrow-button.yt-chip-cloud-renderer yt-icon,
+  yt-related-chip-cloud-renderer #left-arrow-button yt-icon,
+  yt-related-chip-cloud-renderer #right-arrow-button yt-icon,
+  ytd-feed-filter-chip-bar-renderer #left-arrow-button yt-icon,
+  ytd-feed-filter-chip-bar-renderer #right-arrow-button yt-icon {
+    color: var(--yt-spec-text-primary, #f1f1f1) !important;
+    fill: var(--yt-spec-text-primary, #f1f1f1) !important;
   }
   
   ytd-watch-metadata {
@@ -2960,12 +3023,19 @@ html[data-ambientlight-enabled] {
       text-shadow: inherit !important;
     }
 
+    #subscribe-button,
+    #subscribe-button *,
+    ytd-subscribe-button-renderer,
+    ytd-subscribe-button-renderer *,
+    #subscribe-button-shape,
+    #subscribe-button-shape *,
     #subscribe-button ytd-button-renderer:not([subscribed]) button,
     tp-yt-paper-button.ytd-subscribe-button-renderer:not([subscribed]),
     yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip,
     ytd-button-renderer.style-primary[is-paper-button] button,
     .product-item-button.ytd-merch-shelf-item-renderer,
-    .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
+    .yt-spec-button-shape-next--filled,
+    .yt-spec-button-shape-next--filled *,
     #action, // Ad button: More info
     #action-button, // Ad button: Visite website
     .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
@@ -3279,10 +3349,7 @@ html[data-ambientlight-enabled] {
       content-visibility: auto;
       contain-intrinsic-size: auto 62px;
     }
-    yt-related-chip-cloud-renderer {
-      content-visibility: auto;
-      contain-intrinsic-size: auto 100px;
-    }
+
     ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer {
       ytd-compact-video-renderer,
       ytd-compact-radio-renderer,
