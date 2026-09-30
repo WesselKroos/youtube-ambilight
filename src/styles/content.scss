@@ -1249,8 +1249,17 @@ html[data-ambientlight-enabled] {
   ytd-playlist-panel-renderer:not([within-miniplayer]) #items.ytd-playlist-panel-renderer,
   .playlist-items.ytd-playlist-panel-renderer,
   ytd-live-chat-frame #show-hide-button.ytd-live-chat-frame > ytd-button-renderer.ytd-live-chat-frame,
-  yt-chip-cloud-renderer {
+  yt-chip-cloud-renderer,
+  yt-related-chip-cloud-renderer,
+  ytd-feed-filter-chip-bar-renderer,
+  #chips.yt-chip-cloud-renderer,
+  #chips-wrapper.yt-chip-cloud-renderer,
+  #scroll-container.yt-chip-cloud-renderer,
+  yt-chip-cloud-chip-renderer {
     background: none !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   ytd-playlist-panel-video-renderer,
@@ -1287,12 +1296,92 @@ html[data-ambientlight-enabled] {
     }
   }
 
-  yt-chip-cloud-chip-renderer:not([selected]) .ytChipShapeChip {
-    background: var(--ytal-background) !important;
+  yt-chip-cloud-chip-renderer:not([selected]) {
+    yt-chip-shape,
+    .ytChipShapeChip,
+    .ytChipShapeButton {
+      background: var(--ytal-background) !important;
+      background-color: var(--ytal-background) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border-radius: 8px !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    &:hover yt-chip-shape,
+    &:hover .ytChipShapeChip,
+    .ytChipShapeChip:hover {
+      background: var(--ytal-background-10-percent) !important;
+      background-color: var(--ytal-background-10-percent) !important;
+    }
+
+    .ytChipShapeInactive,
+    yt-formatted-string,
+    .yt-formatted-string,
+    span,
+    * {
+      color: #f1f1f1 !important;
+      fill: #f1f1f1 !important;
+      text-shadow: none !important;
+      filter: none !important;
+      font-weight: 500 !important;
+    }
   }
-  yt-chip-cloud-chip-renderer[selected] .ytChipShapeChip {
-    background: var(--yt-spec-inverted-background) !important;
-    color: var(--yt-spec-text-primary-inverse) !important;
+
+  yt-chip-cloud-chip-renderer[selected] {
+    yt-chip-shape,
+    .ytChipShapeChip,
+    .ytChipShapeButton {
+      background: #f1f1f1 !important;
+      background-color: #f1f1f1 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border-radius: 8px !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    .ytChipShapeActive,
+    yt-formatted-string,
+    .yt-formatted-string,
+    span,
+    * {
+      color: #0f0f0f !important;
+      fill: #0f0f0f !important;
+      text-shadow: none !important;
+      filter: none !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  #left-arrow-button.yt-chip-cloud-renderer,
+  #right-arrow-button.yt-chip-cloud-renderer,
+  yt-related-chip-cloud-renderer #left-arrow-button,
+  yt-related-chip-cloud-renderer #right-arrow-button,
+  ytd-feed-filter-chip-bar-renderer #left-arrow-button,
+  ytd-feed-filter-chip-bar-renderer #right-arrow-button {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    button,
+    .yt-spec-button-shape-next {
+      background: var(--ytal-background) !important;
+      background-color: var(--ytal-background) !important;
+      border-radius: 50% !important;
+      color: #f1f1f1 !important;
+      fill: #f1f1f1 !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    yt-icon {
+      color: #f1f1f1 !important;
+      fill: #f1f1f1 !important;
+      text-shadow: none !important;
+      filter: none !important;
+    }
   }
   
   ytd-watch-metadata {
