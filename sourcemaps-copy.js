@@ -1,5 +1,5 @@
-import path from 'path';
-import { renameSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
+import path from 'node:path';
+import { renameSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
 
 function copyMapFiles(srcDir, destDir) {
   readdirSync(srcDir, { withFileTypes: true }).forEach((dirent) => {

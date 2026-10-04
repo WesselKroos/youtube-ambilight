@@ -18,6 +18,7 @@ import SettingsConfig, {
 import { getFeedbackFormLink, getVersion } from './utils';
 import { storage } from './storage';
 import { AmbientlightError } from './errors/ambient-light-error';
+import { getMessage } from './i18n';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
@@ -78,7 +79,9 @@ export default class Settings {
     const warningTimeout = setTimeout(
       () =>
         setWarning(
-          `It is taking more than 5 seconds to load your previous settings.
+          getMessage(
+            'settings_warning_slow_load',
+            `It is taking more than 5 seconds to load your previous settings.
 If this is your first warning and it does not disappear, then the extension might have updated. 
 You can reload the webpage to complete the update.
 
@@ -87,6 +90,7 @@ But if this happens frequently, here are some possible causes:
   Disable other extensions temporarely to find out which one it is.
 - If your computer is very slow or frequently freezing in other applications as well,
   there could be a problem with your hardware, likely the memory (DDR).`
+          )
         ),
       5000
     );
@@ -174,7 +178,10 @@ But if this happens frequently, here are some possible causes:
       storedSettings = await Settings.getStoredSettingsCached();
     } catch {
       this.setWarning(
-        'Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again.'
+        getMessage(
+          'settings_warning_updated_retry',
+          'Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again.'
+        )
       );
     }
 
@@ -342,7 +349,10 @@ But if this happens frequently, here are some possible causes:
 
     const warningCloseButton = document.createElement('button');
     warningCloseButton.className = 'ytpa-warning-close-btn';
-    warningCloseButton.title = 'Close warning';
+    warningCloseButton.title = getMessage(
+      'settings_close_warning',
+      'Close warning'
+    );
     warning.appendChild(warningCloseButton);
 
     const info = document.createElement('div');
@@ -382,7 +392,10 @@ But if this happens frequently, here are some possible causes:
 
     const troubleshootLinkText = document.createElement('span');
     troubleshootLinkText.className = 'ytpa-feedback-link__text';
-    troubleshootLinkText.textContent = 'Troubleshoot performance problems';
+    troubleshootLinkText.textContent = getMessage(
+      'settings_troubleshoot_performance',
+      'Troubleshoot performance problems'
+    );
     troubleshootLink.appendChild(troubleshootLinkText);
 
     const toolbar = document.createElement('div');
@@ -396,15 +409,18 @@ But if this happens frequently, here are some possible causes:
 
     const importTooltip = document.createElement('span');
     importTooltip.className = 'ytpa-export-import-settings-btn__tooltip';
-    importTooltip.textContent = `How to export or import settings: 
+    importTooltip.textContent = getMessage(
+      'settings_export_import_tooltip',
+      `How to export or import settings: 
 1. Click on the extension icon to open the option. 
-2. Scroll down to "Import / Export settings"`;
+2. Scroll down to "Import / Export settings"`
+    );
     importBtn.appendChild(importTooltip);
 
     const resetBtn = document.createElement('button');
     resetBtn.className = 'ytpa-reset-settings-btn';
     resetBtn.type = 'button';
-    resetBtn.title = 'Reset all settings';
+    resetBtn.title = getMessage('settings_reset_all', 'Reset all settings');
     toolbar.appendChild(resetBtn);
 
     const header2 = document.createElement('div');
@@ -428,7 +444,10 @@ But if this happens frequently, here are some possible causes:
 
     const feedbackLinkText = document.createElement('span');
     feedbackLinkText.className = 'ytpa-feedback-link__text';
-    feedbackLinkText.textContent = 'Give feedback or a rating';
+    feedbackLinkText.textContent = getMessage(
+      'settings_give_feedback',
+      'Give feedback or a rating'
+    );
     feedbackLink.appendChild(feedbackLinkText);
 
     const donateLink = document.createElement('a');
@@ -440,8 +459,14 @@ But if this happens frequently, here are some possible causes:
 
     const donateLinkImage = document.createElement('img');
     donateLinkImage.className = 'ytpa-donate-link__image';
-    donateLinkImage.alt = 'Support me via a donation';
-    donateLinkImage.title = 'Support me via a donation';
+    donateLinkImage.alt = getMessage(
+      'settings_donate_title',
+      'Support me via a donation'
+    );
+    donateLinkImage.title = getMessage(
+      'settings_donate_title',
+      'Support me via a donation'
+    );
     donateLinkImage.src = `${baseUrl}images/donate.svg`;
     donateLinkImage.height = '23';
     donateLink.appendChild(donateLinkImage);
@@ -468,8 +493,10 @@ But if this happens frequently, here are some possible causes:
         const labelKey = document.createElement('span');
         labelKey.contentEditable = true;
         labelKey.className = 'ytpa-menuitem-key';
-        labelKey.title =
-          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)';
+        labelKey.title = getMessage(
+          'settings_hotkey_tooltip',
+          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)'
+        );
         labelKey.textContent = setting.key;
         labelElems.push(labelKey);
 
@@ -539,9 +566,15 @@ But if this happens frequently, here are some possible causes:
         checkbox.ariaChecked = value ? 'true' : 'false';
         if (setting.disabled) {
           checkbox.ariaDisabled = 'true';
-          checkbox.title = 'This setting is unavailable';
+          checkbox.title = getMessage(
+            'settings_unavailable',
+            'This setting is unavailable'
+          );
         } else {
-          checkbox.title = 'Right click to reset';
+          checkbox.title = getMessage(
+            'settings_reset_right_click',
+            'Right click to reset'
+          );
           checkbox.tabindex = '0';
         }
         sectionContent.appendChild(checkbox);
@@ -611,7 +644,10 @@ But if this happens frequently, here are some possible causes:
           setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''
         }`;
         range.setAttribute('rowspan', '2');
-        range.title = 'Right click to reset';
+        range.title = getMessage(
+          'settings_reset_right_click',
+          'Right click to reset'
+        );
         wrapper.appendChild(range);
 
         const input = document.createElement('input');
@@ -644,7 +680,12 @@ But if this happens frequently, here are some possible causes:
             option.className = `setting-range-datalist__label ${
               flip ? 'setting-range-datalist__label--flip' : ''
             }`;
-            option.title = `Set to ${hiddenLabel || label}`;
+            const targetLabel = hiddenLabel || label;
+            option.title = getMessage(
+              'settings_snap_to',
+              `Set to ${targetLabel}`,
+              [targetLabel]
+            );
             option.style.marginLeft = `${
               (value + -setting.min) * (100 / (setting.max - setting.min))
             }%`;
@@ -677,12 +718,17 @@ But if this happens frequently, here are some possible causes:
     this.settingsMenuBtnTooltipText = document.createElement('span');
     this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-bottom-text';
     this.settingsMenuBtnTooltipText.appendChild(
-      document.createTextNode('Ambient light loading is paused.')
+      document.createTextNode(
+        getMessage('settings_paused_title', 'Ambient light loading is paused.')
+      )
     );
     this.settingsMenuBtnTooltipText.appendChild(document.createElement('br'));
     this.settingsMenuBtnTooltipText.appendChild(
       document.createTextNode(
-        'Waiting for the video and page to be loaded first...'
+        getMessage(
+          'settings_paused_desc',
+          'Waiting for the video and page to be loaded first...'
+        )
       )
     );
     settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText);
@@ -727,7 +773,10 @@ But if this happens frequently, here are some possible causes:
     on(resetSettingsBtnElem, 'click', async () => {
       if (
         !confirm(
-          'Are you sure you want to reset ALL the settings and reload the watch page?'
+          getMessage(
+            'settings_reset_confirm',
+            'Are you sure you want to reset ALL the settings and reload the watch page?'
+          )
         )
       )
         return;
@@ -1622,7 +1671,10 @@ But if this happens frequently, here are some possible causes:
     if (!this.menuBtn.classList.contains('is-loading')) return;
 
     this.menuBtn.classList.remove('is-loading');
-    this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings';
+    this.settingsMenuBtnTooltipText.textContent = getMessage(
+      'settings_btn_tooltip',
+      'Ambient light settings'
+    );
 
     this.showUpdatesMessage();
   };
@@ -1631,9 +1683,20 @@ But if this happens frequently, here are some possible causes:
     const message = ex?.message ?? typeof ex;
     if (this.menuBtn?.classList?.contains?.('is-loading')) {
       this.menuBtn.classList.add('has-warning');
-      this.settingsMenuBtnTooltipText.textContent = `Ambient light failed to load:\n${message}`;
+      this.settingsMenuBtnTooltipText.textContent = getMessage(
+        'settings_btn_tooltip_failed',
+        `Ambient light failed to load:\n${message}`,
+        [message]
+      );
     } else {
-      this.setWarning(`An error occured:\n${message}`, true);
+      this.setWarning(
+        getMessage(
+          'settings_error_occurred',
+          `An error occurred:\n${message}`,
+          [message]
+        ),
+        true
+      );
     }
   };
 
@@ -1998,14 +2061,20 @@ But if this happens frequently, here are some possible causes:
     } catch (ex) {
       if (ex.message.includes('QuotaExceededError')) {
         this.setWarning(
-          'The changes could not be saved because the settings have changed too often.\nWait a few seconds...'
+          getMessage(
+            'settings_warning_rate_limit',
+            'The changes could not be saved because the settings have changed too often.\nWait a few seconds...'
+          )
         );
         return;
       }
 
       if (ex.message === 'uninstalled') {
         this.setWarning(
-          'The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.'
+          getMessage(
+            'settings_warning_extension_updated',
+            'The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.'
+          )
         );
         return;
       }

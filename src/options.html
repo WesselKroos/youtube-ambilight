@@ -2,71 +2,71 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Ambient light for YouTube&trade; settings</title>
+  <title data-i18n="options_title">Ambient light for YouTube&trade; settings</title>
   <link rel="stylesheet" href="styles/options.css">
 </head>
 
 <body>
   <main>
-    <h1>Ambient light for YouTube&trade;</h1>
+    <h1 data-i18n="options_heading">Ambient light for YouTube&trade;</h1>
     <p>
-      The settings are accessible from video player:<br/><br/>
+      <span data-i18n="options_settings_location">The settings are accessible from video player:</span><br/><br/>
       <img src="images/settings-moved-to.png" />
     </p>
     
-    <h2>I see no settings button</h2>
+    <h2 data-i18n="options_troubleshoot_no_button_title">I see no settings button</h2>
     <p>
-      Please refresh the webpage in the browser.<br/><br/>
-      <i>If after the refresh the settings button is still not shown you can open your browser's console (Press F12) to search for any errors or warnings and report those by:<br/>
-      <a href="https://github.com/WesselKroos/youtube-ambilight/issues" target="_blank">creating an issue</a>
-      or 
-      <a id="feedbackFormLink" href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank">filling out the feedback form</a>
+      <span data-i18n="options_troubleshoot_no_button_desc1">Please refresh the webpage in the browser.</span><br/><br/>
+      <i><span data-i18n="options_troubleshoot_no_button_desc2">If after the refresh the settings button is still not shown you can open your browser's console (Press F12) to search for any errors or warnings and report those by:</span><br/>
+      <a href="https://github.com/WesselKroos/youtube-ambilight/issues" target="_blank" data-i18n="options_create_issue">creating an issue</a>
+      <span data-i18n="options_or">or</span> 
+      <a id="feedbackFormLink" href="https://docs.google.com/forms/d/1OU7e3fOXk2NJSppCj4hrAE0lUgi8utccdooX1rUnycU" target="_blank" data-i18n="options_fill_feedback_form">filling out the feedback form</a>
       </i>
     </p>
-    <h2>Fix performance issues</h2>
+    <h2 data-i18n="options_fix_performance_title">Fix performance issues</h2>
     <p>
-      Follow the <a href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank">troubelshoot guide</a> to resolve performance issue
+      <span data-i18n="options_fix_performance_desc_before">Follow the </span><a href="https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md" target="_blank" data-i18n="options_troubleshoot_guide">troubleshoot guide</a><span data-i18n="options_fix_performance_desc_after"> to resolve performance issue</span>
     </p>
 
-    <h2>Support me</h2>
+    <h2 data-i18n="options_support_title">Support me</h2>
     <p>
       <a class="donate-link" href="https://ko-fi.com/G2G59EK8L" target="_blank" rel="noopener">
-        <img src="images/donate.svg" alt="Support me via a donation" title="Support me via a donation" height="33" />
+        <img src="images/donate.svg" alt="Support me via a donation" title="Support me via a donation" data-i18n-alt="options_support_donation_alt" data-i18n-title="options_support_donation_alt" height="33" />
       </a>
     </p>
 
-    <h2>Import / Export settings</h2>
+    <h2 data-i18n="options_import_export_title">Import / Export settings</h2>
     <div id="importExportStatus" class="import-export-status"></div>
     <div id="importExportStatusDetails" class="import-export-status-details" tabindex="0"></div>
-    <h3>File storage</h3>
+    <h3 data-i18n="options_file_storage_title">File storage</h3>
     <p>
-      <button id="exportFileBtn">Export to file</button>
-      <button id="importFileBtn">Import from file</button>
+      <button id="exportFileBtn" data-i18n="options_export_to_file">Export to file</button>
+      <button id="importFileBtn" data-i18n="options_import_from_file">Import from file</button>
       <input hidden name="import-settings-file" type="file" accept=".json"/>
     </p>
-    <h3>Cloud storage (Your browser account)</h3>
+    <h3 data-i18n="options_cloud_storage_title">Cloud storage (Your browser account)</h3>
     <p>
-      <button id="exportAccountBtn">Export to cloud</button>
-      <button id="importAccountBtn" disabled>Import from cloud</button>
+      <button id="exportAccountBtn" data-i18n="options_export_to_cloud">Export to cloud</button>
+      <button id="importAccountBtn" disabled data-i18n="options_import_from_cloud">Import from cloud</button>
     </p>
     <p>
       <div id="importableAccountStatus" class="importable-account-status"></div>
     </p>
 
-    <h2>Crash reports & Privacy</h2>
-    <p>
+    <h2 data-i18n="options_crash_reports_title">Crash reports & Privacy</h2>
+    <p data-i18n="options_crash_reports_desc">
       A crash report contains only anonymous data and will be deleted after 30 days.
-      However, anonymous data is still your data. That's why you can control what it contains via the settings below.<br/>
+      However, anonymous data is still your data. That's why you can control what it contains via the settings below.
     </p>
 
     <div class="warnings-container"></div>
 
-    <h3>A crash report is allowed to contain:</h3>
+    <h3 data-i18n="options_crash_reports_allowed_title">A crash report is allowed to contain:</h3>
     <ul>
       <li>
         <div class="option">
           <input type="checkbox" name="video"/>
-          <label>The url and video ID being watched at the time of the crash</label>
+          <label data-i18n="options_crash_report_video">The url and video ID being watched at the time of the crash</label>
         </div>
       </li>
       <li>
@@ -74,15 +74,15 @@
           <input type="checkbox" name="technical"/>
           <div class="expandable">
             <div class="expandable__title">
-              <label>Anonymous technical data</label>
-              <button class="expandable__toggle" title="Display the list of technical info">&gt;</button>
+              <label data-i18n="options_crash_report_technical">Anonymous technical data</label>
+              <button class="expandable__toggle" title="Display the list of technical info" data-i18n-title="options_crash_report_technical_toggle_title">&gt;</button>
             </div>
             <ul class="expandable__details">
-              <li>Browser version</li>
-              <li>Operating system version</li>
-              <li>Display capabilities</li>
-              <li>Videoplayer state <i>(Does not contain the video id or title)</i></li>
-              <li>YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
+              <li data-i18n="options_crash_report_browser_version">Browser version</li>
+              <li data-i18n="options_crash_report_os_version">Operating system version</li>
+              <li data-i18n="options_crash_report_display_caps">Display capabilities</li>
+              <li data-i18n="options_crash_report_player_state">Videoplayer state <i>(Does not contain the video id or title)</i></li>
+              <li data-i18n="options_crash_report_layout_state">YouTube layout state <i>(Does not contain your YouTube account data)</i></li>
             </ul>
           </div>
         </div>
@@ -90,13 +90,13 @@
       <li>
         <div class="option">
           <input type="checkbox" name="crash"/>
-          <label>Ambient light state and error information</label>
+          <label data-i18n="options_crash_report_crash">Ambient light state and error information</label>
         </div>
       </li>
     </ul>
     <p>
-      No crash reports will be sent when all checkboxes are unchecked.<br/>
-      <a id="privacyPolicyLink" href="#" target="_blank">Our privacy policy</a>
+      <span data-i18n="options_crash_reports_none_sent">No crash reports will be sent when all checkboxes are unchecked.</span><br/>
+      <a id="privacyPolicyLink" href="#" target="_blank" data-i18n="options_privacy_policy">Our privacy policy</a>
     </p>
   </main>
   <script src="scripts/options.js"></script>

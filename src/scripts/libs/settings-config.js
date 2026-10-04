@@ -1,40 +1,43 @@
 import { supportsColorMix, supportsWebGL } from './generic';
 import { getBrowser } from './utils';
+import { getMessage } from './i18n';
 
 const SettingsConfig = [
   {
     type: 'section',
-    label: 'Settings',
+    label: getMessage('setting_sectionSettingsCollapsed_label', 'Settings'),
     name: 'sectionSettingsCollapsed',
     default: true,
   },
   {
     name: 'advancedSettings',
-    label: 'Advanced',
+    label: getMessage('setting_advancedSettings_label', 'Advanced'),
     type: 'checkbox',
     default: false,
   },
   {
     type: 'section',
-    label: 'Stats',
+    label: getMessage('setting_sectionStatsCollapsed_label', 'Stats'),
     name: 'sectionStatsCollapsed',
     default: true,
     advanced: true,
   },
   {
     name: 'showFPS',
-    label: 'Framerates',
+    label: getMessage('setting_showFPS_label', 'Framerates'),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     name: 'showFrametimes',
-    label: 'Frametimes graph',
-    description: 'Uses: CPU power',
+    label: getMessage('setting_showFrametimes_label', 'Frametimes graph'),
+    description: getMessage('setting_showFrametimes_desc', 'Uses: CPU power'),
     questionMark: {
-      title:
-        'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.',
+      title: getMessage(
+        'setting_showFrametimes_title',
+        'The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues.'
+      ),
     },
     type: 'checkbox',
     default: false,
@@ -42,34 +45,43 @@ const SettingsConfig = [
   },
   {
     name: 'showResolutions',
-    label: 'Resolutions & drawtimes',
+    label: getMessage(
+      'setting_showResolutions_label',
+      'Resolutions & drawtimes'
+    ),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     name: 'showBarDetectionStats',
-    label: 'Bar detection',
+    label: getMessage('setting_showBarDetectionStats_label', 'Bar detection'),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     type: 'section',
-    label: 'Quality',
+    label: getMessage('setting_sectionQualityPerformanceCollapsed_label', 'Quality'),
     name: 'sectionQualityPerformanceCollapsed',
     default: true,
   },
   {
     name: 'webGL',
-    label: 'WebGL renderer (uses less power)',
-    description: 'Changing this reloads the webpage',
+    label: getMessage(
+      'setting_webGL_label',
+      'WebGL renderer (uses less power)'
+    ),
+    description: getMessage(
+      'setting_webGL_desc',
+      'Changing this reloads the webpage'
+    ),
     type: 'checkbox',
     default: true,
   },
   {
     name: 'resolution',
-    label: 'Resolution',
+    label: getMessage('setting_resolution_label', 'Resolution'),
     type: 'list',
     default: 100,
     unit: '%',
@@ -84,7 +96,10 @@ const SettingsConfig = [
   },
   {
     name: 'framerateLimit',
-    label: 'Limit framerate (per second)',
+    label: getMessage(
+      'setting_framerateLimit_label',
+      'Limit framerate (per second)'
+    ),
     type: 'list',
     default: 60,
     min: 0,
@@ -93,10 +108,12 @@ const SettingsConfig = [
   },
   {
     name: 'frameSync',
-    label: 'Synchronization',
+    label: getMessage('setting_frameSync_label', 'Synchronization'),
     questionMark: {
-      title:
-        'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.',
+      title: getMessage(
+        'setting_frameSync_title',
+        'How much energy will be spent on sychronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync.'
+      ),
     },
     type: 'list',
     default: 2,
@@ -104,9 +121,18 @@ const SettingsConfig = [
     max: 2,
     step: 1,
     snapPoints: [
-      { value: 0, label: 'Decoded' },
-      { value: 1, label: 'Display' },
-      { value: 2, label: 'Video' },
+      {
+        value: 0,
+        label: getMessage('setting_frameSync_opt_decoded', 'Decoded'),
+      },
+      {
+        value: 1,
+        label: getMessage('setting_frameSync_opt_display', 'Display'),
+      },
+      {
+        value: 2,
+        label: getMessage('setting_frameSync_opt_video', 'Video'),
+      },
     ],
     manualinput: false,
     advanced: true,
@@ -114,10 +140,15 @@ const SettingsConfig = [
   },
   {
     name: 'energySaver',
-    label: 'Save energy on static videos',
+    label: getMessage(
+      'setting_energySaver_label',
+      'Save energy on static videos'
+    ),
     questionMark: {
-      title:
-        'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second',
+      title: getMessage(
+        'setting_energySaver_title',
+        'Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second'
+      ),
     },
     type: 'checkbox',
     default: false,
@@ -125,23 +156,38 @@ const SettingsConfig = [
   },
   {
     name: 'prioritizePageLoadSpeed',
-    label: 'Prioritize page load speed',
-    description: 'Loads the ambient light after the page has loaded',
+    label: getMessage(
+      'setting_prioritizePageLoadSpeed_label',
+      'Prioritize page load speed'
+    ),
+    description: getMessage(
+      'setting_prioritizePageLoadSpeed_desc',
+      'Loads the ambient light after the page has loaded'
+    ),
     type: 'checkbox',
     default: true,
   },
   {
     name: 'layoutPerformanceImprovements',
-    label: 'YouTube responsiveness fixes',
-    description: 'Improves the responsiveness of the webpage',
+    label: getMessage(
+      'setting_layoutPerformanceImprovements_label',
+      'YouTube responsiveness fixes'
+    ),
+    description: getMessage(
+      'setting_layoutPerformanceImprovements_desc',
+      'Improves the responsiveness of the webpage'
+    ),
     questionMark: {
-      title: `Some of the improvements on the /watch page include:
+      title: getMessage(
+        'setting_layoutPerformanceImprovements_title',
+        `Some of the improvements on the /watch page include:
 - Faster webpage resizing and scrolling (Most noticeable after you've loaded in more than 100 comments)
 - Faster loadingtimes for comments and/or related videos
 - Smoother timeline scrubbing (Most noticeable after you've loaded in more than 100 comments or with a livestream chat window open)
 - Smoother livestream chat scrolling (and new messages will be appended quicker to the chat)
 - Smoother playlist scrolling (Most noticeable in a playlist with more than 25 videos)
-- Smoother dragging/re-ordering videos in a playlist (Most noticeable in a playlist with more than 25 videos)`,
+- Smoother dragging/re-ordering videos in a playlist (Most noticeable in a playlist with more than 25 videos)`
+      ),
     },
     type: 'checkbox',
     default: true,
@@ -149,10 +195,15 @@ const SettingsConfig = [
   },
   {
     name: 'debandingBlendMode',
-    label: 'Optimize debanding for',
+    label: getMessage(
+      'setting_debandingBlendMode_label',
+      'Optimize debanding for'
+    ),
     questionMark: {
-      title:
-        "The normal blend mode is usefull to fix banding in dark colors on LCD's.\nBut on OLED's it's better to use the \"overlay\" blend mode to retain pure blacks.",
+      title: getMessage(
+        'setting_debandingBlendMode_title',
+        "The normal blend mode is usefull to fix banding in dark colors on LCD's.\nBut on OLED's it's better to use the \"overlay\" blend mode to retain pure blacks."
+      ),
     },
     type: 'list',
     default: 0,
@@ -160,8 +211,14 @@ const SettingsConfig = [
     max: 1,
     step: 1,
     snapPoints: [
-      { value: 0, label: 'LCD (normal)' },
-      { value: 1, label: 'OLED (overlay)' },
+      {
+        value: 0,
+        label: getMessage('setting_debandingBlendMode_opt_lcd', 'LCD (normal)'),
+      },
+      {
+        value: 1,
+        label: getMessage('setting_debandingBlendMode_opt_oled', 'OLED (overlay)'),
+      },
     ],
     manualinput: false,
     advanced: true,
@@ -169,13 +226,16 @@ const SettingsConfig = [
   },
   {
     type: 'section',
-    label: 'Page header',
+    label: getMessage(
+      'setting_sectionOtherPageHeaderCollapsed_label',
+      'Page header'
+    ),
     name: 'sectionOtherPageHeaderCollapsed',
     default: true,
   },
   {
     name: 'headerShadowSize',
-    label: 'Shadows size',
+    label: getMessage('setting_headerShadowSize_label', 'Shadows size'),
     type: 'list',
     default: 0,
     min: 0,
@@ -184,7 +244,7 @@ const SettingsConfig = [
   },
   {
     name: 'headerShadowOpacity',
-    label: 'Shadows opacity',
+    label: getMessage('setting_headerShadowOpacity_label', 'Shadows opacity'),
     type: 'list',
     default: 30,
     min: 0,
@@ -193,7 +253,7 @@ const SettingsConfig = [
   },
   {
     name: 'headerImagesOpacity',
-    label: 'Images opacity',
+    label: getMessage('setting_headerImagesOpacity_label', 'Images opacity'),
     type: 'list',
     default: 100,
     min: 0,
@@ -202,8 +262,11 @@ const SettingsConfig = [
   },
   {
     name: 'headerFillOpacity',
-    label: 'Background opacity',
-    description: 'Only applies when scrolled down',
+    label: getMessage('setting_headerFillOpacity_label', 'Background opacity'),
+    description: getMessage(
+      'setting_headerFillOpacity_desc',
+      'Only applies when scrolled down'
+    ),
     type: 'list',
     default: 100,
     min: -100,
@@ -214,13 +277,19 @@ const SettingsConfig = [
 
   {
     type: 'section',
-    label: 'Page content',
+    label: getMessage(
+      'setting_sectionOtherPageContentCollapsed_label',
+      'Page content'
+    ),
     name: 'sectionOtherPageContentCollapsed',
     default: true,
   },
   {
     name: 'surroundingContentShadowSize',
-    label: 'Shadows size',
+    label: getMessage(
+      'setting_surroundingContentShadowSize_label',
+      'Shadows size'
+    ),
     type: 'list',
     default: 15,
     min: 0,
@@ -229,7 +298,10 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentShadowOpacity',
-    label: 'Shadows opacity',
+    label: getMessage(
+      'setting_surroundingContentShadowOpacity_label',
+      'Shadows opacity'
+    ),
     type: 'list',
     default: 30,
     min: 0,
@@ -238,15 +310,24 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentTextAndBtnOnly',
-    label: 'Shadows on texts and buttons only',
-    description: 'Decreases scrolling & video stutter',
+    label: getMessage(
+      'setting_surroundingContentTextAndBtnOnly_label',
+      'Shadows on texts and buttons only'
+    ),
+    description: getMessage(
+      'setting_surroundingContentTextAndBtnOnly_desc',
+      'Decreases scrolling & video stutter'
+    ),
     type: 'checkbox',
     advanced: true,
     default: true,
   },
   {
     name: 'surroundingContentImagesOpacity',
-    label: 'Images opacity',
+    label: getMessage(
+      'setting_surroundingContentImagesOpacity_label',
+      'Images opacity'
+    ),
     type: 'list',
     default: 100,
     min: 0,
@@ -255,7 +336,10 @@ const SettingsConfig = [
   },
   {
     name: 'surroundingContentFillOpacity',
-    label: 'Buttons & boxes background opacity',
+    label: getMessage(
+      'setting_surroundingContentFillOpacity_label',
+      'Buttons & boxes background opacity'
+    ),
     type: 'list',
     default: 10,
     min: -100,
@@ -264,7 +348,10 @@ const SettingsConfig = [
   },
   {
     name: 'pageBackgroundGreyness',
-    label: 'Background greyness',
+    label: getMessage(
+      'setting_pageBackgroundGreyness_label',
+      'Background greyness'
+    ),
     type: 'list',
     default: 0,
     min: 0,
@@ -273,34 +360,46 @@ const SettingsConfig = [
   },
   {
     name: 'immersiveTheaterView',
-    label: 'Hide everything in theater mode',
+    label: getMessage(
+      'setting_immersiveTheaterView_label',
+      'Hide everything in theater mode'
+    ),
     type: 'checkbox',
     default: false,
   },
   {
     name: 'relatedScrollbar',
-    label: 'Related videos as scrollable list',
-    description: 'Also improves scrolling through comments',
+    label: getMessage(
+      'setting_relatedScrollbar_label',
+      'Related videos as scrollable list'
+    ),
+    description: getMessage(
+      'setting_relatedScrollbar_desc',
+      'Also improves scrolling through comments'
+    ),
     type: 'checkbox',
     advanced: true,
     default: false,
   },
   {
     name: 'hideScrollbar',
-    label: 'Hide scrollbar',
+    label: getMessage('setting_hideScrollbar_label', 'Hide scrollbar'),
     type: 'checkbox',
     advanced: true,
     default: false,
   },
   {
     type: 'section',
-    label: 'Video',
+    label: getMessage('setting_sectionVideoResizingCollapsed_label', 'Video'),
     name: 'sectionVideoResizingCollapsed',
     default: true,
   },
   {
     name: 'videoScale.SMALL',
-    label: 'Size (in small view)',
+    label: getMessage(
+      'setting_videoScale_SMALL_label',
+      'Size (in small view)'
+    ),
     type: 'list',
     default: 100,
     min: 25,
@@ -310,7 +409,10 @@ const SettingsConfig = [
   },
   {
     name: 'videoScale.THEATER',
-    label: 'Size (in theater view)',
+    label: getMessage(
+      'setting_videoScale_THEATER_label',
+      'Size (in theater view)'
+    ),
     type: 'list',
     default: 100,
     min: 25,
@@ -320,7 +422,10 @@ const SettingsConfig = [
   },
   {
     name: 'videoScale.FULLSCREEN',
-    label: 'Size (in fullscreen)',
+    label: getMessage(
+      'setting_videoScale_FULLSCREEN_label',
+      'Size (in fullscreen)'
+    ),
     type: 'list',
     default: 100,
     min: 25,
@@ -330,7 +435,7 @@ const SettingsConfig = [
   },
   {
     name: 'videoShadowSize',
-    label: 'Shadow size',
+    label: getMessage('setting_videoShadowSize_label', 'Shadow size'),
     type: 'list',
     default: 0,
     min: 0,
@@ -339,7 +444,7 @@ const SettingsConfig = [
   },
   {
     name: 'videoShadowOpacity',
-    label: 'Shadow opacity',
+    label: getMessage('setting_videoShadowOpacity_label', 'Shadow opacity'),
     type: 'list',
     default: 50,
     min: 0,
@@ -348,10 +453,15 @@ const SettingsConfig = [
   },
   {
     name: 'videoDebandingStrength',
-    label: 'Debanding (noise)',
+    label: getMessage(
+      'setting_videoDebandingStrength_label',
+      'Debanding (noise)'
+    ),
     questionMark: {
-      title:
-        'Click for more information about debanding (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.',
+      title: getMessage(
+        'setting_videoDebandingStrength_title',
+        'Click for more information about debanding (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.'
+      ),
       href: 'https://www.lifewire.com/what-is-dithering-4686105',
     },
     type: 'list',
@@ -363,10 +473,15 @@ const SettingsConfig = [
   },
   {
     name: 'videoOverlayEnabled',
-    label: 'Sync video with ambient light',
+    label: getMessage(
+      'setting_videoOverlayEnabled_label',
+      'Sync video with ambient light'
+    ),
     questionMark: {
-      title:
-        'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.',
+      title: getMessage(
+        'setting_videoOverlayEnabled_title',
+        'Delays the video frames according to the ambient light frametimes.\nThis makes sure that that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames.'
+      ),
     },
     type: 'checkbox',
     default: false,
@@ -374,8 +489,14 @@ const SettingsConfig = [
   },
   {
     name: 'videoOverlaySyncThreshold',
-    label: 'Sync video disable threshold',
-    description: 'Disable when dropping % of frames',
+    label: getMessage(
+      'setting_videoOverlaySyncThreshold_label',
+      'Sync video disable threshold'
+    ),
+    description: getMessage(
+      'setting_videoOverlaySyncThreshold_desc',
+      'Disable when dropping % of frames'
+    ),
     type: 'list',
     default: 5,
     min: 1,
@@ -385,11 +506,19 @@ const SettingsConfig = [
   },
   {
     name: 'chromiumBugVideoJitterWorkaround',
-    label: 'Video jitter workaround',
-    description: 'Uses: CPU & GPU power',
+    label: getMessage(
+      'setting_chromiumBugVideoJitterWorkaround_label',
+      'Video jitter workaround'
+    ),
+    description: getMessage(
+      'setting_chromiumBugVideoJitterWorkaround_desc',
+      'Uses: CPU & GPU power'
+    ),
     questionMark: {
-      title:
-        'Chromium has a bug that jitters the video playback when your display \nhas a higher framerate than 60Hz. This workaround prevents the jittering \nby forcing the browser to run at the framerate of your display instead. \nClick the questionmark for more information about this bug in Chromium browsers.',
+      title: getMessage(
+        'setting_chromiumBugVideoJitterWorkaround_title',
+        'Chromium has a bug that jitters the video playback when your display \nhas a higher framerate than 60Hz. This workaround prevents the jittering \nby forcing the browser to run at the framerate of your display instead. \nClick the questionmark for more information about this bug in Chromium browsers.'
+      ),
       href: 'https://github.com/WesselKroos/youtube-ambilight/issues/166',
     },
     type: 'checkbox',
@@ -398,15 +527,23 @@ const SettingsConfig = [
   },
   {
     name: 'chromiumDirectVideoOverlayWorkaround',
-    label: 'Video artifacts workaround',
-    description:
-      'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)',
+    label: getMessage(
+      'setting_chromiumDirectVideoOverlayWorkaround_label',
+      'Video artifacts workaround'
+    ),
+    description: getMessage(
+      'setting_chromiumDirectVideoOverlayWorkaround_desc',
+      'This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)'
+    ),
     questionMark: {
-      title: `This workaround can fix several artifacts/bugs,
+      title: getMessage(
+        'setting_chromiumDirectVideoOverlayWorkaround_title',
+        `This workaround can fix several artifacts/bugs,
 when videos are in hardware accelerated overlays (MPO).
 Examples are: random black/white squares, flickering or a squeezed video.
 
-Click on the questionmark for more and updated information about these artifacts/bugs.`,
+Click on the questionmark for more and updated information about these artifacts/bugs.`
+      ),
       href: 'https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md#3-nvidia-rtx-video-super-resolution-vsr--nvidia-rtx-video-hdr-does-not-work',
     },
     type: 'checkbox',
@@ -415,35 +552,56 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     type: 'section',
-    label: 'Remove black & colored bars',
+    label: getMessage(
+      'setting_sectionHorizontalBarsCollapsed_label',
+      'Remove black & colored bars'
+    ),
     name: 'sectionHorizontalBarsCollapsed',
     default: true,
   },
   {
     name: 'detectHorizontalBarSizeEnabled',
-    label: 'Remove black bars',
-    description: 'Uses: CPU power',
+    label: getMessage(
+      'setting_detectHorizontalBarSizeEnabled_label',
+      'Remove black bars'
+    ),
+    description: getMessage(
+      'setting_detectHorizontalBarSizeEnabled_desc',
+      'Uses: CPU power'
+    ),
     type: 'checkbox',
     default: false,
     defaultKey: 'B',
   },
   {
     name: 'detectVerticalBarSizeEnabled',
-    label: 'Remove black sidebars',
-    description: 'Uses: CPU power',
+    label: getMessage(
+      'setting_detectVerticalBarSizeEnabled_label',
+      'Remove black sidebars'
+    ),
+    description: getMessage(
+      'setting_detectVerticalBarSizeEnabled_desc',
+      'Uses: CPU power'
+    ),
     type: 'checkbox',
     default: false,
     defaultKey: 'V',
   },
   {
     name: 'detectColoredHorizontalBarSizeEnabled',
-    label: 'Detection: Remove colored bars',
+    label: getMessage(
+      'setting_detectColoredHorizontalBarSizeEnabled_label',
+      'Detection: Remove colored bars'
+    ),
     type: 'checkbox',
     default: false,
   },
   {
     name: 'detectHorizontalBarSizeOffsetPercentage',
-    label: 'Detection: Offset',
+    label: getMessage(
+      'setting_detectHorizontalBarSizeOffsetPercentage_label',
+      'Detection: Offset'
+    ),
     type: 'list',
     default: 0,
     min: -5,
@@ -453,10 +611,15 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAverageHistorySize',
-    label: 'Detection: Frames average',
+    label: getMessage(
+      'setting_barSizeDetectionAverageHistorySize_label',
+      'Detection: Frames average'
+    ),
     questionMark: {
-      title:
-        'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.',
+      title: getMessage(
+        'setting_barSizeDetectionAverageHistorySize_title',
+        'The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections.'
+      ),
     },
     type: 'list',
     default: 4,
@@ -467,10 +630,15 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedElementsPercentage',
-    label: 'Detection: Certainty threshold',
+    label: getMessage(
+      'setting_barSizeDetectionAllowedElementsPercentage_label',
+      'Detection: Certainty threshold'
+    ),
     questionMark: {
-      title:
-        'At 10% only clear bars are removed.\nA higher percentage can also remove bars with some elements.\nAnd an even higher percentage can crop to a squared element in the center.',
+      title: getMessage(
+        'setting_barSizeDetectionAllowedElementsPercentage_title',
+        'At 10% only clear bars are removed.\nA higher percentage can also remove bars with some elements.\nAnd an even higher percentage can crop to a squared element in the center.'
+      ),
     },
     type: 'list',
     default: 20,
@@ -481,10 +649,15 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'barSizeDetectionAllowedUnevenBarsPercentage',
-    label: 'Detection: Uneven threshold',
+    label: getMessage(
+      'setting_barSizeDetectionAllowedUnevenBarsPercentage_label',
+      'Detection: Uneven threshold'
+    ),
     questionMark: {
-      title:
-        'Higher percentages detect a more uneven bar.\nFor example: A bar is uneven when the top bar is smaller than the bottem bar.\nBut with a high percentage you also increase the risk that straight objects or lines are seen as bars.',
+      title: getMessage(
+        'setting_barSizeDetectionAllowedUnevenBarsPercentage_title',
+        'Higher percentages detect a more uneven bar.\nFor example: A bar is uneven when the top bar is smaller than the bottem bar.\nBut with a high percentage you also increase the risk that straight objects or lines are seen as bars.'
+      ),
     },
     type: 'list',
     default: 10,
@@ -496,7 +669,10 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'horizontalBarsClipPercentage',
-    label: 'Bar size',
+    label: getMessage(
+      'setting_horizontalBarsClipPercentage_label',
+      'Bar size'
+    ),
     type: 'list',
     default: 0,
     min: 0,
@@ -511,7 +687,10 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'verticalBarsClipPercentage',
-    label: 'Sidebars size',
+    label: getMessage(
+      'setting_verticalBarsClipPercentage_label',
+      'Sidebars size'
+    ),
     type: 'list',
     default: 0,
     min: 0,
@@ -521,27 +700,33 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'horizontalBarsClipPercentageReset',
-    label: 'Reset bars next video',
+    label: getMessage(
+      'setting_horizontalBarsClipPercentageReset_label',
+      'Reset bars next video'
+    ),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     name: 'detectVideoFillScaleEnabled',
-    label: 'Fill video to removed bars',
+    label: getMessage(
+      'setting_detectVideoFillScaleEnabled_label',
+      'Fill video to removed bars'
+    ),
     type: 'checkbox',
     default: false,
     defaultKey: 'H',
   },
   {
     type: 'section',
-    label: 'Filters',
+    label: getMessage('setting_sectionImageAdjustmentCollapsed_label', 'Filters'),
     name: 'sectionImageAdjustmentCollapsed',
     default: true,
   },
   {
     name: 'brightness',
-    label: 'Brightness',
+    label: getMessage('setting_brightness_label', 'Brightness'),
     type: 'list',
     default: 100,
     min: 0,
@@ -550,7 +735,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'contrast',
-    label: 'Contrast',
+    label: getMessage('setting_contrast_label', 'Contrast'),
     type: 'list',
     default: 100,
     min: 0,
@@ -560,7 +745,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'vibrance',
-    label: 'Colors',
+    label: getMessage('setting_vibrance_label', 'Colors'),
     type: 'list',
     default: 100,
     min: 0,
@@ -569,7 +754,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'saturation',
-    label: 'Saturation',
+    label: getMessage('setting_saturation_label', 'Saturation'),
     type: 'list',
     default: 100,
     min: 0,
@@ -578,14 +763,17 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     type: 'section',
-    label: 'HDR Filters',
+    label: getMessage(
+      'setting_sectionHdrImageAdjustmentCollapsed_label',
+      'HDR Filters'
+    ),
     name: 'sectionHdrImageAdjustmentCollapsed',
     default: false,
     hdr: true,
   },
   {
     name: 'hdrBrightness',
-    label: 'Brightness',
+    label: getMessage('setting_hdrBrightness_label', 'Brightness'),
     type: 'list',
     default: 100,
     min: 0,
@@ -595,7 +783,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'hdrContrast',
-    label: 'Contrast',
+    label: getMessage('setting_hdrContrast_label', 'Contrast'),
     type: 'list',
     default: 100,
     min: 0,
@@ -605,7 +793,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'hdrSaturation',
-    label: 'Saturation',
+    label: getMessage('setting_hdrSaturation_label', 'Saturation'),
     type: 'list',
     default: 100,
     min: 0,
@@ -615,49 +803,52 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     type: 'section',
-    label: 'Directions',
+    label: getMessage('setting_sectionDirectionsCollapsed_label', 'Directions'),
     name: 'sectionDirectionsCollapsed',
     default: true,
     advanced: true,
   },
   {
     name: 'directionTopEnabled',
-    label: 'Top',
+    label: getMessage('setting_directionTopEnabled_label', 'Top'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     name: 'directionRightEnabled',
-    label: 'Right',
+    label: getMessage('setting_directionRightEnabled_label', 'Right'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     name: 'directionBottomEnabled',
-    label: 'Bottom',
+    label: getMessage('setting_directionBottomEnabled_label', 'Bottom'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     name: 'directionLeftEnabled',
-    label: 'Left',
+    label: getMessage('setting_directionLeftEnabled_label', 'Left'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     type: 'section',
-    label: 'Ambient light',
+    label: getMessage(
+      'setting_sectionAmbientlightCollapsed_label',
+      'Ambient light'
+    ),
     name: 'sectionAmbientlightCollapsed',
     default: false,
   },
   {
     name: 'blur2',
-    label: 'Blur',
-    description: 'Uses: GPU memory',
+    label: getMessage('setting_blur2_label', 'Blur'),
+    description: getMessage('setting_blur2_desc', 'Uses: GPU memory'),
     type: 'list',
     default: 30,
     min: 0,
@@ -666,8 +857,11 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'edge',
-    label: 'Edge size',
-    description: 'To better see what changes: Turn the blur to 0%',
+    label: getMessage('setting_edge_label', 'Edge size'),
+    description: getMessage(
+      'setting_edge_desc',
+      'To better see what changes: Turn the blur to 0%'
+    ),
     type: 'list',
     default: 12,
     min: 2,
@@ -677,8 +871,8 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'spread',
-    label: 'Spread',
-    description: 'Uses: GPU power',
+    label: getMessage('setting_spread_label', 'Spread'),
+    description: getMessage('setting_spread_desc', 'Uses: GPU power'),
     type: 'list',
     default: 17,
     min: 0,
@@ -687,7 +881,7 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'spreadFadeStart',
-    label: 'Spread fade start',
+    label: getMessage('setting_spreadFadeStart_label', 'Spread fade start'),
     type: 'list',
     default: 15,
     min: -50,
@@ -697,8 +891,11 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'spreadFadeCurve',
-    label: 'Spread fade curve',
-    description: 'To better see what changes: Turn the blur to 0%',
+    label: getMessage('setting_spreadFadeCurve_label', 'Spread fade curve'),
+    description: getMessage(
+      'setting_spreadFadeCurve_desc',
+      'To better see what changes: Turn the blur to 0%'
+    ),
     type: 'list',
     default: 35,
     min: 1,
@@ -708,10 +905,12 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'debandingStrength',
-    label: 'Debanding (noise)',
+    label: getMessage('setting_debandingStrength_label', 'Debanding (noise)'),
     questionMark: {
-      title:
-        'Click for more information about (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.',
+      title: getMessage(
+        'setting_debandingStrength_title',
+        'Click for more information about (noise /dithering).\nTip: Change the "Quality > Optimize debanding for" setting to "OLED" to retain pure blacks on OLED displays.'
+      ),
       href: 'https://www.lifewire.com/what-is-dithering-4686105',
     },
     type: 'list',
@@ -723,10 +922,13 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'frameFading',
-    label: 'Fade in duration',
-    description: 'Uses: GPU memory',
+    label: getMessage('setting_frameFading_label', 'Fade in duration'),
+    description: getMessage('setting_frameFading_desc', 'Uses: GPU memory'),
     questionMark: {
-      title: 'Fading between changes in the ambient light',
+      title: getMessage(
+        'setting_frameFading_title',
+        'Fading between changes in the ambient light'
+      ),
     },
     type: 'list',
     default: 0,
@@ -737,10 +939,12 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'flickerReduction',
-    label: 'Flicker reduction',
+    label: getMessage('setting_flickerReduction_label', 'Flicker reduction'),
     questionMark: {
-      title:
-        'Reduces flickering by limiting the speed at which brightness changes in the ambient light',
+      title: getMessage(
+        'setting_flickerReduction_title',
+        'Reduces flickering by limiting the speed at which brightness changes in the ambient light'
+      ),
     },
     type: 'list',
     default: 0,
@@ -752,19 +956,31 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'frameBlending',
-    label: 'Smooth motion (frame blending)',
+    label: getMessage(
+      'setting_frameBlending_label',
+      'Smooth motion (frame blending)'
+    ),
     questionMark: {
-      title: 'Click for more information about Frame blending',
+      title: getMessage(
+        'setting_frameBlending_title',
+        'Click for more information about Frame blending'
+      ),
       href: 'https://www.youtube.com/watch?v=m_wfO4fvH8M&t=81s',
     },
-    description: 'Uses: GPU power. Also works with "Sync video"',
+    description: getMessage(
+      'setting_frameBlending_desc',
+      'Uses: GPU power. Also works with "Sync video"'
+    ),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     name: 'frameBlendingSmoothness',
-    label: 'Smooth motion strength',
+    label: getMessage(
+      'setting_frameBlendingSmoothness_label',
+      'Smooth motion strength'
+    ),
     type: 'list',
     default: 80,
     min: 0,
@@ -774,21 +990,24 @@ Click on the questionmark for more and updated information about these artifacts
   },
   {
     name: 'fixedPosition',
-    label: 'Fixed position',
-    description: 'Ignores the scroll position of the page',
+    label: getMessage('setting_fixedPosition_label', 'Fixed position'),
+    description: getMessage(
+      'setting_fixedPosition_desc',
+      'Ignores the scroll position of the page'
+    ),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     type: 'section',
-    label: 'View modes',
+    label: getMessage('setting_sectionViewsCollapsed_label', 'View modes'),
     name: 'sectionViewsCollapsed',
     default: false,
   },
   {
     name: 'enableInViews',
-    label: 'Enable in layouts',
+    label: getMessage('setting_enableInViews_label', 'Enable in layouts'),
     type: 'list',
     manualinput: false,
     default: 0,
@@ -796,44 +1015,71 @@ Click on the questionmark for more and updated information about these artifacts
     max: 5,
     step: 1,
     snapPoints: [
-      { value: 0, label: 'All' },
-      { value: 1, label: 'Small' },
-      { value: 2, hiddenLabel: 'Small & Theater' },
-      { value: 3, label: 'Theater' },
-      { value: 4, hiddenLabel: 'Theater & Fullscreen' },
-      { value: 5, label: 'Fullscreen' },
+      {
+        value: 0,
+        label: getMessage('setting_enableInViews_opt_all', 'All'),
+      },
+      {
+        value: 1,
+        label: getMessage('setting_enableInViews_opt_small', 'Small'),
+      },
+      {
+        value: 2,
+        hiddenLabel: getMessage(
+          'setting_enableInViews_opt_small_theater',
+          'Small & Theater'
+        ),
+      },
+      {
+        value: 3,
+        label: getMessage('setting_enableInViews_opt_theater', 'Theater'),
+      },
+      {
+        value: 4,
+        hiddenLabel: getMessage(
+          'setting_enableInViews_opt_theater_fullscreen',
+          'Theater & Fullscreen'
+        ),
+      },
+      {
+        value: 5,
+        label: getMessage('setting_enableInViews_opt_fullscreen', 'Fullscreen'),
+      },
     ],
   },
   {
     name: 'enableInPictureInPicture',
-    label: 'Picture in picture',
+    label: getMessage(
+      'setting_enableInPictureInPicture_label',
+      'Picture in picture'
+    ),
     type: 'checkbox',
     default: false,
     advanced: true,
   },
   {
     name: 'enableInEmbed',
-    label: 'Embedded videos',
+    label: getMessage('setting_enableInEmbed_label', 'Embedded videos'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     name: 'enableInVRVideos',
-    label: 'VR/360 videos',
+    label: getMessage('setting_enableInVRVideos_label', 'VR/360 videos'),
     type: 'checkbox',
     default: true,
     advanced: true,
   },
   {
     type: 'section',
-    label: 'General',
+    label: getMessage('setting_sectionGeneralCollapsed_label', 'General'),
     name: 'sectionGeneralCollapsed',
     default: false,
   },
   {
     name: 'theme',
-    label: 'Appearance (theme)',
+    label: getMessage('setting_theme_label', 'Appearance (theme)'),
     type: 'list',
     manualinput: false,
     default: 1,
@@ -841,14 +1087,23 @@ Click on the questionmark for more and updated information about these artifacts
     max: 1,
     step: 1,
     snapPoints: [
-      { value: -1, label: 'Light' },
-      { value: 0, label: 'Default' },
-      { value: 1, label: 'Dark' },
+      {
+        value: -1,
+        label: getMessage('setting_theme_opt_light', 'Light'),
+      },
+      {
+        value: 0,
+        label: getMessage('setting_theme_opt_default', 'Default'),
+      },
+      {
+        value: 1,
+        label: getMessage('setting_theme_opt_dark', 'Dark'),
+      },
     ],
   },
   {
     name: 'enabled',
-    label: 'Enabled',
+    label: getMessage('setting_enabled_label', 'Enabled'),
     type: 'checkbox',
     default: true,
     defaultKey: 'G',
@@ -880,7 +1135,10 @@ export const prepareSettingsConfigOnce = () => {
       }
       if (['webGL'].includes(setting.name)) {
         setting.default = false;
-        setting.disabled = 'You have disabled WebGL in your browser.';
+        setting.disabled = getMessage(
+          'setting_webGL_disabled',
+          'You have disabled WebGL in your browser.'
+        );
       }
     }
 

@@ -1,0 +1,694 @@
+{
+  "extension_name": {
+    "message": "Ambient light for YouTube™",
+    "description": "拡張機能の名前"
+  },
+  "extension_description": {
+    "message": "Ambient light で YouTube™ 動画の世界へ没入しよう！",
+    "description": "拡張機能の説明"
+  },
+  "options_title": {
+    "message": "Ambient light for YouTube™ の設定"
+  },
+  "options_heading": {
+    "message": "Ambient light for YouTube™"
+  },
+  "options_settings_location": {
+    "message": "設定は動画プレーヤーからアクセスできます:"
+  },
+  "options_troubleshoot_no_button_title": {
+    "message": "設定ボタンが見当たりません"
+  },
+  "options_troubleshoot_no_button_desc1": {
+    "message": "ブラウザでウェブページを更新してください。"
+  },
+  "options_troubleshoot_no_button_desc2": {
+    "message": "ページを更新後でも設定ボタンが表示されない場合は、ブラウザのコンソールを開き (F12 を押下)、エラーや警告がないか確認をした上で、以下の方法で報告してください:"
+  },
+  "options_create_issue": {
+    "message": "Issue を作成"
+  },
+  "options_or": {
+    "message": "または"
+  },
+  "options_fill_feedback_form": {
+    "message": "フィードバックフォームに入力"
+  },
+  "options_fix_performance_title": {
+    "message": "パフォーマンスの問題を修正"
+  },
+  "options_fix_performance_desc_before": {
+    "message": ""
+  },
+  "options_troubleshoot_guide": {
+    "message": "トラブルシューティングガイド"
+  },
+  "options_fix_performance_desc_after": {
+    "message": "に従ってパフォーマンスの問題を解決してください"
+  },
+  "options_support_title": {
+    "message": "開発を支援"
+  },
+  "options_support_donation_alt": {
+    "message": "寄付で開発を支援"
+  },
+  "options_import_export_title": {
+    "message": "設定をインポート/エクスポート"
+  },
+  "options_file_storage_title": {
+    "message": "ファイル"
+  },
+  "options_export_to_file": {
+    "message": "ファイルにエクスポート"
+  },
+  "options_import_from_file": {
+    "message": "ファイルからインポート"
+  },
+  "options_cloud_storage_title": {
+    "message": "クラウド (あなたのブラウザアカウント)"
+  },
+  "options_export_to_cloud": {
+    "message": "クラウドからエクスポート"
+  },
+  "options_import_from_cloud": {
+    "message": "クラウドからインポート"
+  },
+  "options_crash_reports_title": {
+    "message": "クラッシュレポートとプライバシー"
+  },
+  "options_crash_reports_desc": {
+    "message": "クラッシュレポートは匿名のデータのみが含まれ、30 日後に削除されます。\nですが、匿名化されたデータであろうとも、それは依然としてお客様のデータです。そのため、以下の設定からその内容を管理することができます。"
+  },
+  "options_crash_reports_allowed_title": {
+    "message": "クラッシュレポートには以下の内容が含まれます:"
+  },
+  "options_crash_report_video": {
+    "message": "クラッシュ時に視聴していた動画の URL と動画の ID"
+  },
+  "options_crash_report_technical": {
+    "message": "匿名化された技術データ"
+  },
+  "options_crash_report_technical_toggle_title": {
+    "message": "技術情報の一覧を表示"
+  },
+  "options_crash_report_browser_version": {
+    "message": "ブラウザのバージョン"
+  },
+  "options_crash_report_os_version": {
+    "message": "オペレーティングシステムのバージョン"
+  },
+  "options_crash_report_display_caps": {
+    "message": "ディスプレイの性能"
+  },
+  "options_crash_report_player_state": {
+    "message": "動画プレーヤーの状態 (動画の ID やタイトルは含まれません)"
+  },
+  "options_crash_report_layout_state": {
+    "message": "YouTube のレイアウトの状態 (YouTube アカウントのデータは含まれません)"
+  },
+  "options_crash_report_crash": {
+    "message": "Ambient light の状態とエラー情報"
+  },
+  "options_crash_reports_none_sent": {
+    "message": "すべてのチェックボックスのチェックが外れている場合、クラッシュレポートは送信されません。"
+  },
+  "options_privacy_policy": {
+    "message": "プライバシーポリシー"
+  },
+  "options_warning_sync_open_pages": {
+    "message": "すでに開いている YouTube ページに対して、クラッシュ関連のオプション変更を同期できません。オプションを変更した後は、開いている YouTube ページを必ず再読み込みしてください。"
+  },
+  "options_crash_rate_limit": {
+    "message": "クラッシュレポートのオプションが短時間に何度も変更されました。数秒間お待ちください。"
+  },
+  "options_no_settings_to_import": {
+    "message": "インポートする設定が見つかりません"
+  },
+  "options_nothing_to_export": {
+    "message": "エクスポートする項目はありません。すべての設定がデフォルト値のままです。"
+  },
+  "options_imported_count_from": {
+    "message": "「$2」から「$1」の設定をインポートしました。\n(新しい設定を適用するには、開いている YouTube のブラウザタブをすべて更新してください。)",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_imported_with_warnings": {
+    "message": "\n\n$1 件の警告:\n- $2",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_view_imported_settings": {
+    "message": "インポート済みの設定を表示 (クリックで表示)\n注意: ぼかし設定は、内部的に blur2 に変換されます。\n\n"
+  },
+  "options_failed_to_import": {
+    "message": "設定のインポートに失敗しました: \n$1",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_exported_count_to": {
+    "message": "$1 個の設定を$2にエクスポートしました",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_view_exported_settings": {
+    "message": "エクスポート済みの設定を表示 (クリックで表示)\n\n"
+  },
+  "options_failed_to_export": {
+    "message": "設定のエクスポートに失敗しました: \n$1",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_source_file": {
+    "message": "ファイル"
+  },
+  "options_source_cloud": {
+    "message": "クラウド"
+  },
+  "options_download_block_tip": {
+    "message": "自動ダウンロードがブロックされた場合:\n1. このリンクを右クリックしてください。 \n2. 次に「リンクを名前を付けて保存...」をクリックしてください。"
+  },
+  "options_last_cloud_export": {
+    "message": "前回のクラウドへのエクスポート日時: $1 $2",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "settings_troubleshoot_performance": {
+    "message": "パフォーマンスのトラブルシューティング"
+  },
+  "settings_export_import_tooltip": {
+    "message": "設定をエクスポートまたはインポートする方法: \n1. 拡張機能のアイコンをクリックして、オプションを開きます。 \n2. 「インポート/エクスポートの設定」までスクロールしてください。"
+  },
+  "settings_reset_all": {
+    "message": "設定をすべてリセット"
+  },
+  "settings_reset_confirm": {
+    "message": "すべての設定をリセットし、視聴ページを再読み込みしてもよろしいですか？"
+  },
+  "settings_give_feedback": {
+    "message": "評価やフィードバックを送信"
+  },
+  "settings_donate_title": {
+    "message": "寄付で開発を支援"
+  },
+  "settings_close_warning": {
+    "message": "警告を閉じる"
+  },
+  "settings_hotkey_tooltip": {
+    "message": "ここをクリックして、キーを押してホットキーを変更します。\n(または Esc キーを押してホットキーを無効にします)"
+  },
+  "settings_btn_tooltip": {
+    "message": "Ambient light の設定"
+  },
+  "settings_btn_tooltip_failed": {
+    "message": "Ambient light の読み込みに失敗しました:\n$1",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "settings_error_occurred": {
+    "message": "エラーが発生しました:\n$1",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "settings_paused_title": {
+    "message": "Ambient light の読み込みを一時停止しています。"
+  },
+  "settings_paused_desc": {
+    "message": "始めに動画とページの読み込みが完了するのを待っています..."
+  },
+  "settings_unavailable": {
+    "message": "この設定は利用できません"
+  },
+  "settings_reset_right_click": {
+    "message": "右クリックでリセット"
+  },
+  "settings_snap_to": {
+    "message": "$1に設定",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "settings_warning_slow_load": {
+    "message": "以前の設定を読み込むのに 5 秒以上かかっています。\nこれが最初の警告であり、警告が消えない場合は、拡張機能が更新された可能性があります。ウェブページを再読み込みすると、更新が完了します。\n\nしかし、これが頻繁に発生する場合は、考えられる原因がいくつかあります:\n- 別の拡張機能が、このウェブページでのコードの実行を長時間ブロックしている。\n  どの拡張機能が原因か特定するために、他の拡張機能を一時的に無効にしてください。\n- 他のアプリでもコンピューターの動作が非常に遅かったり、頻繁にフリーズする場合は\nハードウェア、特にメモリ (DDR) に問題がある可能性があります。"
+  },
+  "settings_warning_updated_retry": {
+    "message": "拡張機能が更新された可能性があるため、以前の設定を読み込めません。\nページを再読み込みし、再試行してください。"
+  },
+  "settings_warning_rate_limit": {
+    "message": "設定が頻繁に変更されたため、変更を保存できません。\n数秒間お待ちください..."
+  },
+  "settings_warning_extension_updated": {
+    "message": "拡張機能が更新されたため、変更を保存できませんでした。\nウェブページを更新して、更新された拡張機能を再読み込みしてください。"
+  },
+  "setting_sectionSettingsCollapsed_label": {
+    "message": "設定"
+  },
+  "setting_advancedSettings_label": {
+    "message": "高度"
+  },
+  "setting_sectionStatsCollapsed_label": {
+    "message": "状態"
+  },
+  "setting_showFPS_label": {
+    "message": "フレームレート"
+  },
+  "setting_showFrametimes_label": {
+    "message": "フレーム時間のグラフ"
+  },
+  "setting_showFrametimes_desc": {
+    "message": "使用: CPU 処理"
+  },
+  "setting_showFrametimes_title": {
+    "message": "測定されたディスプレイのフレームレートは、実際の性能を反映したものではありません。\nその測定には、追加の CPU 使用率が伴うためです。\nしかし、この統計情報は他の問題をデバッグする際に役立つ可能性があります。"
+  },
+  "setting_showResolutions_label": {
+    "message": "解像度と描画時間"
+  },
+  "setting_showBarDetectionStats_label": {
+    "message": "バーの検出"
+  },
+  "setting_sectionQualityPerformanceCollapsed_label": {
+    "message": "画質"
+  },
+  "setting_webGL_label": {
+    "message": "WebGL レンダラー (低消費電力)"
+  },
+  "setting_webGL_desc": {
+    "message": "これを変更すると、ウェブページが再読み込みされます"
+  },
+  "setting_webGL_disabled": {
+    "message": "使用中のブラウザで WebGL が無効になっています"
+  },
+  "setting_resolution_label": {
+    "message": "解像度"
+  },
+  "setting_framerateLimit_label": {
+    "message": "フレームレート制限 (1 秒あたり)"
+  },
+  "setting_frameSync_label": {
+    "message": "同期"
+  },
+  "setting_frameSync_title": {
+    "message": "Ambient light のフレームと映像のフレームを同期させるために、どれだけのエネルギーが費やされるのでしょう。\n\nデコード済みのフレームレート: CPU および GPU の使用率が最小限。\nフレームドロップや遅延が発生する可能性があります。\n\nディスプレイのフレームレート: CPU および GPU の使用率が最大。\n高リフレッシュレートのディスプレイ (120Hz 以上) や 1080p を超える解像度では、以前としてフレームの遅延が発生する可能性があります。\n\n動画のフレームレート: CPU および GPU の使用率が最小限。\n最新のブラウザ技術を使用し、常にフレーム同期します。"
+  },
+  "setting_frameSync_opt_decoded": {
+    "message": "デコード済み"
+  },
+  "setting_frameSync_opt_display": {
+    "message": "ディスプレイ"
+  },
+  "setting_frameSync_opt_video": {
+    "message": "動画"
+  },
+  "setting_energySaver_label": {
+    "message": "静止画に近い動画で省電力化"
+  },
+  "setting_energySaver_title": {
+    "message": "静止画の動画でフレームレートを制限します\n\n静止画: 5 秒ごとに 1 フレーム\nわずかな動き: 1 秒ごとに 1 フレーム"
+  },
+  "setting_prioritizePageLoadSpeed_label": {
+    "message": "ページの読み込み速度を優先"
+  },
+  "setting_prioritizePageLoadSpeed_desc": {
+    "message": "ページの読み込み完了後に Ambient light を読み込みます"
+  },
+  "setting_layoutPerformanceImprovements_label": {
+    "message": "YouTube レスポンシブ対応の修正"
+  },
+  "setting_layoutPerformanceImprovements_desc": {
+    "message": "ウェブページのレスポンシブを向上させます"
+  },
+  "setting_layoutPerformanceImprovements_title": {
+    "message": "視聴 (/watch) ページでの主な改善点:\n- ページのサイズ変更やスクロールの高速化 (コメントを 100 件以上読み込んだ後に最も顕著)\n- コメントや関連動画の読み込み時間の短縮\n- シークバー操作の滑らかさを向上 (コメントを 100 件以上読み込んだ後やライブチャット表示時に最も顕著)\n- ライブチャットのスクロールの滑らかさを向上 (新しいメッセージもチャットに素早く追加されます)\n- 再生リストのスクロールの滑らかさを向上 (25 本以上の動画を含む再生リストで最も顕著)\n- 再生リスト内での動画のドラッグ/並び替えの滑らかさを向上 (25 本以上の動画を含む再生リストで最も顕著)"
+  },
+  "setting_debandingBlendMode_label": {
+    "message": "デバンディングの最適化対象"
+  },
+  "setting_debandingBlendMode_title": {
+    "message": "「通常」のブレンドモードは、LCD の暗部でのバンディングノイズの低減に役立ちます。\n一方、OLED では純粋な黒を維持するために「オーバーレイ」ブレンドモードの使用をおすすめします。"
+  },
+  "setting_debandingBlendMode_opt_lcd": {
+    "message": "LCD (通常)"
+  },
+  "setting_debandingBlendMode_opt_oled": {
+    "message": "OLED (オーバーレイ)"
+  },
+  "setting_sectionOtherPageHeaderCollapsed_label": {
+    "message": "ページヘッダー"
+  },
+  "setting_headerShadowSize_label": {
+    "message": "シャドウのサイズ"
+  },
+  "setting_headerShadowOpacity_label": {
+    "message": "シャドウの不透明度"
+  },
+  "setting_headerImagesOpacity_label": {
+    "message": "画像の不透明度"
+  },
+  "setting_headerFillOpacity_label": {
+    "message": "背景の不透明度"
+  },
+  "setting_headerFillOpacity_desc": {
+    "message": "下にスクロールした時のみ適用されます"
+  },
+  "setting_sectionOtherPageContentCollapsed_label": {
+    "message": "ページコンテンツ"
+  },
+  "setting_surroundingContentShadowSize_label": {
+    "message": "シャドウのサイズ"
+  },
+  "setting_surroundingContentShadowOpacity_label": {
+    "message": "シャドウの不透明度"
+  },
+  "setting_surroundingContentTextAndBtnOnly_label": {
+    "message": "テキストとボタンのみに影を表示"
+  },
+  "setting_surroundingContentTextAndBtnOnly_desc": {
+    "message": "スクロールや動画のカクつきを軽減します"
+  },
+  "setting_surroundingContentImagesOpacity_label": {
+    "message": "画像の不透明度"
+  },
+  "setting_surroundingContentFillOpacity_label": {
+    "message": "ボタンとボックスの背景の不透明度"
+  },
+  "setting_pageBackgroundGreyness_label": {
+    "message": "背景のグレー濃度"
+  },
+  "setting_immersiveTheaterView_label": {
+    "message": "シアターモード時に他の要素を非表示"
+  },
+  "setting_relatedScrollbar_label": {
+    "message": "関連動画をスクロール可能なリストにする"
+  },
+  "setting_relatedScrollbar_desc": {
+    "message": "コメントのスクロール操作も改善されます"
+  },
+  "setting_hideScrollbar_label": {
+    "message": "スクロールバーを隠す"
+  },
+  "setting_sectionVideoResizingCollapsed_label": {
+    "message": "動画"
+  },
+  "setting_videoScale_SMALL_label": {
+    "message": "サイズ (通常)"
+  },
+  "setting_videoScale_THEATER_label": {
+    "message": "サイズ (シアタービュー)"
+  },
+  "setting_videoScale_FULLSCREEN_label": {
+    "message": "サイズ (フルスクリーン)"
+  },
+  "setting_videoShadowSize_label": {
+    "message": "シャドウのサイズ"
+  },
+  "setting_videoShadowOpacity_label": {
+    "message": "シャドウの不透明度"
+  },
+  "setting_videoDebandingStrength_label": {
+    "message": "デバンディング (ノイズ)"
+  },
+  "setting_videoDebandingStrength_title": {
+    "message": "デバンディング（ノイズ/ディザリング）の詳細についてはここをクリックしてください。\nヒント: OLED ディスプレイで純粋な黒を維持するには、「画質 > デバンディングの最適化対象」の設定を「OLED」にしてください。"
+  },
+  "setting_videoOverlayEnabled_label": {
+    "message": "動画を Ambient light と同期"
+  },
+  "setting_videoOverlayEnabled_title": {
+    "message": "Ambient light のフレーム時間に合わせて動画のフレームを遅延させます。\nこれにより Ambient light が動画とズレることはなくなりますが、\nカクつきやコマ落ちが発生する場合があります。"
+  },
+  "setting_videoOverlaySyncThreshold_label": {
+    "message": "動画同期の無効のしきい値"
+  },
+  "setting_videoOverlaySyncThreshold_desc": {
+    "message": "フレームの % がドロップ時に無効にします"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_label": {
+    "message": "動画のジッターへの回避策"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_desc": {
+    "message": "使用: CPU と GPU 処理"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_title": {
+    "message": "Chromium には、ディスプレイのリフレッシュレートが 60Hz を超えている場合に動画再生がカクつく不具合があります。この回避策は、ブラウザをディスプレイのリフレッシュレートで強制的に動作させることでカクつきを防ぎます。\nChromium ブラウザにおけるこの不具合の詳細については、? マークをクリックしてください。"
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_label": {
+    "message": "動画の描画乱れの回避策"
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_desc": {
+    "message": "NVidia RTX Super Resolution (VSR) を使用する場合は\nこの回避策を無効にする必要があります"
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_title": {
+    "message": "この回避策は、動画がハードウェアアクセラレーションオーバーレイ (MPO) で再生されている際に発生する複数の描画乱れや不具合を修正できます。\n(例: ランダムな白黒の四角形、ちらつき、動画の歪みなど)\n\nこれらの不具合に関する最新情報については、? マークをクリックしてください。"
+  },
+  "setting_sectionHorizontalBarsCollapsed_label": {
+    "message": "黒いバーと色のバーを除去"
+  },
+  "setting_detectHorizontalBarSizeEnabled_label": {
+    "message": "黒いバーを削除"
+  },
+  "setting_detectHorizontalBarSizeEnabled_desc": {
+    "message": "使用: CPU 処理"
+  },
+  "setting_detectVerticalBarSizeEnabled_label": {
+    "message": "黒いサイドバーを削除"
+  },
+  "setting_detectVerticalBarSizeEnabled_desc": {
+    "message": "使用: CPU 処理"
+  },
+  "setting_detectColoredHorizontalBarSizeEnabled_label": {
+    "message": "検出: 色のバーを削除"
+  },
+  "setting_detectHorizontalBarSizeOffsetPercentage_label": {
+    "message": "検出: オフセット"
+  },
+  "setting_barSizeDetectionAverageHistorySize_label": {
+    "message": "検出: 平均フレーム"
+  },
+  "setting_barSizeDetectionAverageHistorySize_title": {
+    "message": "平均の帯サイズを検出するために参照する動画フレーム数です。\nフレーム数を少なくすると高速に検出されますが、誤検出の頻度が増加します。"
+  },
+  "setting_barSizeDetectionAllowedElementsPercentage_label": {
+    "message": "検出: 確実性のしきい値"
+  },
+  "setting_barSizeDetectionAllowedElementsPercentage_title": {
+    "message": "10% では明らかな帯のみが除去されます。\n割合を高くすると、多少の要素が含まれる帯も除去できるようになります。\nさらに高くすると、中央の四角い要素に合わせてクロップすることができます。"
+  },
+  "setting_barSizeDetectionAllowedUnevenBarsPercentage_label": {
+    "message": "検出: 不均等なしきい値"
+  },
+  "setting_barSizeDetectionAllowedUnevenBarsPercentage_title": {
+    "message": "割合を高くするほど、より不均等な帯（例: 上部の帯が下部の帯より小さい場合など）を検出できます。\nただし、割合を高くすると直線的な物体や線が帯として誤認されるリスクも高まります。"
+  },
+  "setting_horizontalBarsClipPercentage_label": {
+    "message": "バーのサイズ"
+  },
+  "setting_verticalBarsClipPercentage_label": {
+    "message": "サイドバーのサイズ"
+  },
+  "setting_horizontalBarsClipPercentageReset_label": {
+    "message": "次の動画でバーをリセット"
+  },
+  "setting_detectVideoFillScaleEnabled_label": {
+    "message": "動画を拡大してバーを削除"
+  },
+  "setting_sectionImageAdjustmentCollapsed_label": {
+    "message": "フィルター"
+  },
+  "setting_brightness_label": {
+    "message": "明るさ"
+  },
+  "setting_contrast_label": {
+    "message": "コントラスト"
+  },
+  "setting_vibrance_label": {
+    "message": "色"
+  },
+  "setting_saturation_label": {
+    "message": "飽和"
+  },
+  "setting_sectionHdrImageAdjustmentCollapsed_label": {
+    "message": "HDR フィルター"
+  },
+  "setting_hdrBrightness_label": {
+    "message": "明るさ"
+  },
+  "setting_hdrContrast_label": {
+    "message": "コントラスト"
+  },
+  "setting_hdrSaturation_label": {
+    "message": "飽和"
+  },
+  "setting_sectionDirectionsCollapsed_label": {
+    "message": "方向"
+  },
+  "setting_directionTopEnabled_label": {
+    "message": "上"
+  },
+  "setting_directionRightEnabled_label": {
+    "message": "右"
+  },
+  "setting_directionBottomEnabled_label": {
+    "message": "下"
+  },
+  "setting_directionLeftEnabled_label": {
+    "message": "左"
+  },
+  "setting_sectionAmbientlightCollapsed_label": {
+    "message": "Ambient light"
+  },
+  "setting_blur2_label": {
+    "message": "ぼかし"
+  },
+  "setting_blur2_desc": {
+    "message": "使用: GPU メモリ"
+  },
+  "setting_edge_label": {
+    "message": "端のサイズ"
+  },
+  "setting_edge_desc": {
+    "message": "変化をわかりやすく確認するには: ぼかしを 0% に設定"
+  },
+  "setting_spread_label": {
+    "message": "拡散"
+  },
+  "setting_spread_desc": {
+    "message": "使用: GPU 処理"
+  },
+  "setting_spreadFadeStart_label": {
+    "message": "拡散フェード開始"
+  },
+  "setting_spreadFadeCurve_label": {
+    "message": "拡散フェードのカーブ"
+  },
+  "setting_spreadFadeCurve_desc": {
+    "message": "変化をわかりやすく確認するには: ぼかしを 0% に設定"
+  },
+  "setting_debandingStrength_label": {
+    "message": "デバンディング (ノイズ)"
+  },
+  "setting_debandingStrength_title": {
+    "message": "詳細 (ノイズ/ディザリング) はこちらをクリックしてください。\nヒント: OLED ディスプレイで純粋な黒を維持するには「画質 > デバンディングの最適化」の設定を「OLED」にしてください。"
+  },
+  "setting_frameFading_label": {
+    "message": "フェードインの長さ"
+  },
+  "setting_frameFading_desc": {
+    "message": "使用: GPU メモリ"
+  },
+  "setting_frameFading_title": {
+    "message": "環境光の変化に伴うフェード"
+  },
+  "setting_flickerReduction_label": {
+    "message": "フリッカー低減"
+  },
+  "setting_flickerReduction_title": {
+    "message": "周囲の光の明るさが変化する速度を制限することで、ちらつきを低減します"
+  },
+  "setting_frameBlending_label": {
+    "message": "滑らかな動き (フレームブレンド)"
+  },
+  "setting_frameBlending_title": {
+    "message": "フレームブレンドの詳細については、ここをクリックしてください"
+  },
+  "setting_frameBlending_desc": {
+    "message": "使用: GPU 処理、「動画の同期」にも対応しています"
+  },
+  "setting_frameBlendingSmoothness_label": {
+    "message": "滑らかな動作の強さ"
+  },
+  "setting_fixedPosition_label": {
+    "message": "位置を固定"
+  },
+  "setting_fixedPosition_desc": {
+    "message": "ページのスクロール位置を無視します"
+  },
+  "setting_sectionViewsCollapsed_label": {
+    "message": "表示モード"
+  },
+  "setting_enableInViews_label": {
+    "message": "レイアウトで有効"
+  },
+  "setting_enableInViews_opt_all": {
+    "message": "すべて"
+  },
+  "setting_enableInViews_opt_small": {
+    "message": "通常"
+  },
+  "setting_enableInViews_opt_small_theater": {
+    "message": "通常とシアター"
+  },
+  "setting_enableInViews_opt_theater": {
+    "message": "シアター"
+  },
+  "setting_enableInViews_opt_theater_fullscreen": {
+    "message": "シアターとフルスクリーン"
+  },
+  "setting_enableInViews_opt_fullscreen": {
+    "message": "フルスクリーン"
+  },
+  "setting_enableInPictureInPicture_label": {
+    "message": "ピクチャーインピクチャー"
+  },
+  "setting_enableInEmbed_label": {
+    "message": "埋め込み動画"
+  },
+  "setting_enableInVRVideos_label": {
+    "message": "VR/360 動画"
+  },
+  "setting_sectionGeneralCollapsed_label": {
+    "message": "一般"
+  },
+  "setting_theme_label": {
+    "message": "外観 (テーマ)"
+  },
+  "setting_theme_opt_light": {
+    "message": "ライト"
+  },
+  "setting_theme_opt_default": {
+    "message": "デフォルト"
+  },
+  "setting_theme_opt_dark": {
+    "message": "ダーク"
+  },
+  "setting_enabled_label": {
+    "message": "有効"
+  }
+}
