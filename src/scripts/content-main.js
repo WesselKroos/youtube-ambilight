@@ -25,6 +25,19 @@ import Settings from './libs/settings';
 import { contentScript } from './libs/messaging/content';
 import { getVersion } from './libs/utils';
 import { defaultCrashOptions, storage } from './libs/storage';
+import {
+  isBilibiliPlatform,
+  platform,
+  getAppElem,
+  getContentElem,
+  getWatchElem,
+  getMastheadElem,
+  getVideoElem,
+  getSelectorsString,
+  getSettingsMenuBtnParentSelectorString,
+  getWatchVideoSelectorString,
+  getEmbedVideoSelectorString,
+} from './libs/platform';
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
@@ -65,32 +78,36 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
 };
 
 const isVideoInKnownInvalidLocation = () => {
-  const ytdAppPlayerVideoElem = () =>
-    document.querySelector(
-      'ytd-app > #container.ytd-player video.html5-main-video'
-    );
-  const playerApiVideoElem = () =>
-    document.querySelector('#player-api video.html5-main-video');
-  const ytPlayerManagerVideoElem = () =>
-    document.querySelector('yt-player-manager video.html5-main-video');
-  const ytdInlinePreviewPlayerVideoElem = () =>
-    document.querySelector('#inline-preview-player video.html5-main-video');
-  const ytdBrowseVideoElem = () =>
-    document.querySelector('ytd-browse video.html5-main-video');
-  const ytdMiniplayerVideoElem = () =>
-    document.querySelector('ytd-miniplayer video.html5-main-video');
-  const channelPlayerVideoElem = () =>
-    document.querySelector(
-      'ytd-channel-video-player-renderer video.html5-main-video'
-    );
-  const isInShorts = () =>
-    document.querySelector('ytd-shorts video.html5-main-video');
-  const isControlledByAnotherExtension = () =>
-    document.querySelector('.html5-video-container video.stefanvdvideotop');
-  const outsideYtdAppVideoElem = () =>
-    document.querySelector(
-      'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
-    );
+  const ytdAppPlayerVideoElem = () => document.querySelector(
+    'ytd-app > #container.ytd-player video.html5-main-video'
+  );
+  const playerApiVideoElem = () => document.querySelector(
+    '#player-api video.html5-main-video'
+  );
+  const ytPlayerManagerVideoElem = () => document.querySelector(
+    'yt-player-manager video.html5-main-video'
+  );
+  const ytdInlinePreviewPlayerVideoElem = () => document.querySelector(
+    '#inline-preview-player video.html5-main-video'
+  );
+  const ytdBrowseVideoElem = () => document.querySelector(
+    'ytd-browse video.html5-main-video'
+  );
+  const ytdMiniplayerVideoElem = () => document.querySelector(
+    'ytd-miniplayer video.html5-main-video'
+  );
+  const channelPlayerVideoElem = () => document.querySelector(
+    'ytd-channel-video-player-renderer video.html5-main-video'
+  );
+  const isInShorts = () => document.querySelector(
+    'ytd-shorts video.html5-main-video'
+  );
+  const isControlledByAnotherExtension = () => document.querySelector(
+    '.html5-video-container video.stefanvdvideotop'
+  );
+  const outsideYtdAppVideoElem = () => document.querySelector(
+    'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
+  );
   return !!(
     ytdAppPlayerVideoElem() ||
     playerApiVideoElem() ||
@@ -107,8 +124,10 @@ const isVideoInKnownInvalidLocation = () => {
 
 const detectDetachedVideo = () => {
   const observer = new MutationObserver(
-    wrapErrorHandler(function detectDetachedVideo() {
+    wrapErrorHandler(async function detectDetachedVideo() {
       if (!isWatchPageUrl()) return;
+
+      onUrlChanged();
 
       const videoElem = ambientlight.videoElem;
       const ytdAppElem = ambientlight.ytdAppElem ?? document.body;
@@ -116,7 +135,9 @@ const detectDetachedVideo = () => {
       const isDetached =
         !videoElem ||
         !ytdAppElem?.contains(videoElem) ||
-        !document.contains(ytdAppElem);
+        !document.contains(ytdAppElem) ||
+        (isBilibiliPlatform &&
+          !document.contains(ambientlight.videoPlayerElem));
       if (!isDetached) {
         if (errorEvents.list.length) {
           errorEvents.list = [];
@@ -126,19 +147,25 @@ const detectDetachedVideo = () => {
 
       if (!document.querySelector('video')) return;
 
-      const newVideoElem =
-        document.body !== ytdAppElem
-          ? document.querySelector(
-              watchSelectors
-                .map(
-                  (selector) =>
-                    `ytd-app #content.ytd-app ${selector} video.html5-main-video`
-                )
-                .join(', ')
-            )
-          : ytdAppElem.querySelector('video.html5-main-video');
+      const newVideoElem = isBilibiliPlatform
+        ? getVideoElem()
+        : document.body !== ytdAppElem
+        ? document.querySelector(getWatchVideoSelectorString())
+        : ytdAppElem.querySelector('video.html5-main-video');
       if (!newVideoElem) {
         logErrorEventWithPageTrees('detectDetachedVideo');
+        return;
+      }
+
+      if (isBilibiliPlatform) {
+        // Bilibili replaces its player element and its whole app element (#app)
+        // when its client side rendering has finished (and when the player is
+        // re-created), which detaches everything we injected. Re-bind the
+        // existing instance to the new page elements.
+        await ambientlight.rebindPageElems(newVideoElem);
+        if (errorEvents.list.length) {
+          errorEvents.list = [];
+        }
         return;
       }
 
@@ -156,10 +183,7 @@ const detectDetachedVideo = () => {
             oldVideoTree: getNodeTreeString(videoElem),
           };
           logErrorEventWithPageTrees('detectDetachedYtdApp', details);
-          return;
-          // Migrating to a new ytd-app element is not supported,
-          // because it will also require moving or re-creating the
-          // settings menu, canvasses and other elements
+          return; // We do not support this, because if we do we have to move or re-create the settings menu, canvasses and other elements as well
         }
       }
 
@@ -208,13 +232,11 @@ const tryInitAmbientlight = async () => {
   if (!isWatchPageUrl()) return;
   if (!document.querySelector('video')) return;
 
-  const settingsMenuBtnParentSelector = [
-    '.html5-video-player .ytp-right-controls',
-    '.html5-video-player .ytp-chrome-controls > *:last-child',
-  ].join(', ');
-  const hasSettingsMenuBtnParent = !!document.querySelector(
-    settingsMenuBtnParentSelector
-  );
+  const settingsMenuBtnParentSelector =
+    getSettingsMenuBtnParentSelectorString();
+  const hasSettingsMenuBtnParent =
+    !platform.requiresSettingsMenuBtnParent ||
+    !!document.querySelector(settingsMenuBtnParentSelector);
   if (!hasSettingsMenuBtnParent) {
     logErrorEventWithPageTrees(
       `initialize - not found yet: ${settingsMenuBtnParentSelector}`
@@ -223,12 +245,11 @@ const tryInitAmbientlight = async () => {
   }
 
   if (isEmbedPageUrl()) {
-    const videoElem = document.querySelector(
-      '#player .html5-video-player .html5-video-container video.html5-main-video'
-    );
+    const embedVideoSelector = getEmbedVideoSelectorString();
+    const videoElem = document.querySelector(embedVideoSelector);
     if (!videoElem) {
       logErrorEventWithPageTrees(
-        'initialize - not found yet: #player .html5-video-player .html5-video-container video.html5-main-video'
+        `initialize - not found yet: ${embedVideoSelector}`
       );
       return;
     }
@@ -243,47 +264,56 @@ const tryInitAmbientlight = async () => {
     return true;
   }
 
-  const videoElem = document.querySelector(
-    watchSelectors
-      .map(
-        (selector) =>
-          `ytd-app #content.ytd-app ${selector} .html5-video-player .html5-video-container video.html5-main-video`
-      )
-      .join(', ')
-  );
+  const watchVideoSelector = getWatchVideoSelectorString();
+  const videoElem = document.querySelector(watchVideoSelector);
   if (!videoElem) {
     logErrorEventWithPageTrees(
-      'initialize - not found yet: ytd-app ytd-watch-... .html5-video-player .html5-video-container video.html5-main-video'
+      `initialize - not found yet: ${watchVideoSelector}`
     );
     return;
   }
 
-  const ytdAppElem = document.querySelector('ytd-app');
+  const ytdAppElem = getAppElem();
   if (!ytdAppElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: ytd-app');
+    logErrorEventWithPageTrees(
+      `initialize - not found yet: ${getSelectorsString(
+        platform.appSelectors
+      )}`
+    );
     return;
   }
 
-  const contentElem = document.querySelector('#content.ytd-app');
+  const contentElem = getContentElem();
   if (!contentElem) {
-    logErrorEventWithPageTrees('initialize - not found yet: #content.ytd-app');
+    logErrorEventWithPageTrees(
+      `initialize - not found yet: ${getSelectorsString(
+        platform.contentSelectors
+      )}`
+    );
     return;
   }
 
-  const ytdWatchElem = document.querySelector(
-    watchSelectors.map((selector) => `ytd-app ${selector}`).join(', ')
-  );
+  const ytdWatchElem = getWatchElem();
   if (!ytdWatchElem) {
     logErrorEventWithPageTrees(
-      `initialize - not found yet: ytd-app ytd-watch-...`
+      `initialize - not found yet: ${getSelectorsString(
+        platform.watchSelectors
+      )}`
     );
     return;
   }
 
-  const mastheadElem = document.querySelector('ytd-app #masthead-container');
-  if (!mastheadElem) {
+  // The masthead is optional and does not exist on every platform
+  const mastheadElem = getMastheadElem();
+  if (
+    !mastheadElem &&
+    platform.mastheadSelectors.length &&
+    !platform.mastheadOptional
+  ) {
     logErrorEventWithPageTrees(
-      'initialize - not found yet: #masthead-container'
+      `initialize - not found yet: ${getSelectorsString(
+        platform.mastheadSelectors
+      )}`
     );
     return;
   }
@@ -329,11 +359,7 @@ const startIfWatchPageHasVideo = () => {
     return;
   }
 
-  const videoElem = document.querySelector(
-    watchSelectors
-      .map((selector) => `ytd-app ${selector} video.html5-main-video`)
-      .join(', ')
-  );
+  const videoElem = document.querySelector(getWatchVideoSelectorString());
   if (!videoElem) return;
 
   getWatchPageViewObserver().disconnect();
@@ -341,7 +367,35 @@ const startIfWatchPageHasVideo = () => {
   window.ambientlight.start();
 };
 
+// Bilibili is a single page application too, but it does not dispatch a
+// navigation event that a content script can observe. The URL is therefore
+// compared on every DOM change (see detectDetachedVideo) and on history
+// navigation.
+let lastUrl = location.href;
+const onUrlChanged = wrapErrorHandler(async function onUrlChanged() {
+  if (location.href === lastUrl) return;
+  lastUrl = location.href;
+
+  getWatchPageViewObserver().disconnect();
+  if (isWatchPageUrl()) {
+    startIfWatchPageHasVideo();
+    if (!window.ambientlight.isOnVideoPage) {
+      detectWatchPageVideo(getAppElem() ?? document.body);
+    }
+  } else {
+    if (window.ambientlight.isOnVideoPage) {
+      window.ambientlight.isOnVideoPage = false;
+      await window.ambientlight.hide();
+    }
+  }
+}, true);
+
 const detectPageTransitions = (ytdAppElem) => {
+  if (isBilibiliPlatform) {
+    on(window, 'popstate', onUrlChanged, undefined, true);
+    return;
+  }
+
   on(
     document,
     'yt-navigate-finish',
@@ -368,8 +422,8 @@ const loadAmbientlight = async () => {
   // Mobile player
   if (document.querySelector('#player-control-container')) return;
 
-  // Validate YouTube desktop web app or embedded page
-  let observerTarget = document.querySelector('ytd-app');
+  // Validate the desktop web app or the embedded page
+  let observerTarget = getAppElem();
   if (!observerTarget) {
     if (isEmbedPageUrl()) {
       observerTarget = document.documentElement;
@@ -380,7 +434,9 @@ const loadAmbientlight = async () => {
           otherAppElems.map((elem) => elem.tagName).join(',')
         );
         throw new AmbientlightError(
-          'Found one or more *-app elements but cannot find desktop app element: ytd-app',
+          `Found one or more *-app elements but cannot find desktop app element: ${getSelectorsString(
+            platform.appSelectors
+          )}`,
           selectorTree
         );
       }

@@ -1,5 +1,6 @@
 import { setErrorHandler, setStyleProperty } from './libs/generic';
 import { contentScript } from './libs/messaging/content';
+import { isBilibiliPlatform } from './libs/platform';
 
 let reporting = false; // Prevent infinite loops
 setErrorHandler((ex) => {
@@ -37,6 +38,12 @@ const getElem = (() => {
 })();
 
 function updateTheme(toDark) {
+  if (isBilibiliPlatform) {
+    // Bilibili knows no "dark" attribute, its theme is a class on the html element
+    document.documentElement.classList.toggle('dark', toDark);
+    return;
+  }
+
   document.documentElement.toggleAttribute('dark', toDark);
 
   const ytdAppElem = getElem('ytd-app');
@@ -116,6 +123,7 @@ contentScript.addMessageListener(
   }
 );
 
+let videoPlayerSetSizeWarningShown = false;
 function videoPlayerSetSize() {
   const videoPlayerElem = getElem('video-player');
   if (videoPlayerElem) {
@@ -123,11 +131,16 @@ function videoPlayerSetSize() {
       videoPlayerElem.setSize();
       videoPlayerElem.setInternalSize();
     } catch (ex) {
-      console.warn(
-        `Failed to resize the video player${
-          ex?.message ? `: ${ex?.message}` : ''
-        }`
-      );
+      // The Bilibili player does not expose setSize(). Only warn once, because
+      // this runs on every view update and would otherwise flood the console.
+      if (!videoPlayerSetSizeWarningShown) {
+        videoPlayerSetSizeWarningShown = true;
+        console.warn(
+          `Failed to resize the video player${
+            ex?.message ? `: ${ex?.message}` : ''
+          }`
+        );
+      }
     }
   }
   contentScript.postMessage('sizes-changed');

@@ -31,7 +31,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://www.bilibili.com/*"
       ],
       "exclude_matches": [
         "https://www.youtube.com/live_chat*",
@@ -45,6 +46,16 @@
     {
       "matches": [
         "https://www.youtube.com/embed/*"
+      ],
+      "js": [
+        "scripts/content.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://player.bilibili.com/*"
       ],
       "js": [
         "scripts/content.js"
@@ -81,7 +92,9 @@
         "images/donate.svg"
       ],
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://www.bilibili.com/*",
+        "https://player.bilibili.com/*"
       ]
     }
   ],

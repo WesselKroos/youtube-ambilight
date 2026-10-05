@@ -1,4 +1,5 @@
 import { supportsColorMix, supportsWebGL } from './generic';
+import { isBilibiliPlatform } from './platform';
 import { getBrowser } from './utils';
 
 const SettingsConfig = [
@@ -864,6 +865,35 @@ export const WebGLOnlySettings = [
   'chromiumBugVideoJitterWorkaround',
 ];
 
+/**
+ * Settings that only make sense on YouTube: they restyle parts of the YouTube
+ * page (header, surrounding content, scrollbars) or resize YouTube's player
+ * itself. Bilibili's page and player have no equivalent targets, so these are
+ * removed from the settings menu there instead of silently doing nothing.
+ */
+export const BilibiliUnsupportedSettings = [
+  'layoutPerformanceImprovements',
+  'sectionOtherPageHeaderCollapsed',
+  'headerShadowSize',
+  'headerShadowOpacity',
+  'headerImagesOpacity',
+  'headerFillOpacity',
+  'sectionOtherPageContentCollapsed',
+  'surroundingContentShadowSize',
+  'surroundingContentShadowOpacity',
+  'surroundingContentTextAndBtnOnly',
+  'surroundingContentImagesOpacity',
+  'surroundingContentFillOpacity',
+  'pageBackgroundGreyness',
+  'immersiveTheaterView',
+  'relatedScrollbar',
+  'hideScrollbar',
+  'videoScale.SMALL',
+  'videoScale.THEATER',
+  'videoScale.FULLSCREEN',
+  'enableInVRVideos',
+];
+
 let prepared = false;
 export const prepareSettingsConfigOnce = () => {
   if (prepared) return;
@@ -904,10 +934,15 @@ export const prepareSettingsConfigOnce = () => {
     settingsToRemove.push('pageBackgroundGreyness');
   }
 
+  if (isBilibiliPlatform) {
+    settingsToRemove.push(...BilibiliUnsupportedSettings);
+  }
+
   for (const settingName of settingsToRemove) {
     const settingIndex = SettingsConfig.findIndex(
       (setting) => setting.name === settingName
     );
+    if (settingIndex === -1) continue;
     SettingsConfig.splice(settingIndex, 1);
   }
 

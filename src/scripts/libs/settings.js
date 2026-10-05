@@ -9,6 +9,7 @@ import {
   VIEW_THEATER,
   VIEW_FULLSCREEN,
   setDisplayErrorHandler,
+  wrapErrorHandler,
 } from './generic';
 import SentryReporter from './errors/sentry-reporter';
 import SettingsConfig, {
@@ -18,6 +19,12 @@ import SettingsConfig, {
 import { getFeedbackFormLink, getVersion } from './utils';
 import { storage } from './storage';
 import { AmbientlightError } from './errors/ambient-light-error';
+import {
+  isBilibiliPlatform,
+  getSettingsMenuBtnParent,
+  getSettingsMenuBtnParentSelectorString,
+  getSettingsButtonAnchor,
+} from './platform';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
@@ -688,14 +695,8 @@ But if this happens frequently, here are some possible causes:
     settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText);
 
     this.menuBtn.prepend(settingsMenuBtnTooltip);
-    const ytSettingsBtn = document.querySelector(
-      'ytd-player [data-tooltip-target-id="ytp-autonav-toggle-button"]'
-    );
-    if (ytSettingsBtn) {
-      ytSettingsBtn.parentNode.insertBefore(this.menuBtn, ytSettingsBtn);
-    } else {
-      this.menuBtnParent.prepend(this.menuBtn);
-    }
+    this.mountMenuBtn();
+    this.initMenuBtnMounting();
     setDisplayErrorHandler(this.onError);
 
     this.menuElem = this.createMenuElement();
@@ -1369,24 +1370,113 @@ But if this happens frequently, here are some possible causes:
     return elem;
   }
 
+  /** Parent element the settings button currently has to be mounted in. */
+  get currentMenuBtnParent() {
+    return (
+      getSettingsMenuBtnParent(this.ambientlight.videoPlayerElem) ??
+      this.menuBtnParent
+    );
+  }
+
+  /** Insert the settings button in front of the settings button of the player. */
+  mountMenuBtn() {
+    const anchorElem = getSettingsButtonAnchor();
+    if (anchorElem?.parentNode) {
+      anchorElem.parentNode.insertBefore(this.menuBtn, anchorElem);
+      return;
+    }
+
+    this.currentMenuBtnParent.prepend(this.menuBtn);
+  }
+
+  /**
+   * The Bilibili player element is replaced when the page finished its client
+   * side rendering or when the player is re-created, which detaches the
+   * settings menu, the bezel and the button. Re-mount them in the new player.
+   */
+  updatePageElems() {
+    this.menuBtnParent =
+      this.ambientlight.settingsMenuBtnParent ?? this.menuBtnParent;
+
+    const menuElemParent = this.ambientlight.videoPlayerElem;
+    if (menuElemParent) {
+      this.menuElemParent = menuElemParent;
+      menuElemParent.prepend(this.menuElem);
+      menuElemParent.prepend(this.bezelElem);
+    }
+
+    this.mountMenuBtn();
+  }
+
+  /**
+   * The Bilibili player creates its control bar asynchronously and it is
+   * re-created on layout switches, which removes the settings button from the
+   * page. Watch the player container until the button is in the right place.
+   */
+  initMenuBtnMounting() {
+    if (!isBilibiliPlatform) return;
+
+    let isMounting = false;
+    const observer = new MutationObserver(
+      wrapErrorHandler(() => {
+        if (isMounting) return;
+
+        // Cheap check first: the page of Bilibili is very busy and querying the
+        // page elements on every mutation is expensive. The button is mounted
+        // directly before the settings button of the player while it is in place.
+        if (
+          this.menuBtn.isConnected &&
+          this.menuBtn.nextElementSibling?.matches(
+            '.bpx-player-ctrl-setting'
+          )
+        )
+          return;
+
+        const anchorElem = getSettingsButtonAnchor();
+        if (!anchorElem?.parentNode) return;
+        if (
+          this.menuBtn.parentNode === anchorElem.parentNode &&
+          document.contains(this.menuBtn)
+        )
+          return;
+
+        isMounting = true;
+        try {
+          this.mountMenuBtn();
+        } finally {
+          isMounting = false;
+        }
+      }, true)
+    );
+
+    const playerContainerElem = this.ambientlight.playerSmallContainerElem;
+    observer.observe(playerContainerElem ?? document.body, {
+      childList: true,
+      subtree: true,
+    });
+    this.menuBtnMountObserver = observer;
+  }
+
   createMenuButton() {
     const elem = document.createElement('button');
-    elem.className = 'ytp-button ytp-ambientlight-settings-button is-loading';
+    elem.className = isBilibiliPlatform
+      ? 'bpx-player-ctrl-btn ytp-ambientlight-settings-button is-loading'
+      : 'ytp-button ytp-ambientlight-settings-button is-loading';
     elem.setAttribute('aria-owns', 'ytp-id-190');
 
     const xmlns = 'http://www.w3.org/2000/svg';
-    const is2020PlayerUI = !!document.querySelector(
-      '.ytp-settings-button svg[viewBox="0 0 36 36"]'
-    );
-    const is2025PlayerUI = !!document.querySelector(
-      '.ytp-settings-button svg[viewBox="0 0 24 24"]'
-    );
-    if (!is2020PlayerUI && !is2025PlayerUI) {
+    // Bilibili uses its own player UI, so there is nothing to probe for and the
+    // default icon size is used
+    const is2020PlayerUI =
+      isBilibiliPlatform ||
+      !!document.querySelector('.ytp-settings-button svg[viewBox="0 0 36 36"]');
+    const is2025PlayerUI =
+      !isBilibiliPlatform &&
+      !!document.querySelector('.ytp-settings-button svg[viewBox="0 0 24 24"]');
+    if (!isBilibiliPlatform && !is2020PlayerUI && !is2025PlayerUI) {
       const error = new AmbientlightError('Updated player (controls) UI');
-      const settingsMenuBtnParentSelector = [
-        '.html5-video-player .ytp-right-controls',
-        '.html5-video-player .ytp-chrome-controls > *:last-child',
-      ].join(', ');
+      const settingsMenuBtnParentSelector =
+        getSettingsMenuBtnParentSelectorString();
       error.details = {
         controlsHTML: document.querySelector(settingsMenuBtnParentSelector)
           ?.outerHTML,
@@ -1408,7 +1498,7 @@ But if this happens frequently, here are some possible causes:
       svgElem.setAttributeNS(null, 'fill', 'none');
     }
 
-    if (!is2025PlayerUI) {
+    if (!is2025PlayerUI && !isBilibiliPlatform) {
       const useElem = document.createElementNS(xmlns, 'use');
       useElem.setAttributeNS(null, 'class', 'ytp-svg-shadow');
       useElem.setAttributeNS(null, 'href', '#ytp-ambientlight-btn-icon');

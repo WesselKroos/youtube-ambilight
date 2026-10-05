@@ -3448,3 +3448,224 @@ html[data-ambientlight-related-scrollbar] {
     }
   }
 }
+
+/* Bilibili */
+
+// The bilibili player is not inside a stacking context of its own, which would
+// put the ambientlight above the player controls (YouTube uses `#content.ytd-app`)
+#mirror-vdcon.video-container-v1 {
+  z-index: 0;
+}
+
+// `#mirror-vdcon.video-container-v1` is a flex row, so the upstream
+// `display: contents` wrapper would turn every injected element into a flex item
+// of that row: the left column grew and the right column (author, up next, ...)
+// was pushed off screen. Taking the wrapper out of flow leaves the page layout
+// untouched.
+#mirror-vdcon.video-container-v1 > .ambientlight,
+.video-container-v1 > .ambientlight,
+.bpx-player-container > .ambientlight,
+#bilibili-player > .ambientlight {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+// The wrapper is `position: fixed` while the page is at the top and while the
+// mini player is open, and `position: fixed` already creates a stacking context:
+// the container`s `z-index: -1` stayed trapped inside it, so the whole wrapper
+// painted in the positioned layer of `#mirror-vdcon` - after `.right-container` -
+// and the light was drawn on top of the sidebar and of the page instead of behind
+// them. A negative `z-index` on the wrapper itself keeps the light behind the page
+// content in every state, while the wrapper still keeps its origin at the viewport
+// so the projector offsets stay correct.
+#mirror-vdcon.video-container-v1 > .ambientlight,
+.video-container-v1 > .ambientlight {
+  z-index: -1;
+}
+
+// The mini player floats above the page, so in that state the light has to stay
+// above the page content as well (like YouTube, where the light lives inside the
+// miniplayer element): behind the opaque panels of the page (the comment section
+// for example) it looked like the light was gone.
+body[data-ambientlight-bilibili-mini] {
+  #mirror-vdcon.video-container-v1 > .ambientlight,
+  .video-container-v1 > .ambientlight {
+    z-index: auto;
+  }
+}
+
+// While the ambientlight is fixed to the viewport (bilibili's mini player) the
+// wrapper has to be the viewport box as well: the projector offsets are
+// measured relative to the wrapper, because it is the `offsetParent` of the
+// container, so leaving it in the scrolling page offset the glow by the scroll
+// position.
+body[data-ambientlight-fixed] {
+  #mirror-vdcon.video-container-v1 > .ambientlight,
+  .video-container-v1 > .ambientlight,
+  .bpx-player-container > .ambientlight,
+  #bilibili-player > .ambientlight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100svh;
+  }
+}
+
+// The right column of a bilibili video page (the danmaku list and the video list)
+// keeps showing the ambient light while its text stays readable: the panels get a
+// translucent background, so the light that is painted behind the page content
+// (see the `z-index: -1` rule above) shines through them, while the text keeps its
+// contrast on the panel colour behind it.
+// The panels inside a card are made transparent, otherwise the light would be
+// dimmed twice (by the card and by the panel inside it).
+html[data-ambientlight-enabled] {
+  --ytal-bilibili-panel: rgba(241, 242, 243, .7);
+  --ytal-bilibili-panel-active: rgba(241, 242, 243, .88);
+}
+
+html[data-ambientlight-enabled].dark,
+html.dark[data-ambientlight-enabled],
+body.dark[data-ambientlight-enabled] {
+  --ytal-bilibili-panel: rgba(35, 37, 39, .7);
+  --ytal-bilibili-panel-active: rgba(35, 37, 39, .88);
+}
+
+html[data-ambientlight-enabled] {
+  #mirror-vdcon .right-container .danmaku-wrap,
+  #mirror-vdcon .right-container .video-pod {
+    background-color: var(--ytal-bilibili-panel) !important;
+  }
+
+  #mirror-vdcon .right-container .danmaku-wrap .bpx-docker,
+  #mirror-vdcon .right-container .danmaku-wrap .bui-collapse-header,
+  #mirror-vdcon .right-container .danmaku-wrap .bui-collapse-body,
+  #mirror-vdcon .right-container .video-pod .simple-base-item {
+    background-color: transparent !important;
+  }
+
+  #mirror-vdcon .right-container .video-pod .simple-base-item.active {
+    background-color: var(--ytal-bilibili-panel-active) !important;
+  }
+}
+
+// The bilibili header bar is fixed (z-index 1002) and opaque, and it is not inside
+// `#mirror-vdcon`, so it always painted above the ambientlight: the top strip of the
+// page stayed the plain theme background (a solid black or white rectangle). Like
+// YouTube's masthead it becomes transparent while the page is at the top.
+// The content element also starts below the header, so the ambientlight has to be
+// stretched to the viewport in that state, otherwise the light would start below the
+// header and the strip would show the page background anyway.
+// As soon as the page is scrolled the header gets its background back, so the page
+// content scrolling underneath it stays hidden.
+// bilibili replaces its header element while the page is loading, which drops the
+// `at-top` class, so the background is cleared with the attribute that is set on
+// the body instead.
+body[data-ambientlight-at-top] {
+  .bili-header__bar,
+  .bili-header,
+  #biliMainHeader {
+    background: none !important;
+  }
+}
+
+body[data-ambientlight-at-top] {
+  #mirror-vdcon.video-container-v1 > .ambientlight,
+  .video-container-v1 > .ambientlight,
+  .bpx-player-container > .ambientlight,
+  #bilibili-player > .ambientlight {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Bilibili does not define YouTube's `.ytp-popup`, `.ytp-tooltip` and
+// `.ytp-bezel` base styles, so the injected player UI brings its own skin
+
+.bpx-player-video-area {
+  .ytpa-ambientlight-settings-menu {
+    position: absolute;
+    box-sizing: border-box;
+    border-radius: 4px;
+    background: rgba(21, 21, 21, .92);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .65);
+    color: #eee;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: left;
+    text-shadow: 0 0 2px rgba(0, 0, 0, .5);
+    user-select: none;
+  }
+
+  .ytal-bezel {
+    position: absolute;
+    z-index: 1002;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 90px;
+    margin: -45px 0 0 -45px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .8);
+    color: #fff;
+    fill: #fff;
+    text-align: center;
+  }
+}
+
+.bpx-player-control-bottom-right {
+  .ytp-ambientlight-settings-button {
+    display: block;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 36px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: rgba(255, 255, 255, .8);
+    cursor: pointer;
+    transition: color .1s ease-out;
+
+    &:hover,
+    &[aria-expanded="true"] {
+      color: #fff;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+
+      path {
+        fill: currentColor;
+      }
+    }
+  }
+
+  .ytp-ambientlight-settings-button-tooltip {
+    position: absolute;
+    display: block;
+    box-sizing: border-box;
+    padding: 5px 9px;
+    border-radius: 2px;
+    background: rgba(28, 28, 28, .9);
+    color: #eee;
+    font-family: Roboto, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: left;
+    text-shadow: 0 0 2px rgba(0, 0, 0, .5);
+    white-space: nowrap;
+  }
+}

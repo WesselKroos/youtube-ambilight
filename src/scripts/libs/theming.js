@@ -6,6 +6,7 @@ import {
   requestIdleCallback,
   wrapErrorHandler,
 } from './generic';
+import { isBilibiliPlatform } from './platform';
 import { injectedScript } from './messaging/injected';
 import SentryReporter from './errors/sentry-reporter';
 import { storage } from './storage';
@@ -22,11 +23,12 @@ export default class Theming {
 
   initListeners() {
     // Appearance (theme) changes initiated by the YouTube menu
-    this.youtubeTheme = this.isDarkTheme() ? 1 : -1;
+    this.youtubeTheme = this.isDarkTheme() ? THEME_DARK : THEME_LIGHT;
     on(
       document,
       'yt-action',
       async (e) => {
+        if (isBilibiliPlatform) return; // Bilibili does not emit yt-action events
         if (!this.settings.enabled) return;
         const name = e?.detail?.actionName;
         if (name === 'yt-signal-action-toggle-dark-theme-off') {
@@ -58,7 +60,7 @@ export default class Theming {
 
     try {
       // Firefox does not support the cookieStore
-      if (globalThis.cookieStore?.addEventListener) {
+      if (!isBilibiliPlatform && globalThis.cookieStore?.addEventListener) {
         cookieStore.addEventListener(
           'change',
           wrapErrorHandler(async (e) => {
@@ -74,7 +76,7 @@ export default class Theming {
       matchMedia('(prefers-color-scheme: dark)').addEventListener(
         'change',
         wrapErrorHandler(async () => {
-          this.youtubeTheme = await this.prefCookieToTheme();
+          this.youtubeTheme = await this.getPageTheme();
           this.updateTheme();
         }, true)
       );
@@ -85,7 +87,11 @@ export default class Theming {
     let themeCorrections = 0;
     this.themeObserver = new MutationObserver(
       wrapErrorHandler(
-        function themeMutation() {
+        async function themeMutation() {
+          // Bilibili's theme lives in a class, so re-read it from the DOM first.
+          // This keeps following the page theme when the "Appearance (theme)"
+          // setting is set to "Default", where updateTheme() does nothing.
+          if (isBilibiliPlatform) this.youtubeTheme = await this.getPageTheme();
           if (!this.shouldToggleTheme()) return;
 
           themeCorrections++;
@@ -95,13 +101,23 @@ export default class Theming {
         true
       )
     );
-    this.themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeOldValue: true,
-      attributeFilter: ['dark'],
-    });
+    const themeObserverOptions = isBilibiliPlatform
+      ? {
+          attributes: true,
+          attributeOldValue: true,
+          attributeFilter: ['class'],
+        }
+      : {
+          attributes: true,
+          attributeOldValue: true,
+          attributeFilter: ['dark'],
+        };
+    this.themeObserver.observe(document.documentElement, themeObserverOptions);
+    // Bilibili applies its dark mode to either <html> or <body>
+    if (isBilibiliPlatform)
+      this.themeObserver.observe(document.body, themeObserverOptions);
 
-    if (isEmbedPageUrl()) return;
+    if (isEmbedPageUrl() || isBilibiliPlatform) return;
 
     this.initLiveChat(); // Depends on this.youtubeTheme set in initListeners
   }
@@ -123,7 +139,45 @@ export default class Theming {
     return THEME_LIGHT;
   };
 
-  isDarkTheme = () => document.documentElement.getAttribute('dark') != null;
+  /**
+   * The theme the page itself is currently using, independent of our setting:
+   * YouTube stores it in the PREF cookie, Bilibili in a class on the page.
+   */
+  getPageTheme = async () => {
+    if (isBilibiliPlatform)
+      return this.isDarkTheme() ? THEME_DARK : THEME_LIGHT;
+    return await this.prefCookieToTheme();
+  };
+
+  isDarkTheme = () => {
+    if (!isBilibiliPlatform)
+      return document.documentElement.getAttribute('dark') != null;
+
+    // Bilibili toggles a "dark" class on <html> or <body> (the "light" class is
+    // supported for completeness). If neither is present, fall back to the
+    // actual background color so the extension still follows the page.
+    for (const elem of [document.documentElement, document.body]) {
+      if (!elem) continue;
+      if (elem.classList.contains('dark')) return true;
+      if (elem.classList.contains('light')) return false;
+    }
+    return this.hasDarkBackground();
+  };
+
+  hasDarkBackground = () => {
+    for (const elem of [document.body, document.documentElement]) {
+      if (!elem) continue;
+      const backgroundColor = getComputedStyle(elem).backgroundColor;
+      const match = backgroundColor?.match(
+        /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/
+      );
+      if (!match) continue;
+      if (match[4] !== undefined && parseFloat(match[4]) === 0) continue;
+      const [r, g, b] = [match[1], match[2], match[3]].map(Number);
+      return r * 0.299 + g * 0.587 + b * 0.114 < 128;
+    }
+    return false;
+  };
 
   shouldBeDarkTheme = (enabledAndVisible) => {
     const enabled =
@@ -178,9 +232,9 @@ export default class Theming {
           const withinThresshold = now - 10000 < lastFailedThemeToggle;
           if (withinThresshold) {
             this.settings.setWarning(
-              `Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the ${
+              `Because the previous attempt failed and to prevent repeated page refreshes we temporarily disabled the automatic toggle to the ${
                 this.isDarkTheme() ? 'light' : 'dark'
-              } appearance has been disabled for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+              } appearance for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
             );
             this.updatingTheme = false;
             return;
@@ -205,13 +259,19 @@ export default class Theming {
   );
 
   async updateDocumentTheme(toDark) {
+    if (isBilibiliPlatform) {
+      // The injected (page world) script only knows YouTube's bare "dark"
+      // attribute, and Bilibili's own theme is a class, so apply it directly.
+      document.documentElement.classList.toggle('dark', toDark);
+      return;
+    }
     await injectedScript.postAndReceiveMessage('update-theme', toDark);
   }
 
   async toggleDarkTheme() {
     const wasDark = this.isDarkTheme();
     await this.updateDocumentTheme(!wasDark);
-    if (!isEmbedPageUrl()) {
+    if (!isEmbedPageUrl() && !isBilibiliPlatform) {
       this.updateLiveChatTheme();
     }
 
@@ -230,6 +290,7 @@ export default class Theming {
   }
 
   initLiveChat = () => {
+    if (isBilibiliPlatform) return; // Bilibili has no YouTube live chat frame
     this.initLiveChatSecondaryElem();
     if (this.secondaryElem) return;
 
@@ -295,6 +356,7 @@ export default class Theming {
 
   updateLiveChatThemeThrottle = {};
   updateLiveChatTheme = () => {
+    if (isBilibiliPlatform) return;
     if (!this.liveChatElem || !this.liveChatIframeElem) this.initLiveChatElem();
     if (!this.liveChatElem || !this.liveChatIframeElem) return;
     if (this.updateLiveChatThemeThrottle.timeout) return;

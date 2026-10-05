@@ -391,11 +391,19 @@ export const supportsColorMix = () => {
   return _supportsColorMix;
 };
 
-export const isWatchPageUrl = () =>
-  ['/watch', '/live/'].some((path) => location.pathname.startsWith(path)) ||
-  isEmbedPageUrl();
-
-export const isEmbedPageUrl = () => location.pathname?.startsWith('/embed/');
+// Page detection and the view constants are platform specific and live in
+// platform.js. They are re-exported here to keep the existing import sites.
+export {
+  isWatchPageUrl,
+  isEmbedPageUrl,
+  VIEW_DISABLED,
+  VIEW_DETACHED,
+  VIEW_SMALL,
+  VIEW_THEATER,
+  VIEW_FULLSCREEN,
+  VIEW_POPUP,
+  watchSelectors,
+} from './platform';
 
 export const getCookie = async (name) =>
   globalThis.cookieStore
@@ -453,19 +461,6 @@ export const webGLErrorToString = (value) =>
   }[value] ||
     value) ??
   'UNKNOWN');
-
-export const VIEW_DISABLED = 'DISABLED';
-export const VIEW_DETACHED = 'DETACHED';
-export const VIEW_SMALL = 'SMALL';
-export const VIEW_THEATER = 'THEATER';
-export const VIEW_FULLSCREEN = 'FULLSCREEN';
-export const VIEW_POPUP = 'POPUP';
-
-export const watchSelectors = [
-  'ytd-watch-flexy',
-  'ytd-watch-fixie',
-  'ytd-watch-grid',
-];
 
 let warningElem;
 let warningElemText;

@@ -47,6 +47,20 @@ import Stats from './stats';
 import { getBrowser } from './utils';
 import { injectedScript } from './messaging/injected';
 import { getNodeTreeString, getPageElems } from './errors/dom';
+import {
+  isBilibiliPlatform,
+  platform,
+  getContentElem as getPlatformContentElem,
+  getVideoPlayerElem,
+  getVideoContainerElem,
+  getPlayerContainerElem,
+  getSettingsMenuBtnParent,
+  getViewObserverElems,
+  getView as getPlatformView,
+  getAppElem,
+  getWatchElem,
+  watchSelectors as platformWatchSelectors,
+} from './platform';
 
 const baseUrl = chrome.runtime.getURL('') || ''; // document.currentScript?.getAttribute('data-base-url') || ''
 
@@ -149,6 +163,8 @@ export default class Ambientlight {
   }
 
   get playerSmallContainerElem() {
+    if (isBilibiliPlatform) return getPlayerContainerElem(this.videoElem);
+
     return document.querySelector(
       watchSelectors
         .map((selector) => `${selector} #player-container-inner`)
@@ -157,6 +173,8 @@ export default class Ambientlight {
   }
 
   get playerTheaterContainerElem() {
+    if (isBilibiliPlatform) return getPlayerContainerElem(this.videoElem);
+
     return document.querySelector(
       watchSelectors
         .map((selector) => `${selector} #full-bleed-container`)
@@ -165,14 +183,27 @@ export default class Ambientlight {
   }
 
   get playerTheaterContainerElemFromVideo() {
+    if (isBilibiliPlatform) {
+      const playerContainerElem = getPlayerContainerElem(this.videoElem);
+      return playerContainerElem?.getAttribute('data-screen') === 'wide'
+        ? playerContainerElem
+        : null;
+    }
+
     return this.videoElem?.closest('#full-bleed-container');
   }
 
   get ytdWatchElemFromVideo() {
+    if (isBilibiliPlatform) return document.querySelector(
+      platformWatchSelectors.join(', ')
+    );
+
     return this.videoElem?.closest(watchSelectors.join(', '));
   }
 
   get thumbnailOverlayElem() {
+    if (isBilibiliPlatform) return null; // Bilibili has no cued thumbnail overlay
+
     if (!this._thumbnailOverlayElem)
       this._thumbnailOverlayElem = document.querySelector(
         watchSelectors
@@ -183,10 +214,12 @@ export default class Ambientlight {
   }
 
   initElems(videoElem) {
-    this.videoPlayerElem = videoElem.closest('.html5-video-player');
+    this.videoPlayerElem = getVideoPlayerElem(videoElem);
     if (!this.videoPlayerElem) {
       const error = new Error(
-        'Cannot find videoPlayerElem: .html5-video-player'
+        `Cannot find videoPlayerElem: ${platform.videoPlayerSelectors.join(
+          ', '
+        )}`
       );
       error.details = getPageElems();
       error.details.videoIsInDocument = document.contains(videoElem);
@@ -198,21 +231,30 @@ export default class Ambientlight {
     this.videoPlayerElem.dataset.ytalElem = 'video-player';
 
     // ytdPlayerElem is optional and only used on non-embed pages in small view to set the border radius
-    this.ytdPlayerElem = videoElem.closest('ytd-player');
+    this.ytdPlayerElem = isBilibiliPlatform
+      ? getPlayerContainerElem(videoElem)
+      : videoElem.closest('ytd-player');
 
     // videoContainerElem is optional and only used in the videoOverlayEnabled setting
-    this.videoContainerElem = videoElem.closest('.html5-video-container');
+    this.videoContainerElem = getVideoContainerElem(videoElem);
 
-    this.settingsMenuBtnParent = this.videoPlayerElem.querySelector(
-      '.ytp-right-controls, .ytp-chrome-controls > *:last-child'
-    );
+    this.settingsMenuBtnParent = getSettingsMenuBtnParent(this.videoPlayerElem);
     if (!this.settingsMenuBtnParent) {
-      const error = new Error(
-        'Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child'
-      );
-      error.details = getPageElems();
-      setWarning(`Failed to load.\n${error.message}`);
-      throw error;
+      if (platform.requiresSettingsMenuBtnParent) {
+        const error = new Error(
+          `Cannot find settingsMenuBtnParent: ${platform.settingsMenuBtnParentSelectors.join(
+            ', '
+          )}`
+        );
+        error.details = getPageElems();
+        setWarning(`Failed to load.\n${error.message}`);
+        throw error;
+      }
+
+      // The Bilibili control bar is created later than the player. Mount the
+      // settings button on the player itself and move it into place once the
+      // control bar exists (see settings.js initMenu()).
+      this.settingsMenuBtnParent = this.videoPlayerElem;
     }
 
     this.initVideoElem(videoElem, false);
@@ -226,6 +268,61 @@ export default class Ambientlight {
     this.applyChromiumBugDirectVideoOverlayWorkaround();
     if (initListeners) this.initVideoListeners();
   }
+
+  /**
+   * Bilibili replaces its player element and even its whole app element (#app)
+   * when its client side rendering has finished (and when the player is
+   * re-created), which detaches every element we injected. Re-bind this
+   * instance to the new page elements instead of creating a second instance,
+   * because a second instance would duplicate listeners, observers and WebGL
+   * contexts.
+   */
+  rebindPageElems = async (newVideoElem) => {
+    if (!isBilibiliPlatform || this.isRebindingPageElems) return;
+
+    this.isRebindingPageElems = true;
+    try {
+      this.videoPlayerObserver?.disconnect();
+      this.playerContainersObserver?.disconnect();
+      this.videoPlayerResizeObserver?.disconnect();
+      this.videoResizeObserver?.disconnect();
+
+      this.ytdAppElem = getAppElem() ?? document.body;
+      this.ytdWatchElem = getWatchElem() ?? this.ytdWatchElem;
+
+      this.initElems(newVideoElem);
+      this.initVideoListeners();
+
+      // Observe the new player elements
+      for (const viewObserverElem of getViewObserverElems(
+        this.videoPlayerElem
+      )) {
+        this.videoPlayerObserver?.observe(viewObserverElem, {
+          attributes: true,
+          attributeFilter: platform.viewObserverAttributeFilter,
+        });
+      }
+      this.videoPlayerResizeObserver?.observe(this.videoPlayerElem);
+      this.videoResizeObserver?.observe(this.videoElem);
+      const playerContainerElem = this.playerSmallContainerElem;
+      if (playerContainerElem) {
+        this.playerContainersObserver?.observe(playerContainerElem, {
+          childList: true,
+        });
+      }
+
+      // Move our elements into the new page elements
+      this.appendElemToContentElem();
+      this.settings.updatePageElems();
+
+      this.sizesChanged = true;
+      this.buffersCleared = true;
+      await this.updateView(true);
+      if (!this.isHidden) await this.optionalFrame();
+    } finally {
+      this.isRebindingPageElems = false;
+    }
+  };
 
   // FireFox workaround: WebGLParent::RecvReadPixels is slow when reading from a HtmlCanvasElement/OffscreenCanvas (performance scales linear with the amount of pixels to be read)
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1719154
@@ -820,6 +917,13 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       await this.updateAtTop();
     }
 
+    // Bilibili: the ambientlight is stretched to the viewport while the page is at
+    // the top (see the bilibili block in content.scss), which keeps the topElem
+    // inside the viewport so the observer above can not detect that the page was
+    // scrolled. The scroll position is used instead.
+    if (isBilibiliPlatform)
+      on(window, 'scroll', this.handleBilibiliScroll, false);
+
     if (this.settings.webGL)
       on(window, 'resize', this.projector.handleWindowResize, false);
 
@@ -929,7 +1033,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     this.initAverageVideoFramesDifferenceListeners();
 
-    const videoPlayerObserver = new MutationObserver(
+    this.videoPlayerObserver = new MutationObserver(
       wrapErrorHandler(
         async function videoPlayerMutation() {
           const viewChanged = await this.updateView();
@@ -954,19 +1058,22 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     );
     this.updateIsVideoHiddenOnWatchPage();
 
-    videoPlayerObserver.observe(this.videoPlayerElem, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
+    const viewObserverElems = getViewObserverElems(this.videoPlayerElem);
+    for (const viewObserverElem of viewObserverElems) {
+      this.videoPlayerObserver.observe(viewObserverElem, {
+        attributes: true,
+        attributeFilter: platform.viewObserverAttributeFilter,
+      });
+    }
     if (this.thumbnailOverlayElem) {
-      videoPlayerObserver.observe(this.thumbnailOverlayElem, {
+      this.videoPlayerObserver.observe(this.thumbnailOverlayElem, {
         attributes: true,
         attributeFilter: ['style'],
       });
     }
 
     // When the video moves between the small and theater views
-    const playerContainersObserver = new MutationObserver(
+    this.playerContainersObserver = new MutationObserver(
       wrapErrorHandler(
         async function playerContainerMutation() {
           await this.updateView();
@@ -981,14 +1088,14 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     const playerTheaterContainerElem = this.playerTheaterContainerElem;
     if (playerTheaterContainerElem) {
-      playerContainersObserver.observe(
+      this.playerContainersObserver.observe(
         playerTheaterContainerElem,
         playerContainersObserverOptions
       );
     }
     const playerSmallContainerElem = this.playerSmallContainerElem;
     if (playerSmallContainerElem) {
-      playerContainersObserver.observe(
+      this.playerContainersObserver.observe(
         playerSmallContainerElem,
         playerContainersObserverOptions
       );
@@ -998,6 +1105,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   updateIsVideoHiddenOnWatchPage = () => {
+    if (isBilibiliPlatform) {
+      // Bilibili shows the ending screen (ending-wrap) instead of hiding the video
+      if (this.isVideoHiddenOnWatchPage === false) return false;
+
+      this.isVideoHiddenOnWatchPage = false;
+      this.sizesInvalidated = true;
+      return true;
+    }
+
     const classList = this.videoPlayerElem.classList;
     const hidden =
       classList.contains('ended-mode') ||
@@ -1267,10 +1383,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     await this.initProjector();
   }
 
-  getContentElem = () =>
-    this.ytdAppElem
+  getContentElem = () => {
+    if (isBilibiliPlatform) {
+      return getPlatformContentElem() || this.videoPlayerElem; // On the embed player there is no page content element
+    }
+
+    return this.ytdAppElem
       ? this.ytdAppElem.querySelector('#content.ytd-app')
       : this.videoPlayerElem; // In embed view
+  };
 
   getFullscreenContentElem() {
     let elem = this.getContentElem();
@@ -1286,7 +1407,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     const contentElem = this.getContentElem();
     if (this.elem.parentElement === contentElem) return;
 
-    contentElem.prepend(this.elem);
+    this.insertElem(contentElem);
   }
 
   appendElemToFullscreenElem() {
@@ -1294,7 +1415,43 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     if (this.elem.parentElement === fullscreenContentElem) return;
 
-    fullscreenContentElem.prepend(this.elem);
+    this.insertElem(fullscreenContentElem);
+  }
+
+  // On bilibili the content element is the root of the video page app: it mirrors
+  // server rendered content into it and maps those children by position. Prepending
+  // our element makes the app adopt our wrapper as one of its own elements - it then
+  // renders a second copy of the page content into the wrapper and removes everything
+  // inside it (the ambient light disappears and duplicated content shows up instead).
+  // Appending leaves bilibili's own child positions untouched.
+  insertElem(containerElem) {
+    if (isBilibiliPlatform) {
+      containerElem.append(this.elem);
+      return;
+    }
+
+    containerElem.prepend(this.elem);
+  }
+
+  // bilibili rebuilds the video page while it loads and when navigating between
+  // videos, which can drop our elements. Put them back before anything measures them.
+  ensureElemsAttached() {
+    if (!this.elem) return;
+
+    let invalidated = false;
+    if (
+      this.containerElem &&
+      this.containerElem.parentElement !== this.elem &&
+      !this.containerElem.isConnected
+    ) {
+      this.elem.append(this.containerElem);
+      invalidated = true;
+    }
+    if (!this.elem.isConnected) {
+      this.appendElemToContentElem();
+      invalidated = true;
+    }
+    if (invalidated) this.invalidateProjectorPosition();
   }
 
   initProjector = async () => {
@@ -1643,26 +1800,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   getView = () => {
     if (!this.settings.enabled) return VIEW_DISABLED;
 
-    if (!document.contains(this.videoPlayerElem)) return VIEW_DETACHED;
-
-    if (
-      document.fullscreenElement ||
-      this.videoPlayerElem.classList.contains('ytp-fullscreen')
-    )
-      return VIEW_FULLSCREEN;
-
-    if (this.videoPlayerElem.classList.contains('ytp-player-minimized'))
-      return VIEW_POPUP;
-
-    if (
-      this.ytdWatchElemFromVideo
-        ? this.ytdWatchElemFromVideo.getAttribute('theater') != null
-        : this.playerTheaterContainerElemFromVideo
-    ) {
-      return VIEW_THEATER;
-    }
-
-    return VIEW_SMALL;
+    return getPlatformView(this);
   };
 
   initVR = () => {
@@ -1779,6 +1917,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         [VIEW_THEATER]:
           enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
         [VIEW_FULLSCREEN]: enableInViews === 0 || enableInViews >= 4,
+        // Bilibili shrinks its player into a floating mini player at the bottom
+        // right when the page is scrolled down. It is the small layout, so it
+        // honours the same "Enable in layouts" option.
+        [VIEW_POPUP]: isBilibiliPlatform && enableInViews <= 2,
       }[this.view] || false;
 
     if (isEmbedPageUrl()) {
@@ -2177,8 +2319,38 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     const fixedLayout =
       this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' &&
       this.view === VIEW_SMALL;
-    const enable = this.settings.fixedPosition || fixedLayout;
+    // Bilibili's mini player is fixed to the viewport, so the ambientlight has
+    // to be fixed as well to keep the projector offsets correct while scrolling
+    const bilibiliMiniPlayer =
+      isBilibiliPlatform && this.view === VIEW_POPUP;
+    const enable =
+      this.settings.fixedPosition || fixedLayout || bilibiliMiniPlayer;
+    const changed =
+      document.body.hasAttribute('data-ambientlight-fixed') !== enable;
     document.body.toggleAttribute('data-ambientlight-fixed', enable);
+    // The mini player floats above the page, so its light has to stay above the
+    // page content as well (on YouTube the light lives inside the miniplayer
+    // element): the light is a page background everywhere else, which would put
+    // it behind the opaque panels of the page here and look like it is gone
+    document.body.toggleAttribute(
+      'data-ambientlight-bilibili-mini',
+      bilibiliMiniPlayer
+    );
+
+    if (changed) this.invalidateProjectorPosition();
+  }
+
+  // The mini player / fixie transitions move the video with an animation and
+  // only report the final size, and switching between the in-flow and the fixed
+  // layout moves the origin the projector offsets are measured from, so the
+  // offsets have to be rechecked for a short while after such a layout change
+  invalidateProjectorPosition() {
+    this.sizesInvalidated = true;
+    for (const delay of [100, 300, 600, 1000, 1500]) {
+      setTimeout(() => {
+        this.sizesInvalidated = true;
+      }, delay);
+    }
   }
 
   updateStyles() {
@@ -2833,6 +3005,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           }
         : {};
 
+      this.ensureElemsAttached();
+
       this.delayedUpdateSizesChanged = false;
       if (this.p && this.sizesInvalidated) {
         this.updateSizesChanged();
@@ -3128,7 +3302,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         !this.settings.videoOverlayEnabled) ||
       this.isControlledByAnotherExtension ||
       this.isVideoHiddenOnWatchPage ||
-      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead handle this in the canScheduleNextFrame check
+      // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead we handle this in the canScheduleNextFrame check
       this.videoElem.ended ||
       this.videoElem.readyState === 0 || // HAVE_NOTHING
       this.videoElem.readyState === 1 // HAVE_METADATA
@@ -3212,10 +3386,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.initVideoOverlayWithFrameBlending();
       }
 
-      // Prevents unnessecary frames from being drawn.
-      // But when frameBlending is enabled also draw:
-      // - when there is a new frame (hasNewFrame) or...
-      // - when the current frame is not yet fully drawn (!previousDrawFullAlpha)
+      // Prevent unnessecary frames drawing when frameBlending is not 100% but keep counting becuase we calculate with this.ambientlightFrameRate
       if (hasNewFrame || this.buffersCleared || !this.previousDrawFullAlpha) {
         if (hasNewFrame || this.buffersCleared) {
           if (this.settings.videoOverlayEnabled) {
@@ -3906,7 +4077,25 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.mastheadElem)
       this.mastheadElem.classList.toggle('at-top', this.atTop);
 
+    // Bilibili: the header bar is a fixed element that would cover the light, and
+    // the content element starts below it, so the ambientlight is stretched to the
+    // viewport while the page is at the top to let the light reach the header strip
+    // (see the bilibili block in content.scss).
+    if (this.mastheadElem && isBilibiliPlatform)
+      document.body.toggleAttribute('data-ambientlight-at-top', this.atTop);
+
     if (this.settings.webGL) await this.projector.handleAtTopChange(this.atTop);
+  };
+
+  handleBilibiliScroll = async () => {
+    const atTop = window.scrollY === 0;
+    if (this.atTop === atTop) return;
+
+    this.atTop = atTop;
+    await this.updateAtTop();
+    // The container switches between the fixed and the in-flow layout, which
+    // changes the origin the projector offsets are measured from
+    this.invalidateProjectorPosition();
   };
 
   shouldEnableImmersiveMode = () =>
