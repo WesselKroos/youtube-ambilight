@@ -45,7 +45,7 @@ export class WebGLOffscreenCanvas {
             type,
             options,
             ambientlight,
-            settings
+            settings,
           ));
       } else {
         this.canvas.ctx = this.ctx = this.canvas._getContext(type, options);
@@ -80,9 +80,9 @@ export class WebGLContext {
 
             console.log(`WebGLContext lost (${this.lostCount})`);
             this.setWebGLWarning('restore');
-          }.bind(this)
+          }.bind(this),
         ),
-        false
+        false,
       );
       this.canvas.addEventListener(
         'webglcontextrestored',
@@ -91,7 +91,7 @@ export class WebGLContext {
             // console.log(`WebGLContext restored (${this.lostCount})`)
             if (this.lostCount >= 3) {
               console.error(
-                'WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.'
+                'WebGLContext was lost 3 times. The current restoration has been aborted to prevent an infinite restore loop.',
               );
               this.setWebGLWarning('3 times restore');
               return;
@@ -111,9 +111,9 @@ export class WebGLContext {
               console.error(`WebGLContext restore failed (${this.lostCount})`);
               this.setWebGLWarning('restore');
             }
-          }.bind(this)
+          }.bind(this),
         ),
-        false
+        false,
       );
       this.canvas.addEventListener(
         'webglcontextcreationerror',
@@ -125,9 +125,9 @@ export class WebGLContext {
               time: performance.now(),
               webGLVersion: this.webGLVersion,
             });
-          }.bind(this)
+          }.bind(this),
         ),
-        false
+        false,
       );
 
       this.options = options;
@@ -140,7 +140,7 @@ export class WebGLContext {
 
   setWebGLWarning(action = 'restore') {
     this.setWarning(
-      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`
+      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`,
     );
   }
 
@@ -188,7 +188,7 @@ export class WebGLContext {
 
           throw new AmbientlightError(
             `WebGLContext creation failed: ${lastErrorMessage}`,
-            errors
+            errors,
           );
         }
       }
@@ -253,7 +253,7 @@ export class WebGLContext {
           );
           float percentage = 1.;
           percentage = min(1., (1. - (difference * difference * difference)) * ${flickerReductionDifference.toFixed(
-            3
+            3,
           )});
           gl_FragColor = currentColor * percentage + previousColor * (1. - percentage);
           return;
@@ -290,7 +290,7 @@ export class WebGLContext {
       // The first getProgramParameter COMPLETION_STATUS_KHR request returns always false on chromium and the return value seems to be cached between animation frames
       this.ctx.getProgramParameter(
         program,
-        parallelShaderCompileExt.COMPLETION_STATUS_KHR
+        parallelShaderCompileExt.COMPLETION_STATUS_KHR,
       );
       await new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -299,12 +299,12 @@ export class WebGLContext {
         while (!compiled) {
           const completionStatus = this.ctx.getProgramParameter(
             program,
-            parallelShaderCompileExt.COMPLETION_STATUS_KHR
+            parallelShaderCompileExt.COMPLETION_STATUS_KHR,
           );
           // COMPLETION_STATUS_KHR can be null because of webgl-lint
           if (completionStatus === false) {
             await new Promise((resolve) =>
-              requestIdleCallback(resolve, { timeout: 200 })
+              requestIdleCallback(resolve, { timeout: 200 }),
             );
             await new Promise((resolve) => requestAnimationFrame(resolve));
           } else {
@@ -347,15 +347,15 @@ export class WebGLContext {
     // Validate these parameters after program compilation to prevent render blocking validation
     const vertexShaderCompiled = this.ctx.getShaderParameter(
       vertexShader,
-      this.ctx.COMPILE_STATUS
+      this.ctx.COMPILE_STATUS,
     );
     const fragmentShaderCompiled = this.ctx.getShaderParameter(
       fragmentShader,
-      this.ctx.COMPILE_STATUS
+      this.ctx.COMPILE_STATUS,
     );
     const programLinked = this.ctx.getProgramParameter(
       program,
-      this.ctx.LINK_STATUS
+      this.ctx.LINK_STATUS,
     );
     if (!vertexShaderCompiled || !fragmentShaderCompiled || !programLinked) {
       const programCompilationError = new Error('Program compilation failed');
@@ -411,7 +411,7 @@ export class WebGLContext {
 
       try {
         const debugRendererInfo = this.ctx.getExtension(
-          'WEBGL_debug_renderer_info'
+          'WEBGL_debug_renderer_info',
         );
         programCompilationError.details.gpuVendor =
           debugRendererInfo?.UNMASKED_VENDOR_WEBGL
@@ -480,7 +480,7 @@ export class WebGLContext {
 
     this.fMipmapLevelLoc = this.ctx.getUniformLocation(
       this.program,
-      'fMipmapLevel'
+      'fMipmapLevel',
     );
 
     // Buffers
@@ -489,7 +489,7 @@ export class WebGLContext {
     this.ctx.bufferData(
       this.ctx.ARRAY_BUFFER,
       new Float32Array([0, 0, 0, 1, 1, 1, 1, 0]),
-      this.ctx.STATIC_DRAW
+      this.ctx.STATIC_DRAW,
     );
     const vUVLoc = this.ctx.getAttribLocation(this.program, 'vUV');
     this.ctx.vertexAttribPointer(
@@ -498,7 +498,7 @@ export class WebGLContext {
       this.ctx.FLOAT,
       false,
       2 * Float32Array.BYTES_PER_ELEMENT,
-      0
+      0,
     );
     this.ctx.enableVertexAttribArray(vUVLoc);
 
@@ -507,7 +507,7 @@ export class WebGLContext {
     this.ctx.bufferData(
       this.ctx.ARRAY_BUFFER,
       new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1]),
-      this.ctx.STATIC_DRAW
+      this.ctx.STATIC_DRAW,
     );
     const vPositionLoc = this.ctx.getAttribLocation(this.program, 'vPosition');
     this.ctx.vertexAttribPointer(
@@ -516,7 +516,7 @@ export class WebGLContext {
       this.ctx.FLOAT,
       false,
       2 * Float32Array.BYTES_PER_ELEMENT,
-      0
+      0,
     );
     this.ctx.enableVertexAttribArray(vPositionLoc);
 
@@ -528,45 +528,45 @@ export class WebGLContext {
       this.ctx.texParameteri(
         this.ctx.TEXTURE_2D,
         this.ctx.TEXTURE_MAG_FILTER,
-        this.ctx.LINEAR
+        this.ctx.LINEAR,
       );
       if (this.webGLVersion == 1) {
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_MIN_FILTER,
-          this.ctx.LINEAR
+          this.ctx.LINEAR,
         );
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_WRAP_S,
-          this.ctx.CLAMP_TO_EDGE
+          this.ctx.CLAMP_TO_EDGE,
         );
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_WRAP_T,
-          this.ctx.CLAMP_TO_EDGE
+          this.ctx.CLAMP_TO_EDGE,
         );
       } else {
         this.ctx.hint(this.ctx.GENERATE_MIPMAP_HINT, this.ctx.NICEST);
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_MAX_LEVEL,
-          8
+          8,
         );
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_MIN_FILTER,
-          this.ctx.LINEAR_MIPMAP_LINEAR
+          this.ctx.LINEAR_MIPMAP_LINEAR,
         );
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_WRAP_S,
-          this.ctx.MIRRORED_REPEAT
+          this.ctx.MIRRORED_REPEAT,
         );
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           this.ctx.TEXTURE_WRAP_T,
-          this.ctx.MIRRORED_REPEAT
+          this.ctx.MIRRORED_REPEAT,
         );
       }
       const tfaExt =
@@ -579,7 +579,7 @@ export class WebGLContext {
         this.ctx.texParameteri(
           this.ctx.TEXTURE_2D,
           tfaExt.TEXTURE_MAX_ANISOTROPY_EXT,
-          Math.min(16, max)
+          Math.min(16, max),
         );
       }
       this.ctx.texImage2D(
@@ -591,7 +591,7 @@ export class WebGLContext {
         0,
         this.ctx.RGBA,
         this.ctx.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255])
+        new Uint8Array([0, 0, 0, 255]),
       );
       this.textures.push(texture);
     }
@@ -599,17 +599,17 @@ export class WebGLContext {
 
     const textureSamplerLoc = this.ctx.getUniformLocation(
       this.program,
-      'textureSampler'
+      'textureSampler',
     );
     this.ctx.uniform1iv(
       textureSamplerLoc,
-      this.textures.map((_, i) => i)
+      this.textures.map((_, i) => i),
     );
 
     if (this.settings.flickerReduction) {
       this.fPreviousClearedLoc = this.ctx.getUniformLocation(
         this.program,
-        'fPreviousCleared'
+        'fPreviousCleared',
       );
       this.ctx.uniform1f(this.fPreviousClearedLoc, 1);
       this.fPreviousCleared = 1;
@@ -634,7 +634,7 @@ export class WebGLContext {
       0,
       this.ctx.RGBA,
       this.ctx.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
+      new Uint8Array([0, 0, 0, 255]),
     );
 
     this.ctx.clear(this.ctx.COLOR_BUFFER_BIT | this.ctx.DEPTH_BUFFER_BIT); // Or set preserveDrawingBuffer to false te always draw from a clear canvas
@@ -660,7 +660,7 @@ export class WebGLContext {
       0,
       this.ctx.RGBA,
       this.ctx.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
+      new Uint8Array([0, 0, 0, 255]),
     );
     this.ctx.activeTexture(this.ctx['TEXTURE0']);
 
@@ -690,7 +690,7 @@ export class WebGLContext {
     destX,
     destY,
     destWidth,
-    destHeight
+    destHeight,
   ) => {
     if (this.ctxIsInvalid || this.lost) return;
 
@@ -721,7 +721,7 @@ export class WebGLContext {
       this.ctx.bufferData(
         this.ctx.ARRAY_BUFFER,
         this.getCachedScale(scaleX, scaleY),
-        this.ctx.STATIC_DRAW
+        this.ctx.STATIC_DRAW,
       );
       this.scaleX = scaleX;
       this.scaleY = scaleY;
@@ -752,7 +752,7 @@ export class WebGLContext {
       internalFormat,
       format,
       formatType,
-      src
+      src,
     );
 
     // Don't generate mipmaps in WebGL1 because video resolutions are not a power of 2
@@ -782,7 +782,7 @@ export class WebGLContext {
         internalFormat,
         format,
         formatType,
-        this.canvas
+        this.canvas,
       );
       if (this.webGLVersion !== 1) {
         this.ctx.generateMipmap(this.ctx.TEXTURE_2D);
@@ -818,7 +818,7 @@ export class WebGLContext {
         program: this.program?.toString(),
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions,
-      }
+      },
     );
     error.name = 'WebGLDrawError';
 
@@ -839,7 +839,7 @@ export class WebGLContext {
     x = 0,
     y = 0,
     width = this.ctx.drawingBufferWidth,
-    height = this.ctx.drawingBufferHeight
+    height = this.ctx.drawingBufferHeight,
   ) => {
     if (this.ctxIsInvalid || this.lost) return;
 
@@ -869,7 +869,7 @@ export class WebGLContext {
       height,
       this.ctx.RGBA,
       this.ctx.UNSIGNED_BYTE,
-      buffer.data
+      buffer.data,
     );
 
     return buffer;
