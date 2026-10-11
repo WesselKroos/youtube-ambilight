@@ -257,10 +257,20 @@ html[data-ambientlight-enabled] {
   /* General */
 
   body {
+    --yt-spec-text-primary: rgba(0, 0, 0, 1);
+    --tffc2fd3a644f6275: var(--yt-spec-text-primary);
+    --yt-spec-text-primary-inverse: rgba(255, 255, 255, 1);
+    
     --yt-spec-text-secondary: rgba(10, 10, 10, 0.8);
+    --t4a6da19e16bf221a: var(--yt-spec-text-secondary);
+    --yt-spec-text-secondary-inverse: rgba(245, 245, 245, 0.8);
+    
+    --yt-spec-inverted-background: var(--yt-spec-text-primary);
+
     --yt-spec-icon-inactive: rgba(10, 10, 10, 0.65);
     --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
     --yt-spec-outline: var(--yt-spec-10-percent-layer);
+
 
     --ytal-text-rgb: 10;
     --ytal-background: rgba(0,0,0,.1); // fallback
@@ -291,7 +301,10 @@ html[data-ambientlight-enabled] {
     // --yt-spec-general-background-c: none;
     // --yt-spec-snackbar-background: none;
     body {
+      --yt-spec-text-primary: rgba(255, 255, 255, 1);
+      --yt-spec-text-primary-inverse: rgba(0, 0, 0, 1);
       --yt-spec-text-secondary: rgba(245, 245, 245, 0.8);
+      --yt-spec-text-secondary-inverse: rgba(10, 10, 10, 0.8);
       --yt-spec-icon-inactive: rgba(245, 245, 245, 0.65);
       --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
 
@@ -2993,11 +3006,13 @@ html[data-ambientlight-enabled] {
     ytd-button-renderer.style-primary[is-paper-button] button,
     .product-item-button.ytd-merch-shelf-item-renderer,
     .yt-spec-button-shape-next--filled, // Ad button: Buy or rent
+    .ytSpecButtonShapeNextFilled,
     #action, // Ad button: More info
     #action-button, // Ad button: Visite website
     .badge-style-type-live-now-alternate.ytd-badge-supported-renderer,
     ytd-author-comment-badge-renderer,
-    ytd-thumbnail-overlay-time-status-renderer {
+    ytd-thumbnail-overlay-time-status-renderer,
+    .ytBadgeShapeText {
       filter: none !important;
       text-shadow: none !important;
     }
@@ -3084,7 +3099,7 @@ html[data-ambientlight-enabled] {
       #{$info} ytd-toggle-button-renderer button,
       #{$info} ytd-button-renderer button,
       #{$info} yt-icon.ytd-menu-renderer,
-      #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled) > *,
+      #top-row.ytd-watch-metadata button:not(.yt-spec-button-shape-next--filled):not(.ytSpecButtonShapeNextFilled) > *,
       #info-container.ytd-watch-metadata, // Old info-container
       #info-container.ytd-watch-info-text, // New info-container
       #description-inline-expander.ytd-watch-metadata,
@@ -3297,6 +3312,14 @@ html[data-ambientlight-enabled] {
       #emojis.ytd-commentbox {
         position: relative;
         max-width: 100%;
+      }
+
+      .ytSubThreadConnection {
+        border-bottom-color: var(--yt-spec-10-percent-layer);
+      }
+      .continuation.ytd-comment-view-model,
+      .ytSubThreadConnection, .ytSubThreadContinuation {
+        border-left-color: var(--yt-spec-10-percent-layer);
       }
     }
     ytd-playlist-panel-renderer #top-level-buttons-computed {
