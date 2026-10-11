@@ -1335,7 +1335,7 @@ html[data-ambientlight-enabled] {
     background: var(--ytal-background) !important;
   }
   
-  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container';
+  $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container, #placeholder-area.ytd-comment-simplebox-renderer';
   #{$comments-reply-input} {
     border-bottom-color: rgba(20,20,20,.5);
   }
