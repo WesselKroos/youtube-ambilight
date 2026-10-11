@@ -578,7 +578,8 @@ html[data-ambientlight-enabled] {
     backdrop-filter: blur(4px);
   }
 
-  .yt-core-attributed-string--link-inherit-color {
+  .yt-core-attributed-string--link-inherit-color,
+  .ytAttributedStringLinkInheritColor {
     color: inherit !important;
   }
 
@@ -1322,10 +1323,23 @@ html[data-ambientlight-enabled] {
   }
   
   ytd-watch-metadata {
+    --yt-saturated-base-background: rgba(255, 255, 255, 1) !important;
+    --yt-saturated-raised-background: rgba(255, 255, 255, .95) !important;
+    --yt-saturated-decorated-background: rgba(255, 255, 255, .1) !important;
+    --yt-saturated-additive-background: rgba(0, 0, 0, 0.09) !important;
+    --yt-saturated-text-primary: rgba(0, 0, 0, 1) !important;
+    --yt-saturated-text-secondary: rgba(0, 0, 0, .8) !important;
+    --yt-saturated-inverted-background: rgba(0, 0, 0, .5) !important;
+    --yt-saturated-overlay-background: rgba(0, 0, 0, 0.75) !important;
+
     yt-light-shape {
       display: none !important; // Causes overbrightened/darkened gradients on buttons
     }
     
+    .ytAttributedStringHighlightTextDecorator {
+      background-color: var(--yt-saturated-decorated-background) !important;
+    }
+
     .yt-spec-button-shape-next--tonal {
       &.yt-spec-button-shape-next--mono:not(:hover):not(:focus) {
         background: var(--ytal-background) !important;
@@ -1340,6 +1354,16 @@ html[data-ambientlight-enabled] {
         ) !important;
       }
     }
+  }
+  &[dark] ytd-watch-metadata {
+    --yt-saturated-base-background: rgba(0, 0, 0, 1) !important;
+    --yt-saturated-raised-background: rgba(0, 0, 0, .95) !important;
+    --yt-saturated-decorated-background: rgba(0, 0, 0, .1) !important;
+    --yt-saturated-additive-background: rgba(255, 255, 255, 0.09) !important;
+    --yt-saturated-text-primary: rgba(255, 255, 255, 1) !important;
+    --yt-saturated-text-secondary: rgba(255, 255, 255, .8) !important;
+    --yt-saturated-inverted-background: rgba(255, 255, 255, .5) !important;
+    --yt-saturated-overlay-background: rgba(0, 0, 0, 0.75) !important;
   }
 
   .ytd-menu-title-renderer.ytd-add-to-playlist-renderer {
@@ -2919,6 +2943,8 @@ html[data-ambientlight-enabled] {
     ytd-comment-replies-renderer .expander-header#{$not-hover} #creator-thumbnail,
     .ytd-playlist-panel-renderer#{$not-hover} #thumbnail,
     .ytd-compact-autoplay-renderer#{$not-hover} #thumbnail,
+    ytd-watch-next-secondary-results-renderer yt-lockup-view-model#{$not-hover} .ytCoreImageHost,
+    ytd-watch-next-secondary-results-renderer yt-lockup-view-model#{$not-hover} yt-thumbnail-overlay-progress-bar-view-model,
     ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer#{$not-hover} #thumbnail,
     ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer#{$not-hover} .modern-collection-parent,
     ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer#{$not-hover} ytd-playlist-thumbnail,
