@@ -229,3 +229,27 @@ button:not(.expandable__toggle):focus {
 button:not(.expandable__toggle):active {
   box-shadow: #000 0 1px 2px 0 inset;
 }
+.settings-image {
+  position: relative;
+  display: inline-block;
+}
+.settings-image img {
+  display: block;
+}
+/* Drawn over the image so that the tooltip text can be translated */
+.settings-image__tooltip {
+  position: absolute;
+  top: 16px;
+  left: 12px;
+  min-width: 146px;
+  height: 25px;
+  padding: 0 9px;
+  border-radius: 4px;
+  background: rgb(29, 30, 26);
+  color: #fff;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 25px;
+  white-space: nowrap;
+}

@@ -2202,7 +2202,7 @@ html[data-ambientlight-enabled] {
         }
       }
       &::after {
-        content: 'New';
+        content: var(--ytal-label-new, 'New');
         position: absolute;
         pointer-events: none;
         user-select: none;
@@ -2262,7 +2262,7 @@ html[data-ambientlight-enabled] {
         background: #fa0;
       }
       &::after {
-        content: 'Experimental';
+        content: var(--ytal-label-experimental, 'Experimental');
         background: #fa0;
       }
     }

@@ -3,6 +3,9 @@ import { syncStorage } from './libs/sync-storage';
 import { getFeedbackFormLink, getPrivacyPolicyLink } from './libs/utils';
 import SettingsConfig from './libs/settings-config';
 import { on } from './libs/generic';
+import { t, translateDocument } from './libs/i18n';
+
+translateDocument();
 
 document.querySelector('#feedbackFormLink').href = getFeedbackFormLink();
 document.querySelector('#privacyPolicyLink').href = getPrivacyPolicyLink();
@@ -26,9 +29,7 @@ for (const input of checkboxInputs) {
       crashOptions[input.name] = input.checked;
       await storage.set('crashOptions', crashOptions);
     } catch {
-      alert(
-        'Crash reports options changed to many times. Please wait a few seconds.'
-      );
+      alert(t('options_crash_options_too_many_changes'));
       input.checked = !input.checked;
       crashOptions[input.name] = input.checked;
     }
@@ -48,8 +49,7 @@ for (const elem of toggles) {
 
 if (!chrome?.storage?.local?.onChanged) {
   const synchronizationWarning = document.createElement('div');
-  synchronizationWarning.textContent =
-    "Unable to synchronize any crash option changes to youtube pages that are already open. Make sure to refresh any open youtube pages after you've changed an option.";
+  synchronizationWarning.textContent = t('options_crash_options_sync_warning');
   synchronizationWarning.classList.add('warning');
   document
     .querySelector('.warnings-container')
@@ -61,7 +61,7 @@ const importExportStatusDetails = document.querySelector(
   '#importExportStatusDetails'
 );
 let importWarnings = [];
-const importSettings = async (storageName, importJson) => {
+const importSettings = async (storageType, importJson) => {
   try {
     importExportStatus.textContent = '';
     importExportStatus.classList.remove('has-error');
@@ -69,11 +69,11 @@ const importSettings = async (storageName, importJson) => {
     importExportStatusDetails.scrollTo(0, 0);
 
     const jsonString = await importJson();
-    if (!jsonString) throw new Error('No settings found to import');
+    if (!jsonString) throw new Error(t('options_import_error_no_settings'));
 
     let importedObject = JSON.parse(jsonString);
     if (typeof importedObject !== 'object')
-      throw new Error('No settings found to import');
+      throw new Error(t('options_import_error_no_settings'));
 
     // Temporarely import the setting blur as blur2
     // https://github.com/WesselKroos/youtube-ambilight/issues/191#issuecomment-1703792823
@@ -93,9 +93,10 @@ const importSettings = async (storageName, importJson) => {
       const setting = SettingsConfig.find((setting) => setting.name === name);
       if (!setting) {
         importWarnings.push(
-          `Skipped "${name}": ${JSON.stringify(
-            value
-          )}. This settings might have been removed or migrated to another name after an update.`
+          t('options_import_warning_skipped_unknown', [
+            name,
+            JSON.stringify(value),
+          ])
         );
         continue;
       }
@@ -104,41 +105,52 @@ const importSettings = async (storageName, importJson) => {
       if (type === 'checkbox' || type === 'section') {
         if (typeof value !== 'boolean') {
           importWarnings.push(
-            `Skipped "${name}": ${JSON.stringify(value)} is not a boolean.`
+            t('options_import_warning_skipped_not_boolean', [
+              name,
+              JSON.stringify(value),
+            ])
           );
           continue;
         }
       } else if (type === 'list') {
         if (typeof value !== 'number') {
           importWarnings.push(
-            `Skipped "${name}": ${JSON.stringify(value)} is not a number.`
+            t('options_import_warning_skipped_not_number', [
+              name,
+              JSON.stringify(value),
+            ])
           );
           continue;
         }
         const valueRoundingLeft = ((value - min) * 1000) % (step * 1000);
         if (valueRoundingLeft !== 0) {
           importWarnings.push(
-            `Rounded down "${name}": ${JSON.stringify(
-              value
-            )} is not in steps of ${step}${
-              min === undefined ? '' : ` from ${min}`
-            }.`
+            t('options_import_warning_rounded', [
+              name,
+              JSON.stringify(value),
+              step,
+              min,
+            ])
           );
           value = Math.round(value * 1000 - valueRoundingLeft) / 1000;
         }
         if (min !== undefined && value < min) {
           importWarnings.push(
-            `Clipped "${name}": ${JSON.stringify(
-              value
-            )} is lower than the minimum of ${min}.`
+            t('options_import_warning_clipped_min', [
+              name,
+              JSON.stringify(value),
+              min,
+            ])
           );
           value = min;
         }
         if (max !== undefined && value > max) {
           importWarnings.push(
-            `Clipped "${name}": ${JSON.stringify(
-              value
-            )} is higher than the maximum of ${max}.`
+            t('options_import_warning_clipped_max', [
+              name,
+              JSON.stringify(value),
+              max,
+            ])
           );
           value = max;
         }
@@ -148,18 +160,21 @@ const importSettings = async (storageName, importJson) => {
     }
 
     if (!Object.keys(settings).length)
-      throw new Error('No settings found to import');
+      throw new Error(t('options_import_error_no_settings'));
 
     await storage.set(settings);
 
-    importExportStatus.textContent = `Imported ${
+    importExportStatus.textContent = `${t(
+      storageType === 'file'
+        ? 'options_imported_from_file'
+        : 'options_imported_from_cloud',
       Object.keys(settings).length
-    } settings from ${storageName}.
-(Refresh any open YouTube browser tabs to use the new settings.)${
+    )}${
       importWarnings.length
-        ? `\n\nWith ${importWarnings.length} warnings:\n- ${importWarnings.join(
-            '\n- '
-          )}`
+        ? `\n\n${t(
+            'options_import_warnings',
+            importWarnings.length
+          )}\n- ${importWarnings.join('\n- ')}`
         : ''
     }`;
     if (importWarnings.length) {
@@ -167,9 +182,9 @@ const importSettings = async (storageName, importJson) => {
     }
     importWarnings = [];
 
-    importExportStatusDetails.textContent = `View imported settings (Click to view)\nNote: The blur setting is internally converted to blur2\n\n${Object.keys(
-      settings
-    )
+    importExportStatusDetails.textContent = `${t(
+      'options_imported_details'
+    )}\n\n${Object.keys(settings)
       .map(
         (key) =>
           `${key.substring('setting-'.length)}: ${JSON.stringify(
@@ -180,10 +195,10 @@ const importSettings = async (storageName, importJson) => {
   } catch (ex) {
     console.error('Failed to import settings', ex);
     importExportStatus.classList.add('has-error');
-    importExportStatus.textContent = `Failed to import settings: \n${ex?.message}`;
+    importExportStatus.textContent = t('options_import_failed', ex?.message);
   }
 };
-const exportSettings = async (storageName, exportJson) => {
+const exportSettings = async (storageType, exportJson) => {
   try {
     importExportStatus.textContent = '';
     importExportStatus.classList.remove('has-error');
@@ -206,9 +221,7 @@ const exportSettings = async (storageName, exportJson) => {
       exportObject[name] = storageData[key];
     }
     if (!Object.keys(exportObject).length)
-      throw new Error(
-        'Nothing to export. All settings still have their default values.'
-      );
+      throw new Error(t('options_export_error_nothing'));
 
     // Temporarely export the setting blur2 as blur
     // https://github.com/WesselKroos/youtube-ambilight/issues/191#issuecomment-1703792823
@@ -223,18 +236,21 @@ const exportSettings = async (storageName, exportJson) => {
 
     const jsonString = JSON.stringify(exportObject, null, 2);
     await exportJson(jsonString);
-    importExportStatus.textContent = `Exported ${
+    importExportStatus.textContent = t(
+      storageType === 'file'
+        ? 'options_exported_to_file'
+        : 'options_exported_to_cloud',
       Object.keys(exportObject).length
-    } settings to ${storageName}`;
-    importExportStatusDetails.textContent = `View exported settings (Click to view)\n\n${Object.keys(
-      exportObject
-    )
+    );
+    importExportStatusDetails.textContent = `${t(
+      'options_exported_details'
+    )}\n\n${Object.keys(exportObject)
       .map((key) => `${key}: ${JSON.stringify(exportObject[key])}`)
       .join('\n')}`;
   } catch (ex) {
     console.error('Failed to export settings', ex);
     importExportStatus.classList.add('has-error');
-    importExportStatus.textContent = `Failed to export settings: \n${ex?.message}`;
+    importExportStatus.textContent = t('options_export_failed', ex?.message);
   }
 };
 
@@ -243,7 +259,7 @@ const importFileInput = document.querySelector('[name="import-settings-file"]');
 on(importFileInput, 'change', async () => {
   if (!importFileInput.files.length) return;
 
-  await importSettings('a file', async () => {
+  await importSettings('file', async () => {
     return await new Promise((resolve, reject) => {
       try {
         const reader = new FileReader();
@@ -261,17 +277,14 @@ on(importFileButton, 'click', () => importFileInput.click());
 let exportedSettingsLink;
 const exportFileButton = document.querySelector('#exportFileBtn');
 on(exportFileButton, 'click', async () => {
-  await exportSettings('', (jsonString) => {
+  await exportSettings('file', (jsonString) => {
     const blob = new Blob([jsonString], { type: 'text/plain' });
 
     const link = (exportedSettingsLink =
       exportedSettingsLink ?? document.createElement('a'));
     link.setAttribute('href', URL.createObjectURL(blob));
     link.setAttribute('download', 'ambient-light-for-youtube-settings.json');
-    link.setAttribute(
-      'title',
-      'If the automatic download was blocked:\n1. Right click on this link \n2. Click on "Save link as..."'
-    );
+    link.setAttribute('title', t('options_export_download_link_title'));
     link.style.display = 'block';
     link.style.marginTop = '0';
     link.style.marginBottom = '4px';
@@ -287,14 +300,14 @@ on(exportFileButton, 'click', async () => {
 
 const importAccountButton = document.querySelector('#importAccountBtn');
 on(importAccountButton, 'click', async () => {
-  await importSettings('cloud storage', async () => {
+  await importSettings('cloud', async () => {
     return await syncStorage.get('settings');
   });
 });
 
 const exportAccountButton = document.querySelector('#exportAccountBtn');
 on(exportAccountButton, 'click', async () => {
-  await exportSettings('cloud storage', async (jsonString) => {
+  await exportSettings('cloud', async (jsonString) => {
     await syncStorage.set('settings', jsonString);
     await syncStorage.set('settings-date', new Date().toJSON());
   });
@@ -307,7 +320,10 @@ const updateImportableAccountStatus = async () => {
   const jsonString = await syncStorage.get('settings-date');
   if (jsonString) {
     const settingsDate = new Date(jsonString);
-    importableAccountStatus.textContent = `Last cloud storage export was on: ${settingsDate.toLocaleDateString()} at ${settingsDate.toLocaleTimeString()}`;
+    importableAccountStatus.textContent = t('options_last_cloud_export', [
+      settingsDate.toLocaleDateString(),
+      settingsDate.toLocaleTimeString(),
+    ]);
     importAccountButton.disabled = false;
   } else {
     importableAccountStatus.textContent = '';

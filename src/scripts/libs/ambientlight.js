@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import {
   on,
   off,
@@ -192,7 +193,7 @@ export default class Ambientlight {
       error.details.videoIsInDocument = document.contains(videoElem);
       error.details.videoIsInBody = document.body.contains(videoElem);
       error.details.videoTree = getNodeTreeString(videoElem);
-      setWarning(`Failed to load.\n${error.message}`);
+      setWarning(t('warning_failed_to_load', error.message));
       throw error;
     }
     this.videoPlayerElem.dataset.ytalElem = 'video-player';
@@ -211,7 +212,7 @@ export default class Ambientlight {
         'Cannot find settingsMenuBtnParent: .ytp-right-controls, .ytp-chrome-controls > *:last-child'
       );
       error.details = getPageElems();
-      setWarning(`Failed to load.\n${error.message}`);
+      setWarning(t('warning_failed_to_load', error.message));
       throw error;
     }
 
@@ -591,12 +592,7 @@ export default class Ambientlight {
         this.settings.setWarning(undefined, undefined, undefined, 'encrypted');
       },
       encrypted: () => {
-        this.settings.setWarning(
-          'Unable to display an ambient light because YouTube has applied DRM protection to this video',
-          true,
-          true,
-          'encrypted'
-        );
+        this.settings.setWarning(t('warning_drm'), true, true, 'encrypted');
       },
       loadeddata: async () => {
         if (!this.settings.enabled || !this.isOnVideoPage) return;
@@ -1667,11 +1663,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
   initVR = () => {
     if (getBrowser() === 'Firefox') {
-      this.settings.setWarning(
-        'Ambient light does not support VR videos',
-        false,
-        false
-      );
+      this.settings.setWarning(t('warning_vr_unsupported'), false, false);
     } else {
       this.vrVideoElem = this.videoPlayerElem.querySelector('.webgl canvas');
       this.vrVideoElem.dataset.ytalElem = 'vr-video';
@@ -2093,9 +2085,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           this.videoContainerElemMissingThrown = true;
         }
         this.videoContainerElemMissingWarning = true;
-        this.settings.setWarning(
-          'Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to a update of the YouTube design. This will probably soon be fixed in a new version.'
-        );
+        this.settings.setWarning(t('warning_video_container_missing'));
       }
     } else if (
       !videoOverlayEnabled &&
@@ -2915,12 +2905,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   setDrawWarning = (ex) => {
     const message =
       ex.name === 'SecurityError'
-        ? 'A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem.'
-        : `A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: ${ex.name}\nReason: ${ex.message}`;
+        ? t('warning_draw_failed_security')
+        : t('warning_draw_failed_other', [ex.name, ex.message]);
 
-    this.settings.setWarning(
-      `Failed to display the ambient light\n\n${message}`
-    );
+    this.settings.setWarning(`${t('warning_draw_failed')}\n\n${message}`);
   };
 
   afterNextFrame = async function afterNextFrame() {

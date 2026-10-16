@@ -1,6 +1,7 @@
+import { t } from './i18n';
 import { AmbientlightError } from './errors/ambient-light-error';
 import {
-  canvasWebGLCrashTips,
+  getCanvasWebGLCrashTips,
   ctxOptions,
   requestIdleCallback,
   webGLErrorToString,
@@ -139,9 +140,13 @@ export class WebGLContext {
   }
 
   setWebGLWarning(action = 'restore') {
-    this.setWarning(
-      `Failed to ${action} the WebGL renderer from a GPU crash.${canvasWebGLCrashTips}`
-    );
+    const messageKey = {
+      restore: 'warning_webgl_restore_failed',
+      '3 times restore': 'warning_webgl_restore_failed_3_times',
+      create: 'warning_webgl_create_failed',
+      change: 'warning_webgl_change_failed',
+    }[action];
+    this.setWarning(`${t(messageKey)}${getCanvasWebGLCrashTips()}`);
   }
 
   webglcontextcreationerrors = [];

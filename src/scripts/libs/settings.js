@@ -18,6 +18,7 @@ import SettingsConfig, {
 import { getFeedbackFormLink, getVersion } from './utils';
 import { storage } from './storage';
 import { AmbientlightError } from './errors/ambient-light-error';
+import { t } from './i18n';
 
 export const FRAMESYNC_DECODEDFRAMES = 0;
 export const FRAMESYNC_DISPLAYFRAMES = 1;
@@ -76,18 +77,7 @@ export default class Settings {
     names.push('setting-fadeOutEasing');
 
     const warningTimeout = setTimeout(
-      () =>
-        setWarning(
-          `It is taking more than 5 seconds to load your previous settings.
-If this is your first warning and it does not disappear, then the extension might have updated. 
-You can reload the webpage to complete the update.
-
-But if this happens frequently, here are some possible causes:
-- Another extension is blocking code execution on this webpage for a long duration.
-  Disable other extensions temporarely to find out which one it is.
-- If your computer is very slow or frequently freezing in other applications as well,
-  there could be a problem with your hardware, likely the memory (DDR).`
-        ),
+      () => setWarning(t('warning_settings_load_slow')),
       5000
     );
     try {
@@ -173,9 +163,7 @@ But if this happens frequently, here are some possible causes:
     try {
       storedSettings = await Settings.getStoredSettingsCached();
     } catch {
-      this.setWarning(
-        'Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again.'
-      );
+      this.setWarning(t('warning_settings_load_failed_updated'));
     }
 
     const webGLCrash = storedSettings['setting-webGLCrash'];
@@ -265,14 +253,16 @@ But if this happens frequently, here are some possible causes:
 
     let descriptionText = disabledText;
     if (this.webGLCrashDate) {
-      descriptionText += `${
-        disabledText
-          ? '\r\nAnd the WebGL renderer previously failed'
-          : 'Failed to load'
-      } at ${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`;
-      descriptionText += `\r\n\r\nCheck the Hardware acceleration and WebGL settings in your browser or click on the link "troubleshoot performance problems" at the top of this menu to troubleshoot this problem.`;
+      const crashTime = `${this.webGLCrashDate.toLocaleTimeString()} ${this.webGLCrashDate.toLocaleDateString()}`;
+      descriptionText += disabledText
+        ? `\r\n${t('setting_webGL_disabled_previously_failed_at', crashTime)}`
+        : t('setting_webGL_disabled_failed_at', crashTime);
+      descriptionText += `\r\n\r\n${t(
+        'setting_webGL_disabled_check_browser',
+        t('menu_troubleshoot_link')
+      )}`;
       if (!disabledText)
-        descriptionText += `\r\n\r\nNote: You can re-enable this setting to try it again. In case the WebGL renderer fails again the time at which it failed will be updated.`;
+        descriptionText += `\r\n\r\n${t('setting_webGL_disabled_retry_note')}`;
     }
     descriptionElem.textContent = descriptionText;
   };
@@ -283,6 +273,14 @@ But if this happens frequently, here are some possible causes:
       this.advancedSettings ? 'ytpa-ambientlight-settings-menu--advanced' : ''
     }`;
     elem.id = 'ytp-id-190';
+    elem.style.setProperty(
+      '--ytal-label-new',
+      JSON.stringify(t('menu_badge_new'))
+    );
+    elem.style.setProperty(
+      '--ytal-label-experimental',
+      JSON.stringify(t('menu_badge_experimental'))
+    );
 
     const panel = document.createElement('div');
     panel.className = 'ytp-panel';
@@ -342,7 +340,7 @@ But if this happens frequently, here are some possible causes:
 
     const warningCloseButton = document.createElement('button');
     warningCloseButton.className = 'ytpa-warning-close-btn';
-    warningCloseButton.title = 'Close warning';
+    warningCloseButton.title = t('menu_close_warning');
     warning.appendChild(warningCloseButton);
 
     const info = document.createElement('div');
@@ -382,7 +380,7 @@ But if this happens frequently, here are some possible causes:
 
     const troubleshootLinkText = document.createElement('span');
     troubleshootLinkText.className = 'ytpa-feedback-link__text';
-    troubleshootLinkText.textContent = 'Troubleshoot performance problems';
+    troubleshootLinkText.textContent = t('menu_troubleshoot_link');
     troubleshootLink.appendChild(troubleshootLinkText);
 
     const toolbar = document.createElement('div');
@@ -396,15 +394,16 @@ But if this happens frequently, here are some possible causes:
 
     const importTooltip = document.createElement('span');
     importTooltip.className = 'ytpa-export-import-settings-btn__tooltip';
-    importTooltip.textContent = `How to export or import settings: 
-1. Click on the extension icon to open the option. 
-2. Scroll down to "Import / Export settings"`;
+    importTooltip.textContent = t(
+      'menu_import_export_tooltip',
+      t('options_import_export_heading')
+    );
     importBtn.appendChild(importTooltip);
 
     const resetBtn = document.createElement('button');
     resetBtn.className = 'ytpa-reset-settings-btn';
     resetBtn.type = 'button';
-    resetBtn.title = 'Reset all settings';
+    resetBtn.title = t('menu_reset_all_settings');
     toolbar.appendChild(resetBtn);
 
     const header2 = document.createElement('div');
@@ -428,7 +427,7 @@ But if this happens frequently, here are some possible causes:
 
     const feedbackLinkText = document.createElement('span');
     feedbackLinkText.className = 'ytpa-feedback-link__text';
-    feedbackLinkText.textContent = 'Give feedback or a rating';
+    feedbackLinkText.textContent = t('menu_feedback_link');
     feedbackLink.appendChild(feedbackLinkText);
 
     const donateLink = document.createElement('a');
@@ -440,8 +439,8 @@ But if this happens frequently, here are some possible causes:
 
     const donateLinkImage = document.createElement('img');
     donateLinkImage.className = 'ytpa-donate-link__image';
-    donateLinkImage.alt = 'Support me via a donation';
-    donateLinkImage.title = 'Support me via a donation';
+    donateLinkImage.alt = t('donate_alt');
+    donateLinkImage.title = t('donate_alt');
     donateLinkImage.src = `${baseUrl}images/donate.svg`;
     donateLinkImage.height = '23';
     donateLink.appendChild(donateLinkImage);
@@ -468,8 +467,7 @@ But if this happens frequently, here are some possible causes:
         const labelKey = document.createElement('span');
         labelKey.contentEditable = true;
         labelKey.className = 'ytpa-menuitem-key';
-        labelKey.title =
-          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)';
+        labelKey.title = t('menu_hotkey_title');
         labelKey.textContent = setting.key;
         labelElems.push(labelKey);
 
@@ -539,9 +537,9 @@ But if this happens frequently, here are some possible causes:
         checkbox.ariaChecked = value ? 'true' : 'false';
         if (setting.disabled) {
           checkbox.ariaDisabled = 'true';
-          checkbox.title = 'This setting is unavailable';
+          checkbox.title = t('menu_setting_unavailable');
         } else {
-          checkbox.title = 'Right click to reset';
+          checkbox.title = t('menu_right_click_to_reset');
           checkbox.tabindex = '0';
         }
         sectionContent.appendChild(checkbox);
@@ -611,7 +609,7 @@ But if this happens frequently, here are some possible causes:
           setting.snapPoints ? 'ytp-menuitem-range--has-snap-points' : ''
         }`;
         range.setAttribute('rowspan', '2');
-        range.title = 'Right click to reset';
+        range.title = t('menu_right_click_to_reset');
         wrapper.appendChild(range);
 
         const input = document.createElement('input');
@@ -644,7 +642,7 @@ But if this happens frequently, here are some possible causes:
             option.className = `setting-range-datalist__label ${
               flip ? 'setting-range-datalist__label--flip' : ''
             }`;
-            option.title = `Set to ${hiddenLabel || label}`;
+            option.title = t('menu_set_to', hiddenLabel || label);
             option.style.marginLeft = `${
               (value + -setting.min) * (100 / (setting.max - setting.min))
             }%`;
@@ -677,13 +675,11 @@ But if this happens frequently, here are some possible causes:
     this.settingsMenuBtnTooltipText = document.createElement('span');
     this.settingsMenuBtnTooltipText.className = 'ytp-tooltip-bottom-text';
     this.settingsMenuBtnTooltipText.appendChild(
-      document.createTextNode('Ambient light loading is paused.')
+      document.createTextNode(t('menu_loading_paused'))
     );
     this.settingsMenuBtnTooltipText.appendChild(document.createElement('br'));
     this.settingsMenuBtnTooltipText.appendChild(
-      document.createTextNode(
-        'Waiting for the video and page to be loaded first...'
-      )
+      document.createTextNode(t('menu_loading_waiting'))
     );
     settingsMenuBtnTooltipTextWrapper.prepend(this.settingsMenuBtnTooltipText);
 
@@ -725,12 +721,7 @@ But if this happens frequently, here are some possible causes:
       '.ytpa-reset-settings-btn'
     );
     on(resetSettingsBtnElem, 'click', async () => {
-      if (
-        !confirm(
-          'Are you sure you want to reset ALL the settings and reload the watch page?'
-        )
-      )
-        return;
+      if (!confirm(t('menu_reset_all_settings_confirm'))) return;
 
       for (const setting of SettingsConfig) {
         this.saveStorageEntry(setting.name, undefined);
@@ -1488,21 +1479,21 @@ But if this happens frequently, here are some possible causes:
   }
 
   frameFadingValueToDuration(value) {
-    if (!value) return 'Off';
+    if (!value) return t('value_off');
 
     const frames = Math.pow(value, 2);
     const seconds = frames / 30;
-    if (seconds < 1) return `${Math.round(seconds * 1000)} ms`;
-    return `${Math.round(seconds * 10) / 10} seconds`;
+    if (seconds < 1) return t('value_milliseconds', Math.round(seconds * 1000));
+    return t('value_seconds', Math.round(seconds * 10) / 10);
   }
 
   getSettingListDisplayText(setting) {
     const value = this[setting.name];
     if (setting.name === 'frameSync') {
       return {
-        [FRAMESYNC_DECODEDFRAMES]: 'Decoded framerate',
-        [FRAMESYNC_DISPLAYFRAMES]: 'Display framerate',
-        [FRAMESYNC_VIDEOFRAMES]: 'Video framerate',
+        [FRAMESYNC_DECODEDFRAMES]: t('value_frameSync_decoded'),
+        [FRAMESYNC_DISPLAYFRAMES]: t('value_frameSync_display'),
+        [FRAMESYNC_VIDEOFRAMES]: t('value_frameSync_video'),
       }[value];
     }
     if (setting.name === 'debandingBlendMode') {
@@ -1513,11 +1504,11 @@ But if this happens frequently, here are some possible causes:
     }
     if (setting.name === 'barSizeDetectionAverageHistorySize') {
       return this.barSizeDetectionAverageHistorySize == 1
-        ? `1 frame`
-        : `${value} frames`;
+        ? t('value_one_frame')
+        : t('value_frames', value);
     }
     if (setting.name === 'framerateLimit') {
-      return this.framerateLimit == 0 ? 'max fps' : `${value} fps`;
+      return this.framerateLimit == 0 ? t('value_max_fps') : `${value} fps`;
     }
     if (setting.name === 'frameFading') {
       return this.frameFadingValueToDuration(value);
@@ -1622,7 +1613,7 @@ But if this happens frequently, here are some possible causes:
     if (!this.menuBtn.classList.contains('is-loading')) return;
 
     this.menuBtn.classList.remove('is-loading');
-    this.settingsMenuBtnTooltipText.textContent = 'Ambient light settings';
+    this.settingsMenuBtnTooltipText.textContent = t('menu_button_tooltip');
 
     this.showUpdatesMessage();
   };
@@ -1631,9 +1622,12 @@ But if this happens frequently, here are some possible causes:
     const message = ex?.message ?? typeof ex;
     if (this.menuBtn?.classList?.contains?.('is-loading')) {
       this.menuBtn.classList.add('has-warning');
-      this.settingsMenuBtnTooltipText.textContent = `Ambient light failed to load:\n${message}`;
+      this.settingsMenuBtnTooltipText.textContent = t(
+        'menu_button_tooltip_failed',
+        message
+      );
     } else {
-      this.setWarning(`An error occured:\n${message}`, true);
+      this.setWarning(t('warning_error_occurred', message), true);
     }
   };
 
@@ -1779,7 +1773,7 @@ But if this happens frequently, here are some possible causes:
         valueElem.classList.add('is-controlled-by-setting');
         valueElem.setAttribute(
           'title',
-          `Controlled by the "${controlledByLabel}" setting.\nManually adjusting this setting will turn off "${controlledByLabel}"`
+          t('menu_controlled_by_setting', controlledByLabel)
         );
       } else {
         valueElem.classList.remove('is-controlled-by-setting');
@@ -1997,16 +1991,12 @@ But if this happens frequently, here are some possible causes:
       }
     } catch (ex) {
       if (ex.message.includes('QuotaExceededError')) {
-        this.setWarning(
-          'The changes could not be saved because the settings have changed too often.\nWait a few seconds...'
-        );
+        this.setWarning(t('warning_save_failed_quota'));
         return;
       }
 
       if (ex.message === 'uninstalled') {
-        this.setWarning(
-          'The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension.'
-        );
+        this.setWarning(t('warning_save_failed_updated'));
         return;
       }
 
@@ -2081,12 +2071,13 @@ But if this happens frequently, here are some possible causes:
 
     let message = '';
     if (this.energySaver) {
+      const settingPath = `${t(
+        'setting_sectionQualityPerformanceCollapsed_label'
+      )} > ${t('setting_energySaver_label')}`;
       if (this.ambientlight.averageVideoFramesDifference < 0.002) {
-        message =
-          'Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos';
+        message = t('info_energy_saver_still_image', settingPath);
       } else if (this.ambientlight.averageVideoFramesDifference < 0.0175) {
-        message =
-          'Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\nQuality > Save energy on static videos';
+        message = t('info_energy_saver_small_movements', settingPath);
       }
     }
 
@@ -2112,8 +2103,7 @@ But if this happens frequently, here are some possible causes:
 
       this.updateItemElem.style.display = '';
       this.menuBtn.classList.toggle('has-updates', true);
-      this.menuBtn.title =
-        "Ambient light has been updated with new settings\nClick to see what's new";
+      this.menuBtn.title = t('menu_button_updated');
       this.showingUpdatesMessage = true;
     } catch (ex) {
       SentryReporter.captureException(ex);

@@ -1,0 +1,992 @@
+{
+  "extName": {
+    "message": "Ambient light for YouTube™"
+  },
+  "extDescription": {
+    "message": "Immerse yourself in YouTube™ videos with ambient light!"
+  },
+  "options_title": {
+    "message": "Ambient light for YouTube™ settings"
+  },
+  "options_settings_location": {
+    "message": "The settings are accessible from video player:"
+  },
+  "options_no_settings_button_heading": {
+    "message": "I see no settings button"
+  },
+  "options_no_settings_button_refresh": {
+    "message": "Please refresh the webpage in the browser."
+  },
+  "options_no_settings_button_report": {
+    "message": "If after the refresh the settings button is still not shown you can open your browser's console (Press F12) to search for any errors or warnings and report those by:"
+  },
+  "options_no_settings_button_create_issue": {
+    "message": "creating an issue"
+  },
+  "options_no_settings_button_or": {
+    "message": " or "
+  },
+  "options_no_settings_button_feedback_form": {
+    "message": "filling out the feedback form"
+  },
+  "options_performance_heading": {
+    "message": "Fix performance issues"
+  },
+  "options_performance_before_link": {
+    "message": "Follow the "
+  },
+  "options_performance_link": {
+    "message": "troubleshoot guide"
+  },
+  "options_performance_after_link": {
+    "message": " to resolve performance issues"
+  },
+  "options_support_heading": {
+    "message": "Support me"
+  },
+  "options_import_export_heading": {
+    "message": "Import / Export settings"
+  },
+  "options_file_storage_heading": {
+    "message": "File storage"
+  },
+  "options_export_file_button": {
+    "message": "Export to file"
+  },
+  "options_import_file_button": {
+    "message": "Import from file"
+  },
+  "options_cloud_storage_heading": {
+    "message": "Cloud storage (Your browser account)"
+  },
+  "options_export_cloud_button": {
+    "message": "Export to cloud"
+  },
+  "options_import_cloud_button": {
+    "message": "Import from cloud"
+  },
+  "options_crash_reports_heading": {
+    "message": "Crash reports & Privacy"
+  },
+  "options_crash_reports_description": {
+    "message": "A crash report contains only anonymous data and will be deleted after 30 days. However, anonymous data is still your data. That's why you can control what it contains via the settings below."
+  },
+  "options_crash_reports_allowed_heading": {
+    "message": "A crash report is allowed to contain:"
+  },
+  "options_crash_reports_video": {
+    "message": "The url and video ID being watched at the time of the crash"
+  },
+  "options_crash_reports_technical": {
+    "message": "Anonymous technical data"
+  },
+  "options_crash_reports_technical_toggle": {
+    "message": "Display the list of technical info"
+  },
+  "options_crash_reports_technical_browser": {
+    "message": "Browser version"
+  },
+  "options_crash_reports_technical_os": {
+    "message": "Operating system version"
+  },
+  "options_crash_reports_technical_display": {
+    "message": "Display capabilities"
+  },
+  "options_crash_reports_technical_player": {
+    "message": "Videoplayer state"
+  },
+  "options_crash_reports_technical_player_note": {
+    "message": "(Does not contain the video id or title)"
+  },
+  "options_crash_reports_technical_layout": {
+    "message": "YouTube layout state"
+  },
+  "options_crash_reports_technical_layout_note": {
+    "message": "(Does not contain your YouTube account data)"
+  },
+  "options_crash_reports_crash": {
+    "message": "Ambient light state and error information"
+  },
+  "options_crash_reports_none": {
+    "message": "No crash reports will be sent when all checkboxes are unchecked."
+  },
+  "options_privacy_policy_link": {
+    "message": "Our privacy policy"
+  },
+  "setting_sectionSettingsCollapsed_label": {
+    "message": "Settings"
+  },
+  "setting_advancedSettings_label": {
+    "message": "Advanced"
+  },
+  "setting_sectionStatsCollapsed_label": {
+    "message": "Stats"
+  },
+  "setting_showFPS_label": {
+    "message": "Framerates"
+  },
+  "setting_showFrametimes_label": {
+    "message": "Frametimes graph"
+  },
+  "setting_showFrametimes_description": {
+    "message": "Uses: CPU power"
+  },
+  "setting_showFrametimes_help": {
+    "message": "The measured display framerate is not a reflection of the real performance.\nBecause the measurement uses an extra percentage of CPU usage.\nHowever, this statistic could be helpful to debug other issues."
+  },
+  "setting_showResolutions_label": {
+    "message": "Resolutions & drawtimes"
+  },
+  "setting_showBarDetectionStats_label": {
+    "message": "Bar detection"
+  },
+  "setting_sectionQualityPerformanceCollapsed_label": {
+    "message": "Quality"
+  },
+  "setting_webGL_label": {
+    "message": "WebGL renderer (uses less power)"
+  },
+  "setting_webGL_description": {
+    "message": "Changing this reloads the webpage"
+  },
+  "setting_resolution_label": {
+    "message": "Resolution"
+  },
+  "setting_framerateLimit_label": {
+    "message": "Limit framerate (per second)"
+  },
+  "setting_frameSync_label": {
+    "message": "Synchronization"
+  },
+  "setting_frameSync_help": {
+    "message": "How much energy will be spent on synchronising ambient light frames with video frames.\n\nDecoded framerate: Lowest CPU & GPU usage.\nMight result in dropped and delayed frames.\n\nDisplay framerate: Highest CPU & GPU usage.\nMight still result in delayed frames on high refreshrate monitors (120hz and higher) and higher than 1080p videos.\n\nVideo framerate: Lowest CPU & GPU usage.\nUses the newest browser technology to always keep the frames in sync."
+  },
+  "setting_frameSync_value_0": {
+    "message": "Decoded"
+  },
+  "setting_frameSync_value_1": {
+    "message": "Display"
+  },
+  "setting_frameSync_value_2": {
+    "message": "Video"
+  },
+  "setting_energySaver_label": {
+    "message": "Save energy on static videos"
+  },
+  "setting_energySaver_help": {
+    "message": "Limits the framerate on videos with an (almost) static image\n\nStill image: 1 frame per 5 seconds\nSmall movements: 1 frame per second"
+  },
+  "setting_prioritizePageLoadSpeed_label": {
+    "message": "Prioritize page load speed"
+  },
+  "setting_prioritizePageLoadSpeed_description": {
+    "message": "Loads the ambient light after the page has loaded"
+  },
+  "setting_layoutPerformanceImprovements_label": {
+    "message": "YouTube responsiveness fixes"
+  },
+  "setting_layoutPerformanceImprovements_description": {
+    "message": "Improves the responsiveness of the webpage"
+  },
+  "setting_layoutPerformanceImprovements_help": {
+    "message": "Some of the improvements on the /watch page include:\n- Faster webpage resizing and scrolling (Most noticeable after you've loaded in more than 100 comments)\n- Faster loadingtimes for comments and/or related videos\n- Smoother timeline scrubbing (Most noticeable after you've loaded in more than 100 comments or with a livestream chat window open)\n- Smoother livestream chat scrolling (and new messages will be appended quicker to the chat)\n- Smoother playlist scrolling (Most noticeable in a playlist with more than 25 videos)\n- Smoother dragging/re-ordering videos in a playlist (Most noticeable in a playlist with more than 25 videos)"
+  },
+  "setting_debandingBlendMode_label": {
+    "message": "Optimize debanding for"
+  },
+  "setting_debandingBlendMode_help": {
+    "message": "The normal blend mode is useful to fix banding in dark colors on LCD's.\nBut on OLED's it's better to use the \"overlay\" blend mode to retain pure blacks."
+  },
+  "setting_debandingBlendMode_value_0": {
+    "message": "LCD (normal)"
+  },
+  "setting_debandingBlendMode_value_1": {
+    "message": "OLED (overlay)"
+  },
+  "setting_sectionOtherPageHeaderCollapsed_label": {
+    "message": "Page header"
+  },
+  "setting_headerShadowSize_label": {
+    "message": "Shadows size"
+  },
+  "setting_headerShadowOpacity_label": {
+    "message": "Shadows opacity"
+  },
+  "setting_headerImagesOpacity_label": {
+    "message": "Images opacity"
+  },
+  "setting_headerFillOpacity_label": {
+    "message": "Background opacity"
+  },
+  "setting_headerFillOpacity_description": {
+    "message": "Only applies when scrolled down"
+  },
+  "setting_sectionOtherPageContentCollapsed_label": {
+    "message": "Page content"
+  },
+  "setting_surroundingContentShadowSize_label": {
+    "message": "Shadows size"
+  },
+  "setting_surroundingContentShadowOpacity_label": {
+    "message": "Shadows opacity"
+  },
+  "setting_surroundingContentTextAndBtnOnly_label": {
+    "message": "Shadows on texts and buttons only"
+  },
+  "setting_surroundingContentTextAndBtnOnly_description": {
+    "message": "Decreases scrolling & video stutter"
+  },
+  "setting_surroundingContentImagesOpacity_label": {
+    "message": "Images opacity"
+  },
+  "setting_surroundingContentFillOpacity_label": {
+    "message": "Buttons & boxes background opacity"
+  },
+  "setting_pageBackgroundGreyness_label": {
+    "message": "Background greyness"
+  },
+  "setting_immersiveTheaterView_label": {
+    "message": "Hide everything in theater mode"
+  },
+  "setting_relatedScrollbar_label": {
+    "message": "Related videos as scrollable list"
+  },
+  "setting_relatedScrollbar_description": {
+    "message": "Also improves scrolling through comments"
+  },
+  "setting_hideScrollbar_label": {
+    "message": "Hide scrollbar"
+  },
+  "setting_sectionVideoResizingCollapsed_label": {
+    "message": "Video"
+  },
+  "setting_videoScale_SMALL_label": {
+    "message": "Size (in small view)"
+  },
+  "setting_videoScale_THEATER_label": {
+    "message": "Size (in theater view)"
+  },
+  "setting_videoScale_FULLSCREEN_label": {
+    "message": "Size (in fullscreen)"
+  },
+  "setting_videoShadowSize_label": {
+    "message": "Shadow size"
+  },
+  "setting_videoShadowOpacity_label": {
+    "message": "Shadow opacity"
+  },
+  "setting_videoDebandingStrength_label": {
+    "message": "Debanding (noise)"
+  },
+  "setting_videoDebandingStrength_help": {
+    "message": "Click for more information about debanding (noise /dithering).\nTip: Change the \"Quality > Optimize debanding for\" setting to \"OLED\" to retain pure blacks on OLED displays."
+  },
+  "setting_videoOverlayEnabled_label": {
+    "message": "Sync video with ambient light"
+  },
+  "setting_videoOverlayEnabled_help": {
+    "message": "Delays the video frames according to the ambient light frametimes.\nThis makes sure that the ambient light is never out of sync with the video,\nbut it can introduce stuttering and/or dropped frames."
+  },
+  "setting_videoOverlaySyncThreshold_label": {
+    "message": "Sync video disable threshold"
+  },
+  "setting_videoOverlaySyncThreshold_description": {
+    "message": "Disable when dropping % of frames"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_label": {
+    "message": "Video jitter workaround"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_description": {
+    "message": "Uses: CPU & GPU power"
+  },
+  "setting_chromiumBugVideoJitterWorkaround_help": {
+    "message": "Chromium has a bug that jitters the video playback when your display \nhas a higher framerate than 60Hz. This workaround prevents the jittering \nby forcing the browser to run at the framerate of your display instead. \nClick the questionmark for more information about this bug in Chromium browsers."
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_label": {
+    "message": "Video artifacts workaround"
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_description": {
+    "message": "This workaround must be disabled for \nNVidia RTX Virtual Super Resolution (VSR)"
+  },
+  "setting_chromiumDirectVideoOverlayWorkaround_help": {
+    "message": "This workaround can fix several artifacts/bugs,\nwhen videos are in hardware accelerated overlays (MPO).\nExamples are: random black/white squares, flickering or a squeezed video.\n\nClick on the questionmark for more and updated information about these artifacts/bugs."
+  },
+  "setting_sectionHorizontalBarsCollapsed_label": {
+    "message": "Remove black & colored bars"
+  },
+  "setting_detectHorizontalBarSizeEnabled_label": {
+    "message": "Remove black bars"
+  },
+  "setting_detectHorizontalBarSizeEnabled_description": {
+    "message": "Uses: CPU power"
+  },
+  "setting_detectVerticalBarSizeEnabled_label": {
+    "message": "Remove black sidebars"
+  },
+  "setting_detectVerticalBarSizeEnabled_description": {
+    "message": "Uses: CPU power"
+  },
+  "setting_detectColoredHorizontalBarSizeEnabled_label": {
+    "message": "Detection: Remove colored bars"
+  },
+  "setting_detectHorizontalBarSizeOffsetPercentage_label": {
+    "message": "Detection: Offset"
+  },
+  "setting_barSizeDetectionAverageHistorySize_label": {
+    "message": "Detection: Frames average"
+  },
+  "setting_barSizeDetectionAverageHistorySize_help": {
+    "message": "The amount of video frames to detect an average bar size from. \nA lower amount of frames results in a faster detection, \nbut does also increase the amount of inaccurate detections."
+  },
+  "setting_barSizeDetectionAllowedElementsPercentage_label": {
+    "message": "Detection: Certainty threshold"
+  },
+  "setting_barSizeDetectionAllowedElementsPercentage_help": {
+    "message": "At 10% only clear bars are removed.\nA higher percentage can also remove bars with some elements.\nAnd an even higher percentage can crop to a squared element in the center."
+  },
+  "setting_barSizeDetectionAllowedUnevenBarsPercentage_label": {
+    "message": "Detection: Uneven threshold"
+  },
+  "setting_barSizeDetectionAllowedUnevenBarsPercentage_help": {
+    "message": "Higher percentages detect a more uneven bar.\nFor example: A bar is uneven when the top bar is smaller than the bottom bar.\nBut with a high percentage you also increase the risk that straight objects or lines are seen as bars."
+  },
+  "setting_horizontalBarsClipPercentage_label": {
+    "message": "Bar size"
+  },
+  "setting_verticalBarsClipPercentage_label": {
+    "message": "Sidebars size"
+  },
+  "setting_horizontalBarsClipPercentageReset_label": {
+    "message": "Reset bars next video"
+  },
+  "setting_detectVideoFillScaleEnabled_label": {
+    "message": "Fill video to removed bars"
+  },
+  "setting_sectionImageAdjustmentCollapsed_label": {
+    "message": "Filters"
+  },
+  "setting_brightness_label": {
+    "message": "Brightness"
+  },
+  "setting_contrast_label": {
+    "message": "Contrast"
+  },
+  "setting_vibrance_label": {
+    "message": "Colors"
+  },
+  "setting_saturation_label": {
+    "message": "Saturation"
+  },
+  "setting_sectionHdrImageAdjustmentCollapsed_label": {
+    "message": "HDR Filters"
+  },
+  "setting_hdrBrightness_label": {
+    "message": "Brightness"
+  },
+  "setting_hdrContrast_label": {
+    "message": "Contrast"
+  },
+  "setting_hdrSaturation_label": {
+    "message": "Saturation"
+  },
+  "setting_sectionDirectionsCollapsed_label": {
+    "message": "Directions"
+  },
+  "setting_directionTopEnabled_label": {
+    "message": "Top"
+  },
+  "setting_directionRightEnabled_label": {
+    "message": "Right"
+  },
+  "setting_directionBottomEnabled_label": {
+    "message": "Bottom"
+  },
+  "setting_directionLeftEnabled_label": {
+    "message": "Left"
+  },
+  "setting_sectionAmbientlightCollapsed_label": {
+    "message": "Ambient light"
+  },
+  "setting_blur2_label": {
+    "message": "Blur"
+  },
+  "setting_blur2_description": {
+    "message": "Uses: GPU memory"
+  },
+  "setting_edge_label": {
+    "message": "Edge size"
+  },
+  "setting_edge_description": {
+    "message": "To better see what changes: Turn the blur to 0%"
+  },
+  "setting_spread_label": {
+    "message": "Spread"
+  },
+  "setting_spread_description": {
+    "message": "Uses: GPU power"
+  },
+  "setting_spreadFadeStart_label": {
+    "message": "Spread fade start"
+  },
+  "setting_spreadFadeCurve_label": {
+    "message": "Spread fade curve"
+  },
+  "setting_spreadFadeCurve_description": {
+    "message": "To better see what changes: Turn the blur to 0%"
+  },
+  "setting_debandingStrength_label": {
+    "message": "Debanding (noise)"
+  },
+  "setting_debandingStrength_help": {
+    "message": "Click for more information about (noise /dithering).\nTip: Change the \"Quality > Optimize debanding for\" setting to \"OLED\" to retain pure blacks on OLED displays."
+  },
+  "setting_frameFading_label": {
+    "message": "Fade in duration"
+  },
+  "setting_frameFading_description": {
+    "message": "Uses: GPU memory"
+  },
+  "setting_frameFading_help": {
+    "message": "Fading between changes in the ambient light"
+  },
+  "setting_flickerReduction_label": {
+    "message": "Flicker reduction"
+  },
+  "setting_flickerReduction_help": {
+    "message": "Reduces flickering by limiting the speed at which brightness changes in the ambient light"
+  },
+  "setting_frameBlending_label": {
+    "message": "Smooth motion (frame blending)"
+  },
+  "setting_frameBlending_description": {
+    "message": "Uses: GPU power. Also works with \"Sync video\""
+  },
+  "setting_frameBlending_help": {
+    "message": "Click for more information about Frame blending"
+  },
+  "setting_frameBlendingSmoothness_label": {
+    "message": "Smooth motion strength"
+  },
+  "setting_fixedPosition_label": {
+    "message": "Fixed position"
+  },
+  "setting_fixedPosition_description": {
+    "message": "Ignores the scroll position of the page"
+  },
+  "setting_sectionViewsCollapsed_label": {
+    "message": "View modes"
+  },
+  "setting_enableInViews_label": {
+    "message": "Enable in layouts"
+  },
+  "setting_enableInViews_value_0": {
+    "message": "All"
+  },
+  "setting_enableInViews_value_1": {
+    "message": "Small"
+  },
+  "setting_enableInViews_value_2": {
+    "message": "Small & Theater"
+  },
+  "setting_enableInViews_value_3": {
+    "message": "Theater"
+  },
+  "setting_enableInViews_value_4": {
+    "message": "Theater & Fullscreen"
+  },
+  "setting_enableInViews_value_5": {
+    "message": "Fullscreen"
+  },
+  "setting_enableInPictureInPicture_label": {
+    "message": "Picture in picture"
+  },
+  "setting_enableInEmbed_label": {
+    "message": "Embedded videos"
+  },
+  "setting_enableInVRVideos_label": {
+    "message": "VR/360 videos"
+  },
+  "setting_sectionGeneralCollapsed_label": {
+    "message": "General"
+  },
+  "setting_theme_label": {
+    "message": "Appearance (theme)"
+  },
+  "setting_theme_value_minus1": {
+    "message": "Light"
+  },
+  "setting_theme_value_0": {
+    "message": "Default"
+  },
+  "setting_theme_value_1": {
+    "message": "Dark"
+  },
+  "setting_enabled_label": {
+    "message": "Enabled"
+  },
+  "warning_settings_load_slow": {
+    "message": "It is taking more than 5 seconds to load your previous settings.\nIf this is your first warning and it does not disappear, then the extension might have updated. \nYou can reload the webpage to complete the update.\n\nBut if this happens frequently, here are some possible causes:\n- Another extension is blocking code execution on this webpage for a long duration.\n  Disable other extensions temporarily to find out which one it is.\n- If your computer is very slow or frequently freezing in other applications as well,\n  there could be a problem with your hardware, likely the memory (DDR)."
+  },
+  "warning_settings_load_failed_updated": {
+    "message": "Your previous settings cannot be loaded because the extension could have been updated.\nRefresh the page to retry again."
+  },
+  "setting_webGL_disabled_webgl_unavailable": {
+    "message": "You have disabled WebGL in your browser."
+  },
+  "setting_webGL_disabled_previously_failed_at": {
+    "message": "And the WebGL renderer previously failed at $ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "setting_webGL_disabled_failed_at": {
+    "message": "Failed to load at $ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "setting_webGL_disabled_check_browser": {
+    "message": "Check the Hardware acceleration and WebGL settings in your browser or click on the link \"$ARG1$\" at the top of this menu to troubleshoot this problem.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "setting_webGL_disabled_retry_note": {
+    "message": "Note: You can re-enable this setting to try it again. In case the WebGL renderer fails again the time at which it failed will be updated."
+  },
+  "menu_close_warning": {
+    "message": "Close warning"
+  },
+  "menu_troubleshoot_link": {
+    "message": "Troubleshoot performance problems"
+  },
+  "menu_import_export_tooltip": {
+    "message": "How to export or import settings: \n1. Click on the extension icon to open the option. \n2. Scroll down to \"$ARG1$\"",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "menu_reset_all_settings": {
+    "message": "Reset all settings"
+  },
+  "menu_reset_all_settings_confirm": {
+    "message": "Are you sure you want to reset ALL the settings and reload the watch page?"
+  },
+  "menu_feedback_link": {
+    "message": "Give feedback or a rating"
+  },
+  "donate_alt": {
+    "message": "Support me via a donation"
+  },
+  "menu_hotkey_title": {
+    "message": "Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)"
+  },
+  "menu_setting_unavailable": {
+    "message": "This setting is unavailable"
+  },
+  "menu_right_click_to_reset": {
+    "message": "Right click to reset"
+  },
+  "menu_set_to": {
+    "message": "Set to $ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "menu_loading_paused": {
+    "message": "Ambient light loading is paused."
+  },
+  "menu_loading_waiting": {
+    "message": "Waiting for the video and page to be loaded first..."
+  },
+  "menu_button_tooltip": {
+    "message": "Ambient light settings"
+  },
+  "menu_button_tooltip_failed": {
+    "message": "Ambient light failed to load:\n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "menu_button_updated": {
+    "message": "Ambient light has been updated with new settings\nClick to see what's new"
+  },
+  "menu_controlled_by_setting": {
+    "message": "Controlled by the \"$ARG1$\" setting.\nManually adjusting this setting will turn off \"$ARG1$\"",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_error_occurred": {
+    "message": "An error occurred:\n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_save_failed_quota": {
+    "message": "The changes could not be saved because the settings have changed too often.\nWait a few seconds..."
+  },
+  "warning_save_failed_updated": {
+    "message": "The changes could not be saved because the extension has been updated.\nRefresh the webpage to reload the updated extension."
+  },
+  "info_energy_saver_still_image": {
+    "message": "Detected a still image as video\nThe framerate has been limited to: 0.2 fps\n\nLimited by the advanced setting:\n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "info_energy_saver_small_movements": {
+    "message": "Detected only small movements in the video\nThe framerate has been limited to: 1 fps\n\nLimited by the advanced setting:\n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "value_off": {
+    "message": "Off"
+  },
+  "value_milliseconds": {
+    "message": "$ARG1$ ms",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "value_seconds": {
+    "message": "$ARG1$ seconds",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "value_frameSync_decoded": {
+    "message": "Decoded framerate"
+  },
+  "value_frameSync_display": {
+    "message": "Display framerate"
+  },
+  "value_frameSync_video": {
+    "message": "Video framerate"
+  },
+  "value_one_frame": {
+    "message": "1 frame"
+  },
+  "value_frames": {
+    "message": "$ARG1$ frames",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "value_max_fps": {
+    "message": "max fps"
+  },
+  "options_crash_options_too_many_changes": {
+    "message": "Crash reports options changed too many times. Please wait a few seconds."
+  },
+  "options_crash_options_sync_warning": {
+    "message": "Unable to synchronize any crash option changes to youtube pages that are already open. Make sure to refresh any open youtube pages after you've changed an option."
+  },
+  "options_import_error_no_settings": {
+    "message": "No settings found to import"
+  },
+  "options_import_warning_skipped_unknown": {
+    "message": "Skipped \"$ARG1$\": $ARG2$. This setting might have been removed or migrated to another name after an update.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_import_warning_skipped_not_boolean": {
+    "message": "Skipped \"$ARG1$\": $ARG2$ is not a boolean.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_import_warning_skipped_not_number": {
+    "message": "Skipped \"$ARG1$\": $ARG2$ is not a number.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "options_import_warning_rounded": {
+    "message": "Rounded down \"$ARG1$\": $ARG2$ is not in steps of $ARG3$ from $ARG4$.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "options_import_warning_clipped_min": {
+    "message": "Clipped \"$ARG1$\": $ARG2$ is lower than the minimum of $ARG3$.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "options_import_warning_clipped_max": {
+    "message": "Clipped \"$ARG1$\": $ARG2$ is higher than the maximum of $ARG3$.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "options_imported_from_file": {
+    "message": "Imported $ARG1$ settings from a file.\n(Refresh any open YouTube browser tabs to use the new settings.)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_imported_from_cloud": {
+    "message": "Imported $ARG1$ settings from cloud storage.\n(Refresh any open YouTube browser tabs to use the new settings.)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_import_warnings": {
+    "message": "With $ARG1$ warnings:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_imported_details": {
+    "message": "View imported settings (Click to view)\nNote: The blur setting is internally converted to blur2"
+  },
+  "options_import_failed": {
+    "message": "Failed to import settings: \n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_export_error_nothing": {
+    "message": "Nothing to export. All settings still have their default values."
+  },
+  "options_exported_to_file": {
+    "message": "Exported $ARG1$ settings",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_exported_to_cloud": {
+    "message": "Exported $ARG1$ settings to cloud storage",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_exported_details": {
+    "message": "View exported settings (Click to view)"
+  },
+  "options_export_failed": {
+    "message": "Failed to export settings: \n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_export_download_link_title": {
+    "message": "If the automatic download was blocked:\n1. Right click on this link \n2. Click on \"Save link as...\""
+  },
+  "options_last_cloud_export": {
+    "message": "Last cloud storage export was on: $ARG1$ at $ARG2$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "warning_crash_tips": {
+    "message": "Reload the webpage to try it again.\n\nPossible causes:\n- The memory of your GPU is fully used by another application.\n- You have too many YouTube webpages visible at the same time. Your GPU can only render a limited amount of ambient lights at the same time.\n- You have changed a setting to a value that is incompatible with your GPU. Undo your last change and refresh the webpage. Or reset all settings with the reset button at the top right."
+  },
+  "warning_crash_tips_webgl": {
+    "message": "Another possible workaround could be to turn off the \"$ARG1$\" setting (This is an advanced setting). But if you do so, know that the legacy renderer requires more power.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_renderer_restore_failed": {
+    "message": "Failed to restore the renderer from a GPU crash."
+  },
+  "warning_renderer_restore_failed_3_times": {
+    "message": "Failed to restore 3 times the renderer from a GPU crash."
+  },
+  "warning_webgl_restore_failed": {
+    "message": "Failed to restore the WebGL renderer from a GPU crash."
+  },
+  "warning_webgl_restore_failed_3_times": {
+    "message": "Failed to restore 3 times the WebGL renderer from a GPU crash."
+  },
+  "warning_webgl_create_failed": {
+    "message": "Failed to create the WebGL renderer from a GPU crash."
+  },
+  "warning_webgl_change_failed": {
+    "message": "Failed to change the WebGL renderer from a GPU crash."
+  },
+  "warning_slow_device": {
+    "message": "The browser warned that this is a slow device. If you have a graphics card, make sure to enable hardware acceleration in the browser.\n(The resolution setting has been turned down to 25% for better performance)"
+  },
+  "warning_failed_to_load": {
+    "message": "Failed to load.\n$ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_drm": {
+    "message": "Unable to display an ambient light because YouTube has applied DRM protection to this video"
+  },
+  "warning_vr_unsupported": {
+    "message": "Ambient light does not support VR videos"
+  },
+  "warning_video_container_missing": {
+    "message": "Unable to sync the video with the ambient light. The html5-video-container element does not exist on the page. This is likely due to an update of the YouTube design. This will probably soon be fixed in a new version."
+  },
+  "warning_draw_failed": {
+    "message": "Failed to display the ambient light"
+  },
+  "warning_draw_failed_security": {
+    "message": "A refresh could help, but it is most likely that your browser does not allow the ambient light to read the video pixels of this specific YouTube video. You can probably watch other YouTube videos without this problem."
+  },
+  "warning_draw_failed_other": {
+    "message": "A refresh of the page might help. If not, there could be a specific problem with this YouTube video. Or searching the error message below might help.\n\nError: $ARG1$\nReason: $ARG2$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "warning_theme_toggle_paused_to_light": {
+    "message": "Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the light appearance has been disabled for 10 seconds."
+  },
+  "warning_theme_toggle_paused_to_dark": {
+    "message": "Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the dark appearance has been disabled for 10 seconds."
+  },
+  "warning_theme_toggle_failed": {
+    "message": "Failed to toggle the page theme from $ARG1$ to $ARG2$ mode.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "warning_theme_toggle_hint": {
+    "message": "Set the \"$ARG1$\" setting to \"$ARG2$\" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "value_theme_mode_dark": {
+    "message": "dark"
+  },
+  "value_theme_mode_light": {
+    "message": "light"
+  },
+  "warning_settings_load_failed": {
+    "message": "Your previous settings cannot be loaded. Refresh the webpage to try it again. \nThis can happen after you have updated the extension."
+  },
+  "warning_resource_load_failed": {
+    "message": "Failed to load a resource. Reload the webpage to try it again. \nThis can happen after you have updated the extension. \n\nOr if this happens often, view the error in your browser's DevTools javascript console panel. \nTip: Look for errors about this url: $ARG1$",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_extension_unavailable": {
+    "message": "Failed to load the extension on this webpage because it has been updated, reloaded or uninstalled. \nReload the webpage to reload the extension."
+  },
+  "menu_badge_new": {
+    "message": "New"
+  },
+  "menu_badge_experimental": {
+    "message": "Experimental"
+  }
+}

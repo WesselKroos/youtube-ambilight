@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import {
   getCookie,
   isEmbedPageUrl,
@@ -178,9 +179,14 @@ export default class Theming {
           const withinThresshold = now - 10000 < lastFailedThemeToggle;
           if (withinThresshold) {
             this.settings.setWarning(
-              `Because the previous theme toggle attempt failed to prevent repeated page refreshes, the automatic toggle to the ${
-                this.isDarkTheme() ? 'light' : 'dark'
-              } appearance has been disabled for 10 seconds.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+              `${t(
+                this.isDarkTheme()
+                  ? 'warning_theme_toggle_paused_to_light'
+                  : 'warning_theme_toggle_paused_to_dark'
+              )}\n\n${t('warning_theme_toggle_hint', [
+                t('setting_theme_label'),
+                t('setting_theme_value_0'),
+              ])}`
             );
             this.updatingTheme = false;
             return;
@@ -221,11 +227,13 @@ export default class Theming {
     this.themeToggleFailed = true;
     await storage.set('last-failed-theme-toggle', new Date().getTime());
     this.settings.setWarning(
-      `Failed to toggle the page theme to from ${
-        wasDark ? 'dark' : 'light'
-      } to ${
-        isDark ? 'dark' : 'light'
-      } mode.\n\nSet the "Appearance (theme)" setting to "Default" to disable the automatic appearance toggle permanently if it keeps on failing.\n(And let me know via the feedback form that it failed so that I can fix it in the next version of the extension)`
+      `${t('warning_theme_toggle_failed', [
+        t(wasDark ? 'value_theme_mode_dark' : 'value_theme_mode_light'),
+        t(isDark ? 'value_theme_mode_dark' : 'value_theme_mode_light'),
+      ])}\n\n${t('warning_theme_toggle_hint', [
+        t('setting_theme_label'),
+        t('setting_theme_value_0'),
+      ])}`
     );
   }
 

@@ -1,3 +1,4 @@
+import { t } from './libs/i18n';
 import {
   on,
   wrapErrorHandler,
@@ -394,9 +395,7 @@ const loadAmbientlight = async () => {
   try {
     await Settings.getStoredSettingsCached();
   } catch (ex) {
-    setWarning(
-      `Your previous settings cannot be loaded. Refresh the webpage to try it again. ${'\n'}This can happen after you have updated the extension. ${'\n\n'}${ex?.toString()}`
-    );
+    setWarning(`${t('warning_settings_load_failed')}\n\n${ex?.toString()}`);
 
     if (
       !(

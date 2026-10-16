@@ -1,3 +1,4 @@
+import { t } from './libs/i18n';
 import { getVersion } from './libs/utils';
 import {
   appendErrorStack,
@@ -26,13 +27,8 @@ injectedScript.addMessageListener('error', (injectedEx) => {
 const setResourceWarning = (url) => {
   setWarning(
     url
-      ? `Failed to load a resource. Reload the webpage to try it again. 
-This can happen after you have updated the extension. 
-
-Or if this happens often, view the error in your browser's DevTools javascript console panel. 
-Tip: Look for errors about this url: ${url}`
-      : `Failed to load the extension on this webpage because it has been updated, reloaded or uninstalled. 
-Reload the webpage to reload the extension.`
+      ? t('warning_resource_load_failed', url)
+      : t('warning_extension_unavailable')
   );
 };
 
