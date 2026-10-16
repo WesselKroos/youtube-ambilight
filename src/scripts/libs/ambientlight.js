@@ -1841,7 +1841,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       videoParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`;
       videoParentElem.style.overflow = 'hidden';
       videoParentElem.style.transform = `
-        translate(${left}px, ${top}px)
+        translate(${document.body.dir === 'rtl' ? -left : left}px, ${top}px)
         scale(${this.videoScale / 100}) 
         scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `;
@@ -2167,6 +2167,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (videoParentElem) {
       videoParentElem.style.transform = '';
       videoParentElem.style.overflow = '';
+      videoParentElem.style.width = '';
       videoParentElem.style.height = '';
       videoParentElem.style.marginBottom = '';
       setStyleProperty(videoParentElem, '--video-transform', '');
