@@ -227,8 +227,11 @@ export default class Ambientlight {
     if (initListeners) this.initVideoListeners();
   }
 
-  // FireFox workaround: WebGLParent::RecvReadPixels is slow when reading from a HtmlCanvasElement/OffscreenCanvas (performance scales linear with the amount of pixels to be read)
+  // FireFox workaround 1: WebGLParent::RecvReadPixels is slow when reading from a HtmlCanvasElement/OffscreenCanvas (performance scales linear with the amount of pixels to be read)
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1719154
+  // FireFox workaround 2:
+  // Additional videobuffer takes ~50% more time (30ms): video -> texImage2D (9ms) -> videobuffer -> texSubImage2D (9ms) -> ambientbuffer -> drawImage (12ms)
+  // Than without the videobuffer (20.5ms): video -> texSubImage2D (0.5ms) -> ambientbuffer -> drawImage (20ms)
   detectMozillaBugSlowCanvas2DReadPixelsWorkaround() {
     const match = navigator.userAgent.match(/Firefox\/((?:\.|[0-9])+)/);
     const version = match?.length > 1 ? parseFloat(match[1]) : null;
@@ -238,7 +241,9 @@ export default class Ambientlight {
   }
   shouldDrawDirectlyFromVideoElem = () =>
     this.enableMozillaBugReadPixelsWorkaround &&
-    this.projector.webGLVersion === 2;
+    this.projector.webGLVersion === 2 &&
+    !this.settings.flickerReduction // requires a videobuffer
+    ;
 
   // FireFox workaround: Force to rerender the outer blur of the canvasses
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1606251
