@@ -1,4 +1,4 @@
-<a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
+		<a href="https://ko-fi.com/G2G59EK8L" rel="noopener">
   <img align="right" src="https://github.com/WesselKroos/youtube-ambilight/blob/master/src/images/donate.svg?raw=true" title="Support me via a donation">
 </a>
 
