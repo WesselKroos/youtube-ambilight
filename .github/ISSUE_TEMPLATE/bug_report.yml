@@ -66,8 +66,11 @@ body:
      description: Check the statements that match your findings
      options:
        - label: The bug still persist when I disable all other extensions (ex. in incognito mode with only this extension enabled)
+         required: true
        - label: When I logged out of my YouTube account (ex. in incognito mode)
+         required: true
        - label: In incognito mode
+         required: true
  - type: textarea
    id: context
    attributes:
