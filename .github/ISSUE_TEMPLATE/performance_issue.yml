@@ -12,7 +12,7 @@ body:
        **Troubleshooter**
        First try all relevant checks and steps in the troubleshooter: https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md
        
- - type: checkboxs
+ - type: checkboxes
    id: assessment
    attributes:
      label: Troubleshooting
