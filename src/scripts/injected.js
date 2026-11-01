@@ -43,6 +43,8 @@ function updateTheme(toDark) {
   if (ytdAppElem?.setMastheadTheme) {
     ytdAppElem.setMastheadTheme();
   }
+  
+  setLiveChatTheme(toDark);
 }
 
 contentScript.addMessageListener(
@@ -89,16 +91,17 @@ contentScript.addMessageListener(
   }
 );
 
-contentScript.addMessageListener(
-  'set-live-chat-theme',
-  function seLiveChatTheme(toDark) {
-    const liveChatElem = getElem('live-chat');
-    if (!liveChatElem) return;
+function setLiveChatTheme(toDark) {
+  const liveChatElem = getElem('live-chat');
+  if (!liveChatElem) return;
 
-    liveChatElem.postToContentWindow({
-      'yt-live-chat-set-dark-theme': toDark,
-    });
-  }
+  liveChatElem.postToContentWindow({
+    'yt-live-chat-set-dark-theme': toDark,
+  });
+}
+
+contentScript.addMessageListener(
+  'set-live-chat-theme', setLiveChatTheme
 );
 
 contentScript.addMessageListener('is-hdr-video', function isHdrVideo() {
