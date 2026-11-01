@@ -1,0 +1,88 @@
+name: Performance issue
+description: Report and get help troubleshooting a performance issue
+title: "A short title describing the performance issue"
+labels: ["S: Todo", "T: Question"]
+assignees: 
+  - WesselKroos
+body:
+
+ - type: markdown
+   attributes:
+     value: |
+       **Troubleshooter**
+       First try all relevant checks and steps in the troubleshooter: https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md
+       
+ - type: checkboxs
+   id: assessment
+   attributes:
+     label: Troubleshooting
+     options:
+       - label: I have tried all relevant checks and steps in the troubleshooter
+         required: true
+       - label: Did the troubleshooter not solve your performance problems?
+         required: true
+       
+ - type : textarea
+   id: description
+   attributes:
+     label: Describe the performance problem you are currently experiencing
+     description: Feel free to add screenshots or upload your extension settings (Extension button > "Export to file" button)
+   validations:
+     required: true
+
+ - type: markdown
+   attributes:
+     value: |
+       **Device information**
+
+ - type: input
+   id: browser-name
+   attributes:
+     label: Name of your web browser
+     placeholder: Chrome
+   validations:
+     required: true
+     
+ - type: input
+   id: browser-version
+   attributes:
+     label: Version of your web browser
+     placeholder: 156.0.8078.79 (Official Build) (64-bit)
+   validations:
+     required: true
+
+ - type: input
+   id: cpu
+   attributes:
+     label: Name of your CPU (Processor)
+     placeholder: AMD 7800X3D
+   validations:
+     required: true
+
+ - type: input
+   id: gpu
+   attributes:
+     label: Name of your GPU (Videocard)
+     placeholder: NVIDIA RTX 5060 TI
+   validations:
+     required: true
+
+ - type: markdown
+   attributes:
+     value: |
+       **Screenshots**
+
+ - type: textarea
+   id: screenshots-taskmanager
+   attributes:
+     label: Screenshots of the Task manager with the CPU and GPU usage charts
+     
+ - type: textarea
+   id: screenshots-framerates
+   attributes:
+     label: Turn on the Ambient light setting Quality > Show framerate and make a screenshot of your framerates
+
+ - type: textarea
+   id: workarounds
+   attributes:
+     label: Describe any workarounds you have found that fix or reduce the problem
