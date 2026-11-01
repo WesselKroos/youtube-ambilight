@@ -373,6 +373,13 @@ html[data-ambientlight-enabled] {
     background: var(--yt-spec-inverted-background) !important;
     color: var(--yt-spec-text-primary-inverse) !important;
   }
+
+  .ytSpecButtonShapeNextOutline {
+    &.ytSpecButtonShapeNextMono,
+    &.ytSpecButtonShapeNextCallToAction {
+      border-color: var(--yt-spec-10-percent-layer);
+    }
+  }
   
   .byline-title.ytd-playlist-panel-renderer,
   .byline-title.ytd-playlist-panel-renderer a, 
@@ -578,8 +585,17 @@ html[data-ambientlight-enabled] {
     backdrop-filter: blur(4px);
   }
 
+  
+  #description.ytd-watch-metadata .ytAttributedStringLinkCallToActionColor {
+    color: #065fd4 !important;
+  }
+  &[dark] #description.ytd-watch-metadata .ytAttributedStringLinkCallToActionColor {
+    color: #3ea6ff !important;
+  }
+
   .yt-core-attributed-string--link-inherit-color,
-  .ytAttributedStringLinkInheritColor {
+  .ytAttributedStringLinkInheritColor,
+  .ytAttributedStringHighlightTextDecorator .ytAttributedStringLinkCallToActionColor {
     color: inherit !important;
   }
 
@@ -1152,6 +1168,10 @@ html[data-ambientlight-enabled] {
 
   /* Live chat (Iframe styling in live-chat.css */
 
+  ytd-live-chat-frame {
+    border-color: var(--yt-spec-10-percent-layer);
+  }
+
   ytd-live-chat-frame,
   ytd-live-chat-frame ytd-toggle-button-renderer {
     background: none !important;
@@ -1217,11 +1237,20 @@ html[data-ambientlight-enabled] {
   tp-yt-paper-toast.yt-notification-action-renderer {
     background: var(--yt-spec-text-primary-inverse) !important;
   }
+  .snackbarViewModelTitle {
+    color: var(--yt-spec-text-primary-inverse) !important;
+  }
 
   /* Cosmetics - Rich metadata */
 
   ytd-rich-metadata-renderer {
     background: var(--ytal-background) !important;
+  }
+
+  #topic-link-container.ytd-topic-link-renderer,
+  ytd-comments-header-renderer[engagement-panel],
+  #subheader.ytd-engagement-panel-title-header-renderer:not(:empty) {
+    border-color: var(--yt-spec-10-percent-layer);
   }
 
   ytd-engagement-panel-section-list-renderer {
@@ -1374,10 +1403,23 @@ html[data-ambientlight-enabled] {
   #primary.ytd-watch-fixie ytd-comments-entry-point-header-renderer {
     background: var(--ytal-background) !important;
   }
+
+  .ytListItemViewModelTitle {
+    color: var(--yt-spec-text-secondary) !important;
+  }
   
   $comments-reply-input: '#input-container.ytd-commentbox .unfocused-line.tp-yt-paper-input-container, #placeholder-area.ytd-comment-simplebox-renderer';
   #{$comments-reply-input} {
     border-bottom-color: rgba(20,20,20,.5);
+  }
+
+  ytd-author-comment-badge-renderer[creator],
+  .ytChipShapeActive {
+    background-color: var(--yt-spec-text-primary);
+  }
+  ytd-author-comment-badge-renderer[creator] #name.ytd-author-comment-badge-renderer,
+  .ytChipShapeActive .ytChipShapeText {
+    color: var(--yt-spec-text-primary-inverse);
   }
     
   &[dark] {
@@ -2975,12 +3017,15 @@ html[data-ambientlight-enabled] {
       ytd-info-panel-container-renderer,
       ytd-video-owner-renderer.ytd-watch-metadata,
       #top-row.ytd-watch-metadata button.yt-spec-button-shape-next:not(.yt-spec-button-shape-next--filled) > *,
+      #top-row.ytd-watch-metadata button.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextTonal > *,
       #middle-row.ytd-watch-metadata,
       #description-inner.ytd-watch-metadata,
       ytd-ticket-shelf-renderer,
       ytd-comments,
       #header.ytd-comments-entry-point-header-renderer, // fixie
       #content.ytd-comments-entry-point-header-renderer, // fixie
+      ytd-comments .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextText,
+      yt-chip-cloud-renderer .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextText,
       ytd-watch-metadata ytd-rich-metadata-renderer > *,
       ytd-expandable-metadata-renderer,
 
@@ -3088,7 +3133,9 @@ html[data-ambientlight-enabled] {
     #expander[collapsed].ytd-comment-renderer,
 
     #container.ytd-channel-name,
-    #channel-name.long-byline.ytd-video-meta-block {
+    #channel-name.long-byline.ytd-video-meta-block,
+    ytd-comments .ytSpecButtonShapeNextButtonTextContent,
+    .ytChipShapeText {
       overflow: initial !important;
     }
 
@@ -3171,6 +3218,8 @@ html[data-ambientlight-enabled] {
       ytd-macro-markers-list-item-renderer yt-button-shape yt-icon,
       .ytd-item-section-renderer yt-icon.ytd-menu-renderer,
 
+      ytd-comments .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextText .ytSpecButtonShapeNextIcon svg,
+      yt-chip-cloud-renderer .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextText .ytSpecButtonShapeNextIcon svg,
       ytd-comments-header-renderer[modern-typography] .count-text.ytd-comments-header-renderer, // New comments header
       ytd-comment-replies-renderer .yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--text, // More/less replies button
       #like-button.ytd-comment-action-buttons-renderer, // Comment like button
@@ -3361,12 +3410,16 @@ html[data-ambientlight-enabled] {
         max-width: 100%;
       }
 
-      .ytSubThreadConnection {
-        border-bottom-color: var(--yt-spec-10-percent-layer);
-      }
       .continuation.ytd-comment-view-model,
       .ytSubThreadConnection, .ytSubThreadContinuation {
         border-left-color: var(--yt-spec-10-percent-layer);
+      }
+      .ytSubThreadConnection {
+        border-bottom-color: var(--yt-spec-10-percent-layer);
+      }
+      .ytSubThreadHost:not(:last-of-type) > .ytSubThreadThreadline .ytSubThreadConnection {
+        // Hides the semi transparent line on the left that would otherwise merge with the ytSubThreadContinuation line
+        mask-image: linear-gradient(to right, transparent 0 1px, black 1px 100%);
       }
     }
     ytd-playlist-panel-renderer #top-level-buttons-computed {

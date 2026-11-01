@@ -36,11 +36,19 @@ body yt-live-chat-app {
   --yt-spec-10-percent-layer: rgba(0, 0, 0, .1);
   --yt-live-chat-header-bottom-border: 1px solid var(--yt-spec-10-percent-layer);
   --yt-live-chat-panel-pages-border-color: var(--yt-spec-10-percent-layer);
+  --t08a7c6c176cbc5c2: #fff; // background
+  --tde41338fc2bd4ba5: #000; // primary
+  --tffc2fd3a644f6275: #0f0f0f; // secondary
+  --tf3fc855af2285f5f: var(--yt-spec-10-percent-layer); // chat/input divider
 
   html[dark] &,
   &[dark] {
     --yt-spec-icon-inactive: rgba(255, 255, 255, .3);
     --yt-spec-10-percent-layer: rgba(255, 255, 255, .1);
+    --t08a7c6c176cbc5c2: #000; // background
+    --tde41338fc2bd4ba5: #fff; // primary
+    --tffc2fd3a644f6275: #f0f0f0; // secondary
+    --tf3fc855af2285f5f: var(--yt-spec-10-percent-layer); // chat/input divider
   }
 }
 
@@ -49,6 +57,7 @@ yt-live-chat-renderer,
 yt-live-chat-header-renderer,
 yt-live-chat-ticker-renderer,
 yt-live-chat-text-message-renderer,
+yt-live-chat-message-input-renderer,
 #card.yt-live-chat-viewer-engagement-message-renderer,
 #menu.yt-live-chat-text-message-renderer,
 #container.yt-live-chat-restricted-participation-renderer,
