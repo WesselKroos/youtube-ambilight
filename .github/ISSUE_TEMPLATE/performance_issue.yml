@@ -9,7 +9,7 @@ body:
  - type: markdown
    attributes:
      value: |
-       **Troubleshooter**
+       ## Troubleshooter
        First try all relevant checks and steps in the troubleshooter: https://github.com/WesselKroos/youtube-ambilight/blob/master/TROUBLESHOOT.md
        
  - type: checkboxes
@@ -33,7 +33,7 @@ body:
  - type: markdown
    attributes:
      value: |
-       **Device information**
+       ## Device information
 
  - type: input
    id: browser-name
@@ -70,7 +70,7 @@ body:
  - type: markdown
    attributes:
      value: |
-       **Screenshots**
+       ## Screenshots
 
  - type: textarea
    id: screenshots-taskmanager
@@ -82,6 +82,11 @@ body:
    attributes:
      label: Turn on the Ambient light setting Quality > Show framerate and make a screenshot of your framerates
 
+ - type: markdown
+   attributes:
+     value: |
+       ## Additional information
+       
  - type: textarea
    id: workarounds
    attributes:
