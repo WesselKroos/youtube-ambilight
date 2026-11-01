@@ -21,6 +21,11 @@ body:
          required: true
        - label: Did the troubleshooter not solve your performance problems?
          required: true
+
+ - type: markdown
+   attributes:
+     value: |
+       ## Description
        
  - type : textarea
    id: description
@@ -29,6 +34,26 @@ body:
      description: Feel free to add screenshots or upload your extension settings (Extension button > "Export to file" button)
    validations:
      required: true
+       
+ - type: textarea
+   id: workarounds
+   attributes:
+     label: Describe any workarounds you have found that fix or reduce the problem
+
+ - type: markdown
+   attributes:
+     value: |
+       ## Screenshots
+
+ - type: textarea
+   id: screenshots-taskmanager
+   attributes:
+     label: Screenshots of the Task manager with the CPU and GPU usage charts
+     
+ - type: textarea
+   id: screenshots-framerates
+   attributes:
+     label: Turn on the Ambient light setting Quality > Show framerate and make a screenshot of your framerates
 
  - type: markdown
    attributes:
@@ -66,28 +91,3 @@ body:
      placeholder: NVIDIA RTX 5060 TI
    validations:
      required: true
-
- - type: markdown
-   attributes:
-     value: |
-       ## Screenshots
-
- - type: textarea
-   id: screenshots-taskmanager
-   attributes:
-     label: Screenshots of the Task manager with the CPU and GPU usage charts
-     
- - type: textarea
-   id: screenshots-framerates
-   attributes:
-     label: Turn on the Ambient light setting Quality > Show framerate and make a screenshot of your framerates
-
- - type: markdown
-   attributes:
-     value: |
-       ## Additional information
-       
- - type: textarea
-   id: workarounds
-   attributes:
-     label: Describe any workarounds you have found that fix or reduce the problem
