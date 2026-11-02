@@ -720,12 +720,12 @@ export default class ProjectorWebGL {
       this.ctx.texParameteri(
         this.ctx.TEXTURE_2D,
         this.ctx.TEXTURE_WRAP_S,
-        this.ctx.REPEAT,
+        this.ctx.CLAMP_TO_EDGE,
       );
       this.ctx.texParameteri(
         this.ctx.TEXTURE_2D,
         this.ctx.TEXTURE_WRAP_T,
-        this.ctx.REPEAT,
+        this.ctx.CLAMP_TO_EDGE,
       );
       if (this.webGLVersion !== 1) {
         this.ctx.texParameteri(
