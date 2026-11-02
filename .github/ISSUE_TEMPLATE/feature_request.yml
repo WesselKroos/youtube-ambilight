@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea
-title: "A short title describing your idea"
+title: 
 labels: ["S: Todo", "T: Enhancement"]
 assignees: 
   - WesselKroos
