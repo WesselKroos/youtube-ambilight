@@ -1,6 +1,5 @@
 name: Bug report
 description: File a bug report
-title: "A concise title for the bug"
 labels: ["S: Todo", "T: Bug"]
 assignees: 
   - WesselKroos
