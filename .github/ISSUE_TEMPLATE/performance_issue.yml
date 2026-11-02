@@ -1,6 +1,5 @@
 name: Performance issue
 description: Report and get help troubleshooting a performance issue
-title: "A short title describing the performance issue"
 labels: ["S: Todo", "T: Question"]
 assignees: 
   - WesselKroos
