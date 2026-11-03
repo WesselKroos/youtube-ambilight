@@ -2158,7 +2158,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       }
     }
 
-    this.resizeCanvasses();
+    await this.resizeCanvasses();
     this.stats.initElems();
 
     this.sizesChanged = false;
@@ -2462,7 +2462,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     );
   }
 
-  resizeCanvasses() {
+  async resizeCanvasses() {
     if (this.canvassesInvalidated) {
       this.recreateProjectors();
       this.canvassesInvalidated = false;
@@ -2524,7 +2524,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       });
     }
 
-    this.projector.rescale(
+    await this.projector.rescale(
       scales,
       lastScale,
       projectorSize,

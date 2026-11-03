@@ -799,7 +799,7 @@ export default class ProjectorWebGL {
         vec2 direction = ceil(fUV * 2.) - 1.;
         vec2 iUV = ((direction - fUV) * fScale) / ((direction - .5) * fScaleStep);
         int impreciseI = int(min(iUV[0], iUV[1]));
-        for (int preciseI = 0; preciseI < 200; preciseI++) {
+        for (int preciseI = 0; preciseI < ${this.scalesLength > 150 ? Math.min(2000 /* spread 400% / edge 0.3 = 1333 * 1.4 for inner projectors */, Math.ceil(this.scalesLength * 1.4)) : 200}; preciseI++) { ${''/* The loop is limited to 200 for maximum compatibility with WebGL 1 loop unrolling on lower end hardware */}
           if (preciseI < impreciseI) continue;
           int i = ${this.webGLVersion === 1 ? 'impreciseI' : 'preciseI'};
           vec2 scaledUV = (fUV - .5) * (fScale / (fScale - fScaleStep * vec2(i)));
@@ -1269,7 +1269,7 @@ export default class ProjectorWebGL {
     return true;
   }
 
-  rescale(scales, lastScale, projectorSize, crop, settings) {
+  async rescale(scales, lastScale, projectorSize, crop, settings) {
     if (this.shadow) {
       this.shadow.rescale(lastScale, projectorSize, settings);
     }
@@ -1311,7 +1311,12 @@ export default class ProjectorWebGL {
       this.blurCtx.filter = `blur(${blurPx / this.blurCanvasScale}px)`;
     }
 
-    this.updateCtx();
+    // A this.scalesLength higher than 150 requires a shader recompilation to increase the shader loop
+    if (this.scalesLength > 150) {
+      await this.initCtx();
+    } else {
+      this.updateCtx();
+    }
   }
 
   async updateVibrance() {
