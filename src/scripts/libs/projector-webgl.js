@@ -1,3 +1,4 @@
+import { getBrowser } from './utils';
 import SentryReporter from './errors/sentry-reporter';
 import { AmbientlightError } from './errors/ambient-light-error';
 import {
@@ -256,6 +257,9 @@ export default class ProjectorWebGL {
 
     if (this.settings.showResolutions) start = performance.now();
     this.ctx.drawArrays(this.ctx.TRIANGLES, 0, this.vPosition.length / 2);
+    if (getBrowser() === 'Safari') {
+      this.ctx.flush();
+    }
 
     const isNewTextureUpload =
       this.drawTextureSize.width === 0 && this.drawTextureSize.height === 0;
@@ -414,6 +418,10 @@ export default class ProjectorWebGL {
     if (!this.blurCtx) {
       throw new Error('ProjectorWebGL blur context creation failed');
     }
+    if (getBrowser() === 'Safari') {
+      this.blurCtx.imageSmoothingEnabled = true;
+      this.blurCtx.imageSmoothingQuality = 'high';
+    }
     this.projectors[0] = {
       elem: this.blurCanvas,
       ctx: this.blurCtx,
@@ -560,7 +568,7 @@ export default class ProjectorWebGL {
     if (!this.ctx) {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: true,
-        preserveDrawingBuffer: false, // Allows the browser to swap the visible- and drawbuffers, which is faster
+        preserveDrawingBuffer: getBrowser() === 'Safari' ? true : false, // Allows the browser to swap the visible- and drawbuffers, which is faster
         premultipliedAlpha: false,
         alpha: true,
         depth: false,
@@ -1289,7 +1297,8 @@ export default class ProjectorWebGL {
       this.elem.height = height;
     }
 
-    this.blurCanvasScale = settings.blur2 > 1 ? 2 : 1;
+    const isSafari = getBrowser() === 'Safari';
+    this.blurCanvasScale = isSafari ? 1 : settings.blur2 > 1 ? 2 : 1;
     const blurPx = settings.blur2 * (this.height / 512) * 1.275;
     const blurRadius = 2.64;
     this.blurBound = Math.max(1, Math.ceil(blurPx * blurRadius));
@@ -1306,6 +1315,14 @@ export default class ProjectorWebGL {
       this.blurCanvas.style.transform = `scale(${
         this.scale.x + (this.blurBound * 2) / projectorSize.w
       }, ${this.scale.y + (this.blurBound * 2) / projectorSize.h})`;
+
+      // Safari CanvasRenderingContext2D lacks native ctx.filter support, so apply CSS blur to blurCanvas element
+      if (isSafari) {
+        const cssBlur = (blurPx / this.blurCanvasScale) * 1.15;
+        const blurFilter = cssBlur > 0 ? `blur(${cssBlur.toFixed(2)}px)` : '';
+        this.blurCanvas.style.filter = blurFilter;
+        this.blurCanvas.style.webkitFilter = blurFilter;
+      }
     }
     if (this.blurCtx) {
       this.blurCtx.filter = `blur(${blurPx / this.blurCanvasScale}px)`;
@@ -1527,6 +1544,21 @@ export default class ProjectorWebGL {
       b: -Math.min(Math.max(0, cutPerc.bottom.toFixed(4)), -crop.b),
       l: -Math.min(Math.max(0, cutPerc.left.toFixed(4)), -crop.l),
     };
+
+    if (getBrowser() === "Safari") {
+      const safariCut = {
+        t: Math.min(Math.max(0, cutPerc.top.toFixed(4)), 1),
+        r: Math.min(Math.max(0, cutPerc.right.toFixed(4)), 1),
+        b: -Math.min(Math.max(0, cutPerc.bottom.toFixed(4)), 1),
+        l: -Math.min(Math.max(0, cutPerc.left.toFixed(4)), 1),
+      };
+      this.updatePositionAndUvCoordinates(
+        { t: 1, r: 1, b: -1, l: -1 },
+        safariCut
+      );
+      this.cropped = true;
+      return;
+    }
 
     this.updatePositionAndUvCoordinates(crop, cut);
     this.cropped = true;

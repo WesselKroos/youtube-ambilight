@@ -27,6 +27,11 @@
     "build:scripts:sourcemaps": "run-s build:scripts:sourcemaps:inject build:scripts:sourcemaps:copy",
     "build:scripts": "run-s build:scripts:rollup build:scripts:sourcemaps",
     "build": "run-s build:scripts build:styles build:manifest build:html build:images",
+    "build:safari:install": "node safari-install.js",
+    "build:safari": "run-s build build:safari:app build:safari:install",
+    "build:safari:app": "xcodebuild -project Xcode/YouTubeAmbilight.xcodeproj -scheme YouTubeAmbilight -configuration Debug build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=-",
+    "build:safari:release": "run-s build build:safari:app:release build:safari:install",
+    "build:safari:app:release": "xcodebuild -project Xcode/YouTubeAmbilight.xcodeproj -scheme YouTubeAmbilight -configuration Release build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=-",
     "upload-sourcemaps": "dotenvx run -f .env -f .env.local --overload -- sentry-cli sourcemaps upload ./sourcemaps --release=2.38.17"
   },
   "engines": {

@@ -221,7 +221,7 @@
     }
 
     &--highlight-text-decorator {
-      background-color: var(--yt-spec-badge-chip-background) !important;
+      background-color: transparent !important;
 
       .yt-core-attributed-string__link--call-to-action-color {
         color: inherit !important;
@@ -443,11 +443,20 @@ html[data-ambientlight-enabled] {
   #player-wide-container, // Second old theater view
   #full-bleed-container,
   #player-full-bleed-container,
+  #player-container-outer,
+  #player-container-inner,
   #player,
   #player-container,
   #ytd-player,
   .html5-video-player,
-  .html5-main-video {
+  .html5-main-video,
+  #primary,
+  #primary-inner,
+  #below,
+  ytd-watch-flexy,
+  ytd-watch-grid,
+  #columns,
+  #page-manager {
     background: none !important;
   }
   
@@ -466,8 +475,7 @@ html[data-ambientlight-enabled] {
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #ffffff);
     }
 
-    &,
-    .ambientlight__container {
+    & {
       background: #fff !important;
       background: var(--ytal-page-background) !important;
       background-color: var(--ytal-page-background) !important;
@@ -479,8 +487,7 @@ html[data-ambientlight-enabled] {
     @supports (background-color: color-mix(in srgb, #000 0%, #000)) {
       --ytal-page-background: color-mix(in srgb, #808080 var(--ytal-page-background-greyness, 0%), #000000);
     }
-    &,
-    .ambientlight__container {
+    & {
       background: #000 !important;
       background: var(--ytal-page-background) !important;
       background-color: var(--ytal-page-background) !important;
@@ -3236,6 +3243,20 @@ html[data-ambientlight-enabled] {
   // Soft video controls shadow gradient on the sides
 
   #primary .ytp-gradient-bottom {
+    -webkit-mask-image: linear-gradient(to right, 
+      transparent 0%, 
+      rgb(0, 0, 0, .3) 25px, 
+      rgb(0, 0, 0, .55) 50px, 
+      rgb(0, 0, 0, .7) 75px, 
+      rgb(0, 0, 0, .8) 100px, 
+      rgb(0, 0, 0) 200px,
+
+      rgb(0, 0, 0) calc(100% - 200px),
+      rgb(0, 0, 0, .8) calc(100% - 100px), 
+      rgb(0, 0, 0, .7) calc(100% - 75px), 
+      rgb(0, 0, 0, .55) calc(100% - 50px), 
+      rgb(0, 0, 0, .3) calc(100% - 25px), 
+      transparent 100%);
     mask-image: linear-gradient(to right, 
       transparent 0%, 
       rgb(0, 0, 0, .3) 25px, 
@@ -3447,5 +3468,38 @@ html[data-ambientlight-related-scrollbar] {
       }
       scrollbar-color: transparent transparent !important;
     }
+  }
+}
+
+html[data-ambientlight-safari] {
+  .ambientlight__container,
+  .ambientlight__clip,
+  .ambientlight__projectors,
+  .ambientlight__projector-list,
+  .ambientlight__projector {
+    contain: none !important;
+    overflow: visible !important;
+  }
+
+  :fullscreen .ambientlight__container {
+    /* A negative stacking level sits behind Safari's opaque fullscreen backdrop. */
+    z-index: 0;
+  }
+
+  :fullscreen .html5-video-container,
+  :fullscreen .ytp-chrome-bottom,
+  :fullscreen .ytp-chrome-top {
+    position: relative;
+    z-index: 1;
+  }
+
+  ytd-comment-thread-renderer,
+  ytd-playlist-panel-video-renderer,
+  yt-related-chip-cloud-renderer,
+  ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer,
+  ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer ytd-compact-radio-renderer,
+  ytd-item-section-renderer.ytd-watch-next-secondary-results-renderer ytd-compact-playlist-renderer {
+    content-visibility: visible !important;
+    contain-intrinsic-size: auto !important;
   }
 }

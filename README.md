@@ -41,6 +41,7 @@ With a score lower than 1000 the extension will still work but it is likely that
 | -------- | ------- | ------ |
 | Chromium | 80      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
 | Firefox  | 74      | [Optional chaining operator (?.)](https://caniuse.com/mdn-javascript_operators_optional_chaining) |
+| Safari   | 15.4    | [Safari Web Extensions & ES module support](https://developer.apple.com/documentation/safariservices/safari_web_extensions) |
 
 
 ## Privacy & Security
@@ -71,3 +72,44 @@ Feel free to
 5. After you've modified a file in the `/src` folder follow these steps:
     1. In the terminal/commandline enter `npm run build`
     2. In Chrome go to the url [chrome://extensions/](chrome://extensions/) and click the refresh/update button in the card of the extension.
+
+## Safari Web Extension (macOS)
+
+### Building and Running on Safari
+
+1. **Prerequisites**: macOS 12.0+ and Xcode 14+ installed.
+2. **Build Web Extension & Xcode Project**:
+   ```bash
+   npm install
+   npm run build:safari
+   ```
+   Or build the web resources only:
+   ```bash
+   npm run build
+   ```
+3. **Open in Xcode**:
+   Open `Xcode/YouTubeAmbilight.xcodeproj` in Xcode.
+4. **Enable Developer Menu in Safari**:
+   - Open Safari.
+   - Go to **Safari > Settings** (or **Preferences**) > **Advanced**.
+   - Check **Show features for web developers** (or **Show Develop menu in menu bar**).
+5. **Allow Unsigned Extensions**:
+   - In Safari's menu bar, click the **Develop** menu.
+   - Check **Allow Unsigned Extensions** (enter your macOS administrator password when prompted).
+   *(Note: This setting resets each time Safari is completely quit and restarted).*
+6. **Run the Host Application from Xcode**:
+   - In Xcode, select the `YouTubeAmbilight` scheme and `My Mac` destination.
+   - Click **Run** (or press `Cmd + R`).
+   - The YouTube Ambilight host application will launch and check extension status. Click **Quit and Open Safari Extensions Preferences…**.
+7. **Enable Extension in Safari**:
+   - In Safari Settings > **Extensions**, check the box next to **YouTube Ambilight**.
+   - Grant permission for `youtube.com` when prompted.
+8. **Test on YouTube**:
+   - Navigate to `https://www.youtube.com` and play any video.
+   - The Ambilight engine will initialize with WebGL (or Canvas 2D fallback).
+
+### Safari-specific Notes & Architecture
+- **Unsigned Extensions**: During local development without an Apple Developer certificate, "Allow Unsigned Extensions" must be checked in Safari's Develop menu.
+- **Automatic Resource Updates**: Running `npm run build` updates the `dist/` folder, which is directly referenced by the Xcode extension target. Re-running the app in Xcode immediately deploys the latest scripts, styles, and manifest without manual file copying.
+- **Isolated & Page World Messaging**: Uses WebKit-standard DOM CustomEvent (`ytal-message`) dispatch between the isolated content script world and the main page world.
+

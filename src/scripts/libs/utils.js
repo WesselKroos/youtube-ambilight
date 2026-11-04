@@ -22,6 +22,7 @@ const browsersUAList = [
   { ua: 'OPR', name: 'Opera' },
   { ua: 'Edg', name: 'Edge' },
   { ua: 'Chrome', name: 'Chrome' },
+  { ua: 'Safari', name: 'Safari' },
 ];
 
 export const getBrowser = () => {
@@ -39,10 +40,14 @@ export const getBrowser = () => {
 const getBrowserVersion = () => {
   try {
     const browserName = getBrowser();
+    const ua = globalThis.navigator.userAgent;
+    if (browserName === 'Safari') {
+      const matches = ua.match(/Version\/([0-9.]+)/);
+      return matches && matches.length === 2 ? matches[1] : ua;
+    }
     const browserUA = browsersUAList.find(
       (browser) => browserName === browser.name
     ).ua;
-    const ua = globalThis.navigator.userAgent;
     const matches = ua.match(`${browserUA}/([0-9.]+)`);
     return matches.length === 2 ? matches[1] : ua;
   } catch {
@@ -52,7 +57,11 @@ const getBrowserVersion = () => {
 
 export const getVersion = () => {
   try {
-    return (chrome.runtime.getManifest() || {}).version;
+    const api =
+      typeof globalThis.browser !== 'undefined'
+        ? globalThis.browser
+        : globalThis.chrome;
+    return (api?.runtime?.getManifest() || {}).version;
   } catch {
     return null;
   }

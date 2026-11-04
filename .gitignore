@@ -4,3 +4,7 @@
 /sourcecodes
 /sourcemaps
 .env.local
+.DS_Store
+Xcode/build/
+*.xcuserstate
+xcuserdata/

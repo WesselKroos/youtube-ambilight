@@ -31,11 +31,14 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://youtube.com/*"
       ],
       "exclude_matches": [
-        "https://www.youtube.com/live_chat*",
-        "https://www.youtube.com/embed/*"
+        "*://*.youtube.com/live_chat*",
+        "*://youtube.com/live_chat*",
+        "*://*.youtube.com/embed/*",
+        "*://youtube.com/embed/*"
       ],
       "js": [
         "scripts/content.js"
@@ -44,7 +47,8 @@
     },
     {
       "matches": [
-        "https://www.youtube.com/embed/*"
+        "*://*.youtube.com/embed/*",
+        "*://youtube.com/embed/*"
       ],
       "js": [
         "scripts/content.js"
@@ -54,10 +58,12 @@
     },
     {
       "matches": [
-        "https://www.youtube.com/live_chat*"
+        "*://*.youtube.com/live_chat*",
+        "*://youtube.com/live_chat*"
       ],
       "exclude_matches": [
-        "https://www.youtube.com/live_chat?is_popout=1*"
+        "*://*.youtube.com/live_chat?is_popout=1*",
+        "*://youtube.com/live_chat?is_popout=1*"
       ],
       "css": [
         "styles/live-chat.css"
@@ -81,15 +87,19 @@
         "images/donate.svg"
       ],
       "matches": [
-        "https://www.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://youtube.com/*"
       ]
     }
   ],
   "options_ui": {
-    "page": "options.html",
-    "open_in_tab": false
+    "page": "options.html"
   },
   "permissions": [
     "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://youtube.com/*"
   ]
 }
