@@ -54,6 +54,18 @@
     },
     {
       "matches": [
+        "https://music.youtube.com/*"
+      ],
+      "css": [
+        "styles/content-music.css"
+      ],
+      "js": [
+        "scripts/content-music.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
         "https://www.youtube.com/live_chat*"
       ],
       "exclude_matches": [

@@ -12,6 +12,10 @@
 # Ambient light for YouTube™
 Immerse yourself in YouTube videos with ambient light!
 
+### YouTube Music
+The ambient light is also displayed on the player page of [YouTube Music](https://music.youtube.com). It follows the music video while it is playing, or the cover art when only the song is shown.
+By default it uses the same settings as the YouTube video player (enabled, spread, blur, brightness, contrast, saturation, smooth motion and black bars removal), so any change made on youtube.com is also applied on YouTube Music. The settings can also be changed via the ambient light button in the player bar of YouTube Music, where "Sync with YouTube" can be turned off to use separate settings on YouTube Music.
+
 ## Installation
 Go to the extensions site of your browser and add the extension:
 
