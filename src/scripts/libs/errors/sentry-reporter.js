@@ -153,10 +153,19 @@ export default class SentryReporter {
         return;
 
       // Report hardware errors that cannot be fixed to the user
-      if (ex?.message?.includes?.('Out of memory at ImageData creation'))
-      {
+      if (ex?.message?.includes?.('Out of memory at ImageData creation')) {
         if (settings) {
           settings.setWarning(`Failed to display the ambient light or detect black bars because your graphics card is out of memory. Free your card's memory and refresh the webpage to try it again. \n\nDetailed error message: ${ex.message}`);
+        }
+        return;
+      }
+      if (ex?.message?.includes?.('FILE_ERROR_NO_SPACE')) {
+        if (settings) {
+          if (ex?.stack?.include?.('Storage.set')) {
+            settings.setWarning(`Failed to save the setting(s) to your browser's storage, because there is no space available on your disk/drive. Free up space on your disk/drive. \n\nDetailed error message: ${ex.message}`);
+          } else {
+            settings.setWarning(`Failed to save data to a file, because there is no space available on your disk/drive. Free up space on your disk/drive. \n\nDetailed error message: ${ex.message}`);
+          }
         }
         return;
       }
