@@ -154,13 +154,12 @@ const drawVR = (...args) => {
 
 contentScript.addMessageListener('init-vr-video', function initVrVideo() {
   const vrVideoElem = getElem('vr-video');
-  vrVideoCtx = vrVideoElem.getContext('webgl');
-  if (vrVideoCtx) {
-    if (vrVideoCtx.drawArrays !== drawVR) {
-      vrVideoCtxDrawArrays = vrVideoCtx.drawArrays;
-      vrVideoCtx.drawArrays = drawVR;
-    }
-  }
+  vrVideoCtx = vrVideoElem?.getContext('webgl') ?? vrVideoElem?.getContext('webgl2');
+  if (!vrVideoCtx) return;
+  if (vrVideoCtx.drawArrays === drawVR) return;
+
+  vrVideoCtxDrawArrays = vrVideoCtx.drawArrays;
+  vrVideoCtx.drawArrays = drawVR;
 });
 
 contentScript.addMessageListener('dispose-vr-video', function disposeVrVideo() {
