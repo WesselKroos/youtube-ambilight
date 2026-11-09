@@ -190,7 +190,7 @@ export default class Ambientlight {
       );
       error.details = getPageElems();
       error.details.videoIsInDocument = document.contains(videoElem);
-      error.details.videoIsInBody = document.body.contains(videoElem);
+      error.details.videoIsInBody = document.body?.contains(videoElem);
       error.details.videoTree = getNodeTreeString(videoElem);
       setWarning(`Failed to load.\n${error.message}`);
       throw error;
@@ -729,7 +729,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   updateKeywordsToPreventTheaterScaling = () => {
     try {
       let keywords =
-        document.head.querySelector('meta[name="keywords"]')?.content ?? '';
+        document.head?.querySelector('meta[name="keywords"]')?.content ?? '';
       if (
         !this.ytScalingBaseKeywords.some((baseKeyword) =>
           keywords.includes(baseKeyword)
@@ -1721,7 +1721,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
 
     const wasControlledByAnotherExtension = this.isControlledByAnotherExtension;
     this.isControlledByAnotherExtension =
-      document.body.classList.contains('efyt-mini-player') ||
+      document.body?.classList.contains('efyt-mini-player') ||
       this.videoElem?.classList.contains('stefanvdvideotop'); // Enhancer for YouTube
     if (
       wasControlledByAnotherExtension !== this.isControlledByAnotherExtension
@@ -1846,7 +1846,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       videoParentElem.style.marginBottom = `${-this.videoElem.offsetHeight}px`;
       videoParentElem.style.overflow = 'hidden';
       videoParentElem.style.transform = `
-        translate(${document.body.dir === 'rtl' ? -left : left}px, ${top}px)
+        translate(${document.body?.dir === 'rtl' ? -left : left}px, ${top}px)
         scale(${this.videoScale / 100}) 
         scale(${this.clippedVideoScale[0]}, ${this.clippedVideoScale[1]})
       `;
@@ -2184,7 +2184,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.ytdWatchElem?.tagName === 'YTD-WATCH-FIXIE' &&
       this.view === VIEW_SMALL;
     const enable = this.settings.fixedPosition || fixedLayout;
-    document.body.toggleAttribute('data-ambientlight-fixed', enable);
+    if(document.body) document.body.toggleAttribute('data-ambientlight-fixed', enable);
   }
 
   updateStyles() {
@@ -2354,7 +2354,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       '--ytal-text-shadow-inverted',
       textAndBtnOnly ? getContentTextShadow('255,255,255') : ''
     );
-    document.body.toggleAttribute(
+    if(document.body) document.body.toggleAttribute(
       'data-ambientlight-text-shadow',
       textAndBtnOnly
     );

@@ -163,7 +163,7 @@ wrapErrorHandler(async function loadContentScript() {
   //   s.onerror = function injectScriptOnError(ex) {
   //     console.error(ex)
   //   }.bind(this)
-  //   document.body.appendChild(s)
+  //   if(document.body) document.body.appendChild(s)
   // }
   // addWebGLLint()
 
@@ -182,7 +182,7 @@ wrapErrorHandler(async function loadContentScript() {
       return;
     }
 
-    if (document.head.querySelector(`link[href="${url}"]`)) {
+    if (document.head?.querySelector(`link[href="${url}"]`)) {
       resolve(true);
       return;
     }

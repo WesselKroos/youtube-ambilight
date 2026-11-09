@@ -536,6 +536,8 @@ export const isNetworkError = (ex) =>
   ex?.message === 'NetworkError when attempting to fetch resource.'; // Firefox
 
 export const setStyleProperty = (elem, name, value, priority = '') => {
+  if(!elem) return;
+
   const currentValue = elem.style.getPropertyValue(name) ?? '';
   const currentPriority = elem.style.getPropertyPriority(name) ?? '';
   if (currentValue === value && currentPriority === priority) return; // Prevent MutationObservers from firing

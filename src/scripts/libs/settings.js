@@ -1769,6 +1769,8 @@ But if this happens frequently, here are some possible causes:
           setting.name
         )}.ytp-menuitem, ${getSettingQuerySelector(setting.name)} .ytp-menuitem`
       );
+      if (!valueElem) return;
+
       const controlledByName = setting.controllers.find((name) => this[name]);
       const controlledByLabel = SettingsConfig.find(
         (setting) =>
@@ -1933,7 +1935,8 @@ But if this happens frequently, here are some possible causes:
   }
 
   clickUI(name) {
-    this.menuElem.querySelector(getSettingQuerySelector(name)).click();
+    const elem = this.menuElem.querySelector(getSettingQuerySelector(name));
+    if(elem) elem.click();
   }
 
   processStorageEntry(name, value) {

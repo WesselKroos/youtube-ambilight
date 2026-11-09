@@ -152,6 +152,15 @@ export default class SentryReporter {
         // Firefox has destroyed the webpage but the extensions javascript not yet
         return;
 
+      // Report hardware errors that cannot be fixed to the user
+      if (ex?.message?.includes?.('Out of memory at ImageData creation'))
+      {
+        if (settings) {
+          settings.setWarning(`Failed to display the ambient light or detect black bars because your graphics card is out of memory. Free your card's memory and refresh the webpage to try it again. \n\nDetailed error message: ${ex.message}`);
+        }
+        return;
+      }
+
       this.overflowProtection++;
       if (this.overflowProtection > 2) {
         return;

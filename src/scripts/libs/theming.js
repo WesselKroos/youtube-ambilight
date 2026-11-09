@@ -44,7 +44,7 @@ export default class Theming {
             function forwardReduxActionToLiveChatIframe() {
               // Fix the theme to the correct color after the process
               if (!this.ambientlight.isOnVideoPage) return;
-              if (e.detail.args?.[0]?.type === 'SET_WATCH_SCROLL_TOP') return;
+              if (e?.detail?.args?.[0]?.type === 'SET_WATCH_SCROLL_TOP') return;
 
               this.updateLiveChatTheme();
             }.bind(this),
