@@ -125,7 +125,7 @@ const captureResourceLoadingException = async (url, event) => {
   } finally {
     if (error) {
       error.details = event;
-      SentryReporter.captureException(error);
+      console.error(error);
     }
 
     setResourceWarning(url);

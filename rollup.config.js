@@ -31,6 +31,7 @@ const common = {
           {
             replace: {
               'globalThis.BARDETECTION_EDGE_RANGE': '32',
+              'globalThis.SENTRY_DSN': `'${process.env.SENTRY_DSN}'`,
             },
           },
         ],

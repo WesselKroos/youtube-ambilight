@@ -64,7 +64,7 @@ function initClientAndScope() {
 
   const client = new BrowserClient({
     enabled: true,
-    dsn: 'https://a3d06857fc2d401690381d0878ce3bc3@o288593.ingest.us.sentry.io/1524536',
+    dsn: globalThis.SENTRY_DSN,
     transport: makeFetchTransport,
     stackParser: defaultStackParser,
     integrations: [
@@ -153,7 +153,7 @@ export default class SentryReporter {
         return;
 
       this.overflowProtection++;
-      if (this.overflowProtection > 3) {
+      if (this.overflowProtection > 2) {
         return;
       }
 
@@ -180,7 +180,7 @@ export default class SentryReporter {
         console.error(ex);
       }
 
-      if (this.overflowProtection === 3) {
+      if (this.overflowProtection === 2) {
         console.warn('Exception overflow protection enabled');
       }
 
@@ -208,7 +208,7 @@ export default class SentryReporter {
           const reportsThisWeek = reports.filter(
             (report) => report.time > weekAgo
           );
-          if (reportsToday.length < 4 && reportsThisWeek.length < 5) {
+          if (reportsToday.length < 3 && reportsThisWeek.length < 4) {
             reportsThisWeek.push({
               time: Date.now(),
               error: ex.message,
