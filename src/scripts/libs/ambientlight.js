@@ -2648,7 +2648,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.clearfixElem.offsetParent ||
       (this.isFullscreen
         ? document.fullscreenElement || document.body
-        : document.body)
+        : document.body) ||
+      document.documentElement
     ).getBoundingClientRect();
     const elemRect = elem.getBoundingClientRect();
 
