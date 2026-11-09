@@ -105,7 +105,7 @@ export const getOtherUnknownAppElems = () =>
 
 export const getPageElems = () => {
   const allSelector =
-    'html, body, ytd-app, #content.ytd-app, ytd-watch-flexy, ytd-watch-fixie, ytd-watch-grid, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .html5-video-container, video, .video-stream, .html5-main-video';
+    'html, body, ytd-app, #content.ytd-app, ytd-watch-flexy, ytd-watch-fixie, ytd-watch-grid, #player-container, ytd-player, #container.ytd-player, .html5-video-player, .ytp-right-controls, .ytp-chrome-controls, .html5-video-container, video, .video-stream, .html5-main-video';
   const otherAppElems = getOtherUnknownAppElems();
 
   return {

@@ -65,6 +65,8 @@ const logErrorEventWithPageTrees = (message, details = {}) => {
 };
 
 const isVideoInKnownInvalidLocation = () => {
+  const bodyPlayerVideoElem = () =>
+    document.querySelector('body > #player > #movie_player video');
   const ytdAppPlayerVideoElem = () =>
     document.querySelector(
       'ytd-app > #container.ytd-player video.html5-main-video'
@@ -84,14 +86,15 @@ const isVideoInKnownInvalidLocation = () => {
       'ytd-channel-video-player-renderer video.html5-main-video'
     );
   const isInShorts = () =>
-    document.querySelector('ytd-shorts video.html5-main-video');
+    document.querySelector('ytd-shorts video.html5-main-video, ytd-shorts #shorts-player video');
   const isControlledByAnotherExtension = () =>
-    document.querySelector('.html5-video-container video.stefanvdvideotop');
+    document.querySelector('.html5-video-container video.stefanvdvideotop, #bframe video#vframe, html.mobile_mode video');
   const outsideYtdAppVideoElem = () =>
     document.querySelector(
-      'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video.html5-main-video, body > video.html5-main-video'
+      'html > *:not(body) video.html5-main-video, body > *:not(ytd-app) video, body > video.html5-main-video'
     );
   return !!(
+    bodyPlayerVideoElem() ||
     ytdAppPlayerVideoElem() ||
     playerApiVideoElem() ||
     ytPlayerManagerVideoElem() ||
