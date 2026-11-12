@@ -1,3 +1,4 @@
+import { getBrowser } from './utils';
 import { AmbientlightError } from './errors/ambient-light-error';
 import {
   canvasWebGLCrashTips,
@@ -27,7 +28,7 @@ import {
 
 export class WebGLOffscreenCanvas {
   constructor(width, height, ambientlight, settings) {
-    if (typeof OffscreenCanvas !== 'undefined') {
+    if (typeof OffscreenCanvas !== 'undefined' && getBrowser() !== 'Safari') {
       this.canvas = new OffscreenCanvas(width, height);
     } else {
       this.canvas = document.createElement('canvas');
@@ -160,11 +161,11 @@ export class WebGLContext {
     if (!this.ctx) {
       this.ctxOptions = {
         failIfMajorPerformanceCaveat: false,
-        preserveDrawingBuffer: false, // Allows the browser to swap the visible- and drawbuffers, which is faster
+        preserveDrawingBuffer: getBrowser() === 'Safari' ? true : false, // Allows the browser to swap the visible- and drawbuffers, which is faster
         // alpha: false, // Decreases performance on some platforms
         depth: false,
         antialias: false,
-        desynchronized: true,
+        desynchronized: getBrowser() === 'Safari' ? false : true,
         ...this.options,
       };
       this.webGLVersion = 2;
@@ -764,6 +765,9 @@ export class WebGLContext {
 
     if (this.settings.showResolutions) start = performance.now();
     this.ctx.drawArrays(this.ctx.TRIANGLE_FAN, 0, 4);
+    if (getBrowser() === 'Safari') {
+      this.ctx.flush();
+    }
 
     if (
       this.settings.flickerReduction &&

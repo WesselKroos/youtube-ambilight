@@ -462,7 +462,7 @@ const onLoad = wrapErrorHandler(async function onLoadCallback() {
   await loadAmbientlight();
 });
 
-(function setup() {
+export const initContentMain = () => {
   try {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', onLoad, { once: true });
@@ -472,4 +472,8 @@ const onLoad = wrapErrorHandler(async function onLoadCallback() {
   } catch (ex) {
     SentryReporter.captureException(ex);
   }
-})();
+};
+
+if (typeof window !== 'undefined' && !window._ytalBundled) {
+  initContentMain();
+}

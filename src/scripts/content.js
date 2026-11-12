@@ -11,6 +11,11 @@ import SentryReporter, {
   setVersion,
 } from './libs/errors/sentry-reporter';
 import { injectedScript } from './libs/messaging/injected';
+import { initContentMain } from './content-main';
+
+if (typeof window !== 'undefined') {
+  window._ytalBundled = true;
+}
 
 setErrorHandler((ex) => SentryReporter.captureException(ex));
 
@@ -222,6 +227,10 @@ wrapErrorHandler(async function loadContentScript() {
     }
 
     const script = document.createElement('script');
+    const existingNonce = document.querySelector("script[nonce]")?.nonce;
+    if (existingNonce) {
+      script.nonce = existingNonce;
+    }
     script.src = url;
     script.async = true;
     script.setAttribute('data-crash-options', JSON.stringify(crashOptions));
@@ -247,17 +256,5 @@ wrapErrorHandler(async function loadContentScript() {
   }
   if (!loaded) return;
 
-  let scriptUrl;
-  try {
-    scriptUrl = chrome.runtime.getURL('scripts/content-main.js');
-  } catch {
-    setResourceWarning();
-    return;
-  }
-
-  try {
-    await import(scriptUrl);
-  } catch (error) {
-    await captureResourceLoadingException(scriptUrl, error);
-  }
+  initContentMain();
 })();

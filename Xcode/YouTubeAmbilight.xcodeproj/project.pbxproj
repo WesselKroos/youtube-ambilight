@@ -1,0 +1,601 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		957725A3306AC9AF0037AD45 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957725A2306AC9AF0037AD45 /* AppDelegate.swift */; };
+		957725A7306AC9AF0037AD45 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 957725A5306AC9AF0037AD45 /* Main.html */; };
+		957725A9306AC9AF0037AD45 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 957725A8306AC9AF0037AD45 /* Icon.png */; };
+		957725AB306AC9AF0037AD45 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 957725AA306AC9AF0037AD45 /* Style.css */; };
+		957725AD306AC9AF0037AD45 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 957725AC306AC9AF0037AD45 /* Script.js */; };
+		957725AF306AC9AF0037AD45 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957725AE306AC9AF0037AD45 /* ViewController.swift */; };
+		957725B2306AC9AF0037AD45 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 957725B0306AC9AF0037AD45 /* Main.storyboard */; };
+		957725B4306AC9B00037AD45 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 957725B3306AC9B00037AD45 /* Assets.xcassets */; };
+		957725BB306AC9B00037AD45 /* YouTubeAmbilight Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 957725BA306AC9B00037AD45 /* YouTubeAmbilight Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		957725C0306AC9B00037AD45 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957725BF306AC9B00037AD45 /* SafariWebExtensionHandler.swift */; };
+		957725D1306AC9B00037AD45 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 957725CC306AC9B00037AD45 /* images */; };
+		957725D2306AC9B00037AD45 /* styles in Resources */ = {isa = PBXBuildFile; fileRef = 957725CD306AC9B00037AD45 /* styles */; };
+		957725D3306AC9B00037AD45 /* scripts in Resources */ = {isa = PBXBuildFile; fileRef = 957725CE306AC9B00037AD45 /* scripts */; };
+		957725D4306AC9B00037AD45 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 957725CF306AC9B00037AD45 /* manifest.json */; };
+		957725D5306AC9B00037AD45 /* options.html in Resources */ = {isa = PBXBuildFile; fileRef = 957725D0306AC9B00037AD45 /* options.html */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		957725BC306AC9B00037AD45 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 95772597306AC9AF0037AD45 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 957725B9306AC9B00037AD45;
+			remoteInfo = "YouTubeAmbilight Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		957725C7306AC9B00037AD45 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				957725BB306AC9B00037AD45 /* YouTubeAmbilight Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		9577259F306AC9AF0037AD45 /* YouTubeAmbilight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YouTubeAmbilight.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		957725A2306AC9AF0037AD45 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		957725A6306AC9AF0037AD45 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		957725A8306AC9AF0037AD45 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		957725AA306AC9AF0037AD45 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		957725AC306AC9AF0037AD45 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		957725AE306AC9AF0037AD45 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		957725B1306AC9AF0037AD45 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		957725B3306AC9B00037AD45 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		957725B5306AC9B00037AD45 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		957725BA306AC9B00037AD45 /* YouTubeAmbilight Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "YouTubeAmbilight Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		957725BF306AC9B00037AD45 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		957725C1306AC9B00037AD45 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		957725CC306AC9B00037AD45 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = images; path = ../../dist/images; sourceTree = "<group>"; };
+		957725CD306AC9B00037AD45 /* styles */ = {isa = PBXFileReference; lastKnownFileType = folder; name = styles; path = ../../dist/styles; sourceTree = "<group>"; };
+		957725CE306AC9B00037AD45 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = scripts; path = ../../dist/scripts; sourceTree = "<group>"; };
+		957725CF306AC9B00037AD45 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../dist/manifest.json; sourceTree = "<group>"; };
+		957725D0306AC9B00037AD45 /* options.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = options.html; path = ../../dist/options.html; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9577259C306AC9AF0037AD45 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		957725B7306AC9B00037AD45 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		95772596306AC9AF0037AD45 = {
+			isa = PBXGroup;
+			children = (
+				957725A1306AC9AF0037AD45 /* YouTubeAmbilight */,
+				957725BE306AC9B00037AD45 /* YouTubeAmbilight Extension */,
+				957725A0306AC9AF0037AD45 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		957725A0306AC9AF0037AD45 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9577259F306AC9AF0037AD45 /* YouTubeAmbilight.app */,
+				957725BA306AC9B00037AD45 /* YouTubeAmbilight Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		957725A1306AC9AF0037AD45 /* YouTubeAmbilight */ = {
+			isa = PBXGroup;
+			children = (
+				957725A2306AC9AF0037AD45 /* AppDelegate.swift */,
+				957725AE306AC9AF0037AD45 /* ViewController.swift */,
+				957725B0306AC9AF0037AD45 /* Main.storyboard */,
+				957725B3306AC9B00037AD45 /* Assets.xcassets */,
+				957725B5306AC9B00037AD45 /* Info.plist */,
+				957725A4306AC9AF0037AD45 /* Resources */,
+			);
+			path = YouTubeAmbilight;
+			sourceTree = "<group>";
+		};
+		957725A4306AC9AF0037AD45 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				957725A5306AC9AF0037AD45 /* Main.html */,
+				957725A8306AC9AF0037AD45 /* Icon.png */,
+				957725AA306AC9AF0037AD45 /* Style.css */,
+				957725AC306AC9AF0037AD45 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		957725BE306AC9B00037AD45 /* YouTubeAmbilight Extension */ = {
+			isa = PBXGroup;
+			children = (
+				957725CB306AC9B00037AD45 /* Resources */,
+				957725BF306AC9B00037AD45 /* SafariWebExtensionHandler.swift */,
+				957725C1306AC9B00037AD45 /* Info.plist */,
+			);
+			path = "YouTubeAmbilight Extension";
+			sourceTree = "<group>";
+		};
+		957725CB306AC9B00037AD45 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				957725CC306AC9B00037AD45 /* images */,
+				957725CD306AC9B00037AD45 /* styles */,
+				957725CE306AC9B00037AD45 /* scripts */,
+				957725CF306AC9B00037AD45 /* manifest.json */,
+				957725D0306AC9B00037AD45 /* options.html */,
+			);
+			name = Resources;
+			path = "YouTubeAmbilight Extension";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9577259E306AC9AF0037AD45 /* YouTubeAmbilight */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 957725C8306AC9B00037AD45 /* Build configuration list for PBXNativeTarget "YouTubeAmbilight" */;
+			buildPhases = (
+				9577259B306AC9AF0037AD45 /* Sources */,
+				9577259C306AC9AF0037AD45 /* Frameworks */,
+				9577259D306AC9AF0037AD45 /* Resources */,
+				957725C7306AC9B00037AD45 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				957725BD306AC9B00037AD45 /* PBXTargetDependency */,
+			);
+			name = YouTubeAmbilight;
+			productName = YouTubeAmbilight;
+			productReference = 9577259F306AC9AF0037AD45 /* YouTubeAmbilight.app */;
+			productType = "com.apple.product-type.application";
+		};
+		957725B9306AC9B00037AD45 /* YouTubeAmbilight Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 957725C4306AC9B00037AD45 /* Build configuration list for PBXNativeTarget "YouTubeAmbilight Extension" */;
+			buildPhases = (
+				957725B6306AC9B00037AD45 /* Sources */,
+				957725B7306AC9B00037AD45 /* Frameworks */,
+				957725B8306AC9B00037AD45 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "YouTubeAmbilight Extension";
+			productName = "YouTubeAmbilight Extension";
+			productReference = 957725BA306AC9B00037AD45 /* YouTubeAmbilight Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		95772597306AC9AF0037AD45 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					9577259E306AC9AF0037AD45 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					957725B9306AC9B00037AD45 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 9577259A306AC9AF0037AD45 /* Build configuration list for PBXProject "YouTubeAmbilight" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 95772596306AC9AF0037AD45;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 957725A0306AC9AF0037AD45 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9577259E306AC9AF0037AD45 /* YouTubeAmbilight */,
+				957725B9306AC9B00037AD45 /* YouTubeAmbilight Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9577259D306AC9AF0037AD45 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				957725A9306AC9AF0037AD45 /* Icon.png in Resources */,
+				957725B2306AC9AF0037AD45 /* Main.storyboard in Resources */,
+				957725AD306AC9AF0037AD45 /* Script.js in Resources */,
+				957725A7306AC9AF0037AD45 /* Main.html in Resources */,
+				957725B4306AC9B00037AD45 /* Assets.xcassets in Resources */,
+				957725AB306AC9AF0037AD45 /* Style.css in Resources */,
+			);
+		};
+		957725B8306AC9B00037AD45 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				957725D4306AC9B00037AD45 /* manifest.json in Resources */,
+				957725D3306AC9B00037AD45 /* scripts in Resources */,
+				957725D5306AC9B00037AD45 /* options.html in Resources */,
+				957725D2306AC9B00037AD45 /* styles in Resources */,
+				957725D1306AC9B00037AD45 /* images in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9577259B306AC9AF0037AD45 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				957725AF306AC9AF0037AD45 /* ViewController.swift in Sources */,
+				957725A3306AC9AF0037AD45 /* AppDelegate.swift in Sources */,
+			);
+		};
+		957725B6306AC9B00037AD45 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				957725C0306AC9B00037AD45 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		957725BD306AC9B00037AD45 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 957725B9306AC9B00037AD45 /* YouTubeAmbilight Extension */;
+			targetProxy = 957725BC306AC9B00037AD45 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		957725A5306AC9AF0037AD45 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				957725A6306AC9AF0037AD45 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		957725B0306AC9AF0037AD45 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				957725B1306AC9AF0037AD45 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		957725C2306AC9B00037AD45 /* Debug configuration for PBXProject "YouTubeAmbilight" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_PREVIEWS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		957725C3306AC9B00037AD45 /* Release configuration for PBXProject "YouTubeAmbilight" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_PREVIEWS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		957725C5306AC9B00037AD45 /* Debug configuration for PBXNativeTarget "YouTubeAmbilight Extension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "YouTubeAmbilight Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "YouTubeAmbilight Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				CODE_SIGN_ENTITLEMENTS = "YouTubeAmbilight Extension/YouTubeAmbilight Extension.entitlements";
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtubeambilight.safari.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		957725C6306AC9B00037AD45 /* Release configuration for PBXNativeTarget "YouTubeAmbilight Extension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "YouTubeAmbilight Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "YouTubeAmbilight Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				CODE_SIGN_ENTITLEMENTS = "YouTubeAmbilight Extension/YouTubeAmbilight Extension.entitlements";
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtubeambilight.safari.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		957725C9306AC9B00037AD45 /* Debug configuration for PBXNativeTarget "YouTubeAmbilight" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YouTubeAmbilight/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = YouTubeAmbilight/YouTubeAmbilight.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = "YouTube Ambilight";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtubeambilight.safari;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		957725CA306AC9B00037AD45 /* Release configuration for PBXNativeTarget "YouTubeAmbilight" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YouTubeAmbilight/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = YouTubeAmbilight/YouTubeAmbilight.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = "YouTube Ambilight";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.youtubeambilight.safari;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9577259A306AC9AF0037AD45 /* Build configuration list for PBXProject "YouTubeAmbilight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				957725C2306AC9B00037AD45 /* Debug configuration for PBXProject "YouTubeAmbilight" */,
+				957725C3306AC9B00037AD45 /* Release configuration for PBXProject "YouTubeAmbilight" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		957725C4306AC9B00037AD45 /* Build configuration list for PBXNativeTarget "YouTubeAmbilight Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				957725C5306AC9B00037AD45 /* Debug configuration for PBXNativeTarget "YouTubeAmbilight Extension" */,
+				957725C6306AC9B00037AD45 /* Release configuration for PBXNativeTarget "YouTubeAmbilight Extension" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		957725C8306AC9B00037AD45 /* Build configuration list for PBXNativeTarget "YouTubeAmbilight" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				957725C9306AC9B00037AD45 /* Debug configuration for PBXNativeTarget "YouTubeAmbilight" */,
+				957725CA306AC9B00037AD45 /* Release configuration for PBXNativeTarget "YouTubeAmbilight" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 95772597306AC9AF0037AD45 /* Project object */;
+	validationLevel = 1;
+}

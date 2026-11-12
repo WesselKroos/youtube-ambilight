@@ -889,9 +889,13 @@ export const prepareSettingsConfigOnce = () => {
         setting.max = 1;
         setting.default = 0;
       } else if (getBrowser() === 'Firefox') {
-        // FireFox workaround: requestVideoFrameCallback is limited to 24fps. Use decoded video frames by default instead
+        // FireFox workaround: use decoded video frames by default instead
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1935256
         setting.default = 0;
+      } else if (getBrowser() === 'Safari') {
+        // Safari: WebKit requestVideoFrameCallback and totalVideoFrames can be irregular/unsupported
+        // Default to Display framerate (1) for buttery-smooth 60+ fps without frame-drop stutter
+        setting.default = 1;
       }
     }
   }

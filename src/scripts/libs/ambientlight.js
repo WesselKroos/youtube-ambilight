@@ -792,6 +792,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       'fullscreenchange',
       async function fullscreenchange() {
         await this.updateSizes();
+        // Safari applies the fullscreen layout after the event. Recalculate on
+        // the next frame so the projector uses the final video bounds.
+        requestAnimationFrame(() => this.updateSizes());
       }.bind(this),
       false
     );
@@ -1999,6 +2002,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
           : 256);
       if (this.settings.spread > 200) pMinSize = pMinSize / 2;
 
+      if (getBrowser() === 'Safari') {
+        pMinSize = Math.max(384, pMinSize * 2);
+      }
+
       pScale = Math.min(
         0.5,
         Math.max(
@@ -2271,47 +2278,50 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       const getHeaderTextShadow = (color) =>
         getTextShadow(color, headerShadowSize, headerShadowOpacity);
 
+      const isSafari = getBrowser() === 'Safari';
+
       // Header !textAndBtnOnly
       setStyleProperty(
         this.mastheadElem,
         `--ytal-filter-shadow`,
-        !textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''
+        !textAndBtnOnly && !isSafari ? getHeaderFilterShadow('0,0,0') : ''
       );
       setStyleProperty(
         this.mastheadElem,
         `--ytal-filter-shadow-inverted`,
-        !textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''
+        !textAndBtnOnly && !isSafari ? getHeaderFilterShadow('255,255,255') : ''
       );
 
       // Header textAndBtnOnly
       setStyleProperty(
         this.mastheadElem,
         `--ytal-button-shadow`,
-        textAndBtnOnly ? getHeaderFilterShadow('0,0,0') : ''
+        textAndBtnOnly && !isSafari ? getHeaderFilterShadow('0,0,0') : ''
       );
       setStyleProperty(
         this.mastheadElem,
         `--ytal-button-shadow-inverted`,
-        textAndBtnOnly ? getHeaderFilterShadow('255,255,255') : ''
+        textAndBtnOnly && !isSafari ? getHeaderFilterShadow('255,255,255') : ''
       );
 
       setStyleProperty(
         this.mastheadElem,
         '--ytal-text-shadow',
-        textAndBtnOnly ? getHeaderTextShadow('0,0,0') : ''
+        textAndBtnOnly || isSafari ? getHeaderTextShadow('0,0,0') : ''
       );
       setStyleProperty(
         this.mastheadElem,
         '--ytal-text-shadow-inverted',
-        textAndBtnOnly ? getHeaderTextShadow('255,255,255') : ''
+        textAndBtnOnly || isSafari ? getHeaderTextShadow('255,255,255') : ''
       );
       this.mastheadElem.toggleAttribute(
         'data-ambientlight-text-shadow',
-        textAndBtnOnly
+        textAndBtnOnly || isSafari
       );
     }
 
     // Content shadow
+    const isSafari = getBrowser() === 'Safari';
     const contentShadowSize = this.settings.surroundingContentShadowSize / 5;
     const contentShadowOpacity =
       this.settings.surroundingContentShadowOpacity / 100;
@@ -2324,39 +2334,39 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     setStyleProperty(
       document.body,
       `--ytal-filter-shadow`,
-      !textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''
+      !textAndBtnOnly && !isSafari ? getContentFilterShadow('0,0,0') : ''
     );
     setStyleProperty(
       document.body,
       `--ytal-filter-shadow-inverted`,
-      !textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''
+      !textAndBtnOnly && !isSafari ? getContentFilterShadow('255,255,255') : ''
     );
 
     // Content textAndBtnOnly
     setStyleProperty(
       document.body,
       `--ytal-button-shadow`,
-      textAndBtnOnly ? getContentFilterShadow('0,0,0') : ''
+      textAndBtnOnly && !isSafari ? getContentFilterShadow('0,0,0') : ''
     );
     setStyleProperty(
       document.body,
       `--ytal-button-shadow-inverted`,
-      textAndBtnOnly ? getContentFilterShadow('255,255,255') : ''
+      textAndBtnOnly && !isSafari ? getContentFilterShadow('255,255,255') : ''
     );
 
     setStyleProperty(
       document.body,
       '--ytal-text-shadow',
-      textAndBtnOnly ? getContentTextShadow('0,0,0') : ''
+      textAndBtnOnly || isSafari ? getContentTextShadow('0,0,0') : ''
     );
     setStyleProperty(
       document.body,
       '--ytal-text-shadow-inverted',
-      textAndBtnOnly ? getContentTextShadow('255,255,255') : ''
+      textAndBtnOnly || isSafari ? getContentTextShadow('255,255,255') : ''
     );
     if(document.body) document.body.toggleAttribute(
       'data-ambientlight-text-shadow',
-      textAndBtnOnly
+      textAndBtnOnly || isSafari
     );
 
     // Video shadow
@@ -2668,6 +2678,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (
       this.settings.frameSync == FRAMESYNC_VIDEOFRAMES &&
       this.requestVideoFrameCallbackId &&
+      getBrowser() !== 'Safari' &&
       !this.videoIsHidden &&
       !this.settings.frameBlending &&
       !this.settings.frameFading &&
@@ -2811,7 +2822,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       this.videoElem.paused ||
       this.videoElem.seeking ||
       this.isVideoHiddenOnWatchPage ||
-      this.isAmbientlightHiddenOnWatchPage
+      (this.isAmbientlightHiddenOnWatchPage && this.ambientlightFrameCount > 0)
     );
 
   optionalFrame = async (fromSettingChange = false) => {
@@ -3362,7 +3373,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         }
       }
     } else {
-      if (!hasNewFrame && !this.settings.frameFading) return;
+      if (!hasNewFrame && !this.settings.frameFading && getBrowser() !== 'Safari') return;
 
       if (
         this.settings.videoOverlayEnabled &&
@@ -3771,6 +3782,12 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (this.isHidden) return;
     this.isHidden = true;
 
+    const html = document.documentElement;
+    html.toggleAttribute('data-ambientlight-enabled', false);
+    html.toggleAttribute('data-ambientlight-safari', false);
+    html.toggleAttribute('data-ambientlight-hide-scrollbar', false);
+    html.toggleAttribute('data-ambientlight-related-scrollbar', false);
+
     if (this.chromiumBugVideoJitterWorkaround?.update)
       this.chromiumBugVideoJitterWorkaround.update();
 
@@ -3830,6 +3847,15 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   async show() {
     if (!this.isHidden) return;
     this.isHidden = false;
+
+    const html = document.documentElement;
+    html.toggleAttribute('data-ambientlight-enabled', true);
+    if (getBrowser() === 'Safari')
+      html.toggleAttribute('data-ambientlight-safari', true);
+    if (this.settings.hideScrollbar)
+      html.toggleAttribute('data-ambientlight-hide-scrollbar', true);
+    if (this.settings.relatedScrollbar)
+      html.toggleAttribute('data-ambientlight-related-scrollbar', true);
     // await new Promise((resolve) => raf(resolve));
 
     // // Pre-style to prevent black/white flashes

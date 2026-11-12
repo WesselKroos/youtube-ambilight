@@ -1,3 +1,4 @@
+import { getBrowser } from './utils';
 export const uuidv4 = () => {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
@@ -322,7 +323,7 @@ export class Canvas {
 
 export class SafeOffscreenCanvas {
   constructor(width, height, pixelated) {
-    if (typeof OffscreenCanvas !== 'undefined') {
+    if (typeof OffscreenCanvas !== 'undefined' && getBrowser() !== 'Safari') {
       return new OffscreenCanvas(width, height);
     } else {
       const canvas = document.createElement('canvas');
@@ -533,7 +534,8 @@ export const setWarning = (text) => {
 
 export const isNetworkError = (ex) =>
   ex?.message === 'Failed to fetch' || // Chromium
-  ex?.message === 'NetworkError when attempting to fetch resource.'; // Firefox
+  ex?.message === 'NetworkError when attempting to fetch resource.' || // Firefox
+  ex?.message === 'Load failed'; // Safari WebKit
 
 export const setStyleProperty = (elem, name, value, priority = '') => {
   if(!elem) return;
