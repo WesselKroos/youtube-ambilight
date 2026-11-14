@@ -469,7 +469,7 @@ But if this happens frequently, here are some possible causes:
         labelKey.contentEditable = true;
         labelKey.className = 'ytpa-menuitem-key';
         labelKey.title =
-          'Click here and press a key to change the hotkey\n(Or press the escape key to disable this hotkey)';
+          'Click here and press a key to change the hotkey\n(Or to disable this hotkey press the backspace, delete or escape key)';
         labelKey.textContent = setting.key;
         labelElems.push(labelKey);
 
@@ -826,7 +826,7 @@ But if this happens frequently, here are some possible causes:
 
       const keyElem = settingElem.querySelector('.ytpa-menuitem-key');
       if (keyElem) {
-        on(keyElem, 'click', (e) => {
+        on(keyElem, 'click dblclick', (e) => {
           e.stopPropagation();
           e.preventDefault();
         });
@@ -848,7 +848,7 @@ But if this happens frequently, here are some possible causes:
 
           keyElem.textContent = key;
           this.setKey(setting.name, key);
-        });
+        }, { capture: true });
         on(keyElem, 'blur', () => {
           // Deselect all
           const sel = window.getSelection();
