@@ -3092,6 +3092,10 @@ html[data-ambientlight-enabled] {
     background-color: var(--yt-spec-10-percent-layer);
   }
 
+  .ytSpecButtonShapeNextDisabled.ytSpecButtonShapeNextTonal {
+    color: var(--yt-spec-text-secondary);
+  }
+
   > body[data-ambientlight-text-shadow] {
     .title.ytd-video-primary-info-renderer // Remove default title text-shadow
     {
