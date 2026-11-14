@@ -463,7 +463,7 @@ But if this happens frequently, here are some possible causes:
       labelElems.push(document.createTextNode(setting.label));
 
       if (setting.key) {
-        labelElems.push(document.createTextNode('['));
+        labelElems.push(document.createTextNode(' '));
 
         const labelKey = document.createElement('span');
         labelKey.contentEditable = true;
@@ -473,7 +473,7 @@ But if this happens frequently, here are some possible causes:
         labelKey.textContent = setting.key;
         labelElems.push(labelKey);
 
-        labelElems.push(document.createTextNode(']'));
+        labelElems.push(document.createTextNode(' '));
       }
 
       if (setting.questionMark) {

@@ -433,7 +433,7 @@ Click on the questionmark for more and updated information about these artifacts
     description: 'Uses: CPU power',
     type: 'checkbox',
     default: false,
-    defaultKey: 'V',
+    defaultKey: 'N',
   },
   {
     name: 'detectColoredHorizontalBarSizeEnabled',

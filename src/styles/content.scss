@@ -2493,23 +2493,37 @@ html[data-ambientlight-enabled] {
       color: #5ebfff;
       text-decoration: underline;
     }
+
+    .ytpa-menuitem-key {
+      display: inline-block;
+      text-align: center;
+      min-width: 11px;
+      margin-left: 4px;
+      border: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 4px;
+      padding: 0 2px !important;
+      color: #fff;
+      line-height: 15px;
+      font-size: 13px;
+      cursor: text;
+
+      &:hover {
+        border: 1px solid #5ebfff;
+      }
+      &:focus {
+        background: #000;
+        border: 1px solid #000;
+        outline: 1px solid #30acf3;
+        color: #fff;
+      }
+      &::selection {
+        background: #007cc3;
+        color: #fff;
+      }
+    }
   }
   .ytpa-menuitem--header .ytp-menuitem-label {
     width: fit-content;
-  }
-
-  .ytpa-menuitem-key {
-    display: inline-block;
-    min-width: 12px;
-    text-align: center;
-    cursor: text;
-    &:hover {
-      color: #30acf3;
-    }
-    &:focus {
-      background: #000;
-      outline: 1px solid #ffffff88;
-    }
   }
 
   .ytpa-menuitem-description {

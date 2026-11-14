@@ -120,7 +120,7 @@ export function on(elem, eventNames, callback, options, reportOnce = false) {
 
           const e = args.length ? args[0] : {};
           const type =
-            e.type === 'keydown' ? `${e.type} keyCode: ${e.keyCode}` : e.type;
+            e.type?.startsWith('key') ? `${e.type} key: ${e.key}` : e.type;
           ex.message = `${ex.message} \nOn event: ${type}`;
 
           try {
