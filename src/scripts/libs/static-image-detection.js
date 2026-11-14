@@ -123,62 +123,65 @@ const workerCode = function () {
   //   }
   //   return diffSum / (image1.data.length * .25) / (1 - diffIgnore);
   // };
-  const getImageDataDifference = (image1, image2) => {
-    const diffs = [];
-    for (let i = 0; i < image1.data.length; i += 4) {
-      // let diff = Math.max(
-      //   Math.abs(sRGBtoLin(image1.data[i]   / 255) - sRGBtoLin(image2.data[i]   / 255)),
-      //   Math.abs(sRGBtoLin(image1.data[i+1] / 255) - sRGBtoLin(image2.data[i+1] / 255)),
-      //   Math.abs(sRGBtoLin(image1.data[i+2] / 255) - sRGBtoLin(image2.data[i+2] / 255))
-      // )
-      // let diff = (
-      //   0.2126 * Math.abs(sRGBtoLin(image1.data[i]   / 255) - sRGBtoLin(image2.data[i]   / 255)) +
-      //   0.7152 * Math.abs(sRGBtoLin(image1.data[i+1] / 255) - sRGBtoLin(image2.data[i+1] / 255)) +
-      //   0.0722 * Math.abs(sRGBtoLin(image1.data[i+2] / 255) - sRGBtoLin(image2.data[i+2] / 255))
-      // )
-      diffs.push(
-        0.2126 *
-          Math.max(
-            0,
-            Math.abs(image1.data[i] / 255 - image2.data[i] / 255) - 0.03
-          ) +
-          0.7152 *
-            Math.max(
-              0,
-              Math.abs(image1.data[i + 1] / 255 - image2.data[i + 1] / 255) -
-                0.03
-            ) +
-          0.0722 *
-            Math.max(
-              0,
-              Math.abs(image1.data[i + 2] / 255 - image2.data[i + 2] / 255) -
-                0.03
-            )
-      );
-      // diffs.push(
-      //   0.2126 * Math.max(0, Math.abs(sRGBtoLin(image1.data[i]   / 255) - sRGBtoLin(image2.data[i]   / 255)) - .03) +
-      //   0.7152 * Math.max(0, Math.abs(sRGBtoLin(image1.data[i+1] / 255) - sRGBtoLin(image2.data[i+1] / 255)) - .03) +
-      //   0.0722 * Math.max(0, Math.abs(sRGBtoLin(image1.data[i+2] / 255) - sRGBtoLin(image2.data[i+2] / 255)) - .03)
-      // );
-    }
 
-    // diffs = diffs
-    //   .sort((a, b) => a - b)
-    //   .slice(Math.floor(diffs.length / 8), Math.floor((diffs.length / 8) * 7))
-    //   .reduce((i, sum) => sum + i, 0)
+  const LUMA_WEIGHTS = { red: 0.2126, green: 0.7152, blue: 0.0722 };
+  const CHANNEL_THRESHOLD = 0.03 * 255;
+  const getImageDataDifference = (image1, image2) => {
+    const data1 = image1.data;
+    const data2 = image2.data;
+
+    const channelDifference = (a, b) => {
+      const delta = Math.abs(a - b) - CHANNEL_THRESHOLD;
+      return delta > 0 ? delta : 0;
+    };
 
     let diffSum = 0;
-    for (let diff of diffs) {
-      diffSum += diff;
+    for (let i = 0; i < data1.length; i += 4) {
+      diffSum +=
+        LUMA_WEIGHTS.red * channelDifference(data1[i], data2[i]) +
+        LUMA_WEIGHTS.green * channelDifference(data1[i + 1], data2[i + 1]) +
+        LUMA_WEIGHTS.blue * channelDifference(data1[i + 2], data2[i + 2]);
     }
-    const diff = diffSum / diffs.length;
-    return diff;
+
+    const pixelCount = data1.length / 4;
+    return diffSum / 255 / pixelCount;
+
+
+    // const diffs = [];
+    // for (let i = 0; i < image1.data.length; i += 4) {
+    //   diffs.push(
+    //     0.2126 *
+    //       Math.max(
+    //         0,
+    //         Math.abs(image1.data[i] / 255 - image2.data[i] / 255) - 0.03
+    //       ) +
+    //     0.7152 *
+    //       Math.max(
+    //         0,
+    //         Math.abs(image1.data[i + 1] / 255 - image2.data[i + 1] / 255) -
+    //           0.03
+    //       ) +
+    //     0.0722 *
+    //       Math.max(
+    //         0,
+    //         Math.abs(image1.data[i + 2] / 255 - image2.data[i + 2] / 255) -
+    //           0.03
+    //       )
+    //   );
+    // }
+
+    // let diffSum = 0;
+    // for (let diff of diffs) {
+    //   diffSum += diff;
+    // }
+    // const diff = diffSum / diffs.length;
+    // return diff;
   };
 
   const getStoryboardPageDifferences = (imageDatas) => {
-    const diffs = [];
+    const diffs = new Array(Math.max(0, imageDatas.length - 1));
     for (let i = 1; i < imageDatas.length; i++) {
-      diffs.push(getImageDataDifference(imageDatas[i - 1], imageDatas[i]));
+      diffs[i - 1] = getImageDataDifference(imageDatas[i - 1], imageDatas[i]);
     }
     return diffs;
   };
@@ -219,10 +222,9 @@ const workerCode = function () {
       ...middlePageImageDatas,
       ...secondlastPageImageDatas,
     ];
-    const differences = getStoryboardPageDifferences(imageDatas);
 
-    const averageDifference =
-      differences.reduce((diffs, diff) => diffs + diff, 0) / differences.length;
+    const differences = getStoryboardPageDifferences(imageDatas);
+    const averageDifference = differences.reduce((diffs, diff) => diffs + diff, 0) / differences.length;
     return averageDifference;
   };
 

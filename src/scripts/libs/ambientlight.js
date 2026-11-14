@@ -3487,7 +3487,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         this.settings.barSizeDetectionAverageHistorySize || 1,
         this.settings.barSizeDetectionAllowedElementsPercentage || 20,
         this.settings.barSizeDetectionAllowedUnevenBarsPercentage || 20,
-        wrapErrorHandler(this.scheduleBarSizeDetectionCallback)
+        wrapErrorHandler(this.scheduleBarSizeDetectionCallback),
+        this.settings.setWarning
       );
     } catch (ex) {
       if (!this.showedDetectBarSizeWarning) {

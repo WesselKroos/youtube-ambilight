@@ -981,13 +981,21 @@ Ambient rendering budget: ${ambientlightBudgetRange[0]}ms to ${
       this.barDetectionGraphElem.style.display = '';
     }
 
-    this.barDetectionBufferCtx.drawImage(
-      image,
-      0,
-      0,
-      this.barDetectionBufferCanvas.width,
-      this.barDetectionBufferCanvas.height
-    );
+    if (image instanceof ImageData) {
+      this.barDetectionBufferCtx.putImageData(
+        image,
+        0,
+        0
+      );
+    } else {
+      this.barDetectionBufferCtx.drawImage(
+        image,
+        0,
+        0,
+        this.barDetectionBufferCanvas.width,
+        this.barDetectionBufferCanvas.height
+      );
+    }
   };
 
   updateBarDetectionResult = (

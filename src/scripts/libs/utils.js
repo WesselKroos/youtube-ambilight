@@ -24,30 +24,38 @@ const browsersUAList = [
   { ua: 'Chrome', name: 'Chrome' },
 ];
 
+let browser;
 export const getBrowser = () => {
-  try {
-    const ua = globalThis.navigator.userAgent;
-    const browser = browsersUAList.find(
-      (browser) => ua.indexOf(browser.ua) >= 0
-    );
-    return browser ? browser.name : '';
-  } catch {
-    return null;
+  if (browser === undefined) {
+    try {
+      const ua = globalThis.navigator.userAgent;
+      const _browser = browsersUAList.find(
+        (browser) => ua.indexOf(browser.ua) >= 0
+      );
+      browser = _browser ? _browser.name : '';
+    } catch {
+      browser = null;
+    }
   }
+  return browser;
 };
 
+let browserVersion;
 const getBrowserVersion = () => {
-  try {
-    const browserName = getBrowser();
-    const browserUA = browsersUAList.find(
-      (browser) => browserName === browser.name
-    ).ua;
-    const ua = globalThis.navigator.userAgent;
-    const matches = ua.match(`${browserUA}/([0-9.]+)`);
-    return matches.length === 2 ? matches[1] : ua;
-  } catch {
-    return null;
+  if (browserVersion === undefined) {
+    try {
+      const browserName = getBrowser();
+      const browserUA = browsersUAList.find(
+        (browser) => browserName === browser.name
+      ).ua;
+      const ua = globalThis.navigator.userAgent;
+      const matches = ua.match(`${browserUA}/([0-9.]+)`);
+      browserVersion = matches.length === 2 ? matches[1] : ua;
+    } catch {
+      browserVersion = null;
+    }
   }
+  return browserVersion;
 };
 
 export const getVersion = () => {

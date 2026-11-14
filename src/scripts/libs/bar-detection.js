@@ -6,6 +6,9 @@ import {
 } from './generic';
 import SentryReporter from './errors/sentry-reporter';
 import { workerFromCode } from './worker';
+import { getBrowser } from './utils';
+
+const isFirefox = getBrowser() === 'Firefox';
 
 const workerCode = function () {
   class ImageHelper {
@@ -20,32 +23,49 @@ const workerCode = function () {
       return this.imageData?.height ?? 0;
     }
 
-    getDataOffset(x, y) {
-      return (y * this.width + x) * this.channels;
+    getDataOffset(x, y, width = this.width) {
+      return (y * width + x) * this.channels;
     }
 
-    getPixel(x, y, data, dataOffset, alpha = true) {
-      // Throttle worker thread
-      // for (let i = 0; i < 100_000; i++) {}
+    getPixel(x, y, data, dataOffset = 0, alpha = true) {
+      const returnValue = !data;
 
-      let returnValue = !data;
-      if (returnValue) data = new Uint8Array(4);
-      if (!dataOffset) dataOffset = 0;
-
-      const offset = this.getDataOffset(x, y);
-      if (offset < 0 || offset > (this.imageData?.data?.length ?? 0)) {
-        data[dataOffset + 0] = 0;
-        data[dataOffset + 1] = 0;
-        data[dataOffset + 2] = 0;
-        if (alpha) data[dataOffset + 3] = 0;
-      } else {
-        data[dataOffset + 0] = this.imageData?.data?.[offset];
-        data[dataOffset + 1] = this.imageData?.data?.[offset + 1];
-        data[dataOffset + 2] = this.imageData?.data?.[offset + 2];
-        if (alpha) data[dataOffset + 3] = this.imageData?.data?.[offset + 3];
+      if (returnValue) {
+        data = new Uint8Array(4);
       }
 
-      if (returnValue) return data;
+      const imageData = this.imageData;
+
+      if (
+        !imageData ||
+        x < 0 ||
+        y < 0 ||
+        x >= imageData.width ||
+        y >= imageData.height
+      ) {
+        data[dataOffset] = 0;
+        data[dataOffset + 1] = 0;
+        data[dataOffset + 2] = 0;
+
+        if (alpha) {
+          data[dataOffset + 3] = 0;
+        }
+      } else {
+        const source = imageData.data;
+        const offset = this.getDataOffset(x, y, imageData.width);
+
+        data[dataOffset] = source[offset];
+        data[dataOffset + 1] = source[offset + 1];
+        data[dataOffset + 2] = source[offset + 2];
+
+        if (alpha) {
+          data[dataOffset + 3] = source[offset + 3];
+        }
+      }
+
+      if (returnValue) {
+        return data;
+      }
     }
   }
 
@@ -157,34 +177,6 @@ const workerCode = function () {
       colorsIndexes.sort(sortAverageColors);
     }
 
-    // console.log(
-    //   'average color',
-    //   averageColor
-    //     .map((c) => c.toFixed(0).toString().padStart(3, ' '))
-    //     .join('|'),
-    //   new Array(colorsIndexes.length).fill(undefined).map((_, i) => {
-    //     const colorsIndex = colorsIndexes[i];
-    //     const pixelOffset = colorsIndex * colorChannels;
-
-    //     const color = [
-    //       colors[pixelOffset],
-    //       colors[pixelOffset + 1],
-    //       colors[pixelOffset + 2],
-    //     ];
-
-    //     const info = [
-    //       // colorsIndex,
-    //       color.map((c) => c.toFixed(0).toString().padStart(3, ' ')).join('|'),
-    //       Math.abs(averageColor[0] - color[0]) +
-    //         Math.abs(averageColor[1] - color[1]) +
-    //         Math.abs(averageColor[2] - color[2]),
-    //       colorsIndexesDiffs[colorsIndex],
-    //     ];
-
-    //     return info;
-    //   })
-    // );
-
     return Array.from(averageColor);
   }
 
@@ -226,16 +218,21 @@ const workerCode = function () {
       : maxBlackDeviation;
   }
 
-  function isColorWithinMaxDeviation(currentColor, referenceColor) {
+  function isColorWithinMaxDeviation(currentColor, referenceColor,
+    maxDeviation = getMaxDeviationLimits(referenceColor)
+  ) {
     const hueDeviation = getHueDeviation(currentColor, referenceColor);
+
+    if (hueDeviation > maxDeviation.hue) {
+      return false;
+    }
+
     const brightnessDeviation = getBrightnessDeviation(
       currentColor,
       referenceColor
     );
-    const maxDeviation = getMaxDeviationLimits(referenceColor);
 
     return (
-      hueDeviation <= maxDeviation.hue &&
       brightnessDeviation <= maxDeviation.brightness &&
       hueDeviation + brightnessDeviation <= maxDeviation.sum
     );
@@ -252,94 +249,95 @@ const workerCode = function () {
     x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 
   const getCertaintyColorData = new Uint8Array(4);
-  const getCertainty = (pointX, pointY, yAxis, yDirection, color) => {
-    // return .8;
-    //, linesX) => {
+  function getCertainty(pointX, pointY, yAxis, yDirection, color,
+    maxDeviation = getMaxDeviationLimits(color)
+  ) {
     const x = pointX - (enhancedCertainty ? edgePointXRange : 1);
+
     const y =
       pointY -
       edgePointYRange *
         2 *
-        (yDirection === 1 ? edgePointYCenter : 1 - edgePointYCenter);
-    const xLength = 1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
+        (yDirection === 1
+          ? edgePointYCenter
+          : 1 - edgePointYCenter);
+
+    const xLength =
+      1 + (enhancedCertainty ? edgePointXRange * 2 : 0);
+
     const yLength = 1 + edgePointYRange * 2;
 
-    // let data = enhancedCertainty
-    //   ? ctx.getImageData(
-    //       ...(yAxis === 'height'
-    //         ? [x, y, xLength, yLength]
-    //         : [y, x, yLength, xLength])
-    //     ).data
-    //   : [];
-    // if (!enhancedCertainty) {
-    //   let start = y;
-    //   let length = yLength;
-    //   if (start < 0) {
-    //     data = new Array(-start).fill(0);
-    //     length += start;
-    //     start = 0;
-    //     data = data.concat(...imageLine.data.slice(start, start + length));
-    //   } else {
-    //     data = imageLine.data.slice(start, start + length);
-    //   }
-    // }
+    // These values do not change between samples.
+    const horizontal = yAxis === 'height';
+    const forward = yDirection === 1;
 
-    // console.log(point, yAxis, yDirection, color)
-    // console.log(x, y, xLength, yLength)
-    // console.log(data)
+    const withinThreshold = Math.floor(
+      1 + edgePointYRange * 2 * edgePointYCenter
+    );
+
+    const maxDeviationScore = 1 - minDeviationScore;
 
     let score = 0;
-    // let iColor = getCertaintyColorData;
 
     for (let dx = 0; dx < xLength; dx += 2) {
-      // const ix = dx * (yAxis === 'height' ? 1 : yLength);
+      const sampleX = x + dx;
 
       for (let dy = 0; dy < yLength; dy += 2) {
-        const dy2 = yDirection === 1 ? dy : yLength - 1 - dy;
-        // const iy = dy2 * (yAxis === 'height' ? xLength : 1);
-        // const i = ix + iy;
+        const dy2 = forward ? dy : yLength - 1 - dy;
+        const sampleY = y + dy2;
+
         let iColor = getCertaintyColorData;
-        if (yAxis === 'height') {
-          image.getPixel(x + dx, y + dy2, iColor);
+
+        if (horizontal) {
+          image.getPixel(sampleX, sampleY, iColor);
         } else {
-          image.getPixel(y + dy2, x + dx, iColor);
+          image.getPixel(sampleY, sampleX, iColor);
         }
-        if (iColor[3] === 0) iColor = color;
-        // data[i + 3] === 0
-        //   ? color // Outside canvas bounds
-        //   : [data[i], data[i + 1], data[i + 2]];
-        const expectWithinDeviation =
-          dy < Math.floor(1 + edgePointYRange * 2 * edgePointYCenter);
-        // const within = isColorWithinMaxDeviation(iColor, color)
-        // console.log(dx, dy2, '|', ix, iy, '|', i, JSON.stringify(iColor), within)
-        // if (within === expectWithinDeviation) {
 
-        if (!expectWithinDeviation) {
-          const maxDeviation = getMaxDeviationLimits(color);
+        if (iColor[3] === 0) {
+          iColor = color;
+        }
 
+        if (dy < withinThreshold) {
+          if (
+            isColorWithinMaxDeviation(
+              iColor,
+              color,
+              maxDeviation
+            )
+          ) {
+            score += 1;
+          }
+        } else {
           const hueDeviation = getHueDeviation(iColor, color);
-          const brightnessDeviation = getBrightnessDeviation(iColor, color);
+          const brightnessDeviation = getBrightnessDeviation(
+            iColor,
+            color
+          );
+
           const deviationScore = Math.max(
             0,
             Math.min(
-              1 - minDeviationScore,
-              (hueDeviation + brightnessDeviation) / maxDeviation.score / 0.05
+              maxDeviationScore,
+              (hueDeviation + brightnessDeviation) /
+                maxDeviation.score /
+                0.05
             )
           );
-          // console.log(dx, dy, deviationScore, iColor, color, hueDeviation, brightnessDeviation)
+
           score += minDeviationScore + deviationScore;
-        } else {
-          const within = isColorWithinMaxDeviation(iColor, color);
-          if (within) score += 1;
         }
-        // }
       }
     }
-    const length = (1 + (xLength - 1) / 2) * (1 + (yLength - 1) / 2);
+
+    const length =
+      (1 + (xLength - 1) / 2) *
+      (1 + (yLength - 1) / 2);
+
     const certainty = (score - length / 2) / (length / 2);
 
     return easeInOutQuad(certainty);
-  };
+  }
 
   const largeStep = 4;
   const ignoreEdge = 2;
@@ -349,33 +347,70 @@ const workerCode = function () {
   const maxCertaintyChecks = enhancedCertainty ? 3 : 5;
   const sureCertainty = enhancedCertainty ? 0.65 : 0.65;
 
-  const getAverageLineColorRange = 9;
-  const getAverageLineColorRangeOffset = (getAverageLineColorRange - 1) / 2;
-  const getAverageLineColorData = new Uint8Array(4 * getAverageLineColorRange);
   function getAverageLineColor(x, y, yAxis, iColor) {
-    const iColors = getAverageLineColorData;
-    const range = getAverageLineColorRange;
-    const rangeOffset = getAverageLineColorRangeOffset;
-    for (let i = 0; i < range; i++) {
-      const x2 = x + (i - rangeOffset) * 2;
-      const iColorsOffset = i * 4;
-      if (yAxis === 'height') {
-        image.getPixel(x2, y, iColors, iColorsOffset);
-      } else {
-        image.getPixel(y, x2, iColors, iColorsOffset);
-      }
+    const imageData = image.imageData;
+
+    if (!imageData) {
+        iColor[0] = 0;
+        iColor[1] = 0;
+        iColor[2] = 0;
+        return;
     }
-    for (let i = 0; i < 4; i++) {
-      let sum = 0;
-      for (let j = 0; j < range; j++) {
-        sum += iColors[j * 4 + i];
-      }
-      iColor[i] = Math.round(sum / range);
+
+    const { data, width, height } = imageData;
+    const horizontal = yAxis === "height";
+
+    // The sample positions are:
+    // x - 8, x - 6, ..., x + 6, x + 8.
+    const start = x - 8;
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    if (
+        horizontal
+            ? y >= 0 && y < height && start >= 0 && x + 8 < width
+            : y >= 0 && y < width && start >= 0 && x + 8 < height
+    ) {
+        // Fast path: all nine samples are inside the image.
+        const stride = horizontal ? 8 : width * 8;
+        let offset = horizontal
+            ? (y * width + start) * 4
+            : (start * width + y) * 4;
+
+        for (let i = 0; i < 9; i++, offset += stride) {
+            r += data[offset];
+            g += data[offset + 1];
+            b += data[offset + 2];
+        }
+    } else {
+        // Boundary path: outside-image samples contribute transparent black.
+        for (let i = 0; i < 9; i++) {
+            const position = start + i * 2;
+            const px = horizontal ? position : y;
+            const py = horizontal ? y : position;
+
+            if (px < 0 || px >= width || py < 0 || py >= height) {
+                continue;
+            }
+
+            const offset = (py * width + px) * 4;
+
+            r += data[offset];
+            g += data[offset + 1];
+            b += data[offset + 2];
+        }
     }
+
+    iColor[0] = Math.round(r / 9);
+    iColor[1] = Math.round(g / 9);
+    iColor[2] = Math.round(b / 9);
   }
 
-  const detectEdgesColorData = new Uint8Array(4);
+  const detectEdgesColorData = new Uint8Array(3);
   function detectEdges(linesX, color, yAxis) {
+    const maxDeviation = getMaxDeviationLimits(color);
     const maxY = image[yAxis];
     const middleY = maxY / 2; // imageLines[0].data.length / 2;
     const topEdges = [];
@@ -397,8 +432,6 @@ const workerCode = function () {
           wasUncertain = false;
           step = 1;
         }
-
-        getAverageLineColor(x, y, yAxis, iColor);
 
         // image.getPixel(
         //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
@@ -428,7 +461,8 @@ const workerCode = function () {
           break;
         }
 
-        const isDeviating = !isColorWithinMaxDeviation(iColor, color);
+        getAverageLineColor(x, y, yAxis, iColor);
+        const isDeviating = !isColorWithinMaxDeviation(iColor, color, maxDeviation);
 
         if (limitNotReached && wasDeviating && !isDeviating) {
           wasDeviating = false;
@@ -483,13 +517,11 @@ const workerCode = function () {
       mostCertainEdge = undefined;
       detectedEdges = 0;
       // From the bottom up
-      for (let y = maxY - 1 + ignoreEdge; y >= 0; y -= step) {
+      for (let y = maxY - 1 - ignoreEdge; y >= 0; y -= step) {
         if (wasUncertain) {
           wasUncertain = false;
           step = 1;
         }
-
-        getAverageLineColor(x, y, yAxis, iColor);
 
         // image.getPixel(
         //   ...(yAxis === 'height' ? [x, y] : [y, x]), iColor
@@ -517,7 +549,9 @@ const workerCode = function () {
           }
           break;
         }
-        const isDeviating = !isColorWithinMaxDeviation(iColor, color);
+
+        getAverageLineColor(x, y, yAxis, iColor);
+        const isDeviating = !isColorWithinMaxDeviation(iColor, color, maxDeviation);
 
         if (limitNotReached && wasDeviating && !isDeviating) {
           wasDeviating = false;
@@ -603,28 +637,6 @@ const workerCode = function () {
       const deviatingEdge = nonDeviatingEdges[nonDeviatingEdges.length - 1];
       deviatingEdge.deviates = true;
     }
-
-    // while(topEdges.filter(e => !e.deviates && !e.deviatesTop).length > threshold) {
-    //   const nonDeviatingEdges = topEdges.filter(e => !e.deviates && !e.deviatesTop)
-    //   const averageSize = reduceAverageSize(nonDeviatingEdges)
-    //   nonDeviatingEdges
-    //     .sort(sortSizes(averageSize))
-    //     .slice(nonDeviatingEdges.length - 1)
-    //     .forEach(e => {
-    //       e.deviatesTop = true
-    //     })
-    // }
-
-    // while(bottomEdges.filter(e => !e.deviates && !e.deviatesBottom).length > threshold) {
-    //   const nonDeviatingEdges = bottomEdges.filter(e => !e.deviates && !e.deviatesBottom)
-    //   const averageSize = reduceAverageSize(nonDeviatingEdges)
-    //   nonDeviatingEdges
-    //     .sort(sortSizes(averageSize))
-    //     .slice(nonDeviatingEdges.length - 1)
-    //     .forEach(e => {
-    //       e.deviatesBottom = true
-    //     })
-    // }
 
     const maxAllowedSideDeviation = maxSize * (0.008 * scale);
 
@@ -785,7 +797,7 @@ const workerCode = function () {
       // xOffset = partSizeBorderMultiplier ? xOffset * .5 : xOffset
 
       const partSize = Math.floor(
-        canvas[xLength] / (scanlinesAmount + partSizeBorderMultiplier * 2)
+        image[xLength] / (scanlinesAmount + partSizeBorderMultiplier * 2)
       );
       // const imageLines = [];
       // const linesX = new Uint16Array(5);
@@ -794,7 +806,7 @@ const workerCode = function () {
       for (
         let index =
           Math.ceil(partSize / 2) - 1 + partSizeBorderMultiplier * partSize;
-        index < canvas[xLength] - partSizeBorderMultiplier * partSize;
+        index < image[xLength] - partSizeBorderMultiplier * partSize;
         index += partSize
       ) {
         // if (id < globalRunId) {
@@ -808,7 +820,7 @@ const workerCode = function () {
               index + Math.round(xOffset * (partSize / 2) - partSize / 4)
             )
           ),
-          canvas[xLength] - 1
+          image[xLength] - 1
         );
         linesX[linesXIndex] = xIndex;
         linesXIndex++;
@@ -820,29 +832,6 @@ const workerCode = function () {
       // console.log(imageSquare.length)
 
       // console.log(`scanned ${imageLines.length} lines`)
-      // if (id < globalRunId) {
-      //   imageLines.length = 0;
-      //   return;
-      // }
-
-      // const perpendicularImageLines = [];
-      // await getLineImageData(perpendicularImageLines, xLength, 3);
-      // await getLineImageData(perpendicularImageLines, xLength, 6);
-      // await getLineImageData(
-      //   perpendicularImageLines,
-      //   xLength,
-      //   canvas[xLength] - 3
-      // );
-      // await getLineImageData(
-      //   perpendicularImageLines,
-      //   xLength,
-      //   canvas[xLength] - 6
-      // );
-
-      // if (id < globalRunId) {
-      //   imageLines.length = 0;
-      //   return;
-      // }
 
       const color = getAverageColor(yAxis);
       // > Used 3600kb untill now
@@ -855,15 +844,16 @@ const workerCode = function () {
           Math.abs(color[1] - color[2]) > 3 ||
           Math.abs(color[2] - color[0]) > 3)
       ) {
-        const topEdges = linesX.map((x) => ({
-          xIndex: x,
-          yIndex: 0,
-          deviates: true,
+        const topEdges = Array.from(linesX, (x) => ({
+            xIndex: x,
+            yIndex: 0,
+            deviates: true,
         }));
-        const bottomEdges = linesX.map((x) => ({
-          xIndex: x,
-          yIndex: 0,
-          deviates: true,
+
+        const bottomEdges = Array.from(linesX, (x) => ({
+            xIndex: x,
+            yIndex: 0,
+            deviates: true,
         }));
         // imageLines.length = 0;
 
@@ -1025,14 +1015,28 @@ const workerCode = function () {
           }
           ctx.drawImage(bitmap, 0, 0, 512, 512);
           bitmap.close();
-        } else {
+          image.imageData = ctx.getImageData(0, 0, 512, 512);
+          // > Used 1.400kb up until now
+        } else if(canvasInfo.canvas) {
           canvas = canvasInfo.canvas;
           canvasIsCreatedInWorker = false;
           ctx = canvasInfo.ctx;
+          image.imageData = ctx.getImageData(0, 0, 512, 512);
+          // > Used 1.400kb up until now
+        } else if(canvasInfo.imageData) {
+          // Firefox: clone the incoming ImageData into this scope, because reading
+          // pixels through cross-context wrappers is much slower than reading a local copy.
+          if (isFirefox) {
+            image.imageData = globalThis.structuredClone(
+              canvasInfo.imageData
+            );
+          } else {
+            image.imageData = canvasInfo.imageData;
+          }
+        } else {
+          throw new Error('No bitmap, canvas or imageData has been received by the BarDetection worker');
         }
 
-        image.imageData = ctx.getImageData(0, 0, 512, 512);
-        // > Used 1.400kb up until now
 
         globalXOffsetIndex++;
         if (globalXOffsetIndex >= xOffsetSize) globalXOffsetIndex = 0;
@@ -1078,7 +1082,7 @@ const workerCode = function () {
           return;
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx?.clearRect?.(0, 0, canvas?.width, canvas?.height);
         this.postMessage({
           id,
           horizontalBarSizeInfo,
@@ -1098,6 +1102,113 @@ const workerCode = function () {
     postError(ex);
   }
 };
+
+const getImageDataFromImage = (() => {
+  const W = 512, H = 512;
+  const canvas = new SafeOffscreenCanvas(W, H);
+  const gl = canvas.getContext("webgl2", {
+    alpha: false, antialias: false, depth: false, stencil: false,
+    preserveDrawingBuffer: true
+  });
+
+  const vs = `#version 300 es
+  out vec2 uv;
+
+  void main() {
+    vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+    uv = p;
+    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+  }`;
+
+  const fs = `#version 300 es
+  precision mediump float;
+  uniform sampler2D tex;
+  in vec2 uv;
+  out vec4 color;
+
+  void main() {
+    color = texture(tex, uv);
+  }`;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  gl.bindVertexArray(gl.createVertexArray());
+
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const pbo = gl.createBuffer();
+  gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+
+  gl.viewport(0, 0, W, H);
+
+  function clientWaitSyncFence(sync, firstTimeout = 5, recurringTimeout = 2, afterTwoSecondsTimeout = 1000) {
+    const start = performance.now();
+    return new Promise((resolve, reject) => {
+      setTimeout(function clientWaitSyncPoll() {
+        try {
+          const r = gl.clientWaitSync(sync, 0, 0);
+          if (r === gl.WAIT_FAILED) return reject(new Error("WebGL clientWaitSync WAIT_FAILED"));
+          if (r === gl.TIMEOUT_EXPIRED) return setTimeout(clientWaitSyncPoll, 
+            (performance.now() - start > 2000) ? afterTwoSecondsTimeout : recurringTimeout);
+          resolve();
+        } catch(ex) {
+          reject(ex);
+        }
+      }, firstTimeout);
+    });
+  }
+  
+  // const array = new Uint8Array(W * H * 4);
+  // const imageData = new ImageData(W, H);
+
+  async function getVideoFrameBufferPixels(image) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.drawArrays(gl.TRIANGLES, 0, 3); // Queue the command to draw the image onto the canvas
+
+    // gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, W * H * 4, gl.STREAM_READ); // Signal webgl that the previous buffer can be discarded
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, 0); // Queue the command to copy pixeldata into the PIXEL_PACK_BUFFER pbo
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); // Create a fence that will signal once the gpu has executed all previous commands
+    gl.flush(); // Send the queued command to the gpu
+
+    await clientWaitSyncFence(sync); // Wacht tot de fence signaleert dat de gpu klaar is met het uitvoeren van de commands
+    gl.deleteSync(sync); // Delete the fence
+
+    const imageData = new ImageData(W, H); // Create new imagedata objects to prevent Firefox from throwing exception. Investigate todo: Could cause a lot of garbage collections that have a negative impact?
+    gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, imageData.data);
+
+    // gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, array); // Copy the pixeldata from the PIXEL_PACK_BUFFER on the GPU VRAM into the Uint8Array on the CPU RAM
+    // gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); // ontkoppel de PIXEL_PACK_BUFFER pbo
+    // const imageData = new ImageData(
+    //   new Uint8ClampedArray(
+    //       array.buffer,
+    //       array.byteOffset,
+    //       array.byteLength
+    //   ),
+    //   W,
+    //   H
+    // );
+
+    return imageData;
+  }
+
+  return getVideoFrameBufferPixels;
+})();
 
 export default class BarDetection {
   worker;
@@ -1178,7 +1289,8 @@ export default class BarDetection {
     averageHistorySize,
     allowedAnomaliesPercentage,
     allowedUnevenBarsPercentage,
-    callback
+    callback,
+    setWarning
   ) => {
     if (this.running) {
       return;
@@ -1242,7 +1354,8 @@ export default class BarDetection {
           averageHistorySize,
           allowedAnomaliesPercentage,
           allowedUnevenBarsPercentage,
-          callback
+          callback,
+          setWarning
         );
       }.bind(this),
       { timeout: 1 },
@@ -1476,7 +1589,8 @@ export default class BarDetection {
     averageHistorySize,
     allowedAnomaliesPercentage,
     allowedUnevenBarsPercentage,
-    callback
+    callback,
+    setWarning
   ) => {
     if (this.runId !== runId) return;
 
@@ -1491,38 +1605,46 @@ export default class BarDetection {
         !buffer.transferToImageBitmap ||
         !buffer.getContext
       ) {
-        if (!this.canvas) {
-          this.canvas = new SafeOffscreenCanvas(
-            512,
-            512
-            // Math.min(buffer.videoWidth || buffer.width || 512, 512),
-            // Math.min(buffer.videoHeight || buffer.height || 512, 512)
-          );
-          // Smallest size to prevent many garbage collections caused by transferToImageBitmap
-          this.ctx = undefined;
-        }
+        const imageData = await getImageDataFromImage(buffer);
+        // const clamped = new Uint8ClampedArray(array.buffer, array.byteOffset, array.byteLength);
+        // const imageData = new ImageData(clamped, 512, 512);
+        // const bitmap = await createImageBitmap(imageData, { premultiplyAlpha: "none" });
+        canvasInfo = {
+          imageData,
+          // canvas,
+        };
+        // if (!this.canvas) {
+        //   this.canvas = new SafeOffscreenCanvas(
+        //     512,
+        //     512
+        //     // Math.min(buffer.videoWidth || buffer.width || 512, 512),
+        //     // Math.min(buffer.videoHeight || buffer.height || 512, 512)
+        //   );
+        //   // Smallest size to prevent many garbage collections caused by transferToImageBitmap
+        //   this.ctx = undefined;
+        // }
 
-        if (
-          !this.ctx ||
-          (this.ctx?.isContextLost && this.ctx.isContextLost())
-        ) {
-          this.ctx = this.canvas.getContext('2d', {
-            // alpha: false, // Decreases performance on some platforms
-            desynchronized: true,
-          });
-          this.ctx.imageSmoothingEnabled = true;
-        }
+        // if (
+        //   !this.ctx ||
+        //   (this.ctx?.isContextLost && this.ctx.isContextLost())
+        // ) {
+        //   this.ctx = this.canvas.getContext('2d', {
+        //     // alpha: false, // Decreases performance on some platforms
+        //     desynchronized: true,
+        //   });
+        //   this.ctx.imageSmoothingEnabled = true;
+        // }
 
-        this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height);
-        canvasInfo =
-          this.worker.isFallbackWorker || !this.canvas.transferToImageBitmap
-            ? {
-                canvas: this.canvas,
-                ctx: this.ctx,
-              }
-            : {
-                bitmap: this.canvas.transferToImageBitmap(),
-              };
+        // this.ctx.drawImage(buffer, 0, 0, this.canvas.width, this.canvas.height);
+        // canvasInfo =
+        //   this.worker.isFallbackWorker || !this.canvas.transferToImageBitmap
+        //     ? {
+        //         canvas: this.canvas,
+        //         ctx: this.ctx,
+        //       }
+        //     : {
+        //         bitmap: this.canvas.transferToImageBitmap(),
+        //       };
       } else {
         bufferCtx = buffer.getContext('2d');
         if (bufferCtx instanceof Promise) bufferCtx = await bufferCtx;
@@ -1549,7 +1671,7 @@ export default class BarDetection {
       }
 
       this.ambientlight.stats.updateBarDetectionImage(
-        canvasInfo.bitmap ?? canvasInfo.canvas
+        canvasInfo.bitmap ?? canvasInfo.imageData ?? canvasInfo.canvas
       );
 
       const stackHolder = new Error();
@@ -1694,7 +1816,9 @@ export default class BarDetection {
           allowedUnevenBarsPercentage,
           xOffsetSize: averageHistorySize,
         },
-        canvasInfo.bitmap ? [canvasInfo.bitmap] : undefined
+        canvasInfo.imageData?.data?.buffer ? [canvasInfo.imageData.data.buffer]
+          : canvasInfo.bitmap ? [canvasInfo.bitmap]
+          : undefined
       );
       await onMessagePromise;
       if (this.runId !== runId) return;
@@ -1738,11 +1862,15 @@ export default class BarDetection {
         }),
         throttle
       );
+      
+      setWarning('', false, true, 'bar-detection'); // Clear previous warnings
     } catch (ex) {
-      // Happens when the video has been emptied or canvas is cleared before the idleCallback has been executed
+      // Happens when the gpu is lost, video has been emptied or canvas is cleared before the idleCallback has been executed
       const isKnownError =
         ex.message?.includes('ImageBitmap construction failed') || // Chromium
-        ex.name === 'DataCloneError'; // Firefox
+        ex.name === 'DataCloneError' || // Firefox
+        ex.message === 'WebGL clientWaitSync WAIT_FAILED';
+
       if (!isKnownError) {
         ex.details = {
           ...(ex.details ? { details: ex.details } : {}),
@@ -1780,16 +1908,34 @@ export default class BarDetection {
                       type: canvasInfo.bitmap.constructor?.name,
                     }
                   : undefined,
+                imageData: canvasInfo?.imageData
+                  ? {
+                      width: canvasInfo.imageData.width,
+                      height: canvasInfo.imageData.height,
+                      type: canvasInfo.imageData.constructor?.name,
+                    }
+                  : undefined,
               }
             : undefined,
         };
       }
 
+      setWarning(`Failed to detect black/colored bars. \n\n${ex.name}: ${ex.message}`, false, true, 'bar-detection');
+
       if (this.runId === runId) {
         if (canvasInfo?.bitmap) {
           canvasInfo.bitmap.close();
         }
-        this.running = false;
+
+        this.timeout = setTimeout(
+          wrapErrorHandler(() => {
+            this.timeout = undefined;
+            if (this.runId !== runId) return;
+
+            this.running = false;
+          }),
+          2000
+        );
       }
 
       if (this.catchedDetectBarSizeError || isKnownError) return;
