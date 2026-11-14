@@ -1180,7 +1180,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   async checkGetImageDataAllowed() {
     const isSameOriginVideo =
       !!this.videoElem.src &&
-      this.videoElem.src.indexOf(location.origin) !== -1;
+      this.videoElem.src.indexOf(globalThis.location?.origin) !== -1;
     const getImageDataAllowed =
       !window.chrome ||
       isSameOriginVideo ||
@@ -1511,7 +1511,7 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   }
 
   async resetSettingsIfNeeded() {
-    const videoPath = location.search;
+    const videoPath = globalThis.location?.search;
     if (!this.prevVideoPath || videoPath !== this.prevVideoPath) {
       if (this.settings.horizontalBarsClipPercentageReset) {
         const horizontalBarChanged = this.setHorizontalBars(0);

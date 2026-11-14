@@ -80,7 +80,7 @@ function initClientAndScope() {
       try {
         event.request = {};
         if (navigator.doNotTrack !== '1' && crashOptions?.video) {
-          event.request.url = location.href;
+          event.request.url = globalThis.location?.href;
           event.request.headers = {
             Referer: globalThis.window?.document?.referrer,
           };
@@ -429,7 +429,7 @@ export default class SentryReporter {
 
         const pageExtra = {};
         try {
-          pageExtra.isVideo = location.pathname == '/watch';
+          pageExtra.isVideo = globalThis.location?.pathname == '/watch';
         } catch (ex) {
           setExtra('Page .isVideo (exception)', ex);
         }

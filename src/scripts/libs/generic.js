@@ -392,10 +392,10 @@ export const supportsColorMix = () => {
 };
 
 export const isWatchPageUrl = () =>
-  ['/watch', '/live/'].some((path) => location.pathname.startsWith(path)) ||
+  ['/watch', '/live/'].some((path) => globalThis.location?.pathname?.startsWith(path)) ||
   isEmbedPageUrl();
 
-export const isEmbedPageUrl = () => location.pathname?.startsWith('/embed/');
+export const isEmbedPageUrl = () => globalThis.location?.pathname?.startsWith('/embed/');
 
 export const getCookie = async (name) =>
   globalThis.cookieStore

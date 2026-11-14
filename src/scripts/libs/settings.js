@@ -1389,7 +1389,7 @@ But if this happens frequently, here are some possible causes:
       ].join(', ');
       error.details = {
         controlsHTML: document.querySelector(settingsMenuBtnParentSelector)
-          ?.outerHTML,
+          ?.innerHTML,
       };
       SentryReporter.captureException(error);
     }
@@ -1473,6 +1473,8 @@ But if this happens frequently, here are some possible causes:
   }
 
   reloadPage() {
+    if (!globalThis.location) return;
+
     const search = new URLSearchParams(location.search);
     const time = Math.max(
       0,
