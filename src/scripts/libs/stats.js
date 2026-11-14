@@ -257,8 +257,7 @@ export default class Stats {
           ? `${projector?.blurCanvas?.width ?? '?'}x${
               projector?.blurCanvas?.height ?? '?'
             } 
-          [ clear: ${(projector?.blurClearTime ?? 0).toFixed(1)}ms
-          | draw: ${(projector?.blurDrawTime ?? 0).toFixed(1)}ms]`
+          [ draw: ${(projector?.blurDrawTime ?? 0).toFixed(1)}ms]`
           : projector?.projectors?.length
           ? `${projector?.projectors[0]?.elem?.width ?? '?'}x${
               projector?.projectors[0]?.elem?.height ?? '?'

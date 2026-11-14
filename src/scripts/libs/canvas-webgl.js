@@ -746,6 +746,9 @@ export class WebGLContext {
 
     let start = this.settings.showResolutions ? performance.now() : undefined;
     // Chromium bug 1074473: Using texImage2D because texSubImage2D from a video element is 80x slower than texImage2D
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1074473 was migrated to https://issues.chromium.org/issues/40128037
+    // 40128037 depends on https://issues.chromium.org/issues/40469618
+    // 40469618 depends on https://issues.chromium.org/issues/40501199
     this.ctx.texImage2D(
       this.ctx.TEXTURE_2D,
       0,

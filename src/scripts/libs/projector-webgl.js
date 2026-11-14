@@ -267,11 +267,6 @@ export default class ProjectorWebGL {
       this.drawTime = performance.now() - start;
 
     if (this.settings.showResolutions) start = performance.now();
-    this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
-    if (this.settings.showResolutions) {
-      this.blurClearTime = performance.now() - start;
-      start = performance.now();
-    }
     this.blurCtx.drawImage(
       this.elem,
       blurCanvasBound,
@@ -1309,6 +1304,7 @@ export default class ProjectorWebGL {
     }
     if (this.blurCtx) {
       this.blurCtx.filter = `blur(${blurPx / this.blurCanvasScale}px)`;
+      this.blurCtx.globalCompositeOperation = 'copy';
     }
 
     // A this.scalesLength higher than 150 requires a shader recompilation to increase the shader loop
