@@ -12,7 +12,7 @@ class Storage {
         ? nameOrNamesAndValues
         : { [nameOrNamesAndValues]: value };
 
-      const stack = new Error().stack;
+      const stackHolder = new Error();
       return await new Promise(function storageSet(resolve, reject) {
         try {
           if (!chrome?.runtime?.id) throw new Error('uninstalled');
@@ -23,7 +23,7 @@ class Storage {
               resolve();
             } catch (ex) {
               if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-              appendErrorStack(stack, ex);
+              appendErrorStack(stackHolder.stack, ex);
               reject(ex);
             }
           };
@@ -34,7 +34,7 @@ class Storage {
           }
         } catch (ex) {
           if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-          appendErrorStack(stack, ex);
+          appendErrorStack(stackHolder.stack, ex);
           reject(ex);
         }
       });
@@ -55,7 +55,7 @@ class Storage {
     try {
       const multiple = typeof nameOrNames !== 'string';
       const names = multiple ? nameOrNames : [nameOrNames];
-      const stack = new Error().stack;
+      const stackHolder = new Error();
       return await new Promise(function storageGet(resolve, reject) {
         try {
           if (!chrome?.runtime?.id) throw new Error('uninstalled');
@@ -72,13 +72,13 @@ class Storage {
               );
             } catch (ex) {
               if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-              appendErrorStack(stack, ex);
+              appendErrorStack(stackHolder.stack, ex);
               reject(ex);
             }
           });
         } catch (ex) {
           if (!chrome?.runtime?.id) return reject(new Error('uninstalled'));
-          appendErrorStack(stack, ex);
+          appendErrorStack(stackHolder.stack, ex);
           reject(ex);
         }
       });

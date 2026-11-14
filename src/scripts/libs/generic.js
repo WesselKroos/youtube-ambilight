@@ -59,38 +59,44 @@ const wrapErrorHandlerHandleError = (stack, ex, reportOnce, reported) => {
   if (displayErrorHandler) displayErrorHandler(ex);
 };
 
-const withErrorHandler = (callback, reportOnce, stack, reported) => {
+const withErrorHandler = (callback, reportOnce, stackHolder, reported) => {
   const callbackName = callback.name || 'anonymous';
   const container = {
     [callbackName]: (...args) => {
       try {
         return callback(...args);
       } catch (ex) {
-        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported);
+        wrapErrorHandlerHandleError(stackHolder.stack, ex, reportOnce, reported);
       }
     },
   };
   return container[callbackName];
 };
 
-const withAsyncErrorHandler = (callback, reportOnce, stack, reported) => {
+const withAsyncErrorHandler = (callback, reportOnce, stackHolder, reported) => {
   const callbackName = callback.name || 'anonymous';
   const container = {
     [callbackName]: async (...args) => {
       try {
         return await callback(...args);
       } catch (ex) {
-        wrapErrorHandlerHandleError(stack, ex, reportOnce, reported);
+        wrapErrorHandlerHandleError(stackHolder.stack, ex, reportOnce, reported);
       }
     },
   };
   return container[callbackName];
 };
 
-export const wrapErrorHandler = (callback, reportOnce = false) =>
-  (callback.constructor.name === 'AsyncFunction'
-    ? withAsyncErrorHandler
-    : withErrorHandler)(callback, reportOnce, new Error().stack, []);
+export const wrapErrorHandler = (() => {
+  const AsyncFunction = (async () => {}).constructor;
+  const container = {
+    '_': (callback, reportOnce = false) =>
+    (callback instanceof AsyncFunction
+      ? withAsyncErrorHandler
+      : withErrorHandler)(callback, reportOnce, new Error(), reportOnce ? [] : undefined)
+    };
+    return container['_']
+})();
 
 export const setTimeout = (handler, timeout) => {
   return globalThis.setTimeout(wrapErrorHandler(handler), timeout);
@@ -99,9 +105,9 @@ export const setTimeout = (handler, timeout) => {
 const eventListenerCallbacks = [];
 export function on(elem, eventNames, callback, options, reportOnce = false) {
   try {
-    const stack = new Error().stack;
+    const stackHolder = new Error();
     const callbacksName = `on_${eventNames.split(' ').join('_')}`;
-    let reported = [];
+    let reported = reportOnce ? [] : undefined;
     const namedCallbacks = {
       [callbacksName]: async (...args) => {
         try {
@@ -165,7 +171,7 @@ export function on(elem, eventNames, callback, options, reportOnce = false) {
             reportOnce,
           };
 
-          appendErrorStack(stack, ex);
+          appendErrorStack(stackHolder.stack, ex);
           if (errorHandler) errorHandler(ex);
         }
       },

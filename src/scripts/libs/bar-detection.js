@@ -1190,7 +1190,7 @@ export default class BarDetection {
 
     if (!this.worker) {
       this.worker = await workerFromCode(workerCode);
-      const stack = new Error().stack;
+      const stackHolder = new Error();
       this.worker.onmessage = (e) => {
         if (this.onWorkerMessageListener) {
           return this.onWorkerMessageListener(e);
@@ -1200,7 +1200,7 @@ export default class BarDetection {
           return;
         }
         if (e.data.error) {
-          appendErrorStack(stack, e.data.error);
+          appendErrorStack(stackHolder.stack, e.data.error);
           SentryReporter.captureException(e.data.error);
         }
       };
@@ -1552,7 +1552,7 @@ export default class BarDetection {
         canvasInfo.bitmap ?? canvasInfo.canvas
       );
 
-      const stack = new Error().stack;
+      const stackHolder = new Error();
       const onMessagePromise = new Promise(
         function onMessagePromise(resolve, reject) {
           this.onWorkerRejectListener = (err) => reject(err);
@@ -1572,7 +1572,7 @@ export default class BarDetection {
                   /blob:.+?:\/.+?:/g,
                   'extension://scripts/bar-detection-worker.js:'
                 );
-                appendErrorStack(stack, error);
+                appendErrorStack(stackHolder.stack, error);
                 throw error;
               }
 

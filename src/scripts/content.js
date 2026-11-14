@@ -39,7 +39,7 @@ Reload the webpage to reload the extension.`
 const waitForHtmlElement = async () => {
   if (document.documentElement) return;
 
-  const stack = new Error().stack;
+  const stackHolder = new Error();
   await new Promise((resolve, reject) => {
     try {
       const observer = new MutationObserver(
@@ -55,7 +55,7 @@ const waitForHtmlElement = async () => {
       );
       observer.observe(document, { childList: true });
     } catch (ex) {
-      appendErrorStack(stack, ex);
+      appendErrorStack(stackHolder.stack, ex);
       reject(ex);
     }
   });
@@ -64,7 +64,7 @@ const waitForHtmlElement = async () => {
 const waitForHeadElement = async () => {
   if (document.head) return;
 
-  const stack = new Error().stack;
+  const stackHolder = new Error();
   await new Promise((resolve, reject) => {
     try {
       const observer = new MutationObserver(
@@ -80,7 +80,7 @@ const waitForHeadElement = async () => {
       );
       observer.observe(document.documentElement, { childList: true });
     } catch (ex) {
-      appendErrorStack(stack, ex);
+      appendErrorStack(stackHolder.stack, ex);
       reject(ex);
     }
   });
@@ -94,7 +94,7 @@ const captureResourceLoadingException = async (url, event) => {
 
   let error;
   try {
-    const stack = new Error().stack;
+    const stackHolder = new Error();
     await new Promise((resolve, reject) => {
       try {
         const req = new XMLHttpRequest();
@@ -105,7 +105,7 @@ const captureResourceLoadingException = async (url, event) => {
                 error = new Error(
                   `Cannot load ${url} (Status: ${req.statusText} ${req.status})`
                 );
-                appendErrorStack(stack, error);
+                appendErrorStack(stackHolder.stack, error);
               }
               resolve();
             }
@@ -116,7 +116,7 @@ const captureResourceLoadingException = async (url, event) => {
         req.open('GET', url, true);
         req.send();
       } catch (ex) {
-        appendErrorStack(stack, ex);
+        appendErrorStack(stackHolder.stack, ex);
         reject(ex);
       }
     });

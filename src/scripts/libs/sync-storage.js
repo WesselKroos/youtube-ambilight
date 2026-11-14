@@ -7,7 +7,7 @@ class SyncStorage {
       ? nameOrNamesAndValues
       : { [nameOrNamesAndValues]: value };
 
-    const stack = new Error().stack;
+    const stackHolder = new Error();
     return await new Promise(function storageSet(resolve, reject) {
       try {
         const setCallback = () => {
@@ -15,7 +15,7 @@ class SyncStorage {
             if (chrome.runtime.lastError) throw chrome.runtime.lastError;
             resolve();
           } catch (ex) {
-            appendErrorStack(stack, ex);
+            appendErrorStack(stackHolder.stack, ex);
             reject(ex);
           }
         };
@@ -25,7 +25,7 @@ class SyncStorage {
           chrome.storage.sync.set(namesAndValues, setCallback);
         }
       } catch (ex) {
-        appendErrorStack(stack, ex);
+        appendErrorStack(stackHolder.stack, ex);
         reject(ex);
       }
     });
@@ -34,7 +34,7 @@ class SyncStorage {
   async get(nameOrNames) {
     const multiple = typeof nameOrNames !== 'string';
     const names = multiple ? nameOrNames : [nameOrNames];
-    const stack = new Error().stack;
+    const stackHolder = new Error();
     return await new Promise(function storageGet(resolve, reject) {
       try {
         chrome.storage.sync.get(names, function getCallback(result) {
@@ -48,12 +48,12 @@ class SyncStorage {
                 : result[nameOrNames]
             );
           } catch (ex) {
-            appendErrorStack(stack, ex);
+            appendErrorStack(stackHolder.stack, ex);
             reject(ex);
           }
         });
       } catch (ex) {
-        appendErrorStack(stack, ex);
+        appendErrorStack(stackHolder.stack, ex);
         reject(ex);
       }
     });

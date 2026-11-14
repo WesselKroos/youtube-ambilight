@@ -305,7 +305,7 @@ export const getAverageVideoFramesDifference = async (format) => {
   workerMessageId++;
   const id = workerMessageId;
 
-  const stack = new Error().stack;
+  const stackHolder = new Error();
   onMessagePromise = new Promise(
     function onMessagePromise(resolve, reject) {
       worker.onerror = (err) => {
@@ -332,7 +332,7 @@ export const getAverageVideoFramesDifference = async (format) => {
                 'extension://scripts/static-image-detection-worker.js:'
               );
             }
-            appendErrorStack(stack, e.data.error);
+            appendErrorStack(stackHolder.stack, e.data.error);
             throw e.data.error;
           }
 

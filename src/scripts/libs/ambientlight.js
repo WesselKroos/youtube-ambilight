@@ -132,17 +132,17 @@ export default class Ambientlight {
       await this.initListeners();
 
       new Promise((resolve) =>
-        wrapErrorHandler(() => {
+        wrapErrorHandler(function activateSettingsMenu() {
           this.initializedTime = performance.now();
           this.settings.onLoaded();
           resolve();
-        })()
+        }.bind(this))()
       );
 
       if (this.settings.enabled) {
-        await wrapErrorHandler(async () => {
+        await wrapErrorHandler(async function enableFirstTime(){
           await this.enable(true);
-        })();
+        }.bind(this))();
       }
 
       return this;
