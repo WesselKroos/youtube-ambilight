@@ -103,6 +103,7 @@ export default class Ambientlight {
       this.detectMozillaBug1606251Workaround();
       this.detectMozillaBugSlowCanvas2DReadPixelsWorkaround();
       this.detectChromiumBug1092080Workaround();
+      this.detectChromiumBug477806716Workaround();
 
       this.initElems(videoElem);
       await this.initSettings();
@@ -305,6 +306,16 @@ export default class Ambientlight {
     if (version) {
       this.enableChromiumBugVideoJitterWorkaround = true;
       this.settings.updateVisibility();
+    }
+  }
+
+  // Chromium workaround: Force to render the ambient light canvas behind the video when it's overlayed by the debanding element
+  // https://issues.chromium.org/issues/477806716
+  detectChromiumBug477806716Workaround() {
+    const match = navigator.userAgent.match(/Chrome\/((?:\.|[0-9])+)/);
+    const version = match?.length > 1 ? parseFloat(match[1]) : null;
+    if (version && version >= 141) {
+      this.enableChromiumBug477806716Workaround = true;
     }
   }
 
@@ -2123,6 +2134,17 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       }
     }
 
+    if (this.chromiumBug477806716WorkaroundElem) {
+      const debandingStrength = parseFloat(this.settings.debandingStrength);
+      const shouldShow = debandingStrength && this.isFullscreen && !this.isFillingFullscreen;
+      if (shouldShow && !this.chromiumBug477806716WorkaroundElem.isConnected) {
+        this.videoContainerElem.appendChild(this.chromiumBug477806716WorkaroundElem);
+      }
+      if (!shouldShow && this.chromiumBug477806716WorkaroundElem.isConnected) {
+        this.chromiumBug477806716WorkaroundElem.remove();
+      }
+    }
+
     if (videoOverlayEnabled && videoOverlay) {
       if (videoOverlay.elem.getAttribute('style') !== videoElemStyle) {
         videoOverlay.elem.setAttribute('style', videoElemStyle);
@@ -2460,6 +2482,16 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         [DEBANDING_BLEND_MODE_OLED]: 'overlay',
       }[this.settings.debandingBlendMode]
     );
+    
+    if (this.enableChromiumBug477806716Workaround && debandingStrength) {
+      if (!this.chromiumBug477806716WorkaroundElem) {
+        this.chromiumBug477806716WorkaroundElem = document.createElement('div');
+        this.chromiumBug477806716WorkaroundElem.classList.add('ambientlight__chromium-bug-477806716-workaround');
+      }
+    } else if (this.chromiumBug477806716WorkaroundElem) {
+      this.chromiumBug477806716WorkaroundElem.remove();
+      this.chromiumBug477806716WorkaroundElem = undefined;
+    }
   }
 
   async resizeCanvasses() {
@@ -3790,6 +3822,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     }
     if (this.videoDebandingElem?.isConnected) {
       this.videoDebandingElem.remove();
+    }
+    if (this.chromiumBug477806716WorkaroundElem?.isConnected) {
+      this.chromiumBug477806716WorkaroundElem.remove();
     }
 
     this.resetVideoParentElemStyle();

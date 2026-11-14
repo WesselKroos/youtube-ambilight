@@ -71,6 +71,7 @@
 .ambientlight__fps-list,
 .ambientlight__video-overlay,
 .ambientlight__video-debanding,
+.ambientlight__chromium-bug-477806716-workaround,
 .ambientlight__chromium-bug-video-jitter-workaround {
   display: none;
 }
@@ -1503,18 +1504,29 @@ html[data-ambientlight-enabled] {
     }
   }
 
-  .ambientlight__video-debanding {
+  .ytp-fullscreen .ambientlight__chromium-bug-477806716-workaround {
     position: absolute;
-    display: block;
-    width: 1px;
-    height: 1px;
     margin-top: 0px;
     pointer-events: none;
     user-select: none;
+    display: block;
+    width: 1px;
+    height: 1px;
+    background: rgba(127,127,127,.002);
+    background: linear-gradient(to right, transparent 50%);
+    left: 50dvw;
+  }
 
+  .ambientlight__video-debanding {
+    position: absolute;
+    margin-top: 0px;
+    pointer-events: none;
+    user-select: none;
+    display: block;
+    width: 1px;
+    height: 1px;
     transform-origin: center center;
     transform: var(--video-transform);
-    
     background: var(--ytal-video-debanding-background, none);
     opacity: var(--ytal-video-debanding-opacity, 0);
     mix-blend-mode: var(--ytal-debanding-blend-mode, none);
