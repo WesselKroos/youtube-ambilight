@@ -1131,6 +1131,7 @@ But if this happens frequently, here are some possible causes:
               'enableInPictureInPicture',
               'enableInEmbed',
               'enableInVRVideos',
+              'enableWhileDischarging',
             ].some((name) => name === setting.name)
           ) {
             if (setting.name !== 'webGL') this.set(setting.name, value);
@@ -1202,6 +1203,10 @@ But if this happens frequently, here are some possible causes:
             this.enabled
           ) {
             this.ambientlight.updateLayoutPerformanceImprovements();
+          }
+
+          if (setting.name === 'enableWhileDischarging') {
+            this.ambientlight.updateChargingListener();
           }
 
           const html = document.documentElement;

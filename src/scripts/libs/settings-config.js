@@ -826,6 +826,14 @@ Click on the questionmark for more and updated information about these artifacts
     advanced: true,
   },
   {
+    name: 'enableWhileDischarging',
+    label: 'While on battery',
+    description: 'When your device\'s battery is discharging',
+    type: 'checkbox',
+    default: true,
+    advanced: true,
+  },
+  {
     type: 'section',
     label: 'General',
     name: 'sectionGeneralCollapsed',
@@ -898,6 +906,10 @@ export const prepareSettingsConfigOnce = () => {
 
   if (getBrowser() === 'Firefox') {
     settingsToRemove.push('enableInVRVideos');
+  }
+
+  if (typeof navigator.getBattery !== 'function') {
+    settingsToRemove.push('enableWhileDischarging');
   }
 
   if (!supportsColorMix()) {

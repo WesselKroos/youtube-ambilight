@@ -1010,6 +1010,8 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       );
     }
 
+    await this.updateChargingListener();
+
     await this.updateView();
   }
 
@@ -1788,6 +1790,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
   };
 
   isInEnabledView = () => {
+    const chargingOrEnabledWhileDischarging = (this.settings.enableWhileDischarging ?? true) || (this.battery?.charging ?? true);
+    if (!chargingOrEnabledWhileDischarging) return false;
+
     const enableInViews = this.settings.enableInViews;
     const enabledInView =
       {
@@ -3861,6 +3866,30 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
         );
     }
   }, true);
+
+  updateChargingListener = wrapErrorHandler(async () => {
+    if (typeof navigator.getBattery !== 'function') return;
+
+    const enableWhileDischarging = this.settings.enableWhileDischarging ?? true;
+    if (enableWhileDischarging) {
+      if (this.battery && this.chargingListener) {
+        this.battery.removeEventListener('chargingchange', this.chargingListener);
+        this.chargingListener = undefined;
+        this.battery = undefined;
+      }
+      return;
+    }
+
+    try {
+      this.battery ??= await navigator.getBattery();
+      this.chargingListener = wrapErrorHandler(async function onChargingchange() {
+        await this.optionalFrame();
+      }.bind(this));
+      this.battery.addEventListener('chargingchange', this.chargingListener);
+    } catch (ex) {
+      this.settings.setWarning(`Failed to detect your battery charging status to disable the ambient light while charging.\n\n${ex.name} ${ex.message}`);
+    }
+  });
 
   async show() {
     if (!this.isHidden) return;
