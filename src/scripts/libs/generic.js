@@ -391,11 +391,20 @@ export const supportsColorMix = () => {
   return _supportsColorMix;
 };
 
-export const isWatchPageUrl = () =>
-  ['/watch', '/live/'].some((path) => globalThis.location?.pathname?.startsWith(path)) ||
-  isEmbedPageUrl();
+const getPathname = () => globalThis.location?.pathname ?? '';
 
-export const isEmbedPageUrl = () => globalThis.location?.pathname?.startsWith('/embed/');
+export const isEmbedPageUrl = (pathname = getPathname()) => pathname.startsWith('/embed/');
+
+export const isWatchPageUrl = (() => {
+  const watchUrls = ['/watch', '/live/'];
+  return () => {
+    const pathname = getPathname();
+    for (const watchUrl of watchUrls) {
+      if (pathname.startsWith(watchUrl)) return true;
+    }
+    return isEmbedPageUrl(pathname);
+  };
+})();
 
 export const getCookie = async (name) =>
   globalThis.cookieStore

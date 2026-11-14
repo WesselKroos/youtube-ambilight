@@ -1794,13 +1794,10 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     if (!chargingOrEnabledWhileDischarging) return false;
 
     const enableInViews = this.settings.enableInViews;
-    const enabledInView =
-      {
-        [VIEW_SMALL]: enableInViews <= 2,
-        [VIEW_THEATER]:
-          enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4),
-        [VIEW_FULLSCREEN]: enableInViews === 0 || enableInViews >= 4,
-      }[this.view] || false;
+    const enabledInView = (this.view === VIEW_SMALL) ? enableInViews <= 2
+      : (this.view === VIEW_THEATER) ? enableInViews === 0 || (enableInViews >= 2 && enableInViews <= 4)
+      : (this.view === VIEW_FULLSCREEN) ? enableInViews === 0 || enableInViews >= 4
+      : false;
 
     if (isEmbedPageUrl()) {
       return (
@@ -2482,10 +2479,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
     setStyleProperty(
       document.body,
       '--ytal-debanding-blend-mode',
-      {
-        [DEBANDING_BLEND_MODE_LCD]: '',
-        [DEBANDING_BLEND_MODE_OLED]: 'overlay',
-      }[this.settings.debandingBlendMode]
+      this.settings.debandingBlendMode === DEBANDING_BLEND_MODE_OLED ? 'overlay'
+      : this.settings.debandingBlendMode === DEBANDING_BLEND_MODE_LCD ? ''
+      : ''
     );
     
     if (this.enableChromiumBug477806716Workaround && debandingStrength) {
