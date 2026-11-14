@@ -1156,6 +1156,12 @@ html[data-ambientlight-enabled] {
     background: var(--ytal-background) !important;
   }
 
+  /* ytd-feed-nudge-renderer */
+
+  #content-wrapper.ytd-feed-nudge-renderer {
+    background: none !important;
+  }
+
   /* Live chat replay panel */
 
   .ytVideoMetadataCarouselViewModelHost {
