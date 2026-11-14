@@ -2,6 +2,8 @@ import { AmbientlightError } from './errors/ambient-light-error';
 import {
   canvasWebGLCrashTips,
   ctxOptions,
+  networkStateToString,
+  readyStateToString,
   requestIdleCallback,
   webGLErrorToString,
   wrapErrorHandler,
@@ -794,7 +796,7 @@ export class WebGLContext {
     }
 
     if (resolutionChanged) {
-      this.checkForDrawErrors();
+      this.checkForDrawErrors(src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight);
     }
 
     if (this.settings.showResolutions)
@@ -802,7 +804,7 @@ export class WebGLContext {
   };
 
   drawErrors = [];
-  checkForDrawErrors = () => {
+  checkForDrawErrors = (src, srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight) => {
     // Only do this once for the first texture. Because getError takes 0.3 to 20ms
     const webGLError = this.ctx.getError();
 
@@ -812,19 +814,55 @@ export class WebGLContext {
       return;
     }
 
-    // Reset cpu-memory cached texture data
-    this.viewport = undefined;
-
     const error = new AmbientlightError(
       `WebGL error: ${webGLErrorToString(webGLError)}`,
       {
         program: this.program?.toString(),
         webGLVersion: this.webGLVersion,
         ctxOptions: this.ctxOptions,
+        src: {
+          x: srcX,
+          y: srcY,
+          width: srcWidth,
+          height: srcHeight,
+          name: src?.constructor?.name,
+          ...(src?.localName === 'video' ? {
+            currentTime: src.currentTime,
+            duration: src.duration,
+            ended: src.ended,
+            videoWidth: src.videoWidth,
+            videoHeight: src.videoHeight,
+            readyState: readyStateToString(src.readyState),
+            networkState: networkStateToString(src.networkState),
+          } : {}),
+          ...(src?.localName === 'img' ? {
+            currentSrc: !!src.currentSrc,
+            complete: src.complete,
+            'img.width': src.width,
+            'img.height': src.height,
+          } : {})
+        },
+        dest: {
+          x: destX,
+          y: destY,
+          width: destWidth,
+          height: destHeight
+        },
+        canvas: {
+          width: this.canvas?.width,
+          height: this.canvas?.height,
+          drawingBufferWidth: this.ctx?.drawingBufferWidth,
+          drawingBufferHeight: this.ctx?.drawingBufferHeight,
+          viewport: this.viewport,
+        },
+        'document.visibilityState': document.visibilityState
       },
     );
     error.name = 'WebGLDrawError';
 
+    // Reset cpu-memory cached texture data
+    this.viewport = undefined;
+    
     this.drawErrors.push(error);
     if (this.drawErrors.length < 3) {
       console.warn(error);

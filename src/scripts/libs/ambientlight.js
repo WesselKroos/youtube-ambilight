@@ -625,7 +625,7 @@ export default class Ambientlight {
           this.projectorBuffer.ctx.clearPreviousRect();
         }
 
-        // Whent the video is playing this is the first event. Else [seeked] is first
+        // When the video is playing this is the first event. Else [seeked] is first
         this.checkGetImageDataAllowed(); // Re-check after crossOrigin attribute has been applied
         await this.updateHdr();
         await this.initVideoIfSrcChanged();
@@ -3171,7 +3171,9 @@ Video ready state: ${readyStateToString(videoElem?.readyState)}`);
       // this.isAmbientlightHiddenOnWatchPage || // Disabled because: When in fullscreen isFillingFullscreen goes to false the observer needs a frame to render the shown ambientlight element. So instead handle this in the canScheduleNextFrame check
       this.videoElem.ended ||
       this.videoElem.readyState === 0 || // HAVE_NOTHING
-      this.videoElem.readyState === 1 // HAVE_METADATA
+      this.videoElem.readyState === 1 || // HAVE_METADATA
+      this.videoElem.videoWidth === 0 ||
+      this.videoElem.videoHeight === 0
       // The video contains metadata about the resolution so videoWidth and videoHeight are set.
       // But the video could have no framedata yet. On Firefox this can result in a failed draw call
       // to WebGL into a texture with a 0x0 resolution.

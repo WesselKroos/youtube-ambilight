@@ -3,6 +3,8 @@ import { AmbientlightError } from './errors/ambient-light-error';
 import {
   canvasWebGLCrashTips,
   ctxOptions,
+  networkStateToString,
+  readyStateToString,
   requestIdleCallback,
   SafeOffscreenCanvas,
   webGLErrorToString,
@@ -260,7 +262,7 @@ export default class ProjectorWebGL {
     const isNewTextureUpload =
       this.drawTextureSize.width === 0 && this.drawTextureSize.height === 0;
     if (isNewTextureUpload) {
-      this.checkForDrawErrors();
+      this.checkForDrawErrors(src);
     }
 
     if (this.settings.showResolutions)
@@ -286,7 +288,7 @@ export default class ProjectorWebGL {
   };
 
   drawErrors = [];
-  checkForDrawErrors = () => {
+  checkForDrawErrors = (src) => {
     // Only do this once for the first texture. Because getError takes 0.3 to 20ms
     const webGLError = this.ctx.getError();
 
@@ -306,6 +308,36 @@ export default class ProjectorWebGL {
         webGLVersion: this.webGLVersion,
         majorPerformanceCaveat: this.majorPerformanceCaveat,
         ctxOptions: this.ctxOptions,
+        src: {
+          width: src?.width,
+          height: src?.height,
+          videoWidth: src?.videoWidth,
+          videoHeight: src?.videoHeight,
+          name: src?.constructor?.name,
+          ...(src?.localName === 'video' ? {
+            currentTime: src.currentTime,
+            duration: src.duration,
+            ended: src.ended,
+            videoWidth: src.videoWidth,
+            videoHeight: src.videoHeight,
+            readyState: readyStateToString(src.readyState),
+            networkState: networkStateToString(src.networkState),
+          } : {}),
+          ...(src?.localName === 'img' ? {
+            currentSrc: !!src.currentSrc,
+            complete: src.complete,
+            'img.width': src.width,
+            'img.height': src.height,
+          } : {})
+        },
+        canvas: {
+          width: this.elem?.width,
+          height: this.elem?.height,
+          drawingBufferWidth: this.ctx?.drawingBufferWidth,
+          drawingBufferHeight: this.ctx?.drawingBufferHeight,
+          viewport: this.viewport,
+        },
+        'document.visibilityState': document.visibilityState
       },
     );
     error.name = 'ProjectorWebGLDrawError';
