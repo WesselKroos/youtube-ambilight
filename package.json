@@ -30,10 +30,10 @@
     "upload-sourcemaps": "dotenvx run -f .env -f .env.local --overload -- sentry-cli sourcemaps upload ./sourcemaps --release=2.38.17"
   },
   "engines": {
-    "node": "22.5.1"
+    "node": "22.23.5"
   },
   "volta": {
-    "node": "22.5.1"
+    "node": "22.23.5"
   },
   "devDependencies": {
     "@babel/core": "^7.21.8",
@@ -42,7 +42,7 @@
     "@dotenvx/dotenvx": "^1.45.1",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-eslint": "^9.0.5",
-    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@sentry/browser": "^9.27.0",
     "@sentry/cli": "^2.46.0",
     "babel-plugin-transform-replace-expressions": "^0.2.0",
@@ -50,7 +50,7 @@
     "eslint": "^9.28.0",
     "globals": "^16.2.0",
     "npm-run-all": "^4.1.5",
-    "replace-in-file": "^8.3.0",
+    "replace-in-file": "^9.0.0",
     "rollup": "^4.42.0",
     "sass": "^1.62.1"
   },
